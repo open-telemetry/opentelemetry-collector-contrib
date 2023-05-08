@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,6 +41,20 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
 	assert.Equal(t, "test-task-id", s)
+	assert.True(t, success)
+}
+
+func TestReplacePatternValidServiceName(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "{ServiceName}"
+
+	attrMap := pcommon.NewMap()
+	attrMap.PutStr("service.name", "some-test-service")
+
+	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
+
+	assert.Equal(t, "some-test-service", s)
 	assert.True(t, success)
 }
 

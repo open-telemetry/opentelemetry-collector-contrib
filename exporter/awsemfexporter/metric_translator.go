@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,9 +28,8 @@ import (
 
 const (
 	// OTel instrumentation lib name as dimension
-	oTellibDimensionKey          = "OTelLib"
-	defaultNamespace             = "default"
-	noInstrumentationLibraryName = "Undefined"
+	oTellibDimensionKey = "OTelLib"
+	defaultNamespace    = "default"
 
 	// DimensionRollupOptions
 	zeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
@@ -69,18 +68,19 @@ type cWMetricStats struct {
 }
 
 type groupedMetricMetadata struct {
-	namespace      string
-	timestampMs    int64
-	logGroup       string
-	logStream      string
-	metricDataType pmetric.MetricType
+	namespace                  string
+	timestampMs                int64
+	logGroup                   string
+	logStream                  string
+	metricDataType             pmetric.MetricType
+	retainInitialValueForDelta bool
 }
 
 // cWMetricMetadata represents the metadata associated with a given CloudWatch metric
 type cWMetricMetadata struct {
 	groupedMetricMetadata
-	instrumentationLibraryName string
-	receiver                   string
+	instrumentationScopeName string
+	receiver                 string
 }
 
 type metricTranslator struct {
@@ -100,7 +100,7 @@ func newMetricTranslator(config Config) metricTranslator {
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
 func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	var instrumentationLibName string
+	var instrumentationScopeName string
 	cWNamespace := getNamespace(rm, config.Namespace)
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 
@@ -111,10 +111,8 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.Scope().Name() == "" {
-			instrumentationLibName = noInstrumentationLibraryName
-		} else {
-			instrumentationLibName = ilm.Scope().Name()
+		if ilm.Scope().Name() != "" {
+			instrumentationScopeName = ilm.Scope().Name()
 		}
 
 		metrics := ilm.Metrics()
@@ -128,8 +126,8 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 					logStream:      logStream,
 					metricDataType: metric.Type(),
 				},
-				instrumentationLibraryName: instrumentationLibName,
-				receiver:                   metricReceiver,
+				instrumentationScopeName: instrumentationScopeName,
+				receiver:                 metricReceiver,
 			}
 			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {
@@ -340,7 +338,6 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
 func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 	// convert CWMetric into map format for compatible with PLE input
-	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
 
 	// restore the json objects that are stored as string in attributes
@@ -371,12 +368,51 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 		}
 	}
 
-	// Create `_aws` section only if there are measurements
+	// Create EMF metrics if there are measurements
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure
 	if len(cWMetric.measurements) > 0 {
-		// Create `_aws` section only if there are measurements
-		cWMetricMap["CloudWatchMetrics"] = cWMetric.measurements
-		cWMetricMap["Timestamp"] = cWMetric.timestampMs
-		fieldMap["_aws"] = cWMetricMap
+		if config.Version == "1" {
+			/* 	EMF V1
+				"Version": "1",
+				"_aws": {
+					"CloudWatchMetrics": [
+					{
+						"Namespace": "ECS",
+						"Dimensions": [ ["ClusterName"] ],
+						"Metrics": [{"Name": "memcached_commands_total"}]
+					}
+					],
+					"Timestamp": 1668387032641
+			  	}
+			*/
+			fieldMap["Version"] = "1"
+			fieldMap["_aws"] = map[string]interface{}{
+				"CloudWatchMetrics": cWMetric.measurements,
+				"Timestamp":         cWMetric.timestampMs,
+			}
+
+		}
+	}
+
+	if config.Version == "0" {
+		fieldMap["Timestamp"] = fmt.Sprint(cWMetric.timestampMs)
+		if len(cWMetric.measurements) > 0 {
+			/* 	EMF V0
+				{
+					"Version": "0",
+					"CloudWatchMetrics": [
+					{
+						"Namespace": "ECS",
+						"Dimensions": [ ["ClusterName"] ],
+						"Metrics": [{"Name": "memcached_commands_total"}]
+					}
+					],
+					"Timestamp": "1668387032641"
+			  	}
+			*/
+			fieldMap["Version"] = "0"
+			fieldMap["CloudWatchMetrics"] = cWMetric.measurements
+		}
 	}
 
 	pleMsg, err := json.Marshal(fieldMap)

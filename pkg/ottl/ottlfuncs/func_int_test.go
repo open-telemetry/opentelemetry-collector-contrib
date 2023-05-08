@@ -82,12 +82,11 @@ func Test_Int(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Int[interface{}](&ottl.StandardGetSetter[interface{}]{
+			exprFunc := intFunc[interface{}](&ottl.StandardGetSetter[interface{}]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
 			})
-			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)

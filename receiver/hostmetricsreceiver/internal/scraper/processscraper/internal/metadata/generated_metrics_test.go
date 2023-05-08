@@ -17,30 +17,30 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testConfigCollection int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name      string
+		configSet testConfigCollection
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name:      "default",
+			configSet: testSetDefault,
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:      "all_set",
+			configSet: testSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:      "none_set",
+			configSet: testSetNone,
 		},
 	}
 	for _, test := range tests {
@@ -100,7 +100,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			metrics := mb.Emit(WithProcessCommand("attr-val"), WithProcessCommandLine("attr-val"), WithProcessExecutableName("attr-val"), WithProcessExecutablePath("attr-val"), WithProcessOwner("attr-val"), WithProcessParentPid(1), WithProcessPid(1))
 
-			if test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -111,50 +111,50 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("process.command")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommand.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessCommand.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessCommand.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessCommand.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.command_line")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommandLine.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessCommandLine.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessCommandLine.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessCommandLine.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutableName.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessExecutableName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessExecutableName.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessExecutableName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.path")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutablePath.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessExecutablePath.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessExecutablePath.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessExecutablePath.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.owner")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessOwner.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessOwner.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessOwner.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessOwner.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.parent_pid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessParentPid.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessParentPid.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessParentPid.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessParentPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, 1, attrVal.Int())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.pid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessPid.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessPid.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessPid.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, 1, attrVal.Int())
 			}
@@ -163,10 +163,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -314,7 +314,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.paging.faults"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of page faults the process has made. This metric is only available on Linux.", ms.At(i).Description())
+					assert.Equal(t, "Number of page faults the process has made.", ms.At(i).Description())
 					assert.Equal(t, "{faults}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -331,7 +331,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.signals_pending"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pending signals for the process. This metric is only available on Linux.", ms.At(i).Description())
+					assert.Equal(t, "Number of pending signals for the process.", ms.At(i).Description())
 					assert.Equal(t, "{signals}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -360,12 +360,12 @@ func TestMetricsBuilder(t *testing.T) {
 	}
 }
 
-func loadConfig(t *testing.T, name string) MetricsSettings {
+func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
+	cfg := DefaultMetricsBuilderConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

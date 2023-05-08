@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,11 +102,6 @@ func TestLoadConfig(t *testing.T) {
 								Name: "ip",
 							},
 						},
-					},
-					// Deprecated way
-					{
-						From: "resource_attribute",
-						Name: "k8s.pod.uid",
 					},
 				},
 				Exclude: ExcludeConfig{

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,17 +23,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
 // This file implements factory for Splunk HEC receiver.
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "splunk_hec"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelBeta
-
 	// Default endpoints to bind to.
 	defaultEndpoint = ":8088"
 )
@@ -41,10 +38,10 @@ const (
 // NewFactory creates a factory for Splunk HEC receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
-		receiver.WithLogs(createLogsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
@@ -72,10 +69,17 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
+	var err error
+	var recv receiver.Metrics
 	rCfg := cfg.(*Config)
-
-	return newMetricsReceiver(params, *rCfg, consumer)
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newMetricsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
@@ -85,8 +89,17 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-
+	var err error
+	var recv receiver.Logs
 	rCfg := cfg.(*Config)
-
-	return newLogsReceiver(params, *rCfg, consumer)
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		recv, err = newLogsReceiver(params, *rCfg, consumer)
+		return recv
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()

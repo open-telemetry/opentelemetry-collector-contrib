@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync/atomic"
 	"time"
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -68,8 +68,8 @@ func newResourceWatcher(logger *zap.Logger, cfg *Config) *resourceWatcher {
 	return &resourceWatcher{
 		logger:                   logger,
 		dataCollector:            collection.NewDataCollector(logger, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
-		initialSyncDone:          atomic.NewBool(false),
-		initialSyncTimedOut:      atomic.NewBool(false),
+		initialSyncDone:          &atomic.Bool{},
+		initialSyncTimedOut:      &atomic.Bool{},
 		initialTimeout:           defaultInitialSyncTimeout,
 		config:                   cfg,
 		makeClient:               k8sconfig.MakeClient,
@@ -119,7 +119,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"StatefulSet":             {gvk.StatefulSet},
 		"Job":                     {gvk.Job},
 		"CronJob":                 {gvk.CronJob, gvk.CronJobBeta},
-		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
+		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler, gvk.HorizontalPodAutoscalerBeta},
 	}
 
 	for kind, gvks := range supportedKinds {
@@ -197,6 +197,8 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 	case gvk.CronJobBeta:
 		rw.setupInformer(kind, factory.Batch().V1beta1().CronJobs().Informer())
 	case gvk.HorizontalPodAutoscaler:
+		rw.setupInformer(kind, factory.Autoscaling().V2().HorizontalPodAutoscalers().Informer())
+	case gvk.HorizontalPodAutoscalerBeta:
 		rw.setupInformer(kind, factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer())
 	default:
 		rw.logger.Error("Could not setup an informer for provided group version kind",

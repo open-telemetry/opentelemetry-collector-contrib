@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ type httpTestError struct {
 	cause   error
 }
 
-const currentESVersion = "8.4.0"
+const currentESVersion = "7.17.7"
 
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())

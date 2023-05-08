@@ -23,6 +23,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
+func newConvertSumToGaugeFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("convert_sum_to_gauge", nil, createConvertSumToGaugeFunction)
+}
+
+func createConvertSumToGaugeFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	return convertSumToGauge()
+}
+
 func convertSumToGauge() (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
 		metric := tCtx.GetMetric()

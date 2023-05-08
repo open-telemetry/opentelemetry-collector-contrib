@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,4 +66,22 @@ func TestCreateNilNextConsumerLogs(t *testing.T) {
 	mReceiver, err := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	assert.EqualError(t, err, "nil logsConsumer")
 	assert.Nil(t, mReceiver, "receiver creation failed")
+}
+
+func TestMultipleLogsReceivers(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:1"
+	mockLogsConsumer := consumertest.NewNop()
+	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockLogsConsumer)
+	mReceiver2, _ := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockLogsConsumer)
+	assert.Equal(t, mReceiver, mReceiver2)
+}
+
+func TestMultipleMetricsReceivers(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:1"
+	mockMetricsConsumer := consumertest.NewNop()
+	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockMetricsConsumer)
+	mReceiver2, _ := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockMetricsConsumer)
+	assert.Equal(t, mReceiver, mReceiver2)
 }

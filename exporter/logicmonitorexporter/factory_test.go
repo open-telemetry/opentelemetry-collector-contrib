@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,6 +63,46 @@ func TestCreateLogsExporter(t *testing.T) {
 			oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)
+				return
+			}
+			if tt.shouldError {
+				assert.Error(t, err)
+				if len(tt.errorMessage) != 0 {
+					assert.Equal(t, tt.errorMessage, err.Error())
+				}
+				return
+			}
+			assert.NoError(t, err)
+			assert.NotNil(t, oexp)
+		})
+	}
+}
+
+func TestCreateTracesExporter(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       Config
+		shouldError  bool
+		errorMessage string
+	}{
+		{
+			name: "valid config",
+			config: Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://example.logicmonitor.com/rest",
+				},
+			},
+			shouldError: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			set := exportertest.NewNopCreateSettings()
+			oexp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+			if (err != nil) != tt.shouldError {
+				t.Errorf("CreateTracesExporter() error = %v, shouldError %v", err, tt.shouldError)
 				return
 			}
 			if tt.shouldError {

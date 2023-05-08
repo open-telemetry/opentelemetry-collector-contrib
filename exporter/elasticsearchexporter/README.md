@@ -55,7 +55,10 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
     will reject documents that have duplicate fields.
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
-
+- `sending_queue`
+  - `enabled` (default = false)
+  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
+  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
 ### HTTP settings
 
 - `read_buffer_size` (default=0): Read buffer size.
@@ -99,6 +102,10 @@ exporters:
   elasticsearch/log:
     endpoints: [http://localhost:9200]
     logs_index: my_log_index
+    sending_queue:
+      enabled: true
+      num_consumers: 20
+      queue_size: 1000
 ······
 service:
   pipelines:

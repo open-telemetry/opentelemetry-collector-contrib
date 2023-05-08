@@ -20,20 +20,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/auth"
-)
 
-const (
-	// The value of extension "type" in configuration.
-	typeStr = "oauth2client"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension/internal/metadata"
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 

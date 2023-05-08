@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap/zaptest"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"

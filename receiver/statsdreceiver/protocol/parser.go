@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,20 @@
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
 import (
+	"net"
+
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
 type Parser interface {
 	Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error
-	GetMetrics() pmetric.Metrics
-	Aggregate(line string) error
+	GetMetrics() []BatchMetrics
+	Aggregate(line string, addr net.Addr) error
+}
+
+type BatchMetrics struct {
+	Info    client.Info
+	Metrics pmetric.Metrics
 }

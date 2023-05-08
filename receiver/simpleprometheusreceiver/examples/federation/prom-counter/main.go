@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,8 +40,9 @@ func initMeter() api.Meter {
 	mux := http.NewServeMux()
 	mux.Handle("/", promhttp.Handler())
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -69,7 +70,7 @@ func main() {
 	valueRecorder.Record(ctx, 0)
 	commonLabels := []attribute.KeyValue{attribute.String("A", "1"), attribute.String("B", "2"), attribute.String("C", "3")}
 	counter := int64(0)
-	valueRecorder.Record(ctx, counter, commonLabels...)
+	valueRecorder.Record(ctx, counter, api.WithAttributes(commonLabels...))
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	ticker := time.NewTicker(1 * time.Second)
@@ -78,7 +79,7 @@ func main() {
 		case <-ticker.C:
 			time.Sleep(1 * time.Second)
 			counter++
-			valueRecorder.Record(ctx, counter, commonLabels...)
+			valueRecorder.Record(ctx, counter, api.WithAttributes(commonLabels...))
 			break
 		case <-c:
 			ticker.Stop()

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,6 @@ type Config struct {
 	// Timeout for the memcache stats request
 	Timeout time.Duration `mapstructure:"timeout"`
 
-	// Metrics allows customizing scraped metrics representation.
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

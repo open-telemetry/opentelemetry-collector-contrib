@@ -24,7 +24,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-// ParseJSON factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+type ParseJSONArguments[K any] struct {
+	Target ottl.StringGetter[K] `ottlarg:"0"`
+}
+
+func NewParseJSONFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("ParseJSON", &ParseJSONArguments[K]{}, createParseJSONFunction[K])
+}
+
+func createParseJSONFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ParseJSONArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("ParseJSONFactory args must be of type *ParseJSONArguments[K]")
+	}
+
+	return parseJSON(args.Target), nil
+}
+
+// parseJSON returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
 // Each JSON type is converted into a `pdata.Value` using the following map:
 //
 //	JSON boolean -> bool
@@ -33,23 +51,19 @@ import (
 //	JSON null    -> nil
 //	JSON arrays  -> pdata.SliceValue
 //	JSON objects -> map[string]any
-func ParseJSON[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+func parseJSON[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		jsonStr, ok := targetVal.(string)
-		if !ok {
-			return nil, fmt.Errorf("target must be a string but got %T", targetVal)
-		}
 		var parsedValue map[string]interface{}
-		err = jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
+		err = jsoniter.UnmarshalFromString(targetVal, &parsedValue)
 		if err != nil {
 			return nil, err
 		}
 		result := pcommon.NewMap()
 		err = result.FromRaw(parsedValue)
 		return result, err
-	}, nil
+	}
 }

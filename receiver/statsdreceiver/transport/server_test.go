@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import (
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {
-
 	tests := []struct {
 		name          string
 		buildServerFn func(addr string) (Server, error)
@@ -76,7 +75,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			p := &protocol.StatsDParser{}
 			require.NoError(t, err)
 			mr := NewMockReporter(1)
-			var transferChan = make(chan string, 10)
+			transferChan := make(chan Metric, 10)
 
 			wgListenAndServe := sync.WaitGroup{}
 			wgListenAndServe.Add(1)

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ func createDefaultConfig() component.Config {
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -81,7 +81,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions, cfg.Metrics)
+	scrp, err := newKubletScraper(rest, set, rOptions, cfg.MetricsBuilderConfig)
 	if err != nil {
 		return nil, err
 	}

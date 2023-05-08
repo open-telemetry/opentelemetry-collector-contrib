@@ -1,31 +1,33 @@
 default:
-all_metrics:
-  system.disk.io:
-    enabled: true
-  system.disk.io_time:
-    enabled: true
-  system.disk.merged:
-    enabled: true
-  system.disk.operation_time:
-    enabled: true
-  system.disk.operations:
-    enabled: true
-  system.disk.pending_operations:
-    enabled: true
-  system.disk.weighted_io_time:
-    enabled: true
-no_metrics:
-  system.disk.io:
-    enabled: false
-  system.disk.io_time:
-    enabled: false
-  system.disk.merged:
-    enabled: false
-  system.disk.operation_time:
-    enabled: false
-  system.disk.operations:
-    enabled: false
-  system.disk.pending_operations:
-    enabled: false
-  system.disk.weighted_io_time:
-    enabled: false
+all_set:
+  metrics:
+    system.disk.io:
+      enabled: true
+    system.disk.io_time:
+      enabled: true
+    system.disk.merged:
+      enabled: true
+    system.disk.operation_time:
+      enabled: true
+    system.disk.operations:
+      enabled: true
+    system.disk.pending_operations:
+      enabled: true
+    system.disk.weighted_io_time:
+      enabled: true
+none_set:
+  metrics:
+    system.disk.io:
+      enabled: false
+    system.disk.io_time:
+      enabled: false
+    system.disk.merged:
+      enabled: false
+    system.disk.operation_time:
+      enabled: false
+    system.disk.operations:
+      enabled: false
+    system.disk.pending_operations:
+      enabled: false
+    system.disk.weighted_io_time:
+      enabled: false

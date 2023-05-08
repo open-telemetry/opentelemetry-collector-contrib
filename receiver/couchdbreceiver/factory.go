@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "couchdb"
-	stability = component.StabilityLevelBeta
+	typeStr = "couchdb"
 )
 
 // NewFactory creates the couchdbreceiver factory
@@ -38,12 +37,12 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 1 * time.Minute,
 		},

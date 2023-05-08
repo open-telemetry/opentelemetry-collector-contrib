@@ -17,30 +17,30 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testConfigCollection int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name      string
+		configSet testConfigCollection
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name:      "default",
+			configSet: testSetDefault,
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:      "all_set",
+			configSet: testSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:      "none_set",
+			configSet: testSetNone,
 		},
 	}
 	for _, test := range tests {
@@ -108,7 +108,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			metrics := mb.Emit(WithApacheServerName("attr-val"), WithApacheServerPort("attr-val"))
 
-			if test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -119,15 +119,15 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("apache.server.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ApacheServerName.Enabled, ok)
-			if mb.resourceAttributesSettings.ApacheServerName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ApacheServerName.Enabled, ok)
+			if mb.resourceAttributesConfig.ApacheServerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("apache.server.port")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ApacheServerPort.Enabled, ok)
-			if mb.resourceAttributesSettings.ApacheServerPort.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ApacheServerPort.Enabled, ok)
+			if mb.resourceAttributesConfig.ApacheServerPort.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -136,10 +136,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -323,12 +323,12 @@ func TestMetricsBuilder(t *testing.T) {
 	}
 }
 
-func loadConfig(t *testing.T, name string) MetricsSettings {
+func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
+	cfg := DefaultMetricsBuilderConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

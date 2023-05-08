@@ -236,7 +236,7 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{},
 				},
 			},
-			expectedErr: errNoProjects.Error(),
+			expectedErr: errNoEvents.Error(),
 		},
 	}
 
@@ -265,7 +265,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Metrics = metadata.DefaultMetricsSettings()
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
 	expected.PrivateKey = "my-private-key"
 	expected.PublicKey = "my-public-key"
 	expected.Logs = LogConfig{
@@ -294,6 +294,11 @@ func TestLoadConfig(t *testing.T) {
 		Projects: []*ProjectConfig{
 			{
 				Name: "Project 0",
+			},
+		},
+		Organizations: []*OrgConfig{
+			{
+				ID: "5b478b3afc4625789ce616a3",
 			},
 		},
 		PollInterval: time.Minute,

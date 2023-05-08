@@ -155,8 +155,8 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultMetrics := metadata.DefaultMetricsSettings()
-	defaultMetrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
+	defaultMetrics := metadata.DefaultMetricsBuilderConfig()
+	defaultMetrics.Metrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -174,9 +174,9 @@ func TestLoadConfig(t *testing.T) {
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Minute,
 				},
-				Metrics:  defaultMetrics,
-				Username: "otel",
-				Password: "password",
+				MetricsBuilderConfig: defaultMetrics,
+				Username:             "otel",
+				Password:             "password",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout:  10000000000,
 					Endpoint: "http://example.com:9200",
@@ -195,7 +195,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

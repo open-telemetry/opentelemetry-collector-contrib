@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ func newMySQLScraper(
 	ms := &mySQLScraper{
 		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings),
+		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 
 	return ms

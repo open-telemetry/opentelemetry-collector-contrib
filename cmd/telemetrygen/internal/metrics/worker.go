@@ -17,12 +17,12 @@ package metrics
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -62,7 +62,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				},
 			},
 		}
-		if err := exporter.Export(context.Background(), rm); err != nil {
+		if err := exporter.Export(context.Background(), &rm); err != nil {
 			w.logger.Fatal("exporter failed", zap.Error(err))
 		}
 		if err := limiter.Wait(context.Background()); err != nil {

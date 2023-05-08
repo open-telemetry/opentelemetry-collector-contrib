@@ -182,7 +182,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.json")
+				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -210,7 +210,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.json")
+				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -241,7 +241,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.json")
+				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -280,7 +280,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "expected.json")
+				goldenPath := filepath.Join("testdata", "scraper", "expected.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -293,10 +293,10 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
 			// Enable any metrics set to `false` by default
-			scraperCfg.Metrics.MongodbOperationLatencyTime.Enabled = true
-			scraperCfg.Metrics.MongodbOperationReplCount.Enabled = true
-			scraperCfg.Metrics.MongodbUptime.Enabled = true
-			scraperCfg.Metrics.MongodbHealth.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationLatencyTime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationReplCount.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled = true
+			scraperCfg.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled = true
 
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
 			scraper.client = tc.setupMockClient(t)

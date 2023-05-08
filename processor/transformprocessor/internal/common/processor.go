@@ -144,6 +144,7 @@ type parserCollection struct {
 	settings       component.TelemetrySettings
 	resourceParser ottl.Parser[ottlresource.TransformContext]
 	scopeParser    ottl.Parser[ottlscope.TransformContext]
+	errorMode      ottl.ErrorMode
 }
 
 type baseContext interface {
@@ -152,21 +153,21 @@ type baseContext interface {
 	consumer.Logs
 }
 
-func (pc parserCollection) parseCommonContextStatements(contextStatement ContextStatements, errorMode ottl.ErrorMode) (baseContext, error) {
+func (pc parserCollection) parseCommonContextStatements(contextStatement ContextStatements) (baseContext, error) {
 	switch contextStatement.Context {
 	case Resource:
 		parsedStatements, err := pc.resourceParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		rStatements := ottlresource.NewStatements(parsedStatements, pc.settings, ottlresource.WithErrorMode(errorMode))
+		rStatements := ottlresource.NewStatements(parsedStatements, pc.settings, ottlresource.WithErrorMode(pc.errorMode))
 		return resourceStatements{rStatements}, nil
 	case Scope:
 		parsedStatements, err := pc.scopeParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlscope.NewStatements(parsedStatements, pc.settings, ottlscope.WithErrorMode(errorMode))
+		sStatements := ottlscope.NewStatements(parsedStatements, pc.settings, ottlscope.WithErrorMode(pc.errorMode))
 		return scopeStatements{sStatements}, nil
 	default:
 		return nil, fmt.Errorf("unknown context %v", contextStatement.Context)

@@ -36,8 +36,8 @@ The available scrapers are:
 | [memory]     | All                          | Memory utilization metrics                             |
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
 | [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
-| [processes]  | Linux                        | Process count metrics                                  |
-| [process]    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
+| [processes]  | Linux, Mac                   | Process count metrics                                  |
+| [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
 [disk]: ./internal/scraper/diskscraper/documentation.md
@@ -105,6 +105,8 @@ process:
     names: [ <process name>, ... ]
     match_type: <strict|regexp>
   mute_process_name_error: <true|false>
+  mute_process_exe_error: <true|false>
+  mute_process_io_error: <true|false>
   scrape_process_delay: <time>
 ```
 

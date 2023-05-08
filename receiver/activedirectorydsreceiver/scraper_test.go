@@ -33,8 +33,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.json")
-var partialScrapePath = filepath.Join("testdata", "partial_scrape.json")
+var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
+var partialScrapePath = filepath.Join("testdata", "partial_scrape.yaml")
 
 func TestScrape(t *testing.T) {
 	t.Run("Fully successful scrape", func(t *testing.T) {
@@ -46,7 +46,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).scrapeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -113,7 +113,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).closeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -132,7 +132,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 

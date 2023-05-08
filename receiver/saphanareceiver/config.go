@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confignet.TCPAddr                       `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	// Metrics defines which metrics to enable for the scraper
-	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`

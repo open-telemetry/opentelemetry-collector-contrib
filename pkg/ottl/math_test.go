@@ -67,6 +67,10 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
+type sumArguments struct {
+	Ints []int64 `ottlarg:"0"`
+}
+
 //nolint:unparam
 func sum[K any](ints []int64) (ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
@@ -206,12 +210,12 @@ func Test_evaluateMathExpression(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{
-		"One":           one[any],
-		"Two":           two[any],
-		"ThreePointOne": threePointOne[any],
-		"Sum":           sum[any],
-	}
+	functions := CreateFactoryMap(
+		createFactory("One", &struct{}{}, one[any]),
+		createFactory("Two", &struct{}{}, two[any]),
+		createFactory("ThreePointOne", &struct{}{}, threePointOne[any]),
+		createFactory("Sum", &sumArguments{}, sum[any]),
+	)
 
 	p, _ := NewParser[any](
 		functions,
@@ -249,12 +253,12 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{
-		"one":           one[any],
-		"two":           two[any],
-		"threePointOne": threePointOne[any],
-		"sum":           sum[any],
-	}
+	functions := CreateFactoryMap(
+		createFactory("one", &struct{}{}, one[any]),
+		createFactory("two", &struct{}{}, two[any]),
+		createFactory("threePointOne", &struct{}{}, threePointOne[any]),
+		createFactory("sum", &sumArguments{}, sum[any]),
+	)
 
 	p, _ := NewParser[any](
 		functions,

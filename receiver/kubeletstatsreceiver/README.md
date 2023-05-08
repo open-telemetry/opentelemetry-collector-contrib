@@ -24,6 +24,8 @@ endpoint will be used if `auth_type` set to any of the following values:
 `ca_file`, `key_file`, and `cert_file` also be set.
 - `serviceAccount` tells this receiver to use the default service account token
 to authenticate to the kubelet API.
+- `kubeConfig` tells this receiver to use the kubeconfig file (KUBECONFIG env variable or ~/.kube/config)
+to authenticate and use API server proxy to access the kubelet API.
 
 ### TLS Example
 
@@ -69,7 +71,7 @@ receivers:
   kubeletstats:
     collection_interval: 20s
     auth_type: "serviceAccount"
-    endpoint: "https://${K8S_NODE_NAME}:10250"
+    endpoint: "https://${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
 exporters:
   file:
@@ -95,7 +97,7 @@ receivers:
   kubeletstats:
     collection_interval: 20s
     auth_type: "none"
-    endpoint: "http://${K8S_NODE_NAME}:10255"
+    endpoint: "http://${env:K8S_NODE_NAME}:10255"
 exporters:
   file:
     path: "fileexporter.txt"
@@ -105,6 +107,29 @@ service:
       receivers: [kubeletstats]
       exporters: [file]
 ```
+
+### Kubeconfig example
+
+The following config can be used to collect Kubelet metrics from read-only endpoint, proxied by the API server:
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 20s
+    auth_type: "kubeConfig"
+    insecure_skip_verify: true
+    endpoint: "${env:K8S_NODE_NAME}"
+exporters:
+  file:
+    path: "fileexporter.txt"
+service:
+  pipelines:
+    metrics:
+      receivers: [kubeletstats]
+      exporters: [file]
+```
+Note that using `auth_type` `kubeConfig`, the endpoint should only be the node name as the communication to the kubelet is proxied by the API server configured in the `kubeConfig`.
+`insecure_skip_verify` still applies by overriding the `kubeConfig` settings.
 
 ### Extra metadata labels
 
@@ -127,7 +152,7 @@ receivers:
   kubeletstats:
     collection_interval: 10s
     auth_type: "serviceAccount"
-    endpoint: "${K8S_NODE_NAME}:10250"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
     extra_metadata_labels:
       - container.id
@@ -146,7 +171,7 @@ receivers:
   kubeletstats:
     collection_interval: 10s
     auth_type: "serviceAccount"
-    endpoint: "${K8S_NODE_NAME}:10250"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
     extra_metadata_labels:
       - k8s.volume.type
@@ -170,7 +195,7 @@ receivers:
   kubeletstats:
     collection_interval: 10s
     auth_type: "serviceAccount"
-    endpoint: "${K8S_NODE_NAME}:10250"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
     insecure_skip_verify: true
     metric_groups:
       - node

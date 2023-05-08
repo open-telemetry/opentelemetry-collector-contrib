@@ -17,30 +17,30 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testConfigCollection int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name      string
+		configSet testConfigCollection
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name:      "default",
+			configSet: testSetDefault,
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:      "all_set",
+			configSet: testSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:      "none_set",
+			configSet: testSetNone,
 		},
 	}
 	for _, test := range tests {
@@ -88,7 +88,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			metrics := mb.Emit(WithDeviceID("attr-val"), WithNsxtNodeID("attr-val"), WithNsxtNodeName("attr-val"), WithNsxtNodeType("attr-val"))
 
-			if test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -99,29 +99,29 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("device.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.DeviceID.Enabled, ok)
-			if mb.resourceAttributesSettings.DeviceID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.DeviceID.Enabled, ok)
+			if mb.resourceAttributesConfig.DeviceID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.NsxtNodeID.Enabled, ok)
-			if mb.resourceAttributesSettings.NsxtNodeID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeID.Enabled, ok)
+			if mb.resourceAttributesConfig.NsxtNodeID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.NsxtNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.NsxtNodeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeName.Enabled, ok)
+			if mb.resourceAttributesConfig.NsxtNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.type")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.NsxtNodeType.Enabled, ok)
-			if mb.resourceAttributesSettings.NsxtNodeType.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeType.Enabled, ok)
+			if mb.resourceAttributesConfig.NsxtNodeType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -130,10 +130,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -254,12 +254,12 @@ func TestMetricsBuilder(t *testing.T) {
 	}
 }
 
-func loadConfig(t *testing.T, name string) MetricsSettings {
+func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
+	cfg := DefaultMetricsBuilderConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

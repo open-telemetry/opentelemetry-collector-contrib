@@ -28,6 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 // TestLoadingConfigRegexp tests loading testdata/config_strict.yaml
@@ -52,6 +54,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "empty"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Strict,
@@ -61,6 +64,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
@@ -68,6 +72,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
@@ -75,6 +80,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 					Exclude: &filtermetric.MatchProperties{
@@ -134,6 +140,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "empty"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
 						LogMatchType: Strict,
@@ -143,6 +150,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -150,6 +158,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -157,6 +166,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -203,6 +213,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -210,6 +221,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -217,6 +229,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -262,6 +275,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -269,6 +283,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -276,6 +291,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -322,6 +338,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -329,6 +346,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -336,6 +354,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -382,6 +401,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -389,6 +409,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -396,6 +417,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -444,6 +466,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -451,6 +474,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -458,6 +482,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -510,6 +535,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
@@ -517,6 +543,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
@@ -524,6 +551,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "unlimitedcache"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -537,6 +565,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "limitedcache"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -577,6 +606,7 @@ func TestLoadingSpans(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "spans"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Spans: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
 						Config: filterset.Config{
@@ -626,6 +656,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "empty"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -636,6 +667,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -650,6 +682,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -664,6 +697,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -822,6 +856,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "ottl"),
 			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
 				Traces: TraceFilters{
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
@@ -848,6 +883,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "multiline"),
 			expected: &Config{
+				ErrorMode: ottl.PropagateError,
 				Traces: TraceFilters{
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
@@ -857,36 +893,36 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "spans_mix_config"),
+			id:           component.NewIDWithName(metadata.Type, "spans_mix_config"),
 			errorMessage: "cannot use ottl conditions and include/exclude for spans at the same time",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "metrics_mix_config"),
+			id:           component.NewIDWithName(metadata.Type, "metrics_mix_config"),
 			errorMessage: "cannot use ottl conditions and include/exclude for metrics at the same time",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "logs_mix_config"),
+			id:           component.NewIDWithName(metadata.Type, "logs_mix_config"),
 			errorMessage: "cannot use ottl conditions and include/exclude for logs at the same time",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_span"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_span"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_spanevent"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:33: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
+			errorMessage: "unable to parse OTTL statement: 1:34: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_datapoint"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_log"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 	}
 

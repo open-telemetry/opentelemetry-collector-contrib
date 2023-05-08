@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -153,15 +152,15 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			APITLSConfig: apiTLSCfg,
 			LogUpdates:   se.config.LogDimensionUpdates,
 			Logger:       se.logger,
-			// Duration to wait between property updates. This might be worth
-			// being made configurable.
-			SendDelay: 10,
-			// In case of having issues sending dimension updates to SignalFx,
-			// buffer a fixed number of updates. Might also be a good candidate
-			// to make configurable.
-			PropertiesMaxBuffered: 10000,
-			MetricsConverter:      *se.converter,
-			ExcludeProperties:     se.config.ExcludeProperties,
+			// Duration to wait between property updates.
+			SendDelay:           se.config.DimensionClient.SendDelay,
+			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
+			MetricsConverter:    *se.converter,
+			ExcludeProperties:   se.config.ExcludeProperties,
+			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
+			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
+			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
 		})
 	dimClient.Start()
 
@@ -232,10 +231,6 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 		if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
 			se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
 		}
-	}
-	if se.config.HTTPClientSettings.IdleConnTimeout == nil {
-		defaultIdleConnTimeout := 30 * time.Second
-		se.config.HTTPClientSettings.IdleConnTimeout = &defaultIdleConnTimeout
 	}
 
 	return se.config.ToClient(host, se.telemetrySettings)

@@ -72,12 +72,30 @@ func Test_replacePattern(t *testing.T) {
 				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive **** **** ")
 			},
 		},
+		{
+			name:        "expand capturing groups",
+			target:      target,
+			pattern:     `(\w+)=(\w+)`,
+			replacement: "$1:$2",
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application passwd:sensitivedtata otherarg:notsensitive key1 key2")
+			},
+		},
+		{
+			name:        "replacement with literal $",
+			target:      target,
+			pattern:     `passwd\=[^\s]*(\s?)`,
+			replacement: "passwd=$$$$$$ ",
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application passwd=$$$ otherarg=notsensitive key1 key2")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := ReplacePattern(tt.target, tt.pattern, tt.replacement)
+			exprFunc, err := replacePattern(tt.target, tt.pattern, tt.replacement)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, scenarioValue)
@@ -104,7 +122,7 @@ func Test_replacePattern_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := ReplacePattern[interface{}](target, "regexp", "{replacement}")
+	exprFunc, err := replacePattern[interface{}](target, "regexp", "{replacement}")
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -124,7 +142,7 @@ func Test_replacePattern_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := ReplacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, "{anything}")
+	exprFunc, err := replacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, "{anything}")
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)
@@ -145,7 +163,7 @@ func Test_replacePatterns_invalid_pattern(t *testing.T) {
 	}
 
 	invalidRegexPattern := "*"
-	_, err := ReplacePattern[interface{}](target, invalidRegexPattern, "{anything}")
+	_, err := replacePattern[interface{}](target, invalidRegexPattern, "{anything}")
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

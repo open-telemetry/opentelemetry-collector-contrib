@@ -13,14 +13,14 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -32,48 +32,21 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for hostmetricsreceiver/processes metrics.
-type MetricsSettings struct {
-	SystemProcessesCount   MetricSettings `mapstructure:"system.processes.count"`
-	SystemProcessesCreated MetricSettings `mapstructure:"system.processes.created"`
+// MetricsConfig provides config for hostmetricsreceiver/processes metrics.
+type MetricsConfig struct {
+	SystemProcessesCount   MetricConfig `mapstructure:"system.processes.count"`
+	SystemProcessesCreated MetricConfig `mapstructure:"system.processes.created"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SystemProcessesCount: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		SystemProcessesCount: MetricConfig{
 			Enabled: true,
 		},
-		SystemProcessesCreated: MetricSettings{
+		SystemProcessesCreated: MetricConfig{
 			Enabled: true,
 		},
 	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// ResourceAttributesSettings provides settings for hostmetricsreceiver/processes metrics.
-type ResourceAttributesSettings struct {
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{}
 }
 
 // AttributeStatus specifies the a value status attribute.
@@ -148,7 +121,7 @@ var MapAttributeStatus = map[string]AttributeStatus{
 
 type metricSystemProcessesCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -164,7 +137,7 @@ func (m *metricSystemProcessesCount) init() {
 }
 
 func (m *metricSystemProcessesCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -183,16 +156,16 @@ func (m *metricSystemProcessesCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemProcessesCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemProcessesCount(settings MetricSettings) metricSystemProcessesCount {
-	m := metricSystemProcessesCount{settings: settings}
-	if settings.Enabled {
+func newMetricSystemProcessesCount(cfg MetricConfig) metricSystemProcessesCount {
+	m := metricSystemProcessesCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -201,7 +174,7 @@ func newMetricSystemProcessesCount(settings MetricSettings) metricSystemProcesse
 
 type metricSystemProcessesCreated struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -216,7 +189,7 @@ func (m *metricSystemProcessesCreated) init() {
 }
 
 func (m *metricSystemProcessesCreated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -234,31 +207,35 @@ func (m *metricSystemProcessesCreated) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemProcessesCreated) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemProcessesCreated(settings MetricSettings) metricSystemProcessesCreated {
-	m := metricSystemProcessesCreated{settings: settings}
-	if settings.Enabled {
+func newMetricSystemProcessesCreated(cfg MetricConfig) metricSystemProcessesCreated {
+	m := metricSystemProcessesCreated{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics MetricsConfig `mapstructure:"metrics"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                    pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity              int                 // maximum observed number of metrics per resource.
 	resourceCapacity             int                 // maximum observed number of resource attributes.
 	metricsBuffer                pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                    component.BuildInfo // contains version information
-	resourceAttributesSettings   ResourceAttributesSettings
 	metricSystemProcessesCount   metricSystemProcessesCount
 	metricSystemProcessesCreated metricSystemProcessesCreated
 }
@@ -273,21 +250,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics: DefaultMetricsConfig(),
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                pmetric.NewMetrics(),
 		buildInfo:                    settings.BuildInfo,
-		resourceAttributesSettings:   DefaultResourceAttributesSettings(),
-		metricSystemProcessesCount:   newMetricSystemProcessesCount(ms.SystemProcessesCount),
-		metricSystemProcessesCreated: newMetricSystemProcessesCreated(ms.SystemProcessesCreated),
+		metricSystemProcessesCount:   newMetricSystemProcessesCount(mbc.Metrics.SystemProcessesCount),
+		metricSystemProcessesCreated: newMetricSystemProcessesCreated(mbc.Metrics.SystemProcessesCreated),
 	}
 	for _, op := range options {
 		op(mb)
@@ -306,12 +281,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -345,7 +320,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemProcessesCreated.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -355,7 +330,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

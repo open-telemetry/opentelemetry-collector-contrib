@@ -8,8 +8,6 @@
 
 The Pure Storage FlashArray receiver, receives metrics from Pure Storage internal services hosts.
 
-Supported pipeline types: metrics
-
 ## Configuration
 
 The following settings are required:
@@ -25,31 +23,31 @@ extensions:
 receivers:
   purefa:
     endpoint: http://172.0.0.1:9490/metrics
-    arrays:
-      - address: gse-array01
+    array:
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
-    host:
-      - address: gse-array01
+    hosts:
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     directories:
-      - address: gse-array01
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     pods:
-      - address: gse-array01
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     volumes:
-      - address: gse-array01
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     env: dev
     settings:
       reload_intervals:
         array: 10s
-        host: 13s
+        hosts: 13s
         directories: 15s
         pods: 30s
         volumes: 25s

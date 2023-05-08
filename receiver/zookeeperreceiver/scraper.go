@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ func newZookeeperMetricsScraper(settings receiver.CreateSettings, config *Config
 	z := &zookeeperMetricsScraper{
 		logger:                settings.Logger,
 		config:                config,
-		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings),
+		mb:                    metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,

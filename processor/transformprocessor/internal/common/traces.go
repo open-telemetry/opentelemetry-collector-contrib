@@ -100,7 +100,7 @@ type TraceParserCollection struct {
 
 type TraceParserCollectionOption func(*TraceParserCollection) error
 
-func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOption {
+func WithSpanParser(functions map[string]ottl.Factory[ottlspan.TransformContext]) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
 		spanParser, err := ottlspan.NewParser(functions, tp.settings)
 		if err != nil {
@@ -111,13 +111,20 @@ func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOptio
 	}
 }
 
-func WithSpanEventParser(functions map[string]interface{}) TraceParserCollectionOption {
+func WithSpanEventParser(functions map[string]ottl.Factory[ottlspanevent.TransformContext]) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
 		spanEventParser, err := ottlspanevent.NewParser(functions, tp.settings)
 		if err != nil {
 			return err
 		}
 		tp.spanEventParser = spanEventParser
+		return nil
+	}
+}
+
+func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
+	return func(tp *TraceParserCollection) error {
+		tp.errorMode = errorMode
 		return nil
 	}
 }
@@ -156,16 +163,16 @@ func (pc TraceParserCollection) ParseContextStatements(contextStatements Context
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(ottl.PropagateError))
+		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(pc.errorMode))
 		return traceStatements{sStatements}, nil
 	case SpanEvent:
 		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(ottl.PropagateError))
+		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(pc.errorMode))
 		return spanEventStatements{seStatements}, nil
 	default:
-		return pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
+		return pc.parseCommonContextStatements(contextStatements)
 	}
 }

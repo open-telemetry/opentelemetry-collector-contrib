@@ -1,4 +1,4 @@
-// Copyright 2022 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ type ScraperType string
 
 const (
 	ScraperTypeArray       ScraperType = "array"
-	ScraperTypeHost        ScraperType = "host"
+	ScraperTypeHosts       ScraperType = "hosts"
 	ScraperTypeDirectories ScraperType = "directories"
 	ScraperTypePods        ScraperType = "pods"
 	ScraperTypeVolumes     ScraperType = "volumes"
@@ -83,6 +83,9 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
 
+		labels := h.labels
+		labels["fa_array_name"] = model.LabelValue(arr.Address)
+
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
@@ -101,7 +104,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.
 						Targets: []model.LabelSet{
 							{model.AddressLabel: model.LabelValue(u.Host)},
 						},
-						Labels: h.labels,
+						Labels: labels,
 					},
 				},
 			},

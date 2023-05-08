@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,6 +53,10 @@ type Config struct {
 	logger *zap.Logger
 
 	awsutil.AWSSessionSettings `mapstructure:",squash"`
+
+	// Export raw log string instead of log wrapper
+	// Required for emf logs
+	RawLog bool `mapstructure:"raw_log,omitempty"`
 }
 
 type QueueSettings struct {

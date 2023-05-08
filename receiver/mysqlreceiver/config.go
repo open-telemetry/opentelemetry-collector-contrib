@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ type Config struct {
 	Database                                string `mapstructure:"database,omitempty"`
 	AllowNativePasswords                    bool   `mapstructure:"allow_native_passwords,omitempty"`
 	confignet.NetAddr                       `mapstructure:",squash"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
-	StatementEvents                         StatementEventsConfig    `mapstructure:"statement_events"`
+	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	StatementEvents                         StatementEventsConfig         `mapstructure:"statement_events"`
 }
 
 type StatementEventsConfig struct {

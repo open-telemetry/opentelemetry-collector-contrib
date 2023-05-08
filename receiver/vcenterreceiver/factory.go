@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,8 +47,8 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 2 * time.Minute,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{},
-		Metrics:          metadata.DefaultMetricsSettings(),
+		TLSClientSetting:     configtls.TLSClientSetting{},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

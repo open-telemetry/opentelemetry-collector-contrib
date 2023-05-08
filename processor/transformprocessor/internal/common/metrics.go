@@ -153,7 +153,7 @@ type MetricParserCollection struct {
 
 type MetricParserCollectionOption func(*MetricParserCollection) error
 
-func WithMetricParser(functions map[string]interface{}) MetricParserCollectionOption {
+func WithMetricParser(functions map[string]ottl.Factory[ottlmetric.TransformContext]) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
 		metricParser, err := ottlmetric.NewParser(functions, mp.settings)
 		if err != nil {
@@ -164,13 +164,20 @@ func WithMetricParser(functions map[string]interface{}) MetricParserCollectionOp
 	}
 }
 
-func WithDataPointParser(functions map[string]interface{}) MetricParserCollectionOption {
+func WithDataPointParser(functions map[string]ottl.Factory[ottldatapoint.TransformContext]) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
 		dataPointParser, err := ottldatapoint.NewParser(functions, mp.settings)
 		if err != nil {
 			return err
 		}
 		mp.dataPointParser = dataPointParser
+		return nil
+	}
+}
+
+func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption {
+	return func(mp *MetricParserCollection) error {
+		mp.errorMode = errorMode
 		return nil
 	}
 }
@@ -209,17 +216,17 @@ func (pc MetricParserCollection) ParseContextStatements(contextStatements Contex
 		if err != nil {
 			return nil, err
 		}
-		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(ottl.PropagateError))
+		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(pc.errorMode))
 		return metricStatements{mStatements}, nil
 	case DataPoint:
 		parsedStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		dpStatements := ottldatapoint.NewStatements(parsedStatements, pc.settings, ottldatapoint.WithErrorMode(ottl.PropagateError))
+		dpStatements := ottldatapoint.NewStatements(parsedStatements, pc.settings, ottldatapoint.WithErrorMode(pc.errorMode))
 		return dataPointStatements{dpStatements}, nil
 	default:
-		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
+		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {
 			return nil, err
 		}

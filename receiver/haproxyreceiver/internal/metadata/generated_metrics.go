@@ -14,14 +14,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -33,178 +33,164 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for haproxyreceiver metrics.
-type MetricsSettings struct {
-	HaproxyBytesInput           MetricSettings `mapstructure:"haproxy.bytes.input"`
-	HaproxyBytesOutput          MetricSettings `mapstructure:"haproxy.bytes.output"`
-	HaproxyClientsCanceled      MetricSettings `mapstructure:"haproxy.clients.canceled"`
-	HaproxyCompressionBypass    MetricSettings `mapstructure:"haproxy.compression.bypass"`
-	HaproxyCompressionCount     MetricSettings `mapstructure:"haproxy.compression.count"`
-	HaproxyCompressionInput     MetricSettings `mapstructure:"haproxy.compression.input"`
-	HaproxyCompressionOutput    MetricSettings `mapstructure:"haproxy.compression.output"`
-	HaproxyConnectionsErrors    MetricSettings `mapstructure:"haproxy.connections.errors"`
-	HaproxyConnectionsRate      MetricSettings `mapstructure:"haproxy.connections.rate"`
-	HaproxyConnectionsRetries   MetricSettings `mapstructure:"haproxy.connections.retries"`
-	HaproxyConnectionsTotal     MetricSettings `mapstructure:"haproxy.connections.total"`
-	HaproxyDowntime             MetricSettings `mapstructure:"haproxy.downtime"`
-	HaproxyFailedChecks         MetricSettings `mapstructure:"haproxy.failed_checks"`
-	HaproxyRequestsDenied       MetricSettings `mapstructure:"haproxy.requests.denied"`
-	HaproxyRequestsErrors       MetricSettings `mapstructure:"haproxy.requests.errors"`
-	HaproxyRequestsQueued       MetricSettings `mapstructure:"haproxy.requests.queued"`
-	HaproxyRequestsRate         MetricSettings `mapstructure:"haproxy.requests.rate"`
-	HaproxyRequestsRedispatched MetricSettings `mapstructure:"haproxy.requests.redispatched"`
-	HaproxyRequestsTotal        MetricSettings `mapstructure:"haproxy.requests.total"`
-	HaproxyResponsesDenied      MetricSettings `mapstructure:"haproxy.responses.denied"`
-	HaproxyResponsesErrors      MetricSettings `mapstructure:"haproxy.responses.errors"`
-	HaproxyServerSelectedTotal  MetricSettings `mapstructure:"haproxy.server_selected.total"`
-	HaproxySessionsAverage      MetricSettings `mapstructure:"haproxy.sessions.average"`
-	HaproxySessionsCount        MetricSettings `mapstructure:"haproxy.sessions.count"`
-	HaproxySessionsRate         MetricSettings `mapstructure:"haproxy.sessions.rate"`
-	HaproxySessionsTotal        MetricSettings `mapstructure:"haproxy.sessions.total"`
+// MetricsConfig provides config for haproxyreceiver metrics.
+type MetricsConfig struct {
+	HaproxyBytesInput           MetricConfig `mapstructure:"haproxy.bytes.input"`
+	HaproxyBytesOutput          MetricConfig `mapstructure:"haproxy.bytes.output"`
+	HaproxyClientsCanceled      MetricConfig `mapstructure:"haproxy.clients.canceled"`
+	HaproxyCompressionBypass    MetricConfig `mapstructure:"haproxy.compression.bypass"`
+	HaproxyCompressionCount     MetricConfig `mapstructure:"haproxy.compression.count"`
+	HaproxyCompressionInput     MetricConfig `mapstructure:"haproxy.compression.input"`
+	HaproxyCompressionOutput    MetricConfig `mapstructure:"haproxy.compression.output"`
+	HaproxyConnectionsErrors    MetricConfig `mapstructure:"haproxy.connections.errors"`
+	HaproxyConnectionsRate      MetricConfig `mapstructure:"haproxy.connections.rate"`
+	HaproxyConnectionsRetries   MetricConfig `mapstructure:"haproxy.connections.retries"`
+	HaproxyConnectionsTotal     MetricConfig `mapstructure:"haproxy.connections.total"`
+	HaproxyDowntime             MetricConfig `mapstructure:"haproxy.downtime"`
+	HaproxyFailedChecks         MetricConfig `mapstructure:"haproxy.failed_checks"`
+	HaproxyRequestsDenied       MetricConfig `mapstructure:"haproxy.requests.denied"`
+	HaproxyRequestsErrors       MetricConfig `mapstructure:"haproxy.requests.errors"`
+	HaproxyRequestsQueued       MetricConfig `mapstructure:"haproxy.requests.queued"`
+	HaproxyRequestsRate         MetricConfig `mapstructure:"haproxy.requests.rate"`
+	HaproxyRequestsRedispatched MetricConfig `mapstructure:"haproxy.requests.redispatched"`
+	HaproxyRequestsTotal        MetricConfig `mapstructure:"haproxy.requests.total"`
+	HaproxyResponsesDenied      MetricConfig `mapstructure:"haproxy.responses.denied"`
+	HaproxyResponsesErrors      MetricConfig `mapstructure:"haproxy.responses.errors"`
+	HaproxyServerSelectedTotal  MetricConfig `mapstructure:"haproxy.server_selected.total"`
+	HaproxySessionsAverage      MetricConfig `mapstructure:"haproxy.sessions.average"`
+	HaproxySessionsCount        MetricConfig `mapstructure:"haproxy.sessions.count"`
+	HaproxySessionsRate         MetricConfig `mapstructure:"haproxy.sessions.rate"`
+	HaproxySessionsTotal        MetricConfig `mapstructure:"haproxy.sessions.total"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		HaproxyBytesInput: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		HaproxyBytesInput: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyBytesOutput: MetricSettings{
+		HaproxyBytesOutput: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyClientsCanceled: MetricSettings{
+		HaproxyClientsCanceled: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionBypass: MetricSettings{
+		HaproxyCompressionBypass: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionCount: MetricSettings{
+		HaproxyCompressionCount: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionInput: MetricSettings{
+		HaproxyCompressionInput: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyCompressionOutput: MetricSettings{
+		HaproxyCompressionOutput: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyConnectionsErrors: MetricSettings{
+		HaproxyConnectionsErrors: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyConnectionsRate: MetricSettings{
+		HaproxyConnectionsRate: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyConnectionsRetries: MetricSettings{
+		HaproxyConnectionsRetries: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyConnectionsTotal: MetricSettings{
+		HaproxyConnectionsTotal: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyDowntime: MetricSettings{
+		HaproxyDowntime: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyFailedChecks: MetricSettings{
+		HaproxyFailedChecks: MetricConfig{
 			Enabled: false,
 		},
-		HaproxyRequestsDenied: MetricSettings{
+		HaproxyRequestsDenied: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsErrors: MetricSettings{
+		HaproxyRequestsErrors: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsQueued: MetricSettings{
+		HaproxyRequestsQueued: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsRate: MetricSettings{
+		HaproxyRequestsRate: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsRedispatched: MetricSettings{
+		HaproxyRequestsRedispatched: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyRequestsTotal: MetricSettings{
+		HaproxyRequestsTotal: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyResponsesDenied: MetricSettings{
+		HaproxyResponsesDenied: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyResponsesErrors: MetricSettings{
+		HaproxyResponsesErrors: MetricConfig{
 			Enabled: true,
 		},
-		HaproxyServerSelectedTotal: MetricSettings{
+		HaproxyServerSelectedTotal: MetricConfig{
 			Enabled: true,
 		},
-		HaproxySessionsAverage: MetricSettings{
+		HaproxySessionsAverage: MetricConfig{
 			Enabled: true,
 		},
-		HaproxySessionsCount: MetricSettings{
+		HaproxySessionsCount: MetricConfig{
 			Enabled: true,
 		},
-		HaproxySessionsRate: MetricSettings{
+		HaproxySessionsRate: MetricConfig{
 			Enabled: true,
 		},
-		HaproxySessionsTotal: MetricSettings{
+		HaproxySessionsTotal: MetricConfig{
 			Enabled: false,
 		},
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
+// ResourceAttributeConfig provides common config for a particular resource attribute.
+type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
 }
 
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
+// ResourceAttributesConfig provides config for haproxyreceiver resource attributes.
+type ResourceAttributesConfig struct {
+	HaproxyAddr ResourceAttributeConfig `mapstructure:"haproxy.addr"`
+	HaproxyAlgo ResourceAttributeConfig `mapstructure:"haproxy.algo"`
+	HaproxyIid  ResourceAttributeConfig `mapstructure:"haproxy.iid"`
+	HaproxyPid  ResourceAttributeConfig `mapstructure:"haproxy.pid"`
+	HaproxySid  ResourceAttributeConfig `mapstructure:"haproxy.sid"`
+	HaproxyType ResourceAttributeConfig `mapstructure:"haproxy.type"`
+	HaproxyURL  ResourceAttributeConfig `mapstructure:"haproxy.url"`
+	ProxyName   ResourceAttributeConfig `mapstructure:"proxy_name"`
+	ServiceName ResourceAttributeConfig `mapstructure:"service_name"`
 }
 
-// ResourceAttributesSettings provides settings for haproxyreceiver metrics.
-type ResourceAttributesSettings struct {
-	HaproxyAddr ResourceAttributeSettings `mapstructure:"haproxy.addr"`
-	HaproxyAlgo ResourceAttributeSettings `mapstructure:"haproxy.algo"`
-	HaproxyIid  ResourceAttributeSettings `mapstructure:"haproxy.iid"`
-	HaproxyPid  ResourceAttributeSettings `mapstructure:"haproxy.pid"`
-	HaproxySid  ResourceAttributeSettings `mapstructure:"haproxy.sid"`
-	HaproxyType ResourceAttributeSettings `mapstructure:"haproxy.type"`
-	HaproxyURL  ResourceAttributeSettings `mapstructure:"haproxy.url"`
-	ProxyName   ResourceAttributeSettings `mapstructure:"proxy_name"`
-	ServiceName ResourceAttributeSettings `mapstructure:"service_name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		HaproxyAddr: ResourceAttributeSettings{
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		HaproxyAddr: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyAlgo: ResourceAttributeSettings{
+		HaproxyAlgo: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyIid: ResourceAttributeSettings{
+		HaproxyIid: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyPid: ResourceAttributeSettings{
+		HaproxyPid: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxySid: ResourceAttributeSettings{
+		HaproxySid: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyType: ResourceAttributeSettings{
+		HaproxyType: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyURL: ResourceAttributeSettings{
+		HaproxyURL: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		ProxyName: ResourceAttributeSettings{
+		ProxyName: ResourceAttributeConfig{
 			Enabled: false,
 		},
-		ServiceName: ResourceAttributeSettings{
+		ServiceName: ResourceAttributeConfig{
 			Enabled: false,
 		},
 	}
@@ -254,7 +240,7 @@ var MapAttributeStatusCode = map[string]AttributeStatusCode{
 
 type metricHaproxyBytesInput struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -269,7 +255,7 @@ func (m *metricHaproxyBytesInput) init() {
 }
 
 func (m *metricHaproxyBytesInput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -287,16 +273,16 @@ func (m *metricHaproxyBytesInput) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyBytesInput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyBytesInput(settings MetricSettings) metricHaproxyBytesInput {
-	m := metricHaproxyBytesInput{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyBytesInput(cfg MetricConfig) metricHaproxyBytesInput {
+	m := metricHaproxyBytesInput{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -305,7 +291,7 @@ func newMetricHaproxyBytesInput(settings MetricSettings) metricHaproxyBytesInput
 
 type metricHaproxyBytesOutput struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -320,7 +306,7 @@ func (m *metricHaproxyBytesOutput) init() {
 }
 
 func (m *metricHaproxyBytesOutput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -338,16 +324,16 @@ func (m *metricHaproxyBytesOutput) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyBytesOutput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyBytesOutput(settings MetricSettings) metricHaproxyBytesOutput {
-	m := metricHaproxyBytesOutput{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyBytesOutput(cfg MetricConfig) metricHaproxyBytesOutput {
+	m := metricHaproxyBytesOutput{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -356,7 +342,7 @@ func newMetricHaproxyBytesOutput(settings MetricSettings) metricHaproxyBytesOutp
 
 type metricHaproxyClientsCanceled struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -371,7 +357,7 @@ func (m *metricHaproxyClientsCanceled) init() {
 }
 
 func (m *metricHaproxyClientsCanceled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -389,16 +375,16 @@ func (m *metricHaproxyClientsCanceled) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyClientsCanceled) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyClientsCanceled(settings MetricSettings) metricHaproxyClientsCanceled {
-	m := metricHaproxyClientsCanceled{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyClientsCanceled(cfg MetricConfig) metricHaproxyClientsCanceled {
+	m := metricHaproxyClientsCanceled{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -407,7 +393,7 @@ func newMetricHaproxyClientsCanceled(settings MetricSettings) metricHaproxyClien
 
 type metricHaproxyCompressionBypass struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -422,7 +408,7 @@ func (m *metricHaproxyCompressionBypass) init() {
 }
 
 func (m *metricHaproxyCompressionBypass) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -440,16 +426,16 @@ func (m *metricHaproxyCompressionBypass) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyCompressionBypass) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyCompressionBypass(settings MetricSettings) metricHaproxyCompressionBypass {
-	m := metricHaproxyCompressionBypass{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyCompressionBypass(cfg MetricConfig) metricHaproxyCompressionBypass {
+	m := metricHaproxyCompressionBypass{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -458,7 +444,7 @@ func newMetricHaproxyCompressionBypass(settings MetricSettings) metricHaproxyCom
 
 type metricHaproxyCompressionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -473,7 +459,7 @@ func (m *metricHaproxyCompressionCount) init() {
 }
 
 func (m *metricHaproxyCompressionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -491,16 +477,16 @@ func (m *metricHaproxyCompressionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyCompressionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyCompressionCount(settings MetricSettings) metricHaproxyCompressionCount {
-	m := metricHaproxyCompressionCount{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyCompressionCount(cfg MetricConfig) metricHaproxyCompressionCount {
+	m := metricHaproxyCompressionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -509,7 +495,7 @@ func newMetricHaproxyCompressionCount(settings MetricSettings) metricHaproxyComp
 
 type metricHaproxyCompressionInput struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -524,7 +510,7 @@ func (m *metricHaproxyCompressionInput) init() {
 }
 
 func (m *metricHaproxyCompressionInput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -542,16 +528,16 @@ func (m *metricHaproxyCompressionInput) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyCompressionInput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyCompressionInput(settings MetricSettings) metricHaproxyCompressionInput {
-	m := metricHaproxyCompressionInput{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyCompressionInput(cfg MetricConfig) metricHaproxyCompressionInput {
+	m := metricHaproxyCompressionInput{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -560,7 +546,7 @@ func newMetricHaproxyCompressionInput(settings MetricSettings) metricHaproxyComp
 
 type metricHaproxyCompressionOutput struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -575,7 +561,7 @@ func (m *metricHaproxyCompressionOutput) init() {
 }
 
 func (m *metricHaproxyCompressionOutput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -593,16 +579,16 @@ func (m *metricHaproxyCompressionOutput) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyCompressionOutput) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyCompressionOutput(settings MetricSettings) metricHaproxyCompressionOutput {
-	m := metricHaproxyCompressionOutput{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyCompressionOutput(cfg MetricConfig) metricHaproxyCompressionOutput {
+	m := metricHaproxyCompressionOutput{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -611,7 +597,7 @@ func newMetricHaproxyCompressionOutput(settings MetricSettings) metricHaproxyCom
 
 type metricHaproxyConnectionsErrors struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -626,7 +612,7 @@ func (m *metricHaproxyConnectionsErrors) init() {
 }
 
 func (m *metricHaproxyConnectionsErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -644,16 +630,16 @@ func (m *metricHaproxyConnectionsErrors) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyConnectionsErrors) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyConnectionsErrors(settings MetricSettings) metricHaproxyConnectionsErrors {
-	m := metricHaproxyConnectionsErrors{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyConnectionsErrors(cfg MetricConfig) metricHaproxyConnectionsErrors {
+	m := metricHaproxyConnectionsErrors{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -662,7 +648,7 @@ func newMetricHaproxyConnectionsErrors(settings MetricSettings) metricHaproxyCon
 
 type metricHaproxyConnectionsRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -675,7 +661,7 @@ func (m *metricHaproxyConnectionsRate) init() {
 }
 
 func (m *metricHaproxyConnectionsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -693,16 +679,16 @@ func (m *metricHaproxyConnectionsRate) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyConnectionsRate) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyConnectionsRate(settings MetricSettings) metricHaproxyConnectionsRate {
-	m := metricHaproxyConnectionsRate{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyConnectionsRate(cfg MetricConfig) metricHaproxyConnectionsRate {
+	m := metricHaproxyConnectionsRate{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -711,7 +697,7 @@ func newMetricHaproxyConnectionsRate(settings MetricSettings) metricHaproxyConne
 
 type metricHaproxyConnectionsRetries struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -726,7 +712,7 @@ func (m *metricHaproxyConnectionsRetries) init() {
 }
 
 func (m *metricHaproxyConnectionsRetries) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -744,16 +730,16 @@ func (m *metricHaproxyConnectionsRetries) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyConnectionsRetries) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyConnectionsRetries(settings MetricSettings) metricHaproxyConnectionsRetries {
-	m := metricHaproxyConnectionsRetries{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyConnectionsRetries(cfg MetricConfig) metricHaproxyConnectionsRetries {
+	m := metricHaproxyConnectionsRetries{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -762,7 +748,7 @@ func newMetricHaproxyConnectionsRetries(settings MetricSettings) metricHaproxyCo
 
 type metricHaproxyConnectionsTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -777,7 +763,7 @@ func (m *metricHaproxyConnectionsTotal) init() {
 }
 
 func (m *metricHaproxyConnectionsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -795,16 +781,16 @@ func (m *metricHaproxyConnectionsTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyConnectionsTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyConnectionsTotal(settings MetricSettings) metricHaproxyConnectionsTotal {
-	m := metricHaproxyConnectionsTotal{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyConnectionsTotal(cfg MetricConfig) metricHaproxyConnectionsTotal {
+	m := metricHaproxyConnectionsTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -813,7 +799,7 @@ func newMetricHaproxyConnectionsTotal(settings MetricSettings) metricHaproxyConn
 
 type metricHaproxyDowntime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -828,7 +814,7 @@ func (m *metricHaproxyDowntime) init() {
 }
 
 func (m *metricHaproxyDowntime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -846,16 +832,16 @@ func (m *metricHaproxyDowntime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyDowntime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyDowntime(settings MetricSettings) metricHaproxyDowntime {
-	m := metricHaproxyDowntime{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyDowntime(cfg MetricConfig) metricHaproxyDowntime {
+	m := metricHaproxyDowntime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -864,7 +850,7 @@ func newMetricHaproxyDowntime(settings MetricSettings) metricHaproxyDowntime {
 
 type metricHaproxyFailedChecks struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -879,7 +865,7 @@ func (m *metricHaproxyFailedChecks) init() {
 }
 
 func (m *metricHaproxyFailedChecks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -897,16 +883,16 @@ func (m *metricHaproxyFailedChecks) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyFailedChecks) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyFailedChecks(settings MetricSettings) metricHaproxyFailedChecks {
-	m := metricHaproxyFailedChecks{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyFailedChecks(cfg MetricConfig) metricHaproxyFailedChecks {
+	m := metricHaproxyFailedChecks{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -915,7 +901,7 @@ func newMetricHaproxyFailedChecks(settings MetricSettings) metricHaproxyFailedCh
 
 type metricHaproxyRequestsDenied struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -930,7 +916,7 @@ func (m *metricHaproxyRequestsDenied) init() {
 }
 
 func (m *metricHaproxyRequestsDenied) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -948,16 +934,16 @@ func (m *metricHaproxyRequestsDenied) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyRequestsDenied) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyRequestsDenied(settings MetricSettings) metricHaproxyRequestsDenied {
-	m := metricHaproxyRequestsDenied{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyRequestsDenied(cfg MetricConfig) metricHaproxyRequestsDenied {
+	m := metricHaproxyRequestsDenied{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -966,7 +952,7 @@ func newMetricHaproxyRequestsDenied(settings MetricSettings) metricHaproxyReques
 
 type metricHaproxyRequestsErrors struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -981,7 +967,7 @@ func (m *metricHaproxyRequestsErrors) init() {
 }
 
 func (m *metricHaproxyRequestsErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -999,16 +985,16 @@ func (m *metricHaproxyRequestsErrors) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyRequestsErrors) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyRequestsErrors(settings MetricSettings) metricHaproxyRequestsErrors {
-	m := metricHaproxyRequestsErrors{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyRequestsErrors(cfg MetricConfig) metricHaproxyRequestsErrors {
+	m := metricHaproxyRequestsErrors{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1017,7 +1003,7 @@ func newMetricHaproxyRequestsErrors(settings MetricSettings) metricHaproxyReques
 
 type metricHaproxyRequestsQueued struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1032,7 +1018,7 @@ func (m *metricHaproxyRequestsQueued) init() {
 }
 
 func (m *metricHaproxyRequestsQueued) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1050,16 +1036,16 @@ func (m *metricHaproxyRequestsQueued) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyRequestsQueued) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyRequestsQueued(settings MetricSettings) metricHaproxyRequestsQueued {
-	m := metricHaproxyRequestsQueued{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyRequestsQueued(cfg MetricConfig) metricHaproxyRequestsQueued {
+	m := metricHaproxyRequestsQueued{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1068,7 +1054,7 @@ func newMetricHaproxyRequestsQueued(settings MetricSettings) metricHaproxyReques
 
 type metricHaproxyRequestsRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1081,7 +1067,7 @@ func (m *metricHaproxyRequestsRate) init() {
 }
 
 func (m *metricHaproxyRequestsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1099,16 +1085,16 @@ func (m *metricHaproxyRequestsRate) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyRequestsRate) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyRequestsRate(settings MetricSettings) metricHaproxyRequestsRate {
-	m := metricHaproxyRequestsRate{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyRequestsRate(cfg MetricConfig) metricHaproxyRequestsRate {
+	m := metricHaproxyRequestsRate{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1117,7 +1103,7 @@ func newMetricHaproxyRequestsRate(settings MetricSettings) metricHaproxyRequests
 
 type metricHaproxyRequestsRedispatched struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1132,7 +1118,7 @@ func (m *metricHaproxyRequestsRedispatched) init() {
 }
 
 func (m *metricHaproxyRequestsRedispatched) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1150,16 +1136,16 @@ func (m *metricHaproxyRequestsRedispatched) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyRequestsRedispatched) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyRequestsRedispatched(settings MetricSettings) metricHaproxyRequestsRedispatched {
-	m := metricHaproxyRequestsRedispatched{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyRequestsRedispatched(cfg MetricConfig) metricHaproxyRequestsRedispatched {
+	m := metricHaproxyRequestsRedispatched{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1168,7 +1154,7 @@ func newMetricHaproxyRequestsRedispatched(settings MetricSettings) metricHaproxy
 
 type metricHaproxyRequestsTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1184,7 +1170,7 @@ func (m *metricHaproxyRequestsTotal) init() {
 }
 
 func (m *metricHaproxyRequestsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusCodeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1203,16 +1189,16 @@ func (m *metricHaproxyRequestsTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyRequestsTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyRequestsTotal(settings MetricSettings) metricHaproxyRequestsTotal {
-	m := metricHaproxyRequestsTotal{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyRequestsTotal(cfg MetricConfig) metricHaproxyRequestsTotal {
+	m := metricHaproxyRequestsTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1221,7 +1207,7 @@ func newMetricHaproxyRequestsTotal(settings MetricSettings) metricHaproxyRequest
 
 type metricHaproxyResponsesDenied struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1236,7 +1222,7 @@ func (m *metricHaproxyResponsesDenied) init() {
 }
 
 func (m *metricHaproxyResponsesDenied) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1254,16 +1240,16 @@ func (m *metricHaproxyResponsesDenied) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyResponsesDenied) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyResponsesDenied(settings MetricSettings) metricHaproxyResponsesDenied {
-	m := metricHaproxyResponsesDenied{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyResponsesDenied(cfg MetricConfig) metricHaproxyResponsesDenied {
+	m := metricHaproxyResponsesDenied{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1272,7 +1258,7 @@ func newMetricHaproxyResponsesDenied(settings MetricSettings) metricHaproxyRespo
 
 type metricHaproxyResponsesErrors struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1287,7 +1273,7 @@ func (m *metricHaproxyResponsesErrors) init() {
 }
 
 func (m *metricHaproxyResponsesErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1305,16 +1291,16 @@ func (m *metricHaproxyResponsesErrors) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyResponsesErrors) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyResponsesErrors(settings MetricSettings) metricHaproxyResponsesErrors {
-	m := metricHaproxyResponsesErrors{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyResponsesErrors(cfg MetricConfig) metricHaproxyResponsesErrors {
+	m := metricHaproxyResponsesErrors{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1323,7 +1309,7 @@ func newMetricHaproxyResponsesErrors(settings MetricSettings) metricHaproxyRespo
 
 type metricHaproxyServerSelectedTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1338,7 +1324,7 @@ func (m *metricHaproxyServerSelectedTotal) init() {
 }
 
 func (m *metricHaproxyServerSelectedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1356,16 +1342,16 @@ func (m *metricHaproxyServerSelectedTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxyServerSelectedTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxyServerSelectedTotal(settings MetricSettings) metricHaproxyServerSelectedTotal {
-	m := metricHaproxyServerSelectedTotal{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxyServerSelectedTotal(cfg MetricConfig) metricHaproxyServerSelectedTotal {
+	m := metricHaproxyServerSelectedTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1374,7 +1360,7 @@ func newMetricHaproxyServerSelectedTotal(settings MetricSettings) metricHaproxyS
 
 type metricHaproxySessionsAverage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1387,7 +1373,7 @@ func (m *metricHaproxySessionsAverage) init() {
 }
 
 func (m *metricHaproxySessionsAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1405,16 +1391,16 @@ func (m *metricHaproxySessionsAverage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxySessionsAverage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxySessionsAverage(settings MetricSettings) metricHaproxySessionsAverage {
-	m := metricHaproxySessionsAverage{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxySessionsAverage(cfg MetricConfig) metricHaproxySessionsAverage {
+	m := metricHaproxySessionsAverage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1423,7 +1409,7 @@ func newMetricHaproxySessionsAverage(settings MetricSettings) metricHaproxySessi
 
 type metricHaproxySessionsCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1436,7 +1422,7 @@ func (m *metricHaproxySessionsCount) init() {
 }
 
 func (m *metricHaproxySessionsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1454,16 +1440,16 @@ func (m *metricHaproxySessionsCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxySessionsCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxySessionsCount(settings MetricSettings) metricHaproxySessionsCount {
-	m := metricHaproxySessionsCount{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxySessionsCount(cfg MetricConfig) metricHaproxySessionsCount {
+	m := metricHaproxySessionsCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1472,7 +1458,7 @@ func newMetricHaproxySessionsCount(settings MetricSettings) metricHaproxySession
 
 type metricHaproxySessionsRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1485,7 +1471,7 @@ func (m *metricHaproxySessionsRate) init() {
 }
 
 func (m *metricHaproxySessionsRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1503,16 +1489,16 @@ func (m *metricHaproxySessionsRate) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxySessionsRate) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxySessionsRate(settings MetricSettings) metricHaproxySessionsRate {
-	m := metricHaproxySessionsRate{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxySessionsRate(cfg MetricConfig) metricHaproxySessionsRate {
+	m := metricHaproxySessionsRate{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1521,7 +1507,7 @@ func newMetricHaproxySessionsRate(settings MetricSettings) metricHaproxySessions
 
 type metricHaproxySessionsTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1536,7 +1522,7 @@ func (m *metricHaproxySessionsTotal) init() {
 }
 
 func (m *metricHaproxySessionsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1554,31 +1540,37 @@ func (m *metricHaproxySessionsTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricHaproxySessionsTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricHaproxySessionsTotal(settings MetricSettings) metricHaproxySessionsTotal {
-	m := metricHaproxySessionsTotal{settings: settings}
-	if settings.Enabled {
+func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal {
+	m := metricHaproxySessionsTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                   int                 // maximum observed number of metrics per resource.
 	resourceCapacity                  int                 // maximum observed number of resource attributes.
 	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                         component.BuildInfo // contains version information
-	resourceAttributesSettings        ResourceAttributesSettings
+	resourceAttributesConfig          ResourceAttributesConfig
 	metricHaproxyBytesInput           metricHaproxyBytesInput
 	metricHaproxyBytesOutput          metricHaproxyBytesOutput
 	metricHaproxyClientsCanceled      metricHaproxyClientsCanceled
@@ -1617,45 +1609,45 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        DefaultResourceAttributesSettings(),
-		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(ms.HaproxyBytesInput),
-		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(ms.HaproxyBytesOutput),
-		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(ms.HaproxyClientsCanceled),
-		metricHaproxyCompressionBypass:    newMetricHaproxyCompressionBypass(ms.HaproxyCompressionBypass),
-		metricHaproxyCompressionCount:     newMetricHaproxyCompressionCount(ms.HaproxyCompressionCount),
-		metricHaproxyCompressionInput:     newMetricHaproxyCompressionInput(ms.HaproxyCompressionInput),
-		metricHaproxyCompressionOutput:    newMetricHaproxyCompressionOutput(ms.HaproxyCompressionOutput),
-		metricHaproxyConnectionsErrors:    newMetricHaproxyConnectionsErrors(ms.HaproxyConnectionsErrors),
-		metricHaproxyConnectionsRate:      newMetricHaproxyConnectionsRate(ms.HaproxyConnectionsRate),
-		metricHaproxyConnectionsRetries:   newMetricHaproxyConnectionsRetries(ms.HaproxyConnectionsRetries),
-		metricHaproxyConnectionsTotal:     newMetricHaproxyConnectionsTotal(ms.HaproxyConnectionsTotal),
-		metricHaproxyDowntime:             newMetricHaproxyDowntime(ms.HaproxyDowntime),
-		metricHaproxyFailedChecks:         newMetricHaproxyFailedChecks(ms.HaproxyFailedChecks),
-		metricHaproxyRequestsDenied:       newMetricHaproxyRequestsDenied(ms.HaproxyRequestsDenied),
-		metricHaproxyRequestsErrors:       newMetricHaproxyRequestsErrors(ms.HaproxyRequestsErrors),
-		metricHaproxyRequestsQueued:       newMetricHaproxyRequestsQueued(ms.HaproxyRequestsQueued),
-		metricHaproxyRequestsRate:         newMetricHaproxyRequestsRate(ms.HaproxyRequestsRate),
-		metricHaproxyRequestsRedispatched: newMetricHaproxyRequestsRedispatched(ms.HaproxyRequestsRedispatched),
-		metricHaproxyRequestsTotal:        newMetricHaproxyRequestsTotal(ms.HaproxyRequestsTotal),
-		metricHaproxyResponsesDenied:      newMetricHaproxyResponsesDenied(ms.HaproxyResponsesDenied),
-		metricHaproxyResponsesErrors:      newMetricHaproxyResponsesErrors(ms.HaproxyResponsesErrors),
-		metricHaproxyServerSelectedTotal:  newMetricHaproxyServerSelectedTotal(ms.HaproxyServerSelectedTotal),
-		metricHaproxySessionsAverage:      newMetricHaproxySessionsAverage(ms.HaproxySessionsAverage),
-		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(ms.HaproxySessionsCount),
-		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(ms.HaproxySessionsRate),
-		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(ms.HaproxySessionsTotal),
+		resourceAttributesConfig:          mbc.ResourceAttributes,
+		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(mbc.Metrics.HaproxyBytesInput),
+		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(mbc.Metrics.HaproxyBytesOutput),
+		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(mbc.Metrics.HaproxyClientsCanceled),
+		metricHaproxyCompressionBypass:    newMetricHaproxyCompressionBypass(mbc.Metrics.HaproxyCompressionBypass),
+		metricHaproxyCompressionCount:     newMetricHaproxyCompressionCount(mbc.Metrics.HaproxyCompressionCount),
+		metricHaproxyCompressionInput:     newMetricHaproxyCompressionInput(mbc.Metrics.HaproxyCompressionInput),
+		metricHaproxyCompressionOutput:    newMetricHaproxyCompressionOutput(mbc.Metrics.HaproxyCompressionOutput),
+		metricHaproxyConnectionsErrors:    newMetricHaproxyConnectionsErrors(mbc.Metrics.HaproxyConnectionsErrors),
+		metricHaproxyConnectionsRate:      newMetricHaproxyConnectionsRate(mbc.Metrics.HaproxyConnectionsRate),
+		metricHaproxyConnectionsRetries:   newMetricHaproxyConnectionsRetries(mbc.Metrics.HaproxyConnectionsRetries),
+		metricHaproxyConnectionsTotal:     newMetricHaproxyConnectionsTotal(mbc.Metrics.HaproxyConnectionsTotal),
+		metricHaproxyDowntime:             newMetricHaproxyDowntime(mbc.Metrics.HaproxyDowntime),
+		metricHaproxyFailedChecks:         newMetricHaproxyFailedChecks(mbc.Metrics.HaproxyFailedChecks),
+		metricHaproxyRequestsDenied:       newMetricHaproxyRequestsDenied(mbc.Metrics.HaproxyRequestsDenied),
+		metricHaproxyRequestsErrors:       newMetricHaproxyRequestsErrors(mbc.Metrics.HaproxyRequestsErrors),
+		metricHaproxyRequestsQueued:       newMetricHaproxyRequestsQueued(mbc.Metrics.HaproxyRequestsQueued),
+		metricHaproxyRequestsRate:         newMetricHaproxyRequestsRate(mbc.Metrics.HaproxyRequestsRate),
+		metricHaproxyRequestsRedispatched: newMetricHaproxyRequestsRedispatched(mbc.Metrics.HaproxyRequestsRedispatched),
+		metricHaproxyRequestsTotal:        newMetricHaproxyRequestsTotal(mbc.Metrics.HaproxyRequestsTotal),
+		metricHaproxyResponsesDenied:      newMetricHaproxyResponsesDenied(mbc.Metrics.HaproxyResponsesDenied),
+		metricHaproxyResponsesErrors:      newMetricHaproxyResponsesErrors(mbc.Metrics.HaproxyResponsesErrors),
+		metricHaproxyServerSelectedTotal:  newMetricHaproxyServerSelectedTotal(mbc.Metrics.HaproxyServerSelectedTotal),
+		metricHaproxySessionsAverage:      newMetricHaproxySessionsAverage(mbc.Metrics.HaproxySessionsAverage),
+		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(mbc.Metrics.HaproxySessionsCount),
+		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(mbc.Metrics.HaproxySessionsRate),
+		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(mbc.Metrics.HaproxySessionsTotal),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1674,12 +1666,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithHaproxyAddr sets provided value as "haproxy.addr" attribute for current resource.
 func WithHaproxyAddr(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HaproxyAddr.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HaproxyAddr.Enabled {
 			rm.Resource().Attributes().PutStr("haproxy.addr", val)
 		}
 	}
@@ -1687,8 +1679,8 @@ func WithHaproxyAddr(val string) ResourceMetricsOption {
 
 // WithHaproxyAlgo sets provided value as "haproxy.algo" attribute for current resource.
 func WithHaproxyAlgo(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HaproxyAlgo.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HaproxyAlgo.Enabled {
 			rm.Resource().Attributes().PutStr("haproxy.algo", val)
 		}
 	}
@@ -1696,8 +1688,8 @@ func WithHaproxyAlgo(val string) ResourceMetricsOption {
 
 // WithHaproxyIid sets provided value as "haproxy.iid" attribute for current resource.
 func WithHaproxyIid(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HaproxyIid.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HaproxyIid.Enabled {
 			rm.Resource().Attributes().PutStr("haproxy.iid", val)
 		}
 	}
@@ -1705,8 +1697,8 @@ func WithHaproxyIid(val string) ResourceMetricsOption {
 
 // WithHaproxyPid sets provided value as "haproxy.pid" attribute for current resource.
 func WithHaproxyPid(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HaproxyPid.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HaproxyPid.Enabled {
 			rm.Resource().Attributes().PutStr("haproxy.pid", val)
 		}
 	}
@@ -1714,8 +1706,8 @@ func WithHaproxyPid(val string) ResourceMetricsOption {
 
 // WithHaproxySid sets provided value as "haproxy.sid" attribute for current resource.
 func WithHaproxySid(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HaproxySid.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HaproxySid.Enabled {
 			rm.Resource().Attributes().PutStr("haproxy.sid", val)
 		}
 	}
@@ -1723,8 +1715,8 @@ func WithHaproxySid(val string) ResourceMetricsOption {
 
 // WithHaproxyType sets provided value as "haproxy.type" attribute for current resource.
 func WithHaproxyType(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HaproxyType.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HaproxyType.Enabled {
 			rm.Resource().Attributes().PutStr("haproxy.type", val)
 		}
 	}
@@ -1732,8 +1724,8 @@ func WithHaproxyType(val string) ResourceMetricsOption {
 
 // WithHaproxyURL sets provided value as "haproxy.url" attribute for current resource.
 func WithHaproxyURL(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.HaproxyURL.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.HaproxyURL.Enabled {
 			rm.Resource().Attributes().PutStr("haproxy.url", val)
 		}
 	}
@@ -1741,8 +1733,8 @@ func WithHaproxyURL(val string) ResourceMetricsOption {
 
 // WithProxyName sets provided value as "proxy_name" attribute for current resource.
 func WithProxyName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.ProxyName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ProxyName.Enabled {
 			rm.Resource().Attributes().PutStr("proxy_name", val)
 		}
 	}
@@ -1750,8 +1742,8 @@ func WithProxyName(val string) ResourceMetricsOption {
 
 // WithServiceName sets provided value as "service_name" attribute for current resource.
 func WithServiceName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.ServiceName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ServiceName.Enabled {
 			rm.Resource().Attributes().PutStr("service_name", val)
 		}
 	}
@@ -1760,7 +1752,7 @@ func WithServiceName(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1817,7 +1809,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricHaproxySessionsTotal.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1827,7 +1819,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

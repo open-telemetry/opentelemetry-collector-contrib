@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "mongodb"
-	stability = component.StabilityLevelBeta
+	typeStr = "mongodb"
 )
 
 // NewFactory creates a factory for mongodb receiver.
@@ -38,7 +37,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -52,8 +51,8 @@ func createDefaultConfig() component.Config {
 				Endpoint: "localhost:27017",
 			},
 		},
-		Metrics:          metadata.DefaultMetricsSettings(),
-		TLSClientSetting: configtls.TLSClientSetting{},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		TLSClientSetting:     configtls.TLSClientSetting{},
 	}
 }
 

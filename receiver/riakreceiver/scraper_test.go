@@ -138,30 +138,30 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "expected_disabled.json")
+				goldenPath := filepath.Join("testdata", "scraper", "expected_disabled.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
 			},
 			setupCfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Metrics = metadata.MetricsSettings{
-					RiakMemoryLimit: metadata.MetricSettings{
+				cfg.MetricsBuilderConfig.Metrics = metadata.MetricsConfig{
+					RiakMemoryLimit: metadata.MetricConfig{
 						Enabled: false,
 					},
-					RiakNodeOperationCount: metadata.MetricSettings{
+					RiakNodeOperationCount: metadata.MetricConfig{
 						Enabled: false,
 					},
-					RiakNodeOperationTimeMean: metadata.MetricSettings{
+					RiakNodeOperationTimeMean: metadata.MetricConfig{
 						Enabled: true,
 					},
-					RiakNodeReadRepairCount: metadata.MetricSettings{
+					RiakNodeReadRepairCount: metadata.MetricConfig{
 						Enabled: true,
 					},
-					RiakVnodeIndexOperationCount: metadata.MetricSettings{
+					RiakVnodeIndexOperationCount: metadata.MetricConfig{
 						Enabled: true,
 					},
-					RiakVnodeOperationCount: metadata.MetricSettings{
+					RiakVnodeOperationCount: metadata.MetricConfig{
 						Enabled: true,
 					},
 				}
@@ -183,7 +183,7 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "expected.json")
+				goldenPath := filepath.Join("testdata", "scraper", "expected.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics

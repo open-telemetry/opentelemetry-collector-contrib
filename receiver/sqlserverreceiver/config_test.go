@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		}, {
 			desc: "valid config with no metric settings",
@@ -54,15 +54,50 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	t.Run("default", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub("sqlserver")
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		sub, err := cm.Sub("sqlserver")
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.NoError(t, component.ValidateConfig(cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	})
+
+	t.Run("named", func(t *testing.T) {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+		require.NoError(t, err)
+
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
+
+		expected := factory.CreateDefaultConfig().(*Config)
+		expected.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
+			Metrics: metadata.DefaultMetricsConfig(),
+			ResourceAttributes: metadata.ResourceAttributesConfig{
+				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverInstanceName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				SqlserverComputerName: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+			},
+		}
+		expected.ComputerName = "CustomServer"
+		expected.InstanceName = "CustomInstance"
+
+		sub, err := cm.Sub("sqlserver/named")
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.Equal(t, expected, cfg)
+	})
 }

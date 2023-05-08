@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 const (
@@ -50,5 +51,5 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
-	return newTracesExporter(eCfg, params, &awsutil.Conn{})
+	return newTracesExporter(eCfg, params, &awsutil.Conn{}, telemetry.GlobalRegistry())
 }
