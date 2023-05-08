@@ -547,7 +547,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			name: "drop everything by dropping all metrics",
 			conditions: MetricFilters{
 				MetricConditions: []string{
-					`IsMatch(name, "operation.*") == true`,
+					`IsMatch(name, "operation.*")`,
 				},
 			},
 			filterEverything: true,

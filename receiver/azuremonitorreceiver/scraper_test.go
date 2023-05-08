@@ -161,6 +161,11 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 	cfg := createDefaultConfig().(*Config)
 	cfg.MaximumNumberOfMetricsInACall = 2
+
+	cfgTagsEnabled := createDefaultConfig().(*Config)
+	cfgTagsEnabled.AppendTagsAsAttributes = true
+	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -168,9 +173,18 @@ func TestAzureScraperScrape(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "",
+			name: "metrics_golden",
 			fields: fields{
 				cfg: cfg,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_tags_golden",
+			fields: fields{
+				cfg: cfgTagsEnabled,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -184,7 +198,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 			armClientMock := &armClientMock{
 				current: 0,
-				pages:   getResourcesMockData(),
+				pages:   getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
 			}
 
 			counters, pages := getMetricsDefinitionsMockData()
@@ -214,7 +228,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+			expectedFile := filepath.Join("testdata", "expected_metrics", tt.name+".yaml")
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
@@ -226,19 +240,26 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
+
 	}
 }
 
-func getResourcesMockData() []armresources.ClientListResponse {
-	id1, id2, id3 := "resourceId1", "resourceId2", "resourceId3"
+func getResourcesMockData(tags bool) []armresources.ClientListResponse {
+	id1, id2, id3, location1 := "resourceId1", "resourceId2", "resourceId3", "location1"
 
+	resourceID1 := armresources.GenericResourceExpanded{
+		ID:       &id1,
+		Location: &location1,
+	}
+	if tags {
+		tagName1, tagValue1 := "tagName1", "tagValue1"
+		resourceID1.Tags = map[string]*string{tagName1: &tagValue1}
+	}
 	return []armresources.ClientListResponse{
 		{
 			ResourceListResult: armresources.ResourceListResult{
 				Value: []*armresources.GenericResourceExpanded{
-					{
-						ID: &id1,
-					},
+					&resourceID1,
 					{
 						ID: &id2,
 					},

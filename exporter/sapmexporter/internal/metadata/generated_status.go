@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "sapm"
-	Stability = component.StabilityLevelBeta
+	Type            = "sapm"
+	TracesStability = component.StabilityLevelBeta
 )

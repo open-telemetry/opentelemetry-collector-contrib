@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -139,14 +139,14 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 				rm.Resource().Attributes().PutStr(label, v)
 			})
 		}
 	}
 	for k, label := range r.config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 				rm.Resource().Attributes().PutStr(label, v)
 			})
 		}

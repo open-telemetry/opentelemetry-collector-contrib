@@ -127,15 +127,15 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("aerospike.namespace")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AerospikeNamespace.Enabled, ok)
-			if mb.resourceAttributesSettings.AerospikeNamespace.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.AerospikeNamespace.Enabled, ok)
+			if mb.resourceAttributesConfig.AerospikeNamespace.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("aerospike.node.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AerospikeNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.AerospikeNodeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.AerospikeNodeName.Enabled, ok)
+			if mb.resourceAttributesConfig.AerospikeNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

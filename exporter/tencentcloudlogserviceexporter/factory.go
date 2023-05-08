@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,17 +25,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "tencentcloud_logservice"
-)
-
 // NewFactory creates a factory for tencentcloud LogService exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.Stability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.

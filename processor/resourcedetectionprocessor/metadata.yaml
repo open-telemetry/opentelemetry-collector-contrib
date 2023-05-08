@@ -2,6 +2,6 @@ type: resourcedetectionprocessor
 
 status:
   class: processor
-  stability: beta
-  pipelines: [traces, metrics, logs]
+  stability:
+    beta: [traces, metrics, logs]
   distributions: [contrib]

@@ -131,15 +131,15 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("server.state")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ServerState.Enabled, ok)
-			if mb.resourceAttributesSettings.ServerState.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ServerState.Enabled, ok)
+			if mb.resourceAttributesConfig.ServerState.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("zk.version")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ZkVersion.Enabled, ok)
-			if mb.resourceAttributesSettings.ZkVersion.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ZkVersion.Enabled, ok)
+			if mb.resourceAttributesConfig.ZkVersion.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
