@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.76.2-0.20230502195822-4df44379e094
 	golang.org/x/oauth2 v0.7.0
-	google.golang.org/api v0.120.0
+	google.golang.org/api v0.121.0
 )
 
 require (
@@ -27,7 +27,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/s2a-go v0.1.2 // indirect
+	github.com/google/s2a-go v0.1.3 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
