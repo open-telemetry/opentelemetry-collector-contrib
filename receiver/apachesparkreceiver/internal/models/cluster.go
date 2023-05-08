@@ -28,14 +28,14 @@ type Gauge struct {
 }
 
 type Counter struct {
-	Count int `json:"count"`
+	Count int64 `json:"count"`
 }
 
 type Histogram struct {
-	Count  int     `json:"count"`
-	Max    int     `json:"max"`
+	Count  int64   `json:"count"`
+	Max    int64   `json:"max"`
 	Mean   float64 `json:"mean"`
-	Min    int     `json:"min"`
+	Min    int64   `json:"min"`
 	P50    float64 `json:"p50"`
 	P75    float64 `json:"p75"`
 	P95    float64 `json:"p95"`
@@ -46,6 +46,6 @@ type Histogram struct {
 }
 
 type Timer struct {
-	Count int     `json:"count"`
+	Count int64   `json:"count"`
 	Mean  float64 `json:"mean"`
 }

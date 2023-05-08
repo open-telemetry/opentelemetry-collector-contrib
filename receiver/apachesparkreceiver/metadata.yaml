@@ -51,7 +51,7 @@ attributes:
       - direct
       - mapped
   gc_type:
-    description: The severity of the garbage collection performed for the metric.
+    description: The type of the garbage collection performed for the metric.
     type: string
     enum:
       - major

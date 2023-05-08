@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http" // client defines the basic HTTP client interface.
+	"net/http"
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
@@ -127,7 +127,7 @@ func (c *apacheSparkClient) GetApplications() (*models.Applications, error) {
 }
 
 func (c *apacheSparkClient) GetStageStats(appID string) (*models.Stages, error) {
-	stagePath := fmt.Sprintf("/api/v1/applications/%s/stages", appID)
+	stagePath := fmt.Sprintf("%s/%s/stages", applicationsPath, appID)
 	body, err := c.Get(stagePath)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (c *apacheSparkClient) GetStageStats(appID string) (*models.Stages, error) 
 }
 
 func (c *apacheSparkClient) GetExecutorStats(appID string) (*models.Executors, error) {
-	executorPath := fmt.Sprintf("/api/v1/applications/%s/executors", appID)
+	executorPath := fmt.Sprintf("%s/%s/executors", applicationsPath, appID)
 	body, err := c.Get(executorPath)
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (c *apacheSparkClient) GetExecutorStats(appID string) (*models.Executors, e
 }
 
 func (c *apacheSparkClient) GetJobStats(appID string) (*models.Jobs, error) {
-	jobPath := fmt.Sprintf("/api/v1/applications/%s/jobs", appID)
+	jobPath := fmt.Sprintf("%s/%s/jobs", applicationsPath, appID)
 	body, err := c.Get(jobPath)
 	if err != nil {
 		return nil, err

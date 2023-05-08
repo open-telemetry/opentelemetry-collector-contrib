@@ -17,7 +17,6 @@ package apachesparkreceiver
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -48,10 +47,10 @@ func TestNewFactory(t *testing.T) {
 
 				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-						CollectionInterval: 15 * time.Second,
+						CollectionInterval: defaultCollectionInterval,
 					},
 					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: "http://localhost:4040",
+						Endpoint: defaultEndpoint,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}

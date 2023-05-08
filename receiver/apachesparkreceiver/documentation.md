@@ -284,7 +284,7 @@ Number of garbage collection operations performed.
 | ---- | ----------- | ------ |
 | application_id | The ID of the application for which the metric was recorded. | Any Str |
 | application_name | The name of the application for which the metric was recorded. | Any Str |
-| gc_type | The severity of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
+| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
 
 ### spark.driver.executor_metrics.gc_time
 
@@ -300,7 +300,7 @@ Total elapsed time during garbage collection operations.
 | ---- | ----------- | ------ |
 | application_id | The ID of the application for which the metric was recorded. | Any Str |
 | application_name | The name of the application for which the metric was recorded. | Any Str |
-| gc_type | The severity of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
+| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
 
 ### spark.driver.executor_metrics.jvm_memory
 

@@ -625,7 +625,7 @@ resourceMetrics:
           - description: Average time taken for the LiveListenerBus to process an event posted to it.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 2.570765936935471
                   attributes:
                     - key: application_id
                       value:

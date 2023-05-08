@@ -1162,7 +1162,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asDouble": 0
+                    "asDouble": 2.570765936935471
                   }
                 ]
               }
@@ -2059,7 +2059,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "22291"
+                    "asInt": "0"
                   },
                   {
                     "attributes": [
@@ -2096,7 +2096,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "1369"
+                    "asInt": "0"
                   }
                 ],
                 "aggregationTemporality": 2
@@ -2143,7 +2143,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "22291"
+                    "asInt": "200"
                   },
                   {
                     "attributes": [
@@ -2180,7 +2180,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "1369"
+                    "asInt": "12"
                   }
                 ],
                 "aggregationTemporality": 2,
@@ -2483,7 +2483,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "22291"
+                    "asInt": "0"
                   },
                   {
                     "attributes": [
@@ -2520,7 +2520,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "1369"
+                    "asInt": "0"
                   }
                 ],
                 "aggregationTemporality": 2,
@@ -2823,7 +2823,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "22291"
+                    "asInt": "0"
                   },
                   {
                     "attributes": [
@@ -2860,7 +2860,7 @@
                     ],
                     "startTimeUnixNano": "1682695858373190000",
                     "timeUnixNano": "1682695873374648000",
-                    "asInt": "1369"
+                    "asInt": "0"
                   }
                 ],
                 "aggregationTemporality": 2,

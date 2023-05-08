@@ -625,7 +625,7 @@ resourceMetrics:
           - description: Average time taken for the LiveListenerBus to process an event posted to it.
             gauge:
               dataPoints:
-                - asDouble: 0
+                - asDouble: 2.570765936935471
                   attributes:
                     - key: application_id
                       value:
@@ -1108,7 +1108,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "96205"
+                - asInt: "0"
                   attributes:
                     - key: application_id
                       value:
@@ -1127,7 +1127,7 @@ resourceMetrics:
                         stringValue: COMPLETE
                   startTimeUnixNano: "1682622246645221000"
                   timeUnixNano: "1682622246647075000"
-                - asInt: "8927"
+                - asInt: "0"
                   attributes:
                     - key: application_id
                       value:
@@ -1152,7 +1152,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "96205"
+                - asInt: "200"
                   attributes:
                     - key: application_id
                       value:
@@ -1171,7 +1171,7 @@ resourceMetrics:
                         stringValue: COMPLETE
                   startTimeUnixNano: "1682622246645221000"
                   timeUnixNano: "1682622246647075000"
-                - asInt: "8927"
+                - asInt: "12"
                   attributes:
                     - key: application_id
                       value:
@@ -1332,7 +1332,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "96205"
+                - asInt: "0"
                   attributes:
                     - key: application_id
                       value:
@@ -1351,7 +1351,7 @@ resourceMetrics:
                         stringValue: COMPLETE
                   startTimeUnixNano: "1682622246645221000"
                   timeUnixNano: "1682622246647075000"
-                - asInt: "8927"
+                - asInt: "0"
                   attributes:
                     - key: application_id
                       value:
@@ -1512,7 +1512,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "96205"
+                - asInt: "0"
                   attributes:
                     - key: application_id
                       value:
@@ -1531,7 +1531,7 @@ resourceMetrics:
                         stringValue: COMPLETE
                   startTimeUnixNano: "1682622246645221000"
                   timeUnixNano: "1682622246647075000"
-                - asInt: "8927"
+                - asInt: "0"
                   attributes:
                     - key: application_id
                       value:

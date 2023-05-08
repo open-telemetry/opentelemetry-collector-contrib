@@ -19,30 +19,30 @@ type Stages []struct {
 	Status                       string `json:"status"`
 	StageID                      int64  `json:"stageId"`
 	AttemptID                    int64  `json:"attemptId"`
-	NumActiveTasks               int    `json:"numActiveTasks"`
-	NumCompleteTasks             int    `json:"numCompleteTasks"`
-	NumFailedTasks               int    `json:"numFailedTasks"`
-	NumKilledTasks               int    `json:"numKilledTasks"`
-	ExecutorRunTime              int    `json:"executorRunTime"`
-	ExecutorCPUTime              int    `json:"executorCpuTime"`
-	ResultSize                   int    `json:"resultSize"`
-	JvmGcTime                    int    `json:"jvmGcTime"`
-	MemoryBytesSpilled           int    `json:"memoryBytesSpilled"`
-	DiskBytesSpilled             int    `json:"diskBytesSpilled"`
-	PeakExecutionMemory          int    `json:"peakExecutionMemory"`
-	InputBytes                   int    `json:"inputBytes"`
-	InputRecords                 int    `json:"inputRecords"`
-	OutputBytes                  int    `json:"outputBytes"`
-	OutputRecords                int    `json:"outputRecords"`
-	ShuffleRemoteBlocksFetched   int    `json:"shuffleRemoteBlocksFetched"`
-	ShuffleLocalBlocksFetched    int    `json:"shuffleLocalBlocksFetched"`
-	ShuffleFetchWaitTime         int    `json:"shuffleFetchWaitTime"`
-	ShuffleRemoteBytesRead       int    `json:"shuffleRemoteBytesRead"`
-	ShuffleLocalBytesRead        int    `json:"shuffleLocalBytesRead"`
-	ShuffleRemoteBytesReadToDisk int    `json:"shuffleRemoteBytesReadToDisk"`
-	ShuffleReadBytes             int    `json:"shuffleReadBytes"`
-	ShuffleReadRecords           int    `json:"shuffleReadRecords"`
-	ShuffleWriteBytes            int    `json:"shuffleWriteBytes"`
-	ShuffleWriteRecords          int    `json:"shuffleWriteRecords"`
-	ShuffleWriteTime             int    `json:"shuffleWriteTime"`
+	NumActiveTasks               int64  `json:"numActiveTasks"`
+	NumCompleteTasks             int64  `json:"numCompleteTasks"`
+	NumFailedTasks               int64  `json:"numFailedTasks"`
+	NumKilledTasks               int64  `json:"numKilledTasks"`
+	ExecutorRunTime              int64  `json:"executorRunTime"`
+	ExecutorCPUTime              int64  `json:"executorCpuTime"`
+	ResultSize                   int64  `json:"resultSize"`
+	JvmGcTime                    int64  `json:"jvmGcTime"`
+	MemoryBytesSpilled           int64  `json:"memoryBytesSpilled"`
+	DiskBytesSpilled             int64  `json:"diskBytesSpilled"`
+	PeakExecutionMemory          int64  `json:"peakExecutionMemory"`
+	InputBytes                   int64  `json:"inputBytes"`
+	InputRecords                 int64  `json:"inputRecords"`
+	OutputBytes                  int64  `json:"outputBytes"`
+	OutputRecords                int64  `json:"outputRecords"`
+	ShuffleRemoteBlocksFetched   int64  `json:"shuffleRemoteBlocksFetched"`
+	ShuffleLocalBlocksFetched    int64  `json:"shuffleLocalBlocksFetched"`
+	ShuffleFetchWaitTime         int64  `json:"shuffleFetchWaitTime"`
+	ShuffleRemoteBytesRead       int64  `json:"shuffleRemoteBytesRead"`
+	ShuffleLocalBytesRead        int64  `json:"shuffleLocalBytesRead"`
+	ShuffleRemoteBytesReadToDisk int64  `json:"shuffleRemoteBytesReadToDisk"`
+	ShuffleReadBytes             int64  `json:"shuffleReadBytes"`
+	ShuffleReadRecords           int64  `json:"shuffleReadRecords"`
+	ShuffleWriteBytes            int64  `json:"shuffleWriteBytes"`
+	ShuffleWriteRecords          int64  `json:"shuffleWriteRecords"`
+	ShuffleWriteTime             int64  `json:"shuffleWriteTime"`
 }
