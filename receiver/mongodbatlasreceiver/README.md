@@ -58,8 +58,17 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
   - `enabled` (default false)
   - `projects` (required if enabled)
     - `name` (required if enabled)
+    - `collect_host_logs` (default true)
     - `collect_audit_logs` (default false)
       - Audit logging must be [enabled for your MongoDB Atlas project](https://www.mongodb.com/docs/atlas/database-auditing/) in order to scrape audit logs.
+    - `access_logs`
+      - `enabled` (default true, if the `access_logs` parameter is defined)
+      - `auth_result`
+        - If specified, will limit the access logs queried to successful accesses (true) or failed accesses (false). If not specified, all will be collected
+      - `page_size` (default `20000`)
+        - This is the number of access logs that will be processed per request to the MongoDB Atlas API. The maximum value is 20000.
+      - `max_pages` (default `10`)
+        - This will limit how many pages of access logs the receiver will request from the MongoDB Atlas API for each project.
     - `include_clusters` (default empty)
     - `exclude_clusters` (default empty)
 - `events`
@@ -75,20 +84,6 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - This will limit how many pages of events the receiver will request from the MongoDB Atlas API for each project.
   - `types` (defaults to all types of events)
     - This is a list of [event types](https://www.mongodb.com/docs/atlas/reference/api/events-orgs-get-all/#event-type-values) that the receiver will request from the API. If specified, the receiver will collect only the indicated types of events.
-- `access_logs`
-  - `projects`
-    - `name`
-    - `include_clusters` (default empty, exclusive with `exclude_clusters`)
-    - `exclude_clusters` (default empty, exclusive with `include_clusters`)
-      - If both `include_clusters` and `exclude_clusters` are empty, then all clusters in the project will be included
-  - `poll_interval` (default `1m`)
-    - How often the receiver will poll the Access History API for new access logs.
-  - `auth_result`
-    - If specified, will limit the access logs queried to successful accesses (true) or failed accesses (false). If not specified, all will be collected
-  - `page_size` (default `20000`)
-    - This is the number of access logs that will be processed per request to the MongoDB Atlas API. The maximum value is 20000.
-  - `max_pages` (default `10`)
-    - This will limit how many pages of access logs the receiver will request from the MongoDB Atlas API for each project.
 
 Examples:
 
@@ -140,6 +135,7 @@ receivers:
       projects: 
         - name: "project 1"
           collect_audit_logs: true
+          collect_host_logs: true
 ```
 
 Receive events:
@@ -166,13 +162,14 @@ receivers:
   mongodbatlas:
     public_key: <redacted>
     private_key: <redacted>
-    access_logs:
+    logs:
+      enabled: true
       projects:
       - name: Project 0
         include_clusters: [Cluster0]
-      poll_interval: 1m
-      page_size: 20000
-      max_pages: 10
+        access_logs:
+          page_size: 20000
+          max_pages: 10
     # use of a storage extension is recommended to reduce chance of duplicated access logs
     storage: file_storage
 ```

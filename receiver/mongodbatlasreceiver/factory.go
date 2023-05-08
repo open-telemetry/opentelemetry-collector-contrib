@@ -71,8 +71,8 @@ func createCombinedLogReceiver(
 ) (rcvr.Logs, error) {
 	cfg := rConf.(*Config)
 
-	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && cfg.Events == nil && cfg.AccessLogs == nil {
-		return nil, errors.New("one of 'alerts', 'events', 'logs', or 'access_logs' must be enabled")
+	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && cfg.Events == nil {
+		return nil, errors.New("one of 'alerts', 'events', or 'logs' must be enabled")
 	}
 
 	var err error
@@ -90,14 +90,11 @@ func createCombinedLogReceiver(
 
 	if cfg.Logs.Enabled {
 		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
+		recv.accessLogs = newAccessLogsReceiver(params, cfg, consumer)
 	}
 
 	if cfg.Events != nil {
 		recv.events = newEventsReceiver(params, cfg, consumer)
-	}
-
-	if cfg.AccessLogs != nil {
-		recv.accessLogs = newAccessLogsReceiver(params, cfg, consumer)
 	}
 
 	return recv, nil
@@ -118,7 +115,7 @@ func createDefaultConfig() component.Config {
 		},
 		Logs: LogConfig{
 			Enabled:  defaultLogsEnabled,
-			Projects: []*ProjectConfig{},
+			Projects: []*LogsProjectConfig{},
 		},
 	}
 	// reset default of 1 minute to be 3 minutes in order to avoid null values for some metrics that do not publish

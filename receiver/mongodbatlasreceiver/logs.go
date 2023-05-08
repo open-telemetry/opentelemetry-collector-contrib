@@ -149,23 +149,27 @@ func (s *logsReceiver) collect(ctx context.Context) {
 	}
 }
 
-func (s *logsReceiver) processClusters(ctx context.Context, projectCfg ProjectConfig, projectID string) ([]mongodbatlas.Cluster, error) {
+func (s *logsReceiver) processClusters(ctx context.Context, projectCfg LogsProjectConfig, projectID string) ([]mongodbatlas.Cluster, error) {
 	clusters, err := s.client.GetClusters(ctx, projectID)
 	if err != nil {
 		s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
 		return nil, err
 	}
 
-	return filterClusters(clusters, projectCfg)
+	return filterClusters(clusters, projectCfg.ProjectConfig)
 }
 
-func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig, pc ProjectContext) {
+func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc ProjectContext) {
 	for _, cluster := range clusters {
 		hostnames := parseHostNames(cluster.ConnectionStrings.Standard, s.log)
 		for _, hostname := range hostnames {
-			s.collectLogs(pc, hostname, "mongodb.gz", cluster.Name, cluster.MongoDBMajorVersion)
-			s.collectLogs(pc, hostname, "mongos.gz", cluster.Name, cluster.MongoDBMajorVersion)
+			// Defaults to true if not specified
+			if projectCfg.EnableHostLogs == nil || *projectCfg.EnableHostLogs {
+				s.collectLogs(pc, hostname, "mongodb.gz", cluster.Name, cluster.MongoDBMajorVersion)
+				s.collectLogs(pc, hostname, "mongos.gz", cluster.Name, cluster.MongoDBMajorVersion)
+			}
 
+			// Defaults to false if not specified
 			if projectCfg.EnableAuditLogs {
 				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)
 				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", cluster.Name, cluster.MongoDBMajorVersion)

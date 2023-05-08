@@ -35,9 +35,8 @@ import (
 const (
 	accessLogStorageKey           = "last_endtime_access_logs"
 	defaultAccessLogsPollInterval = time.Minute
-
-	defaultAccessLogsPageSize = 20000
-	defaultAccessLogsMaxPages = 10
+	defaultAccessLogsPageSize     = 20000
+	defaultAccessLogsMaxPages     = 10
 )
 
 type accessLogClient interface {
@@ -55,8 +54,6 @@ type accessLogsReceiver struct {
 
 	nextStartTime *time.Time
 	pollInterval  time.Duration
-	pageSize      int
-	maxPages      int
 	authResult    *bool
 	wg            *sync.WaitGroup
 	cancel        context.CancelFunc
@@ -68,26 +65,25 @@ func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer c
 		cfg:           cfg,
 		logger:        settings.Logger,
 		consumer:      consumer,
-		pollInterval:  cfg.AccessLogs.PollInterval,
-		authResult:    cfg.AccessLogs.AuthResult,
+		pollInterval:  cfg.CollectionInterval,
 		wg:            &sync.WaitGroup{},
 		storageClient: storage.NewNopClient(),
-	}
-
-	if r.maxPages == 0 {
-		r.maxPages = defaultAccessLogsMaxPages
-	}
-
-	if r.pageSize == 0 {
-		r.pageSize = defaultAccessLogsPageSize
 	}
 
 	if r.pollInterval == 0 {
 		r.pollInterval = defaultAccessLogsPollInterval
 	}
 
-	for _, p := range cfg.AccessLogs.Projects {
+	for _, p := range cfg.Logs.Projects {
 		p.populateIncludesAndExcludes()
+		if p.AccessLogs != nil && p.AccessLogs.IsEnabled() {
+			if p.AccessLogs.PageSize <= 0 {
+				p.AccessLogs.PageSize = defaultAccessLogsPageSize
+			}
+			if p.AccessLogs.MaxPages <= 0 {
+				p.AccessLogs.MaxPages = defaultAccessLogsMaxPages
+			}
+		}
 	}
 
 	return r
@@ -137,7 +133,11 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context) error {
 	}
 	et := time.Now()
 
-	for _, pc := range alr.cfg.AccessLogs.Projects {
+	for _, pc := range alr.cfg.Logs.Projects {
+		if pc.AccessLogs == nil || !pc.AccessLogs.IsEnabled() {
+			continue
+		}
+
 		project, err := alr.client.GetProject(ctx, pc.Name)
 		if err != nil {
 			alr.logger.Error("error retrieving project information", zap.Error(err), zap.String("project", pc.Name))
@@ -148,13 +148,13 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context) error {
 			alr.logger.Error("error retrieving cluster information", zap.Error(err), zap.String("project", pc.Name))
 			return err
 		}
-		filteredClusters, err := filterClusters(clusters, pc)
+		filteredClusters, err := filterClusters(clusters, pc.ProjectConfig)
 		if err != nil {
 			alr.logger.Error("error filtering clusters", zap.Error(err), zap.String("project", pc.Name))
 			return err
 		}
 		for _, cluster := range filteredClusters {
-			alr.pollCluster(ctx, project, cluster, st, et)
+			alr.pollCluster(ctx, pc, project, cluster, st, et)
 		}
 	}
 
@@ -162,14 +162,14 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context) error {
 	return alr.checkpoint(ctx)
 }
 
-func (alr *accessLogsReceiver) pollCluster(ctx context.Context, project *mongodbatlas.Project, cluster mongodbatlas.Cluster, startTime, now time.Time) {
+func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectConfig, project *mongodbatlas.Project, cluster mongodbatlas.Cluster, startTime, now time.Time) {
 	nowTimestamp := pcommon.NewTimestampFromTime(now)
 
 	opts := &internal.GetAccessLogsOptions{
 		MaxDate:    now,
 		MinDate:    startTime,
 		AuthResult: alr.authResult,
-		NLogs:      alr.pageSize,
+		NLogs:      int(pc.AccessLogs.PageSize),
 	}
 
 	pageCount := 0
@@ -194,13 +194,13 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, project *mongodb
 
 		// If we get back less than the maximum number of logs, we can assume that we've retrieved all of the logs for this
 		// time period.
-		if len(accessLogs) < alr.pageSize {
+		if len(accessLogs) < int(pc.AccessLogs.PageSize) {
 			break
 		}
 
-		if pageCount >= alr.maxPages {
+		if pageCount >= int(pc.AccessLogs.MaxPages) {
 			alr.logger.Warn(`reached maximum number of pages of access logs, increase 'max_pages' or 
-			frequency of 'poll_interval' to ensure all access logs are retrieved`, zap.Int("maxPages", alr.maxPages))
+			frequency of 'poll_interval' to ensure all access logs are retrieved`, zap.Int("maxPages", int(pc.AccessLogs.MaxPages)))
 			break
 		}
 

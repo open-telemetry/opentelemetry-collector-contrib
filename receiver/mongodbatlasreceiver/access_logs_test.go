@@ -156,16 +156,21 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "basic",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-					AccessLogs: &AccessLogsConfig{
-						Projects: []ProjectConfig{
+					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+						CollectionInterval: 1 * time.Second,
+					},
+					Granularity:   defaultGranularity,
+					RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+					Logs: LogConfig{
+						Enabled: true,
+						Projects: []*LogsProjectConfig{
 							{
-								Name: testProjectName,
+								ProjectConfig: ProjectConfig{
+									Name: testProjectName,
+								},
+								AccessLogs: &AccessLogsConfig{},
 							},
 						},
-						PollInterval: 1 * time.Second,
 					},
 				}
 			},
@@ -203,17 +208,23 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "multiple page read all",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-					AccessLogs: &AccessLogsConfig{
-						Projects: []ProjectConfig{
+					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+						CollectionInterval: 2 * time.Second,
+					},
+					Granularity:   defaultGranularity,
+					RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+					Logs: LogConfig{
+						Enabled: true,
+						Projects: []*LogsProjectConfig{
 							{
-								Name: testProjectName,
+								ProjectConfig: ProjectConfig{
+									Name: testProjectName,
+								},
+								AccessLogs: &AccessLogsConfig{
+									PageSize: 2,
+								},
 							},
 						},
-						PollInterval: 2 * time.Second,
-						PageSize:     2,
 					},
 				}
 			},
@@ -235,17 +246,23 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "multiple page break early based on timestamp",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-					AccessLogs: &AccessLogsConfig{
-						Projects: []ProjectConfig{
+					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+						CollectionInterval: 1 * time.Second,
+					},
+					Granularity:   defaultGranularity,
+					RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+					Logs: LogConfig{
+						Enabled: true,
+						Projects: []*LogsProjectConfig{
 							{
-								Name: testProjectName,
+								ProjectConfig: ProjectConfig{
+									Name: testProjectName,
+								},
+								AccessLogs: &AccessLogsConfig{
+									PageSize: 2,
+								},
 							},
 						},
-						PollInterval: 1 * time.Second,
-						PageSize:     2,
 					},
 				}
 			},

@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
-var authResultTrue = true
+var referencableTrue = true
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
@@ -123,9 +123,11 @@ func TestValidate(t *testing.T) {
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*ProjectConfig{
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
+							ProjectConfig: ProjectConfig{
+								Name: "Project1",
+							},
 							EnableAuditLogs: false,
 						},
 					},
@@ -146,12 +148,14 @@ func TestValidate(t *testing.T) {
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*ProjectConfig{
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								ExcludeClusters: []string{"cluster1"},
+								IncludeClusters: []string{"cluster2"},
+							},
 							EnableAuditLogs: false,
-							ExcludeClusters: []string{"cluster1"},
-							IncludeClusters: []string{"cluster2"},
 						},
 					},
 				},
@@ -167,7 +171,6 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{
 						{
 							Name:            "Project1",
-							EnableAuditLogs: false,
 							ExcludeClusters: []string{"cluster1"},
 							IncludeClusters: []string{"cluster2"},
 						},
@@ -243,39 +246,40 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Valid Access Logs Config",
 			input: Config{
-				AccessLogs: &AccessLogsConfig{
-					Projects: []ProjectConfig{
+				Logs: LogConfig{
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
-							IncludeClusters: []string{"Cluster1"},
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								IncludeClusters: []string{"Cluster1"},
+							},
+							AccessLogs: &AccessLogsConfig{
+								Enabled:    &referencableTrue,
+								AuthResult: &referencableTrue,
+							},
 						},
 					},
-					AuthResult:   &authResultTrue,
-					PollInterval: 60 * time.Second,
 				},
 			},
-		},
-		{
-			name: "Invalid Access Logs Config - no projects",
-			input: Config{
-				AccessLogs: &AccessLogsConfig{
-					PollInterval: 60 * time.Second,
-				},
-			},
-			expectedErr: errNoProjects.Error(),
 		},
 		{
 			name: "Invalid Access Logs Config - bad project config",
 			input: Config{
-				AccessLogs: &AccessLogsConfig{
-					Projects: []ProjectConfig{
+				Logs: LogConfig{
+					Enabled: true,
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
-							IncludeClusters: []string{"Cluster1"},
-							ExcludeClusters: []string{"Cluster3"},
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								IncludeClusters: []string{"Cluster1"},
+								ExcludeClusters: []string{"Cluster3"},
+							},
+							AccessLogs: &AccessLogsConfig{
+								Enabled:    &referencableTrue,
+								AuthResult: &referencableTrue,
+							},
 						},
 					},
-					PollInterval: 60 * time.Second,
 				},
 			},
 			expectedErr: errClusterConfig.Error(),
@@ -312,9 +316,16 @@ func TestLoadConfig(t *testing.T) {
 	expected.PublicKey = "my-public-key"
 	expected.Logs = LogConfig{
 		Enabled: true,
-		Projects: []*ProjectConfig{
+		Projects: []*LogsProjectConfig{
 			{
-				Name: "Project 0",
+				ProjectConfig: ProjectConfig{
+					Name: "Project 0",
+				},
+				AccessLogs: &AccessLogsConfig{
+					Enabled:    &referencableTrue,
+					AuthResult: &referencableTrue,
+				},
+				EnableAuditLogs: true,
 			},
 		},
 	}
@@ -346,17 +357,6 @@ func TestLoadConfig(t *testing.T) {
 		PollInterval: time.Minute,
 		MaxPages:     defaultEventsMaxPages,
 		PageSize:     defaultEventsPageSize,
-	}
-
-	expected.AccessLogs = &AccessLogsConfig{
-		Projects: []ProjectConfig{
-			{
-				Name:            "Project 0",
-				IncludeClusters: []string{"Cluster0"},
-			},
-		},
-		PollInterval: 2 * time.Minute,
-		AuthResult:   &authResultTrue,
 	}
 	require.Equal(t, expected, cfg)
 }

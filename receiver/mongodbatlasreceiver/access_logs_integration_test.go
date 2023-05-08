@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -67,13 +68,19 @@ func TestAccessLogsIntegration(t *testing.T) {
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
 		&Config{
-			AccessLogs: &AccessLogsConfig{
-				Projects: []ProjectConfig{
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: 1 * time.Second,
+			},
+			Logs: LogConfig{
+				Enabled: true,
+				Projects: []*LogsProjectConfig{
 					{
-						Name: testProjectName,
+						ProjectConfig: ProjectConfig{
+							Name: testProjectName,
+						},
+						AccessLogs: &AccessLogsConfig{},
 					},
 				},
-				PollInterval: 1 * time.Second,
 			},
 		},
 		sink,

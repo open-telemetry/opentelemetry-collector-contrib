@@ -41,7 +41,6 @@ type Config struct {
 	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
 	Events                                  *EventsConfig                 `mapstructure:"events"`
 	Logs                                    LogConfig                     `mapstructure:"logs"`
-	AccessLogs                              *AccessLogsConfig             `mapstructure:"access_logs"`
 	RetrySettings                           exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 	StorageID                               *component.ID                 `mapstructure:"storage"`
 }
@@ -61,8 +60,8 @@ type AlertConfig struct {
 }
 
 type LogConfig struct {
-	Enabled  bool             `mapstructure:"enabled"`
-	Projects []*ProjectConfig `mapstructure:"projects"`
+	Enabled  bool                 `mapstructure:"enabled"`
+	Projects []*LogsProjectConfig `mapstructure:"projects"`
 }
 
 // EventsConfig is the configuration options for events collection
@@ -75,11 +74,29 @@ type EventsConfig struct {
 	MaxPages      int64            `mapstructure:"max_pages"`
 }
 
+type LogsProjectConfig struct {
+	ProjectConfig `mapstructure:",squash"`
+
+	EnableAuditLogs bool              `mapstructure:"collect_audit_logs"`
+	EnableHostLogs  *bool             `mapstructure:"collect_host_logs"`
+	AccessLogs      *AccessLogsConfig `mapstructure:"access_logs"`
+}
+
+type AccessLogsConfig struct {
+	Enabled    *bool `mapstructure:"enabled"`
+	PageSize   int64 `mapstructure:"page_size"`
+	MaxPages   int64 `mapstructure:"max_pages"`
+	AuthResult *bool `mapstructure:"auth_result"`
+}
+
+func (alc *AccessLogsConfig) IsEnabled() bool {
+	return alc.Enabled == nil || *alc.Enabled
+}
+
 type ProjectConfig struct {
 	Name            string   `mapstructure:"name"`
 	ExcludeClusters []string `mapstructure:"exclude_clusters"`
 	IncludeClusters []string `mapstructure:"include_clusters"`
-	EnableAuditLogs bool     `mapstructure:"collect_audit_logs"`
 
 	includesByClusterName map[string]struct{}
 	excludesByClusterName map[string]struct{}
@@ -87,15 +104,6 @@ type ProjectConfig struct {
 
 type OrgConfig struct {
 	ID string `mapstructure:"id"`
-}
-
-// AccessLogsConfig is the configuration options for access logs collection
-type AccessLogsConfig struct {
-	Projects     []ProjectConfig `mapstructure:"projects"`
-	PollInterval time.Duration   `mapstructure:"poll_interval"`
-	AuthResult   *bool           `mapstructure:"auth_result"`
-	PageSize     int64           `mapstructure:"page_size"`
-	MaxPages     int64           `mapstructure:"max_pages"`
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() {
@@ -139,9 +147,6 @@ func (c *Config) Validate() error {
 	if c.Events != nil {
 		errs = multierr.Append(errs, c.Events.validate())
 	}
-	if c.AccessLogs != nil {
-		errs = multierr.Append(errs, c.AccessLogs.validate())
-	}
 
 	return errs
 }
@@ -160,25 +165,12 @@ func (l *LogConfig) validate() error {
 		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
 			errs = multierr.Append(errs, errClusterConfig)
 		}
-	}
 
-	return errs
-}
-
-func (l *AccessLogsConfig) validate() error {
-	var errs error
-	if len(l.Projects) == 0 {
-		errs = multierr.Append(errs, errNoProjects)
-	}
-
-	for _, project := range l.Projects {
-		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
-			errs = multierr.Append(errs, errClusterConfig)
+		if project.AccessLogs != nil && project.AccessLogs.IsEnabled() {
+			if project.AccessLogs.PageSize > 20000 {
+				errs = multierr.Append(errs, errMaxPageSize)
+			}
 		}
-	}
-
-	if l.PageSize > 20000 {
-		errs = multierr.Append(errs, errMaxPageSize)
 	}
 
 	return errs

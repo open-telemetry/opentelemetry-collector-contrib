@@ -12,6 +12,10 @@ mongodbatlas:
     enabled: true
     projects:
     - name: Project 0
+      access_logs:
+        enabled: true
+        auth_result: true
+      collect_audit_logs: true
   events:
     projects:
       - name: Project 0
@@ -20,10 +24,3 @@ mongodbatlas:
     poll_interval: 1m
     page_size: 100
     max_pages: 25
-  access_logs:
-    projects:
-      - name: Project 0
-        include_clusters:
-        - Cluster0
-    poll_interval: 2m
-    auth_result: true
