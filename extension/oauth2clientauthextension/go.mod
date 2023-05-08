@@ -10,11 +10,11 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/oauth2 v0.7.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 )
 
 require (
-	cloud.google.com/go/compute v1.15.1 // indirect
+	cloud.google.com/go/compute v1.18.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
