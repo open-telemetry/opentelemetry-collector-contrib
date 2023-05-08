@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "bigip"
-	stability = component.StabilityLevelBeta
+	typeStr = "bigip"
 )
 
 var errConfigNotBigip = errors.New("config was not a Big-IP receiver config")
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates a config for Big-IP with as many default values as possible

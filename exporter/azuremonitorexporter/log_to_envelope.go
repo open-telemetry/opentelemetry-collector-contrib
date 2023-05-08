@@ -1,4 +1,4 @@
-// Copyright OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -106,11 +106,4 @@ func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {
 	}
 
 	return pcommon.NewTimestampFromTime(timeNow())
-}
-
-func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
-		properties[k] = v.AsString()
-		return true
-	})
 }

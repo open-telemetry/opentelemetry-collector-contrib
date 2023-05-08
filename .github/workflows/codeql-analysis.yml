@@ -15,9 +15,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.7
+          go-version: ~1.19.8
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL

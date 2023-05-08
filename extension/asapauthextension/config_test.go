@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension/internal/metadata"
 )
 
 // Test keys. Not for use anywhere but these tests.
@@ -44,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewID(typeStr),
+			id: component.NewID(metadata.Type),
 			expected: &Config{
 				TTL:        60 * time.Second,
 				Audience:   []string{"test_service1", "test_service2"},
@@ -54,19 +56,19 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingkeyid"),
+			id:          component.NewIDWithName(metadata.Type, "missingkeyid"),
 			expectedErr: errNoKeyIDProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingissuer"),
+			id:          component.NewIDWithName(metadata.Type, "missingissuer"),
 			expectedErr: errNoIssuerProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingaudience"),
+			id:          component.NewIDWithName(metadata.Type, "missingaudience"),
 			expectedErr: errNoAudienceProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingpk"),
+			id:          component.NewIDWithName(metadata.Type, "missingpk"),
 			expectedErr: errNoPrivateKeyProvided,
 		},
 	}

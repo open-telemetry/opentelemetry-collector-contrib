@@ -1,5 +1,11 @@
-name: couchdbreceiver
+type: couchdbreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   couchdb.node.name:
     description: The name of the node.

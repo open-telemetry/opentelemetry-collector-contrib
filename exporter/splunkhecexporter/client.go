@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+// allow monkey patching for injecting pushLogData function in test
+var getPushLogFn = func(c *client) func(ctx context.Context, ld plog.Logs) error {
+	return c.pushLogData
+}
+
 // client sends the data to the splunk backend.
 type client struct {
 	config            *Config
@@ -42,6 +47,7 @@ type client struct {
 	telemetrySettings component.TelemetrySettings
 	hecWorker         hecWorker
 	buildInfo         component.BuildInfo
+	heartbeater       *heartbeater
 }
 
 func (c *client) pushMetricsData(
@@ -124,8 +130,8 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 		profilingLocalHeaders[k] = v
 	}
 
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
-	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
+	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
@@ -395,7 +401,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rms = md.ResourceMetrics()
@@ -430,7 +436,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
-	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression)
+	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rts = td.ResourceSpans()
@@ -631,6 +637,9 @@ func subTracesByType(src ptrace.Traces, from *index, dst ptrace.Traces) {
 
 func (c *client) stop(context.Context) error {
 	c.wg.Wait()
+	if c.heartbeater != nil {
+		c.heartbeater.shutdown()
+	}
 	return nil
 }
 
@@ -650,6 +659,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
 	return nil
 }
 

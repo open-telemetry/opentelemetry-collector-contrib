@@ -12,14 +12,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
+// MetricConfig provides common config for a particular metric.
+type MetricConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
@@ -31,92 +31,92 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsSettings provides settings for zookeeperreceiver metrics.
-type MetricsSettings struct {
-	ZookeeperConnectionActive            MetricSettings `mapstructure:"zookeeper.connection.active"`
-	ZookeeperDataTreeEphemeralNodeCount  MetricSettings `mapstructure:"zookeeper.data_tree.ephemeral_node.count"`
-	ZookeeperDataTreeSize                MetricSettings `mapstructure:"zookeeper.data_tree.size"`
-	ZookeeperFileDescriptorLimit         MetricSettings `mapstructure:"zookeeper.file_descriptor.limit"`
-	ZookeeperFileDescriptorOpen          MetricSettings `mapstructure:"zookeeper.file_descriptor.open"`
-	ZookeeperFollowerCount               MetricSettings `mapstructure:"zookeeper.follower.count"`
-	ZookeeperFsyncExceededThresholdCount MetricSettings `mapstructure:"zookeeper.fsync.exceeded_threshold.count"`
-	ZookeeperLatencyAvg                  MetricSettings `mapstructure:"zookeeper.latency.avg"`
-	ZookeeperLatencyMax                  MetricSettings `mapstructure:"zookeeper.latency.max"`
-	ZookeeperLatencyMin                  MetricSettings `mapstructure:"zookeeper.latency.min"`
-	ZookeeperPacketCount                 MetricSettings `mapstructure:"zookeeper.packet.count"`
-	ZookeeperRequestActive               MetricSettings `mapstructure:"zookeeper.request.active"`
-	ZookeeperSyncPending                 MetricSettings `mapstructure:"zookeeper.sync.pending"`
-	ZookeeperWatchCount                  MetricSettings `mapstructure:"zookeeper.watch.count"`
-	ZookeeperZnodeCount                  MetricSettings `mapstructure:"zookeeper.znode.count"`
+// MetricsConfig provides config for zookeeperreceiver metrics.
+type MetricsConfig struct {
+	ZookeeperConnectionActive            MetricConfig `mapstructure:"zookeeper.connection.active"`
+	ZookeeperDataTreeEphemeralNodeCount  MetricConfig `mapstructure:"zookeeper.data_tree.ephemeral_node.count"`
+	ZookeeperDataTreeSize                MetricConfig `mapstructure:"zookeeper.data_tree.size"`
+	ZookeeperFileDescriptorLimit         MetricConfig `mapstructure:"zookeeper.file_descriptor.limit"`
+	ZookeeperFileDescriptorOpen          MetricConfig `mapstructure:"zookeeper.file_descriptor.open"`
+	ZookeeperFollowerCount               MetricConfig `mapstructure:"zookeeper.follower.count"`
+	ZookeeperFsyncExceededThresholdCount MetricConfig `mapstructure:"zookeeper.fsync.exceeded_threshold.count"`
+	ZookeeperLatencyAvg                  MetricConfig `mapstructure:"zookeeper.latency.avg"`
+	ZookeeperLatencyMax                  MetricConfig `mapstructure:"zookeeper.latency.max"`
+	ZookeeperLatencyMin                  MetricConfig `mapstructure:"zookeeper.latency.min"`
+	ZookeeperPacketCount                 MetricConfig `mapstructure:"zookeeper.packet.count"`
+	ZookeeperRequestActive               MetricConfig `mapstructure:"zookeeper.request.active"`
+	ZookeeperSyncPending                 MetricConfig `mapstructure:"zookeeper.sync.pending"`
+	ZookeeperWatchCount                  MetricConfig `mapstructure:"zookeeper.watch.count"`
+	ZookeeperZnodeCount                  MetricConfig `mapstructure:"zookeeper.znode.count"`
 }
 
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ZookeeperConnectionActive: MetricSettings{
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		ZookeeperConnectionActive: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperDataTreeEphemeralNodeCount: MetricSettings{
+		ZookeeperDataTreeEphemeralNodeCount: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperDataTreeSize: MetricSettings{
+		ZookeeperDataTreeSize: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFileDescriptorLimit: MetricSettings{
+		ZookeeperFileDescriptorLimit: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFileDescriptorOpen: MetricSettings{
+		ZookeeperFileDescriptorOpen: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFollowerCount: MetricSettings{
+		ZookeeperFollowerCount: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperFsyncExceededThresholdCount: MetricSettings{
+		ZookeeperFsyncExceededThresholdCount: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperLatencyAvg: MetricSettings{
+		ZookeeperLatencyAvg: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperLatencyMax: MetricSettings{
+		ZookeeperLatencyMax: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperLatencyMin: MetricSettings{
+		ZookeeperLatencyMin: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperPacketCount: MetricSettings{
+		ZookeeperPacketCount: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperRequestActive: MetricSettings{
+		ZookeeperRequestActive: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperSyncPending: MetricSettings{
+		ZookeeperSyncPending: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperWatchCount: MetricSettings{
+		ZookeeperWatchCount: MetricConfig{
 			Enabled: true,
 		},
-		ZookeeperZnodeCount: MetricSettings{
+		ZookeeperZnodeCount: MetricConfig{
 			Enabled: true,
 		},
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
+// ResourceAttributeConfig provides common config for a particular resource attribute.
+type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesSettings provides settings for zookeeperreceiver metrics.
-type ResourceAttributesSettings struct {
-	ServerState ResourceAttributeSettings `mapstructure:"server.state"`
-	ZkVersion   ResourceAttributeSettings `mapstructure:"zk.version"`
+// ResourceAttributesConfig provides config for zookeeperreceiver resource attributes.
+type ResourceAttributesConfig struct {
+	ServerState ResourceAttributeConfig `mapstructure:"server.state"`
+	ZkVersion   ResourceAttributeConfig `mapstructure:"zk.version"`
 }
 
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		ServerState: ResourceAttributeSettings{
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		ServerState: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		ZkVersion: ResourceAttributeSettings{
+		ZkVersion: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
@@ -176,7 +176,7 @@ var MapAttributeState = map[string]AttributeState{
 
 type metricZookeeperConnectionActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -191,7 +191,7 @@ func (m *metricZookeeperConnectionActive) init() {
 }
 
 func (m *metricZookeeperConnectionActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -209,16 +209,16 @@ func (m *metricZookeeperConnectionActive) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperConnectionActive) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperConnectionActive(settings MetricSettings) metricZookeeperConnectionActive {
-	m := metricZookeeperConnectionActive{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperConnectionActive(cfg MetricConfig) metricZookeeperConnectionActive {
+	m := metricZookeeperConnectionActive{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -227,7 +227,7 @@ func newMetricZookeeperConnectionActive(settings MetricSettings) metricZookeeper
 
 type metricZookeeperDataTreeEphemeralNodeCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -242,7 +242,7 @@ func (m *metricZookeeperDataTreeEphemeralNodeCount) init() {
 }
 
 func (m *metricZookeeperDataTreeEphemeralNodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -260,16 +260,16 @@ func (m *metricZookeeperDataTreeEphemeralNodeCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperDataTreeEphemeralNodeCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperDataTreeEphemeralNodeCount(settings MetricSettings) metricZookeeperDataTreeEphemeralNodeCount {
-	m := metricZookeeperDataTreeEphemeralNodeCount{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperDataTreeEphemeralNodeCount(cfg MetricConfig) metricZookeeperDataTreeEphemeralNodeCount {
+	m := metricZookeeperDataTreeEphemeralNodeCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -278,7 +278,7 @@ func newMetricZookeeperDataTreeEphemeralNodeCount(settings MetricSettings) metri
 
 type metricZookeeperDataTreeSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -293,7 +293,7 @@ func (m *metricZookeeperDataTreeSize) init() {
 }
 
 func (m *metricZookeeperDataTreeSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -311,16 +311,16 @@ func (m *metricZookeeperDataTreeSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperDataTreeSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperDataTreeSize(settings MetricSettings) metricZookeeperDataTreeSize {
-	m := metricZookeeperDataTreeSize{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperDataTreeSize(cfg MetricConfig) metricZookeeperDataTreeSize {
+	m := metricZookeeperDataTreeSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -329,7 +329,7 @@ func newMetricZookeeperDataTreeSize(settings MetricSettings) metricZookeeperData
 
 type metricZookeeperFileDescriptorLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -342,7 +342,7 @@ func (m *metricZookeeperFileDescriptorLimit) init() {
 }
 
 func (m *metricZookeeperFileDescriptorLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -360,16 +360,16 @@ func (m *metricZookeeperFileDescriptorLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperFileDescriptorLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperFileDescriptorLimit(settings MetricSettings) metricZookeeperFileDescriptorLimit {
-	m := metricZookeeperFileDescriptorLimit{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperFileDescriptorLimit(cfg MetricConfig) metricZookeeperFileDescriptorLimit {
+	m := metricZookeeperFileDescriptorLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -378,7 +378,7 @@ func newMetricZookeeperFileDescriptorLimit(settings MetricSettings) metricZookee
 
 type metricZookeeperFileDescriptorOpen struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -393,7 +393,7 @@ func (m *metricZookeeperFileDescriptorOpen) init() {
 }
 
 func (m *metricZookeeperFileDescriptorOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -411,16 +411,16 @@ func (m *metricZookeeperFileDescriptorOpen) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperFileDescriptorOpen) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperFileDescriptorOpen(settings MetricSettings) metricZookeeperFileDescriptorOpen {
-	m := metricZookeeperFileDescriptorOpen{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperFileDescriptorOpen(cfg MetricConfig) metricZookeeperFileDescriptorOpen {
+	m := metricZookeeperFileDescriptorOpen{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -429,7 +429,7 @@ func newMetricZookeeperFileDescriptorOpen(settings MetricSettings) metricZookeep
 
 type metricZookeeperFollowerCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -445,7 +445,7 @@ func (m *metricZookeeperFollowerCount) init() {
 }
 
 func (m *metricZookeeperFollowerCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -464,16 +464,16 @@ func (m *metricZookeeperFollowerCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperFollowerCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperFollowerCount(settings MetricSettings) metricZookeeperFollowerCount {
-	m := metricZookeeperFollowerCount{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperFollowerCount(cfg MetricConfig) metricZookeeperFollowerCount {
+	m := metricZookeeperFollowerCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -482,7 +482,7 @@ func newMetricZookeeperFollowerCount(settings MetricSettings) metricZookeeperFol
 
 type metricZookeeperFsyncExceededThresholdCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -497,7 +497,7 @@ func (m *metricZookeeperFsyncExceededThresholdCount) init() {
 }
 
 func (m *metricZookeeperFsyncExceededThresholdCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -515,16 +515,16 @@ func (m *metricZookeeperFsyncExceededThresholdCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperFsyncExceededThresholdCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperFsyncExceededThresholdCount(settings MetricSettings) metricZookeeperFsyncExceededThresholdCount {
-	m := metricZookeeperFsyncExceededThresholdCount{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperFsyncExceededThresholdCount(cfg MetricConfig) metricZookeeperFsyncExceededThresholdCount {
+	m := metricZookeeperFsyncExceededThresholdCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -533,7 +533,7 @@ func newMetricZookeeperFsyncExceededThresholdCount(settings MetricSettings) metr
 
 type metricZookeeperLatencyAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -546,7 +546,7 @@ func (m *metricZookeeperLatencyAvg) init() {
 }
 
 func (m *metricZookeeperLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -564,16 +564,16 @@ func (m *metricZookeeperLatencyAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperLatencyAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperLatencyAvg(settings MetricSettings) metricZookeeperLatencyAvg {
-	m := metricZookeeperLatencyAvg{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperLatencyAvg(cfg MetricConfig) metricZookeeperLatencyAvg {
+	m := metricZookeeperLatencyAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -582,7 +582,7 @@ func newMetricZookeeperLatencyAvg(settings MetricSettings) metricZookeeperLatenc
 
 type metricZookeeperLatencyMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -595,7 +595,7 @@ func (m *metricZookeeperLatencyMax) init() {
 }
 
 func (m *metricZookeeperLatencyMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -613,16 +613,16 @@ func (m *metricZookeeperLatencyMax) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperLatencyMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperLatencyMax(settings MetricSettings) metricZookeeperLatencyMax {
-	m := metricZookeeperLatencyMax{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperLatencyMax(cfg MetricConfig) metricZookeeperLatencyMax {
+	m := metricZookeeperLatencyMax{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -631,7 +631,7 @@ func newMetricZookeeperLatencyMax(settings MetricSettings) metricZookeeperLatenc
 
 type metricZookeeperLatencyMin struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -644,7 +644,7 @@ func (m *metricZookeeperLatencyMin) init() {
 }
 
 func (m *metricZookeeperLatencyMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -662,16 +662,16 @@ func (m *metricZookeeperLatencyMin) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperLatencyMin) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperLatencyMin(settings MetricSettings) metricZookeeperLatencyMin {
-	m := metricZookeeperLatencyMin{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperLatencyMin(cfg MetricConfig) metricZookeeperLatencyMin {
+	m := metricZookeeperLatencyMin{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -680,7 +680,7 @@ func newMetricZookeeperLatencyMin(settings MetricSettings) metricZookeeperLatenc
 
 type metricZookeeperPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -696,7 +696,7 @@ func (m *metricZookeeperPacketCount) init() {
 }
 
 func (m *metricZookeeperPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -715,16 +715,16 @@ func (m *metricZookeeperPacketCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperPacketCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperPacketCount(settings MetricSettings) metricZookeeperPacketCount {
-	m := metricZookeeperPacketCount{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperPacketCount(cfg MetricConfig) metricZookeeperPacketCount {
+	m := metricZookeeperPacketCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -733,7 +733,7 @@ func newMetricZookeeperPacketCount(settings MetricSettings) metricZookeeperPacke
 
 type metricZookeeperRequestActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -748,7 +748,7 @@ func (m *metricZookeeperRequestActive) init() {
 }
 
 func (m *metricZookeeperRequestActive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -766,16 +766,16 @@ func (m *metricZookeeperRequestActive) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperRequestActive) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperRequestActive(settings MetricSettings) metricZookeeperRequestActive {
-	m := metricZookeeperRequestActive{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperRequestActive(cfg MetricConfig) metricZookeeperRequestActive {
+	m := metricZookeeperRequestActive{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -784,7 +784,7 @@ func newMetricZookeeperRequestActive(settings MetricSettings) metricZookeeperReq
 
 type metricZookeeperSyncPending struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -799,7 +799,7 @@ func (m *metricZookeeperSyncPending) init() {
 }
 
 func (m *metricZookeeperSyncPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -817,16 +817,16 @@ func (m *metricZookeeperSyncPending) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperSyncPending) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperSyncPending(settings MetricSettings) metricZookeeperSyncPending {
-	m := metricZookeeperSyncPending{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperSyncPending(cfg MetricConfig) metricZookeeperSyncPending {
+	m := metricZookeeperSyncPending{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -835,7 +835,7 @@ func newMetricZookeeperSyncPending(settings MetricSettings) metricZookeeperSyncP
 
 type metricZookeeperWatchCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -850,7 +850,7 @@ func (m *metricZookeeperWatchCount) init() {
 }
 
 func (m *metricZookeeperWatchCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -868,16 +868,16 @@ func (m *metricZookeeperWatchCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperWatchCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperWatchCount(settings MetricSettings) metricZookeeperWatchCount {
-	m := metricZookeeperWatchCount{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperWatchCount(cfg MetricConfig) metricZookeeperWatchCount {
+	m := metricZookeeperWatchCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -886,7 +886,7 @@ func newMetricZookeeperWatchCount(settings MetricSettings) metricZookeeperWatchC
 
 type metricZookeeperZnodeCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -901,7 +901,7 @@ func (m *metricZookeeperZnodeCount) init() {
 }
 
 func (m *metricZookeeperZnodeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -919,16 +919,16 @@ func (m *metricZookeeperZnodeCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricZookeeperZnodeCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricZookeeperZnodeCount(settings MetricSettings) metricZookeeperZnodeCount {
-	m := metricZookeeperZnodeCount{settings: settings}
-	if settings.Enabled {
+func newMetricZookeeperZnodeCount(cfg MetricConfig) metricZookeeperZnodeCount {
+	m := metricZookeeperZnodeCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -937,19 +937,19 @@ func newMetricZookeeperZnodeCount(settings MetricSettings) metricZookeeperZnodeC
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                            int                 // maximum observed number of metrics per resource.
 	resourceCapacity                           int                 // maximum observed number of resource attributes.
 	metricsBuffer                              pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                  component.BuildInfo // contains version information
-	resourceAttributesSettings                 ResourceAttributesSettings
+	resourceAttributesConfig                   ResourceAttributesConfig
 	metricZookeeperConnectionActive            metricZookeeperConnectionActive
 	metricZookeeperDataTreeEphemeralNodeCount  metricZookeeperDataTreeEphemeralNodeCount
 	metricZookeeperDataTreeSize                metricZookeeperDataTreeSize
@@ -979,15 +979,8 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -996,7 +989,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
-		resourceAttributesSettings:      mbc.ResourceAttributes,
+		resourceAttributesConfig:        mbc.ResourceAttributes,
 		metricZookeeperConnectionActive: newMetricZookeeperConnectionActive(mbc.Metrics.ZookeeperConnectionActive),
 		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(mbc.Metrics.ZookeeperDataTreeEphemeralNodeCount),
 		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(mbc.Metrics.ZookeeperDataTreeSize),
@@ -1030,12 +1023,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithServerState sets provided value as "server.state" attribute for current resource.
 func WithServerState(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.ServerState.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ServerState.Enabled {
 			rm.Resource().Attributes().PutStr("server.state", val)
 		}
 	}
@@ -1043,8 +1036,8 @@ func WithServerState(val string) ResourceMetricsOption {
 
 // WithZkVersion sets provided value as "zk.version" attribute for current resource.
 func WithZkVersion(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.ZkVersion.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ZkVersion.Enabled {
 			rm.Resource().Attributes().PutStr("zk.version", val)
 		}
 	}
@@ -1053,7 +1046,7 @@ func WithZkVersion(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1099,7 +1092,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricZookeeperZnodeCount.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1109,7 +1102,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

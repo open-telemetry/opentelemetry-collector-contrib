@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,9 +22,6 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -33,12 +30,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -113,32 +111,14 @@ func TestMockedEndToEnd(t *testing.T) {
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
 		example := receiver.(*nopWithEndpointReceiver)
-		md := internaldata.OCToMetrics(
-			&commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
-				LibraryInfo: &commonpb.LibraryInfo{},
-				Identifier:  &commonpb.ProcessIdentifier{},
-				Attributes: map[string]string{
-					"attr": "1",
-				},
-			},
-			&resourcepb.Resource{Type: "test"},
-			[]*metricspb.Metric{
-				{
-					MetricDescriptor: &metricspb.MetricDescriptor{
-						Name:        "my-metric",
-						Description: "My metric",
-						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-					},
-					Timeseries: []*metricspb.TimeSeries{
-						{
-							Points: []*metricspb.Point{
-								{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
-							},
-						},
-					},
-				},
-			})
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("attr", "1")
+		rm.Resource().Attributes().PutStr(semconv.AttributeServiceName, "dynamictest")
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("my-metric")
+		m.SetDescription("My metric")
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(123)
 		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
 	}
 

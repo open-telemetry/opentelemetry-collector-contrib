@@ -466,3 +466,48 @@ func TestTimeout(t *testing.T) {
 
 	require.NoError(t, recombine.Stop())
 }
+
+// This test is to make sure the timeout would take effect when there
+// are constantly logs that meet the aggregation criteria
+func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
+	t.Parallel()
+
+	cfg := NewConfig()
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsFirstEntry = "body == 'start'"
+	cfg.CombineWith = ""
+	cfg.OutputIDs = []string{"fake"}
+	cfg.ForceFlushTimeout = 100 * time.Millisecond
+	op, err := cfg.Build(testutil.Logger(t))
+	require.NoError(t, err)
+	recombine := op.(*Transformer)
+
+	fake := testutil.NewFakeOutput(t)
+	require.NoError(t, recombine.SetOutputs([]operator.Operator{fake}))
+
+	e := entry.New()
+	e.Timestamp = time.Now()
+	e.Body = "start"
+
+	ctx := context.Background()
+
+	require.NoError(t, recombine.Start(nil))
+	require.NoError(t, recombine.Process(ctx, e))
+
+	go func() {
+		next := e.Copy()
+		next.Body = "next"
+		for {
+			time.Sleep(cfg.ForceFlushTimeout / 2)
+			require.NoError(t, recombine.Process(ctx, next))
+		}
+	}()
+
+	select {
+	case <-fake.Received:
+	case <-time.After(5 * time.Second):
+		t.Logf("The entry should be flushed by now")
+		t.FailNow()
+	}
+	require.NoError(t, recombine.Stop())
+}

@@ -224,7 +224,7 @@ OUTER:
 		fp := fps[i]
 		if len(fp.FirstBytes) == 0 {
 			if err := files[i].Close(); err != nil {
-				m.Errorf("problem closing file", "file", files[i].Name())
+				m.Errorf("problem closing file %s", files[i].Name())
 			}
 			// Empty file, don't read it until we can compare its fingerprint
 			fps = append(fps[:i], fps[i+1:]...)
@@ -237,7 +237,7 @@ OUTER:
 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 				// Exclude
 				if err := files[i].Close(); err != nil {
-					m.Errorf("problem closing file", "file", files[i].Name())
+					m.Errorf("problem closing file %s", files[i].Name())
 				}
 				fps = append(fps[:i], fps[i+1:]...)
 				files = append(files[:i], files[i+1:]...)
@@ -294,6 +294,9 @@ func (m *Manager) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
 		oldReader := m.knownFiles[i]
 		if fp.StartsWith(oldReader.Fingerprint) {
+			// Remove the old reader from the list of known files. We will
+			// add it back in saveCurrent if it is still alive.
+			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
 			return oldReader, true
 		}
 	}

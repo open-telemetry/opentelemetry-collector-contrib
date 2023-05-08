@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ func TestLoadConfig(t *testing.T) {
 				LogDataEnabled:          true,
 				ProfilingDataEnabled:    true,
 				ExportRaw:               true,
+				MaxEventSize:            5 * 1024 * 1024,
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
@@ -108,6 +109,19 @@ func TestLoadConfig(t *testing.T) {
 				},
 				HealthPath:            "/services/collector/health",
 				HecHealthCheckEnabled: false,
+				Heartbeat: HecHeartbeat{
+					Interval: 30 * time.Second,
+				},
+				Telemetry: HecTelemetry{
+					Enabled: true,
+					OverrideMetricsNames: map[string]string{
+						"otelcol_exporter_splunkhec_heartbeats_sent":   "app_heartbeats_success_total",
+						"otelcol_exporter_splunkhec_heartbeats_failed": "app_heartbeats_failed_total",
+					},
+					ExtraAttributes: map[string]string{
+						"customKey": "customVal",
+					},
+				},
 			},
 		},
 	}
@@ -189,6 +203,17 @@ func TestConfig_Validate(t *testing.T) {
 				return cfg
 			}(),
 			wantErr: "requires \"max_content_length_traces\" <= 838860800",
+		},
+		{
+			name: "max default event-size",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.MaxEventSize = maxMaxEventSize + 1
+				cfg.Token = "foo"
+				return cfg
+			}(),
+			wantErr: "requires \"max_event_size\" <= 838860800",
 		},
 	}
 

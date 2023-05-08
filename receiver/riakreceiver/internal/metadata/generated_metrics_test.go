@@ -95,8 +95,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("riak.node.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RiakNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.RiakNodeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.RiakNodeName.Enabled, ok)
+			if mb.resourceAttributesConfig.RiakNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

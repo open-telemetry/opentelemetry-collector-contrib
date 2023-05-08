@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,9 +56,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
-		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
-		exporter.WithLogs(createLogsExporter, metadata.Stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -80,6 +80,7 @@ func createDefaultConfig() component.Config {
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
+		MaxEventSize:            defaultMaxEventSize,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
@@ -93,6 +94,11 @@ func createDefaultConfig() component.Config {
 		HealthPath:            splunk.DefaultHealthPath,
 		HecHealthCheckEnabled: false,
 		ExportRaw:             false,
+		Telemetry: HecTelemetry{
+			Enabled:              false,
+			OverrideMetricsNames: map[string]string{},
+			ExtraAttributes:      map[string]string{},
+		},
 	}
 }
 

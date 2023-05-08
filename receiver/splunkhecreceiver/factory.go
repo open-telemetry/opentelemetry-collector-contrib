@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,9 +31,6 @@ import (
 // This file implements factory for Splunk HEC receiver.
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "splunk_hec"
-
 	// Default endpoints to bind to.
 	defaultEndpoint = ":8088"
 )
@@ -41,10 +38,10 @@ const (
 // NewFactory creates a factory for Splunk HEC receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.Stability),
-		receiver.WithLogs(createLogsReceiver, metadata.Stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.

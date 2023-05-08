@@ -35,7 +35,7 @@ func (m *mockExporter) export(logs plog.Logs) error {
 	return nil
 }
 
-func TestFixedNumberOfMetrics(t *testing.T) {
+func TestFixedNumberOfLogs(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			WorkerCount: 1,
@@ -55,7 +55,7 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 	require.Len(t, exp.logs, 5)
 }
 
-func TestRateOfMetrics(t *testing.T) {
+func TestRateOfLogs(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
@@ -70,7 +70,7 @@ func TestRateOfMetrics(t *testing.T) {
 
 	// verify
 	// the minimum acceptable number of logs for the rate of 10/sec for half a second
-	assert.True(t, len(exp.logs) >= 6, "there should have been more than 6 logs, had %d", len(exp.logs))
+	assert.True(t, len(exp.logs) >= 5, "there should have been 5 or more logs, had %d", len(exp.logs))
 	// the maximum acceptable number of logs for the rate of 10/sec for half a second
 	assert.True(t, len(exp.logs) <= 20, "there should have been less than 20 logs, had %d", len(exp.logs))
 }

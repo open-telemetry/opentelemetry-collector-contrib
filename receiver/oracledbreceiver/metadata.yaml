@@ -1,9 +1,9 @@
-name: oracledbreceiver
+type: oracledbreceiver
 
 status:
-  type: receiver
-  stability: alpha
-  pipelines: [metrics]
+  class: receiver
+  stability:
+    alpha: [metrics]
   distributions: [contrib]
 
 resource_attributes:

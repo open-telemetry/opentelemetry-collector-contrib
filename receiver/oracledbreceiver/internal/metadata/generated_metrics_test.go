@@ -171,8 +171,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("oracledb.instance.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.OracledbInstanceName.Enabled, ok)
-			if mb.resourceAttributesSettings.OracledbInstanceName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.OracledbInstanceName.Enabled, ok)
+			if mb.resourceAttributesConfig.OracledbInstanceName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

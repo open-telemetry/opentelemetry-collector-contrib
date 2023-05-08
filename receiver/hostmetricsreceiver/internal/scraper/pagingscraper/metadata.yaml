@@ -1,4 +1,4 @@
-name: hostmetricsreceiver/paging
+type: hostmetricsreceiver/paging
 
 sem_conv_version: 1.9.0
 

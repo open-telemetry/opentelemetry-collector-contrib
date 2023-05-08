@@ -16,6 +16,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -44,6 +45,10 @@ type Config struct {
 	// Compression Codec used to export telemetry data
 	// Supported compression algorithms:`zstd`
 	Compression string `mapstructure:"compression"`
+
+	// FlushInterval is the duration between flushes.
+	// See time.ParseDuration for valid values.
+	FlushInterval time.Duration `mapstructure:"flush_interval"`
 }
 
 // Rotation an option to rolling log files
@@ -82,6 +87,9 @@ func (cfg *Config) Validate() error {
 	if cfg.Compression != "" && cfg.Compression != compressionZSTD {
 		return errors.New("compression is not supported")
 	}
+	if cfg.FlushInterval < 0 {
+		return errors.New("flush_interval must be larger than zero")
+	}
 	return nil
 }
 
@@ -100,6 +108,11 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// if rotation is not present it means it is disabled.
 	if !componentParser.IsSet(rotationFieldName) {
 		cfg.Rotation = nil
+	}
+
+	// set flush interval to 1 second if not set.
+	if cfg.FlushInterval == 0 {
+		cfg.FlushInterval = time.Second
 	}
 	return nil
 }

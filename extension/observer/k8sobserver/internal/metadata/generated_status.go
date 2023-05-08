@@ -6,4 +6,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const Stability = component.StabilityLevelAlpha
+const (
+	Type               = "k8s_observer"
+	ExtensionStability = component.StabilityLevelAlpha
+)

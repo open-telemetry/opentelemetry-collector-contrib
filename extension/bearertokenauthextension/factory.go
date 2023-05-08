@@ -24,19 +24,16 @@ import (
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr = "bearertokenauth"
-
 	defaultScheme = "Bearer"
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.Stability,
+		metadata.ExtensionStability,
 	)
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
 func TestLoadingConfig(t *testing.T) {
@@ -32,13 +34,13 @@ func TestLoadingConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "grouping"),
+			id: component.NewIDWithName(metadata.Type, "grouping"),
 			expected: &Config{
 				GroupByKeys: []string{"key1", "key2"},
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "compaction"),
+			id: component.NewIDWithName(metadata.Type, "compaction"),
 			expected: &Config{
 				GroupByKeys: []string{},
 			},

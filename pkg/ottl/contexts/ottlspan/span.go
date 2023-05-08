@@ -23,11 +23,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 )
 
-var _ ottlcommon.ResourceContext = TransformContext{}
-var _ ottlcommon.InstrumentationScopeContext = TransformContext{}
+var _ internal.ResourceContext = TransformContext{}
+var _ internal.InstrumentationScopeContext = TransformContext{}
 
 type TransformContext struct {
 	span                 ptrace.Span
@@ -63,7 +63,7 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
 	p, err := ottl.NewParser[TransformContext](
 		functions,
 		parsePath,
@@ -97,7 +97,7 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := ottlcommon.SpanSymbolTable[*val]; ok {
+		if enum, ok := internal.SpanSymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
@@ -115,17 +115,17 @@ func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
 	case "cache":
-		mapKey := path[0].MapKey
+		mapKey := path[0].Keys
 		if mapKey == nil {
 			return accessCache(), nil
 		}
 		return accessCacheKey(mapKey), nil
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
+		return internal.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
+		return internal.ScopePathGetSetter[TransformContext](path[1:])
 	default:
-		return ottlcommon.SpanPathGetSetter[TransformContext](path)
+		return internal.SpanPathGetSetter[TransformContext](path)
 	}
 }
 
@@ -143,14 +143,13 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.getCache(), *mapKey), nil
+			return internal.GetMapValue(tCtx.getCache(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.getCache(), *mapKey, val)
-			return nil
+			return internal.SetMapValue(tCtx.getCache(), keys, val)
 		},
 	}
 }

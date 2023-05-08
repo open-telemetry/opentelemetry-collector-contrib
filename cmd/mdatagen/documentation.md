@@ -29,6 +29,8 @@ The metric will be become optional soon.
 | string_attr | Attribute with any string value. | Any Str |
 | state | Integer attribute with overridden name. | Any Int |
 | enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
+| slice_attr | Attribute with a slice value. | Any Slice |
+| map_attr | Attribute with a map value. | Any Map |
 
 ### default.metric.to_be_removed
 
@@ -69,6 +71,8 @@ metrics:
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| map.resource.attr | Resource attribute with a map value. | Any Map | true |
 | optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false |
+| slice.resource.attr | Resource attribute with a slice value. | Any Slice | true |
 | string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true |
 | string.resource.attr | Resource attribute with any string value. | Any Str | true |

@@ -1,8 +1,8 @@
-name: zipkinexporter
+type: zipkin
 
 status:
-  type: exporter
-  stability: beta
-  pipelines: [traces]
+  class: exporter
+  stability:
+    beta: [traces]
   distributions: [core, contrib]
 
