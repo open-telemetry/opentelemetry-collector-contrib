@@ -30,7 +30,8 @@ type RevisionV1 struct {
 	eventNames       *migrate.SignalSlice
 	eventAttrsOnSpan *migrate.ConditionalAttributeSetSlice
 	eventAttrsOnName *migrate.ConditionalAttributeSetSlice
-	metrics          *migrate.ConditionalAttributeSetSlice
+	metricsAttrs     *migrate.ConditionalAttributeSetSlice
+	metricNames      *migrate.SignalSlice
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -47,7 +48,8 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		eventNames:       newSpanEventSignalSlice(def.SpanEvents),
 		eventAttrsOnSpan: newSpanEventConditionalSpans(def.SpanEvents),
 		eventAttrsOnName: newSpanEventConditionalNames(def.SpanEvents),
-		metrics:          newMetricConditionalSlice(def.Metrics),
+		metricsAttrs:     newMetricConditionalSlice(def.Metrics),
+		metricNames:      newMetricNameSignalSlice(def.Metrics),
 	}
 }
 
@@ -112,4 +114,12 @@ func newMetricConditionalSlice(metrics ast.Metrics) *migrate.ConditionalAttribut
 		}
 	}
 	return migrate.NewConditionalAttributeSetSlice(values...)
+}
+
+func newMetricNameSignalSlice(metrics ast.Metrics) *migrate.SignalSlice {
+	values := make([]*migrate.Signal, 0, 10)
+	for _, ch := range metrics.Changes {
+		values = append(values, migrate.NewSignal(ch.RenameMetrics))
+	}
+	return migrate.NewSignalSlice(values...)
 }
