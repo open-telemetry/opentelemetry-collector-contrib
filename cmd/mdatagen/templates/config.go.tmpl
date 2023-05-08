@@ -2,6 +2,7 @@
 
 package {{ .Package }}
 
+{{ if .Metrics -}}
 import "go.opentelemetry.io/collector/confmap"
 
 // MetricConfig provides common config for a particular metric.
@@ -39,6 +40,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- end }}
 	}
 }
+{{- end }}
 
 {{ if .ResourceAttributes -}}
 // ResourceAttributeConfig provides common config for a particular resource attribute.
@@ -64,6 +66,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 }
 {{- end }}
 
+{{ if .Metrics -}}
 // MetricsBuilderConfig is a configuration for {{ .Type }} metrics builder.
 type MetricsBuilderConfig struct {
     Metrics MetricsConfig `mapstructure:"metrics"`
@@ -80,3 +83,4 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		{{- end }}
 	}
 }
+{{- end }}
