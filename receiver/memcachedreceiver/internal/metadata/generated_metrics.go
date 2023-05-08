@@ -6,83 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for memcachedreceiver metrics.
-type MetricsConfig struct {
-	MemcachedBytes              MetricConfig `mapstructure:"memcached.bytes"`
-	MemcachedCommands           MetricConfig `mapstructure:"memcached.commands"`
-	MemcachedConnectionsCurrent MetricConfig `mapstructure:"memcached.connections.current"`
-	MemcachedConnectionsTotal   MetricConfig `mapstructure:"memcached.connections.total"`
-	MemcachedCPUUsage           MetricConfig `mapstructure:"memcached.cpu.usage"`
-	MemcachedCurrentItems       MetricConfig `mapstructure:"memcached.current_items"`
-	MemcachedEvictions          MetricConfig `mapstructure:"memcached.evictions"`
-	MemcachedNetwork            MetricConfig `mapstructure:"memcached.network"`
-	MemcachedOperationHitRatio  MetricConfig `mapstructure:"memcached.operation_hit_ratio"`
-	MemcachedOperations         MetricConfig `mapstructure:"memcached.operations"`
-	MemcachedThreads            MetricConfig `mapstructure:"memcached.threads"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		MemcachedBytes: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedCommands: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedConnectionsCurrent: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedConnectionsTotal: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedCPUUsage: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedCurrentItems: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedEvictions: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedNetwork: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedOperationHitRatio: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedOperations: MetricConfig{
-			Enabled: true,
-		},
-		MemcachedThreads: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeCommand specifies the a value command attribute.
 type AttributeCommand int
@@ -794,11 +721,6 @@ func newMetricMemcachedThreads(cfg MetricConfig) metricMemcachedThreads {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -827,12 +749,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsConfig(),
 	}
 }
 

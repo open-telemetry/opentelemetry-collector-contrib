@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshche
 go 1.19
 
 require (
+	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.76.3
 	github.com/pkg/sftp v1.13.5
 	github.com/stretchr/testify v1.8.2

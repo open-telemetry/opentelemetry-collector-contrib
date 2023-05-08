@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/facebook/time v0.0.0-20220713225404-f7a0d7702d50
+	github.com/google/go-cmp v0.5.9
 	github.com/stretchr/testify v1.8.2
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v0.76.2-0.20230508160606-833cbdaf75cc
