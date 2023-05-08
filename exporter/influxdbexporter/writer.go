@@ -198,11 +198,12 @@ type tag struct {
 func (b *influxHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
 	tags := make([]tag, 0, len(m))
 	for k, v := range m {
-		if k == "" {
+		switch {
+		case k == "":
 			b.logger.Debug("empty tag key")
-		} else if v == "" {
+		case v == "":
 			b.logger.Debug("empty tag value", "key", k)
-		} else {
+		default:
 			tags = append(tags, tag{k, v})
 		}
 	}
