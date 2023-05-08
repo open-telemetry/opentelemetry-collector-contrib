@@ -30,8 +30,8 @@ import (
 )
 
 const (
-	typeStr = "mongodbatlas"
-	defaultGranularity = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
+	typeStr              = "mongodbatlas"
+	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
 	defaultLogsEnabled   = false
 )
