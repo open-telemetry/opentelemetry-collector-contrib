@@ -178,13 +178,13 @@ require (
 	go.opentelemetry.io/collector/connector/forwardconnector v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/consumer v0.76.2-0.20230508160606-833cbdaf75cc
 	go.opentelemetry.io/collector/exporter v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.76.2-0.20230508160606-833cbdaf75cc
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/extension/ballastextension v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/extension/zpagesextension v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/extension/ballastextension v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/extension/zpagesextension v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/processor/batchprocessor v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/receiver v0.76.2-0.20230508160606-833cbdaf75cc
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.76.2-0.20230508160606-833cbdaf75cc
 	golang.org/x/sys v0.7.0
