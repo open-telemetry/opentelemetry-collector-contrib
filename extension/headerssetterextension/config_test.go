@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,11 +35,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedError error
 	}{
 		{
-			id:            component.NewIDWithName(typeStr, ""),
+			id:            component.NewIDWithName(metadata.Type, ""),
 			expectedError: errMissingHeadersConfig,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				HeadersConfig: []HeaderConfig{
 					{

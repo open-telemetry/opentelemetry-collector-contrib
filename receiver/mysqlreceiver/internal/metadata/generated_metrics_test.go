@@ -225,8 +225,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("mysql.instance.endpoint")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MysqlInstanceEndpoint.Enabled, ok)
-			if mb.resourceAttributesSettings.MysqlInstanceEndpoint.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MysqlInstanceEndpoint.Enabled, ok)
+			if mb.resourceAttributesConfig.MysqlInstanceEndpoint.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

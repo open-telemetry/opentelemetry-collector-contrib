@@ -23,7 +23,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Limit[K any](target ottl.PMapGetter[K], limit int64, priorityKeys []string) (ottl.ExprFunc[K], error) {
+type LimitArguments[K any] struct {
+	Target       ottl.PMapGetter[K] `ottlarg:"0"`
+	Limit        int64              `ottlarg:"1"`
+	PriorityKeys []string           `ottlarg:"2"`
+}
+
+func NewLimitFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Limit", &LimitArguments[K]{}, createLimitFunction[K])
+}
+
+func createLimitFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*LimitArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("LimitFactory args must be of type *LimitArguments[K]")
+	}
+
+	return limit(args.Target, args.Limit, args.PriorityKeys)
+}
+
+func limit[K any](target ottl.PMapGetter[K], limit int64, priorityKeys []string) (ottl.ExprFunc[K], error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
 	}

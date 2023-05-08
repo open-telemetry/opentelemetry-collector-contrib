@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,9 @@ import (
 	"testing"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -709,6 +711,24 @@ func TestTimestampFormatRoundingWithNanos(t *testing.T) {
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pcommon.Timestamp(0)
 	assert.Nil(t, timestampToSecondsWithMillisecondPrecision(ts))
+}
+
+func TestMergeEvents(t *testing.T) {
+	json1 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test":3411}}`
+	json2 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test2":26059}}`
+	ev1 := &splunk.Event{}
+	err := jsoniter.Unmarshal([]byte(json1), ev1)
+	require.NoError(t, err)
+	ev2 := &splunk.Event{}
+	err = jsoniter.Unmarshal([]byte(json2), ev2)
+	require.NoError(t, err)
+	events := []*splunk.Event{ev1, ev2}
+	merged, err := mergeEventsToMultiMetricFormat(events)
+	require.NoError(t, err)
+	require.Len(t, merged, 1)
+	b, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(merged[0])
+	require.NoError(t, err)
+	require.Equal(t, `{"host":"","event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_name:otel.collector.test":3411,"metric_name:otel.collector.test2":26059,"metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42"}}`, string(b))
 }
 
 func newMetricsWithResources() pcommon.Resource {

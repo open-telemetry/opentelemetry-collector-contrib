@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "oauth2clientauthextension"
-	Stability = component.StabilityLevelBeta
+	Type               = "oauth2client"
+	ExtensionStability = component.StabilityLevelBeta
 )

@@ -192,8 +192,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("snowflake.account.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SnowflakeAccountName.Enabled, ok)
-			if mb.resourceAttributesSettings.SnowflakeAccountName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SnowflakeAccountName.Enabled, ok)
+			if mb.resourceAttributesConfig.SnowflakeAccountName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

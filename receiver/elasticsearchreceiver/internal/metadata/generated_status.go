@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "elasticsearchreceiver"
-	Stability = component.StabilityLevelBeta
+	Type             = "elasticsearchreceiver"
+	MetricsStability = component.StabilityLevelBeta
 )

@@ -5,13 +5,13 @@ go 1.19
 require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.5.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.76.3
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.76.1
-	go.opentelemetry.io/collector/component v0.76.1
-	go.opentelemetry.io/collector/consumer v0.76.1
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
-	go.opentelemetry.io/collector/receiver v0.76.1
+	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/consumer v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector/receiver v0.76.2-0.20230502195822-4df44379e094
 	go.uber.org/zap v1.24.0
 )
 
@@ -37,7 +37,7 @@ require (
 	github.com/devigned/tab v0.1.1 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -63,8 +63,8 @@ require (
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.3 // indirect
-	github.com/shoenig/go-m1cpu v0.1.4 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.4 // indirect
+	github.com/shoenig/go-m1cpu v0.1.5 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
@@ -72,25 +72,25 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.76.1 // indirect
-	go.opentelemetry.io/collector/exporter v0.76.1 // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.1 // indirect
-	go.opentelemetry.io/collector/semconv v0.76.1 // indirect
+	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502195822-4df44379e094 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.15.0 // indirect
-	go.opentelemetry.io/otel v1.14.0 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v0.37.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.37.0 // indirect
-	go.opentelemetry.io/otel/metric v0.37.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.14.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.14.0 // indirect
+	go.opentelemetry.io/otel v1.15.1 // indirect
+	go.opentelemetry.io/otel/bridge/opencensus v0.38.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.38.1 // indirect
+	go.opentelemetry.io/otel/metric v0.38.1 // indirect
+	go.opentelemetry.io/otel/sdk v1.15.1 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.38.1 // indirect
+	go.opentelemetry.io/otel/trace v1.15.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	gonum.org/v1/gonum v0.12.0 // indirect
+	gonum.org/v1/gonum v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
@@ -100,4 +100,8 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

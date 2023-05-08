@@ -1,7 +1,7 @@
-type: splunkhecreceiver
+type: splunk_hec
 
 status:
   class: receiver
-  stability: beta
-  pipelines: [metrics, logs]
+  stability:
+    beta: [metrics, logs]
   distributions: [contrib]

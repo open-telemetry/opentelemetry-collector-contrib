@@ -5,13 +5,13 @@ go 1.19
 require (
 	github.com/getsentry/sentry-go v0.20.0
 	github.com/google/go-cmp v0.5.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/component v0.76.1
-	go.opentelemetry.io/collector/confmap v0.76.1
-	go.opentelemetry.io/collector/exporter v0.76.1
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
-	go.opentelemetry.io/collector/semconv v0.76.1
+	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502195822-4df44379e094
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502195822-4df44379e094
 )
 
 require (
@@ -21,7 +21,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -29,13 +28,13 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.76.1 // indirect
-	go.opentelemetry.io/collector/consumer v0.76.1 // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.1 // indirect
-	go.opentelemetry.io/collector/receiver v0.76.1 // indirect
-	go.opentelemetry.io/otel v1.14.0 // indirect
-	go.opentelemetry.io/otel/metric v0.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.14.0 // indirect
+	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/consumer v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/receiver v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/otel v1.15.1 // indirect
+	go.opentelemetry.io/otel/metric v0.38.1 // indirect
+	go.opentelemetry.io/otel/trace v1.15.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
@@ -50,4 +49,8 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)
