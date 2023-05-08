@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.76.2-0.20230502195822-4df44379e094
 	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502195822-4df44379e094
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.30.0
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f
 )
@@ -52,7 +52,7 @@ require (
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
+	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
