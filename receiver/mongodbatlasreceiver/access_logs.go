@@ -382,19 +382,25 @@ func (alr *accessLogsReceiver) loadCheckpoint(ctx context.Context, groupID strin
 	cBytes, err := alr.storageClient.Get(ctx, accessLogsCheckpointKey(groupID))
 	if err != nil {
 		alr.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
-		alr.record[groupID] = []*accessLogStorageRecord{}
+		if _, ok := alr.record[groupID]; !ok {
+			alr.record[groupID] = []*accessLogStorageRecord{}
+		}
 		return
 	}
 
 	if cBytes == nil {
-		alr.record[groupID] = []*accessLogStorageRecord{}
+		if _, ok := alr.record[groupID]; !ok {
+			alr.record[groupID] = []*accessLogStorageRecord{}
+		}
 		return
 	}
 
 	var record []*accessLogStorageRecord
 	if err = json.Unmarshal(cBytes, &record); err != nil {
 		alr.logger.Error("unable to decode stored record for access logs, continuing without a checkpoint", zap.Error(err))
-		alr.record[groupID] = []*accessLogStorageRecord{}
+		if _, ok := alr.record[groupID]; !ok {
+			alr.record[groupID] = []*accessLogStorageRecord{}
+		}
 	}
 }
 
