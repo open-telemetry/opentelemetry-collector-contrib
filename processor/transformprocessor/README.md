@@ -293,7 +293,7 @@ transform:
         - merge_maps(cache, ParseJSON(body), "upsert") where IsMatch(body, "^\\{") 
           
         # Set attributes using the values merged into cache.
-        # If attr1 doesn't exist in cache then nothing happens.
+        # If the attribute doesn't exist in cache then nothing happens.
         - set(attributes["attr1"], cache["attr1"])
         - set(attributes["attr2"], cache["attr2"])
         
