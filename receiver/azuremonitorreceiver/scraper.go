@@ -15,7 +15,9 @@
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"strings"
 	"sync"
@@ -64,18 +66,26 @@ const (
 )
 
 type azureResource struct {
-	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
+	metricsByCompositeKey     map[string]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 	tags                      map[string]*string
 	location                  string
 }
 
 type metricsCompositeKey struct {
-	dimension string
-	timeGrain string
+	dimensions []string
+	timeGrain  string
+}
+
+func (s metricsCompositeKey) Hash() string {
+	h := sha256.New()
+	h.Write([]byte(s.timeGrain))
+	h.Write([]byte(strings.Join(s.dimensions, ",")))
+	return string(h.Sum(nil))
 }
 
 type azureResourceMetrics struct {
+	compositeKey         metricsCompositeKey
 	metrics              []string
 	metricsValuesUpdated time.Time
 }
@@ -249,7 +259,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 		return
 	}
 
-	s.resources[resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
+	s.resources[resourceID].metricsByCompositeKey = map[string]*azureResourceMetrics{}
 
 	pager := s.clientMetricsDefinitions.NewListPager(resourceID, nil)
 	for pager.More() {
@@ -266,10 +276,14 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
 
 			if len(v.Dimensions) > 0 {
+				var dimensionsSlice []string
 				for _, dimension := range v.Dimensions {
-					compositeKey.dimension = *dimension.Value
-					s.storeMetricsDefinition(resourceID, name, compositeKey)
+					if len(strings.TrimSpace(*dimension.Value)) > 0 {
+						dimensionsSlice = append(dimensionsSlice, *dimension.Value)
+					}
 				}
+				dimensionsCompositeKey := metricsCompositeKey{timeGrain: timeGrain, dimensions: dimensionsSlice}
+				s.storeMetricsDefinition(resourceID, name, dimensionsCompositeKey)
 			} else {
 				s.storeMetricsDefinition(resourceID, name, compositeKey)
 			}
@@ -279,21 +293,22 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 }
 
 func (s *azureScraper) storeMetricsDefinition(resourceID, name string, compositeKey metricsCompositeKey) {
-	if _, ok := s.resources[resourceID].metricsByCompositeKey[compositeKey]; ok {
-		s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics = append(
-			s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics, name,
+	hash := compositeKey.Hash()
+	if _, ok := s.resources[resourceID].metricsByCompositeKey[hash]; ok {
+		s.resources[resourceID].metricsByCompositeKey[hash].metrics = append(
+			s.resources[resourceID].metricsByCompositeKey[hash].metrics, name,
 		)
 	} else {
-		s.resources[resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
+		s.resources[resourceID].metricsByCompositeKey[hash] = &azureResourceMetrics{metrics: []string{name}, compositeKey: compositeKey}
 	}
 }
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
 	res := *s.resources[resourceID]
 
-	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
+	for _, metricsByGrain := range res.metricsByCompositeKey {
 
-		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[metricsByGrain.compositeKey.timeGrain]) {
 			continue
 		}
 		metricsByGrain.metricsValuesUpdated = time.Now()
@@ -309,8 +324,8 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 			opts := getResourceMetricsValuesRequestOptions(
 				metricsByGrain.metrics,
-				compositeKey.dimension,
-				compositeKey.timeGrain,
+				metricsByGrain.compositeKey.dimensions,
+				metricsByGrain.compositeKey.timeGrain,
 				start,
 				end,
 			)
@@ -356,7 +371,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 func getResourceMetricsValuesRequestOptions(
 	metrics []string,
-	dimension string,
+	dimensions []string,
 	timeGrain string,
 	start int,
 	end int,
@@ -369,9 +384,17 @@ func getResourceMetricsValuesRequestOptions(
 		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
 	}
 
-	if len(dimension) > 0 {
-		dimensionFilter := fmt.Sprintf("%s eq '*'", dimension)
-		filter.Filter = &dimensionFilter
+	if len(dimensions) > 0 {
+		var dimensionsFilter bytes.Buffer
+		for i, dimension := range dimensions {
+			dimensionsFilter.WriteString(dimension)
+			dimensionsFilter.WriteString(" eq '*' ")
+			if i != len(dimensions) {
+				dimensionsFilter.WriteString(" and ")
+			}
+		}
+		dimensionFilterString := dimensionsFilter.String()
+		filter.Filter = &dimensionFilterString
 	}
 
 	return filter
