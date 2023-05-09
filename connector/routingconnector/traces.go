@@ -39,11 +39,6 @@ type tracesConnector struct {
 	router *router[consumer.Traces, ottlspan.TransformContext]
 }
 
-type spanGroup struct {
-	consumer consumer.Traces
-	traces   ptrace.Traces
-}
-
 func newTracesConnector(
 	set connector.CreateSettings,
 	config component.Config,
@@ -86,7 +81,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 	// groups is used to group ptrace.ResourceSpans that are routed to
 	// the same set of pipelines. This way we're not ending up with all the
 	// spans split up which would cause higher CPU usage.
-	groups := map[string]spanGroup{}
+	groups := make(map[consumer.Traces]ptrace.Traces)
 
 	var errs error
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
@@ -98,47 +93,46 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 		)
 
 		matchCount := len(c.router.routes)
-		for key, route := range c.router.routes {
+		for _, route := range c.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, stx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err
 				}
-				c.group("", groups, c.router.defaultConsumer, rspans)
+				c.group(groups, c.router.defaultConsumer, rspans)
 				continue
 			}
 			if !isMatch {
 				matchCount--
 				continue
 			}
-			c.group(key, groups, route.consumer, rspans)
+			c.group(groups, route.consumer, rspans)
 		}
 
 		if matchCount == 0 {
 			// no route conditions are matched, add resource spans to default pipelines group
-			c.group("", groups, c.router.defaultConsumer, rspans)
+			c.group(groups, c.router.defaultConsumer, rspans)
 		}
 	}
 
-	for _, g := range groups {
-		if g.consumer != nil {
-			errs = multierr.Append(errs, g.consumer.ConsumeTraces(ctx, g.traces))
-		}
+	for consumer, group := range groups {
+		errs = multierr.Append(errs, consumer.ConsumeTraces(ctx, group))
 	}
 	return errs
 }
 
 func (c *tracesConnector) group(
-	key string,
-	groups map[string]spanGroup,
+	groups map[consumer.Traces]ptrace.Traces,
 	consumer consumer.Traces,
 	spans ptrace.ResourceSpans,
 ) {
-	group, ok := groups[key]
-	if !ok {
-		group.traces = ptrace.NewTraces()
-		group.consumer = consumer
+	if consumer == nil {
+		return
 	}
-	spans.CopyTo(group.traces.ResourceSpans().AppendEmpty())
-	groups[key] = group
+	group, ok := groups[consumer]
+	if !ok {
+		group = ptrace.NewTraces()
+	}
+	spans.CopyTo(group.ResourceSpans().AppendEmpty())
+	groups[consumer] = group
 }

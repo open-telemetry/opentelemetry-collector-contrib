@@ -39,11 +39,6 @@ type logsConnector struct {
 	router *router[consumer.Logs, ottllog.TransformContext]
 }
 
-type logsGroup struct {
-	consumer consumer.Logs
-	logs     plog.Logs
-}
-
 func newLogsConnector(
 	set connector.CreateSettings,
 	config component.Config,
@@ -88,7 +83,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
 	// higher CPU usage.
-	groups := map[string]logsGroup{}
+	groups := make(map[consumer.Logs]plog.Logs)
 	var errs error
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -100,46 +95,45 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		)
 
 		matchCount := len(c.router.routes)
-		for key, route := range c.router.routes {
+		for _, route := range c.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, ltx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err
 				}
-				c.group("", groups, c.router.defaultConsumer, rlogs)
+				c.group(groups, c.router.defaultConsumer, rlogs)
 				continue
 			}
 			if !isMatch {
 				matchCount--
 				continue
 			}
-			c.group(key, groups, route.consumer, rlogs)
+			c.group(groups, route.consumer, rlogs)
 		}
 
 		if matchCount == 0 {
 			// no route conditions are matched, add resource logs to default exporters group
-			c.group("", groups, c.router.defaultConsumer, rlogs)
+			c.group(groups, c.router.defaultConsumer, rlogs)
 		}
 	}
-	for _, g := range groups {
-		if g.consumer != nil {
-			errs = multierr.Append(errs, g.consumer.ConsumeLogs(ctx, g.logs))
-		}
+	for consumer, group := range groups {
+		errs = multierr.Append(errs, consumer.ConsumeLogs(ctx, group))
 	}
 	return errs
 }
 
 func (c *logsConnector) group(
-	key string,
-	groups map[string]logsGroup,
+	groups map[consumer.Logs]plog.Logs,
 	consumer consumer.Logs,
 	logs plog.ResourceLogs,
 ) {
-	group, ok := groups[key]
-	if !ok {
-		group.logs = plog.NewLogs()
-		group.consumer = consumer
+	if consumer == nil {
+		return
 	}
-	logs.CopyTo(group.logs.ResourceLogs().AppendEmpty())
-	groups[key] = group
+	group, ok := groups[consumer]
+	if !ok {
+		group = plog.NewLogs()
+	}
+	logs.CopyTo(group.ResourceLogs().AppendEmpty())
+	groups[consumer] = group
 }

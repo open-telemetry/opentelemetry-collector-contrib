@@ -39,11 +39,6 @@ type metricsConnector struct {
 	router *router[consumer.Metrics, ottldatapoint.TransformContext]
 }
 
-type metricsGroup struct {
-	consumer consumer.Metrics
-	metrics  pmetric.Metrics
-}
-
 func newMetricsConnector(
 	set connector.CreateSettings,
 	config component.Config,
@@ -87,7 +82,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 	// groups is used to group pmetric.ResourceMetrics that are routed to
 	// the same set of exporters. This way we're not ending up with all the
 	// metrics split up which would cause higher CPU usage.
-	groups := map[string]metricsGroup{}
+	groups := make(map[consumer.Metrics]pmetric.Metrics)
 
 	var errs error
 
@@ -102,47 +97,46 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		)
 
 		matchCount := len(c.router.routes)
-		for key, route := range c.router.routes {
+		for _, route := range c.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, mtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err
 				}
-				c.group("", groups, c.router.defaultConsumer, rmetrics)
+				c.group(groups, c.router.defaultConsumer, rmetrics)
 				continue
 			}
 			if !isMatch {
 				matchCount--
 				continue
 			}
-			c.group(key, groups, route.consumer, rmetrics)
+			c.group(groups, route.consumer, rmetrics)
 		}
 
 		if matchCount == 0 {
 			// no route conditions are matched, add resource metrics to default exporters group
-			c.group("", groups, c.router.defaultConsumer, rmetrics)
+			c.group(groups, c.router.defaultConsumer, rmetrics)
 		}
 	}
 
-	for _, g := range groups {
-		if g.consumer != nil {
-			errs = multierr.Append(errs, g.consumer.ConsumeMetrics(ctx, g.metrics))
-		}
+	for consumer, group := range groups {
+		errs = multierr.Append(errs, consumer.ConsumeMetrics(ctx, group))
 	}
 	return errs
 }
 
 func (c *metricsConnector) group(
-	key string,
-	groups map[string]metricsGroup,
+	groups map[consumer.Metrics]pmetric.Metrics,
 	consumer consumer.Metrics,
 	metrics pmetric.ResourceMetrics,
 ) {
-	group, ok := groups[key]
-	if !ok {
-		group.metrics = pmetric.NewMetrics()
-		group.consumer = consumer
+	if consumer == nil {
+		return
 	}
-	metrics.CopyTo(group.metrics.ResourceMetrics().AppendEmpty())
-	groups[key] = group
+	group, ok := groups[consumer]
+	if !ok {
+		group = pmetric.NewMetrics()
+	}
+	metrics.CopyTo(group.ResourceMetrics().AppendEmpty())
+	groups[consumer] = group
 }
