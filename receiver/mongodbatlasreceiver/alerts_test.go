@@ -495,7 +495,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				for k, v := range expectedResourceAttributes {
 					value, ok := ra.Get(k)
 					require.True(t, ok)
-					require.Equal(t, v, value)
+					require.Equal(t, v, value.AsString())
 				}
 			},
 		},
@@ -560,7 +560,7 @@ func TestAlertsRetrieval(t *testing.T) {
 						{
 							ID:            testAlertID,
 							GroupID:       testGroupID,
-							AlertConfigID: "",
+							AlertConfigID: testAlertConfigID,
 							EventTypeName: testTypeName,
 							Created:       time.Now().Format(time.RFC3339),
 							Updated:       time.Now().Format(time.RFC3339),
@@ -667,7 +667,7 @@ func testAlert() mongodbatlas.Alert {
 	return mongodbatlas.Alert{
 		ID:            testAlertID,
 		GroupID:       testGroupID,
-		AlertConfigID: "",
+		AlertConfigID: testAlertConfigID,
 		EventTypeName: testTypeName,
 		Created:       time.Now().Format(time.RFC3339),
 		Updated:       time.Now().Format(time.RFC3339),
