@@ -25,11 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-)
 
-const (
-	typeStr   = "snmp"
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
@@ -37,9 +34,9 @@ var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
 // NewFactory creates a new receiver factory for SNMP
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
@@ -74,7 +71,7 @@ func createMetricsReceiver(
 	}
 
 	snmpScraper := newScraper(params.Logger, snmpConfig, params)
-	scraper, err := scraperhelper.NewScraper(typeStr, snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
 	if err != nil {
 		return nil, err
 	}
