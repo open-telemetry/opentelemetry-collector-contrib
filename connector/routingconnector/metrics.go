@@ -96,7 +96,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 			rmetrics.Resource(),
 		)
 
-		matchCount := len(c.router.routes)
+		noRoutesMatch := true
 		for _, route := range c.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, mtx)
 			if err != nil {
@@ -106,14 +106,14 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 				c.group(groups, c.router.defaultConsumer, rmetrics)
 				continue
 			}
-			if !isMatch {
-				matchCount--
-				continue
+			if isMatch {
+				noRoutesMatch = false
+				c.group(groups, route.consumer, rmetrics)
 			}
-			c.group(groups, route.consumer, rmetrics)
+
 		}
 
-		if matchCount == 0 {
+		if noRoutesMatch {
 			// no route conditions are matched, add resource metrics to default exporters group
 			c.group(groups, c.router.defaultConsumer, rmetrics)
 		}

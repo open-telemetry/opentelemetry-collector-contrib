@@ -94,7 +94,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			rlogs.Resource(),
 		)
 
-		matchCount := len(c.router.routes)
+		noRoutesMatch := true
 		for _, route := range c.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, ltx)
 			if err != nil {
@@ -104,14 +104,14 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				c.group(groups, c.router.defaultConsumer, rlogs)
 				continue
 			}
-			if !isMatch {
-				matchCount--
-				continue
+			if isMatch {
+				noRoutesMatch = false
+				c.group(groups, route.consumer, rlogs)
 			}
-			c.group(groups, route.consumer, rlogs)
+
 		}
 
-		if matchCount == 0 {
+		if noRoutesMatch {
 			// no route conditions are matched, add resource logs to default exporters group
 			c.group(groups, c.router.defaultConsumer, rlogs)
 		}

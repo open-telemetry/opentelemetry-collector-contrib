@@ -92,7 +92,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 			rspans.Resource(),
 		)
 
-		matchCount := len(c.router.routes)
+		noRoutesMatch := true
 		for _, route := range c.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, stx)
 			if err != nil {
@@ -102,14 +102,14 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 				c.group(groups, c.router.defaultConsumer, rspans)
 				continue
 			}
-			if !isMatch {
-				matchCount--
-				continue
+			if isMatch {
+				noRoutesMatch = false
+				c.group(groups, route.consumer, rspans)
 			}
-			c.group(groups, route.consumer, rspans)
+
 		}
 
-		if matchCount == 0 {
+		if noRoutesMatch {
 			// no route conditions are matched, add resource spans to default pipelines group
 			c.group(groups, c.router.defaultConsumer, rspans)
 		}
