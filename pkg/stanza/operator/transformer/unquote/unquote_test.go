@@ -177,6 +177,28 @@ func TestBuildAndProcess(t *testing.T) {
 				return e
 			},
 		},
+		{
+			name: "missing_field",
+			cfg: func() *Config {
+				cfg := NewConfig()
+				cfg.Field = entry.NewAttributeField("bar")
+				return cfg
+			}(),
+			input: func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"foo": "\"val\"",
+				}
+				return e
+			},
+			output: func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"foo": "\"val\"",
+				}
+				return e
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run("BuildandProcess/"+tc.name, func(t *testing.T) {
