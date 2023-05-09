@@ -6,8 +6,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.7
 	github.com/elastic/go-structform v0.0.10
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.76.2-0.20230508160606-833cbdaf75cc
 	go.opentelemetry.io/collector/component v0.76.2-0.20230508160606-833cbdaf75cc
