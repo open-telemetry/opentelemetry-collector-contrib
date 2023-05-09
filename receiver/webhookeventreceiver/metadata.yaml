@@ -1,4 +1,4 @@
-type: webhookevent
+type: generic_webhook 
 
 status:
   class: receiver
