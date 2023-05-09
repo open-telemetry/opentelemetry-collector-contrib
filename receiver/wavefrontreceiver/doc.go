@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package wavefrontreceiver// import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
+package wavefrontreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
