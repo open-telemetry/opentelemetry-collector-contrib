@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/klauspost/compress v1.16.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.77.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.76.2-0.20230508160606-833cbdaf75cc
 	go.opentelemetry.io/collector/confmap v0.76.2-0.20230508160606-833cbdaf75cc
