@@ -160,8 +160,7 @@ func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
 		}
 
 		for _, c := range sc.ServiceDiscoveryConfigs {
-			switch c := c.(type) {
-			case *kubernetes.SDConfig:
+			if c, ok := c.(*kubernetes.SDConfig); ok {
 				if err := checkTLSConfig(c.HTTPClientConfig.TLSConfig); err != nil {
 					return err
 				}
