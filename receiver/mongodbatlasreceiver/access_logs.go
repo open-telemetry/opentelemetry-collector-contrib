@@ -17,6 +17,7 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -39,6 +40,12 @@ const (
 	defaultAccessLogsMaxPages     = 10
 )
 
+type accessLogStorageRecord struct {
+	GroupID           string    `json:"group_id"`
+	ClusterName       string    `json:"cluster_name"`
+	NextPollStartTime time.Time `json:"next_poll_start_time"`
+}
+
 type accessLogClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
 	GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error)
@@ -52,11 +59,11 @@ type accessLogsReceiver struct {
 	cfg           *Config
 	consumer      consumer.Logs
 
-	nextStartTime *time.Time
-	pollInterval  time.Duration
-	authResult    *bool
-	wg            *sync.WaitGroup
-	cancel        context.CancelFunc
+	record       []*accessLogStorageRecord
+	pollInterval time.Duration
+	authResult   *bool
+	wg           *sync.WaitGroup
+	cancel       context.CancelFunc
 }
 
 func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) *accessLogsReceiver {
@@ -128,9 +135,6 @@ func (alr *accessLogsReceiver) startPolling(ctx context.Context) error {
 
 func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context) error {
 	st := pcommon.NewTimestampFromTime(time.Now().Add(-alr.pollInterval)).AsTime()
-	if alr.nextStartTime != nil {
-		st = *alr.nextStartTime
-	}
 	et := time.Now()
 
 	for _, pc := range alr.cfg.Logs.Projects {
@@ -154,15 +158,24 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context) error {
 			return err
 		}
 		for _, cluster := range filteredClusters {
-			alr.pollCluster(ctx, pc, project, cluster, st, et)
+			clusterCheckpoint := alr.getClusterCheckpoint(project.ID, cluster.Name)
+
+			if clusterCheckpoint == nil {
+				clusterCheckpoint = &accessLogStorageRecord{
+					GroupID:           project.ID,
+					ClusterName:       cluster.Name,
+					NextPollStartTime: st,
+				}
+				alr.record = append(alr.record, clusterCheckpoint)
+			}
+			clusterCheckpoint.NextPollStartTime = alr.pollCluster(ctx, pc, project, cluster, clusterCheckpoint.NextPollStartTime, et)
 		}
 	}
 
-	alr.nextStartTime = &et
 	return alr.checkpoint(ctx)
 }
 
-func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectConfig, project *mongodbatlas.Project, cluster mongodbatlas.Cluster, startTime, now time.Time) {
+func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectConfig, project *mongodbatlas.Project, cluster mongodbatlas.Cluster, startTime, now time.Time) time.Time {
 	nowTimestamp := pcommon.NewTimestampFromTime(now)
 
 	opts := &internal.GetAccessLogsOptions{
@@ -173,54 +186,72 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectC
 	}
 
 	pageCount := 0
+	// Assume failure, in which case we poll starting with the same startTime
+	// unless we successfully make request(s) for access logs and they are successfully sent to the consumer
+	nextPollStartTime := startTime
 	for {
 		accessLogs, err := alr.client.GetAccessLogs(ctx, project.ID, cluster.Name, opts)
 		pageCount++
 		if err != nil {
 			alr.logger.Error("unable to get access logs", zap.Error(err), zap.String("project", project.Name),
 				zap.String("clusterID", cluster.ID), zap.String("clusterName", cluster.Name))
-			return
+			return nextPollStartTime
+		}
+
+		// No logs retrieved, try again on next interval with the same start time as the API may not have
+		// all logs for the given time available to be queried yet (undocumented behavior)
+		if len(accessLogs) == 0 {
+			return nextPollStartTime
 		}
 
 		logs := transformAccessLogs(nowTimestamp, accessLogs, project, cluster, alr.logger)
+		if err = alr.consumer.ConsumeLogs(ctx, logs); err != nil {
+			alr.logger.Error("error consuming project cluster log", zap.Error(err), zap.String("project", project.Name),
+				zap.String("clusterID", cluster.ID), zap.String("clusterName", cluster.Name))
+			return nextPollStartTime
+		}
 
-		if logs.LogRecordCount() > 0 {
-			if err = alr.consumer.ConsumeLogs(ctx, logs); err != nil {
-				alr.logger.Error("error consuming project cluster log", zap.Error(err), zap.String("project", project.Name),
-					zap.String("clusterID", cluster.ID), zap.String("clusterName", cluster.Name))
-				return
+		// The first page of results will have the latest data, so we want to update the nextPollStartTime
+		// There is risk of data loss at this point if we are unable to then process the remaining pages
+		// of data, but that is a limitation of the API that we can't work around.
+		if pageCount == 1 {
+			// This slice access is safe as we have previously confirmed that the slice is not empty
+			mostRecentLogTimestamp, err := getTimestamp(accessLogs[0])
+			if err != nil {
+				alr.logger.Error("error getting latest log timestamp for calculating next poll timestamps", zap.Error(err),
+					zap.String("project", project.Name), zap.String("clusterName", cluster.Name))
+				// If we are not able to get the latest log timestamp, we have to assume that we are collecting all
+				// data and don't want to risk duplicated data by re-polling the same data again.
+				nextPollStartTime = now
+			} else {
+				nextPollStartTime = mostRecentLogTimestamp.Add(1 * time.Millisecond)
 			}
 		}
 
-		// If we get back less than the maximum number of logs, we can assume that we've retrieved all of the logs for this
-		// time period.
+		// If we get back less than the maximum number of logs, we can assume that we've retrieved all of the logs
+		// that are currently available for this time period, though some logs may not be available in the API yet.
 		if len(accessLogs) < int(pc.AccessLogs.PageSize) {
-			break
+			return nextPollStartTime
 		}
 
 		if pageCount >= int(pc.AccessLogs.MaxPages) {
 			alr.logger.Warn(`reached maximum number of pages of access logs, increase 'max_pages' or 
 			frequency of 'poll_interval' to ensure all access logs are retrieved`, zap.Int("maxPages", int(pc.AccessLogs.MaxPages)))
-			break
+			return nextPollStartTime
 		}
 
-		// If we get back the maximum number of logs, we need to re-query with a new start time. While undocumented, the API
+		// If we get back the maximum number of logs, we need to re-query with a new end time. While undocumented, the API
 		// returns the most recent logs first. If we get the maximum number of logs back, we can assume that
 		// there are more logs to be retrieved. We'll re-query with the same start time, but the end
-		// time set to just before the timestamp of the last log entry returned.
-		lastLog := accessLogs[len(accessLogs)-1]
-		body, err := parseLogMessage(lastLog)
+		// time set to just before the timestamp of the oldest log entry returned.
+		oldestLogTimestampFromPage, err := getTimestamp(accessLogs[len(accessLogs)-1])
 		if err != nil {
-			// If body couldn't be parsed, we'll still use the outer Timestamp field to determine the new max date.
-			body = map[string]interface{}{}
+			alr.logger.Error("error getting oldest log timestamp for calculating next request timestamps", zap.Error(err),
+				zap.String("project", project.Name), zap.String("clusterName", cluster.Name))
+			return nextPollStartTime
 		}
-		lastLogTimestamp, err := getTimestamp(lastLog, body)
-		if err != nil {
-			alr.logger.Error("unable to parse last log timestamp", zap.Error(err), zap.String("project", project.Name),
-				zap.String("clusterID", cluster.ID), zap.String("clusterName", cluster.Name))
-			break
-		}
-		opts.MaxDate = lastLogTimestamp.Add(-1 * time.Millisecond)
+
+		opts.MaxDate = oldestLogTimestampFromPage.Add(-1 * time.Millisecond)
 
 		// If the new max date is before the min date, we've retrieved all of the logs for this time period
 		// and receiving the maximum number of logs back is a coincidence.
@@ -228,9 +259,20 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectC
 			break
 		}
 	}
+
+	return now
 }
 
-func getTimestamp(log *mongodbatlas.AccessLogs, body map[string]interface{}) (time.Time, error) {
+func getTimestamp(log *mongodbatlas.AccessLogs) (time.Time, error) {
+	body, err := parseLogMessage(log)
+	if err != nil {
+		// If body couldn't be parsed, we'll still use the outer Timestamp field to determine the new max date.
+		body = map[string]interface{}{}
+	}
+	return getTimestampPreparsedBody(log, body)
+}
+
+func getTimestampPreparsedBody(log *mongodbatlas.AccessLogs, body map[string]interface{}) (time.Time, error) {
 	// If the log message has a timestamp, use that. When present, it has more precision than the timestamp from the access log entry.
 	if tMap, ok := body["t"]; ok {
 		if dateMap, ok := tMap.(map[string]interface{}); ok {
@@ -289,7 +331,7 @@ func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.Acces
 			logRecord.Body().SetStr(accessLog.LogLine)
 		}
 
-		ts, err := getTimestamp(accessLog, logBody)
+		ts, err := getTimestampPreparsedBody(accessLog, logBody)
 		if err != nil {
 			logger.Warn("unable to interpret when an access log event was recorded, timestamp not parsed", zap.Error(err), zap.String("timestamp", accessLog.Timestamp))
 			logRecord.SetTimestamp(now)
@@ -324,27 +366,41 @@ func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.Acces
 }
 
 func (alr *accessLogsReceiver) checkpoint(ctx context.Context) error {
-	if alr.nextStartTime == nil {
-		return nil
+	marshalBytes, err := json.Marshal(alr.record)
+	if err != nil {
+		return fmt.Errorf("unable to write checkpoint: %w", err)
 	}
-
-	return alr.storageClient.Set(ctx, accessLogStorageKey, []byte(alr.nextStartTime.Format(time.RFC3339)))
+	return alr.storageClient.Set(ctx, accessLogStorageKey, marshalBytes)
 }
 
 func (alr *accessLogsReceiver) loadCheckpoint(ctx context.Context) {
 	cBytes, err := alr.storageClient.Get(ctx, accessLogStorageKey)
 	if err != nil {
 		alr.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
+		alr.record = []*accessLogStorageRecord{}
 		return
 	}
 
 	if cBytes == nil {
+		alr.record = []*accessLogStorageRecord{}
 		return
 	}
 
-	nextStartTime, err := time.Parse(time.RFC3339, string(cBytes))
-	if err != nil {
-		alr.logger.Error("unable to decode stored next start time for access log, continuing without a checkpoint", zap.Error(err))
-		alr.nextStartTime = &nextStartTime
+	var record []*accessLogStorageRecord
+	if err = json.Unmarshal(cBytes, &record); err != nil {
+		alr.logger.Error("unable to decode stored record for access logs, continuing without a checkpoint", zap.Error(err))
+		alr.record = []*accessLogStorageRecord{}
+		return
 	}
+
+	return
+}
+
+func (alr *accessLogsReceiver) getClusterCheckpoint(groupID, clusterName string) *accessLogStorageRecord {
+	for _, v := range alr.record {
+		if v.GroupID == groupID && v.ClusterName == clusterName {
+			return v
+		}
+	}
+	return nil
 }

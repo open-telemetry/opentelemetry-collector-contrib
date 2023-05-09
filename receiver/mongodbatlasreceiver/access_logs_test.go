@@ -289,7 +289,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 
 			require.Eventually(t, func() bool {
 				return logSink.LogRecordCount() >= tc.expectedLogCount
-			}, 20*time.Second, 10*time.Millisecond)
+			}, 10*time.Second, 10*time.Millisecond)
 
 			require.NoError(t, rcvr.Shutdown(context.Background()))
 			tc.validateEntries(t, logSink.AllLogs())
