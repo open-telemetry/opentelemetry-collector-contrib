@@ -1,4 +1,4 @@
-type: generic_webhook 
+type: generic_webhook
 
 status:
   class: receiver
