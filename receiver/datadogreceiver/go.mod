@@ -7,12 +7,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.76.3
 	github.com/stretchr/testify v1.8.2
 	github.com/vmihailenco/msgpack/v4 v4.3.12
-	go.opentelemetry.io/collector v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/component v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/consumer v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/receiver v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/semconv v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector v0.77.0
+	go.opentelemetry.io/collector/component v0.77.0
+	go.opentelemetry.io/collector/consumer v0.77.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/collector/receiver v0.77.0
+	go.opentelemetry.io/collector/semconv v0.77.0
 )
 
 require (
@@ -38,9 +38,9 @@ require (
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.76.2-0.20230508160606-833cbdaf75cc // indirect
-	go.opentelemetry.io/collector/exporter v0.76.2-0.20230508160606-833cbdaf75cc // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230508160606-833cbdaf75cc // indirect
+	go.opentelemetry.io/collector/confmap v0.77.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.77.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
