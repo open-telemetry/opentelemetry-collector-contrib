@@ -15,8 +15,6 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -146,9 +144,8 @@ func (config *Config) Validate() error {
 		return retErr
 	}
 
-	tagInputErr := cwlogs.ValidateTagsInput(config.Tags)
-	if tagInputErr != nil {
-		return errors.New(tagInputErr.Error())
+	if tagInputErr := cwlogs.ValidateTagsInput(config.Tags); tagInputErr != nil {
+		return tagInputErr
 	}
 
 	return nil
