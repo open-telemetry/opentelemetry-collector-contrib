@@ -121,7 +121,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 		require.Equal(t, tag, e.Details.Env()["tag"])
 	}
 
-	tcDockerClient, _, _, err := testcontainers.NewDockerClient()
+	tcDockerClient, err := testcontainers.NewDockerClient()
 	require.Nil(t, err)
 
 	require.NoError(t, tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated"))
