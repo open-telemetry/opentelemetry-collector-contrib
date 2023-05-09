@@ -40,11 +40,11 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 		DefaultPipelines: []component.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+				Statement: `route() where attributes["X-Tenant"] == "acme"`,
 				Pipelines: []component.ID{logs0},
 			},
 			{
-				Statement: `route() where resource.attributes["X-Tenant"] == "*"`,
+				Statement: `route() where attributes["X-Tenant"] == "*"`,
 				Pipelines: []component.ID{logs0, logs1},
 			},
 		},
@@ -100,15 +100,15 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		DefaultPipelines: []component.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
+				Statement: `route() where IsMatch(attributes["X-Tenant"], ".*acme") == true`,
 				Pipelines: []component.ID{logs0},
 			},
 			{
-				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
+				Statement: `route() where IsMatch(attributes["X-Tenant"], "_acme") == true`,
 				Pipelines: []component.ID{logs1},
 			},
 			{
-				Statement: `route() where resource.attributes["X-Tenant"] == "ecorp"`,
+				Statement: `route() where attributes["X-Tenant"] == "ecorp"`,
 				Pipelines: []component.ID{logsDefault, logs0},
 			},
 		},
@@ -257,7 +257,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 		DefaultPipelines: []component.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `delete_key(resource.attributes, "X-Tenant") where resource.attributes["X-Tenant"] == "acme"`,
+				Statement: `delete_key(attributes, "X-Tenant") where attributes["X-Tenant"] == "acme"`,
 				Pipelines: []component.ID{logsOther},
 			},
 		},
@@ -313,7 +313,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 
 	cfg := &Config{
 		Table: []RoutingTableItem{{
-			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+			Statement: `route() where attributes["X-Tenant"] == "acme"`,
 			Pipelines: []component.ID{logsOther},
 		}},
 	}

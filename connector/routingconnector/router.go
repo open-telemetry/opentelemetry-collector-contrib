@@ -21,26 +21,27 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 var errPipelineNotFound = errors.New("pipeline not found")
 
-// consumerProvider is a function with a type parameter T (expected to be one
+// consumerProvider is a function with a type parameter C (expected to be one
 // of consumer.Traces, consumer.Metrics, or Consumer.Logs). returns a
 // consumer for the given component ID(s).
-type consumerProvider[T any] func(...component.ID) (T, error)
+type consumerProvider[C any] func(...component.ID) (C, error)
 
 // router registers consumers and default consumers for a pipeline. the type
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
-// consumer.Logs. K is expected to be one of: ottlspan.TransformContext,
-// ottlmetrics.TransformContext, or ottllog.TransformContext
-type router[C any, K any] struct {
+// consumer.Logs.
+type router[C any] struct {
 	logger *zap.Logger
-	parser ottl.Parser[K]
+	parser ottl.Parser[ottlresource.TransformContext]
 
 	table  []RoutingTableItem
-	routes map[string]routingItem[C, K]
+	routes map[string]routingItem[C]
 
 	defaultConsumer  C
 	consumerProvider consumerProvider[C]
@@ -48,18 +49,26 @@ type router[C any, K any] struct {
 
 // newRouter creates a new router instance with based on type parameters C and K.
 // see router struct definition for the allowed types.
-func newRouter[C any, K any](
+func newRouter[C any](
 	table []RoutingTableItem,
 	defaultPipelineIDs []component.ID,
 	provider consumerProvider[C],
 	settings component.TelemetrySettings,
-	parser ottl.Parser[K],
-) (*router[C, K], error) {
-	r := &router[C, K]{
+) (*router[C], error) {
+	parser, err := ottlresource.NewParser(
+		common.Functions[ottlresource.TransformContext](),
+		settings,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	r := &router[C]{
 		logger:           settings.Logger,
 		parser:           parser,
 		table:            table,
-		routes:           make(map[string]routingItem[C, K]),
+		routes:           make(map[string]routingItem[C]),
 		consumerProvider: provider,
 	}
 
@@ -70,12 +79,12 @@ func newRouter[C any, K any](
 	return r, nil
 }
 
-type routingItem[C any, K any] struct {
+type routingItem[C any] struct {
 	consumer  C
-	statement *ottl.Statement[K]
+	statement *ottl.Statement[ottlresource.TransformContext]
 }
 
-func (r *router[C, K]) registerConsumers(defaultPipelineIDs []component.ID) error {
+func (r *router[C]) registerConsumers(defaultPipelineIDs []component.ID) error {
 	// register default pipelines
 	err := r.registerDefaultConsumer(defaultPipelineIDs)
 	if err != nil {
@@ -93,7 +102,7 @@ func (r *router[C, K]) registerConsumers(defaultPipelineIDs []component.ID) erro
 
 // registerDefaultConsumer registers a consumer for the default
 // pipelines configured
-func (r *router[C, K]) registerDefaultConsumer(pipelineIDs []component.ID) error {
+func (r *router[C]) registerDefaultConsumer(pipelineIDs []component.ID) error {
 	if len(pipelineIDs) == 0 {
 		return nil
 	}
@@ -110,7 +119,7 @@ func (r *router[C, K]) registerDefaultConsumer(pipelineIDs []component.ID) error
 
 // registerRouteConsumers registers a consumer for the pipelines configured
 // for each route
-func (r *router[C, K]) registerRouteConsumers() error {
+func (r *router[C]) registerRouteConsumers() error {
 	for _, item := range r.table {
 		statement, err := r.getStatementFrom(item)
 		if err != nil {
@@ -136,8 +145,8 @@ func (r *router[C, K]) registerRouteConsumers() error {
 // getStatementFrom builds a routing OTTL statement from the provided
 // routing table entry configuration. If the routing table entry configuration
 // does not contain a valid OTTL statement then nil is returned.
-func (r *router[C, K]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[K], error) {
-	var statement *ottl.Statement[K]
+func (r *router[C]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[ottlresource.TransformContext], error) {
+	var statement *ottl.Statement[ottlresource.TransformContext]
 	if item.Statement != "" {
 		var err error
 		statement, err = r.parser.ParseStatement(item.Statement)

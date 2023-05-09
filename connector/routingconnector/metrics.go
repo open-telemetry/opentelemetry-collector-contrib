@@ -20,14 +20,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 type metricsConnector struct {
@@ -36,7 +34,7 @@ type metricsConnector struct {
 
 	logger *zap.Logger
 	config *Config
-	router *router[consumer.Metrics, ottldatapoint.TransformContext]
+	router *router[consumer.Metrics]
 }
 
 func newMetricsConnector(
@@ -45,11 +43,6 @@ func newMetricsConnector(
 	metrics consumer.Metrics,
 ) (*metricsConnector, error) {
 	cfg := config.(*Config)
-
-	dataPointParser, _ := ottldatapoint.NewParser(
-		common.Functions[ottldatapoint.TransformContext](),
-		set.TelemetrySettings,
-	)
 
 	mr, ok := metrics.(connector.MetricsRouter)
 	if !ok {
@@ -60,8 +53,7 @@ func newMetricsConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		mr.Consumer,
-		set.TelemetrySettings,
-		dataPointParser)
+		set.TelemetrySettings)
 
 	if err != nil {
 		return nil, err
@@ -88,17 +80,11 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
-		mtx := ottldatapoint.NewTransformContext(
-			nil,
-			pmetric.Metric{},
-			pmetric.MetricSlice{},
-			pcommon.InstrumentationScope{},
-			rmetrics.Resource(),
-		)
+		rtx := ottlresource.NewTransformContext(rmetrics.Resource())
 
 		noRoutesMatch := true
 		for _, route := range c.router.routes {
-			_, isMatch, err := route.statement.Execute(ctx, mtx)
+			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err

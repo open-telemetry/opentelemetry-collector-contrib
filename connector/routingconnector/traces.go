@@ -20,14 +20,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 type tracesConnector struct {
@@ -36,7 +34,7 @@ type tracesConnector struct {
 
 	logger *zap.Logger
 	config *Config
-	router *router[consumer.Traces, ottlspan.TransformContext]
+	router *router[consumer.Traces]
 }
 
 func newTracesConnector(
@@ -45,10 +43,6 @@ func newTracesConnector(
 	traces consumer.Traces,
 ) (*tracesConnector, error) {
 	cfg := config.(*Config)
-	spanParser, _ := ottlspan.NewParser(
-		common.Functions[ottlspan.TransformContext](),
-		set.TelemetrySettings,
-	)
 
 	tr, ok := traces.(connector.TracesRouter)
 	if !ok {
@@ -59,8 +53,7 @@ func newTracesConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		tr.Consumer,
-		set.TelemetrySettings,
-		spanParser)
+		set.TelemetrySettings)
 
 	if err != nil {
 		return nil, err
@@ -86,15 +79,11 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 	var errs error
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
-		stx := ottlspan.NewTransformContext(
-			ptrace.Span{},
-			pcommon.InstrumentationScope{},
-			rspans.Resource(),
-		)
+		rtx := ottlresource.NewTransformContext(rspans.Resource())
 
 		noRoutesMatch := true
 		for _, route := range c.router.routes {
-			_, isMatch, err := route.statement.Execute(ctx, stx)
+			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err

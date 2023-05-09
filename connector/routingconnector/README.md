@@ -47,9 +47,9 @@ connectors:
     default_pipelines: [traces/jaeger]
     error_mode: ignore
     table:
-      - statement: route() where resource.attributes["X-Tenant"] == "acme"
+      - statement: route() where attributes["X-Tenant"] == "acme"
         pipelines: [traces/jaeger-acme]
-      - statement: delete_key(resource.attributes, "X-Tenant") where IsMatch(resource.attributes["X-Tenant"], ".*corp")
+      - statement: delete_key(attributes, "X-Tenant") where IsMatch(attributes["X-Tenant"], ".*corp")
         pipelines: [traces/jaeger-ecorp]
 
 service:

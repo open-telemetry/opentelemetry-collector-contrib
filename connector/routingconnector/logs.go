@@ -20,14 +20,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 type logsConnector struct {
@@ -36,7 +34,7 @@ type logsConnector struct {
 
 	logger *zap.Logger
 	config *Config
-	router *router[consumer.Logs, ottllog.TransformContext]
+	router *router[consumer.Logs]
 }
 
 func newLogsConnector(
@@ -45,11 +43,6 @@ func newLogsConnector(
 	logs consumer.Logs,
 ) (*logsConnector, error) {
 	cfg := config.(*Config)
-
-	logParser, _ := ottllog.NewParser(
-		common.Functions[ottllog.TransformContext](),
-		set.TelemetrySettings,
-	)
 
 	lr, ok := logs.(connector.LogsRouter)
 	if !ok {
@@ -60,8 +53,7 @@ func newLogsConnector(
 		cfg.Table,
 		cfg.DefaultPipelines,
 		lr.Consumer,
-		set.TelemetrySettings,
-		logParser)
+		set.TelemetrySettings)
 
 	if err != nil {
 		return nil, err
@@ -88,15 +80,11 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
-		ltx := ottllog.NewTransformContext(
-			plog.LogRecord{},
-			pcommon.InstrumentationScope{},
-			rlogs.Resource(),
-		)
+		rtx := ottlresource.NewTransformContext(rlogs.Resource())
 
 		noRoutesMatch := true
 		for _, route := range c.router.routes {
-			_, isMatch, err := route.statement.Execute(ctx, ltx)
+			_, isMatch, err := route.statement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err

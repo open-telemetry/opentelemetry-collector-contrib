@@ -42,14 +42,14 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode: ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
-						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+						Statement: `route() where attributes["X-Tenant"] == "acme"`,
 						Pipelines: []component.ID{
 							component.NewIDWithName(component.DataTypeTraces, "jaeger-acme"),
 							component.NewIDWithName(component.DataTypeTraces, "otlp-acme"),
 						},
 					},
 					{
-						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
+						Statement: `route() where attributes["X-Tenant"] == "globex"`,
 						Pipelines: []component.ID{
 							component.NewIDWithName(component.DataTypeTraces, "otlp-globex"),
 						},
@@ -67,14 +67,14 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode: ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
-						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+						Statement: `route() where attributes["X-Tenant"] == "acme"`,
 						Pipelines: []component.ID{
 							component.NewIDWithName(component.DataTypeMetrics, "jaeger-acme"),
 							component.NewIDWithName(component.DataTypeMetrics, "otlp-acme"),
 						},
 					},
 					{
-						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
+						Statement: `route() where attributes["X-Tenant"] == "globex"`,
 						Pipelines: []component.ID{
 							component.NewIDWithName(component.DataTypeMetrics, "otlp-globex"),
 						},
@@ -92,14 +92,14 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode: ottl.PropagateError,
 				Table: []RoutingTableItem{
 					{
-						Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+						Statement: `route() where attributes["X-Tenant"] == "acme"`,
 						Pipelines: []component.ID{
 							component.NewIDWithName(component.DataTypeLogs, "jaeger-acme"),
 							component.NewIDWithName(component.DataTypeLogs, "otlp-acme"),
 						},
 					},
 					{
-						Statement: `route() where resource.attributes["X-Tenant"] == "globex"`,
+						Statement: `route() where attributes["X-Tenant"] == "globex"`,
 						Pipelines: []component.ID{
 							component.NewIDWithName(component.DataTypeLogs, "otlp-globex"),
 						},
@@ -151,7 +151,7 @@ func TestValidateConfig(t *testing.T) {
 			config: &Config{
 				Table: []RoutingTableItem{
 					{
-						Statement: `route() where resource.attributes["attr"] == "acme"`,
+						Statement: `route() where attributes["attr"] == "acme"`,
 					},
 				},
 			},

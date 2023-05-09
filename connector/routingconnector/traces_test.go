@@ -40,11 +40,11 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 		DefaultPipelines: []component.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+				Statement: `route() where attributes["X-Tenant"] == "acme"`,
 				Pipelines: []component.ID{traces0},
 			},
 			{
-				Statement: `route() where resource.attributes["X-Tenant"] == "*"`,
+				Statement: `route() where attributes["X-Tenant"] == "*"`,
 				Pipelines: []component.ID{traces0, traces1},
 			},
 		},
@@ -100,15 +100,15 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		DefaultPipelines: []component.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 4`,
+				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
 				Pipelines: []component.ID{traces0},
 			},
 			{
-				Statement: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 4`,
+				Statement: `route() where attributes["value"] > 1 and attributes["value"] < 4`,
 				Pipelines: []component.ID{traces1},
 			},
 			{
-				Statement: `route() where resource.attributes["value"] == 5`,
+				Statement: `route() where attributes["value"] == 5`,
 				Pipelines: []component.ID{tracesDefault, traces0},
 			},
 		},
@@ -232,7 +232,7 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 		DefaultPipelines: []component.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `delete_key(resource.attributes, "X-Tenant") where resource.attributes["X-Tenant"] == "acme"`,
+				Statement: `delete_key(attributes, "X-Tenant") where attributes["X-Tenant"] == "acme"`,
 				Pipelines: []component.ID{tracesOther},
 			},
 		},
@@ -290,7 +290,7 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 
 	cfg := &Config{
 		Table: []RoutingTableItem{{
-			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+			Statement: `route() where attributes["X-Tenant"] == "acme"`,
 			Pipelines: []component.ID{tracesOther},
 		}},
 	}

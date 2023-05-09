@@ -30,7 +30,7 @@ import (
 func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 	cfg := &Config{
 		Table: []RoutingTableItem{{
-			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+			Statement: `route() where attributes["X-Tenant"] == "acme"`,
 			Pipelines: []component.ID{
 				component.NewIDWithName(component.DataTypeTraces, "0"),
 			},
@@ -54,7 +54,7 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 func TestCreationFailsWithTooFewPipelines(t *testing.T) {
 	cfg := &Config{
 		Table: []RoutingTableItem{{
-			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+			Statement: `route() where attributes["X-Tenant"] == "acme"`,
 			Pipelines: []component.ID{
 				component.NewIDWithName(component.DataTypeTraces, "0"),
 			},

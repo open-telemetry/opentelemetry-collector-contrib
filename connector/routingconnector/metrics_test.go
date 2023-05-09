@@ -40,11 +40,11 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 		DefaultPipelines: []component.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+				Statement: `route() where attributes["X-Tenant"] == "acme"`,
 				Pipelines: []component.ID{metrics0},
 			},
 			{
-				Statement: `route() where resource.attributes["X-Tenant"] == "*"`,
+				Statement: `route() where attributes["X-Tenant"] == "*"`,
 				Pipelines: []component.ID{metrics0, metrics1},
 			},
 		},
@@ -100,15 +100,15 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		DefaultPipelines: []component.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where resource.attributes["value"] > 2.5`,
+				Statement: `route() where attributes["value"] > 2.5`,
 				Pipelines: []component.ID{metrics0},
 			},
 			{
-				Statement: `route() where resource.attributes["value"] > 3.0`,
+				Statement: `route() where attributes["value"] > 3.0`,
 				Pipelines: []component.ID{metrics1},
 			},
 			{
-				Statement: `route() where resource.attributes["value"] == 1.0`,
+				Statement: `route() where attributes["value"] == 1.0`,
 				Pipelines: []component.ID{metricsDefault, metrics0},
 			},
 		},
@@ -272,7 +272,7 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 		DefaultPipelines: []component.ID{metricsDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `delete_key(resource.attributes, "X-Tenant") where resource.attributes["X-Tenant"] == "acme"`,
+				Statement: `delete_key(attributes, "X-Tenant") where attributes["X-Tenant"] == "acme"`,
 				Pipelines: []component.ID{metricsOther},
 			},
 		},
@@ -328,7 +328,7 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 
 	cfg := &Config{
 		Table: []RoutingTableItem{{
-			Statement: `route() where resource.attributes["X-Tenant"] == "acme"`,
+			Statement: `route() where attributes["X-Tenant"] == "acme"`,
 			Pipelines: []component.ID{metricsOther},
 		}},
 	}
