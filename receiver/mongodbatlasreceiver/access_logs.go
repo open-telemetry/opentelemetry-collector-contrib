@@ -170,7 +170,9 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 			alr.record[project.ID] = append(alr.record[project.ID], clusterCheckpoint)
 		}
 		clusterCheckpoint.NextPollStartTime = alr.pollCluster(ctx, pc, project, cluster, clusterCheckpoint.NextPollStartTime, et)
-		alr.checkpoint(ctx, project.ID)
+		if err = alr.checkpoint(ctx, project.ID); err != nil {
+			alr.logger.Warn("error checkpointing", zap.Error(err), zap.String("project", pc.Name))
+		}
 	}
 
 	return nil
