@@ -80,6 +80,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
@@ -202,6 +203,7 @@ func Components() (otelcol.Factories, error) {
 		basicauthextension.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		dbstorage.NewFactory(),
+		dockerobserver.NewFactory(),
 		ecstaskobserver.NewFactory(),
 		filestorage.NewFactory(),
 		headerssetterextension.NewFactory(),

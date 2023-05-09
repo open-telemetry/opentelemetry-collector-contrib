@@ -62,6 +62,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.76.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.76.3
@@ -679,6 +680,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sob
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver => ../../receiver/haproxyreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver => ../../receiver/httpcheckreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ../../extension/observer/dockerobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ../../extension/observer/k8sobserver
 
