@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: googlecloudspannerreceiver
-note: Changing type of USED_BYTES from INT to FLOAT
-issues: [21500]
-subtext:
