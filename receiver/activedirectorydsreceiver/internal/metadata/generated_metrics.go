@@ -6,111 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for activedirectorydsreceiver metrics.
-type MetricsConfig struct {
-	ActiveDirectoryDsBindRate                                  MetricConfig `mapstructure:"active_directory.ds.bind.rate"`
-	ActiveDirectoryDsLdapBindLastSuccessfulTime                MetricConfig `mapstructure:"active_directory.ds.ldap.bind.last_successful.time"`
-	ActiveDirectoryDsLdapBindRate                              MetricConfig `mapstructure:"active_directory.ds.ldap.bind.rate"`
-	ActiveDirectoryDsLdapClientSessionCount                    MetricConfig `mapstructure:"active_directory.ds.ldap.client.session.count"`
-	ActiveDirectoryDsLdapSearchRate                            MetricConfig `mapstructure:"active_directory.ds.ldap.search.rate"`
-	ActiveDirectoryDsNameCacheHitRate                          MetricConfig `mapstructure:"active_directory.ds.name_cache.hit_rate"`
-	ActiveDirectoryDsNotificationQueued                        MetricConfig `mapstructure:"active_directory.ds.notification.queued"`
-	ActiveDirectoryDsOperationRate                             MetricConfig `mapstructure:"active_directory.ds.operation.rate"`
-	ActiveDirectoryDsReplicationNetworkIo                      MetricConfig `mapstructure:"active_directory.ds.replication.network.io"`
-	ActiveDirectoryDsReplicationObjectRate                     MetricConfig `mapstructure:"active_directory.ds.replication.object.rate"`
-	ActiveDirectoryDsReplicationOperationPending               MetricConfig `mapstructure:"active_directory.ds.replication.operation.pending"`
-	ActiveDirectoryDsReplicationPropertyRate                   MetricConfig `mapstructure:"active_directory.ds.replication.property.rate"`
-	ActiveDirectoryDsReplicationSyncObjectPending              MetricConfig `mapstructure:"active_directory.ds.replication.sync.object.pending"`
-	ActiveDirectoryDsReplicationSyncRequestCount               MetricConfig `mapstructure:"active_directory.ds.replication.sync.request.count"`
-	ActiveDirectoryDsReplicationValueRate                      MetricConfig `mapstructure:"active_directory.ds.replication.value.rate"`
-	ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued MetricConfig `mapstructure:"active_directory.ds.security_descriptor_propagations_event.queued"`
-	ActiveDirectoryDsSuboperationRate                          MetricConfig `mapstructure:"active_directory.ds.suboperation.rate"`
-	ActiveDirectoryDsThreadCount                               MetricConfig `mapstructure:"active_directory.ds.thread.count"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		ActiveDirectoryDsBindRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapBindLastSuccessfulTime: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapBindRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapClientSessionCount: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsLdapSearchRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsNameCacheHitRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsNotificationQueued: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsOperationRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationNetworkIo: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationObjectRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationOperationPending: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationPropertyRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationSyncObjectPending: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationSyncRequestCount: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsReplicationValueRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsSuboperationRate: MetricConfig{
-			Enabled: true,
-		},
-		ActiveDirectoryDsThreadCount: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeBindType specifies the a value bind_type attribute.
 type AttributeBindType int
@@ -1234,11 +1133,6 @@ func newMetricActiveDirectoryDsThreadCount(cfg MetricConfig) metricActiveDirecto
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1274,12 +1168,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsConfig(),
 	}
 }
 

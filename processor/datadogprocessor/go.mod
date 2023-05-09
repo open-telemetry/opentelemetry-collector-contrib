@@ -7,11 +7,11 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.2.0
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.76.2-0.20230502195822-4df44379e094
-	go.opentelemetry.io/collector/component v0.76.2-0.20230502195822-4df44379e094
-	go.opentelemetry.io/collector/consumer v0.76.2-0.20230502195822-4df44379e094
-	go.opentelemetry.io/collector/exporter v0.76.2-0.20230502195822-4df44379e094
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230502184615-d93102a4c623
+	go.opentelemetry.io/collector v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/component v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/consumer v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/exporter v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230508160606-833cbdaf75cc
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0
 )
@@ -59,9 +59,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/confmap v0.76.2-0.20230502195822-4df44379e094 // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230502195822-4df44379e094 // indirect
-	go.opentelemetry.io/collector/semconv v0.76.2-0.20230502195822-4df44379e094 // indirect
+	go.opentelemetry.io/collector/confmap v0.76.2-0.20230508160606-833cbdaf75cc // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230508160606-833cbdaf75cc // indirect
+	go.opentelemetry.io/collector/semconv v0.76.2-0.20230508160606-833cbdaf75cc // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
 	go.opentelemetry.io/otel/trace v1.15.1 // indirect

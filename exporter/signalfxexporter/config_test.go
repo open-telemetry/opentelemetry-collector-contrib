@@ -73,11 +73,8 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      true,
-					NumConsumers: 10,
-					QueueSize:    5000,
-				}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: true,
 				},
 				LogDimensionUpdates: false,
