@@ -166,54 +166,53 @@ func TestValidateTags(t *testing.T) {
 
 	tests := []struct {
 		id           component.ID
-		tags		 map[string]*string
+		tags         map[string]*string
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "validate-correct"),
+			id:   component.NewIDWithName(typeStr, "validate-correct"),
 			tags: map[string]*string{"basicKey": &basicValue},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "too-little-tags"),
-			tags: emptyMap,
+			id:           component.NewIDWithName(typeStr, "too-little-tags"),
+			tags:         emptyMap,
 			errorMessage: "invalid amount of items. Please input at least 1 tag or remove the tag field",
 		},
 		{
-			id: component.NewIDWithName(typeStr, "too-many-tags"),
-			tags: bigMap,
+			id:           component.NewIDWithName(typeStr, "too-many-tags"),
+			tags:         bigMap,
 			errorMessage: "invalid amount of items. Please input at most 50 tags",
 		},
 		{
-			id: component.NewIDWithName(typeStr, "wrong-key-regex"),
-			tags: map[string]*string{"***": &basicValue},
-			errorMessage: "key - *** does not follow the regex pattern"+`^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`,
+			id:           component.NewIDWithName(typeStr, "wrong-key-regex"),
+			tags:         map[string]*string{"***": &basicValue},
+			errorMessage: "key - *** does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "wrong-value-regex"),
-			tags: map[string]*string{"basicKey": &wrongRegexValue},
-			errorMessage: "value - "+wrongRegexValue+" does not follow the regex pattern"+`^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`,
+			id:           component.NewIDWithName(typeStr, "wrong-value-regex"),
+			tags:         map[string]*string{"basicKey": &wrongRegexValue},
+			errorMessage: "value - " + wrongRegexValue + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "key-too-short"),
-			tags: map[string]*string{"": &basicValue},
+			id:           component.NewIDWithName(typeStr, "key-too-short"),
+			tags:         map[string]*string{"": &basicValue},
 			errorMessage: "key -  has an invalid length. Please use keys with a length of 1 to 128 characters",
 		},
 		{
-			id: component.NewIDWithName(typeStr, "key-too-long"),
-			tags: map[string]*string{strings.Repeat("a", 129): &basicValue},
-			errorMessage: "key - "+strings.Repeat("a", 129)+" has an invalid length. Please use keys with a length of 1 to 128 characters",
+			id:           component.NewIDWithName(typeStr, "key-too-long"),
+			tags:         map[string]*string{strings.Repeat("a", 129): &basicValue},
+			errorMessage: "key - " + strings.Repeat("a", 129) + " has an invalid length. Please use keys with a length of 1 to 128 characters",
 		},
 		{
-			id: component.NewIDWithName(typeStr, "value-too-short"),
-			tags: map[string]*string{"basicKey": &emptyValue},
-			errorMessage: "value - "+emptyValue+" has an invalid length. Please use values with a length of 1 to 256 characters",
+			id:           component.NewIDWithName(typeStr, "value-too-short"),
+			tags:         map[string]*string{"basicKey": &emptyValue},
+			errorMessage: "value - " + emptyValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
 		},
 		{
-			id: component.NewIDWithName(typeStr, "value-too-long"),
-			tags: map[string]*string{"basicKey": &tooLongValue},
-			errorMessage: "value - "+tooLongValue+" has an invalid length. Please use values with a length of 1 to 256 characters",
+			id:           component.NewIDWithName(typeStr, "value-too-long"),
+			tags:         map[string]*string{"basicKey": &tooLongValue},
+			errorMessage: "value - " + tooLongValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
 		},
-
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
