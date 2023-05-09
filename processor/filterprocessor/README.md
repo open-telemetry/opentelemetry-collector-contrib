@@ -110,7 +110,7 @@ Examples:
 ## Alternative Config Options
 
 All the following configurations can be expressed using OTTL configuration
-and may eventually be deprecated as part of [#18642](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642.)
+and may eventually be deprecated as part of [#18642](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642).
 
 The filter processor can be configured to include or exclude:
 
