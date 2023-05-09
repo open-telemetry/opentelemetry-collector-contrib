@@ -58,7 +58,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `sending_queue`
   - `enabled` (default = false)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
+  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
 ### HTTP settings
 
 - `read_buffer_size` (default=0): Read buffer size.

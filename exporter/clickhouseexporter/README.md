@@ -286,7 +286,7 @@ Processing:
 
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
-    - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data.
+    - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping data.
 - `retry_on_failure`
     - `enabled` (default = true)
     - `initial_interval` (default = 5s): The Time to wait after the first failure before retrying; ignored if `enabled`

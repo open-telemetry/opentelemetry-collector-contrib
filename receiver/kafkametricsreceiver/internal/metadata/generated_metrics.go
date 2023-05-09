@@ -6,83 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for kafkametricsreceiver metrics.
-type MetricsConfig struct {
-	KafkaBrokers                 MetricConfig `mapstructure:"kafka.brokers"`
-	KafkaConsumerGroupLag        MetricConfig `mapstructure:"kafka.consumer_group.lag"`
-	KafkaConsumerGroupLagSum     MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
-	KafkaConsumerGroupMembers    MetricConfig `mapstructure:"kafka.consumer_group.members"`
-	KafkaConsumerGroupOffset     MetricConfig `mapstructure:"kafka.consumer_group.offset"`
-	KafkaConsumerGroupOffsetSum  MetricConfig `mapstructure:"kafka.consumer_group.offset_sum"`
-	KafkaPartitionCurrentOffset  MetricConfig `mapstructure:"kafka.partition.current_offset"`
-	KafkaPartitionOldestOffset   MetricConfig `mapstructure:"kafka.partition.oldest_offset"`
-	KafkaPartitionReplicas       MetricConfig `mapstructure:"kafka.partition.replicas"`
-	KafkaPartitionReplicasInSync MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
-	KafkaTopicPartitions         MetricConfig `mapstructure:"kafka.topic.partitions"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		KafkaBrokers: MetricConfig{
-			Enabled: true,
-		},
-		KafkaConsumerGroupLag: MetricConfig{
-			Enabled: true,
-		},
-		KafkaConsumerGroupLagSum: MetricConfig{
-			Enabled: true,
-		},
-		KafkaConsumerGroupMembers: MetricConfig{
-			Enabled: true,
-		},
-		KafkaConsumerGroupOffset: MetricConfig{
-			Enabled: true,
-		},
-		KafkaConsumerGroupOffsetSum: MetricConfig{
-			Enabled: true,
-		},
-		KafkaPartitionCurrentOffset: MetricConfig{
-			Enabled: true,
-		},
-		KafkaPartitionOldestOffset: MetricConfig{
-			Enabled: true,
-		},
-		KafkaPartitionReplicas: MetricConfig{
-			Enabled: true,
-		},
-		KafkaPartitionReplicasInSync: MetricConfig{
-			Enabled: true,
-		},
-		KafkaTopicPartitions: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
 
 type metricKafkaBrokers struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -653,11 +580,6 @@ func newMetricKafkaTopicPartitions(cfg MetricConfig) metricKafkaTopicPartitions 
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -686,12 +608,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsConfig(),
 	}
 }
 

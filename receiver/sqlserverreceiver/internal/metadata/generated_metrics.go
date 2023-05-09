@@ -6,145 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for sqlserverreceiver metrics.
-type MetricsConfig struct {
-	SqlserverBatchRequestRate            MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
-	SqlserverBatchSQLCompilationRate     MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
-	SqlserverBatchSQLRecompilationRate   MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
-	SqlserverLockWaitRate                MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
-	SqlserverLockWaitTimeAvg             MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
-	SqlserverPageBufferCacheHitRatio     MetricConfig `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
-	SqlserverPageCheckpointFlushRate     MetricConfig `mapstructure:"sqlserver.page.checkpoint.flush.rate"`
-	SqlserverPageLazyWriteRate           MetricConfig `mapstructure:"sqlserver.page.lazy_write.rate"`
-	SqlserverPageLifeExpectancy          MetricConfig `mapstructure:"sqlserver.page.life_expectancy"`
-	SqlserverPageOperationRate           MetricConfig `mapstructure:"sqlserver.page.operation.rate"`
-	SqlserverPageSplitRate               MetricConfig `mapstructure:"sqlserver.page.split.rate"`
-	SqlserverTransactionRate             MetricConfig `mapstructure:"sqlserver.transaction.rate"`
-	SqlserverTransactionWriteRate        MetricConfig `mapstructure:"sqlserver.transaction.write.rate"`
-	SqlserverTransactionLogFlushDataRate MetricConfig `mapstructure:"sqlserver.transaction_log.flush.data.rate"`
-	SqlserverTransactionLogFlushRate     MetricConfig `mapstructure:"sqlserver.transaction_log.flush.rate"`
-	SqlserverTransactionLogFlushWaitRate MetricConfig `mapstructure:"sqlserver.transaction_log.flush.wait.rate"`
-	SqlserverTransactionLogGrowthCount   MetricConfig `mapstructure:"sqlserver.transaction_log.growth.count"`
-	SqlserverTransactionLogShrinkCount   MetricConfig `mapstructure:"sqlserver.transaction_log.shrink.count"`
-	SqlserverTransactionLogUsage         MetricConfig `mapstructure:"sqlserver.transaction_log.usage"`
-	SqlserverUserConnectionCount         MetricConfig `mapstructure:"sqlserver.user.connection.count"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		SqlserverBatchRequestRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverBatchSQLCompilationRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverBatchSQLRecompilationRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverLockWaitRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverLockWaitTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverPageBufferCacheHitRatio: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverPageCheckpointFlushRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverPageLazyWriteRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverPageLifeExpectancy: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverPageOperationRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverPageSplitRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionWriteRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionLogFlushDataRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionLogFlushRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionLogFlushWaitRate: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionLogGrowthCount: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionLogShrinkCount: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverTransactionLogUsage: MetricConfig{
-			Enabled: true,
-		},
-		SqlserverUserConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for sqlserverreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
-	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
-	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		SqlserverComputerName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		SqlserverDatabaseName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		SqlserverInstanceName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-	}
-}
 
 // AttributePageOperations specifies the a value page.operations attribute.
 type AttributePageOperations int
@@ -1158,12 +1023,6 @@ func newMetricSqlserverUserConnectionCount(cfg MetricConfig) metricSqlserverUser
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1202,13 +1061,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
