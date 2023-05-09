@@ -21,16 +21,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
-)
-
-const (
-	typeStr   = "tcplog"
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver/internal/metadata"
 )
 
 // NewFactory creates a factory for tcp receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, stability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -39,7 +35,7 @@ type ReceiverType struct{}
 
 // Type is the receiver type
 func (f ReceiverType) Type() component.Type {
-	return typeStr
+	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version
