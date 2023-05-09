@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,17 +24,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/metadata"
 )
 
-const (
-	typeStr component.Type = "ecs_observer"
-)
-
 // NewFactory creates a factory for ECSObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.Stability,
+		metadata.ExtensionStability,
 	)
 }
 

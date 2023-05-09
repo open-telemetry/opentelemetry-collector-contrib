@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "loki"
-	Stability = component.StabilityLevelBeta
+	Type          = "loki"
+	LogsStability = component.StabilityLevelBeta
 )

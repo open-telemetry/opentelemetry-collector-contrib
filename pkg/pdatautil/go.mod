@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
 )
 
 require (
@@ -21,4 +21,9 @@ require (
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
+
+retract (
+	v0.76.2
+	v0.76.1
 )

@@ -1,5 +1,11 @@
 type: elasticsearchreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+
 resource_attributes:
   elasticsearch.cluster.name:
     description: The name of the elasticsearch cluster.

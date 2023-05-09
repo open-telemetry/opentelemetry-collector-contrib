@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.249
+	github.com/aws/aws-sdk-go v1.44.255
 	github.com/aws/aws-xray-sdk-go v1.8.1
 )
 
@@ -25,4 +25,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

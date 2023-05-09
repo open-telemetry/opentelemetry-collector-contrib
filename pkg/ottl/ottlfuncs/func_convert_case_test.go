@@ -188,7 +188,7 @@ func Test_convertCase(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := ConvertCase(tt.target, tt.toCase)
+			exprFunc, err := convertCase(tt.target, tt.toCase)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -215,7 +215,7 @@ func Test_convertCaseError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ConvertCase(tt.target, tt.toCase)
+			_, err := convertCase(tt.target, tt.toCase)
 			require.Error(t, err)
 			assert.ErrorContains(t, err, "invalid case: unset, allowed cases are: lower, upper, snake, camel")
 		})
@@ -252,7 +252,7 @@ func Test_convertCaseRuntimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := ConvertCase[any](tt.target, tt.toCase)
+			exprFunc, err := convertCase[any](tt.target, tt.toCase)
 			require.NoError(t, err)
 			_, err = exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)

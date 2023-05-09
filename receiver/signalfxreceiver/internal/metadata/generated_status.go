@@ -7,6 +7,7 @@ import (
 )
 
 const (
-	Type      = "signalfxreceiver"
-	Stability = component.StabilityLevelBeta
+	Type             = "signalfx"
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

@@ -1,0 +1,7 @@
+type: sapm
+
+status:
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [contrib]

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "hostobserver"
-	Stability = component.StabilityLevelBeta
+	Type               = "host_observer"
+	ExtensionStability = component.StabilityLevelBeta
 )

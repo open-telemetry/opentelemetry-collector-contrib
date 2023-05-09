@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "postgresqlreceiver"
-	Stability = component.StabilityLevelBeta
+	Type             = "postgresqlreceiver"
+	MetricsStability = component.StabilityLevelBeta
 )

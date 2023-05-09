@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
@@ -36,11 +37,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				ProxyConfig: proxy.Config{
 					TCPAddr: confignet.TCPAddr{

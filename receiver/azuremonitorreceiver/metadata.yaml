@@ -2,8 +2,8 @@ type: azuremonitor
 
 status:
    class: receiver
-   stability: development
-   pipelines: [metrics]
+   stability:
+    development: [metrics]
    distributions: [contrib]
 
 resource_attributes:

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "pprofextension"
-	Stability = component.StabilityLevelBeta
+	Type               = "pprof"
+	ExtensionStability = component.StabilityLevelBeta
 )

@@ -184,6 +184,9 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "filestats",
+		},
+		{
 			receiver: "flinkmetrics",
 		},
 		{
@@ -371,6 +374,9 @@ func TestDefaultReceivers(t *testing.T) {
 				}
 				return cfg
 			},
+		},
+		{
+			receiver: "snowflake",
 		},
 		{
 			receiver: "splunk_hec",

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,15 +76,21 @@ type queuedDimension struct {
 }
 
 type DimensionClientOptions struct {
-	Token                 configopaque.String
-	APIURL                *url.URL
-	APITLSConfig          *tls.Config
-	LogUpdates            bool
-	Logger                *zap.Logger
-	SendDelay             int
-	PropertiesMaxBuffered int
-	MetricsConverter      translation.MetricsConverter
-	ExcludeProperties     []dpfilters.PropertyFilter
+	Token        configopaque.String
+	APIURL       *url.URL
+	APITLSConfig *tls.Config
+	LogUpdates   bool
+	Logger       *zap.Logger
+	SendDelay    time.Duration
+	// In case of having issues sending dimension updates to SignalFx,
+	// buffer a fixed number of updates.
+	MaxBuffered         int
+	MetricsConverter    translation.MetricsConverter
+	ExcludeProperties   []dpfilters.PropertyFilter
+	MaxConnsPerHost     int
+	MaxIdleConns        int
+	MaxIdleConnsPerHost int
+	IdleConnTimeout     time.Duration
 }
 
 // NewDimensionClient returns a new client
@@ -98,9 +104,10 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 				KeepAlive: 30 * time.Second,
 				DualStack: true,
 			}).DialContext,
-			MaxIdleConns:        20,
-			MaxIdleConnsPerHost: 20,
-			IdleConnTimeout:     30 * time.Second,
+			MaxConnsPerHost:     options.MaxConnsPerHost,
+			MaxIdleConns:        options.MaxIdleConns,
+			MaxIdleConnsPerHost: options.MaxIdleConnsPerHost,
+			IdleConnTimeout:     options.IdleConnTimeout,
 			TLSHandshakeTimeout: 10 * time.Second,
 			TLSClientConfig:     options.APITLSConfig,
 		},
@@ -111,9 +118,9 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 		ctx:               ctx,
 		Token:             options.Token,
 		APIURL:            options.APIURL,
-		sendDelay:         time.Duration(options.SendDelay) * time.Second,
+		sendDelay:         options.SendDelay,
 		delayedSet:        make(map[DimensionKey]*DimensionUpdate),
-		delayedQueue:      make(chan *queuedDimension, options.PropertiesMaxBuffered),
+		delayedQueue:      make(chan *queuedDimension, options.MaxBuffered),
 		requestSender:     sender,
 		client:            client,
 		now:               time.Now,

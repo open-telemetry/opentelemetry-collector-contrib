@@ -1,6 +1,7 @@
-type: ecstaskobserver
+type: ecs_task_observer
 
 status:
   class: extension
-  stability: beta
+  stability:
+    beta: [extension]
   distributions: [contrib]

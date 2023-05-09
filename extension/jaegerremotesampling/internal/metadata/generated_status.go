@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "jaegerremotesampling"
-	Stability = component.StabilityLevelAlpha
+	Type               = "jaegerremotesampling"
+	ExtensionStability = component.StabilityLevelAlpha
 )

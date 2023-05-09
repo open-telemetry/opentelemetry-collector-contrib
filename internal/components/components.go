@@ -1,4 +1,4 @@
-// Copyright 2019 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,6 +80,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
@@ -126,7 +127,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -175,6 +175,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
@@ -202,6 +203,7 @@ func Components() (otelcol.Factories, error) {
 		basicauthextension.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		dbstorage.NewFactory(),
+		dockerobserver.NewFactory(),
 		ecstaskobserver.NewFactory(),
 		filestorage.NewFactory(),
 		headerssetterextension.NewFactory(),
@@ -240,7 +242,6 @@ func Components() (otelcol.Factories, error) {
 		couchdbreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
-		dotnetdiagnosticsreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
 		expvarreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
@@ -290,6 +291,7 @@ func Components() (otelcol.Factories, error) {
 		simpleprometheusreceiver.NewFactory(),
 		skywalkingreceiver.NewFactory(),
 		snmpreceiver.NewFactory(),
+		snowflakereceiver.NewFactory(),
 		solacereceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),
 		sqlqueryreceiver.NewFactory(),
