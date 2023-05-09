@@ -5,14 +5,14 @@ go 1.19
 require (
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.75.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.75.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.76.3
 	github.com/prometheus/common v0.42.0
 	github.com/prometheus/prometheus v0.42.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/pdata v1.0.0-rc9.0.20230424163446-8e33ded10872
-	go.opentelemetry.io/collector/semconv v0.75.1-0.20230424163446-8e33ded10872
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/semconv v0.76.2-0.20230508160606-833cbdaf75cc
 )
 
 require (
@@ -28,13 +28,13 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.75.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.76.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.15.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.75.1-0.20230424163446-8e33ded10872 // indirect
+	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230508160606-833cbdaf75cc // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -58,4 +58,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
 
-retract v0.65.0
+retract (
+	v0.76.2
+	v0.76.1
+	v0.65.0
+)

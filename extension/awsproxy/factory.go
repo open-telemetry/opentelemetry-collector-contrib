@@ -22,23 +22,21 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr = "awsproxy"
-
 	defaultEndpoint = "0.0.0.0:2000"
 )
 
 // NewFactory creates a factory for awsproxy extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelUndefined,
+		metadata.ExtensionStability,
 	)
 }
 

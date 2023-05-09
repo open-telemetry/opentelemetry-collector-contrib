@@ -29,7 +29,28 @@ const (
 	modeValue = "value"
 )
 
-func ReplaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
+type ReplaceAllPatternsArguments[K any] struct {
+	Target       ottl.PMapGetter[K] `ottlarg:"0"`
+	Mode         string             `ottlarg:"1"`
+	RegexPattern string             `ottlarg:"2"`
+	Replacement  string             `ottlarg:"3"`
+}
+
+func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("replace_all_patterns", &ReplaceAllPatternsArguments[K]{}, createReplaceAllPatternsFunction[K])
+}
+
+func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ReplaceAllPatternsArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
+	}
+
+	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement)
+}
+
+func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
@@ -52,14 +73,14 @@ func ReplaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 					updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacement)
 					updated.PutStr(key, updatedString)
 				} else {
-					updated.PutStr(key, originalValue.Str())
+					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			case modeKey:
 				if compiledPattern.MatchString(key) {
 					updatedKey := compiledPattern.ReplaceAllLiteralString(key, replacement)
-					updated.PutStr(updatedKey, originalValue.Str())
+					originalValue.CopyTo(updated.PutEmpty(updatedKey))
 				} else {
-					updated.PutStr(key, originalValue.Str())
+					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			}
 			return true

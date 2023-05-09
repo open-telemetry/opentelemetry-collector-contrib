@@ -38,7 +38,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, metadata.Stability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
 	)
 }
 

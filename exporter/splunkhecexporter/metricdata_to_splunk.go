@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -302,7 +302,8 @@ func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, er
 
 	for _, e := range events {
 		cloned := copyEventWithoutValues(e)
-		data, err := jsoniter.Marshal(cloned)
+		marshaler := jsoniter.ConfigCompatibleWithStandardLibrary
+		data, err := marshaler.Marshal(cloned)
 		if err != nil {
 			return nil, err
 		}

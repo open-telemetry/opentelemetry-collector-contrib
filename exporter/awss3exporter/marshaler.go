@@ -1,4 +1,4 @@
-// Copyright 2022 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,20 +18,32 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
-type Marshaler interface {
+type marshaler interface {
 	MarshalTraces(td ptrace.Traces) ([]byte, error)
 	MarshalLogs(ld plog.Logs) ([]byte, error)
-	Format() string
+	MarshalMetrics(md pmetric.Metrics) ([]byte, error)
+	format() string
 }
 
 var (
 	ErrUnknownMarshaler = errors.New("unknown marshaler")
 )
 
-func NewMarshaler(name string, logger *zap.Logger) (Marshaler, error) {
-	return nil, nil
+func NewMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
+	marshaler := &s3Marshaler{logger: logger}
+	switch mType {
+	case OtlpJSON:
+		marshaler.logsMarshaler = &plog.JSONMarshaler{}
+		marshaler.tracesMarshaler = &ptrace.JSONMarshaler{}
+		marshaler.metricsMarshaler = &pmetric.JSONMarshaler{}
+		marshaler.fileFormat = "json"
+	default:
+		return nil, ErrUnknownMarshaler
+	}
+	return marshaler, nil
 }

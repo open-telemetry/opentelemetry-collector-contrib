@@ -15,7 +15,6 @@ all_set:
       enabled: true
     system.disk.weighted_io_time:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     system.disk.io:
@@ -32,4 +31,3 @@ none_set:
       enabled: false
     system.disk.weighted_io_time:
       enabled: false
-  resource_attributes:

@@ -194,10 +194,13 @@ exporters:
 
 You can combine and create custom Resource attributes using [transform](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) processor. For example:
 ```yaml
-    transform:
-     logs:
-       queries:
-       - set(resource.attributes["applicationName"], Concat("-", "development-environment", resource.attributes["k8s.namespace.name"]))
+    processors:
+      transform:
+        error_mode: ignore
+        log_statements:
+          - context: resource
+            statements:
+            - set(attributes["applicationName"], Concat(["development-environment", attributes["k8s.namespace.name"]], "-"))
 ```
 
 Then you can use the custom Resource attribute in Coralogix exporter:
@@ -209,6 +212,53 @@ exporters:
       - "applicationName" 
     subsystem_name_attributes:
       - "host.name"
+```
+
+### Exporting to multiple teams based on attributes
+You can export the signals based on your business logic (attributes) to different Coralogix teams. To achieve this, you'll need to use the [`filter`](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md) processor and setup one pipeline per team. You can setup your `filter` processors as following (example with metrics):
+```
+processors:  
+  filter/teamA:
+    metrics:
+      datapoint:
+          - 'attributes["your_label"] != "teamA"'
+  filter/teamB:
+    metrics:
+      datapoint:
+          - 'attributes["your_label"] != "teamB"'
+```
+
+This configuration ensures separate processor per each team. Any data points without an attribute for a particular team will be dropped from exporting. 
+
+Secondly, set up an individual exporter per each team:
+```
+exporters:
+  coralogix/teamA:
+    metrics:
+      endpoint: "otel-metrics.coralogix.com:443"
+    private_key: <private_key_for_teamA>
+    application_name: "MyBusinessEnvironment"
+    subsystem_name: "MyBusinessSystem"
+  coralogix/teamB:
+    metrics:
+      endpoint: "otel-metrics.coralogix.com:443"
+    private_key: <private_key_for_teamB>
+    application_name: "MyBusinessEnvironment"
+    subsystem_name: "MyBusinessSystem"
+```
+
+Finally, join each processor and exporter (and any other components you wish) in the pipelines. Here is an example with a Prometheus receiver:
+```
+service:
+  pipelines:
+    metrics/1:
+      receivers: [prometheus]
+      processors: [filter/teamA]
+      exporters: [coralogix/teamA]
+    metrics/2:
+      receivers: [prometheus]
+      processors: [filter/teamB]
+      exporters: [coralogix/teamB]
 ```
 
 ### Need help?

@@ -7,6 +7,7 @@ import (
 )
 
 const (
-	Type      = "splunkhecreceiver"
-	Stability = component.StabilityLevelBeta
+	Type             = "splunk_hec"
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

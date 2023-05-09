@@ -534,7 +534,7 @@ metadata:
     metrics:
       - name: "used_bytes"
         column_name: "USED_BYTES"
-        value_type: "int"
+        value_type: "float"
         data:
           type: "gauge"
         unit: "byte"

@@ -228,7 +228,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			name: "drop everything by dropping all spans",
 			conditions: TraceFilters{
 				SpanConditions: []string{
-					`IsMatch(name, "operation.*") == true`,
+					`IsMatch(name, "operation.*")`,
 				},
 			},
 			filterEverything: true,

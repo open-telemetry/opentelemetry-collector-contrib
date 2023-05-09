@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "oracledbreceiver"
-	Stability = component.StabilityLevelAlpha
+	Type             = "oracledbreceiver"
+	MetricsStability = component.StabilityLevelAlpha
 )

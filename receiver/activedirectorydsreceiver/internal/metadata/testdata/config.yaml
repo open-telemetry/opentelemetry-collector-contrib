@@ -37,7 +37,6 @@ all_set:
       enabled: true
     active_directory.ds.thread.count:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     active_directory.ds.bind.rate:
@@ -76,4 +75,3 @@ none_set:
       enabled: false
     active_directory.ds.thread.count:
       enabled: false
-  resource_attributes:
