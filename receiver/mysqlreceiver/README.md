@@ -46,7 +46,7 @@ receivers:
     password: ${env:MYSQL_PASSWORD}
     database: otel
     collection_interval: 10s
-    perf_events_statements:
+    statement_events:
       digest_text_limit: 120
       time_limit: 24h
       limit: 250

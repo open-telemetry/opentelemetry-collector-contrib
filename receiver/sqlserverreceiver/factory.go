@@ -25,8 +25,7 @@ import (
 )
 
 const (
-	typeStr   = "sqlserver"
-	stability = component.StabilityLevelDevelopment
+	typeStr = "sqlserver"
 )
 
 // NewFactory creates a factory for SQL Server receiver.
@@ -34,7 +33,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
