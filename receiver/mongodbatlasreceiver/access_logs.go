@@ -217,9 +217,9 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectC
 		// of data, but that is a limitation of the API that we can't work around.
 		if pageCount == 1 {
 			// This slice access is safe as we have previously confirmed that the slice is not empty
-			mostRecentLogTimestamp, err := getTimestamp(accessLogs[0])
-			if err != nil {
-				alr.logger.Error("error getting latest log timestamp for calculating next poll timestamps", zap.Error(err),
+			mostRecentLogTimestamp, tsErr := getTimestamp(accessLogs[0])
+			if tsErr != nil {
+				alr.logger.Error("error getting latest log timestamp for calculating next poll timestamps", zap.Error(tsErr),
 					zap.String("project", project.Name), zap.String("clusterName", cluster.Name))
 				// If we are not able to get the latest log timestamp, we have to assume that we are collecting all
 				// data and don't want to risk duplicated data by re-polling the same data again.
@@ -391,10 +391,7 @@ func (alr *accessLogsReceiver) loadCheckpoint(ctx context.Context) {
 	if err = json.Unmarshal(cBytes, &record); err != nil {
 		alr.logger.Error("unable to decode stored record for access logs, continuing without a checkpoint", zap.Error(err))
 		alr.record = []*accessLogStorageRecord{}
-		return
 	}
-
-	return
 }
 
 func (alr *accessLogsReceiver) getClusterCheckpoint(groupID, clusterName string) *accessLogStorageRecord {
