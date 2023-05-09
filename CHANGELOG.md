@@ -30,6 +30,7 @@
 - `pkg/ottl`: Add support for complex indexing of Paths and Converters to allow accessing nested items. (#20754)
   All components using OTTL can take advantage of this feature.
 - `signalfxexporter`: Expose dimension_client configuration for dimension/metadata updates (#21512)
+- `pkg/stanza`: Add "unquote" operator (#10282)
 
 ### 🧰 Bug fixes 🧰
 
