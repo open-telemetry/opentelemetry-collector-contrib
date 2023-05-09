@@ -1,0 +1,8 @@
+type: statsd
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+

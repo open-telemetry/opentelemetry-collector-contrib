@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package statsdreceiver implements a collector receiver that listens
 // on UDP port 8125 by default for incoming StatsD messages and parses
 // them into OTLP equivalent metric representations.
