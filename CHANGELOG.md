@@ -4,6 +4,49 @@
 
 <!-- next version -->
 
+## v0.77.0
+
+### 🛑 Breaking changes 🛑
+
+- `dotnetdiagnosticsreceiver`: Removing component which has been unmaintained for over 6 months (#13218)
+- `cmd/mdatagen`: Don't expose `resource_attributes` user config section if it's empty. (#21519)
+- `pkg/ottl`: Reimplement all OTTL function factories to implement the `ottl.Factory` interface. (#14712)
+  The `ottl.Factory` interface allows making factories extendable and defines
+  canonical names for the functions across components using the OTTL.
+
+### 🚀 New components 🚀
+
+- `datasetexporter`: Add new DataSet exporter. (#20660)
+
+### 💡 Enhancements 💡
+
+- `receiver/azuremonitorreceiver`: Providing an option to include resource tags and location as metric attributes (#21173)
+- `mdatagen`: Support stability level per signal (#21153)
+- `filestatsreceiver`: Promote filestats receiver to alpha, add to the otelcontribcol tests. (#21257)
+- `mdatagen`: Add support for slice and map attributes. (#18272)
+- `receiver/mongodbatlasreceiver`: emit "`mongodb_atlas.cluster.name`" attribute which is thename of the cluster as defined in Atlas. This attribute is disabled by default, if you want to emit it, you'll need to explicitly enable it. (#21154)
+- `pkg/ottl`: Allow using Converters as constant boolean expressions (#20911)
+  This means you don't need to add `== true` after `IsMatch` in OTTL conditions.
+- `pkg/ottl`: Add support for complex indexing of Paths and Converters to allow accessing nested items. (#20754)
+  All components using OTTL can take advantage of this feature.
+- `signalfxexporter`: Expose dimension_client configuration for dimension/metadata updates (#21512)
+
+### 🧰 Bug fixes 🧰
+
+- `snowflakereceiver`: Wiring snowflakereceiver component by adding it to components.go (#21381)
+- `pkg/stanza`: Fix errors in loop evaluating file attributes on windows if the file path contains a Junction (#21088)
+- `clickhouseexporter`: Fix insert metrics with duplicate scope data (#21082)
+- `transformprocessor`: Fixed a scenario where replace_all_patterns would wipe out non-string values on key name change. (#21109)
+- `influxdbexporter`: handle empty attribute values emitted by hostmetricsreceiver with logger.Debug instead of PermanentError (#21474)
+- `receiver/k8scluster`: Make sure the k8scluster receiver is watching for v2 and v2beta2 HorizontalPodAutoscalers for Kubernetes 1.26 (#20480)
+- `splunkhecexporter`: Enforce marshaling json with sorted keys by alphabetical order to produce identical hashes when merging events. (#21486)
+- `googlecloudspannerreceiver`: Changing type of USED_BYTES from INT to FLOAT (#21500)
+- `receiver/mongodbatlasreceiver`: Disk Usage & Utilization metrics are now being reported correctly. (#21180)
+- `receiver/mongodbatlasreceiver`: Reduce the likelihood that mongodbatlas log receivers will emit empty logs, causing unnecessary events to propagate through a pipeline. (#14170)
+- `datadogexporter`: Use literal 'host' resource attribute on OTLP payloads when present as the host value to avoid double tagging. (#21507)
+- `receiver/nsx`: Remove incorrectly exposed resource attributes from the user configuration interface. (#21523)
+- `signalfxexporter`: disk.utilization and disk.summary_utilization now matches the df command by only counting non-root usage. disk.utilization = (used/(used + free)) * 100 (#20656)
+
 ## v0.76.1
 
 ### 🛑 Breaking changes 🛑
