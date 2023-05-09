@@ -19,6 +19,8 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
 const (
@@ -144,7 +146,7 @@ func fromMeasure(measure stats.Measure, agg *view.Aggregation) *view.View {
 }
 
 func buildReceiverCustomMetricName(metric string) string {
-	return receiverKey + nameSep + string(componentType) + nameSep + metric
+	return receiverKey + nameSep + string(metadata.Type) + nameSep + metric
 }
 
 // recordFailedReconnection increments the metric that records failed reconnection event.
