@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "vcenter"
-	stability = component.StabilityLevelAlpha
+	typeStr = "vcenter"
 )
 
 // NewFactory returns the receiver factory for the vcenterreceiver
@@ -38,7 +37,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 

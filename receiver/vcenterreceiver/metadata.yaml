@@ -1,5 +1,11 @@
 type: vcenterreceiver
 
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
