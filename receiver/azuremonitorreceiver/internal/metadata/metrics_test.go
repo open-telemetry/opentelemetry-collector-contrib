@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 )
 
 type testConfigCollection int
