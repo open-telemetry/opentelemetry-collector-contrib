@@ -34,14 +34,13 @@ import (
 )
 
 const (
-	accessLogStorageKey           = "last_endtime_access_logs"
-	defaultAccessLogsPollInterval = time.Minute
+	accessLogStorageKey           = "last_endtime_access_logs_%s"
+	defaultAccessLogsPollInterval = 5 * time.Minute
 	defaultAccessLogsPageSize     = 20000
 	defaultAccessLogsMaxPages     = 10
 )
 
 type accessLogStorageRecord struct {
-	GroupID           string    `json:"group_id"`
 	ClusterName       string    `json:"cluster_name"`
 	NextPollStartTime time.Time `json:"next_poll_start_time"`
 }
@@ -59,11 +58,10 @@ type accessLogsReceiver struct {
 	cfg           *Config
 	consumer      consumer.Logs
 
-	record       []*accessLogStorageRecord
-	pollInterval time.Duration
-	authResult   *bool
-	wg           *sync.WaitGroup
-	cancel       context.CancelFunc
+	record     map[string][]*accessLogStorageRecord
+	authResult *bool
+	wg         *sync.WaitGroup
+	cancel     context.CancelFunc
 }
 
 func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) *accessLogsReceiver {
@@ -73,13 +71,9 @@ func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer c
 		cfg:           cfg,
 		logger:        settings.Logger,
 		consumer:      consumer,
-		pollInterval:  cfg.CollectionInterval,
 		wg:            &sync.WaitGroup{},
 		storageClient: storage.NewNopClient(),
-	}
-
-	if r.pollInterval == 0 {
-		r.pollInterval = defaultAccessLogsPollInterval
+		record:        make(map[string][]*accessLogStorageRecord),
 	}
 
 	for _, p := range cfg.Logs.Projects {
@@ -90,6 +84,9 @@ func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer c
 			}
 			if p.AccessLogs.MaxPages <= 0 {
 				p.AccessLogs.MaxPages = defaultAccessLogsMaxPages
+			}
+			if p.AccessLogs.PollInterval == 0 {
+				p.AccessLogs.PollInterval = defaultAccessLogsPollInterval
 			}
 		}
 	}
@@ -102,7 +99,6 @@ func (alr *accessLogsReceiver) Start(ctx context.Context, host component.Host, s
 	cancelCtx, cancel := context.WithCancel(ctx)
 	alr.cancel = cancel
 	alr.storageClient = storageClient
-	alr.loadCheckpoint(cancelCtx)
 
 	return alr.startPolling(cancelCtx)
 }
@@ -111,69 +107,73 @@ func (alr *accessLogsReceiver) Shutdown(ctx context.Context) error {
 	alr.logger.Debug("Shutting down accessLog receiver")
 	alr.cancel()
 	alr.wg.Wait()
-	return alr.checkpoint(ctx)
-}
-
-func (alr *accessLogsReceiver) startPolling(ctx context.Context) error {
-	t := time.NewTicker(alr.pollInterval)
-	alr.wg.Add(1)
-	go func() {
-		defer alr.wg.Done()
-		for {
-			select {
-			case <-t.C:
-				if err := alr.pollAccessLogs(ctx); err != nil {
-					alr.logger.Error("error while polling for accessLog", zap.Error(err))
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
 	return nil
 }
 
-func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context) error {
-	st := pcommon.NewTimestampFromTime(time.Now().Add(-alr.pollInterval)).AsTime()
-	et := time.Now()
-
+func (alr *accessLogsReceiver) startPolling(ctx context.Context) error {
 	for _, pc := range alr.cfg.Logs.Projects {
+		pc := pc
 		if pc.AccessLogs == nil || !pc.AccessLogs.IsEnabled() {
 			continue
 		}
 
-		project, err := alr.client.GetProject(ctx, pc.Name)
-		if err != nil {
-			alr.logger.Error("error retrieving project information", zap.Error(err), zap.String("project", pc.Name))
-			return err
-		}
-		clusters, err := alr.client.GetClusters(ctx, project.ID)
-		if err != nil {
-			alr.logger.Error("error retrieving cluster information", zap.Error(err), zap.String("project", pc.Name))
-			return err
-		}
-		filteredClusters, err := filterClusters(clusters, pc.ProjectConfig)
-		if err != nil {
-			alr.logger.Error("error filtering clusters", zap.Error(err), zap.String("project", pc.Name))
-			return err
-		}
-		for _, cluster := range filteredClusters {
-			clusterCheckpoint := alr.getClusterCheckpoint(project.ID, cluster.Name)
-
-			if clusterCheckpoint == nil {
-				clusterCheckpoint = &accessLogStorageRecord{
-					GroupID:           project.ID,
-					ClusterName:       cluster.Name,
-					NextPollStartTime: st,
+		t := time.NewTicker(pc.AccessLogs.PollInterval)
+		alr.wg.Add(1)
+		go func() {
+			defer alr.wg.Done()
+			for {
+				select {
+				case <-t.C:
+					if err := alr.pollAccessLogs(ctx, pc); err != nil {
+						alr.logger.Error("error while polling for accessLog", zap.Error(err))
+					}
+				case <-ctx.Done():
+					return
 				}
-				alr.record = append(alr.record, clusterCheckpoint)
 			}
-			clusterCheckpoint.NextPollStartTime = alr.pollCluster(ctx, pc, project, cluster, clusterCheckpoint.NextPollStartTime, et)
-		}
+		}()
 	}
 
-	return alr.checkpoint(ctx)
+	return nil
+}
+
+func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProjectConfig) error {
+	st := pcommon.NewTimestampFromTime(time.Now().Add(-1 * pc.AccessLogs.PollInterval)).AsTime()
+	et := time.Now()
+
+	project, err := alr.client.GetProject(ctx, pc.Name)
+	if err != nil {
+		alr.logger.Error("error retrieving project information", zap.Error(err), zap.String("project", pc.Name))
+		return err
+	}
+
+	alr.loadCheckpoint(ctx, project.ID)
+
+	clusters, err := alr.client.GetClusters(ctx, project.ID)
+	if err != nil {
+		alr.logger.Error("error retrieving cluster information", zap.Error(err), zap.String("project", pc.Name))
+		return err
+	}
+	filteredClusters, err := filterClusters(clusters, pc.ProjectConfig)
+	if err != nil {
+		alr.logger.Error("error filtering clusters", zap.Error(err), zap.String("project", pc.Name))
+		return err
+	}
+	for _, cluster := range filteredClusters {
+		clusterCheckpoint := alr.getClusterCheckpoint(project.ID, cluster.Name)
+
+		if clusterCheckpoint == nil {
+			clusterCheckpoint = &accessLogStorageRecord{
+				ClusterName:       cluster.Name,
+				NextPollStartTime: st,
+			}
+			alr.record[project.ID] = append(alr.record[project.ID], clusterCheckpoint)
+		}
+		clusterCheckpoint.NextPollStartTime = alr.pollCluster(ctx, pc, project, cluster, clusterCheckpoint.NextPollStartTime, et)
+		alr.checkpoint(ctx, project.ID)
+	}
+
+	return nil
 }
 
 func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectConfig, project *mongodbatlas.Project, cluster mongodbatlas.Cluster, startTime, now time.Time) time.Time {
@@ -366,38 +366,46 @@ func transformAccessLogs(now pcommon.Timestamp, accessLogs []*mongodbatlas.Acces
 	return logs
 }
 
-func (alr *accessLogsReceiver) checkpoint(ctx context.Context) error {
+func accessLogsCheckpointKey(groupID string) string {
+	return fmt.Sprintf(accessLogStorageKey, groupID)
+}
+
+func (alr *accessLogsReceiver) checkpoint(ctx context.Context, groupID string) error {
 	marshalBytes, err := json.Marshal(alr.record)
 	if err != nil {
 		return fmt.Errorf("unable to write checkpoint: %w", err)
 	}
-	return alr.storageClient.Set(ctx, accessLogStorageKey, marshalBytes)
+	return alr.storageClient.Set(ctx, accessLogsCheckpointKey(groupID), marshalBytes)
 }
 
-func (alr *accessLogsReceiver) loadCheckpoint(ctx context.Context) {
-	cBytes, err := alr.storageClient.Get(ctx, accessLogStorageKey)
+func (alr *accessLogsReceiver) loadCheckpoint(ctx context.Context, groupID string) {
+	cBytes, err := alr.storageClient.Get(ctx, accessLogsCheckpointKey(groupID))
 	if err != nil {
 		alr.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
-		alr.record = []*accessLogStorageRecord{}
+		alr.record[groupID] = []*accessLogStorageRecord{}
 		return
 	}
 
 	if cBytes == nil {
-		alr.record = []*accessLogStorageRecord{}
+		alr.record[groupID] = []*accessLogStorageRecord{}
 		return
 	}
 
 	var record []*accessLogStorageRecord
 	if err = json.Unmarshal(cBytes, &record); err != nil {
 		alr.logger.Error("unable to decode stored record for access logs, continuing without a checkpoint", zap.Error(err))
-		alr.record = []*accessLogStorageRecord{}
+		alr.record[groupID] = []*accessLogStorageRecord{}
 	}
 }
 
 func (alr *accessLogsReceiver) getClusterCheckpoint(groupID, clusterName string) *accessLogStorageRecord {
-	for _, v := range alr.record {
-		if v.GroupID == groupID && v.ClusterName == clusterName {
-			return v
+	for key, value := range alr.record {
+		if key == groupID {
+			for _, v := range value {
+				if v.ClusterName == clusterName {
+					return v
+				}
+			}
 		}
 	}
 	return nil

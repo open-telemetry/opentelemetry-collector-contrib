@@ -72,7 +72,9 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
       - `page_size` (default `20000`)
         - This is the number of access logs that will be processed per request to the MongoDB Atlas API. The maximum value is 20000.
       - `max_pages` (default `10`)
-        - This will limit how many pages of access logs the receiver will request from the MongoDB Atlas API for each project.
+        - This will limit how many pages of access logs the receiver will request from the MongoDB Atlas API for a project.
+      - `poll_interval` (default `5m`)
+        - This will define how frequently the MongoDB Atlas API is queried for Access Logs for the given project.
     - `include_clusters` (default empty)
     - `exclude_clusters` (default empty)
 - `events`
@@ -174,6 +176,7 @@ receivers:
         access_logs:
           page_size: 20000
           max_pages: 10
+          poll_interval: 5m
     # use of a storage extension is recommended to reduce chance of duplicated access logs
     storage: file_storage
 ```

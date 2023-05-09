@@ -83,10 +83,11 @@ type LogsProjectConfig struct {
 }
 
 type AccessLogsConfig struct {
-	Enabled    *bool `mapstructure:"enabled"`
-	PageSize   int64 `mapstructure:"page_size"`
-	MaxPages   int64 `mapstructure:"max_pages"`
-	AuthResult *bool `mapstructure:"auth_result"`
+	Enabled      *bool         `mapstructure:"enabled"`
+	PollInterval time.Duration `mapstructure:"poll_interval"`
+	PageSize     int64         `mapstructure:"page_size"`
+	MaxPages     int64         `mapstructure:"max_pages"`
+	AuthResult   *bool         `mapstructure:"auth_result"`
 }
 
 func (alc *AccessLogsConfig) IsEnabled() bool {

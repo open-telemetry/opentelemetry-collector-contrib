@@ -322,8 +322,9 @@ func TestLoadConfig(t *testing.T) {
 					Name: "Project 0",
 				},
 				AccessLogs: &AccessLogsConfig{
-					Enabled:    &referencableTrue,
-					AuthResult: &referencableTrue,
+					Enabled:      &referencableTrue,
+					AuthResult:   &referencableTrue,
+					PollInterval: time.Minute,
 				},
 				EnableAuditLogs: true,
 			},

@@ -89,7 +89,13 @@ func createCombinedLogReceiver(
 
 	if cfg.Logs.Enabled {
 		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
-		recv.accessLogs = newAccessLogsReceiver(params, cfg, consumer)
+		// Confirm at least one project is enabled for access logs before adding
+		for _, project := range cfg.Logs.Projects {
+			if project.AccessLogs != nil && project.AccessLogs.IsEnabled() {
+				recv.accessLogs = newAccessLogsReceiver(params, cfg, consumer)
+				break
+			}
+		}
 	}
 
 	if cfg.Events != nil {
