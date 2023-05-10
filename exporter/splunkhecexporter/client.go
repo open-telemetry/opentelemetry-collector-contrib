@@ -175,7 +175,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 
 	// There's some leftover unsent non-profiling data
 	if bufState.containsData {
-
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
 			return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
 		}
@@ -218,13 +217,13 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		}
 
 		// Continue adding events to buffer up to capacity.
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
@@ -236,25 +235,20 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
+			continue
+		}
+
+		state.bufFront = nil
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-		if state.containsData {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -292,13 +286,13 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 
 		// Continue adding events to buffer up to capacity.
 		b := buf.Bytes()
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
@@ -310,26 +304,20 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
+			continue
+		}
+
+		state.bufFront = nil
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-
-		if state.containsData {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -354,13 +342,13 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		}
 
 		// Continue adding events to buffer up to capacity.
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
@@ -372,26 +360,20 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
+			continue
+		}
+
+		state.bufFront = nil
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped trace event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-
-		if state.containsData {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
