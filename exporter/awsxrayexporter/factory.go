@@ -17,6 +17,7 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 
@@ -24,19 +25,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "awsxray"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
-)
-
 // NewFactory creates a factory for AWS-Xray exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {
