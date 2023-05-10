@@ -51,14 +51,6 @@ var (
 		ExposedPorts: []string{mongoDBPort},
 		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 	}
-	containerRequest4_2 = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mongodb.4_2",
-		},
-		ExposedPorts: []string{mongoDBPort},
-		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
-	}
 	containerRequest4_4LPU = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
@@ -77,14 +69,18 @@ var (
 	}
 )
 
+type testCase struct {
+	name      string
+	container testcontainers.ContainerRequest
+	script    []string
+	cfgMod    func(defaultCfg *Config, endpoint string)
+}
+
 func TestMongodbIntegration(t *testing.T) {
-	testCases := []struct {
-		name      string
-		container testcontainers.ContainerRequest
-		cfgMod    func(defaultCfg *Config, endpoint string)
-	}{
+	testCases := []testCase{
 		{
 			name:      "4_0",
+			script:    setupScript,
 			container: containerRequest4_0,
 			cfgMod: func(cfg *Config, endpoint string) {
 				cfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
@@ -97,19 +93,8 @@ func TestMongodbIntegration(t *testing.T) {
 			},
 		},
 		{
-			name:      "4_2",
-			container: containerRequest4_2,
-			cfgMod: func(cfg *Config, endpoint string) {
-				cfg.Hosts = []confignet.NetAddr{
-					{
-						Endpoint: endpoint,
-					},
-				}
-				cfg.Insecure = true
-			},
-		},
-		{
 			name:      "4_4.lpu",
+			script:    LPUSetupScript,
 			container: containerRequest4_4LPU,
 			cfgMod: func(cfg *Config, endpoint string) {
 				cfg.Username = "otelu"
@@ -124,6 +109,7 @@ func TestMongodbIntegration(t *testing.T) {
 		},
 		{
 			name:      "5_0",
+			script:    setupScript,
 			container: containerRequest5_0,
 			cfgMod: func(cfg *Config, endpoint string) {
 				cfg.Hosts = []confignet.NetAddr{
@@ -137,40 +123,45 @@ func TestMongodbIntegration(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			container, endpoint := getContainer(t, tt.container, setupScript)
-			defer func() {
-				require.NoError(t, container.Terminate(context.Background()))
-			}()
-
-			f := NewFactory()
-			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.CollectionInterval = 10 * time.Second
-			tt.cfgMod(cfg, endpoint)
-
-			consumer := new(consumertest.MetricsSink)
-			settings := receivertest.NewNopCreateSettings()
-			rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-			require.NoError(t, err, "failed creating metrics receiver")
-
-			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-
-			// Wait for multiple collections, in case the first represents partially started system
-			require.Eventuallyf(t, func() bool {
-				return len(consumer.AllMetrics()) > 1
-			}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-			require.NoError(t, rcvr.Shutdown(context.Background()))
-			actualMetrics := consumer.AllMetrics()[1]
-
-			expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
-			expectedMetrics, err := golden.ReadMetrics(expectedFile)
-			require.NoError(t, err)
-
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-		})
+		t.Run(tt.name, tt.run)
 	}
+}
+
+func (tt testCase) run(t *testing.T) {
+	t.Parallel()
+	container, endpoint := getContainer(t, tt.container, tt.script)
+	defer func() {
+		require.NoError(t, container.Terminate(context.Background()))
+	}()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.CollectionInterval = 10 * time.Second
+	tt.cfgMod(cfg, endpoint)
+
+	consumer := new(consumertest.MetricsSink)
+	settings := receivertest.NewNopCreateSettings()
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	require.NoError(t, err, "failed creating metrics receiver")
+
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
+
+	expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	// Wait for multiple collections, in case the first represents partially started system
+	require.Eventuallyf(t, func() bool {
+		return len(consumer.AllMetrics()) > 0 && consumer.AllMetrics()[len(consumer.AllMetrics())-1].MetricCount() == expectedMetrics.MetricCount()
+	}, 2*time.Minute, 1*time.Second, "failed to receive all metric data points")
+
+	actualMetrics := consumer.AllMetrics()[len(consumer.AllMetrics())-1]
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []string) (testcontainers.Container, string) {

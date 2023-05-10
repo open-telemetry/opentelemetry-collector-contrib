@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+// allow monkey patching for injecting pushLogData function in test
+var getPushLogFn = func(c *client) func(ctx context.Context, ld plog.Logs) error {
+	return c.pushLogData
+}
+
 // client sends the data to the splunk backend.
 type client struct {
 	config            *Config
@@ -42,6 +47,7 @@ type client struct {
 	telemetrySettings component.TelemetrySettings
 	hecWorker         hecWorker
 	buildInfo         component.BuildInfo
+	heartbeater       *heartbeater
 }
 
 func (c *client) pushMetricsData(
@@ -124,8 +130,8 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 		profilingLocalHeaders[k] = v
 	}
 
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
-	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
+	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
@@ -168,15 +174,14 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	}
 
 	// There's some leftover unsent non-profiling data
-	if bufState.buf.Len() > 0 {
-
+	if bufState.containsData {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
 			return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
 		}
 	}
 
 	// There's some leftover unsent profiling data
-	if profilingBufState.buf.Len() > 0 {
+	if profilingBufState.containsData {
 		if err := c.postEvents(ctx, profilingBufState, profilingLocalHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
 			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState.bufFront))
@@ -212,17 +217,17 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		}
 
 		// Continue adding events to buffer up to capacity.
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if state.containsData {
 			if err := c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -230,25 +235,20 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
+			continue
+		}
+
+		state.bufFront = nil
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-		if state.buf.Len() > 0 {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -286,17 +286,17 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 
 		// Continue adding events to buffer up to capacity.
 		b := buf.Bytes()
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if state.containsData {
 			if err := c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -304,26 +304,20 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
+			continue
+		}
+
+		state.bufFront = nil
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-
-		if state.buf.Len() > 0 {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -348,17 +342,17 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		}
 
 		// Continue adding events to buffer up to capacity.
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if state.containsData {
 			if err = c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -366,26 +360,20 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
+			continue
+		}
+
+		state.bufFront = nil
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped trace event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-
-		if state.buf.Len() > 0 {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -395,7 +383,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rms = md.ResourceMetrics()
@@ -417,7 +405,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	}
 
 	// There's some leftover unsent metrics
-	if bufState.buf.Len() > 0 {
+	if bufState.containsData {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
 			return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
 		}
@@ -430,7 +418,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
-	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression)
+	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression, c.config.MaxEventSize)
 	var permanentErrors []error
 
 	var rts = td.ResourceSpans()
@@ -452,7 +440,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	}
 
 	// There's some leftover unsent traces
-	if bufState.buf.Len() > 0 {
+	if bufState.containsData {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
 			return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
 		}
@@ -631,6 +619,9 @@ func subTracesByType(src ptrace.Traces, from *index, dst ptrace.Traces) {
 
 func (c *client) stop(context.Context) error {
 	c.wg.Wait()
+	if c.heartbeater != nil {
+		c.heartbeater.shutdown()
+	}
 	return nil
 }
 
@@ -650,6 +641,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
 	return nil
 }
 

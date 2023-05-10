@@ -1,7 +1,7 @@
-name: splunkhecexporter
+type: splunkhecexporter
 
 status:
-  type: exporter
-  stability: beta
-  pipelines: [metrics, logs, traces]
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
   distributions: [contrib]

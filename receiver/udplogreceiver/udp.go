@@ -1,4 +1,4 @@
-// Copyright 2021 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,16 +21,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
-)
-
-const (
-	typeStr   = "udplog"
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver/internal/metadata"
 )
 
 // NewFactory creates a factory for udp receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, stability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -39,7 +35,7 @@ type ReceiverType struct{}
 
 // Type is the receiver type
 func (f ReceiverType) Type() component.Type {
-	return typeStr
+	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version

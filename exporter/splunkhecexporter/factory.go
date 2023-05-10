@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,10 +32,11 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr              = "splunk_hec"
-	defaultMaxIdleCons   = 100
-	defaultHTTPTimeout   = 10 * time.Second
-	defaultSplunkAppName = "OpenTelemetry Collector Contrib"
+	typeStr                = "splunk_hec"
+	defaultMaxIdleCons     = 100
+	defaultHTTPTimeout     = 10 * time.Second
+	defaultIdleConnTimeout = 10 * time.Second
+	defaultSplunkAppName   = "OpenTelemetry Collector Contrib"
 )
 
 // TODO: Find a place for this to be shared.
@@ -55,18 +56,20 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
-		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
-		exporter.WithLogs(createLogsExporter, metadata.Stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
 	defaultMaxConns := defaultMaxIdleCons
+	defaultIdleConnTimeout := defaultIdleConnTimeout
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout:             defaultHTTPTimeout,
+			IdleConnTimeout:     &defaultIdleConnTimeout,
 			MaxIdleConnsPerHost: &defaultMaxConns,
 			MaxIdleConns:        &defaultMaxConns,
 		},
@@ -77,6 +80,7 @@ func createDefaultConfig() component.Config {
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
+		MaxEventSize:            defaultMaxEventSize,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
@@ -90,6 +94,11 @@ func createDefaultConfig() component.Config {
 		HealthPath:            splunk.DefaultHealthPath,
 		HecHealthCheckEnabled: false,
 		ExportRaw:             false,
+		Telemetry: HecTelemetry{
+			Enabled:              false,
+			OverrideMetricsNames: map[string]string{},
+			ExtraAttributes:      map[string]string{},
+		},
 	}
 }
 

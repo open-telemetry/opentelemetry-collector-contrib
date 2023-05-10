@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 	assert.Equal(t, cfg, &Config{
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      false,
-			NumConsumers: 10,
-			QueueSize:    5000,
+			NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 		Endpoints:   []string{"http://localhost:9200"},
 		CloudID:     "TRNMxjXlNJEt",
@@ -101,8 +101,8 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      false,
-					NumConsumers: 10,
-					QueueSize:    5000,
+					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 				Endpoints:   []string{"https://elastic.example.com:9200"},
 				CloudID:     "TRNMxjXlNJEt",
@@ -146,8 +146,8 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: 10,
-					QueueSize:    5000,
+					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 				Endpoints:   []string{"http://localhost:9200"},
 				CloudID:     "TRNMxjXlNJEt",

@@ -12,23 +12,72 @@ and logs to [Google Cloud Logging](https://cloud.google.com/logging).
 
 ## Getting started
 
+### Prerequisite: Authenticating
+
+In general, authenticating with the Collector exporter follows the same steps as
+any other app using the steps documented for [Application Default
+Credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc). This
+section explains the specific use cases relevant to the exporter.
+
+The exporter relies on GCP client libraries to send data to Google Cloud. Use of these libraries requires the caller (the Collector) to be authenticated with a GCP account and project. This should be done using a [GCP service account](https://cloud.google.com/compute/docs/access/service-accounts) with at minimum the following IAM roles (depending on the type of data you wish to send):
+
+*   [Metrics](https://cloud.google.com/iam/docs/understanding-roles#monitoring-roles): `roles/monitoring.metricWriter`
+*   [Traces](https://cloud.google.com/iam/docs/understanding-roles#cloud-trace-roles): `roles/cloudtrace.agent`
+*   [Logs](https://cloud.google.com/iam/docs/understanding-roles#logging-roles): `roles/logging.logWriter`
+
+The [Compute Engine default service account](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account) has all of these permissions by default, but if you are running on a different platform or with a different GCP service account you will need to ensure your service account has these permissions.
+
+#### Options for different environments
+
+Depending on the environment where your Collector is running, you can authenticate one of several ways:
+
+**GCE instances**
+
+On GCE it is recommended to use the [GCP service account](https://cloud.google.com/compute/docs/access/service-accounts) associated with your instance. If this is the Compute Engine default service account or another GCP service account with the sufficient IAM permissions, then there is nothing additional you need to do to authenticate the Collector process. Simply run the Collector on your instance, and it will inherit these permissions.
+
+**GKE / Workload Identity**
+
+On GKE clusters with Workload Identity enabled (including GKE Autopilot), follow [the steps to configure a Workload Identity ServiceAccount in your cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) (if you do not already have one). Then, deploy the Collector as you would with any other workload, setting the `serviceAccountName` field in the Collector Pod’s `.spec` to the WI-enabled ServiceAccount.
+
+In non-WI clusters, you can use the GCP service account associated with the node the same way as in the instructions for GCE instances above.
+
+**Non-GCP (AWS, Azure, on-prem, etc.) or alternative service accounts**
+
+In non-GCP environments, a [service account key](https://cloud.google.com/iam/docs/keys-create-delete#iam-service-account-keys-create-console) or credentials file is required. The exporter will automatically look for this file using the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or, if that is unset, one of the [other known locations](https://cloud.google.com/docs/authentication/application-default-credentials). Note that when using this approach, you may need to explicitly set the `project` option in the exporter’s config.
+
+When running the Collector in a Docker container, a credentials file can be passed to the container via volume mounts and environment variables at runtime like so:
+
+```
+docker run \
+  --volume ~/service-account-key.json:/etc/otel/key.json \
+  --volume $(pwd)/config.yaml:/etc/otel/config.yaml \
+  --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
+  --expose 4317 \
+  --expose 55681 \
+  --rm \
+  otel/opentelemetry-collector-contrib
+```
+
+**Using `gcloud auth application-default login`**
+
+Using [`gcloud auth application-default login`](https://cloud.google.com/docs/authentication/application-default-credentials) to authenticate is not recommended for production use. Instead, it’s best to use a GCP service account through one of the methods listed above. The `gcloud auth` command can be useful for development and testing on a user account, and authenticating with it follows the same approach as the service account key method above.
+
+
 These instructions are to get you up and running quickly with the GCP exporter in a local development environment. We'll also point out alternatives that may be more suitable for CI or production.
 
-1.  **Obtain a binary.** Pull a Docker image for the OpenTelemetry contrib collector, which includes the GCP exporter plugin.
+1.  **Obtain a Collector binary.** Pull a binary or Docker image for the
+    OpenTelemetry contrib collector which includes the GCP exporter plugin
+    through one of the following:
 
-    ```sh
-    docker pull otel/opentelemetry-collector-contrib
-    ```
-
-    <details>
-    <summary>Alternatives</summary>
-
-    *   Download a [binary or package of the OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases) that is appropriate for your platform, and includes the Google Cloud exporter.
+    *   Download a [binary or package of the OpenTelemetry
+        Collector Contrib](https://github.com/open-telemetry/opentelemetry-collector-releases/releases)
+        that is appropriate for your platform, and includes the Google Cloud
+        exporter.
+    *   Pull a Docker image with `docker pull otel/opentelemetry-collector-contrib`
     *   Create your own main package in Go, that pulls in just the plugins you need.
-    *   Use the [OpenTelemetry Collector Builder](https://github.com/open-telemetry/opentelemetry-collector/tree/main/cmd/builder) to generate the Go main package and `go.mod`.
-
-    </details>
-
+    *   Use the [OpenTelemetry Collector
+        Builder](https://github.com/open-telemetry/opentelemetry-collector-builder)
+        to generate the Go main package and `go.mod`.
 
 2.  **Create a configuration file `config.yaml`.** The example below shows a minimal recommended configuration that receives OTLP and sends data to GCP, in addition to verbose logging to help understand what is going on. It uses application default credentials (which we will set up in the next step).
 
@@ -77,32 +126,14 @@ These instructions are to get you up and running quickly with the GCP exporter i
 
     3.  Ensure that your user GCP user has (at minimum) `roles/monitoring.metricWriter` and `roles/cloudtrace.agent`. You can learn about [metric-related](https://cloud.google.com/monitoring/access-control) and [trace-related](https://cloud.google.com/trace/docs/iam) IAM in the GCP documentation.
 
-    4.  Obtain credentials.
+    4.  Obtain credentials using one of the methods in the [Authenticating
+        section](#prerequisite-authenticating) above.
 
-        ```sh
-        gcloud auth application-default login
-        ```
 
-    <details>
-      <summary>Alternatives</summary>
-
-      * You can run the collector as a service account, as long as it has the necessary roles. This is useful in production, because credentials for a user are short-lived.
-
-      * You can also run the collector on a GCE VM or as a GKE workload, which will use the service account associated with GCE/GKE.
-    </details>
-
-4.  **Run the collector.** The following command mounts the configuration file and the credentials as Docker volumes. It runs the collector in the foreground, so please execute it in a separate terminal.
+4.  **Run the collector.** The following  runs the collector in the foreground, so please execute it in a separate terminal.
 
     ```sh
-    docker run \
-      --volume ~/.config/gcloud/application_default_credentials.json:/etc/otel/key.json \
-      --volume $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml \
-      --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
-      -p 4317:4317 \
-      -p 4318:4318 \
-      -p 55681:55681 \
-      --rm \
-      otel/opentelemetry-collector-contrib
+    ./otelcol-contrib --config=config.yaml
     ```
 
     <details>
@@ -175,7 +206,7 @@ The following configuration options are supported:
 - `sending_queue` (optional): Configuration for how to buffer traces before sending.
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
+  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
     User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.

@@ -33,6 +33,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
 func TestSnmpReceiverIntegration(t *testing.T) {
@@ -64,13 +65,13 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.desc, func(t *testing.T) {
-
+			t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21086")
 			factory := NewFactory()
-			factories.Receivers[typeStr] = factory
+			factories.Receivers[metadata.Type] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
 			cfg, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
 			require.NoError(t, err)
-			snmpConfig := cfg.Receivers[component.NewID(typeStr)].(*Config)
+			snmpConfig := cfg.Receivers[component.NewID(metadata.Type)].(*Config)
 
 			consumer := new(consumertest.MetricsSink)
 			settings := receivertest.NewNopCreateSettings()

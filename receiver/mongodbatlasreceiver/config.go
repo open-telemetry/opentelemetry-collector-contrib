@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,30 +60,54 @@ type AlertConfig struct {
 }
 
 type LogConfig struct {
-	Enabled  bool             `mapstructure:"enabled"`
-	Projects []*ProjectConfig `mapstructure:"projects"`
+	Enabled  bool                 `mapstructure:"enabled"`
+	Projects []*LogsProjectConfig `mapstructure:"projects"`
 }
 
 // EventsConfig is the configuration options for events collection
 type EventsConfig struct {
-	Projects     []*ProjectConfig `mapstructure:"projects"`
-	PollInterval time.Duration    `mapstructure:"poll_interval"`
-	Types        []string         `mapstructure:"types"`
-	PageSize     int64            `mapstructure:"page_size"`
-	MaxPages     int64            `mapstructure:"max_pages"`
+	Projects      []*ProjectConfig `mapstructure:"projects"`
+	Organizations []*OrgConfig     `mapstructure:"organizations"`
+	PollInterval  time.Duration    `mapstructure:"poll_interval"`
+	Types         []string         `mapstructure:"types"`
+	PageSize      int64            `mapstructure:"page_size"`
+	MaxPages      int64            `mapstructure:"max_pages"`
+}
+
+type LogsProjectConfig struct {
+	ProjectConfig `mapstructure:",squash"`
+
+	EnableAuditLogs bool              `mapstructure:"collect_audit_logs"`
+	EnableHostLogs  *bool             `mapstructure:"collect_host_logs"`
+	AccessLogs      *AccessLogsConfig `mapstructure:"access_logs"`
+}
+
+type AccessLogsConfig struct {
+	Enabled      *bool         `mapstructure:"enabled"`
+	PollInterval time.Duration `mapstructure:"poll_interval"`
+	PageSize     int64         `mapstructure:"page_size"`
+	MaxPages     int64         `mapstructure:"max_pages"`
+	AuthResult   *bool         `mapstructure:"auth_result"`
+}
+
+func (alc *AccessLogsConfig) IsEnabled() bool {
+	return alc.Enabled == nil || *alc.Enabled
 }
 
 type ProjectConfig struct {
 	Name            string   `mapstructure:"name"`
 	ExcludeClusters []string `mapstructure:"exclude_clusters"`
 	IncludeClusters []string `mapstructure:"include_clusters"`
-	EnableAuditLogs bool     `mapstructure:"collect_audit_logs"`
 
 	includesByClusterName map[string]struct{}
 	excludesByClusterName map[string]struct{}
 }
 
-func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
+type OrgConfig struct {
+	ID string `mapstructure:"id"`
+}
+
+func (pc *ProjectConfig) populateIncludesAndExcludes() {
 	pc.includesByClusterName = map[string]struct{}{}
 	for _, inclusion := range pc.IncludeClusters {
 		pc.includesByClusterName[inclusion] = struct{}{}
@@ -93,8 +117,6 @@ func (pc *ProjectConfig) populateIncludesAndExcludes() *ProjectConfig {
 	for _, exclusion := range pc.ExcludeClusters {
 		pc.excludesByClusterName[exclusion] = struct{}{}
 	}
-
-	return pc
 }
 
 var (
@@ -111,7 +133,11 @@ var (
 
 	// Logs Receiver Errors
 	errNoProjects    = errors.New("at least one 'project' must be specified")
+	errNoEvents      = errors.New("at least one 'project' or 'organizations' event type must be specified")
 	errClusterConfig = errors.New("only one of 'include_clusters' or 'exclude_clusters' may be specified")
+
+	// Access Logs Errors
+	errMaxPageSize = errors.New("the maximum value for 'page_size' is 20000")
 )
 
 func (c *Config) Validate() error {
@@ -139,6 +165,12 @@ func (l *LogConfig) validate() error {
 	for _, project := range l.Projects {
 		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
 			errs = multierr.Append(errs, errClusterConfig)
+		}
+
+		if project.AccessLogs != nil && project.AccessLogs.IsEnabled() {
+			if project.AccessLogs.PageSize > 20000 {
+				errs = multierr.Append(errs, errMaxPageSize)
+			}
 		}
 	}
 
@@ -209,8 +241,8 @@ func (a AlertConfig) validateListenConfig() error {
 }
 
 func (e EventsConfig) validate() error {
-	if len(e.Projects) == 0 {
-		return errNoProjects
+	if len(e.Projects) == 0 && len(e.Organizations) == 0 {
+		return errNoEvents
 	}
 	return nil
 }

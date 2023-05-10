@@ -1,8 +1,8 @@
-name: transform
+type: transform
 
 status:
-  type: processor
-  stability: alpha
-  pipelines: [traces, metrics, logs]
+  class: processor
+  stability:
+    alpha: [traces, metrics, logs]
   distributions: [contrib]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]

@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -139,14 +139,14 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 				rm.Resource().Attributes().PutStr(label, v)
 			})
 		}
 	}
 	for k, label := range r.config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 				rm.Resource().Attributes().PutStr(label, v)
 			})
 		}
@@ -156,12 +156,14 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 }
 
 func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
-	totalCache := memoryStats.Stats["total_cache"]
-	totalUsage := memoryStats.Usage - totalCache
-	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
-	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats))
+	totalUsage := calculateMemUsageNoCache(memoryStats)
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
+
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+
+	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
+
+	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
 
 	recorders := map[string]func(pcommon.Timestamp, int64){
 		"cache":                     r.mb.RecordContainerMemoryCacheDataPoint,
@@ -261,41 +263,4 @@ func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUS
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
 	}
-}
-
-// From container.calculateCPUPercentUnix()
-// https://github.com/docker/cli/blob/dbd96badb6959c2b7070664aecbcf0f7c299c538/cli/command/container/stats_helpers.go
-// Copyright 2012-2017 Docker, Inc.
-// This product includes software developed at Docker, Inc. (https://www.docker.com).
-// The following is courtesy of our legal counsel:
-// Use and transfer of Docker may be subject to certain restrictions by the
-// United States and other governments.
-// It is your responsibility to ensure that your use and/or transfer does not
-// violate applicable laws.
-// For more information, please see https://www.bis.doc.gov
-// See also https://www.apache.org/dev/crypto.html and/or seek legal counsel.
-func calculateCPUPercent(previous *dtypes.CPUStats, v *dtypes.CPUStats) float64 {
-	var (
-		cpuPercent = 0.0
-		// calculate the change for the cpu usage of the container in between readings
-		cpuDelta = float64(v.CPUUsage.TotalUsage) - float64(previous.CPUUsage.TotalUsage)
-		// calculate the change for the entire system between readings
-		systemDelta = float64(v.SystemUsage) - float64(previous.SystemUsage)
-		onlineCPUs  = float64(v.OnlineCPUs)
-	)
-
-	if onlineCPUs == 0.0 {
-		onlineCPUs = float64(len(v.CPUUsage.PercpuUsage))
-	}
-	if systemDelta > 0.0 && cpuDelta > 0.0 {
-		cpuPercent = (cpuDelta / systemDelta) * onlineCPUs * 100.0
-	}
-	return cpuPercent
-}
-
-func calculateMemoryPercent(memoryStats *dtypes.MemoryStats) float64 {
-	if float64(memoryStats.Limit) == 0 {
-		return 0
-	}
-	return 100.0 * (float64(memoryStats.Usage) - float64(memoryStats.Stats["cache"])) / float64(memoryStats.Limit)
 }

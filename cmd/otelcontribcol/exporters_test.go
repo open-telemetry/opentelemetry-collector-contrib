@@ -42,9 +42,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
@@ -93,6 +95,9 @@ func TestDefaultExporters(t *testing.T) {
 				return expFactories["awscloudwatchlogs"].CreateDefaultConfig()
 			},
 			skipLifecycle: true,
+		},
+		{
+			exporter: "awss3",
 		},
 		{
 			exporter: "file",
@@ -308,6 +313,15 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true,
 		},
 		{
+			exporter: "cassandra",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["cassandra"].CreateDefaultConfig().(*cassandraexporter.Config)
+				cfg.DSN = endpoint
+				return cfg
+			},
+			skipLifecycle: true,
+		},
+		{
 			exporter: "coralogix",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
@@ -322,6 +336,15 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
+				return cfg
+			},
+		},
+		{
+			exporter: "dataset",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["dataset"].CreateDefaultConfig().(*datasetexporter.Config)
+				cfg.DatasetURL = "https://" + endpoint
+				cfg.APIKey = "secret-key"
 				return cfg
 			},
 		},

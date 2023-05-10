@@ -22,15 +22,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
 const (
-	componentType component.Type = "solace"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelDevelopment
-
 	// default value for max unaked messages
-	defaultMaxUnaked uint32 = 1000
+	defaultMaxUnaked int32 = 1000
 	// default value for host
 	defaultHost string = "localhost:5671"
 )
@@ -38,9 +36,9 @@ const (
 // NewFactory creates a factory for Solace receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		componentType,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, stability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
 	)
 }
 

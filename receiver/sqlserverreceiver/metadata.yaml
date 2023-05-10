@@ -1,5 +1,11 @@
-name: sqlserverreceiver
+type: sqlserverreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   sqlserver.database.name:
     description: The name of the SQL Server database.

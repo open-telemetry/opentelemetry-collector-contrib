@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"golang.org/x/sys/windows/svc/eventlog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
@@ -78,6 +79,8 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 }
 
 func TestReadWindowsEventLogger(t *testing.T) {
+	logMessage := "Test log"
+
 	ctx := context.Background()
 	factory := NewFactory()
 	createSettings := receivertest.NewNopCreateSettings()
@@ -100,7 +103,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.NoError(t, err)
 	defer logger.Close()
 
-	err = logger.Info(10, "Test log")
+	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
 	logsReceived := func() bool {
@@ -118,12 +121,12 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	record := records.At(0)
 	body := record.Body().Map().AsRaw()
 
-	strs := []string{"Test log"}
-	test := make([]interface{}, len(strs))
-	for i, s := range strs {
-		test[i] = s
-	}
-	require.Equal(t, test, body["event_data"])
+	require.Equal(t, logMessage, body["message"])
+
+	eventData := body["event_data"]
+	eventDataMap, ok := eventData.(map[string]interface{})
+	require.True(t, ok)
+	require.Equal(t, map[string]interface{}{}, eventDataMap)
 
 	eventID := body["event_id"]
 	require.NotNil(t, eventID)
@@ -136,7 +139,8 @@ func TestReadWindowsEventLogger(t *testing.T) {
 func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			Operators: []operator.Config{},
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
 		},
 		InputConfig: func() windows.Config {
 			c := windows.NewConfig()

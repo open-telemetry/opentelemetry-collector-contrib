@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,9 +41,16 @@ func createDefaultConfig() component.Config {
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		DomainSettings: configgrpc.GRPCClientSettings{
+			Compression: configcompression.Gzip,
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+		},
 		// Traces GRPC client
 		Traces: configgrpc.GRPCClientSettings{
-			Endpoint: "https://",
+			Endpoint:    "https://",
+			Compression: configcompression.Gzip,
 		},
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
@@ -52,7 +59,8 @@ func createDefaultConfig() component.Config {
 			WriteBufferSize: 512 * 1024,
 		},
 		Logs: configgrpc.GRPCClientSettings{
-			Endpoint: "https://",
+			Endpoint:    "https://",
+			Compression: configcompression.Gzip,
 		},
 		PrivateKey: "",
 		AppName:    "",

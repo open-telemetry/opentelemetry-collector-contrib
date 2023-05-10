@@ -1,5 +1,5 @@
-# Required: name of the receiver.
-name:
+# Required: type of the receiver.
+type:
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
@@ -15,7 +15,7 @@ resource_attributes:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
     enum:
     # Required: attribute value type.
-    type: <string|int|double|bool|bytes>
+    type: <string|int|double|bool|bytes|slice|map>
 
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
@@ -29,7 +29,7 @@ attributes:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
     enum:
     # Required: attribute value type.
-    type: <string|int|double|bool|bytes>
+    type: <string|int|double|bool|bytes|slice|map>
 
 # Required: map of metric names with the key being the metric name and value
 # being described below.

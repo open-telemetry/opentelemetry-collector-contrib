@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
 func TestLoadConfigConnectionConfigs(t *testing.T) {
@@ -258,7 +260,7 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sub, err := cm.Sub(component.NewIDWithName(typeStr, test.nameVal).String())
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, test.nameVal).String())
 			require.NoError(t, err)
 
 			cfg := factory.CreateDefaultConfig()
@@ -842,7 +844,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sub, err := cm.Sub(component.NewIDWithName(typeStr, test.nameVal).String())
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, test.nameVal).String())
 			require.NoError(t, err)
 
 			cfg := factory.CreateDefaultConfig()

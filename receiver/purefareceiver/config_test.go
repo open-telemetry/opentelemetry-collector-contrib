@@ -1,4 +1,4 @@
-// Copyright 2022 The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,6 +62,10 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+
+			expected := factory.CreateDefaultConfig().(*Config)
+
+			require.Equal(t, expected, cfg)
 		})
 	}
 }

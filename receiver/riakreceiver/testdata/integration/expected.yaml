@@ -115,3 +115,4 @@ resourceMetrics:
             unit: '{operation}'
         scope:
           name: otelcol/riakreceiver
+          version: latest

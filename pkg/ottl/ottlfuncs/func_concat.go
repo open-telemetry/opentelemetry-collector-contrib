@@ -22,7 +22,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Concat[K any](vals []ottl.StringLikeGetter[K], delimiter string) (ottl.ExprFunc[K], error) {
+type ConcatArguments[K any] struct {
+	Vals      []ottl.StringLikeGetter[K] `ottlarg:"0"`
+	Delimiter string                     `ottlarg:"1"`
+}
+
+func NewConcatFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Concat", &ConcatArguments[K]{}, createConcatFunction[K])
+}
+
+func createConcatFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ConcatArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("ConcatFactory args must be of type *ConcatArguments[K]")
+	}
+
+	return concat(args.Vals, args.Delimiter), nil
+}
+
+func concat[K any](vals []ottl.StringLikeGetter[K], delimiter string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		builder := strings.Builder{}
 		for i, rv := range vals {
@@ -40,5 +59,5 @@ func Concat[K any](vals []ottl.StringLikeGetter[K], delimiter string) (ottl.Expr
 			}
 		}
 		return builder.String(), nil
-	}, nil
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1076,7 +1076,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		name  string
 		rules ExtractionRules
 		pod   api_v1.Pod
-		want  map[string]*Container
+		want  PodContainers
 	}{
 		{
 			name: "no-data",
@@ -1086,13 +1086,13 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ContainerID:        true,
 			},
 			pod:  api_v1.Pod{},
-			want: map[string]*Container{},
+			want: PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
 		},
 		{
 			name:  "no-rules",
 			rules: ExtractionRules{},
 			pod:   pod,
-			want:  map[string]*Container{},
+			want:  PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
 		},
 		{
 			name: "image-name-only",
@@ -1100,10 +1100,17 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ContainerImageName: true,
 			},
 			pod: pod,
-			want: map[string]*Container{
-				"container1":     {ImageName: "test/image1"},
-				"container2":     {ImageName: "example.com:port1/image2"},
-				"init_container": {ImageName: "test/init-image"},
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123":     {ImageName: "test/image1"},
+					"container2-id-456":     {ImageName: "example.com:port1/image2"},
+					"init-container-id-123": {ImageName: "test/init-image"},
+				},
+				ByName: map[string]*Container{
+					"container1":     {ImageName: "test/image1"},
+					"container2":     {ImageName: "example.com:port1/image2"},
+					"init_container": {ImageName: "test/init-image"},
+				},
 			},
 		},
 		{
@@ -1121,8 +1128,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]*Container{
-				"test-container": {ImageName: "test/image"},
+			want: PodContainers{
+				ByID: map[string]*Container{},
+				ByName: map[string]*Container{
+					"test-container": {ImageName: "test/image"},
+				},
 			},
 		},
 		{
@@ -1131,20 +1141,39 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ContainerID: true,
 			},
 			pod: pod,
-			want: map[string]*Container{
-				"container1": {
-					Statuses: map[int]ContainerStatus{
-						0: {ContainerID: "container1-id-123"},
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123": {
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "container1-id-123"},
+						},
+					},
+					"container2-id-456": {
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container2-id-456"},
+						},
+					},
+					"init-container-id-123": {
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "init-container-id-123"},
+						},
 					},
 				},
-				"container2": {
-					Statuses: map[int]ContainerStatus{
-						2: {ContainerID: "container2-id-456"},
+				ByName: map[string]*Container{
+					"container1": {
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "container1-id-123"},
+						},
 					},
-				},
-				"init_container": {
-					Statuses: map[int]ContainerStatus{
-						0: {ContainerID: "init-container-id-123"},
+					"container2": {
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container2-id-456"},
+						},
+					},
+					"init_container": {
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "init-container-id-123"},
+						},
 					},
 				},
 			},
@@ -1157,26 +1186,51 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ContainerID:        true,
 			},
 			pod: pod,
-			want: map[string]*Container{
-				"container1": {
-					ImageName: "test/image1",
-					ImageTag:  "0.1.0",
-					Statuses: map[int]ContainerStatus{
-						0: {ContainerID: "container1-id-123"},
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123": {
+						ImageName: "test/image1",
+						ImageTag:  "0.1.0",
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "container1-id-123"},
+						},
+					},
+					"container2-id-456": {
+						ImageName: "example.com:port1/image2",
+						ImageTag:  "0.2.0",
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container2-id-456"},
+						},
+					},
+					"init-container-id-123": {
+						ImageName: "test/init-image",
+						ImageTag:  "1.0.2",
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "init-container-id-123"},
+						},
 					},
 				},
-				"container2": {
-					ImageName: "example.com:port1/image2",
-					ImageTag:  "0.2.0",
-					Statuses: map[int]ContainerStatus{
-						2: {ContainerID: "container2-id-456"},
+				ByName: map[string]*Container{
+					"container1": {
+						ImageName: "test/image1",
+						ImageTag:  "0.1.0",
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "container1-id-123"},
+						},
 					},
-				},
-				"init_container": {
-					ImageName: "test/init-image",
-					ImageTag:  "1.0.2",
-					Statuses: map[int]ContainerStatus{
-						0: {ContainerID: "init-container-id-123"},
+					"container2": {
+						ImageName: "example.com:port1/image2",
+						ImageTag:  "0.2.0",
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container2-id-456"},
+						},
+					},
+					"init_container": {
+						ImageName: "test/init-image",
+						ImageTag:  "1.0.2",
+						Statuses: map[int]ContainerStatus{
+							0: {ContainerID: "init-container-id-123"},
+						},
 					},
 				},
 			},

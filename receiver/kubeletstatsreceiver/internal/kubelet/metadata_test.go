@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -229,9 +229,9 @@ func TestSetExtraLabels(t *testing.T) {
 			ro, err := tt.metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
 
 			r := pmetric.NewResourceMetrics()
-			ras := metadata.DefaultResourceAttributesSettings()
+			rac := metadata.DefaultResourceAttributesConfig()
 			for _, op := range ro {
-				op(ras, r)
+				op(rac, r)
 			}
 
 			if tt.wantError == "" {
@@ -375,7 +375,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			volName := "volume0"
-			ras := metadata.DefaultResourceAttributesSettings()
+			rac := metadata.DefaultResourceAttributesConfig()
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -399,7 +399,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 
 			rm := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(ras, rm)
+				op(rac, rm)
 			}
 
 			assert.Equal(t, tt.want, rm.Resource().Attributes().AsRaw())

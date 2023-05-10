@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -453,6 +453,7 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 func copyMetricDetails(from, to pmetric.Metric) {
 	to.SetName(from.Name())
 	to.SetUnit(from.Unit())
+	to.SetDescription(from.Description())
 	switch from.Type() {
 	case pmetric.MetricTypeGauge:
 		to.SetEmptyGauge()

@@ -24,13 +24,8 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
-)
 
-const (
-	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr component.Type = "groupbyattrs"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
 var (
@@ -47,11 +42,11 @@ func NewFactory() processor.Factory {
 	})
 
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
-		processor.WithLogs(createLogsProcessor, stability),
-		processor.WithMetrics(createMetricsProcessor, stability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
