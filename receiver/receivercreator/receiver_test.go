@@ -37,6 +37,7 @@ import (
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -74,7 +75,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 
 	host := &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}
 	host.extensions = map[component.ID]component.Component{
@@ -83,7 +84,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	}
 
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "1").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "1").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
