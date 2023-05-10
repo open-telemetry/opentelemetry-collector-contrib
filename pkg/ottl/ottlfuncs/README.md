@@ -252,9 +252,8 @@ Examples:
 - `truncate_all(attributes, 100)`
 
 
-- `truncate_all(resource.attributes, 50)
+- `truncate_all(resource.attributes, 50)`
 
-<<<<<<< HEAD
 ### uuid
 
 `uuid()`
@@ -455,8 +454,6 @@ Examples:
 
 - `Substring("123456789", 0, 3)`
 
-=======
->>>>>>> 65533d151c (fix docs)
 ## Function syntax
 
 Functions should be named and formatted according to the following standards.
