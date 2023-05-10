@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package awsxrayreceiver implements a receiver that can be used by the
 // Opentelemetry collector to receive traces in the AWS X-Ray segment format.
 // More details can be found on:
