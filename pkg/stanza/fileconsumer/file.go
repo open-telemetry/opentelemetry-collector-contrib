@@ -47,6 +47,8 @@ type Manager struct {
 
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
+
+	currentFps []*Fingerprint
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -136,7 +138,15 @@ func (m *Manager) poll(ctx context.Context) {
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files")
-	readers := m.makeReaders(paths)
+	readers := make([]*Reader, 0, len(paths))
+	for _, path := range paths {
+		r := m.makeReader(path)
+		if r == nil {
+			fmt.Println("Couldn't create reader for ", path)
+			continue
+		}
+		readers = append(readers, r)
+	}
 
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
@@ -182,82 +192,67 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.roller.roll(ctx, readers)
 	m.saveCurrent(readers)
 	m.syncLastPollFiles(ctx)
+	m.clearCurrentFingerprints()
 }
 
-// makeReaders takes a list of paths, then creates readers from each of those paths,
+// makeReaders takes a lis of path, then creates reader,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (m *Manager) makeReaders(filesPaths []string) []*Reader {
+func (m *Manager) makeReader(path string) *Reader {
 	// Open the files first to minimize the time between listing and opening
-	files := make([]*os.File, 0, len(filesPaths))
-	for _, path := range filesPaths {
-		if _, ok := m.seenPaths[path]; !ok {
-			if m.readerFactory.fromBeginning {
-				m.Infow("Started watching file", "path", path)
-			} else {
-				m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
-			}
-			m.seenPaths[path] = struct{}{}
+	if _, ok := m.seenPaths[path]; !ok {
+		if m.readerFactory.fromBeginning {
+			m.Infow("Started watching file", "path", path)
+		} else {
+			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
 		}
-		file, err := os.Open(path) // #nosec - operator must read in files defined by user
-		if err != nil {
-			m.Debugf("Failed to open file", zap.Error(err))
-			continue
-		}
-		files = append(files, file)
+		m.seenPaths[path] = struct{}{}
+	}
+	file, err := os.Open(path) // #nosec - operator must read in files defined by user
+	if err != nil {
+		m.Errorf("Failed to open file", zap.Error(err))
+		return nil
 	}
 
 	// Get fingerprints for each file
-	fps := make([]*Fingerprint, 0, len(files))
-	for _, file := range files {
-		fp, err := m.readerFactory.newFingerprint(file)
-		if err != nil {
-			m.Errorw("Failed creating fingerprint", zap.Error(err))
-			continue
-		}
-		fps = append(fps, fp)
+	fp, err := m.readerFactory.newFingerprint(file)
+	if err != nil {
+		m.Errorw("Failed creating fingerprint", zap.Error(err))
+		return nil
 	}
+
+	if len(fp.FirstBytes) == 0 {
+		// Empty file, don't read it until we can compare its fingerprint
+		if err = file.Close(); err != nil {
+			m.Errorf("problem closing file %s", file.Name())
+			return nil
+		}
+	}
+	m.currentFps = append(m.currentFps, fp)
 
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-OUTER:
-	for i := 0; i < len(fps); i++ {
-		fp := fps[i]
-		if len(fp.FirstBytes) == 0 {
-			if err := files[i].Close(); err != nil {
-				m.Errorf("problem closing file %s", files[i].Name())
+	for i := 0; i < len(m.currentFps)-1; i++ {
+		fp2 := m.currentFps[i]
+		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
+			// Exclude duplicates
+			if err = file.Close(); err != nil {
+				m.Errorf("problem closing file", "file", file.Name())
 			}
-			// Empty file, don't read it until we can compare its fingerprint
-			fps = append(fps[:i], fps[i+1:]...)
-			files = append(files[:i], files[i+1:]...)
-			i--
-			continue
-		}
-		for j := i + 1; j < len(fps); j++ {
-			fp2 := fps[j]
-			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
-				// Exclude
-				if err := files[i].Close(); err != nil {
-					m.Errorf("problem closing file %s", files[i].Name())
-				}
-				fps = append(fps[:i], fps[i+1:]...)
-				files = append(files[:i], files[i+1:]...)
-				i--
-				continue OUTER
-			}
+			m.currentFps = m.currentFps[:len(m.currentFps)-1]
+			return nil
 		}
 	}
-
-	readers := make([]*Reader, 0, len(fps))
-	for i := 0; i < len(fps); i++ {
-		reader, err := m.newReader(files[i], fps[i])
-		if err != nil {
-			m.Errorw("Failed to create reader", zap.Error(err))
-			continue
-		}
-		readers = append(readers, reader)
+	reader, err := m.newReader(file, fp)
+	if err != nil {
+		m.Errorw("Failed to create reader", zap.Error(err))
+		return nil
 	}
 
-	return readers
+	return reader
+}
+
+func (m *Manager) clearCurrentFingerprints() {
+	m.currentFps = make([]*Fingerprint, 0)
 }
 
 // saveCurrent adds the readers from this polling interval to this list of
