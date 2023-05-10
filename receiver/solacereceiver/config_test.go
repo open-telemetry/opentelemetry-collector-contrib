@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(componentType, "primary"),
+			id: component.NewIDWithName(metadata.Type, "primary"),
 			expected: &Config{
 				Broker: []string{"myHost:5671"},
 				Auth: Authentication{
@@ -61,11 +63,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(componentType, "noauth"),
+			id:          component.NewIDWithName(metadata.Type, "noauth"),
 			expectedErr: errMissingAuthDetails,
 		},
 		{
-			id:          component.NewIDWithName(componentType, "noqueue"),
+			id:          component.NewIDWithName(metadata.Type, "noqueue"),
 			expectedErr: errMissingQueueName,
 		},
 	}
