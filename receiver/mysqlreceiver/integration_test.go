@@ -74,6 +74,9 @@ func TestMySqlIntegration(t *testing.T) {
 
 		require.Eventually(t, func() bool {
 			allMetrics := consumer.AllMetrics()
+			if len(allMetrics) == 0 {
+				return false
+			}
 			latestMetrics := allMetrics[len(allMetrics)-1]
 			return nil == pmetrictest.CompareMetrics(expectedMetrics, latestMetrics, compareOpts...)
 		}, 30*time.Second, time.Second)
