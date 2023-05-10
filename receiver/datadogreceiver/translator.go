@@ -66,7 +66,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	}
 
 	for k, v := range payload.Tags {
-		if k := translateDataDogKeyToOtel(k); v != "" {
+		if k = translateDataDogKeyToOtel(k); v != "" {
 			sharedAttributes.PutStr(k, v)
 		}
 	}

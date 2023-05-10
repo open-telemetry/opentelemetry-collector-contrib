@@ -70,11 +70,11 @@ var data = [2]interface{}{
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	var traces pb.Traces
-	
+
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(t, err)
-	
-	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshalling content")
+
+	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshaling content")
 	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
 	translated := toTraces(&pb.TracerPayload{
 		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
@@ -89,7 +89,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	value, exists := span.Attributes().Get("service.name")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name tag value incorrect")
-	assert.Equal(t, span.Name(), "my-resource")
+	assert.Equal(t, "my-name", span.Name())
 }
 
 func TestTracePayloadV07Unmarshalling(t *testing.T) {
