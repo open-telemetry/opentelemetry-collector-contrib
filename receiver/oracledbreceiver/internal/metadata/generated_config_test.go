@@ -26,7 +26,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					OracledbConsistentGets:        MetricConfig{Enabled: true},
 					OracledbCPUTime:               MetricConfig{Enabled: true},
+					OracledbDbBlockGets:           MetricConfig{Enabled: true},
 					OracledbDmlLocksLimit:         MetricConfig{Enabled: true},
 					OracledbDmlLocksUsage:         MetricConfig{Enabled: true},
 					OracledbEnqueueDeadlocks:      MetricConfig{Enabled: true},
@@ -61,7 +63,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					OracledbConsistentGets:        MetricConfig{Enabled: false},
 					OracledbCPUTime:               MetricConfig{Enabled: false},
+					OracledbDbBlockGets:           MetricConfig{Enabled: false},
 					OracledbDmlLocksLimit:         MetricConfig{Enabled: false},
 					OracledbDmlLocksUsage:         MetricConfig{Enabled: false},
 					OracledbEnqueueDeadlocks:      MetricConfig{Enabled: false},

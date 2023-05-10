@@ -231,6 +231,32 @@ Number of times users manually issue the ROLLBACK statement or an error occurs d
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | true |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### oracledb.consistent_gets
+
+Number of times a consistent read was requested for a block from the buffer cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {gets} | Sum | Int | Cumulative | true |
+
+### oracledb.db_block_gets
+
+Number of times a current block was requested from the buffer cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {gets} | Sum | Int | Cumulative | true |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
