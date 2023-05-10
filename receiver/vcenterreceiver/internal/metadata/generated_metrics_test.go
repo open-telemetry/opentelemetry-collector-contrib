@@ -194,7 +194,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
 

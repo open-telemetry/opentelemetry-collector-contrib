@@ -365,14 +365,6 @@ The amount of memory that is used by the virtual machine.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
-### vcenter.vm.memory.utilization
-
-The memory utilization of the VM.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
-
 ### vcenter.vm.network.packet.count
 
 The amount of packets that was received or transmitted over the instance's network.
@@ -412,6 +404,24 @@ As measured over the most recent 20s interval.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {KiBy/s} | Sum | Int | Cumulative | false |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### vcenter.vm.memory.utilization
+
+The memory utilization of the VM.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
 
 ## Resource Attributes
 

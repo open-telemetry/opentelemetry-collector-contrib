@@ -174,7 +174,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterVMMemoryUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterVMNetworkPacketCount: MetricConfig{
 			Enabled: true,
