@@ -29,7 +29,7 @@ type SignalNameChange struct {
 	rollback map[string]string
 }
 
-type SignalNameChageSlice []*SignalNameChange
+type SignalNameChangeSlice []*SignalNameChange
 
 // NewSignalNameChange will create a `Signal` that will check the provided mappings if it can update a `alias.Signal`
 // and if no values are provided for `matches`, then all values will be updated.
@@ -69,23 +69,23 @@ func (s *SignalNameChange) do(ss StateSelctor, signal alias.NamedSignal) {
 	}
 }
 
-func NewSignalNameChageSlice(changes ...*SignalNameChange) *SignalNameChageSlice {
-	values := new(SignalNameChageSlice)
+func NewSignalNameChangeSlice(changes ...*SignalNameChange) *SignalNameChangeSlice {
+	values := new(SignalNameChangeSlice)
 	for _, c := range changes {
 		(*values) = append((*values), c)
 	}
 	return values
 }
 
-func (slice *SignalNameChageSlice) Apply(signal alias.NamedSignal) {
+func (slice *SignalNameChangeSlice) Apply(signal alias.NamedSignal) {
 	slice.do(StateSelectorApply, signal)
 }
 
-func (slice *SignalNameChageSlice) Rollback(signal alias.NamedSignal) {
+func (slice *SignalNameChangeSlice) Rollback(signal alias.NamedSignal) {
 	slice.do(StateSelectorRollback, signal)
 }
 
-func (slice *SignalNameChageSlice) do(ss StateSelctor, signal alias.NamedSignal) {
+func (slice *SignalNameChangeSlice) do(ss StateSelctor, signal alias.NamedSignal) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
 		case StateSelectorApply:

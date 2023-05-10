@@ -34,7 +34,7 @@ func TestSignalApply(t *testing.T) {
 	}{
 		{
 			name: "No changes",
-			sig: NewSignal(
+			sig: NewSignalNameChange(
 				map[string]string{},
 			),
 			val: func() pmetric.Metric {
@@ -46,7 +46,7 @@ func TestSignalApply(t *testing.T) {
 		},
 		{
 			name: "No matched changes",
-			sig: NewSignal(
+			sig: NewSignalNameChange(
 				map[string]string{
 					"system.cpu.usage": "cpu.usage",
 				},
@@ -60,7 +60,7 @@ func TestSignalApply(t *testing.T) {
 		},
 		{
 			name: "Matched changes",
-			sig: NewSignal(map[string]string{
+			sig: NewSignalNameChange(map[string]string{
 				"system.uptime": "instance.uptime",
 			}),
 			val: func() pmetric.Metric {
@@ -92,7 +92,7 @@ func TestSignalRollback(t *testing.T) {
 	}{
 		{
 			name: "No changes",
-			sig: NewSignal(
+			sig: NewSignalNameChange(
 				map[string]string{},
 			),
 			val: func() pmetric.Metric {
@@ -104,7 +104,7 @@ func TestSignalRollback(t *testing.T) {
 		},
 		{
 			name: "No matched changes",
-			sig: NewSignal(
+			sig: NewSignalNameChange(
 				map[string]string{
 					"system.cpu.usage": "cpu.usage",
 				},
@@ -118,7 +118,7 @@ func TestSignalRollback(t *testing.T) {
 		},
 		{
 			name: "Matched changes",
-			sig: NewSignal(map[string]string{
+			sig: NewSignalNameChange(map[string]string{
 				"system.uptime": "instance.uptime",
 			}),
 			val: func() pmetric.Metric {

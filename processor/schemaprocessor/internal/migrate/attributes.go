@@ -35,7 +35,7 @@ type AttributeChangeSet struct {
 	rollback map[alias.AttributeKey]alias.AttributeKey
 }
 
-// OrderedAttributeChangeSets allows for `AttributeChangeSet`
+// AttributeChangeSetSlice allows for `AttributeChangeSet`
 // to be chained together as they are defined within the schema
 // and be applied sequentially to ensure deterministic behavior.
 type AttributeChangeSetSlice []*AttributeChangeSet

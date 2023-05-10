@@ -42,11 +42,11 @@ func TestNewRevision(t *testing.T) {
 				all:              migrate.NewAttributeChangeSetSlice(),
 				resource:         migrate.NewAttributeChangeSetSlice(),
 				spans:            migrate.NewConditionalAttributeSetSlice(),
-				eventNames:       migrate.NewSignalSlice(),
+				eventNames:       migrate.NewSignalNameChangeSlice(),
 				eventAttrsOnSpan: migrate.NewConditionalAttributeSetSlice(),
 				eventAttrsOnName: migrate.NewConditionalAttributeSetSlice(),
 				metricsAttrs:     migrate.NewConditionalAttributeSetSlice(),
-				metricNames:      migrate.NewSignalSlice(),
+				metricNames:      migrate.NewSignalNameChangeSlice(),
 			},
 		},
 		{
@@ -178,8 +178,8 @@ func TestNewRevision(t *testing.T) {
 						map[string]string{"deployment.environment": "service.deployment.environment"},
 					),
 				),
-				eventNames: migrate.NewSignalSlice(
-					migrate.NewSignal(map[string]string{
+				eventNames: migrate.NewSignalNameChangeSlice(
+					migrate.NewSignalNameChange(map[string]string{
 						"started": "application started",
 					}),
 				),
@@ -207,8 +207,8 @@ func TestNewRevision(t *testing.T) {
 						"service.runtime",
 					),
 				),
-				metricNames: migrate.NewSignalSlice(
-					migrate.NewSignal(map[string]string{
+				metricNames: migrate.NewSignalNameChangeSlice(
+					migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
 					}),
 				),

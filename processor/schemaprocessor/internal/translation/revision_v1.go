@@ -27,11 +27,11 @@ type RevisionV1 struct {
 	all              *migrate.AttributeChangeSetSlice
 	resource         *migrate.AttributeChangeSetSlice
 	spans            *migrate.ConditionalAttributeSetSlice
-	eventNames       *migrate.SignalSlice
+	eventNames       *migrate.SignalNameChangeSlice
 	eventAttrsOnSpan *migrate.ConditionalAttributeSetSlice
 	eventAttrsOnName *migrate.ConditionalAttributeSetSlice
 	metricsAttrs     *migrate.ConditionalAttributeSetSlice
-	metricNames      *migrate.SignalSlice
+	metricNames      *migrate.SignalNameChangeSlice
 }
 
 // NewRevision processes the VersionDef and assigns the version to this revision
@@ -76,14 +76,14 @@ func newSpanConditionalAttributeSlice(spans ast.Spans) *migrate.ConditionalAttri
 	return migrate.NewConditionalAttributeSetSlice(values...)
 }
 
-func newSpanEventSignalSlice(events ast.SpanEvents) *migrate.SignalSlice {
+func newSpanEventSignalSlice(events ast.SpanEvents) *migrate.SignalNameChangeSlice {
 	values := make([]*migrate.SignalNameChange, 0, 10)
 	for _, ch := range events.Changes {
 		if renamed := ch.RenameEvents; renamed != nil {
-			values = append(values, migrate.NewSignal(renamed.EventNameMap))
+			values = append(values, migrate.NewSignalNameChange(renamed.EventNameMap))
 		}
 	}
-	return migrate.NewSignalSlice(values...)
+	return migrate.NewSignalNameChangeSlice(values...)
 }
 
 func newSpanEventConditionalSpans(events ast.SpanEvents) *migrate.ConditionalAttributeSetSlice {
@@ -116,10 +116,10 @@ func newMetricConditionalSlice(metrics ast.Metrics) *migrate.ConditionalAttribut
 	return migrate.NewConditionalAttributeSetSlice(values...)
 }
 
-func newMetricNameSignalSlice(metrics ast.Metrics) *migrate.SignalSlice {
+func newMetricNameSignalSlice(metrics ast.Metrics) *migrate.SignalNameChangeSlice {
 	values := make([]*migrate.SignalNameChange, 0, 10)
 	for _, ch := range metrics.Changes {
-		values = append(values, migrate.NewSignal(ch.RenameMetrics))
+		values = append(values, migrate.NewSignalNameChange(ch.RenameMetrics))
 	}
-	return migrate.NewSignalSlice(values...)
+	return migrate.NewSignalNameChangeSlice(values...)
 }
