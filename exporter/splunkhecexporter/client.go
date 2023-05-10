@@ -143,22 +143,22 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 			var newPermanentErrors []error
 
 			if isProfilingData(ills.At(j)) {
-				if profilingBufState == nil {
-					profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
-				}
 				if !c.config.ProfilingDataEnabled {
 					droppedProfilingDataRecords += ills.At(j).LogRecords().Len()
 					continue
 				}
+				if profilingBufState == nil {
+					profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
+				}
 				profilingBufState.resource, profilingBufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, profilingBufState, profilingLocalHeaders)
 			} else {
-				if bufState == nil {
-					bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
-				}
 				if !c.config.LogDataEnabled {
 					droppedLogRecords += ills.At(j).LogRecords().Len()
 					continue
+				}
+				if bufState == nil {
+					bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
 				}
 				bufState.resource, bufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, bufState, headers)
