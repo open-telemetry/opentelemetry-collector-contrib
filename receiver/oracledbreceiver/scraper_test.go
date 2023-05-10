@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
@@ -42,7 +43,7 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 }
 
 var queryResponses = map[string][]metricRow{
-	statsSQL:        {{"NAME": enqueueDeadlocks, "VALUE": "18"}, {"NAME": exchangeDeadlocks, "VALUE": "88898"}, {"NAME": executeCount, "VALUE": "178878"}, {"NAME": parseCountTotal, "VALUE": "1999"}, {"NAME": parseCountHard, "VALUE": "1"}, {"NAME": userCommits, "VALUE": "187778888"}, {"NAME": userRollbacks, "VALUE": "1898979879789"}, {"NAME": physicalReads, "VALUE": "1887777"}, {"NAME": sessionLogicalReads, "VALUE": "189"}, {"NAME": cpuTime, "VALUE": "1887"}, {"NAME": pgaMemory, "VALUE": "1999887"}},
+	statsSQL:        {{"NAME": enqueueDeadlocks, "VALUE": "18"}, {"NAME": exchangeDeadlocks, "VALUE": "88898"}, {"NAME": executeCount, "VALUE": "178878"}, {"NAME": parseCountTotal, "VALUE": "1999"}, {"NAME": parseCountHard, "VALUE": "1"}, {"NAME": userCommits, "VALUE": "187778888"}, {"NAME": userRollbacks, "VALUE": "1898979879789"}, {"NAME": physicalReads, "VALUE": "1887777"}, {"NAME": sessionLogicalReads, "VALUE": "189"}, {"NAME": cpuTime, "VALUE": "1887"}, {"NAME": pgaMemory, "VALUE": "1999887"}, {"NAME": dbBlockGets, "VALUE": "42"}, {"NAME": consistentGets, "VALUE": "78944"}},
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
 		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"}},
@@ -119,7 +120,10 @@ func TestScraper_Scrape(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+			cfg := metadata.DefaultMetricsBuilderConfig()
+			cfg.Metrics.OracledbConsistentGets.Enabled = true
+			cfg.Metrics.OracledbDbBlockGets.Enabled = true
+			metricsBuilder := metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings())
 
 			scrpr := scraper{
 				logger:         zap.NewNop(),
@@ -142,11 +146,20 @@ func TestScraper_Scrape(t *testing.T) {
 				require.EqualError(t, err, test.errWanted)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 16, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+				assert.Equal(t, 18, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 			}
 			name, ok := m.ResourceMetrics().At(0).Resource().Attributes().Get("oracledb.instance.name")
 			assert.True(t, ok)
 			assert.Equal(t, "", name.Str())
+			var found pmetric.Metric
+			for i := 0; i < m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); i++ {
+				metric := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i)
+				if metric.Name() == "oracledb.consistent_gets" {
+					found = metric
+					break
+				}
+			}
+			assert.Equal(t, int64(78944), found.Sum().DataPoints().At(0).IntValue())
 		})
 	}
 
