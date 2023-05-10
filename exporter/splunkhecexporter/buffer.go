@@ -28,16 +28,6 @@ var (
 // Minimum number of bytes to compress. 1500 is the MTU of an ethernet frame.
 const minCompressionLen = 1500
 
-// Composite index of a record.
-type index struct {
-	// Index in orig list (i.e. root parent index).
-	resource int
-	// Index in ScopeLogs/ScopeMetrics list (i.e. immediate parent index).
-	library int
-	// Index in Logs list (i.e. the log record index).
-	record int
-}
-
 // bufferState encapsulates intermediate buffer state when pushing data
 type bufferState struct {
 	compressionAvailable bool
@@ -46,9 +36,9 @@ type bufferState struct {
 	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
-	bufFront             *index
-	resource             int
-	library              int
+	resource             int // index in ResourceLogs/ResourceMetrics/ResourceSpans list
+	library              int // index in ScopeLogs/ScopeMetrics/ScopeSpans list
+	record               int // index in Logs/Metrics/Spans list
 	containsData         bool
 	rawLength            int
 }
@@ -199,8 +189,8 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool, maxEventLength
 		buf:                  buf,
 		bufferMaxLen:         bufCap,
 		maxEventLength:       maxEventLength,
-		bufFront:             nil, // Index of the log record of the first unsent event in buffer.
-		resource:             0,   // Index of currently processed Resource
-		library:              0,   // Index of currently processed Library
+		resource:             0,
+		library:              0,
+		record:               0,
 	}
 }
