@@ -20,6 +20,7 @@ package memcachedreceiver
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -70,7 +71,7 @@ func TestIntegration(t *testing.T) {
 
 	actualMetrics := consumer.AllMetrics()[0]
 
-	expectedMetrics, err := golden.ReadMetrics("./testdata/expected_metrics/test_scraper/expected.yaml")
+	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "expected.yaml"))
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),

@@ -24,7 +24,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -49,10 +48,14 @@ func run(ymlPath string) error {
 	if ymlPath == "" {
 		return errors.New("argument must be metadata.yaml file")
 	}
+	ymlPath, err := filepath.Abs(ymlPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %v: %w", ymlPath, err)
+	}
 
 	ymlDir := filepath.Dir(ymlPath)
 
-	md, err := loadMetadata(filepath.Clean(ymlPath))
+	md, err := loadMetadata(ymlPath)
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
@@ -79,21 +82,33 @@ func run(ymlPath string) error {
 	if len(md.Metrics) == 0 {
 		return nil
 	}
+
 	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
 	}
-	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
-		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
-		return err
-	}
 	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
 		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
+		return err
+	}
+
+	if err = generateFile(filepath.Join(tmplDir, "config.go.tmpl"),
+		filepath.Join(codeDir, "generated_config.go"), md); err != nil {
+		return err
+	}
+	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
+		filepath.Join(codeDir, "generated_config_test.go"), md); err != nil {
+		return err
+	}
+
+	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
+		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
 		return err
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics_test.go.tmpl"),
 		filepath.Join(codeDir, "generated_metrics_test.go"), md); err != nil {
 		return err
 	}
+
 	return generateFile(filepath.Join(tmplDir, "documentation.md.tmpl"), filepath.Join(ymlDir, "documentation.md"), md)
 }
 
@@ -131,16 +146,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"inc":         func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
-				},
-				"keys": func(input map[string]string) []string {
-					keys := []string{}
-					for k := range input {
-						keys = append(keys, k)
-					}
-					sort.Slice(keys, func(i, j int) bool {
-						return keys[i] > keys[j]
-					})
-					return keys
 				},
 				// ParseFS delegates the parsing of the files to `Glob`
 				// which uses the `\` as a special character.

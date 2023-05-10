@@ -178,7 +178,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			settings := test.metricsConfig
-			if test.metricsConfig.Metrics == (metadata.MetricsSettings{}) {
+			if test.metricsConfig.Metrics == (metadata.MetricsConfig{}) {
 				settings = metadata.DefaultMetricsBuilderConfig()
 				settings.Metrics.SystemCPUTime.Enabled = test.times
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization

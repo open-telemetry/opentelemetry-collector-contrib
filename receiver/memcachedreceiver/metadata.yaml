@@ -1,5 +1,11 @@
 type: memcachedreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 attributes:
   command:
     description: The type of command.

@@ -1585,6 +1585,30 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_9", val.AsString())
 }
 
+func TestPushLogRecordsBufferCounters(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ExportRaw = true
+	c := client{
+		config:    cfg,
+		logger:    zap.NewNop(),
+		hecWorker: &mockHecWorker{},
+	}
+
+	logs := plog.NewResourceLogsSlice()
+	logRecords := logs.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	logRecords.AppendEmpty().Body().SetStr("12345")    // the first log record should be accepted and sent
+	logRecords.AppendEmpty().Body().SetStr("12345678") // the second log record should be rejected as it's too big
+	logRecords.AppendEmpty().Body().SetStr("12345")    // the third log record should be just accepted
+	bs := makeBlankBufferState(6, false, 10)
+
+	permErrs, err := c.pushLogRecords(context.Background(), logs, bs, nil)
+	assert.NoError(t, err)
+	assert.Len(t, permErrs, 1)
+	assert.ErrorContains(t, permErrs[0], "bytes larger than configured max content length")
+
+	assert.Equal(t, 2, bs.bufFront.record, "the buffer counter must be at the latest log record")
+}
+
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings
 func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	z, err := gzip.NewReader(bytes.NewReader(got))

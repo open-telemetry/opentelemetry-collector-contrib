@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -229,6 +231,8 @@ type metadata struct {
 	Attributes map[attributeName]attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+	// ScopeName of the metrics emitted by the component.
+	ScopeName string `mapstructure:"-"`
 }
 
 func (md *metadata) Unmarshal(parser *confmap.Conf) error {
@@ -306,7 +310,7 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{}
+	md := metadata{ScopeName: scopeName(filePath)}
 	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
 		return md, err
 	}
@@ -316,4 +320,18 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	return md, nil
+}
+
+func scopeName(filePath string) string {
+	sn := "otelcol"
+	dirs := strings.Split(filepath.Dir(filePath), string(os.PathSeparator))
+	for _, dir := range dirs {
+		if dir != "receiver" && strings.HasSuffix(dir, "receiver") {
+			sn += "/" + dir
+		}
+		if dir != "scraper" && strings.HasSuffix(dir, "scraper") {
+			sn += "/" + strings.TrimSuffix(dir, "scraper")
+		}
+	}
+	return sn
 }

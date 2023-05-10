@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -239,106 +235,106 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("aws.volume.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AwsVolumeID.Enabled, ok)
-			if mb.resourceAttributesSettings.AwsVolumeID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.AwsVolumeID.Enabled, ok)
+			if mb.resourceAttributesConfig.AwsVolumeID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("container.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ContainerID.Enabled, ok)
-			if mb.resourceAttributesSettings.ContainerID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerID.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("fs.type")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.FsType.Enabled, ok)
-			if mb.resourceAttributesSettings.FsType.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.FsType.Enabled, ok)
+			if mb.resourceAttributesConfig.FsType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("gce.pd.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.GcePdName.Enabled, ok)
-			if mb.resourceAttributesSettings.GcePdName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.GcePdName.Enabled, ok)
+			if mb.resourceAttributesConfig.GcePdName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("glusterfs.endpoints.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.GlusterfsEndpointsName.Enabled, ok)
-			if mb.resourceAttributesSettings.GlusterfsEndpointsName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.GlusterfsEndpointsName.Enabled, ok)
+			if mb.resourceAttributesConfig.GlusterfsEndpointsName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("glusterfs.path")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.GlusterfsPath.Enabled, ok)
-			if mb.resourceAttributesSettings.GlusterfsPath.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.GlusterfsPath.Enabled, ok)
+			if mb.resourceAttributesConfig.GlusterfsPath.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.container.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sContainerName.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sContainerName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sContainerName.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sContainerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.namespace.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sNamespaceName.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sNamespaceName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.node.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sNodeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sNodeName.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.persistentvolumeclaim.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sPersistentvolumeclaimName.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sPersistentvolumeclaimName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sPersistentvolumeclaimName.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sPersistentvolumeclaimName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sPodName.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sPodName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sPodName.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sPodName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.uid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sPodUID.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sPodUID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sPodUID.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sPodUID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sVolumeName.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sVolumeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sVolumeName.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sVolumeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.type")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.K8sVolumeType.Enabled, ok)
-			if mb.resourceAttributesSettings.K8sVolumeType.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.K8sVolumeType.Enabled, ok)
+			if mb.resourceAttributesConfig.K8sVolumeType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("partition")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.Partition.Enabled, ok)
-			if mb.resourceAttributesSettings.Partition.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.Partition.Enabled, ok)
+			if mb.resourceAttributesConfig.Partition.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -902,14 +898,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

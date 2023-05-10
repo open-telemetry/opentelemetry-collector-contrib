@@ -17,5 +17,8 @@
 // collection interval and converts them into OTLP equivalent metric
 // representations.
 //
+
+//go:generate mdatagen metadata.yaml
+
 // This receiver is only compatible with Windows.
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"

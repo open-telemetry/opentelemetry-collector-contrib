@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			if test.configSet == testSetDefault {
@@ -94,36 +90,36 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("map.resource.attr")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MapResourceAttr.Enabled, ok)
-			if mb.resourceAttributesSettings.MapResourceAttr.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MapResourceAttr.Enabled, ok)
+			if mb.resourceAttributesConfig.MapResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, map[string]any{"onek": "onev", "twok": "twov"}, attrVal.Map().AsRaw())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("optional.resource.attr")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.OptionalResourceAttr.Enabled, ok)
-			if mb.resourceAttributesSettings.OptionalResourceAttr.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.OptionalResourceAttr.Enabled, ok)
+			if mb.resourceAttributesConfig.OptionalResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("slice.resource.attr")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SliceResourceAttr.Enabled, ok)
-			if mb.resourceAttributesSettings.SliceResourceAttr.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SliceResourceAttr.Enabled, ok)
+			if mb.resourceAttributesConfig.SliceResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, []any{"one", "two"}, attrVal.Slice().AsRaw())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("string.enum.resource.attr")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.StringEnumResourceAttr.Enabled, ok)
-			if mb.resourceAttributesSettings.StringEnumResourceAttr.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.StringEnumResourceAttr.Enabled, ok)
+			if mb.resourceAttributesConfig.StringEnumResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.Equal(t, "one", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("string.resource.attr")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.StringResourceAttr.Enabled, ok)
-			if mb.resourceAttributesSettings.StringResourceAttr.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.StringResourceAttr.Enabled, ok)
+			if mb.resourceAttributesConfig.StringResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -206,14 +202,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }
