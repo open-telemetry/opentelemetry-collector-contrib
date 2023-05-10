@@ -22,6 +22,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v4"
 )
 
@@ -69,17 +70,17 @@ var data = [2]interface{}{
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	var traces pb.Traces
+	
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(t, err)
-	if err := traces.UnmarshalMsgDictionary(payload); err != nil {
-		t.Fatal(err)
-	}
+	
+	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshalling content")
 	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
 	translated := toTraces(&pb.TracerPayload{
 		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 		LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
-		Chunks:          traceChunksFromTraces(traces),
 		TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
+		Chunks:          traceChunksFromTraces(traces),
 	}, req)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)

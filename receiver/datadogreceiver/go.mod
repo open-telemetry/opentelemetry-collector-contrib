@@ -36,6 +36,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
+	github.com/ucarion/urlpath v0.0.0-20200424170820-7ccc79b76bbb // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.77.0 // indirect
