@@ -134,7 +134,7 @@ metrics:
       monotonic: false
   container.memory.usage.total:
     enabled: true
-    description: "Memory usage of the container. This excludes the total cache."
+    description: "Memory usage of the container. This excludes the cache."
     unit: By
     sum:
       value_type: int

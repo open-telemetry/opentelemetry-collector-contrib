@@ -148,6 +148,7 @@ func TestErrorsInStart(t *testing.T) {
 }
 
 func TestScrapeV2(t *testing.T) {
+
 	testCases := []struct {
 		desc                string
 		expectedMetricsFile string
@@ -218,6 +219,20 @@ func TestScrapeV2(t *testing.T) {
 				return mockServer
 			},
 		},
+		{
+			desc:                "cgroups_v2_container",
+			expectedMetricsFile: filepath.Join(mockFolder, "cgroups_v2", "expected_metrics.yaml"),
+			mockDockerEngine: func(t *testing.T) *httptest.Server {
+				containerID := "f97ed5bca0a5a0b85bfd52c4144b96174e825c92a138bc0458f0e196f2c7c1b4"
+				mockServer, err := dockerMockServer(&map[string]string{
+					"/v1.23/containers/json":                      filepath.Join(mockFolder, "cgroups_v2", "containers.json"),
+					"/v1.23/containers/" + containerID + "/json":  filepath.Join(mockFolder, "cgroups_v2", "container.json"),
+					"/v1.23/containers/" + containerID + "/stats": filepath.Join(mockFolder, "cgroups_v2", "stats.json"),
+				})
+				require.NoError(t, err)
+				return mockServer
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -237,6 +252,9 @@ func TestScrapeV2(t *testing.T) {
 
 			actualMetrics, err := receiver.scrapeV2(context.Background())
 			require.NoError(t, err)
+
+			// Uncomment to regenerate 'expected_metrics.yaml' files
+			// golden.WriteMetrics(t, tc.expectedMetricsFile, actualMetrics)
 
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 

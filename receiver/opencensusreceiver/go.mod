@@ -5,19 +5,19 @@ go 1.19
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.77.0
 	github.com/rs/cors v1.9.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/component v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/confmap v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/consumer v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/receiver v0.76.2-0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector v0.77.0
+	go.opentelemetry.io/collector/component v0.77.0
+	go.opentelemetry.io/collector/confmap v0.77.0
+	go.opentelemetry.io/collector/consumer v0.77.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/collector/receiver v0.77.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/sdk v1.15.1
@@ -57,9 +57,9 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.76.2-0.20230508160606-833cbdaf75cc // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230508160606-833cbdaf75cc // indirect
-	go.opentelemetry.io/collector/semconv v0.76.2-0.20230508160606-833cbdaf75cc // indirect
+	go.opentelemetry.io/collector/exporter v0.77.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.77.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.38.1 // indirect

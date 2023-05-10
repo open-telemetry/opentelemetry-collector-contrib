@@ -88,7 +88,7 @@ Memory limit of the container.
 
 ### container.memory.usage.total
 
-Memory usage of the container. This excludes the total cache.
+Memory usage of the container. This excludes the cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

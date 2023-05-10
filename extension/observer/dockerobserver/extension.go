@@ -56,6 +56,9 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 	d := &dockerObserver{
 		logger: logger, config: config,
 		once: &sync.Once{},
+		cancel: func() {
+			// Safe value provided on initialisation
+		},
 	}
 	d.EndpointsWatcher = observer.NewEndpointsWatcher(d, time.Second, logger)
 	return d, nil

@@ -4,14 +4,14 @@ go 1.19
 
 require (
 	github.com/klauspost/compress v1.16.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.76.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.76.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.77.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/component v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/confmap v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/consumer v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/exporter v0.76.2-0.20230508160606-833cbdaf75cc
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011.0.20230508160606-833cbdaf75cc
+	go.opentelemetry.io/collector/component v0.77.0
+	go.opentelemetry.io/collector/confmap v0.77.0
+	go.opentelemetry.io/collector/consumer v0.77.0
+	go.opentelemetry.io/collector/exporter v0.77.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
 	go.uber.org/multierr v1.11.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
@@ -30,9 +30,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.76.2-0.20230508160606-833cbdaf75cc // indirect
-	go.opentelemetry.io/collector/featuregate v0.76.2-0.20230508160606-833cbdaf75cc // indirect
-	go.opentelemetry.io/collector/receiver v0.76.2-0.20230508160606-833cbdaf75cc // indirect
+	go.opentelemetry.io/collector v0.77.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.77.0 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
 	go.opentelemetry.io/otel/trace v1.15.1 // indirect
