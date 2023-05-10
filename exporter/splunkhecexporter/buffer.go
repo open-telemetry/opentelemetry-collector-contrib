@@ -31,7 +31,6 @@ const minCompressionLen = 1500
 // bufferState encapsulates intermediate buffer state when pushing data
 type bufferState struct {
 	compressionAvailable bool
-	compressionEnabled   bool
 	bufferMaxLen         uint
 	maxEventLength       uint
 	writer               io.Writer
@@ -39,15 +38,21 @@ type bufferState struct {
 	resource             int // index in ResourceLogs/ResourceMetrics/ResourceSpans list
 	library              int // index in ScopeLogs/ScopeMetrics/ScopeSpans list
 	record               int // index in Logs/Metrics/Spans list
-	containsData         bool
 	rawLength            int
+}
+
+func (b *bufferState) compressionEnabled() bool {
+	_, ok := b.writer.(*cancellableGzipWriter)
+	return ok
+}
+
+func (b *bufferState) containsData() bool {
+	return b.rawLength > 0
 }
 
 func (b *bufferState) reset() {
 	b.buf.Reset()
-	b.compressionEnabled = false
 	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
-	b.containsData = false
 	b.rawLength = 0
 }
 
@@ -73,7 +78,7 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 	if overCapacity {
 		bufLen += len(data)
 	}
-	if b.compressionAvailable && !b.compressionEnabled && bufLen > minCompressionLen {
+	if b.compressionAvailable && !b.compressionEnabled() && bufLen > minCompressionLen {
 		// switch over to a zip buffer.
 		tmpBuf := bytes.NewBuffer(make([]byte, 0, b.bufferMaxLen+bufCapPadding))
 		writer := gzip.NewWriter(tmpBuf)
@@ -95,7 +100,6 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 		}
 		b.writer = zipWriter
 		b.buf = tmpBuf
-		b.compressionEnabled = true
 		// if the byte writer was over capacity, try to write the new entry in the zip writer:
 		if overCapacity {
 			if _, err2 := zipWriter.Write(data); err2 != nil {
@@ -108,13 +112,11 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 
 		}
 		b.rawLength += len(data)
-		b.containsData = true
 		return true, nil
 	}
 	if overCapacity {
 		return false, nil
 	}
-	b.containsData = true
 	b.rawLength += len(data)
 	return true, err
 }
@@ -184,7 +186,6 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool, maxEventLength
 
 	return &bufferState{
 		compressionAvailable: compressionAvailable,
-		compressionEnabled:   false,
 		writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
 		buf:                  buf,
 		bufferMaxLen:         bufCap,
