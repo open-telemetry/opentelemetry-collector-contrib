@@ -47,6 +47,11 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	swappedMem := vm.Summary.QuickStats.SwappedMemory
 	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
 
+	if totalMemory := vm.Summary.Config.MemorySizeMB; totalMemory > 0 && memUsage > 0 {
+		memoryUtilization := float64(memUsage) / float64(totalMemory) * 100
+		v.mb.RecordVcenterVMMemoryUtilizationDataPoint(now, memoryUtilization)
+	}
+
 	v.mb.RecordVcenterVMMemoryUsageDataPoint(now, int64(memUsage))
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))
 	v.mb.RecordVcenterVMMemorySwappedDataPoint(now, int64(swappedMem))

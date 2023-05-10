@@ -365,6 +365,14 @@ The amount of memory that is used by the virtual machine.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
+### vcenter.vm.memory.utilization
+
+The memory utilization of the VM.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
 ### vcenter.vm.network.packet.count
 
 The amount of packets that was received or transmitted over the instance's network.

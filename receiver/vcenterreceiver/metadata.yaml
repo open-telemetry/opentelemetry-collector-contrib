@@ -404,3 +404,10 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
+  vcenter.vm.memory.utilization:
+    enabled: true
+    description: The memory utilization of the VM.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
