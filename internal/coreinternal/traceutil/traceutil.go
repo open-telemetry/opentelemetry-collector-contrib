@@ -42,6 +42,22 @@ func SpanKindStr(sk ptrace.SpanKind) string {
 	return ""
 }
 
+func SpanKindFromStr(sk string) ptrace.SpanKind {
+	switch sk {
+	case "SPAN_KIND_INTERNAL":
+		return ptrace.SpanKindInternal
+	case "SPAN_KIND_SERVER":
+		return ptrace.SpanKindServer
+	case "SPAN_KIND_CLIENT":
+		return ptrace.SpanKindClient
+	case "SPAN_KIND_PRODUCER":
+		return ptrace.SpanKindProducer
+	case "SPAN_KIND_CONSUMER":
+		return ptrace.SpanKindConsumer
+	}
+	return ptrace.SpanKindUnspecified
+}
+
 // StatusCodeStr returns a string representation of the StatusCode as it's defined in the proto.
 // The function provides old behavior of ptrace.StatusCode.String() to support graceful adoption of
 // https://github.com/open-telemetry/opentelemetry-collector/pull/6250.

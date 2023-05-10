@@ -229,6 +229,22 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "string kind",
+			path: []ottl.Field{
+				{
+					Name: "kind",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   "SPAN_KIND_SERVER",
+			newVal: "SPAN_KIND_CLIENT",
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetKind(ptrace.SpanKindClient)
+			},
+		},
+		{
 			name: "start_time_unix_nano",
 			path: []ottl.Field{
 				{

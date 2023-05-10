@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -79,7 +80,12 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 	case "name":
 		return accessSpanName[K](), nil
 	case "kind":
-		return accessKind[K](), nil
+		if len(path) == 1 {
+			return accessKind[K](), nil
+		}
+		if path[1].Name == "string" {
+			return accessStringKind[K](), nil
+		}
 	case "start_time_unix_nano":
 		return accessStartTimeUnixNano[K](), nil
 	case "end_time_unix_nano":
@@ -294,6 +300,20 @@ func accessKind[K SpanContext]() ottl.StandardGetSetter[K] {
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetSpan().SetKind(ptrace.SpanKind(i))
+			}
+			return nil
+		},
+	}
+}
+
+func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return traceutil.SpanKindStr(tCtx.GetSpan().Kind()), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if s, ok := val.(string); ok {
+				tCtx.GetSpan().SetKind(traceutil.SpanKindFromStr(s))
 			}
 			return nil
 		},
