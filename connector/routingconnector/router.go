@@ -160,17 +160,3 @@ func (r *router[C]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[ott
 func key(entry RoutingTableItem) string {
 	return entry.Statement
 }
-
-func toComponentIDs(names []string) ([]component.ID, error) {
-	componentIDs := make([]component.ID, 0, len(names))
-
-	for _, name := range names {
-		id := component.ID{}
-		if err := id.UnmarshalText([]byte(name)); err != nil {
-			return nil, err
-		}
-		componentIDs = append(componentIDs, id)
-	}
-
-	return componentIDs, nil
-}
