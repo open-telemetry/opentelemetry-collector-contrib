@@ -389,7 +389,7 @@ func getResourceMetricsValuesRequestOptions(
 		for i, dimension := range dimensions {
 			dimensionsFilter.WriteString(dimension)
 			dimensionsFilter.WriteString(" eq '*' ")
-			if i != len(dimensions) {
+			if i < len(dimensions)-1 {
 				dimensionsFilter.WriteString(" and ")
 			}
 		}
