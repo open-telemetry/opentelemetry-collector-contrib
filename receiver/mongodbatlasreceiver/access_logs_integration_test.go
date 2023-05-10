@@ -68,9 +68,7 @@ func TestAccessLogsIntegration(t *testing.T) {
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
 		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				CollectionInterval: 1 * time.Second,
-			},
+			ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 			Logs: LogConfig{
 				Enabled: true,
 				Projects: []*LogsProjectConfig{
@@ -78,7 +76,9 @@ func TestAccessLogsIntegration(t *testing.T) {
 						ProjectConfig: ProjectConfig{
 							Name: testProjectName,
 						},
-						AccessLogs: &AccessLogsConfig{},
+						AccessLogs: &AccessLogsConfig{
+							PollInterval: 1 * time.Second,
+						},
 					},
 				},
 			},
