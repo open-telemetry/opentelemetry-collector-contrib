@@ -14,7 +14,10 @@
 
 package migrate // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 
-import "go.opentelemetry.io/collector/pdata/pcommon"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/multierr"
+)
 
 // ValueMatch defines the expected match type
 // that is used on creation of `ConditionalAttributeSet`
@@ -40,16 +43,18 @@ func NewConditionalAttributeSet[Key AttributeKey, Value AttributeKey, Match Valu
 	}
 }
 
-func (ca *ConditionalAttributeSet) Apply(attrs pcommon.Map, values ...string) {
+func (ca *ConditionalAttributeSet) Apply(attrs pcommon.Map, values ...string) (errs error) {
 	if ca.check(values...) {
-		ca.attrs.Apply(attrs)
+		errs = ca.attrs.Apply(attrs)
 	}
+	return errs
 }
 
-func (ca *ConditionalAttributeSet) Rollback(attrs pcommon.Map, values ...string) {
+func (ca *ConditionalAttributeSet) Rollback(attrs pcommon.Map, values ...string) (errs error) {
 	if ca.check(values...) {
-		ca.attrs.Rollback(attrs)
+		errs = ca.attrs.Rollback(attrs)
 	}
+	return errs
 }
 
 func (ca *ConditionalAttributeSet) check(values ...string) bool {
@@ -72,21 +77,22 @@ func NewConditionalAttributeSetSlice(conditions ...*ConditionalAttributeSet) *Co
 	return values
 }
 
-func (slice *ConditionalAttributeSetSlice) Apply(attrs pcommon.Map, values ...string) {
-	slice.do(StateSelectorApply, attrs, values)
+func (slice *ConditionalAttributeSetSlice) Apply(attrs pcommon.Map, values ...string) error {
+	return slice.do(StateSelectorApply, attrs, values)
 }
 
-func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ...string) {
-	slice.do(StateSelectorRollback, attrs, values)
+func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ...string) error {
+	return slice.do(StateSelectorRollback, attrs, values)
 }
 
-func (slice *ConditionalAttributeSetSlice) do(ss StateSelctor, attrs pcommon.Map, values []string) {
+func (slice *ConditionalAttributeSetSlice) do(ss StateSelctor, attrs pcommon.Map, values []string) (errs error) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
 		case StateSelectorApply:
-			(*slice)[i].Apply(attrs, values...)
+			errs = multierr.Append(errs, (*slice)[i].Apply(attrs, values...))
 		case StateSelectorRollback:
-			(*slice)[len((*slice))-i-1].Rollback(attrs, values...)
+			errs = multierr.Append(errs, (*slice)[len((*slice))-i-1].Rollback(attrs, values...))
 		}
 	}
+	return errs
 }

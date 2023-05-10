@@ -95,7 +95,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.cond.Apply(tc.attr, tc.check)
+			assert.NoError(t, tc.cond.Apply(tc.attr, tc.check))
 			assert.Equal(t, tc.expect.AsRaw(), tc.attr.AsRaw(), "Must match the expected value")
 		})
 	}
@@ -175,7 +175,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.cond.Rollback(tc.attr, tc.check)
+			assert.NoError(t, tc.cond.Rollback(tc.attr, tc.check))
 			assert.Equal(t, tc.expect.AsRaw(), tc.attr.AsRaw(), "Must match the expected value")
 		})
 	}
@@ -232,7 +232,7 @@ func TestConditionalAttribueSetSliceApply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.slice.Apply(tc.attrs, tc.check)
+			assert.NoError(t, tc.slice.Apply(tc.attrs, tc.check))
 			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
 		})
 	}
@@ -289,7 +289,7 @@ func TestConditionalAttribueSetSliceRollback(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.slice.Rollback(tc.attrs, tc.check)
+			assert.NoError(t, tc.slice.Rollback(tc.attrs, tc.check))
 			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
 		})
 	}

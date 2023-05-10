@@ -15,7 +15,10 @@
 package migrate // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
@@ -54,28 +57,47 @@ func NewAttributes[Key AttributeKey, Value AttributeKey](mappings map[Key]Value)
 	return attr
 }
 
-func (a *AttributeChangeSet) Apply(attrs pcommon.Map) {
-	a.do(StateSelectorApply, attrs)
+func (a *AttributeChangeSet) Apply(attrs pcommon.Map) error {
+	return a.do(StateSelectorApply, attrs)
 }
 
-func (a *AttributeChangeSet) Rollback(attrs pcommon.Map) {
-	a.do(StateSelectorRollback, attrs)
+func (a *AttributeChangeSet) Rollback(attrs pcommon.Map) error {
+	return a.do(StateSelectorRollback, attrs)
 }
 
-func (a *AttributeChangeSet) do(ss StateSelctor, attrs pcommon.Map) {
-	attrs.RemoveIf(func(s string, v pcommon.Value) (matched bool) {
-		var key string
+func (a *AttributeChangeSet) do(ss StateSelctor, attrs pcommon.Map) (errs error) {
+	var (
+		updated = make(map[string]struct{})
+		results = pcommon.NewMap()
+	)
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		var (
+			key     string
+			matched bool
+		)
 		switch ss {
 		case StateSelectorApply:
-			key, matched = a.updates[s]
+			key, matched = a.updates[k]
 		case StateSelectorRollback:
-			key, matched = a.rollback[s]
+			key, matched = a.rollback[k]
 		}
 		if matched {
-			v.CopyTo(attrs.PutEmpty(key))
+			k, updated[key] = key, struct{}{}
+		} else {
+			// TODO: Since the spec hasn't decided the behavior on what
+			//       should happen on a name conflict, this will assume
+			//       the rewrite has priority and will set it to the original
+			//       entry's value, not the existing value.
+			if _, overridden := updated[k]; overridden {
+				errs = multierr.Append(errs, fmt.Errorf("value %q already exists", k))
+				return true
+			}
 		}
-		return matched
+		v.CopyTo(results.PutEmpty(k))
+		return true
 	})
+	results.CopyTo(attrs)
+	return errs
 }
 
 // NewAttributeChangeSetSlice combines all the provided `AttributeChangeSets`
@@ -88,21 +110,22 @@ func NewAttributeChangeSetSlice(changes ...*AttributeChangeSet) *AttributeChange
 	return values
 }
 
-func (slice *AttributeChangeSetSlice) Apply(attrs pcommon.Map) {
-	slice.do(StateSelectorApply, attrs)
+func (slice *AttributeChangeSetSlice) Apply(attrs pcommon.Map) error {
+	return slice.do(StateSelectorApply, attrs)
 }
 
-func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) {
-	slice.do(StateSelectorRollback, attrs)
+func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) error {
+	return slice.do(StateSelectorRollback, attrs)
 }
 
-func (slice *AttributeChangeSetSlice) do(ss StateSelctor, attrs pcommon.Map) {
+func (slice *AttributeChangeSetSlice) do(ss StateSelctor, attrs pcommon.Map) (errs error) {
 	for i := 0; i < len(*slice); i++ {
 		switch ss {
 		case StateSelectorApply:
-			(*slice)[i].Apply(attrs)
+			errs = multierr.Append(errs, (*slice)[i].Apply(attrs))
 		case StateSelectorRollback:
-			(*slice)[len(*slice)-1-i].Rollback(attrs)
+			errs = multierr.Append(errs, (*slice)[len(*slice)-1-i].Rollback(attrs))
 		}
 	}
+	return errs
 }
