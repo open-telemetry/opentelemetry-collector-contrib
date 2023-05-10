@@ -258,7 +258,7 @@ Set attribute `test` to `"pass"` if the attribute `test` does not exist:
 ```yaml
 transform:
   error_mode: ignore
-  span_statements:
+  trace_statements:
     - context: span
       statements:
         # accessing a map with a key that does not exist will return nil. 
@@ -273,7 +273,7 @@ You can either set a new attribute and delete the old:
 ```yaml
 transform:
   error_mode: ignore
-  span_statements:
+  trace_statements:
     - context: span
       statements:
         - set(attributes["namespace"], attributes["k8s.namespace.name"])
@@ -285,7 +285,7 @@ Or you can update the key using regex:
 ```yaml
 transform:
   error_mode: ignore
-  span_statements:
+  trace_statements:
     - context: span
       statements:
         - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
