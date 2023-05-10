@@ -26,11 +26,12 @@ import (
 
 // combinedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
 type combinedLogsReceiver struct {
-	alerts    *alertsReceiver
-	logs      *logsReceiver
-	events    *eventsReceiver
-	storageID *component.ID
-	id        component.ID
+	alerts     *alertsReceiver
+	logs       *logsReceiver
+	events     *eventsReceiver
+	accessLogs *accessLogsReceiver
+	storageID  *component.ID
+	id         component.ID
 }
 
 // Starts up the combined MongoDB Atlas Logs and Alert Receiver
@@ -60,6 +61,12 @@ func (c *combinedLogsReceiver) Start(ctx context.Context, host component.Host) e
 		}
 	}
 
+	if c.accessLogs != nil {
+		if err := c.accessLogs.Start(ctx, host, storageClient); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+
 	return errs
 }
 
@@ -81,6 +88,12 @@ func (c *combinedLogsReceiver) Shutdown(ctx context.Context) error {
 
 	if c.events != nil {
 		if err := c.events.Shutdown(ctx); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+
+	if c.accessLogs != nil {
+		if err := c.accessLogs.Shutdown(ctx); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}

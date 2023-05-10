@@ -35,12 +35,22 @@ func TestParseHostName(t *testing.T) {
 func TestFilterClusters(t *testing.T) {
 	clusters := []mongodbatlas.Cluster{{Name: "cluster1", ID: "1"}, {Name: "cluster2", ID: "2"}, {Name: "cluster3", ID: "3"}}
 
-	exclude := []string{"cluster1", "cluster3"}
-	include := []string{"cluster1", "cluster3"}
-	ec := filterClusters(clusters, exclude, false)
+	includeProject := ProjectConfig{
+		IncludeClusters: []string{"cluster1", "cluster3"},
+	}
+	includeProject.populateIncludesAndExcludes()
+
+	excludeProject := ProjectConfig{
+		ExcludeClusters: []string{"cluster1", "cluster3"},
+	}
+	excludeProject.populateIncludesAndExcludes()
+
+	ec, err := filterClusters(clusters, excludeProject)
+	require.NoError(t, err)
 	require.Equal(t, []mongodbatlas.Cluster{{Name: "cluster2", ID: "2"}}, ec)
 
-	ic := filterClusters(clusters, include, true)
+	ic, err := filterClusters(clusters, includeProject)
+	require.NoError(t, err)
 	require.Equal(t, []mongodbatlas.Cluster{{Name: "cluster1", ID: "1"}, {Name: "cluster3", ID: "3"}}, ic)
 
 }
