@@ -265,6 +265,32 @@ transform:
         - set(attributes["test"], "pass") where attributes["test"] == nil
 ``` 
 
+### Rename attribute
+There are 2 ways to rename an attribute key:
+
+You can either set a new attribute and delete the old:
+
+```yaml
+transform:
+  error_mode: ignore
+  span_statements:
+    - context: span
+      statements:
+        - set(attributes["namespace"], attributes["k8s.namespace.name"])
+        - delete_key(attributes, "k8s.namespace.name") 
+``` 
+
+Or you can update the key using regex:
+
+```yaml
+transform:
+  error_mode: ignore
+  span_statements:
+    - context: span
+      statements:
+        - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
+``` 
+
 ### Parsing JSON logs
 
 Given the following json body
