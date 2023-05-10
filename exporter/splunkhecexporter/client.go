@@ -180,14 +180,14 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	}
 
 	// There's some leftover unsent non-profiling data
-	if bufState != nil && bufState.containsData {
+	if bufState != nil && bufState.containsData() {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
 			return consumererror.NewLogs(err, c.subLogs(ld, bufState, profilingBufState))
 		}
 	}
 
 	// There's some leftover unsent profiling data
-	if profilingBufState != nil && profilingBufState.containsData {
+	if profilingBufState != nil && profilingBufState.containsData() {
 		if err := c.postEvents(ctx, profilingBufState, profilingLocalHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
 			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState))
@@ -231,7 +231,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 			continue
 		}
 
-		if state.containsData {
+		if state.containsData() {
 			if err := c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -297,7 +297,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 			continue
 		}
 
-		if state.containsData {
+		if state.containsData() {
 			if err := c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -350,7 +350,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 			continue
 		}
 
-		if state.containsData {
+		if state.containsData() {
 			if err = c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -403,7 +403,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	}
 
 	// There's some leftover unsent metrics
-	if bufState.containsData {
+	if bufState.containsData() {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
 			return consumererror.NewMetrics(err, subMetrics(md, bufState))
 		}
@@ -438,7 +438,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	}
 
 	// There's some leftover unsent traces
-	if bufState.containsData {
+	if bufState.containsData() {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
 			return consumererror.NewTraces(err, subTraces(td, bufState))
 		}
