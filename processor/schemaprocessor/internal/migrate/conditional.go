@@ -85,7 +85,7 @@ func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ..
 	return slice.do(StateSelectorRollback, attrs, values)
 }
 
-func (slice *ConditionalAttributeSetSlice) do(ss StateSelctor, attrs pcommon.Map, values []string) (errs error) {
+func (slice *ConditionalAttributeSetSlice) do(ss StateSelector, attrs pcommon.Map, values []string) (errs error) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
 		case StateSelectorApply:

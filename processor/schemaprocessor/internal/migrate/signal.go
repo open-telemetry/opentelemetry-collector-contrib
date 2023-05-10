@@ -53,7 +53,7 @@ func (s *SignalNameChange) Rollback(signal alias.NamedSignal) {
 	s.do(StateSelectorRollback, signal)
 }
 
-func (s *SignalNameChange) do(ss StateSelctor, signal alias.NamedSignal) {
+func (s *SignalNameChange) do(ss StateSelector, signal alias.NamedSignal) {
 	var (
 		name    string
 		matched bool
@@ -85,7 +85,7 @@ func (slice *SignalNameChangeSlice) Rollback(signal alias.NamedSignal) {
 	slice.do(StateSelectorRollback, signal)
 }
 
-func (slice *SignalNameChangeSlice) do(ss StateSelctor, signal alias.NamedSignal) {
+func (slice *SignalNameChangeSlice) do(ss StateSelector, signal alias.NamedSignal) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
 		case StateSelectorApply:

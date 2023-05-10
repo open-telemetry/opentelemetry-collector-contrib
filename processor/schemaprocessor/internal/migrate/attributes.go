@@ -65,7 +65,7 @@ func (a *AttributeChangeSet) Rollback(attrs pcommon.Map) error {
 	return a.do(StateSelectorRollback, attrs)
 }
 
-func (a *AttributeChangeSet) do(ss StateSelctor, attrs pcommon.Map) (errs error) {
+func (a *AttributeChangeSet) do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	var (
 		updated = make(map[string]struct{})
 		results = pcommon.NewMap()
@@ -118,7 +118,7 @@ func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) error {
 	return slice.do(StateSelectorRollback, attrs)
 }
 
-func (slice *AttributeChangeSetSlice) do(ss StateSelctor, attrs pcommon.Map) (errs error) {
+func (slice *AttributeChangeSetSlice) do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	for i := 0; i < len(*slice); i++ {
 		switch ss {
 		case StateSelectorApply:

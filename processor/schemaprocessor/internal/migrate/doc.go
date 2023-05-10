@@ -16,10 +16,10 @@
 // on specific schema fields that are consumed by the translation package.
 package migrate // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 
-type StateSelctor int
+type StateSelector int
 
 const (
-	_ StateSelctor = iota
+	_ StateSelector = iota
 	StateSelectorApply
 	StateSelectorRollback
 )
