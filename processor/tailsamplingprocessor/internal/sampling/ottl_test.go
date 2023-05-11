@@ -59,6 +59,13 @@ func TestEvaluate_OTTL(t *testing.T) {
 			NotSampled,
 		},
 		{
+			"OTTL conditions inverse match(!=) span attributes 2",
+			[]string{"attributes[\"attr_k_1\"] != \"attr_v_1\""},
+			[]string{},
+			[]spanWithAttributes{{SpanAttributes: map[string]string{"attr_k_1": "attr_v_2"}}},
+			Sampled,
+		},
+		{
 			"OTTL conditions match specific span event attributes",
 			[]string{},
 			[]string{"attributes[\"event_attr_k_1\"] == \"event_attr_v_1\""},
