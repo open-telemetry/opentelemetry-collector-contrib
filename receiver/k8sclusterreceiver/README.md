@@ -101,7 +101,7 @@ type MetadataDelta struct {
 }
 ```
 
-See [here](internal/collection/metadata.go) for details about the above types.
+See [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/experimentalmetricmetadata/metadata.go) for details about the above types.
 
 
 ## Example
