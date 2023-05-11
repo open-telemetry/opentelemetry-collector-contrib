@@ -25,6 +25,7 @@ The following exporter configuration parameters are supported.
 | `s3_partition` | time granularity of S3 key: hour or minute            | "minute" |
 | `file_prefix`  | file prefix defined by user                           |          |
 | `marshaler`    | marshaler used to produce output data otlp_json       |          |
+| `endpoint`     | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`               |          |
 
 # Example Configuration
 

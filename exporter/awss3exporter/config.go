@@ -22,6 +22,7 @@ type S3UploaderConfig struct {
 	S3Prefix    string `mapstructure:"s3_prefix"`
 	S3Partition string `mapstructure:"s3_partition"`
 	FilePrefix  string `mapstructure:"file_prefix"`
+	Endpoint    string `mapstructure:"endpoint"`
 }
 
 type MarshalerType string

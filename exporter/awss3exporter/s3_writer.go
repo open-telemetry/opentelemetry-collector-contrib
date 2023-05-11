@@ -57,6 +57,19 @@ func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix str
 	return s3Key
 }
 
+func getSessionConfig(config *Config) *aws.Config {
+	sessionConfig := &aws.Config{
+		Region: aws.String(config.S3Uploader.Region),
+	}
+
+	endpoint := config.S3Uploader.Endpoint
+	if endpoint != "" {
+		sessionConfig.Endpoint = aws.String(endpoint)
+	}
+
+	return sessionConfig
+}
+
 func (s3writer *s3Writer) writeBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error {
 	now := time.Now()
 	key := getS3Key(now,
@@ -66,9 +79,8 @@ func (s3writer *s3Writer) writeBuffer(ctx context.Context, buf []byte, config *C
 	// create a reader from data data in memory
 	reader := bytes.NewReader(buf)
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.S3Uploader.Region)},
-	)
+	sessionConfig := getSessionConfig(config)
+	sess, err := session.NewSession(sessionConfig)
 
 	if err != nil {
 		return err

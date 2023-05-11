@@ -68,6 +68,7 @@ func TestConfig(t *testing.T) {
 				S3Bucket:    "foo",
 				S3Prefix:    "bar",
 				S3Partition: "minute",
+				Endpoint:    "http://endpoint.com",
 			},
 			MarshalerName: "otlp_json",
 		},
