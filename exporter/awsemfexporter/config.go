@@ -144,11 +144,8 @@ func (config *Config) Validate() error {
 		return retErr
 	}
 
-	if tagInputErr := cwlogs.ValidateTagsInput(config.Tags); tagInputErr != nil {
-		return tagInputErr
-	}
-
-	return nil
+	return cwlogs.ValidateTagsInput(config.Tags)
+	
 }
 
 func newEMFSupportedUnits() map[string]interface{} {
