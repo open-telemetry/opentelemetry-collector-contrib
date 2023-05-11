@@ -17,7 +17,11 @@ all_set:
       enabled: true
     container.blockio.sectors_recursive:
       enabled: true
+    container.cpu.limit:
+      enabled: true
     container.cpu.percent:
+      enabled: true
+    container.cpu.shares:
       enabled: true
     container.cpu.throttling_data.periods:
       enabled: true
@@ -126,6 +130,8 @@ all_set:
     container.pids.count:
       enabled: true
     container.pids.limit:
+      enabled: true
+    container.restart.count:
       enabled: true
   resource_attributes:
     container.hostname:
@@ -156,7 +162,11 @@ none_set:
       enabled: false
     container.blockio.sectors_recursive:
       enabled: false
+    container.cpu.limit:
+      enabled: false
     container.cpu.percent:
+      enabled: false
+    container.cpu.shares:
       enabled: false
     container.cpu.throttling_data.periods:
       enabled: false
@@ -265,6 +275,8 @@ none_set:
     container.pids.count:
       enabled: false
     container.pids.limit:
+      enabled: false
+    container.restart.count:
       enabled: false
   resource_attributes:
     container.hostname:

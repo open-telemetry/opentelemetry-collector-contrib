@@ -41,7 +41,9 @@ var (
 		ContainerBlockioIoTimeRecursive:            metricEnabled,
 		ContainerBlockioIoWaitTimeRecursive:        metricEnabled,
 		ContainerBlockioSectorsRecursive:           metricEnabled,
+		ContainerCPULimit:                          metricEnabled,
 		ContainerCPUPercent:                        metricEnabled,
+		ContainerCPUShares:                         metricEnabled,
 		ContainerCPUThrottlingDataPeriods:          metricEnabled,
 		ContainerCPUThrottlingDataThrottledPeriods: metricEnabled,
 		ContainerCPUThrottlingDataThrottledTime:    metricEnabled,
@@ -96,6 +98,7 @@ var (
 		ContainerNetworkIoUsageTxPackets:           metricEnabled,
 		ContainerPidsCount:                         metricEnabled,
 		ContainerPidsLimit:                         metricEnabled,
+		ContainerRestartCount:                      metricEnabled,
 	}
 )
 

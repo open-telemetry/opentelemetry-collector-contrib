@@ -286,6 +286,22 @@ Number of sectors transferred to/from disk by the group and descendant groups.
 | device_minor | Device minor number for block IO operations. | Any Str |
 | operation | Type of BlockIO operation. | Any Str |
 
+### container.cpu.limit
+
+CPU limit set for the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### container.cpu.shares
+
+CPU shares set for the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### container.cpu.throttling_data.periods
 
 Number of periods with throttling active.
@@ -677,6 +693,14 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
+
+### container.restart.count
+
+Number of restarts for the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 
