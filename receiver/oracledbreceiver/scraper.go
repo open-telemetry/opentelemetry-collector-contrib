@@ -45,6 +45,8 @@ const (
 	sessionLogicalReads     = "session logical reads"
 	cpuTime                 = "CPU used by this session"
 	pgaMemory               = "session pga memory"
+	dbBlockGets             = "db block gets"
+	consistentGets          = "consistent gets"
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
 	tablespaceUsageSQL      = "select TABLESPACE_NAME, BYTES from DBA_DATA_FILES"
@@ -116,7 +118,9 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLogicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
-		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled
+		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDbBlockGets.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbConsistentGets.Enabled
 	if runStats {
 		now := pcommon.NewTimestampFromTime(time.Now())
 		rows, execError := s.statsClient.metricRows(ctx)
@@ -182,6 +186,16 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case pgaMemory:
 				err := s.metricsBuilder.RecordOracledbPgaMemoryDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dbBlockGets:
+				err := s.metricsBuilder.RecordOracledbDbBlockGetsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case consistentGets:
+				err := s.metricsBuilder.RecordOracledbConsistentGetsDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}

@@ -22,16 +22,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
-)
-
-const (
-	typeStr   = "filelog"
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
 
 // NewFactory creates a factory for filelog receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, stability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
 }
 
 // ReceiverType implements stanza.LogReceiverType
@@ -40,7 +36,7 @@ type ReceiverType struct{}
 
 // Type is the receiver type
 func (f ReceiverType) Type() component.Type {
-	return typeStr
+	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version

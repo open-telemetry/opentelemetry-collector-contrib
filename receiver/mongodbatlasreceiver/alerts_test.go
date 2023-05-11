@@ -495,7 +495,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				for k, v := range expectedResourceAttributes {
 					value, ok := ra.Get(k)
 					require.True(t, ok)
-					require.Equal(t, v, value)
+					require.Equal(t, v, value.AsString())
 				}
 			},
 		},
@@ -560,7 +560,7 @@ func TestAlertsRetrieval(t *testing.T) {
 						{
 							ID:            testAlertID,
 							GroupID:       testGroupID,
-							AlertConfigID: "",
+							AlertConfigID: testAlertConfigID,
 							EventTypeName: testTypeName,
 							Created:       time.Now().Format(time.RFC3339),
 							Updated:       time.Now().Format(time.RFC3339),
@@ -594,6 +594,7 @@ func TestAlertsRetrieval(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
@@ -666,7 +667,7 @@ func testAlert() mongodbatlas.Alert {
 	return mongodbatlas.Alert{
 		ID:            testAlertID,
 		GroupID:       testGroupID,
-		AlertConfigID: "",
+		AlertConfigID: testAlertConfigID,
 		EventTypeName: testTypeName,
 		Created:       time.Now().Format(time.RFC3339),
 		Updated:       time.Now().Format(time.RFC3339),
@@ -696,7 +697,7 @@ func validateAttributes(t *testing.T, expectedStringAttributes map[string]string
 				for k, v := range expectedStringAttributes {
 					val, ok := lr.Attributes().Get(k)
 					require.True(t, ok)
-					require.Equal(t, val.AsString(), v)
+					require.Equal(t, v, val.AsString())
 				}
 			}
 		}

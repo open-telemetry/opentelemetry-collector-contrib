@@ -29,6 +29,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 type k8sobjectsreceiver struct {
@@ -138,7 +140,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, typeStr, logs.LogRecordCount(), err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logs.LogRecordCount(), err)
 			}
 		case <-stopperChan:
 			return
@@ -180,7 +182,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 
 			obsCtx := kr.obsrecv.StartLogsOp(ctx)
 			err := kr.consumer.ConsumeLogs(obsCtx, logs)
-			kr.obsrecv.EndLogsOp(obsCtx, typeStr, 1, err)
+			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, 1, err)
 		case <-stopperChan:
 			watch.Stop()
 			return

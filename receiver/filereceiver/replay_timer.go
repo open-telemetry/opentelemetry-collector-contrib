@@ -23,9 +23,9 @@ import (
 )
 
 type replayTimer struct {
-	prev      pcommon.Timestamp
-	throttle  float64 // set to 1.0 to replay at same speed, 2.0 for half speed, etc.
 	sleepFunc func(ctx context.Context, d time.Duration) error
+	prev      pcommon.Timestamp
+	throttle  float64
 }
 
 func newReplayTimer(throttle float64) *replayTimer {

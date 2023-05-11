@@ -25,6 +25,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -48,6 +49,29 @@ type client struct {
 	hecWorker         hecWorker
 	buildInfo         component.BuildInfo
 	heartbeater       *heartbeater
+	bufferStatePool   bufferStatePool
+}
+
+func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+	return &client{
+		config:            cfg,
+		logger:            set.Logger,
+		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
+		bufferStatePool:   newBufferStatePool(maxContentLength, !cfg.DisableCompression, cfg.MaxEventSize),
+	}
+}
+
+func newLogsClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthLogs)
+}
+
+func newTracesClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthTraces)
+}
+
+func newMetricsClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
 func (c *client) pushMetricsData(
@@ -130,8 +154,8 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 		profilingLocalHeaders[k] = v
 	}
 
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
-	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
+	var bufState *bufferState
+	var profilingBufState *bufferState
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
@@ -147,6 +171,10 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 					droppedProfilingDataRecords += ills.At(j).LogRecords().Len()
 					continue
 				}
+				if profilingBufState == nil {
+					profilingBufState = c.bufferStatePool.get()
+					defer c.bufferStatePool.put(profilingBufState)
+				}
 				profilingBufState.resource, profilingBufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, profilingBufState, profilingLocalHeaders)
 			} else {
@@ -154,12 +182,16 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 					droppedLogRecords += ills.At(j).LogRecords().Len()
 					continue
 				}
+				if bufState == nil {
+					bufState = c.bufferStatePool.get()
+					defer c.bufferStatePool.put(bufState)
+				}
 				bufState.resource, bufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, bufState, headers)
 			}
 
 			if err != nil {
-				return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
+				return consumererror.NewLogs(err, c.subLogs(ld, bufState, profilingBufState))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
@@ -174,18 +206,17 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	}
 
 	// There's some leftover unsent non-profiling data
-	if bufState.containsData {
-
+	if bufState != nil && bufState.containsData() {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, c.subLogs(ld, bufState, profilingBufState))
 		}
 	}
 
 	// There's some leftover unsent profiling data
-	if profilingBufState.containsData {
+	if profilingBufState != nil && profilingBufState.containsData() {
 		if err := c.postEvents(ctx, profilingBufState, profilingLocalHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState))
 		}
 	}
 
@@ -196,10 +227,8 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 	res := lds.At(state.resource)
 	logs := res.ScopeLogs().At(state.library).LogRecords()
 
+	state.record = 0
 	for k := 0; k < logs.Len(); k++ {
-		if state.bufFront == nil {
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		}
 		var b []byte
 
 		if c.config.ExportRaw {
@@ -218,17 +247,17 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		}
 
 		// Continue adding events to buffer up to capacity.
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
-		if state.containsData {
+		if state.containsData() {
 			if err := c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -236,25 +265,20 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.record = k
+			continue
+		}
+
+		state.record = k + 1
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-		if state.containsData {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -264,11 +288,8 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 	res := mds.At(state.resource)
 	metrics := res.ScopeMetrics().At(state.library).Metrics()
 
+	state.record = 0
 	for k := 0; k < metrics.Len(); k++ {
-		if state.bufFront == nil {
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		}
-
 		// Parsing metric record to Splunk event.
 		events := mapMetricToSplunkEvent(res.Resource(), metrics.At(k), c.config, c.logger)
 		buf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
@@ -292,17 +313,17 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 
 		// Continue adding events to buffer up to capacity.
 		b := buf.Bytes()
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
-		if state.containsData {
+		if state.containsData() {
 			if err := c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -310,26 +331,20 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.record = k
+			continue
+		}
+
+		state.record = k + 1
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-
-		if state.containsData {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -339,11 +354,8 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 	res := tds.At(state.resource)
 	spans := res.ScopeSpans().At(state.library).Spans()
 
+	state.record = 0
 	for k := 0; k < spans.Len(); k++ {
-		if state.bufFront == nil {
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		}
-
 		// Parsing span record to Splunk event.
 		event := mapSpanToSplunkEvent(res.Resource(), spans.At(k), c.config)
 		// JSON encoding event and writing to buffer.
@@ -354,17 +366,17 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		}
 
 		// Continue adding events to buffer up to capacity.
-		accept, e := state.accept(b)
+		accepted, e := state.accept(b)
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
 			continue
 		}
-		if accept {
+		if accepted {
 			continue
 		}
 
-		if state.containsData {
+		if state.containsData() {
 			if err = c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -372,26 +384,20 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		state.reset()
 
 		// Writing truncated bytes back to buffer.
-		accept, e = state.accept(b)
+		accepted, e = state.accept(b)
+		if accepted {
+			state.record = k
+			continue
+		}
+
+		state.record = k + 1
 		if e != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if !accept {
+		} else {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 				fmt.Errorf("dropped trace event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
-			continue
 		}
-
-		if state.containsData {
-			// This means that the current record had overflown the buffer and was not sent
-			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
-		} else {
-			// This means that the entire buffer was sent, including the current record
-			state.bufFront = nil
-		}
-
 	}
 
 	return permanentErrors, nil
@@ -401,7 +407,9 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression, c.config.MaxEventSize)
+	bufState := c.bufferStatePool.get()
+	defer c.bufferStatePool.put(bufState)
+
 	var permanentErrors []error
 
 	var rms = md.ResourceMetrics()
@@ -415,7 +423,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 			newPermanentErrors, err = c.pushMetricsRecords(ctx, rms, bufState, headers)
 
 			if err != nil {
-				return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
+				return consumererror.NewMetrics(err, subMetrics(md, bufState))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
@@ -423,9 +431,9 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	}
 
 	// There's some leftover unsent metrics
-	if bufState.containsData {
+	if bufState.containsData() {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
+			return consumererror.NewMetrics(err, subMetrics(md, bufState))
 		}
 	}
 
@@ -436,7 +444,9 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
-	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression, c.config.MaxEventSize)
+	bufState := c.bufferStatePool.get()
+	defer c.bufferStatePool.put(bufState)
+
 	var permanentErrors []error
 
 	var rts = td.ResourceSpans()
@@ -450,7 +460,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 			newPermanentErrors, err = c.pushTracesData(ctx, rts, bufState, headers)
 
 			if err != nil {
-				return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
+				return consumererror.NewTraces(err, subTraces(td, bufState))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
@@ -458,9 +468,9 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	}
 
 	// There's some leftover unsent traces
-	if bufState.containsData {
+	if bufState.containsData() {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
+			return consumererror.NewTraces(err, subTraces(td, bufState))
 		}
 	}
 
@@ -474,45 +484,26 @@ func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers 
 	return c.hecWorker.send(ctx, bufState, headers)
 }
 
-// subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data
-// plus starting from `bufFront` for non-profiling data. Both can be nil, in which case they are ignored
-func (c *client) subLogs(ld plog.Logs, bufFront *index, profilingBufFront *index) plog.Logs {
+// subLogs returns a subset of `ld` starting from `profilingState` for profiling data
+// plus starting from `state` for non-profiling data.
+func (c *client) subLogs(ld plog.Logs, state *bufferState, profilingState *bufferState) plog.Logs {
 	subset := plog.NewLogs()
-	if c.config.LogDataEnabled {
-		subLogsByType(ld, bufFront, subset, false)
+	if c.config.LogDataEnabled && state != nil {
+		subLogsByType(ld, state, subset, false)
 	}
-	if c.config.ProfilingDataEnabled {
-		subLogsByType(ld, profilingBufFront, subset, true)
+	if c.config.ProfilingDataEnabled && profilingState != nil {
+		subLogsByType(ld, profilingState, subset, true)
 	}
 
 	return subset
 }
 
-// subMetrics returns a subset of `md`starting from `bufFront`. It can be nil, in which case it is ignored
-func subMetrics(md pmetric.Metrics, bufFront *index) pmetric.Metrics {
-	subset := pmetric.NewMetrics()
-	subMetricsByType(md, bufFront, subset)
-
-	return subset
-}
-
-// subTraces returns a subset of `td`starting from `bufFront`. It can be nil, in which case it is ignored
-func subTraces(td ptrace.Traces, bufFront *index) ptrace.Traces {
-	subset := ptrace.NewTraces()
-	subTracesByType(td, bufFront, subset)
-
-	return subset
-}
-
-func subLogsByType(src plog.Logs, from *index, dst plog.Logs, profiling bool) {
-	if from == nil {
-		return // All the data of this type was sent successfully
-	}
-
+// subLogs returns a subset of logs starting the state.
+func subLogsByType(src plog.Logs, state *bufferState, dst plog.Logs, profiling bool) {
 	resources := src.ResourceLogs()
 	resourcesSub := dst.ResourceLogs()
 
-	for i := from.resource; i < resources.Len(); i++ {
+	for i := state.resource; i < resources.Len(); i++ {
 		newSub := resourcesSub.AppendEmpty()
 		resources.At(i).Resource().CopyTo(newSub.Resource())
 
@@ -520,8 +511,8 @@ func subLogsByType(src plog.Logs, from *index, dst plog.Logs, profiling bool) {
 		librariesSub := newSub.ScopeLogs()
 
 		j := 0
-		if i == from.resource {
-			j = from.library
+		if i == state.resource {
+			j = state.library
 		}
 		for jSub := 0; j < libraries.Len(); j++ {
 			lib := libraries.At(j)
@@ -539,8 +530,8 @@ func subLogsByType(src plog.Logs, from *index, dst plog.Logs, profiling bool) {
 			jSub++
 
 			k := 0
-			if i == from.resource && j == from.library {
-				k = from.record
+			if i == state.resource && j == state.library {
+				k = state.record
 			}
 
 			for kSub := 0; k < logs.Len(); k++ { //revive:disable-line:var-naming
@@ -551,15 +542,13 @@ func subLogsByType(src plog.Logs, from *index, dst plog.Logs, profiling bool) {
 	}
 }
 
-func subMetricsByType(src pmetric.Metrics, from *index, dst pmetric.Metrics) {
-	if from == nil {
-		return // All the data of this type was sent successfully
-	}
-
+// subMetrics returns a subset of metrics starting from the state.
+func subMetrics(src pmetric.Metrics, state *bufferState) pmetric.Metrics {
+	dst := pmetric.NewMetrics()
 	resources := src.ResourceMetrics()
 	resourcesSub := dst.ResourceMetrics()
 
-	for i := from.resource; i < resources.Len(); i++ {
+	for i := state.resource; i < resources.Len(); i++ {
 		newSub := resourcesSub.AppendEmpty()
 		resources.At(i).Resource().CopyTo(newSub.Resource())
 
@@ -567,8 +556,8 @@ func subMetricsByType(src pmetric.Metrics, from *index, dst pmetric.Metrics) {
 		librariesSub := newSub.ScopeMetrics()
 
 		j := 0
-		if i == from.resource {
-			j = from.library
+		if i == state.resource {
+			j = state.library
 		}
 		for jSub := 0; j < libraries.Len(); j++ {
 			lib := libraries.At(j)
@@ -581,8 +570,8 @@ func subMetricsByType(src pmetric.Metrics, from *index, dst pmetric.Metrics) {
 			jSub++
 
 			k := 0
-			if i == from.resource && j == from.library {
-				k = from.record
+			if i == state.resource && j == state.library {
+				k = state.record
 			}
 
 			for kSub := 0; k < metrics.Len(); k++ { //revive:disable-line:var-naming
@@ -591,17 +580,16 @@ func subMetricsByType(src pmetric.Metrics, from *index, dst pmetric.Metrics) {
 			}
 		}
 	}
+
+	return dst
 }
 
-func subTracesByType(src ptrace.Traces, from *index, dst ptrace.Traces) {
-	if from == nil {
-		return // All the data of this type was sent successfully
-	}
-
+func subTraces(src ptrace.Traces, state *bufferState) ptrace.Traces {
+	dst := ptrace.NewTraces()
 	resources := src.ResourceSpans()
 	resourcesSub := dst.ResourceSpans()
 
-	for i := from.resource; i < resources.Len(); i++ {
+	for i := state.resource; i < resources.Len(); i++ {
 		newSub := resourcesSub.AppendEmpty()
 		resources.At(i).Resource().CopyTo(newSub.Resource())
 
@@ -609,10 +597,10 @@ func subTracesByType(src ptrace.Traces, from *index, dst ptrace.Traces) {
 		librariesSub := newSub.ScopeSpans()
 
 		j := 0
-		if i == from.resource {
-			j = from.library
+		if i == state.resource {
+			j = state.library
 		}
-		for jSub := 0; j < libraries.Len(); j++ {
+		for ; j < libraries.Len(); j++ {
 			lib := libraries.At(j)
 
 			newLibSub := librariesSub.AppendEmpty()
@@ -620,19 +608,19 @@ func subTracesByType(src ptrace.Traces, from *index, dst ptrace.Traces) {
 
 			traces := lib.Spans()
 			tracesSub := newLibSub.Spans()
-			jSub++
 
 			k := 0
-			if i == from.resource && j == from.library {
-				k = from.record
+			if i == state.resource && j == state.library {
+				k = state.record
 			}
 
-			for kSub := 0; k < traces.Len(); k++ { //revive:disable-line:var-naming
+			for ; k < traces.Len(); k++ {
 				traces.At(k).CopyTo(tracesSub.AppendEmpty())
-				kSub++
 			}
 		}
 	}
+
+	return dst
 }
 
 func (c *client) stop(context.Context) error {

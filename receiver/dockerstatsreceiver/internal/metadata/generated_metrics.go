@@ -2754,7 +2754,7 @@ type metricContainerMemoryUsageTotal struct {
 // init fills container.memory.usage.total metric with initial data.
 func (m *metricContainerMemoryUsageTotal) init() {
 	m.data.SetName("container.memory.usage.total")
-	m.data.SetDescription("Memory usage of the container. This excludes the total cache.")
+	m.data.SetDescription("Memory usage of the container. This excludes the cache.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

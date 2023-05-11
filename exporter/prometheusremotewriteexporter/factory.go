@@ -26,22 +26,16 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "prometheusremotewrite"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,

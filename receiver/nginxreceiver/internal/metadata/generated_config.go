@@ -29,6 +29,7 @@ type MetricsConfig struct {
 	NginxConnectionsCurrent  MetricConfig `mapstructure:"nginx.connections_current"`
 	NginxConnectionsHandled  MetricConfig `mapstructure:"nginx.connections_handled"`
 	NginxRequests            MetricConfig `mapstructure:"nginx.requests"`
+	TempConnectionsCurrent   MetricConfig `mapstructure:"temp.connections_current"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -43,6 +44,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		NginxRequests: MetricConfig{
+			Enabled: true,
+		},
+		TempConnectionsCurrent: MetricConfig{
 			Enabled: true,
 		},
 	}

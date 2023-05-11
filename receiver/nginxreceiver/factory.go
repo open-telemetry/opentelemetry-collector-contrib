@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -28,7 +29,16 @@ import (
 )
 
 const (
-	typeStr = "nginx"
+	typeStr          = "nginx"
+	connectionsAsSum = "receiver.nginx.emitConnectionsCurrentAsSum"
+)
+
+var connectorsAsSumGate = featuregate.GlobalRegistry().MustRegister(
+	connectionsAsSum,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the receiver will emit the 'nginx.connections_current' metric as a nonmonotonic sum, rather than a gauge."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4326"),
+	featuregate.WithRegisterFromVersion("v0.78.0"),
 )
 
 // NewFactory creates a factory for nginx receiver.
