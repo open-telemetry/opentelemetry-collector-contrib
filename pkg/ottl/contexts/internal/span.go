@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -309,11 +308,26 @@ func accessKind[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return traceutil.SpanKindStr(tCtx.GetSpan().Kind()), nil
+			return tCtx.GetSpan().Kind().String(), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if s, ok := val.(string); ok {
-				tCtx.GetSpan().SetKind(traceutil.SpanKindFromStr(s))
+				var kind ptrace.SpanKind
+				switch s {
+				case "Internal":
+					kind = ptrace.SpanKindInternal
+				case "Server":
+					kind = ptrace.SpanKindServer
+				case "Client":
+					kind = ptrace.SpanKindClient
+				case "Producer":
+					kind = ptrace.SpanKindProducer
+				case "Consumer":
+					kind = ptrace.SpanKindConsumer
+				default:
+					kind = ptrace.SpanKindUnspecified
+				}
+				tCtx.GetSpan().SetKind(kind)
 			}
 			return nil
 		},

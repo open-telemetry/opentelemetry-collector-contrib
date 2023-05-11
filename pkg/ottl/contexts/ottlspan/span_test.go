@@ -238,8 +238,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "string",
 				},
 			},
-			orig:   "SPAN_KIND_SERVER",
-			newVal: "SPAN_KIND_CLIENT",
+			orig:   "Server",
+			newVal: "Client",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				span.SetKind(ptrace.SpanKindClient)
 			},

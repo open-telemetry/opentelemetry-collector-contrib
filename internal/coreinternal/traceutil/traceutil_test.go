@@ -31,16 +31,6 @@ func TestSpanKindStr(t *testing.T) {
 	assert.EqualValues(t, "", SpanKindStr(ptrace.SpanKind(100)))
 }
 
-func TestSpanKindFromStr(t *testing.T) {
-	assert.EqualValues(t, ptrace.SpanKindUnspecified, SpanKindFromStr("SPAN_KIND_UNSPECIFIED"))
-	assert.EqualValues(t, ptrace.SpanKindInternal, SpanKindFromStr("SPAN_KIND_INTERNAL"))
-	assert.EqualValues(t, ptrace.SpanKindServer, SpanKindFromStr("SPAN_KIND_SERVER"))
-	assert.EqualValues(t, ptrace.SpanKindClient, SpanKindFromStr("SPAN_KIND_CLIENT"))
-	assert.EqualValues(t, ptrace.SpanKindProducer, SpanKindFromStr("SPAN_KIND_PRODUCER"))
-	assert.EqualValues(t, ptrace.SpanKindConsumer, SpanKindFromStr("SPAN_KIND_CONSUMER"))
-	assert.EqualValues(t, ptrace.SpanKindUnspecified, SpanKindFromStr(""))
-}
-
 func TestStatusCodeStr(t *testing.T) {
 	assert.EqualValues(t, "STATUS_CODE_UNSET", StatusCodeStr(ptrace.StatusCodeUnset))
 	assert.EqualValues(t, "STATUS_CODE_OK", StatusCodeStr(ptrace.StatusCodeOk))
