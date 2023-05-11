@@ -88,7 +88,7 @@ type Converter struct {
 func NewConverter(logger *zap.Logger) *Converter {
 	return &Converter{
 		workerChan:  make(chan []*entry.Entry),
-		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
+		workerCount: int(math.Max(1, float64(runtime.GOMAXPROCS(-1)/4))),
 		pLogsChan:   make(chan plog.Logs),
 		stopChan:    make(chan struct{}),
 		flushChan:   make(chan plog.Logs),
