@@ -22,12 +22,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "googlecloudspanner"
-	stability = component.StabilityLevelBeta
-
 	defaultCollectionInterval                = 60 * time.Second
 	defaultTopMetricsQueryMaxRows            = 100
 	defaultBackfillEnabled                   = false
@@ -36,9 +35,9 @@ const (
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -62,7 +61,7 @@ func createMetricsReceiver(
 	rCfg := baseCfg.(*Config)
 	r := newGoogleCloudSpannerReceiver(settings.Logger, rCfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, r.Scrape, scraperhelper.WithStart(r.Start),
+	scraper, err := scraperhelper.NewScraper(metadata.Type, r.Scrape, scraperhelper.WithStart(r.Start),
 		scraperhelper.WithShutdown(r.Shutdown))
 	if err != nil {
 		return nil, err
