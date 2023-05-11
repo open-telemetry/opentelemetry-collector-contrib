@@ -13,4 +13,4 @@
 // limitations under the License.
 
 //go:generate mdatagen metadata.yaml
-package pulsarreceiver// import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
+package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
