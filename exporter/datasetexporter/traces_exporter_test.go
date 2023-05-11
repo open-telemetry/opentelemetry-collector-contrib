@@ -88,9 +88,9 @@ func generateTEvent1Raw() *add_events.Event {
 			"resource_type":  "process",
 			"status_code":    "error",
 			"status_message": "status-cancelled",
-			//"dropped_attributes_count": uint32(1),
-			//"dropped_events_count":     uint32(1),
-			//"dropped_links_count":      uint32(0),
+			// "dropped_attributes_count": uint32(1),
+			// "dropped_events_count":     uint32(1),
+			// "dropped_links_count":      uint32(0),
 			/*
 				"event_0_attributes_span-event-attr": "span-event-attr-val",
 				"event_0_index":                      0,
@@ -133,9 +133,9 @@ func generateTEvent2Raw() *add_events.Event {
 			"resource_name":  "",
 			"resource_type":  "process",
 
-			//"dropped_attributes_count": uint32(0),
-			//"dropped_events_count":     uint32(0),
-			//"dropped_links_count":      uint32(3),
+			// "dropped_attributes_count": uint32(0),
+			// "dropped_events_count":     uint32(0),
+			// "dropped_links_count":      uint32(3),
 
 			/*
 				"link_0_attributes_span-link-attr": "span-link-attr-val",
@@ -180,40 +180,15 @@ func generateTEvent3Raw() *add_events.Event {
 			"resource_name":  "",
 			"resource_type":  "process",
 
-			//"dropped_attributes_count": uint32(5),
-			//"dropped_events_count":     uint32(0),
-			//"dropped_links_count":      uint32(0),
+			// "dropped_attributes_count": uint32(5),
+			// "dropped_events_count":     uint32(0),
+			// "dropped_links_count":      uint32(0),
 			/*
 				"scope_name":               "",
 				"trace_state":              "",
 			*/
 		},
 	}
-}
-
-var testTEvent1Req = &add_events.Event{
-	Thread: "TT",
-	Log:    "LT",
-	Sev:    9,
-	Ts:     "1581452772000000321",
-	Attrs: map[string]interface{}{
-		"sca:schemVer": 1,
-		"sca:schema":   "tracing",
-		"sca:type":     "span",
-
-		"name": "operationA",
-		"kind": "Unspecified",
-
-		"start_time_unix_nano": int64(1581452772000000321),
-		"end_time_unix_nano":   int64(1581452773000000789),
-		"duration_nano":        int64(1000000468),
-
-		"span_id":                "",
-		"trace_id":               "",
-		"resource_resource-attr": "resource-attr-val-1",
-		"status_code":            "Error",
-		"status_message":         "status-cancelled",
-	},
 }
 
 var testTThread = &add_events.Thread{
@@ -475,14 +450,13 @@ func GenerateTracesTreesAndOrphans() ptrace.Traces {
 }
 
 func generateSimpleEvent(
-	traceId string,
-	spanId string,
-	parentId string,
+	traceID string,
+	spanID string,
+	parentID string,
 	status ptrace.Status,
 	start int64,
 	end int64,
 	serviceName string,
-	serviceNamespace string,
 	services string,
 ) *add_events.Event {
 	attrs := map[string]interface{}{
@@ -497,14 +471,14 @@ func generateSimpleEvent(
 		"end_time_unix_nano":   end,
 		"duration_nano":        end - start,
 
-		"span_id":        spanId,
-		"trace_id":       traceId,
+		"span_id":        spanID,
+		"trace_id":       traceID,
 		"status_code":    strings.ToLower(status.Code().String()),
 		"status_message": status.Message(),
 
-		//"dropped_attributes_count":   uint32(0),
-		//"dropped_events_count":       uint32(0),
-		//"dropped_links_count":        uint32(0),
+		// "dropped_attributes_count":   uint32(0),
+		// "dropped_events_count":       uint32(0),
+		// "dropped_links_count":        uint32(0),
 		"resource_name": serviceName,
 		"resource_type": "service",
 		"services":      services,
@@ -514,8 +488,8 @@ func generateSimpleEvent(
 			"trace_state":              "",
 		*/
 	}
-	if parentId != "" {
-		attrs["parent_span_id"] = parentId
+	if parentID != "" {
+		attrs["parent_span_id"] = parentID
 	}
 
 	return &add_events.Event{
@@ -538,68 +512,68 @@ func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphans() {
 
 	expected := []*add_events.EventBundle{
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102020101010101", "0102010101010101", statusError, 200, 2000, "sAAA", "snAAA", "sAAA"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102020101010101", "0102010101010101", statusError, 200, 2000, "sAAA", "sAAA"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102030101010101", "0102010101010101", statusError, 2100, 3800, "sAAA", "snAAA", "sAAA"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102030101010101", "0102010101010101", statusError, 2100, 3800, "sAAA", "sAAA"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102040101010101", "0102010101010101", statusUnset, 4000, 4800, "sCCC", "snCCC", "sCCC"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102040101010101", "0102010101010101", statusUnset, 4000, 4800, "sCCC", "sCCC"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102010101010101", "0101010101010101", statusUnset, 100, 4900, "sBBB", "snBBB", "sBBB,sAAA,sCCC"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102010101010101", "0101010101010101", statusUnset, 100, 4900, "sBBB", "sBBB,sAAA,sCCC"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0103010101010101", "0101010101010101", statusUnset, 5100, 9900, "sBBB", "snBBB", "sBBB"),
-			Thread: testTThread,
-			Log:    testTLog,
-		},
-
-		{
-			Event:  generateSimpleEvent("02020202020202020202020202020202", "0203020202020202", "0202020202020202", statusUnset, 10100, 19900, "sBBB", "snBBB", "sBBB"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0103010101010101", "0101010101010101", statusUnset, 5100, 9900, "sBBB", "sBBB"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 
 		{
-			Event:  generateSimpleEvent("03030303030303030303030303030303", "0303030303030303", "0305030303030303", statusError, 21000, 22000, "sBBB", "snBBB", "sBBB"),
-			Thread: testTThread,
-			Log:    testTLog,
-		},
-		{
-			Event:  generateSimpleEvent("03030303030303030303030303030303", "0304030303030303", "0306030303030303", statusUnset, 23000, 24000, "sBBB", "snBBB", "sBBB"),
+			Event:  generateSimpleEvent("02020202020202020202020202020202", "0203020202020202", "0202020202020202", statusUnset, 10100, 19900, "sBBB", "sBBB"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 
 		{
-			Event:  generateSimpleEvent("04040404040404040404040404040404", "0405040404040404", "0404040404040404", statusUnset, 40000, 50000, "sAAA", "snAAA", "sAAA"),
+			Event:  generateSimpleEvent("03030303030303030303030303030303", "0303030303030303", "0305030303030303", statusError, 21000, 22000, "sBBB", "sBBB"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("03030303030303030303030303030303", "0304030303030303", "0306030303030303", statusUnset, 23000, 24000, "sBBB", "sBBB"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0101010101010101", "", statusUnset, 0, 10000, "sCCC", "snCCC", "sCCC,sAAA,sBBB"),
+			Event:  generateSimpleEvent("04040404040404040404040404040404", "0405040404040404", "0404040404040404", statusUnset, 40000, 50000, "sAAA", "sAAA"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 
 		{
-			Event:  generateSimpleEvent("02020202020202020202020202020202", "0202020202020202", "", statusUnset, 10000, 20000, "sCCC", "snCCC", "sCCC,sBBB"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0101010101010101", "", statusUnset, 0, 10000, "sCCC", "sCCC,sAAA,sBBB"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 
 		{
-			Event:  generateSimpleEvent("04040404040404040404040404040404", "0404040404040404", "", statusUnset, 40100, 49900, "sCCC", "snCCC", "sCCC,sAAA"),
+			Event:  generateSimpleEvent("02020202020202020202020202020202", "0202020202020202", "", statusUnset, 10000, 20000, "sCCC", "sCCC,sBBB"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+
+		{
+			Event:  generateSimpleEvent("04040404040404040404040404040404", "0404040404040404", "", statusUnset, 40100, 49900, "sCCC", "sCCC,sAAA"),
 			Thread: testTThread,
 			Log:    testTLog,
 		},

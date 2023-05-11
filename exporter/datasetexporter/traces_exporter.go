@@ -89,9 +89,9 @@ func buildEventFromSpan(
 	// updateWithPrefixedValues(attrs, "resource_", "_", resource.Attributes().AsRaw(), 0)
 	updateResource(attrs, resource.Attributes().AsRaw())
 
-	//attrs["dropped_attributes_count"] = span.DroppedAttributesCount()
-	//attrs["dropped_events_count"] = span.DroppedEventsCount()
-	//attrs["dropped_links_count"] = span.DroppedLinksCount()
+	// attrs["dropped_attributes_count"] = span.DroppedAttributesCount()
+	// attrs["dropped_events_count"] = span.DroppedEventsCount()
+	// attrs["dropped_links_count"] = span.DroppedLinksCount()
 
 	/*
 		// we do not care for now about these properties
@@ -225,7 +225,7 @@ func updateServices(attrs map[string]interface{}, services map[string]bool) {
 			servicesA = append(servicesA, k)
 		}
 
-		sort.Strings(servicesA[:])
+		sort.Strings(servicesA)
 		attrs["services"] = fmt.Sprintf("%s,%s", attrs["services"], strings.Join(servicesA, ","))
 	}
 }
@@ -308,8 +308,8 @@ func (ts TraceAndSpan) split() (traceID pcommon.TraceID, spanID pcommon.SpanID) 
 }
 
 func (ts TraceAndSpan) String() string {
-	traceId, spanId := ts.split()
-	return traceId.String() + spanId.String()
+	traceID, spanID := ts.split()
+	return traceID.String() + spanID.String()
 }
 
 type spanTracker struct {
@@ -346,9 +346,9 @@ func (tt *spanTracker) update(bundle spanBundle) {
 	}
 
 	// increase counters
-	info.spanCount += 1
+	info.spanCount++
 	if span.Status().Code() == ptrace.StatusCodeError {
-		info.errorCount += 1
+		info.errorCount++
 	}
 
 	// update services
