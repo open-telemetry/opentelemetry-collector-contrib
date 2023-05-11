@@ -1121,23 +1121,3 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/windowsperfcountersreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/zipkinreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/zookeeperreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/testbed"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
