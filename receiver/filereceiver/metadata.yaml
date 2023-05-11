@@ -3,6 +3,6 @@ type: file
 status:
   class: receiver
   stability:
-    alpha: [metrics, traces, logs]
+    development: [metrics, traces, logs]
   distributions: [contrib]
   
