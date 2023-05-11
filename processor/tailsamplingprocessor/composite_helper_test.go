@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -26,7 +27,7 @@ import (
 
 func TestCompositeHelper(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
-		actual, err := getNewCompositePolicy(zap.NewNop(), &CompositeCfg{
+		actual, err := getNewCompositePolicy(componenttest.NewNopTelemetrySettings(), &CompositeCfg{
 			MaxTotalSpansPerSecond: 1000,
 			PolicyOrder:            []string{"test-composite-policy-1"},
 			SubPolicyCfg: []CompositeSubPolicyCfg{
@@ -60,11 +61,11 @@ func TestCompositeHelper(t *testing.T) {
 
 		expected := sampling.NewComposite(zap.NewNop(), 1000, []sampling.SubPolicyEvalParams{
 			{
-				Evaluator:         sampling.NewLatency(zap.NewNop(), 100),
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100),
 				MaxSpansPerSecond: 250,
 			},
 			{
-				Evaluator:         sampling.NewLatency(zap.NewNop(), 200),
+				Evaluator:         sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 200),
 				MaxSpansPerSecond: 500,
 			},
 		}, sampling.MonotonicClock{})
@@ -72,7 +73,7 @@ func TestCompositeHelper(t *testing.T) {
 	})
 
 	t.Run("unsupported sampling policy type", func(t *testing.T) {
-		_, err := getNewCompositePolicy(zap.NewNop(), &CompositeCfg{
+		_, err := getNewCompositePolicy(componenttest.NewNopTelemetrySettings(), &CompositeCfg{
 			SubPolicyCfg: []CompositeSubPolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
