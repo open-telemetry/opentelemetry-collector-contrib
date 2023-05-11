@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -51,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "keepalive"),
+			id: component.NewIDWithName(metadata.Type, "keepalive"),
 			expected: &Config{
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -76,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "msg-size-conc-connect-max-idle"),
+			id: component.NewIDWithName(metadata.Type, "msg-size-conc-connect-max-idle"),
 			expected: &Config{
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -96,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "tlscredentials"),
+			id: component.NewIDWithName(metadata.Type, "tlscredentials"),
 			expected: &Config{
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -114,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "cors"),
+			id: component.NewIDWithName(metadata.Type, "cors"),
 			expected: &Config{
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
@@ -127,7 +129,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "uds"),
+			id: component.NewIDWithName(metadata.Type, "uds"),
 			expected: &Config{
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
