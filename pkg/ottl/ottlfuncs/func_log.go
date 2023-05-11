@@ -16,19 +16,38 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Log[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+type LogArguments[K any] struct {
+	Target ottl.Getter[K] `ottlarg:"0"`
+}
+
+func NewLogFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Log", &LogArguments[K]{}, createLogFunction[K])
+}
+
+func createLogFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*LogArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("LogFactory args must be of type *LogArguments[K]")
+	}
+
+	return logFunc(args.Target), nil
+}
+
+func logFunc[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		switch value := value.(type) {
 		case int64:
 			return math.Log((float64)(value)), nil
@@ -44,5 +63,5 @@ func Log[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 		default:
 			return nil, nil
 		}
-	}, nil
+	}
 }

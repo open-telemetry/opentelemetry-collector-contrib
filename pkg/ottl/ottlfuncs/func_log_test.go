@@ -48,7 +48,7 @@ func Test_Log(t *testing.T) {
 		{
 			name:     "int64",
 			value:    int64(333),
-			expected: float64(math.Log(333)),
+			expected: math.Log(333),
 		},
 		{
 			name:     "float64",
@@ -83,12 +83,11 @@ func Test_Log(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Log[interface{}](&ottl.StandardGetSetter[interface{}]{
+			exprFunc := logFunc[interface{}](&ottl.StandardGetSetter[interface{}]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
 			})
-			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
