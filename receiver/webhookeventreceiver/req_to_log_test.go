@@ -56,7 +56,7 @@ func TestReqToLog(t *testing.T) {
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
 				require.Equal(t, 2, attributes.Len())
 
-                scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+				scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
 				require.Equal(t, 2, scopeLogsScope.Attributes().Len())
 
 				if v, ok := attributes.Get("qparam1"); ok {
@@ -83,8 +83,8 @@ func TestReqToLog(t *testing.T) {
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
 				require.Equal(t, 0, attributes.Len())
-                
-                scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+
+				scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
 				require.Equal(t, 2, scopeLogsScope.Attributes().Len())
 			},
 		},
