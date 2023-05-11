@@ -97,7 +97,7 @@ type MetadataDelta struct {
 }
 ```
 
-See [here](internal/collection/metadata.go) for details about the above types.
+See [here](/pkg/experimentalmetricmetadata/metadata.go) for details about the above types.
 
 
 ## Example
