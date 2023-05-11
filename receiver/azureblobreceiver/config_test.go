@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -30,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -38,10 +40,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	receiver := cfg.Receivers[component.NewID(typeStr)]
+	receiver := cfg.Receivers[component.NewID(metadata.Type)]
 	assert.Equal(t, factory.CreateDefaultConfig(), receiver)
 
-	receiver = cfg.Receivers[component.NewIDWithName(typeStr, "2")].(*Config)
+	receiver = cfg.Receivers[component.NewIDWithName(metadata.Type, "2")].(*Config)
 	assert.NoError(t, componenttest.CheckConfigStruct(receiver))
 	assert.Equal(
 		t,
