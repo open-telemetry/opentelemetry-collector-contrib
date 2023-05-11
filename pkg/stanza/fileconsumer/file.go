@@ -141,11 +141,9 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	readers := make([]*Reader, 0, len(paths))
 	for _, path := range paths {
 		r := m.makeReader(path)
-		if r == nil {
-			fmt.Println("Couldn't create reader for ", path)
-			continue
+		if r != nil {
+			readers = append(readers, r)
 		}
-		readers = append(readers, r)
 	}
 
 	// take care of files which disappeared from the pattern since the last poll cycle
@@ -195,7 +193,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.clearCurrentFingerprints()
 }
 
-// makeReaders takes a lis of path, then creates reader,
+// makeReader take a file path, then creates reader,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
 func (m *Manager) makeReader(path string) *Reader {
@@ -210,11 +208,10 @@ func (m *Manager) makeReader(path string) *Reader {
 	}
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.Errorf("Failed to open file", zap.Error(err))
+		m.Debugf("Failed to open file", zap.Error(err))
 		return nil
 	}
 
-	// Get fingerprints for each file
 	fp, err := m.readerFactory.newFingerprint(file)
 	if err != nil {
 		m.Errorw("Failed creating fingerprint", zap.Error(err))
@@ -228,20 +225,20 @@ func (m *Manager) makeReader(path string) *Reader {
 			return nil
 		}
 	}
-	m.currentFps = append(m.currentFps, fp)
 
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-	for i := 0; i < len(m.currentFps)-1; i++ {
+	for i := 0; i < len(m.currentFps); i++ {
 		fp2 := m.currentFps[i]
 		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 			// Exclude duplicates
 			if err = file.Close(); err != nil {
 				m.Errorf("problem closing file", "file", file.Name())
 			}
-			m.currentFps = m.currentFps[:len(m.currentFps)-1]
 			return nil
 		}
 	}
+
+	m.currentFps = append(m.currentFps, fp)
 	reader, err := m.newReader(file, fp)
 	if err != nil {
 		m.Errorw("Failed to create reader", zap.Error(err))
