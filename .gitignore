@@ -1,5 +1,8 @@
 local/
 
+# Go Workspace sum
+go.work.sum
+
 # GoLand IDEA
 /.idea/
 *.iml
