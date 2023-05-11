@@ -27,7 +27,7 @@ func reqToLog(sc *bufio.Scanner,
 	idName string) (plog.Logs, int) {
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
-	appendMetadata(resourceLog, query, idName)
+	appendMetadata(resourceLog, query)
 	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 
     scopeLog.Scope().Attributes().PutStr("source", idName)
@@ -43,7 +43,7 @@ func reqToLog(sc *bufio.Scanner,
 }
 
 // append query parameters and webhook source as resource attributes
-func appendMetadata(resourceLog plog.ResourceLogs, query url.Values, idName string) {
+func appendMetadata(resourceLog plog.ResourceLogs, query url.Values) {
 	for k := range query {
 		if query.Get(k) != "" {
 			resourceLog.Resource().Attributes().PutStr(k, query.Get(k))

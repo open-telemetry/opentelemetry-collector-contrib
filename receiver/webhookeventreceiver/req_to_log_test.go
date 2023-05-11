@@ -52,8 +52,13 @@ func TestReqToLog(t *testing.T) {
 			}(),
 			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, idName string) {
 				require.Equal(t, 1, reqLen)
+
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
-				require.Equal(t, 4, attributes.Len())
+				require.Equal(t, 2, attributes.Len())
+
+                scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+				require.Equal(t, 2, scopeLogsScope.Attributes().Len())
+
 				if v, ok := attributes.Get("qparam1"); ok {
 					require.Equal(t, "hello", v.AsString())
 				} else {
@@ -63,16 +68,6 @@ func TestReqToLog(t *testing.T) {
 					require.Equal(t, "world", v.AsString())
 				} else {
 					require.Fail(t, "faild to set attribute query parameter 2")
-				}
-				if v, ok := attributes.Get("source"); ok {
-					require.Equal(t, idName, v.AsString())
-				} else {
-					require.Fail(t, "faild to set attribute source")
-				}
-				if v, ok := attributes.Get("receiver"); ok {
-					require.Equal(t, typeStr, v.AsString())
-				} else {
-					require.Fail(t, "faild to set attribute receiver")
 				}
 			},
 		},
@@ -85,18 +80,12 @@ func TestReqToLog(t *testing.T) {
 			}(),
 			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, idName string) {
 				require.Equal(t, 1, reqLen)
+
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
-				require.Equal(t, 2, attributes.Len())
-				if v, ok := attributes.Get("source"); ok {
-					require.Equal(t, idName, v.AsString())
-				} else {
-					require.Fail(t, "faild to set attribute source")
-				}
-				if v, ok := attributes.Get("receiver"); ok {
-					require.Equal(t, typeStr, v.AsString())
-				} else {
-					require.Fail(t, "faild to set attribute receiver")
-				}
+				require.Equal(t, 0, attributes.Len())
+                
+                scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+				require.Equal(t, 2, scopeLogsScope.Attributes().Len())
 			},
 		},
 	}
