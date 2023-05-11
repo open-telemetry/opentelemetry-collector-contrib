@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -29,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -37,13 +39,13 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	r0 := cfg.Receivers[component.NewID(typeStr)]
+	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r0.(*Config).Connection)
 	assert.Equal(t, "", r0.(*Config).Offset)
 	assert.Equal(t, "", r0.(*Config).Partition)
 	assert.Equal(t, defaultLogFormat, logFormat(r0.(*Config).Format))
 
-	r1 := cfg.Receivers[component.NewIDWithName(typeStr, "all")]
+	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "all")]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r1.(*Config).Connection)
 	assert.Equal(t, "1234-5566", r1.(*Config).Offset)
 	assert.Equal(t, "foo", r1.(*Config).Partition)
