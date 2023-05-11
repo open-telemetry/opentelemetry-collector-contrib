@@ -50,7 +50,7 @@ const (
 var (
 	emitNodeVersionAttr = featuregate.GlobalRegistry().MustRegister(
 		"receiver.elasticsearch.emitNodeVersionAttr",
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
 	)

@@ -42,7 +42,7 @@ func TestScraper(t *testing.T) {
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	require.NoError(t, err)
 	scraper := newApacheScraper(receivertest.NewNopCreateSettings(), cfg, serverName, port)
 

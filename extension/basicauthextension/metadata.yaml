@@ -2,5 +2,6 @@ type: basicauth
 
 status:
   class: extension
-  stability: beta
+  stability:
+    beta: [extension]
   distributions: [contrib]

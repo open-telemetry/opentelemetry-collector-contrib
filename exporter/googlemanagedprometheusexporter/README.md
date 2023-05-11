@@ -27,7 +27,7 @@ The following configuration options are supported:
 - `sending_queue` (optional): Configuration for how to buffer traces before sending.
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
+  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
     User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.

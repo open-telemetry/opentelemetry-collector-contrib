@@ -69,7 +69,7 @@ func TestChronyScraper(t *testing.T) {
 				rMetrics := metrics.ResourceMetrics().AppendEmpty()
 
 				metric := rMetrics.ScopeMetrics().AppendEmpty()
-				metric.Scope().SetName("otelcol/chrony receiver")
+				metric.Scope().SetName("otelcol/chronyreceiver")
 				metric.Scope().SetVersion("latest")
 
 				m := metric.Metrics().AppendEmpty()

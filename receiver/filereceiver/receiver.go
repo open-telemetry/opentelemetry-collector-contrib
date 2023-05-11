@@ -28,9 +28,9 @@ import (
 
 type fileReceiver struct {
 	consumer consumer.Metrics
-	path     string
 	logger   *zap.Logger
 	cancel   context.CancelFunc
+	path     string
 	throttle float64
 }
 

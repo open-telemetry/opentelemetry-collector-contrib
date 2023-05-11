@@ -2,6 +2,6 @@ type: signalfx
 
 status:
   class: receiver
-  stability: beta
-  pipelines: [metrics, logs]
+  stability:
+    beta: [metrics, logs]
   distributions: [contrib]

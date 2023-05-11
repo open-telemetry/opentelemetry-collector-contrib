@@ -2,6 +2,6 @@ type: signalfx
 
 status:
   class: exporter
-  stability: beta
-  pipelines: [logs, metrics, traces]
+  stability:
+    beta: [traces, metrics, logs]
   distributions: [contrib]

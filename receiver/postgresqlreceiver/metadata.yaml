@@ -3,8 +3,8 @@ type: postgresqlreceiver
 
 status:
   class: receiver
-  stability: beta
-  pipelines: [metrics]
+  stability:
+    beta: [metrics]
   distributions: [contrib]
 
 resource_attributes:

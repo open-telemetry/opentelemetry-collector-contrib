@@ -7,6 +7,7 @@ import (
 )
 
 const (
-	Type      = "cassandra"
-	Stability = component.StabilityLevelAlpha
+	Type            = "cassandra"
+	TracesStability = component.StabilityLevelAlpha
+	LogsStability   = component.StabilityLevelAlpha
 )

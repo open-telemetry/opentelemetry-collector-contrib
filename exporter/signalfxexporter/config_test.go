@@ -45,13 +45,8 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	// Realm doesn't have a default value so set it directly.
-	defaultCfg := createDefaultConfig().(*Config)
-	defaultCfg.AccessToken = "testToken"
-	defaultCfg.Realm = "ap0"
-	require.NoError(t, err)
-
 	seventy := 70
+	hundred := 100
 	idleConnTimeout := 30 * time.Second
 
 	tests := []struct {
@@ -59,8 +54,64 @@ func TestLoadConfig(t *testing.T) {
 		expected *Config
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
-			expected: defaultCfg,
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				AccessToken: "testToken",
+				Realm:       "ap0",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout:             5 * time.Second,
+					Headers:             nil,
+					MaxIdleConns:        &hundred,
+					MaxIdleConnsPerHost: &hundred,
+					IdleConnTimeout:     &idleConnTimeout,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: true,
+				},
+				LogDimensionUpdates: false,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         10000,
+					SendDelay:           10 * time.Second,
+					MaxIdleConns:        20,
+					MaxIdleConnsPerHost: 20,
+					MaxConnsPerHost:     20,
+					IdleConnTimeout:     30 * time.Second,
+				},
+				TranslationRules:    nil,
+				ExcludeMetrics:      nil,
+				IncludeMetrics:      nil,
+				DeltaTranslationTTL: 3600,
+				ExcludeProperties:   nil,
+				Correlation: &correlation.Config{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: "",
+						Timeout:  5 * time.Second,
+					},
+					StaleServiceTimeout: 5 * time.Minute,
+					SyncAttributes: map[string]string{
+						"k8s.pod.uid":  "k8s.pod.uid",
+						"container.id": "container.id",
+					},
+					Config: apmcorrelation.Config{
+						MaxRequests:     20,
+						MaxBuffered:     10_000,
+						MaxRetries:      2,
+						LogUpdates:      false,
+						RetryDelay:      30 * time.Second,
+						CleanupInterval: 1 * time.Minute,
+					},
+				},
+				NonAlphanumericDimensionChars: "_-.",
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
@@ -91,6 +142,15 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    10,
 				}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
+				},
+				LogDimensionUpdates: true,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         1,
+					SendDelay:           time.Hour,
+					MaxIdleConns:        100,
+					MaxIdleConnsPerHost: 10,
+					MaxConnsPerHost:     10000,
+					IdleConnTimeout:     2 * time.Hour,
 				},
 				TranslationRules: []translation.Rule{
 					{

@@ -114,11 +114,11 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.Can
 	}()
 
 	client := NewDimensionClient(ctx, DimensionClientOptions{
-		APIURL:                serverURL,
-		LogUpdates:            true,
-		Logger:                zap.NewNop(),
-		SendDelay:             1,
-		PropertiesMaxBuffered: 10,
+		APIURL:      serverURL,
+		LogUpdates:  true,
+		Logger:      zap.NewNop(),
+		SendDelay:   time.Second,
+		MaxBuffered: 10,
 	})
 	client.Start()
 

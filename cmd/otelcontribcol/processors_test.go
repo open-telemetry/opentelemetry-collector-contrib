@@ -45,8 +45,8 @@ func TestDefaultProcessors(t *testing.T) {
 	procFactories := allFactories.Processors
 
 	tests := []struct {
-		processor     component.Type
 		getConfigFn   getProcessorConfigFn
+		processor     component.Type
 		skipLifecycle bool
 	}{
 		{

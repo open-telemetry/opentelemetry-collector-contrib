@@ -145,17 +145,20 @@ func (tt testCase) run(t *testing.T) {
 	require.NoError(t, err, "failed creating metrics receiver")
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-
-	// Wait for multiple collections, in case the first represents partially started system
-	require.Eventuallyf(t, func() bool {
-		return len(consumer.AllMetrics()) > 1
-	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-	require.NoError(t, rcvr.Shutdown(context.Background()))
-	actualMetrics := consumer.AllMetrics()[1]
+	defer func() {
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
 
 	expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", tt.name))
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
+
+	// Wait for multiple collections, in case the first represents partially started system
+	require.Eventuallyf(t, func() bool {
+		return len(consumer.AllMetrics()) > 0 && consumer.AllMetrics()[len(consumer.AllMetrics())-1].MetricCount() == expectedMetrics.MetricCount()
+	}, 2*time.Minute, 1*time.Second, "failed to receive all metric data points")
+
+	actualMetrics := consumer.AllMetrics()[len(consumer.AllMetrics())-1]
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))

@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -95,22 +91,22 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("rabbitmq.node.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.RabbitmqNodeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqNodeName.Enabled, ok)
+			if mb.resourceAttributesConfig.RabbitmqNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.queue.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqQueueName.Enabled, ok)
-			if mb.resourceAttributesSettings.RabbitmqQueueName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqQueueName.Enabled, ok)
+			if mb.resourceAttributesConfig.RabbitmqQueueName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.vhost.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqVhostName.Enabled, ok)
-			if mb.resourceAttributesSettings.RabbitmqVhostName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqVhostName.Enabled, ok)
+			if mb.resourceAttributesConfig.RabbitmqVhostName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -219,14 +215,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

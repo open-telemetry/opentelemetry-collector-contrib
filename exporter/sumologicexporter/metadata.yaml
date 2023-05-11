@@ -2,6 +2,6 @@ type: sumologic
 
 status:
   class: exporter
-  stability: beta
-  pipelines: [logs, metrics]
+  stability:
+    beta: [metrics, logs]
   distributions: [contrib]
