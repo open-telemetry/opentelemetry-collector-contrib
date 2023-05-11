@@ -24,15 +24,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
 // Factory for prometheusexec
 const (
-	// Key to invoke this receiver (prometheus_exec)
-	typeStr   = "prometheus_exec"
-	stability = component.StabilityLevelDeprecated
-
 	defaultCollectionInterval = 60 * time.Second
 	defaultTimeoutInterval    = 10 * time.Second
 )
@@ -42,9 +39,9 @@ var once sync.Once
 // NewFactory creates a factory for the prometheusexec receiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func logDeprecation(logger *zap.Logger) {
