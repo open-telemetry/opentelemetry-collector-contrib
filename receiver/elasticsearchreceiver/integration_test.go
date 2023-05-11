@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -128,14 +129,7 @@ func (tt *testCase) run(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.Eventually(t, func() bool {
-		allMetrics := consumer.AllMetrics()
-		if len(allMetrics) == 0 {
-			return false
-		}
-		latestMetrics := allMetrics[len(allMetrics)-1]
-		return nil == pmetrictest.CompareMetrics(expectedMetrics, latestMetrics, compareOpts...)
-	}, 30*time.Second, time.Second)
+	require.Eventually(t, scraperinttest.EqualsLatestMetrics(expectedMetrics, consumer, compareOpts), 30*time.Second, time.Second)
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
