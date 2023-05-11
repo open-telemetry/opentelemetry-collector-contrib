@@ -126,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 					{
 						SQL:                "select * from test_logs where log_id > ?",
 						TrackingColumn:     "log_id",
-						TrackingStartValue: 10,
+						TrackingStartValue: "10",
 						Logs: []LogsCfg{
 							{
 								BodyColumn: "log_body",

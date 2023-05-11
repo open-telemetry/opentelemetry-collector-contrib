@@ -18,7 +18,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -170,7 +169,7 @@ type logsQueryReceiver struct {
 
 	db            *sql.DB
 	client        dbClient
-	trackingValue int
+	trackingValue string
 }
 
 func newLogsQueryReceiver(
@@ -241,14 +240,7 @@ func (queryReceiver *logsQueryReceiver) storeTrackingValue(row stringMap) {
 		return
 	}
 	currentTrackingColumnValueString := row[queryReceiver.query.TrackingColumn]
-	currentTrackingColumnValue, err := strconv.Atoi(currentTrackingColumnValueString)
-	if err != nil {
-		queryReceiver.logger.Error("tracking column value is not integer", zap.String("tracking_column_value", currentTrackingColumnValueString))
-		return
-	}
-	if currentTrackingColumnValue > queryReceiver.trackingValue {
-		queryReceiver.trackingValue = currentTrackingColumnValue
-	}
+	queryReceiver.trackingValue = currentTrackingColumnValueString
 }
 
 func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error {
