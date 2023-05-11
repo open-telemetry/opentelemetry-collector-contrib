@@ -651,8 +651,10 @@ metrics:
     enabled: false
     description: "CPU shares set for the container."
     unit: "1"
-    gauge:
+    sum:
       value_type: int
+      monotonic: false
+      aggregation: cumulative
   container.restart.count:
     enabled: false
     description: "Number of restarts for the container."
