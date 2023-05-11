@@ -54,7 +54,7 @@ type Query struct {
 	Metrics            []MetricCfg `mapstructure:"metrics"`
 	Logs               []LogsCfg   `mapstructure:"logs"`
 	TrackingColumn     string      `mapstructure:"tracking_column"`
-	TrackingStartValue int         `mapstructure:"tracking_start_value"`
+	TrackingStartValue string      `mapstructure:"tracking_start_value"`
 }
 
 func (q Query) Validate() error {

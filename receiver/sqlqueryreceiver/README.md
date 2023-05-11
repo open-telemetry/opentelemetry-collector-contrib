@@ -75,7 +75,7 @@ over and over again, unless there's an external actor removing the old rows from
 To prevent reading the same rows on every collection interval, use a parameterized query like `select * from my_logs where id_column > ?`,
 together with the `tracking_start_value` configuration property that specifies the initial value for the parameter.
 The receiver will use the configured `tracking_start_value` as the value for the query parameter when running the query for the first time.
-On each query run, the receiver will retrieve the highest value from the `tracking_column` from the result set and use it as the value for the query parameter on next collection interval.
+On each query run, the receiver will retrieve the last value from the `tracking_column` from the result set and use it as the value for the query parameter on next collection interval. To prevent duplicate log downloads, make sure to sort the query results in ascending order by the tracking_column value.
 
 Note that the notation for the parameter depends on the database backend. For example in MySQL this is `?`, in PostgreSQL this is `$1`, in Oracle this is any string identifier starting with a colon `:`, for example `:my_parameter`.
 
