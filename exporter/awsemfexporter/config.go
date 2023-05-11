@@ -145,7 +145,7 @@ func (config *Config) Validate() error {
 	}
 
 	return cwlogs.ValidateTagsInput(config.Tags)
-	
+
 }
 
 func newEMFSupportedUnits() map[string]interface{} {
