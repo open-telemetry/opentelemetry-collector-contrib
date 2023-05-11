@@ -28,7 +28,6 @@ var (
 	errInvalidRequestMethod = errors.New("invalid method. Valid method is POST")
 	errInvalidEncodingType  = errors.New("invalid encoding type")
 	errEmptyResponseBody    = errors.New("request body content length is zero")
-	// errConsumerError        = errors.New("error with log consumer")
 )
 
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
@@ -184,6 +183,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if consumerErr != nil {
 		er.failBadReq(ctx, w, http.StatusInternalServerError, consumerErr)
+		er.obsrecv.EndLogsOp(ctx, typeStr, numLogs, nil)
 	} else {
 		w.WriteHeader(http.StatusOK)
 		er.obsrecv.EndLogsOp(ctx, typeStr, numLogs, nil)

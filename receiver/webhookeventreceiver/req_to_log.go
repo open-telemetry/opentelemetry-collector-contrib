@@ -30,6 +30,9 @@ func reqToLog(sc *bufio.Scanner,
 	appendMetadata(resourceLog, query, idName)
 	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 
+    scopeLog.Scope().Attributes().PutStr("source", idName)
+    scopeLog.Scope().Attributes().PutStr("receiver", typeStr)
+    
 	for sc.Scan() {
 		logRecord := scopeLog.LogRecords().AppendEmpty()
 		line := sc.Text()
@@ -47,6 +50,4 @@ func appendMetadata(resourceLog plog.ResourceLogs, query url.Values, idName stri
 		}
 	}
 
-	resourceLog.Resource().Attributes().PutStr("source", idName)
-	resourceLog.Resource().Attributes().PutStr("receiver", typeStr)
 }
