@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -34,6 +33,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -52,7 +52,7 @@ func TestSuiteLogsE2EExporterIntegration(t *testing.T) {
 }
 
 func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
-	const MaxDelayMs = 200
+	const maxDelay = 200 * time.Millisecond
 	createSettings := exportertest.NewNopCreateSettings()
 
 	const MaxBatchCount = 20
@@ -101,7 +101,7 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 	config := &Config{
 		DatasetURL:      server.URL,
 		APIKey:          "key-lib",
-		MaxDelayMs:      fmt.Sprintf("%d", MaxDelayMs),
+		MaxDelay:        maxDelay,
 		GroupBy:         []string{"attributes.container_id"},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
@@ -129,7 +129,7 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 			}
 			err = logs.ConsumeLogs(context.Background(), batch)
 			s.Nil(err)
-			time.Sleep(time.Duration(MaxDelayMs*0.7) * time.Millisecond)
+			time.Sleep(time.Duration(float64(maxDelay.Nanoseconds()) * 0.7))
 		}
 
 		s.NotNil(logs)

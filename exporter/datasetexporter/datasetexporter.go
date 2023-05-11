@@ -29,10 +29,11 @@ import (
 )
 
 type DatasetExporter struct {
-	client  *client.DataSetClient
-	limiter *rate.Limiter
-	logger  *zap.Logger
-	session string
+	client      *client.DataSetClient
+	limiter     *rate.Limiter
+	logger      *zap.Logger
+	session     string
+	spanTracker spanTracker
 }
 
 func NewDatasetExporter(entity string, config *Config, logger *zap.Logger) (*DatasetExporter, error) {
@@ -59,10 +60,11 @@ func NewDatasetExporter(entity string, config *Config, logger *zap.Logger) (*Dat
 	}
 
 	return &DatasetExporter{
-		client:  client,
-		limiter: rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
-		session: uuid.New().String(),
-		logger:  logger,
+		client:      client,
+		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
+		session:     uuid.New().String(),
+		logger:      logger,
+		spanTracker: newSpanTracker(exporterCfg.tracesSettings.MaxWait),
 	}, nil
 }
 

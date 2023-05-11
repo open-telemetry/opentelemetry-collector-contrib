@@ -17,6 +17,7 @@ package datasetexporter
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	"go.opentelemetry.io/collector/confmap"
@@ -77,19 +78,19 @@ func (s *SuiteConfig) TestConfigUseEnvWhenSet() {
 	s.Equal("api_key", config.APIKey)
 }
 
-func (s *SuiteConfig) TestConfigUseDefaultForMaxDelay() {
+func (s *SuiteConfig) TestConfigUseDefaults() {
 	config := Config{}
 	conf := confmap.NewFromStringMap(map[string]interface{}{
-		"dataset_url":  "https://example.com",
-		"api_key":      "secret",
-		"max_delay_ms": "",
+		"dataset_url": "https://example.com",
+		"api_key":     "secret",
 	})
 	err := config.Unmarshal(conf)
 	s.Nil(err)
 
 	s.Equal("https://example.com", config.DatasetURL)
 	s.Equal("secret", config.APIKey)
-	s.Equal("15000", config.MaxDelayMs)
+	s.Equal(maxDelay, config.MaxDelay)
+	s.Equal(tracesMaxWait, config.TracesSettings.MaxWait)
 }
 
 func (s *SuiteConfig) TestConfigValidate() {
@@ -103,7 +104,7 @@ func (s *SuiteConfig) TestConfigValidate() {
 			config: Config{
 				DatasetURL: "https://example.com",
 				APIKey:     "secret",
-				MaxDelayMs: "12345",
+				MaxDelay:   123 * time.Millisecond,
 			},
 			expected: nil,
 		},
@@ -111,26 +112,17 @@ func (s *SuiteConfig) TestConfigValidate() {
 			name: "missing api_key",
 			config: Config{
 				DatasetURL: "https://example.com",
-				MaxDelayMs: "15000",
+				MaxDelay:   maxDelay,
 			},
 			expected: fmt.Errorf("api_key is required"),
 		},
 		{
 			name: "missing dataset_url",
 			config: Config{
-				APIKey:     "1234",
-				MaxDelayMs: "15000",
+				APIKey:   "1234",
+				MaxDelay: maxDelay,
 			},
 			expected: fmt.Errorf("dataset_url is required"),
-		},
-		{
-			name: "invalid max_delay_ms",
-			config: Config{
-				DatasetURL: "https://example.com",
-				APIKey:     "1234",
-				MaxDelayMs: "abc",
-			},
-			expected: fmt.Errorf("max_delay_ms must be integer, but abc was used: strconv.Atoi: parsing \"abc\": invalid syntax"),
 		},
 	}
 
@@ -148,17 +140,20 @@ func (s *SuiteConfig) TestConfigValidate() {
 
 func (s *SuiteConfig) TestConfigString() {
 	config := Config{
-		DatasetURL:      "https://example.com",
-		APIKey:          "secret",
-		MaxDelayMs:      "1234",
-		GroupBy:         []string{"field1", "field2"},
+		DatasetURL: "https://example.com",
+		APIKey:     "secret",
+		MaxDelay:   123,
+		GroupBy:    []string{"field1", "field2"},
+		TracesSettings: TracesSettings{
+			MaxWait: 45 * time.Second,
+		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 
 	s.Equal(
-		"DatasetURL: https://example.com; MaxDelayMs: 1234; GroupBy: [field1 field2]; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		"DatasetURL: https://example.com; MaxDelay: 123ns; GroupBy: [field1 field2]; TracesSettings: {MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 		config.String(),
 	)
 }

@@ -295,7 +295,7 @@ func (s *SuiteLogsExporter) TestConsumeLogsShouldSucceed() {
 	config := &Config{
 		DatasetURL:      server.URL,
 		APIKey:          "key-lib",
-		MaxDelayMs:      "1",
+		MaxDelay:        time.Millisecond,
 		GroupBy:         []string{"attributes.container_id"},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

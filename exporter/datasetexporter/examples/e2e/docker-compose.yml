@@ -1,0 +1,46 @@
+version: "3"
+services:
+  otel-collector-dataset:
+    build:
+      context: ../../
+      dockerfile: examples/e2e/Dockerfile
+    container_name: otel-collector-dataset
+    command: ["--config=/etc/otel-config.yaml"]
+    volumes:
+      - ./otel-config.yaml:/etc/otel-config.yaml
+      - /tmp:/tmp
+
+  # Logs generator
+  telemetrygen-logs-dataset:
+    build:
+      context: ../../../../cmd/telemetrygen/
+    container_name: telemetrygen-logs-dataset
+    command:
+       - logs
+       - --otlp-endpoint=otel-collector-dataset:4317
+       - --otlp-insecure
+       - --otlp-attributes=key1="open-telemetry-collector-LOGS"
+       - --rate=10      # generate 10 records per second
+       - --duration=1h  # generate it for 1 hour
+       - --workers=2     # run 2 workers
+    depends_on:
+      - otel-collector-dataset
+
+  # Traces generator
+  telemetrygen-traces-dataset:
+    build:
+      context: ../../../../cmd/telemetrygen/
+    container_name: telemetrygen-traces-dataset
+    command:
+      - traces
+      - --otlp-endpoint=otel-collector-dataset:4317
+      - --otlp-insecure
+      - --otlp-attributes=key1="open-telemetry-collector-TRACES"
+      - --rate=10      # generate 10 records per second
+      - --duration=1h  # generate it for 1 hour
+      - --workers=2     # run 2 workers
+    depends_on:
+      - otel-collector-dataset
+
+
+

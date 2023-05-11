@@ -45,7 +45,8 @@ func (s *SuiteFactory) TestCreateDefaultConfig() {
 	cfg := factory.CreateDefaultConfig()
 
 	s.Equal(&Config{
-		MaxDelayMs:      maxDelayMs,
+		MaxDelay:        maxDelay,
+		TracesSettings:  NewDefaultTracesSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -67,7 +68,8 @@ func (s *SuiteFactory) TestLoadConfig() {
 			expected: &Config{
 				DatasetURL:      "https://app.scalyr.com",
 				APIKey:          "key-minimal",
-				MaxDelayMs:      maxDelayMs,
+				MaxDelay:        maxDelay,
+				TracesSettings:  NewDefaultTracesSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -78,7 +80,8 @@ func (s *SuiteFactory) TestLoadConfig() {
 			expected: &Config{
 				DatasetURL:      "https://app.eu.scalyr.com",
 				APIKey:          "key-lib",
-				MaxDelayMs:      "12345",
+				MaxDelay:        345 * time.Millisecond,
+				TracesSettings:  NewDefaultTracesSettings(),
 				GroupBy:         []string{"attributes.container_id", "attributes.log.file.path"},
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
@@ -90,8 +93,11 @@ func (s *SuiteFactory) TestLoadConfig() {
 			expected: &Config{
 				DatasetURL: "https://app.scalyr.com",
 				APIKey:     "key-full",
-				MaxDelayMs: "3456",
+				MaxDelay:   3456 * time.Millisecond,
 				GroupBy:    []string{"body.map.kubernetes.pod_id", "body.map.kubernetes.docker_id", "body.map.stream"},
+				TracesSettings: TracesSettings{
+					MaxWait: 3 * time.Second,
+				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             true,
 					InitialInterval:     11 * time.Nanosecond,
@@ -138,14 +144,14 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; MaxDelayMs: ; GroupBy: []; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; MaxDelay: 0s; GroupBy: []; TracesSettings: {MaxWait:0s}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
 			config: &Config{
 				DatasetURL:      "https://app.eu.scalyr.com",
 				APIKey:          "key-lib",
-				MaxDelayMs:      "12345",
+				MaxDelay:        12345,
 				GroupBy:         []string{"attributes.container_id"},
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

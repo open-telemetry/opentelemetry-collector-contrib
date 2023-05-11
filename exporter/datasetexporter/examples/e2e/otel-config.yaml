@@ -1,0 +1,78 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch/logs:
+    send_batch_size: 10000
+    timeout: 5s
+  batch/traces:
+    send_batch_size: 10000
+    timeout: 16s
+
+  memory_limiter:
+    check_interval: 2s
+    limit_mib: 1800
+    spike_limit_mib: 500
+
+  # https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
+  resourcedetection/system:
+    detectors: [ "system" ]
+    system:
+      hostname_sources: [ "os" ]
+  resourcedetection/docker:
+    detectors: [env, docker]
+    timeout: 2s
+    override: false
+
+exporters:
+  dataset/logs:
+    api_key: your-api-key
+    dataset_url: https://app.eu.scalyr.com
+    max_delay: 5s
+    group_by:
+      - resource.attributes.host.id
+    retry_on_failure:
+      max_interval: 300
+      max_elapsed_time: 300
+    sending_queue:
+      storage: file_storage
+
+  dataset/traces:
+    api_key: your-api-key
+    dataset_url: https://app.eu.scalyr.com
+    max_delay: 17s
+    traces:
+      max_wait: 10s
+    retry_on_failure:
+      max_interval: 300
+      max_elapsed_time: 300
+    sending_queue:
+      storage: file_storage
+  logging:
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+  memory_ballast:
+    size_mib: 1000
+  # store unprocessed data persistently
+  # do not forget to create this directory
+  # and make sure that its readable and writeable
+  file_storage:
+    directory: /tmp/
+
+service:
+  extensions: [ pprof, zpages, health_check, memory_ballast, file_storage ]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch/logs, resourcedetection/system, resourcedetection/docker]
+      exporters: [dataset/logs]
+    traces:
+      receivers: [ otlp ]
+      processors: [ batch/traces, resourcedetection/system, resourcedetection/docker ]
+      exporters: [ dataset/logs ]

@@ -17,7 +17,6 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/scalyr/dataset-go/pkg/buffer"
@@ -26,13 +25,26 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const maxDelayMs = "15000"
+const maxDelay = 15 * time.Millisecond
+const tracesMaxWait = 5 * time.Second
+
+type TracesSettings struct {
+	MaxWait time.Duration `mapstructure:"max_wait"`
+}
+
+// NewDefaultTracesSettings returns the default settings for TracesSettings.
+func NewDefaultTracesSettings() TracesSettings {
+	return TracesSettings{
+		MaxWait: tracesMaxWait,
+	}
+}
 
 type Config struct {
-	DatasetURL                     string   `mapstructure:"dataset_url"`
-	APIKey                         string   `mapstructure:"api_key"`
-	MaxDelayMs                     string   `mapstructure:"max_delay_ms"`
-	GroupBy                        []string `mapstructure:"group_by"`
+	DatasetURL                     string        `mapstructure:"dataset_url"`
+	APIKey                         string        `mapstructure:"api_key"`
+	MaxDelay                       time.Duration `mapstructure:"max_delay"`
+	GroupBy                        []string      `mapstructure:"group_by"`
+	TracesSettings                 `mapstructure:"traces"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
@@ -50,8 +62,12 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		c.APIKey = os.Getenv("DATASET_API_KEY")
 	}
 
-	if len(c.MaxDelayMs) == 0 {
-		c.MaxDelayMs = maxDelayMs
+	if c.MaxDelay == 0 {
+		c.MaxDelay = maxDelay
+	}
+
+	if c.TracesSettings.MaxWait == 0 {
+		c.TracesSettings.MaxWait = tracesMaxWait
 	}
 
 	return nil
@@ -67,15 +83,6 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("dataset_url is required")
 	}
 
-	_, err := strconv.Atoi(c.MaxDelayMs)
-	if err != nil {
-		return fmt.Errorf(
-			"max_delay_ms must be integer, but %s was used: %w",
-			c.MaxDelayMs,
-			err,
-		)
-	}
-
 	return nil
 }
 
@@ -84,8 +91,9 @@ func (c *Config) Validate() error {
 func (c *Config) String() string {
 	s := ""
 	s += fmt.Sprintf("%s: %s; ", "DatasetURL", c.DatasetURL)
-	s += fmt.Sprintf("%s: %s; ", "MaxDelayMs", c.MaxDelayMs)
+	s += fmt.Sprintf("%s: %s; ", "MaxDelay", c.MaxDelay)
 	s += fmt.Sprintf("%s: %s; ", "GroupBy", c.GroupBy)
+	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
 	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
 	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
@@ -99,26 +107,21 @@ func (c *Config) Convert() (*ExporterConfig, error) {
 		return nil, fmt.Errorf("config is not valid: %w", err)
 	}
 
-	maxDelayMs, err := strconv.Atoi(c.MaxDelayMs)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"MaxDelayMs must be integer, it is %s; %w", c.MaxDelayMs, err,
-		)
-	}
-
 	return &ExporterConfig{
 			datasetConfig: &datasetConfig.DataSetConfig{
 				Endpoint:       c.DatasetURL,
 				Tokens:         datasetConfig.DataSetTokens{WriteLog: c.APIKey},
-				MaxBufferDelay: time.Duration(maxDelayMs) * time.Millisecond,
+				MaxBufferDelay: c.MaxDelay,
 				MaxPayloadB:    buffer.LimitBufferSize,
 				GroupBy:        c.GroupBy,
 				RetryBase:      5 * time.Second,
 			},
+			tracesSettings: c.TracesSettings,
 		},
 		nil
 }
 
 type ExporterConfig struct {
-	datasetConfig *datasetConfig.DataSetConfig
+	datasetConfig  *datasetConfig.DataSetConfig
+	tracesSettings TracesSettings
 }
