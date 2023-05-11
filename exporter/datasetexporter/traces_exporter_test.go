@@ -78,9 +78,9 @@ func generateTEvent1Raw() *add_events.Event {
 			"name": "operationA",
 			"kind": "unspecified",
 
-			"start_time_unix_nano": int64(1581452772000000321),
-			"end_time_unix_nano":   int64(1581452773000000789),
-			"duration_nano":        int64(1000000468),
+			"start_time_unix_nano": "1581452772000000321",
+			"end_time_unix_nano":   "1581452773000000789",
+			"duration_nano":        "1000000468",
 
 			"span_id":        "",
 			"trace_id":       "",
@@ -122,9 +122,9 @@ func generateTEvent2Raw() *add_events.Event {
 			"name": "operationB",
 			"kind": "unspecified",
 
-			"start_time_unix_nano": int64(1581452772000000321),
-			"end_time_unix_nano":   int64(1581452773000000789),
-			"duration_nano":        int64(1000000468),
+			"start_time_unix_nano": "1581452772000000321",
+			"end_time_unix_nano":   "1581452773000000789",
+			"duration_nano":        "1000000468",
 
 			"span_id":        "",
 			"trace_id":       "",
@@ -168,9 +168,9 @@ func generateTEvent3Raw() *add_events.Event {
 			"name": "operationC",
 			"kind": "unspecified",
 
-			"start_time_unix_nano": int64(1581452772000000321),
-			"end_time_unix_nano":   int64(1581452773000000789),
-			"duration_nano":        int64(1000000468),
+			"start_time_unix_nano": "1581452772000000321",
+			"end_time_unix_nano":   "1581452773000000789",
+			"duration_nano":        "1000000468",
 
 			"span_id":        "",
 			"trace_id":       "",
@@ -243,9 +243,9 @@ func (s *SuiteTracesExporter) TestBuildEventsFromSpanAttributesCollision() {
 				"name": "",
 				"kind": "unspecified",
 
-				"start_time_unix_nano": int64(0),
-				"end_time_unix_nano":   int64(0),
-				"duration_nano":        int64(0),
+				"start_time_unix_nano": "0",
+				"end_time_unix_nano":   "0",
+				"duration_nano":        "0",
 
 				"span_id":        "",
 				"trace_id":       "",
@@ -467,9 +467,9 @@ func generateSimpleEvent(
 		"name": "",
 		"kind": "unspecified",
 
-		"start_time_unix_nano": start,
-		"end_time_unix_nano":   end,
-		"duration_nano":        end - start,
+		"start_time_unix_nano": fmt.Sprintf("%d", start),
+		"end_time_unix_nano":   fmt.Sprintf("%d", end),
+		"duration_nano":        fmt.Sprintf("%d", end-start),
 
 		"span_id":        spanID,
 		"trace_id":       traceID,

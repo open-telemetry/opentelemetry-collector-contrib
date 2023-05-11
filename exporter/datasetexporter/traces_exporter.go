@@ -78,9 +78,9 @@ func buildEventFromSpan(
 	}
 	attrs["trace_id"] = span.TraceID().String()
 
-	attrs["start_time_unix_nano"] = span.StartTimestamp().AsTime().UnixNano()
-	attrs["end_time_unix_nano"] = span.EndTimestamp().AsTime().UnixNano()
-	attrs["duration_nano"] = span.EndTimestamp().AsTime().UnixNano() - span.StartTimestamp().AsTime().UnixNano()
+	attrs["start_time_unix_nano"] = fmt.Sprintf("%d", span.StartTimestamp().AsTime().UnixNano())
+	attrs["end_time_unix_nano"] = fmt.Sprintf("%d", span.EndTimestamp().AsTime().UnixNano())
+	attrs["duration_nano"] = fmt.Sprintf("%d", span.EndTimestamp().AsTime().UnixNano()-span.StartTimestamp().AsTime().UnixNano())
 
 	attrs["kind"] = strings.ToLower(span.Kind().String())
 	attrs["status_code"] = strings.ToLower(span.Status().Code().String())
