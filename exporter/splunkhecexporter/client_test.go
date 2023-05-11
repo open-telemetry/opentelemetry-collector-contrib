@@ -1358,66 +1358,44 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	assert.Equal(t, 10, nonProfilingCount)
 }
 
-func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
-	benchPushLogData(b, 100, 10, 10, 1024)
+// 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
+func Benchmark_pushLogData_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 1024)
 }
 
-func Benchmark_pushLogData_10_100_100_1024(b *testing.B) {
-	benchPushLogData(b, 10, 100, 100, 1024)
+// 10 resources, 10 records, 8Kb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 8*1024)
 }
 
-func Benchmark_pushLogData_10_0_100_1024(b *testing.B) {
-	benchPushLogData(b, 10, 0, 100, 1024)
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_10_10_2M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 2*1024*1024)
 }
 
-func Benchmark_pushLogData_10_100_0_1024(b *testing.B) {
-	benchPushLogData(b, 10, 100, 0, 1024)
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_10_200_2M(b *testing.B) {
+	benchPushLogData(b, 10, 200, 2*1024*1024)
 }
 
-func Benchmark_pushLogData_10_10_10_256(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 256)
+// 100 resources, 200 records, 2Mb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_100_200_2M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 2*1024*1024)
 }
 
-func Benchmark_pushLogData_10_10_10_1024(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 1024)
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushLogData_100_200_5M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 5*1024*1024)
 }
 
-func Benchmark_pushLogData_10_10_10_8K(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 8*1024)
-}
-
-func Benchmark_pushLogData_10_10_10_1M(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 1024*1024)
-}
-
-func Benchmark_pushLogData_5_0_20_2M(b *testing.B) {
-	benchPushLogData(b, 5, 0, 20, 2*1024*1024)
-}
-
-func Benchmark_pushLogData_10_0_100_2M(b *testing.B) {
-	benchPushLogData(b, 10, 0, 100, 2*1024*1024)
-}
-
-func Benchmark_pushLogData_50_0_200_2M(b *testing.B) {
-	benchPushLogData(b, 50, 0, 200, 2*1024*1024)
-}
-
-func Benchmark_pushLogData_50_0_200_5M(b *testing.B) {
-	benchPushLogData(b, 50, 0, 200, 5*1024*1024)
-}
-
-func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
-	benchPushLogData(b, 10, 1, 1, 1024)
-}
-
-func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
+func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = bufSize
 	config.DisableCompression = true
 	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 	c.hecWorker = &mockHecWorker{}
 
-	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
+	logs := createLogData(numResources, 1, numRecords)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -1611,26 +1589,4 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 		assert.Contains(t, string(p), e)
 	}
 
-}
-
-func BenchmarkPushLogRecords(b *testing.B) {
-	logs := createLogData(1, 1, 1)
-	c := client{
-		config:          NewFactory().CreateDefaultConfig().(*Config),
-		logger:          zap.NewNop(),
-		hecWorker:       &mockHecWorker{},
-		bufferStatePool: newBufferStatePool(4096, true, 4096),
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	state := c.bufferStatePool.get()
-	for n := 0; n < b.N; n++ {
-		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), state, map[string]string{})
-		assert.NoError(b, sendingErr)
-		for _, permanentErr := range permanentErrs {
-			assert.NoError(b, permanentErr)
-		}
-	}
 }
