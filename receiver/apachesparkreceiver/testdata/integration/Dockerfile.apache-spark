@@ -1,0 +1,8 @@
+FROM apache/spark
+
+COPY sparkprograms/long_running.py /opt/spark/examples/src/main/python/long_running.py
+RUN chmod +x /opt/spark/examples/src/main/python/long_running.py
+
+CMD [ "/opt/spark/bin/spark-submit", "/opt/spark/examples/src/main/python/long_running.py" ]
+
+EXPOSE 4040

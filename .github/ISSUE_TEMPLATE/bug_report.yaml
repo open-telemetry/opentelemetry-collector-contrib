@@ -147,6 +147,7 @@ body:
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
+      - receiver/apachespark
       - receiver/awscloudwatch
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
