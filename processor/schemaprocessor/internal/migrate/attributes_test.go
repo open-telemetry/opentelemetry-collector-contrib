@@ -38,7 +38,7 @@ func TestNewAttributeChangeSet(t *testing.T) {
 	t.Run("map of strings", func(t *testing.T) {
 		t.Parallel()
 
-		acs := NewAttributes(map[string]string{
+		acs := NewAttributeChangeSet(map[string]string{
 			"hello": "world",
 		})
 
@@ -57,7 +57,7 @@ func TestNewAttributeChangeSet(t *testing.T) {
 	t.Run("typedef string values", func(t *testing.T) {
 		t.Parallel()
 
-		acs := NewAttributes(map[testTypeDefKey]testTypeDefValue{
+		acs := NewAttributeChangeSet(map[testTypeDefKey]testTypeDefValue{
 			"awesome": "awesome.service",
 		})
 
@@ -86,7 +86,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 	}{
 		{
 			name: "no modifications",
-			acs:  NewAttributes(map[string]string{}),
+			acs:  NewAttributeChangeSet(map[string]string{}),
 			attrs: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutInt("test.cases", 1)
 			}),
@@ -96,7 +96,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 		},
 		{
 			name: "Apply changes",
-			acs: NewAttributes(map[string]string{
+			acs: NewAttributeChangeSet(map[string]string{
 				"service_version": "service.version",
 			}),
 			attrs: testHelperBuildMap(func(m pcommon.Map) {
@@ -110,7 +110,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 		// it forces both values to be removed from the the attributes.
 		{
 			name: "naming loop",
-			acs: NewAttributes(map[string]string{
+			acs: NewAttributeChangeSet(map[string]string{
 				"service.version": "service_version",
 				"service_version": "service.version",
 			}),
@@ -123,7 +123,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 		},
 		{
 			name: "overrides existing value",
-			acs: NewAttributes(map[string]string{
+			acs: NewAttributeChangeSet(map[string]string{
 				"application.name": "service.name",
 			}),
 			attrs: testHelperBuildMap(func(m pcommon.Map) {
@@ -163,7 +163,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 	}{
 		{
 			name: "no modifications",
-			acs:  NewAttributes(map[string]string{}),
+			acs:  NewAttributeChangeSet(map[string]string{}),
 			attrs: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutInt("test.cases", 1)
 			}),
@@ -173,7 +173,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 		},
 		{
 			name: "Apply changes",
-			acs: NewAttributes(map[string]string{
+			acs: NewAttributeChangeSet(map[string]string{
 				"service_version": "service.version",
 			}),
 			attrs: testHelperBuildMap(func(m pcommon.Map) {
@@ -185,7 +185,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 		},
 		{
 			name: "naming loop",
-			acs: NewAttributes(map[string]string{
+			acs: NewAttributeChangeSet(map[string]string{
 				"service.version": "service_version",
 				"service_version": "service.version",
 			}),
@@ -198,7 +198,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 		},
 		{
 			name: "overrides existing value",
-			acs: NewAttributes(map[string]string{
+			acs: NewAttributeChangeSet(map[string]string{
 				"application.name": "service.name",
 			}),
 			attrs: testHelperBuildMap(func(m pcommon.Map) {
@@ -248,10 +248,10 @@ func TestNewAttributeChangeSetSliceApply(t *testing.T) {
 		{
 			name: "changes defined",
 			changes: NewAttributeChangeSetSlice(
-				NewAttributes(map[string]string{
+				NewAttributeChangeSet(map[string]string{
 					"service_version": "service.version",
 				}),
-				NewAttributes(map[string]string{
+				NewAttributeChangeSet(map[string]string{
 					"service.version": "application.service.version",
 				}),
 			),
@@ -295,10 +295,10 @@ func TestNewAttributeChangeSetSliceApplyRollback(t *testing.T) {
 		{
 			name: "changes defined",
 			changes: NewAttributeChangeSetSlice(
-				NewAttributes(map[string]string{
+				NewAttributeChangeSet(map[string]string{
 					"service_version": "service.version",
 				}),
-				NewAttributes(map[string]string{
+				NewAttributeChangeSet(map[string]string{
 					"service.version": "application.service.version",
 				}),
 			),

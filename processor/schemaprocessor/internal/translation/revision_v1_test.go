@@ -157,15 +157,15 @@ func TestNewRevision(t *testing.T) {
 			expect: &RevisionV1{
 				ver: &Version{1, 0, 0},
 				all: migrate.NewAttributeChangeSetSlice(
-					migrate.NewAttributes(map[string]string{
+					migrate.NewAttributeChangeSet(map[string]string{
 						"state": "status",
 					}),
-					migrate.NewAttributes(map[string]string{
+					migrate.NewAttributeChangeSet(map[string]string{
 						"status": "state",
 					}),
 				),
 				resource: migrate.NewAttributeChangeSetSlice(
-					migrate.NewAttributes(map[string]string{
+					migrate.NewAttributeChangeSet(map[string]string{
 						"service_name": "service.name",
 					}),
 				),

@@ -57,7 +57,7 @@ func newAttributeChangeSetSliceFromChanges(attrs ast.Attributes) *migrate.Attrib
 	values := make([]*migrate.AttributeChangeSet, 0, 10)
 	for _, at := range attrs.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
-			values = append(values, migrate.NewAttributes(renamed.AttributeMap))
+			values = append(values, migrate.NewAttributeChangeSet(renamed.AttributeMap))
 		}
 	}
 	return migrate.NewAttributeChangeSetSlice(values...)

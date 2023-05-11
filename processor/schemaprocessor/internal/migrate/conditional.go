@@ -39,7 +39,7 @@ func NewConditionalAttributeSet[Key AttributeKey, Value AttributeKey, Match Valu
 	}
 	return &ConditionalAttributeSet{
 		on:    &on,
-		attrs: NewAttributes(mappings),
+		attrs: NewAttributeChangeSet(mappings),
 	}
 }
 

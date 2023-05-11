@@ -43,9 +43,9 @@ type AttributeChangeSet struct {
 // and be applied sequentially to ensure deterministic behavior.
 type AttributeChangeSetSlice []*AttributeChangeSet
 
-// NewAttributes allows for typed strings to be used as part
+// NewAttributeChangeSet allows for typed strings to be used as part
 // of the invocation that will be converted into the default string type.
-func NewAttributes[Key AttributeKey, Value AttributeKey](mappings map[Key]Value) *AttributeChangeSet {
+func NewAttributeChangeSet[Key AttributeKey, Value AttributeKey](mappings map[Key]Value) *AttributeChangeSet {
 	attr := &AttributeChangeSet{
 		updates:  make(map[string]string, len(mappings)),
 		rollback: make(map[string]string, len(mappings)),
