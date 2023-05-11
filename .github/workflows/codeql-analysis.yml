@@ -6,7 +6,7 @@ on:
 
 jobs:
   CodeQL-Build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       # Force CodeQL to run the extraction on the files compiled by our custom
       # build command, as opposed to letting the autobuilder figure it out.
