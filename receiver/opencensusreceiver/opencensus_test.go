@@ -57,9 +57,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/metadata"
 )
 
-var ocReceiverID = component.NewIDWithName(typeStr, "receiver_test")
+var ocReceiverID = component.NewIDWithName(metadata.Type, "receiver_test")
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -407,7 +408,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			msg *agenttracepb.ExportTraceServiceRequest) error
 	}{
 		{
-			receiverID: component.NewIDWithName(typeStr, "traces"),
+			receiverID: component.NewIDWithName(metadata.Type, "traces"),
 			exportFn:   exportBidiFn,
 		},
 	}
@@ -558,7 +559,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			msg *agentmetricspb.ExportMetricsServiceRequest) error
 	}{
 		{
-			receiverID: component.NewIDWithName(typeStr, "metrics"),
+			receiverID: component.NewIDWithName(metadata.Type, "metrics"),
 			exportFn:   exportBidiFn,
 		},
 	}
