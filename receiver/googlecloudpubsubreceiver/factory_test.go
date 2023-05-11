@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -34,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, component.Type(typeStr), factory.Type())
+	assert.Equal(t, component.Type(metadata.Type), factory.Type())
 }
 
 func TestCreateTracesReceiver(t *testing.T) {
