@@ -17,19 +17,15 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"database/sql"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-)
 
-const (
-	typeStr   = "sqlquery"
-	stability = component.StabilityLevelUndefined
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createReceiverFunc(sql.Open, newDbClient), stability),
+		receiver.WithMetrics(createReceiverFunc(sql.Open, newDbClient), metadata.MetricsStability),
 	)
 }
