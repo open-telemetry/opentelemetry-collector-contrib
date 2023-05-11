@@ -25,7 +25,9 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for oracledbreceiver metrics.
 type MetricsConfig struct {
+	OracledbConsistentGets        MetricConfig `mapstructure:"oracledb.consistent_gets"`
 	OracledbCPUTime               MetricConfig `mapstructure:"oracledb.cpu_time"`
+	OracledbDbBlockGets           MetricConfig `mapstructure:"oracledb.db_block_gets"`
 	OracledbDmlLocksLimit         MetricConfig `mapstructure:"oracledb.dml_locks.limit"`
 	OracledbDmlLocksUsage         MetricConfig `mapstructure:"oracledb.dml_locks.usage"`
 	OracledbEnqueueDeadlocks      MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
@@ -54,8 +56,14 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		OracledbConsistentGets: MetricConfig{
+			Enabled: false,
+		},
 		OracledbCPUTime: MetricConfig{
 			Enabled: true,
+		},
+		OracledbDbBlockGets: MetricConfig{
+			Enabled: false,
 		},
 		OracledbDmlLocksLimit: MetricConfig{
 			Enabled: true,

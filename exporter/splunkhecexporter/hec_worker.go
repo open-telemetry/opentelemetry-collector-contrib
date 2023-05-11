@@ -53,7 +53,7 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 		req.Header.Set(k, v)
 	}
 
-	if bufferState.compressionEnabled {
+	if bufferState.compressionEnabled() {
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 

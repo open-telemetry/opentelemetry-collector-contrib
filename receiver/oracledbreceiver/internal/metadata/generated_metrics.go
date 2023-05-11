@@ -13,6 +13,57 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+type metricOracledbConsistentGets struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.consistent_gets metric with initial data.
+func (m *metricOracledbConsistentGets) init() {
+	m.data.SetName("oracledb.consistent_gets")
+	m.data.SetDescription("Number of times a consistent read was requested for a block from the buffer cache.")
+	m.data.SetUnit("{gets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbConsistentGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbConsistentGets) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbConsistentGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbConsistentGets(cfg MetricConfig) metricOracledbConsistentGets {
+	m := metricOracledbConsistentGets{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -57,6 +108,57 @@ func (m *metricOracledbCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbCPUTime(cfg MetricConfig) metricOracledbCPUTime {
 	m := metricOracledbCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbDbBlockGets struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.db_block_gets metric with initial data.
+func (m *metricOracledbDbBlockGets) init() {
+	m.data.SetName("oracledb.db_block_gets")
+	m.data.SetDescription("Number of times a current block was requested from the buffer cache.")
+	m.data.SetUnit("{gets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbDbBlockGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbDbBlockGets) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbDbBlockGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbDbBlockGets(cfg MetricConfig) metricOracledbDbBlockGets {
+	m := metricOracledbDbBlockGets{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1276,7 +1378,9 @@ type MetricsBuilder struct {
 	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo // contains version information
 	resourceAttributesConfig            ResourceAttributesConfig
+	metricOracledbConsistentGets        metricOracledbConsistentGets
 	metricOracledbCPUTime               metricOracledbCPUTime
+	metricOracledbDbBlockGets           metricOracledbDbBlockGets
 	metricOracledbDmlLocksLimit         metricOracledbDmlLocksLimit
 	metricOracledbDmlLocksUsage         metricOracledbDmlLocksUsage
 	metricOracledbEnqueueDeadlocks      metricOracledbEnqueueDeadlocks
@@ -1319,7 +1423,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
 		resourceAttributesConfig:            mbc.ResourceAttributes,
+		metricOracledbConsistentGets:        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
 		metricOracledbCPUTime:               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
+		metricOracledbDbBlockGets:           newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
 		metricOracledbDmlLocksLimit:         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
 		metricOracledbDmlLocksUsage:         newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
 		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
@@ -1405,7 +1511,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/oracledbreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricOracledbConsistentGets.emit(ils.Metrics())
 	mb.metricOracledbCPUTime.emit(ils.Metrics())
+	mb.metricOracledbDbBlockGets.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksLimit.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksUsage.emit(ils.Metrics())
 	mb.metricOracledbEnqueueDeadlocks.emit(ils.Metrics())
@@ -1450,9 +1558,29 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
+// RecordOracledbConsistentGetsDataPoint adds a data point to oracledb.consistent_gets metric.
+func (mb *MetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbConsistentGets, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbConsistentGets.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordOracledbCPUTimeDataPoint adds a data point to oracledb.cpu_time metric.
 func (mb *MetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
+func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbDbBlockGets, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbDbBlockGets.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbDmlLocksLimitDataPoint adds a data point to oracledb.dml_locks.limit metric.

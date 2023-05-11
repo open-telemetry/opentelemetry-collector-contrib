@@ -1430,6 +1430,7 @@ func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonPr
 	c.config.MaxContentLengthLogs = bufSize
 	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
 
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -1522,7 +1523,7 @@ func TestSubLogs(t *testing.T) {
 	}
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &index{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
+	_0_0_0 := &bufferState{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
 	got := c.subLogs(logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
@@ -1536,7 +1537,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
+	_0_1_2 := &bufferState{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
 	got = c.subLogs(logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
@@ -1549,7 +1550,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
+	_1_1_2 := &bufferState{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
 	got = c.subLogs(logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
@@ -1561,8 +1562,8 @@ func TestSubLogs(t *testing.T) {
 
 	// Now see how profiling and log data are merged
 	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
-	slice := &index{resource: 1, library: 0, record: 5}
-	profSlice := &index{resource: 0, library: 1, record: 8}
+	slice := &bufferState{resource: 1, library: 0, record: 5}
+	profSlice := &bufferState{resource: 0, library: 1, record: 8}
 
 	got = c.subLogs(logs, slice, profSlice)
 
@@ -1606,7 +1607,7 @@ func TestPushLogRecordsBufferCounters(t *testing.T) {
 	assert.Len(t, permErrs, 1)
 	assert.ErrorContains(t, permErrs[0], "bytes larger than configured max content length")
 
-	assert.Equal(t, 2, bs.bufFront.record, "the buffer counter must be at the latest log record")
+	assert.Equal(t, 2, bs.record, "the buffer counter must be at the latest log record")
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings
@@ -1630,6 +1631,9 @@ func BenchmarkPushLogRecords(b *testing.B) {
 		logger:    zap.NewNop(),
 		hecWorker: &mockHecWorker{},
 	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
 
 	state := makeBlankBufferState(4096, true, 4096)
 	for n := 0; n < b.N; n++ {
