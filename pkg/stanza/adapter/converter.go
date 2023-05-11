@@ -73,6 +73,7 @@ type Converter struct {
 	// entries from Batch() calls and it receives the data in workerLoop().
 	workerChan chan []*entry.Entry
 	// workerCount configures the amount of workers started.
+	// Defaults to GOMAXPROCS/4. If GOMAXPROCS is not set, defaults to the number of logical CPUs
 	workerCount int
 
 	// flushChan is an internal channel used for transporting batched plog.Logs.
@@ -88,7 +89,7 @@ type Converter struct {
 func NewConverter(logger *zap.Logger) *Converter {
 	return &Converter{
 		workerChan:  make(chan []*entry.Entry),
-		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
+		workerCount: int(math.Max(1, float64(runtime.GOMAXPROCS(-1)/4))),
 		pLogsChan:   make(chan plog.Logs),
 		stopChan:    make(chan struct{}),
 		flushChan:   make(chan plog.Logs),
