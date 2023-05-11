@@ -14,4 +14,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package simpleprometheusreceiver// import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+package simpleprometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
