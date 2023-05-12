@@ -1,0 +1,8 @@
+type: metricreceiver
+metrics:
+  metric:
+    enabled: true
+    description: Description.
+    unit: s
+    gauge:
+      value_type: double

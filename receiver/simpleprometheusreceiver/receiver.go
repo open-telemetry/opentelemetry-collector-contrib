@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
 
 type prometheusReceiverWrapper struct {
@@ -122,7 +123,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	scrapeConfig := &config.ScrapeConfig{
 		ScrapeInterval:  model.Duration(cfg.CollectionInterval),
 		ScrapeTimeout:   model.Duration(cfg.CollectionInterval),
-		JobName:         fmt.Sprintf("%s/%s", typeStr, cfg.Endpoint),
+		JobName:         fmt.Sprintf("%s/%s", metadata.Type, cfg.Endpoint),
 		HonorTimestamps: true,
 		Scheme:          scheme,
 		MetricsPath:     cfg.MetricsPath,

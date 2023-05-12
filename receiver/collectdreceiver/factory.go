@@ -24,13 +24,13 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
 
 // This file implements factory for CollectD receiver.
 
 const (
-	typeStr               = "collectd"
-	stability             = component.StabilityLevelAlpha
 	defaultBindEndpoint   = "localhost:8081"
 	defaultTimeout        = time.Second * 30
 	defaultEncodingFormat = "json"
@@ -39,9 +39,9 @@ const (
 // NewFactory creates a factory for collectd receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 func createDefaultConfig() component.Config {
 	return &Config{

@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -113,7 +115,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 	numPoints := mds.DataPointCount()
 	err := kr.consumer.ConsumeMetrics(c, mds)
-	kr.obsrecv.EndMetricsOp(c, typeStr, numPoints, err)
+	kr.obsrecv.EndMetricsOp(c, metadata.Type, numPoints, err)
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.

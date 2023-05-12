@@ -26,14 +26,11 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "sapm"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelBeta
-
 	// Default endpoints to bind to.
 	defaultEndpoint = ":7276"
 )
@@ -41,9 +38,9 @@ const (
 // NewFactory creates a factory for SAPM receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {

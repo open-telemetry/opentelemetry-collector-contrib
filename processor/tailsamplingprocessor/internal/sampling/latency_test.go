@@ -15,17 +15,18 @@
 package sampling
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestEvaluate_Latency(t *testing.T) {
-	filter := NewLatency(zap.NewNop(), 5000)
+	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
@@ -73,7 +74,7 @@ func TestEvaluate_Latency(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithSpans(c.Spans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpans(c.Spans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)

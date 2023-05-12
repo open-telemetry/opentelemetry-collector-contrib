@@ -15,17 +15,18 @@
 package sampling
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestEvaluate_OnlyMinSpans(t *testing.T) {
-	filter := NewSpanCount(zap.NewNop(), 3, 0)
+	filter := NewSpanCount(componenttest.NewNopTelemetrySettings(), 3, 0)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
@@ -80,7 +81,7 @@ func TestEvaluate_OnlyMinSpans(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithMultipleSpans(c.NumberSpans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
@@ -89,7 +90,7 @@ func TestEvaluate_OnlyMinSpans(t *testing.T) {
 }
 
 func TestEvaluate_OnlyMaxSpans(t *testing.T) {
-	filter := NewSpanCount(zap.NewNop(), 0, 20)
+	filter := NewSpanCount(componenttest.NewNopTelemetrySettings(), 0, 20)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
@@ -144,7 +145,7 @@ func TestEvaluate_OnlyMaxSpans(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithMultipleSpans(c.NumberSpans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
@@ -153,7 +154,7 @@ func TestEvaluate_OnlyMaxSpans(t *testing.T) {
 }
 
 func TestEvaluate_RangeOfSpans(t *testing.T) {
-	filter := NewSpanCount(zap.NewNop(), 3, 20)
+	filter := NewSpanCount(componenttest.NewNopTelemetrySettings(), 3, 20)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
@@ -236,7 +237,7 @@ func TestEvaluate_RangeOfSpans(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithMultipleSpans(c.NumberSpans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithMultipleSpans(c.NumberSpans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)

@@ -25,13 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "k8sattributes"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
@@ -41,11 +35,11 @@ var defaultExcludes = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agen
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
-		processor.WithMetrics(createMetricsProcessor, stability),
-		processor.WithLogs(createLogsProcessor, stability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 

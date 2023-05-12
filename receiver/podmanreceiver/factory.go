@@ -22,19 +22,19 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
 
 const (
-	typeStr           = "podman_stats"
-	stability         = component.StabilityLevelDevelopment
 	defaultAPIVersion = "3.3.1"
 )
 
 func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultReceiverConfig,
-		rcvr.WithMetrics(createMetricsReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() *Config {

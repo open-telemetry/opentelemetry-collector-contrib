@@ -109,12 +109,7 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newTracesClient(set, cfg)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -136,12 +131,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newMetricsClient(set, cfg)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
@@ -173,12 +163,7 @@ func createLogsExporter(
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newLogsClient(set, cfg)
 
 	logsExporter, err := exporterhelper.NewLogsExporter(
 		ctx,

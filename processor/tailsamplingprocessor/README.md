@@ -24,6 +24,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `rate_limiting`: Sample based on rate
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
+- `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
 - `and`: Sample based on multiple policies, creates an AND policy 
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
@@ -113,6 +114,21 @@ processors:
               name: test-policy-12,
               type: boolean_attribute,
               boolean_attribute: {key: key4, value: true}
+         },
+         {
+              name: test-policy-11,
+              type: ottl_condition,
+              ottl_condition: {
+                   error_mode: ignore,
+                   span: [
+                        "attributes[\"test_attr_key_1\"] == \"test_attr_val_1\"",
+                        "attributes[\"test_attr_key_2\"] != \"test_attr_val_1\"",
+                   ],
+                   spanevent: [
+                        "name != \"test_span_event_name\"",
+                        "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\"",
+                   ]
+              }
          },
          {
             name: and-policy-1,
