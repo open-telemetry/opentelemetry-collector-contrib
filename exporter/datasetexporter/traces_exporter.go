@@ -199,7 +199,7 @@ func updateResource(attrs map[string]interface{}, resource map[string]any) {
 	attrs[resourceType] = string(Process)
 
 	// but still try to search for anything, that start on service
-	// if we wound it, we will mark it as service
+	// if we found it, we will mark it as service
 	for k, v := range resource {
 		if strings.HasPrefix(k, "service") {
 			attrs[resourceName] = ""
