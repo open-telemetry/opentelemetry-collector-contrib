@@ -140,7 +140,7 @@ func TestPostgresIntegration(t *testing.T) {
 		{
 			SQL:                "select * from simple_logs where id > $1",
 			TrackingColumn:     "id",
-			TrackingStartValue: "3",
+			TrackingStartValue: "2",
 			Logs: []LogsCfg{
 				{
 					BodyColumn: "body",
@@ -261,7 +261,7 @@ func TestOracleDBIntegration(t *testing.T) {
 		{
 			SQL:                "select * from sys.simple_logs where id > :id",
 			TrackingColumn:     "id",
-			TrackingStartValue: "3",
+			TrackingStartValue: "2",
 			Logs: []LogsCfg{
 				{
 					BodyColumn: "BODY",
@@ -271,7 +271,7 @@ func TestOracleDBIntegration(t *testing.T) {
 		{
 			SQL:                "select * from sys.simple_logs where insert_time > :insert_time",
 			TrackingColumn:     "insert_time",
-			TrackingStartValue: "03-JUN-22 09.59.29.000000000 PM +00:00",
+			TrackingStartValue: "03-JUN-22 09.59.28.000000000 PM +00:00",
 			Logs: []LogsCfg{
 				{
 					BodyColumn: "BODY",
