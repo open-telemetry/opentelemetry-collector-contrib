@@ -199,6 +199,12 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardStringLikeGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "FloatGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardTypeGetter[K, float64]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "FloatLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
