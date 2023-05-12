@@ -34,6 +34,7 @@ The following settings can be optionally configured:
   - `raw`: (logs only) the payload's bytes are inserted as the body of a log record.
 - `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
+- `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
