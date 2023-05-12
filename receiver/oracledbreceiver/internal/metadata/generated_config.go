@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for oracledbreceiver metrics.
+// MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
 	OracledbConsistentGets        MetricConfig `mapstructure:"oracledb.consistent_gets"`
 	OracledbCPUTime               MetricConfig `mapstructure:"oracledb.cpu_time"`
@@ -145,7 +145,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for oracledbreceiver resource attributes.
+// ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
 	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
 }
@@ -158,7 +158,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for oracledbreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for oracledb metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

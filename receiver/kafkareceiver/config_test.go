@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Topic:    "spans",
 				Encoding: "otlp_proto",
@@ -71,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 
-			id: component.NewIDWithName(typeStr, "logs"),
+			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				Topic:    "logs",
 				Encoding: "direct",

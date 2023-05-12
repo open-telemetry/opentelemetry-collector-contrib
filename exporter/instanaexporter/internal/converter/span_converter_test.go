@@ -16,11 +16,12 @@ package converter
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
-	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -38,7 +39,7 @@ type SpanOptions struct {
 	EndTimestamp   time.Duration
 }
 
-func setupSpan(span ptrace.Span, opts SpanOptions) {
+func setupSpan(span ptrace.Span, opts SpanOptions) (err error) {
 	var empty16 [16]byte
 	var empty8 [8]byte
 
@@ -51,11 +52,11 @@ func setupSpan(span ptrace.Span, opts SpanOptions) {
 	endTime := opts.EndTimestamp
 
 	if bytes.Equal(traceID[:], empty16[:]) {
-		traceID = generateTraceID()
+		traceID, err = generateTraceID()
 	}
 
 	if bytes.Equal(spanID[:], empty8[:]) {
-		spanID = generateSpanID()
+		spanID, err = generateSpanID()
 	}
 
 	if startTime == time.Second*0 {
@@ -86,6 +87,7 @@ func setupSpan(span ptrace.Span, opts SpanOptions) {
 
 	// adding attributes (tags in the instana side)
 	span.Attributes().PutBool("some_key", true)
+	return err
 }
 
 func generateAttrs() pcommon.Map {
@@ -197,7 +199,8 @@ func TestSpanBasics(t *testing.T) {
 
 	sp1 := spanSlice.AppendEmpty()
 
-	setupSpan(sp1, SpanOptions{})
+	err := setupSpan(sp1, SpanOptions{})
+	require.NoError(t, err)
 
 	attrs := generateAttrs()
 	conv := SpanConverter{}
@@ -214,22 +217,25 @@ func TestSpanCorrelation(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
 	sp1 := spanSlice.AppendEmpty()
-	setupSpan(sp1, SpanOptions{})
+	err := setupSpan(sp1, SpanOptions{})
+	require.NoError(t, err)
 
 	sp2 := spanSlice.AppendEmpty()
-	setupSpan(sp2, SpanOptions{
+	err = setupSpan(sp2, SpanOptions{
 		ParentID: sp1.SpanID(),
 	})
+	require.NoError(t, err)
 
 	sp3 := spanSlice.AppendEmpty()
-	setupSpan(sp3, SpanOptions{
+	err = setupSpan(sp3, SpanOptions{
 		ParentID: sp2.SpanID(),
 	})
+	require.NoError(t, err)
 
 	sp4 := spanSlice.AppendEmpty()
-	setupSpan(sp4, SpanOptions{
+	require.NoError(t, setupSpan(sp4, SpanOptions{
 		ParentID: sp1.SpanID(),
-	})
+	}))
 
 	attrs := generateAttrs()
 	conv := SpanConverter{}
@@ -253,9 +259,9 @@ func TestSpanWithError(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
 	sp1 := spanSlice.AppendEmpty()
-	setupSpan(sp1, SpanOptions{
+	require.NoError(t, setupSpan(sp1, SpanOptions{
 		Error: "some error",
-	})
+	}))
 
 	attrs := generateAttrs()
 	conv := SpanConverter{}
@@ -268,14 +274,12 @@ func TestSpanWithError(t *testing.T) {
 	})
 }
 
-func generateTraceID() (data [16]byte) {
-	rand.Read(data[:])
-
-	return data
+func generateTraceID() (data [16]byte, err error) {
+	_, err = rand.Read(data[:])
+	return data, err
 }
 
-func generateSpanID() (data [8]byte) {
-	rand.Read(data[:])
-
-	return data
+func generateSpanID() (data [8]byte, err error) {
+	_, err = rand.Read(data[:])
+	return data, err
 }

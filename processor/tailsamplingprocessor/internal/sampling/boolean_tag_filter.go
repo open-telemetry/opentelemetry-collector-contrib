@@ -15,6 +15,9 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -30,16 +33,16 @@ var _ PolicyEvaluator = (*booleanAttributeFilter)(nil)
 
 // NewBooleanAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute that match the supplied boolean value.
-func NewBooleanAttributeFilter(logger *zap.Logger, key string, value bool) PolicyEvaluator {
+func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value bool) PolicyEvaluator {
 	return &booleanAttributeFilter{
 		key:    key,
 		value:  value,
-		logger: logger,
+		logger: settings.Logger,
 	}
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (baf *booleanAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()

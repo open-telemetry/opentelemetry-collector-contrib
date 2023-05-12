@@ -21,19 +21,16 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-)
 
-const (
-	typeStr        = "cloudflare"
-	stabilityLevel = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 // NewFactory returns the component factory for the cloudflarereceiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, stabilityLevel),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 

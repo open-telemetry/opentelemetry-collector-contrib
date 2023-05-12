@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,11 +39,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(metadata.Type, "all_settings"),
 			expected: &Config{
 				Namespaces: []string{"default", "my_namespace"},
 				APIConfig: k8sconfig.APIConfig{

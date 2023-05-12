@@ -15,19 +15,20 @@
 package sampling
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestBooleanTagFilter(t *testing.T) {
 
 	var empty = map[string]interface{}{}
-	filter := NewBooleanAttributeFilter(zap.NewNop(), "example", true)
+	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true)
 
 	resAttr := map[string]interface{}{}
 	resAttr["example"] = 8
@@ -57,7 +58,7 @@ func TestBooleanTagFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(pcommon.TraceID(u), c.Trace)
+			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
