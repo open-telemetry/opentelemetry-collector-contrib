@@ -101,10 +101,26 @@ which is going to effectively retrieve all entries which matches the following s
   - `_SYSTEMD_UNIT` is `ssh`
   - `_SYSTEMD_UNIT` is `kubelet` and `_UID` is `1000`
 
-## Permissions
+## Setup and deployment
 
 The user running the collector must have enough permissions to access the journal; not granting them will lead to issues.
 
+When running in a containerized enviroment, differences in the systemd version running on the host and on the container may prevent access to logs due to different features and configurations (e.g. zstd compression, keyed hash etc).
+
+### Docker
+
+When running otelcol in a container, note that:
+
+1. the container must run as a user that has permission to access the logs
+2. the path to the log directory (`/run/log/journal`, `/var/log/journal`...) must be mounted in the container
+3. depending on your guest system, you might need to explicitly set the log directory in the configuration
+
+Please note that *the official otelcol images do not contain the journald binary*; you will need to create your custom image or find one that does.
+
 ### Linux packaging
 
-If you installed otelcol as a linux package, you will most likely need to add the `otelcol-contrib` or `otel` user to the `systemd-journal` group. The exact user and group might vary depending on your package of choice and linux distribution.
+When installing otelcol as a linux package, you will most likely need to add the `otelcol-contrib` or `otel` user to the `systemd-journal` group. The exact user and group might vary depending on your package and linux distribution of choice.
+
+### Kubernetes
+
+See the instructions for [Docker](#Docker) and adapt according to your Kubernetes distribution and node OS.
