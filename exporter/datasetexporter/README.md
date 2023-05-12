@@ -25,9 +25,9 @@ See the [Getting Started](https://app.scalyr.com/help/getting-started) guide.
 - `buffer`:
   - `max_lifetime` (default = 5s): The maximum delay between sending batches from the same source.
   - `group_by` (default = []): The list of attributes based on which events should be grouped.
-  - retry_initial_interval (default = 5s): Time to wait after the first failure before retrying.
-  - retry_max_interval (default = 30s): Is the upper bound on backoff.
-  - max_elapsed_time (default = 300s): Is the maximum amount of time spent trying to send a buffer.
+  - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
+  - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
+  - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
 - `traces`:
   - `aggregate` (default = false): Count the number of spans and errors belonging to a trace.
   - `max_wait` (default = 5s): The maximum waiting for all spans from single trace to arrive; ignored if `aggregate` is false.
