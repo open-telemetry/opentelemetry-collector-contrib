@@ -16,6 +16,8 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
+	"github.com/scalyr/dataset-go/pkg/buffer_config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"os"
 	"time"
 
@@ -25,25 +27,47 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const maxDelay = 15 * time.Millisecond
 const tracesMaxWait = 5 * time.Second
 
 type TracesSettings struct {
 	MaxWait time.Duration `mapstructure:"max_wait"`
 }
 
-// NewDefaultTracesSettings returns the default settings for TracesSettings.
-func NewDefaultTracesSettings() TracesSettings {
+// newDefaultTracesSettings returns the default settings for TracesSettings.
+func newDefaultTracesSettings() TracesSettings {
 	return TracesSettings{
 		MaxWait: tracesMaxWait,
 	}
 }
 
+const bufferMaxLifetime = 5 * time.Second
+const bufferRetryInitialInterval = 5 * time.Second
+const bufferRetryMaxInterval = 30 * time.Second
+const bufferRetryMaxElapsedTime = 300 * time.Second
+
+type BufferSettings struct {
+	MaxLifetime          time.Duration `mapstructure:"max_lifetime"`
+	GroupBy              []string      `mapstructure:"group_by"`
+	RetryInitialInterval time.Duration `mapstructure:"retry_initial_interval"`
+	RetryMaxInterval     time.Duration `mapstructure:"retry_max_interval"`
+	RetryMaxElapsedTime  time.Duration `mapstructure:"retry_max_elapsed_time"`
+}
+
+// newDefaultBufferSettings returns the default settings for BufferSettings.
+func newDefaultBufferSettings() BufferSettings {
+	return BufferSettings{
+		MaxLifetime:          bufferMaxLifetime,
+		GroupBy:              []string{},
+		RetryInitialInterval: bufferRetryInitialInterval,
+		RetryMaxInterval:     bufferRetryMaxInterval,
+		RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
+	}
+}
+
 type Config struct {
-	DatasetURL                     string        `mapstructure:"dataset_url"`
-	APIKey                         string        `mapstructure:"api_key"`
-	MaxDelay                       time.Duration `mapstructure:"max_delay"`
-	GroupBy                        []string      `mapstructure:"group_by"`
+	DatasetURL                     string              `mapstructure:"dataset_url"`
+	APIKey                         configopaque.String `mapstructure:"api_key"`
+	BufferSettings                 `mapstructure:"buffer"`
 	TracesSettings                 `mapstructure:"traces"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
@@ -59,11 +83,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		c.DatasetURL = os.Getenv("DATASET_URL")
 	}
 	if len(c.APIKey) == 0 {
-		c.APIKey = os.Getenv("DATASET_API_KEY")
-	}
-
-	if c.MaxDelay == 0 {
-		c.MaxDelay = maxDelay
+		c.APIKey = configopaque.String(os.Getenv("DATASET_API_KEY"))
 	}
 
 	if c.TracesSettings.MaxWait == 0 {
@@ -91,8 +111,7 @@ func (c *Config) Validate() error {
 func (c *Config) String() string {
 	s := ""
 	s += fmt.Sprintf("%s: %s; ", "DatasetURL", c.DatasetURL)
-	s += fmt.Sprintf("%s: %s; ", "MaxDelay", c.MaxDelay)
-	s += fmt.Sprintf("%s: %s; ", "GroupBy", c.GroupBy)
+	s += fmt.Sprintf("%s: %+v; ", "BufferSettings", c.BufferSettings)
 	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
 	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
@@ -101,7 +120,7 @@ func (c *Config) String() string {
 	return s
 }
 
-func (c *Config) Convert() (*ExporterConfig, error) {
+func (c *Config) convert() (*ExporterConfig, error) {
 	err := c.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("config is not valid: %w", err)
@@ -109,12 +128,16 @@ func (c *Config) Convert() (*ExporterConfig, error) {
 
 	return &ExporterConfig{
 			datasetConfig: &datasetConfig.DataSetConfig{
-				Endpoint:       c.DatasetURL,
-				Tokens:         datasetConfig.DataSetTokens{WriteLog: c.APIKey},
-				MaxBufferDelay: c.MaxDelay,
-				MaxPayloadB:    buffer.LimitBufferSize,
-				GroupBy:        c.GroupBy,
-				RetryBase:      5 * time.Second,
+				Endpoint: c.DatasetURL,
+				Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
+				BufferSettings: buffer_config.DataSetBufferSettings{
+					MaxLifetime:          c.BufferSettings.MaxLifetime,
+					MaxSize:              buffer.LimitBufferSize,
+					GroupBy:              c.BufferSettings.GroupBy,
+					RetryInitialInterval: c.BufferSettings.RetryInitialInterval,
+					RetryMaxInterval:     c.BufferSettings.RetryMaxInterval,
+					RetryMaxElapsedTime:  c.BufferSettings.RetryMaxElapsedTime,
+				},
 			},
 			tracesSettings: c.TracesSettings,
 		},

@@ -31,9 +31,10 @@ exporters:
   dataset/logs:
     api_key: your-api-key
     dataset_url: https://app.eu.scalyr.com
-    max_delay: 5s
-    group_by:
-      - resource.attributes.host.id
+    buffer:
+      max_lifetime: 5s
+      group_by:
+        - resource.attributes.host.id
     retry_on_failure:
       max_interval: 300
       max_elapsed_time: 300
@@ -43,7 +44,8 @@ exporters:
   dataset/traces:
     api_key: your-api-key
     dataset_url: https://app.eu.scalyr.com
-    max_delay: 17s
+    buffer:
+      max_lifetime: 17s
     traces:
       max_wait: 10s
     retry_on_failure:

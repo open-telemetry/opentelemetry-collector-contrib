@@ -34,7 +34,7 @@ const ServiceNameKey = "service.name"
 
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := castConfig(config)
-	e, err := NewDatasetExporter("logs", cfg, set.Logger)
+	e, err := newDatasetExporter("logs", cfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
 	}
@@ -47,10 +47,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithShutdown(func(context.Context) error {
-			e.shutdown()
-			return nil
-		}),
+		exporterhelper.WithShutdown(e.shutdown),
 	)
 }
 
@@ -89,35 +86,6 @@ func buildEventFromSpan(
 	// updateWithPrefixedValues(attrs, "resource_", "_", resource.Attributes().AsRaw(), 0)
 	updateResource(attrs, resource.Attributes().AsRaw())
 
-	// attrs["dropped_attributes_count"] = span.DroppedAttributesCount()
-	// attrs["dropped_events_count"] = span.DroppedEventsCount()
-	// attrs["dropped_links_count"] = span.DroppedLinksCount()
-
-	/*
-		// we do not care for now about these properties
-		attrs["trace_state"] = span.TraceState().AsRaw()
-		for i := 0; i < span.Events().Len(); i++ {
-			attrs[fmt.Sprintf("event_%d_index", i)] = i
-			event := span.Events().At(i)
-			attrs[fmt.Sprintf("event_%d_name", i)] = event.Name()
-			attrs[fmt.Sprintf("event_%d_timestamp", i)] = event.Timestamp()
-			attrs[fmt.Sprintf("event_%d_timestamp_ns", i)] = event.Timestamp().AsTime().UnixNano()
-			updateWithPrefixedValues(attrs, fmt.Sprintf("event_%d_attributes_", i), "_", event.Attributes().AsRaw(), 0)
-		}
-
-		for i := 0; i < span.Links().Len(); i++ {
-			attrs[fmt.Sprintf("link_%d_index", i)] = i
-			link := span.Links().At(i)
-			attrs[fmt.Sprintf("link_%d_span_id", i)] = link.SpanID().String()
-			attrs[fmt.Sprintf("link_%d_trace_id", i)] = link.TraceID().String()
-			attrs[fmt.Sprintf("link_%d_trace_state", i)] = link.TraceState()
-			updateWithPrefixedValues(attrs, fmt.Sprintf("link_%d_attributes_", i), "_", link.Attributes().AsRaw(), 0)
-		}
-
-		attrs["scope_name"] = scope.Name()
-		updateWithPrefixedValues(attrs, "scope_attributes_", "_", scope.Attributes().AsRaw(), 0)
-	*/
-
 	service, serviceFound := resource.Attributes().Get(ServiceNameKey)
 	if serviceFound {
 		attrs["services"] = service.AsString()
@@ -125,7 +93,7 @@ func buildEventFromSpan(
 
 	// find tracking info
 	if !span.TraceID().IsEmpty() {
-		key := NewTraceAndSpan(span.TraceID(), span.SpanID())
+		key := newTraceAndSpan(span.TraceID(), span.SpanID())
 
 		// find previous information
 		info, ok := tracker.spans[key]
@@ -139,7 +107,7 @@ func buildEventFromSpan(
 		}
 
 		// propagate those values to the parent
-		pKey := NewTraceAndSpan(span.TraceID(), span.ParentSpanID())
+		pKey := newTraceAndSpan(span.TraceID(), span.ParentSpanID())
 		if !span.ParentSpanID().IsEmpty() {
 			// find previous information
 			pInfo, pOk := tracker.spans[pKey]
@@ -294,7 +262,7 @@ type spanInfo struct {
 
 type TraceAndSpan [24]byte
 
-func NewTraceAndSpan(traceID pcommon.TraceID, spanID pcommon.SpanID) TraceAndSpan {
+func newTraceAndSpan(traceID pcommon.TraceID, spanID pcommon.SpanID) TraceAndSpan {
 	var traceAndSpan TraceAndSpan
 	copy(traceAndSpan[:], traceID[:])
 	copy(traceAndSpan[16:], spanID[:])
@@ -334,7 +302,7 @@ func (tt *spanTracker) update(bundle spanBundle) {
 		return
 	}
 
-	key := NewTraceAndSpan(span.TraceID(), span.ParentSpanID())
+	key := newTraceAndSpan(span.TraceID(), span.ParentSpanID())
 
 	// find previous information
 	info, ok := tt.spans[key]

@@ -36,8 +36,8 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MaxDelay:        maxDelay,
-		TracesSettings:  NewDefaultTracesSettings(),
+		BufferSettings:  newDefaultBufferSettings(),
+		TracesSettings:  newDefaultTracesSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -46,9 +46,5 @@ func createDefaultConfig() component.Config {
 
 // castConfig casts it to the Dataset Config struct.
 func castConfig(c component.Config) *Config {
-	cfg, ok := c.(*Config)
-	if !ok {
-		panic("config structure is not of type *datasetexporter.Config")
-	}
-	return cfg
+	return c.(*Config)
 }

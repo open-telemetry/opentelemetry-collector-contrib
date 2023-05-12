@@ -15,6 +15,7 @@
 package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -36,12 +37,12 @@ type DatasetExporter struct {
 	spanTracker spanTracker
 }
 
-func NewDatasetExporter(entity string, config *Config, logger *zap.Logger) (*DatasetExporter, error) {
+func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*DatasetExporter, error) {
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),
 		zap.String("entity", entity),
 	)
-	exporterCfg, err := config.Convert()
+	exporterCfg, err := config.convert()
 	if err != nil {
 		return nil, fmt.Errorf(
 			"cannot convert config: %s; %w",
@@ -68,8 +69,9 @@ func NewDatasetExporter(entity string, config *Config, logger *zap.Logger) (*Dat
 	}, nil
 }
 
-func (e *DatasetExporter) shutdown() {
+func (e *DatasetExporter) shutdown(context.Context) error {
 	e.client.SendAllAddEventsBuffers()
+	return nil
 }
 
 func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) error {

@@ -88,22 +88,6 @@ func generateTEvent1Raw() *add_events.Event {
 			"resource_type":  "process",
 			"status_code":    "error",
 			"status_message": "status-cancelled",
-			// "dropped_attributes_count": uint32(1),
-			// "dropped_events_count":     uint32(1),
-			// "dropped_links_count":      uint32(0),
-			/*
-				"event_0_attributes_span-event-attr": "span-event-attr-val",
-				"event_0_index":                      0,
-				"event_0_name":                       "event-with-attr",
-				"event_0_timestamp":                  pcommon.NewTimestampFromTime(time.Unix(0, 1581452773000000123)),
-				"event_0_timestamp_ns":               int64(1581452773000000123),
-				"event_1_index":                      1,
-				"event_1_name":                       "event",
-				"event_1_timestamp":                  pcommon.NewTimestampFromTime(time.Unix(0, 1581452773000000123)),
-				"event_1_timestamp_ns":               int64(1581452773000000123),
-				"scope_name":                         "",
-				"trace_state":                        "",
-			*/
 		},
 	}
 }
@@ -132,24 +116,6 @@ func generateTEvent2Raw() *add_events.Event {
 			"status_message": "",
 			"resource_name":  "",
 			"resource_type":  "process",
-
-			// "dropped_attributes_count": uint32(0),
-			// "dropped_events_count":     uint32(0),
-			// "dropped_links_count":      uint32(3),
-
-			/*
-				"link_0_attributes_span-link-attr": "span-link-attr-val",
-				"link_0_index":                     0,
-				"link_0_span_id":                   "",
-				"link_0_trace_id":                  "",
-				"link_0_trace_state":               pcommon.NewTraceState(),
-				"link_1_index":                     1,
-				"link_1_span_id":                   "",
-				"link_1_trace_id":                  "",
-				"link_1_trace_state":               pcommon.NewTraceState(),
-				"scope_name":                       "",
-				"trace_state":                      "",
-			*/
 		},
 	}
 }
@@ -179,14 +145,6 @@ func generateTEvent3Raw() *add_events.Event {
 			"status_message": "",
 			"resource_name":  "",
 			"resource_type":  "process",
-
-			// "dropped_attributes_count": uint32(5),
-			// "dropped_events_count":     uint32(0),
-			// "dropped_links_count":      uint32(0),
-			/*
-				"scope_name":               "",
-				"trace_state":              "",
-			*/
 		},
 	}
 }
@@ -228,7 +186,6 @@ func (s *SuiteTracesExporter) TestBuildEventsFromSpanAttributesCollision() {
 	span := rss.Spans().AppendEmpty()
 	span.Attributes().PutStr("name", "should_be_name_")
 	span.Attributes().PutStr("span_id", "should_be_span_id_")
-	// TODO
 	expected := &add_events.EventBundle{
 		Event: &add_events.Event{
 			Thread: "TT",
@@ -476,17 +433,9 @@ func generateSimpleEvent(
 		"status_code":    strings.ToLower(status.Code().String()),
 		"status_message": status.Message(),
 
-		// "dropped_attributes_count":   uint32(0),
-		// "dropped_events_count":       uint32(0),
-		// "dropped_links_count":        uint32(0),
 		"resource_name": serviceName,
 		"resource_type": "service",
 		"services":      services,
-
-		/*
-			"scope_name":               "",
-			"trace_state":              "",
-		*/
 	}
 	if parentID != "" {
 		attrs["parent_span_id"] = parentID
@@ -598,8 +547,8 @@ func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphans() {
 	s.Equal(expected, was)
 
 	expectedKeys := []string{
-		NewTraceAndSpan(trace2Id, span22PId).String(),
-		NewTraceAndSpan(trace2Id, span21PId).String(),
+		newTraceAndSpan(trace2Id, span22PId).String(),
+		newTraceAndSpan(trace2Id, span21PId).String(),
 	}
 	sort.Slice(expectedKeys, func(i, j int) bool {
 		return expectedKeys[i] < expectedKeys[j]

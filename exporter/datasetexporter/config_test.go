@@ -16,6 +16,8 @@ package datasetexporter
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"os"
 	"testing"
 	"time"
 
@@ -32,16 +34,19 @@ func TestSuiteConfig(t *testing.T) {
 	suite.Run(t, new(SuiteConfig))
 }
 
+func (s *SuiteConfig) SetupTest() {
+	os.Clearenv()
+}
+
 func (s *SuiteConfig) TestConfigUnmarshalUnknownAttributes() {
-	config := Config{}
-	conf := confmap.NewFromStringMap(map[string]interface{}{
+	f := NewFactory()
+	config := f.CreateDefaultConfig().(*Config)
+	configMap := confmap.NewFromStringMap(map[string]interface{}{
 		"dataset_url":       "https://example.com",
 		"api_key":           "secret",
 		"unknown_attribute": "some value",
 	})
-
-	err := config.Unmarshal(conf)
-	s.NotNil(err)
+	err := config.Unmarshal(configMap)
 
 	unmarshalErr := fmt.Errorf("1 error(s) decoding:\n\n* '' has invalid keys: unknown_attribute")
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)
@@ -53,43 +58,46 @@ func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet() {
 	s.T().Setenv("DATASET_URL", "https://example.org")
 	s.T().Setenv("DATASET_API_KEY", "api_key")
 
-	config := Config{}
-	conf := confmap.NewFromStringMap(map[string]interface{}{
+	f := NewFactory()
+	config := f.CreateDefaultConfig().(*Config)
+	configMap := confmap.NewFromStringMap(map[string]interface{}{
 		"dataset_url": "https://example.com",
-		"api_key":     "secret",
+		"api_key":     configopaque.String("secret"),
 	})
-	err := config.Unmarshal(conf)
+	err := config.Unmarshal(configMap)
 	s.Nil(err)
 
 	s.Equal("https://example.com", config.DatasetURL)
-	s.Equal("secret", config.APIKey)
+	s.Equal(configopaque.String("secret"), config.APIKey)
 }
 
 func (s *SuiteConfig) TestConfigUseEnvWhenSet() {
 	s.T().Setenv("DATASET_URL", "https://example.org")
 	s.T().Setenv("DATASET_API_KEY", "api_key")
 
-	config := Config{}
-	conf := confmap.NewFromStringMap(map[string]interface{}{})
-	err := config.Unmarshal(conf)
+	f := NewFactory()
+	config := f.CreateDefaultConfig().(*Config)
+	configMap := confmap.NewFromStringMap(map[string]interface{}{})
+	err := config.Unmarshal(configMap)
 	s.Nil(err)
 
 	s.Equal("https://example.org", config.DatasetURL)
-	s.Equal("api_key", config.APIKey)
+	s.Equal("api_key", string(config.APIKey))
 }
 
 func (s *SuiteConfig) TestConfigUseDefaults() {
-	config := Config{}
-	conf := confmap.NewFromStringMap(map[string]interface{}{
+	f := NewFactory()
+	config := f.CreateDefaultConfig().(*Config)
+	configMap := confmap.NewFromStringMap(map[string]interface{}{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 	})
-	err := config.Unmarshal(conf)
+	err := config.Unmarshal(configMap)
 	s.Nil(err)
 
 	s.Equal("https://example.com", config.DatasetURL)
-	s.Equal("secret", config.APIKey)
-	s.Equal(maxDelay, config.MaxDelay)
+	s.Equal("secret", string(config.APIKey))
+	s.Equal(bufferMaxLifetime, config.MaxLifetime)
 	s.Equal(tracesMaxWait, config.TracesSettings.MaxWait)
 }
 
@@ -104,7 +112,9 @@ func (s *SuiteConfig) TestConfigValidate() {
 			config: Config{
 				DatasetURL: "https://example.com",
 				APIKey:     "secret",
-				MaxDelay:   123 * time.Millisecond,
+				BufferSettings: BufferSettings{
+					MaxLifetime: 123 * time.Millisecond,
+				},
 			},
 			expected: nil,
 		},
@@ -112,15 +122,19 @@ func (s *SuiteConfig) TestConfigValidate() {
 			name: "missing api_key",
 			config: Config{
 				DatasetURL: "https://example.com",
-				MaxDelay:   maxDelay,
+				BufferSettings: BufferSettings{
+					MaxLifetime: bufferMaxLifetime,
+				},
 			},
 			expected: fmt.Errorf("api_key is required"),
 		},
 		{
 			name: "missing dataset_url",
 			config: Config{
-				APIKey:   "1234",
-				MaxDelay: maxDelay,
+				APIKey: "1234",
+				BufferSettings: BufferSettings{
+					MaxLifetime: bufferMaxLifetime,
+				},
 			},
 			expected: fmt.Errorf("dataset_url is required"),
 		},
@@ -142,8 +156,10 @@ func (s *SuiteConfig) TestConfigString() {
 	config := Config{
 		DatasetURL: "https://example.com",
 		APIKey:     "secret",
-		MaxDelay:   123,
-		GroupBy:    []string{"field1", "field2"},
+		BufferSettings: BufferSettings{
+			MaxLifetime: 123,
+			GroupBy:     []string{"field1", "field2"},
+		},
 		TracesSettings: TracesSettings{
 			MaxWait: 45 * time.Second,
 		},
@@ -153,7 +169,7 @@ func (s *SuiteConfig) TestConfigString() {
 	}
 
 	s.Equal(
-		"DatasetURL: https://example.com; MaxDelay: 123ns; GroupBy: [field1 field2]; TracesSettings: {MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 		config.String(),
 	)
 }

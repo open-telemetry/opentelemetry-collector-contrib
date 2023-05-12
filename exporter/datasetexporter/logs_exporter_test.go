@@ -61,14 +61,14 @@ func (s *SuiteLogsExporter) TestCreateLogsExporter() {
 			logs, err := createLogsExporter(ctx, createSettings, tt.config)
 
 			if err == nil {
-				s.Nil(tt.expectedError)
-				s.NotNil(logs)
+				s.Nil(tt.expectedError, tt.name)
+				s.NotNil(logs, tt.name)
 			} else {
 				if tt.expectedError == nil {
-					s.Nil(err)
+					s.Nil(err, tt.name)
 				} else {
-					s.Equal(tt.expectedError.Error(), err.Error())
-					s.Nil(logs)
+					s.Equal(tt.expectedError.Error(), err.Error(), tt.name)
+					s.Nil(logs, tt.name)
 				}
 			}
 		})
@@ -293,10 +293,12 @@ func (s *SuiteLogsExporter) TestConsumeLogsShouldSucceed() {
 	defer server.Close()
 
 	config := &Config{
-		DatasetURL:      server.URL,
-		APIKey:          "key-lib",
-		MaxDelay:        time.Millisecond,
-		GroupBy:         []string{"attributes.container_id"},
+		DatasetURL: server.URL,
+		APIKey:     "key-lib",
+		BufferSettings: BufferSettings{
+			MaxLifetime: time.Millisecond,
+			GroupBy:     []string{"attributes.container_id"},
+		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),

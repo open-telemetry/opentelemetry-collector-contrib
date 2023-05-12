@@ -30,7 +30,7 @@ import (
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
-	e, err := NewDatasetExporter("logs", cfg, set.Logger)
+	e, err := newDatasetExporter("logs", cfg, set.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
 	}
@@ -43,10 +43,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithShutdown(func(context.Context) error {
-			e.shutdown()
-			return nil
-		}),
+		exporterhelper.WithShutdown(e.shutdown),
 	)
 }
 
