@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"regexp"
 	"runtime"
+	"sync"
 	"time"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -45,6 +46,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
+var tokenRenewInProgress bool
+var counter int
+var credentials Credentials
+
 type opsrampOTLPExporter struct {
 	// Input configuration.
 	config *Config
@@ -58,6 +63,7 @@ type opsrampOTLPExporter struct {
 	callOptions    []grpc.CallOption
 
 	settings component.TelemetrySettings
+	mut      sync.Mutex
 
 	// Default user-agent header.
 	userAgent   string
@@ -69,10 +75,12 @@ type opsrampOTLPExporter struct {
 func newExporter(cfg component.Config, set exporter.CreateSettings) (*opsrampOTLPExporter, error) {
 	oCfg := cfg.(*Config)
 
-	accessToken, err := getAuthToken(oCfg.Security)
+	accessToken, err := getAuthToken(oCfg.Security, counter)
 	if err != nil {
+		tokenRenewInProgress = false
 		return nil, fmt.Errorf("access token isn't available: %w", err)
 	}
+	tokenRenewInProgress = false
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
@@ -95,14 +103,20 @@ type Person struct {
 	Age  int    `json:"age"`
 }
 
-func getAuthToken(cfg SecuritySettings) (string, error) {
+func getAuthToken(cfg SecuritySettings, a int) (string, error) {
 
+	if tokenRenewInProgress {
+		for tokenRenewInProgress {
+			time.Sleep(time.Second * 5)
+		}
+		return credentials.AccessToken, nil
+	}
+	tokenRenewInProgress = true
 	client := &http.Client{}
 	data := url.Values{}
 	data.Set("client_id", cfg.ClientId)
 	data.Set("client_secret", cfg.ClientSecret)
 	data.Set("grant_type", grantType)
-
 	request, err := http.NewRequest("POST", cfg.OAuthServiceURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		return "", err
@@ -120,10 +134,11 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 		return "", err
 	}
 
-	var credentials Credentials
 	if err := json.Unmarshal(jsonResp, &credentials); err != nil {
 		return "", err
 	}
+	fmt.Println("opsramp token renew in Progres acess token dead time: ", credentials.ExpiresIn, " $ access token was: ", credentials.AccessToken)
+	fmt.Println("opsramp token renewprogress completed count was: ", a)
 	return credentials.AccessToken, nil
 
 }
@@ -223,12 +238,24 @@ func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error 
 }
 
 func (e *opsrampOTLPExporter) updateExpiredToken() error {
-	accessToken, err := getAuthToken(e.config.Security)
+	fmt.Println("$$$$$$ opsramp token renew starting: ", tokenRenewInProgress)
+	fmt.Println("$$$$$$ opsramp token renew in Progress ", tokenRenewInProgress)
+	counter += 1
+	accessToken, err := getAuthToken(e.config.Security, counter)
+	fmt.Println("opsramp token getting error: ", err)
 	if err != nil {
+		tokenRenewInProgress = false
 		return err
 	}
+	e.mut.Lock()
+	defer e.mut.Unlock()
 	e.accessToken = accessToken
-	e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
+	fmt.Println("opsramp token code is failing", counter)
+	if tokenRenewInProgress {
+		fmt.Println("opsramp token writing into metadata: ", e.accessToken)
+		e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
+	}
+	tokenRenewInProgress = false
 	return nil
 }
 
