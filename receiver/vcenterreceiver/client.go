@@ -38,7 +38,9 @@ type vcenterClient struct {
 	cfg       *Config
 }
 
-func newVcenterClient(c *Config) *vcenterClient {
+var newVcenterClient = defaultNewVcenterClient
+
+func defaultNewVcenterClient(c *Config) *vcenterClient {
 	return &vcenterClient{
 		cfg: c,
 	}
