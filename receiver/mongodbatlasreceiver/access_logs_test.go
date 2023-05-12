@@ -295,6 +295,43 @@ func TestAccessLogsRetrieval(t *testing.T) {
 	}
 }
 
+func TestCheckpointing(t *testing.T) {
+	pc := &LogsProjectConfig{
+		ProjectConfig: ProjectConfig{
+			Name: testProjectName,
+		},
+		AccessLogs: &AccessLogsConfig{
+			PollInterval: 1 * time.Second,
+		},
+	}
+
+	config := &Config{
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		Granularity:               defaultGranularity,
+		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+		Logs: LogConfig{
+			Enabled:  true,
+			Projects: []*LogsProjectConfig{pc},
+		},
+	}
+
+	logSink := &consumertest.LogsSink{}
+	rcvr := newAccessLogsReceiver(receivertest.NewNopCreateSettings(), config, logSink)
+	rcvr.client = simpleAccessLogClient()
+
+	// First cluster checkpoint should be nil
+	clusterCheckpoint := rcvr.getClusterCheckpoint(testProjectID, testClusterName)
+	require.Nil(t, clusterCheckpoint)
+	err := rcvr.pollAccessLogs(context.Background(), pc)
+	require.NoError(t, err)
+
+	// Second cluster checkpoint should have the last timestamp date +100ms
+	clusterCheckpoint = rcvr.getClusterCheckpoint(testProjectID, testClusterName)
+	require.NotNil(t, clusterCheckpoint)
+	expectedTime, _ := time.Parse(time.RFC3339, "2023-04-26T02:38:56.544+00:00")
+	require.Equal(t, expectedTime, clusterCheckpoint.NextPollStartTime)
+}
+
 func testClientBase() *mockAccessLogsClient {
 	ac := &mockAccessLogsClient{}
 	ac.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
