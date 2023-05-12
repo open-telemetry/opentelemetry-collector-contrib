@@ -15,17 +15,17 @@
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
-func getNewCompositePolicy(logger *zap.Logger, config *CompositeCfg) (sampling.PolicyEvaluator, error) {
+func getNewCompositePolicy(settings component.TelemetrySettings, config *CompositeCfg) (sampling.PolicyEvaluator, error) {
 	var subPolicyEvalParams []sampling.SubPolicyEvalParams
 	rateAllocationsMap := getRateAllocationMap(config)
 	for i := range config.SubPolicyCfg {
 		policyCfg := &config.SubPolicyCfg[i]
-		policy, err := getCompositeSubPolicyEvaluator(logger, policyCfg)
+		policy, err := getCompositeSubPolicyEvaluator(settings, policyCfg)
 		if err != nil {
 			return nil, err
 		}
@@ -36,7 +36,7 @@ func getNewCompositePolicy(logger *zap.Logger, config *CompositeCfg) (sampling.P
 		}
 		subPolicyEvalParams = append(subPolicyEvalParams, evalParams)
 	}
-	return sampling.NewComposite(logger, config.MaxTotalSpansPerSecond, subPolicyEvalParams, sampling.MonotonicClock{}), nil
+	return sampling.NewComposite(settings.Logger, config.MaxTotalSpansPerSecond, subPolicyEvalParams, sampling.MonotonicClock{}), nil
 }
 
 // Apply rate allocations to the sub-policies
@@ -56,11 +56,11 @@ func getRateAllocationMap(config *CompositeCfg) map[string]float64 {
 }
 
 // Return instance of composite sub-policy
-func getCompositeSubPolicyEvaluator(logger *zap.Logger, cfg *CompositeSubPolicyCfg) (sampling.PolicyEvaluator, error) {
+func getCompositeSubPolicyEvaluator(settings component.TelemetrySettings, cfg *CompositeSubPolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case And:
-		return getNewAndPolicy(logger, &cfg.AndCfg)
+		return getNewAndPolicy(settings, &cfg.AndCfg)
 	default:
-		return getSharedPolicyEvaluator(logger, &cfg.sharedPolicyCfg)
+		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg)
 	}
 }

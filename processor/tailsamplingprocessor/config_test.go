@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -112,6 +114,17 @@ func TestLoadConfig(t *testing.T) {
 						Name:                "test-policy-10",
 						Type:                BooleanAttribute,
 						BooleanAttributeCfg: BooleanAttributeCfg{Key: "key4", Value: true},
+					},
+				},
+				{
+					sharedPolicyCfg: sharedPolicyCfg{
+						Name: "test-policy-11",
+						Type: OTTLCondition,
+						OTTLConditionCfg: OTTLConditionCfg{
+							ErrorMode:           ottl.IgnoreError,
+							SpanConditions:      []string{"attributes[\"test_attr_key_1\"] == \"test_attr_val_1\"", "attributes[\"test_attr_key_2\"] != \"test_attr_val_1\""},
+							SpanEventConditions: []string{"name != \"test_span_event_name\"", "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\""},
+						},
 					},
 				},
 				{
