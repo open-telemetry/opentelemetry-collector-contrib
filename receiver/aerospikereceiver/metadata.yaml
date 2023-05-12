@@ -1,4 +1,4 @@
-type: aerospikereceiver
+type: aerospike
 
 status:
   class: receiver

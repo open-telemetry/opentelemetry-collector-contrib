@@ -27,7 +27,6 @@ import (
 )
 
 const (
-	typeStr                      = "aerospike"
 	defaultEndpoint              = "localhost:3000"
 	defaultTimeout               = 20 * time.Second
 	defaultCollectClusterMetrics = false
@@ -36,7 +35,7 @@ const (
 // NewFactory creates a new ReceiverFactory with default configuration
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
@@ -56,7 +55,7 @@ func createMetricsReceiver(
 	}
 
 	scraper, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		receiver.scrape,
 		scraperhelper.WithStart(receiver.start),
 		scraperhelper.WithShutdown(receiver.shutdown),
