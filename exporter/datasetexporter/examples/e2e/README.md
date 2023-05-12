@@ -1,6 +1,6 @@
 # E2E Example
 
-This is simple example that demonstrates how to use open telemetry collector with `DataSetExporter`.
+This is a simple example that demonstrates how to use the OpenTelemetry collector with `DataSetExporter`.
 
 ## How To Use It
 
