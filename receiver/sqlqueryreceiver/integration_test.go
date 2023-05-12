@@ -420,6 +420,26 @@ func TestMysqlIntegration(t *testing.T) {
 				},
 			},
 		},
+		{
+			SQL:                "select * from simple_logs where id > ?",
+			TrackingColumn:     "id",
+			TrackingStartValue: "2",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+		},
+		{
+			SQL:                "select * from simple_logs where insert_time > ?",
+			TrackingColumn:     "insert_time",
+			TrackingStartValue: "2022-06-03 21:59:28",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+		},
 	}
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
@@ -444,6 +464,27 @@ func TestMysqlIntegration(t *testing.T) {
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
 	testMysqlTypeMetrics(t, rms.At(1))
+
+	logsConsumer := &consumertest.LogsSink{}
+	logsReceiver, err := factory.CreateLogsReceiver(
+		ctx,
+		receivertest.NewNopCreateSettings(),
+		config,
+		logsConsumer,
+	)
+	require.NoError(t, err)
+	err = logsReceiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return logsConsumer.LogRecordCount() > 2
+		},
+		2*time.Minute,
+		1*time.Second,
+		"failed to receive more than 2 logs",
+	)
+	testSimpleLogs(t, logsConsumer.AllLogs())
 }
 
 func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey string) {
