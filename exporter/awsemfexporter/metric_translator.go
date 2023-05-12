@@ -120,11 +120,12 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 			metric := metrics.At(k)
 			metadata := cWMetricMetadata{
 				groupedMetricMetadata: groupedMetricMetadata{
-					namespace:      cWNamespace,
-					timestampMs:    timestamp,
-					logGroup:       logGroup,
-					logStream:      logStream,
-					metricDataType: metric.Type(),
+					namespace:                  cWNamespace,
+					timestampMs:                timestamp,
+					logGroup:                   logGroup,
+					logStream:                  logStream,
+					metricDataType:             metric.Type(),
+					retainInitialValueForDelta: config.RetainInitialValueOfDeltaMetric,
 				},
 				instrumentationScopeName: instrumentationScopeName,
 				receiver:                 metricReceiver,

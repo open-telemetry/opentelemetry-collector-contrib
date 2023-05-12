@@ -545,6 +545,42 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		})
 	}
 
+	configTestCases := []struct {
+		testName string
+		retain   bool
+	}{
+		{
+			"w/o retain initial value for delta",
+			false,
+		},
+		{
+			"w retain initial value for delta",
+			true,
+		},
+	}
+
+	for _, tc := range configTestCases {
+
+		t.Run(tc.testName, func(t *testing.T) {
+			setupDataPointCache()
+			c := &Config{
+				Namespace:                       "",
+				DimensionRollupOption:           zeroAndSingleDimensionRollup,
+				logger:                          zap.NewNop(),
+				RetainInitialValueOfDeltaMetric: tc.retain,
+			}
+			setupDataPointCache()
+			groupedMetrics := make(map[interface{}]*groupedMetric)
+			err := translator.translateOTelToGroupedMetric(instrLibMetric, groupedMetrics, c)
+			assert.Nil(t, err)
+			assert.NotNil(t, groupedMetrics)
+
+			for _, v := range groupedMetrics {
+				assert.Equal(t, c.RetainInitialValueOfDeltaMetric, v.metadata.retainInitialValueForDelta)
+			}
+		})
+	}
+
 	t.Run("No metrics", func(t *testing.T) {
 		oc = &agentmetricspb.ExportMetricsServiceRequest{
 			Node: &commonpb.Node{
