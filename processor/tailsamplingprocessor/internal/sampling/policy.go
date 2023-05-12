@@ -15,6 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -71,5 +72,5 @@ const (
 // which makes a sampling decision for a given trace when requested.
 type PolicyEvaluator interface {
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-	Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decision, error)
+	Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error)
 }

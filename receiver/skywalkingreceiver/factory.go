@@ -28,12 +28,11 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "skywalking"
-	stability = component.StabilityLevelBeta
-
 	// Protocol values.
 	protoGRPC = "grpc"
 	protoHTTP = "http"
@@ -46,9 +45,9 @@ const (
 // NewFactory creates a new Skywalking receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Skywalking receiver.

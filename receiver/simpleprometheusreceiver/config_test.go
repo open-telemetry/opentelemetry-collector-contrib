@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -39,11 +41,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(metadata.Type, "all_settings"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
@@ -63,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "partial_settings"),
+			id: component.NewIDWithName(metadata.Type, "partial_settings"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
@@ -76,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "partial_tls_settings"),
+			id: component.NewIDWithName(metadata.Type, "partial_tls_settings"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",

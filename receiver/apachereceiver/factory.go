@@ -29,8 +29,6 @@ import (
 )
 
 const (
-	typeStr = "apache"
-
 	httpDefaultPort  = "80"
 	httpsDefaultPort = "443"
 )
@@ -38,7 +36,7 @@ const (
 // NewFactory creates a factory for apache receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -86,7 +84,7 @@ func createMetricsReceiver(
 	}
 
 	ns := newApacheScraper(params, cfg, serverName, port)
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

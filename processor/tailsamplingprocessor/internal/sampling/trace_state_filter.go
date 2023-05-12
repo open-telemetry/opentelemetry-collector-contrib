@@ -15,6 +15,9 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	tracesdk "go.opentelemetry.io/otel/trace"
@@ -31,7 +34,7 @@ var _ PolicyEvaluator = (*traceStateFilter)(nil)
 
 // NewTraceStateFilter creates a policy evaluator that samples all traces with
 // the given value by the specific key in the trace_state.
-func NewTraceStateFilter(logger *zap.Logger, key string, values []string) PolicyEvaluator {
+func NewTraceStateFilter(settings component.TelemetrySettings, key string, values []string) PolicyEvaluator {
 	// initialize the exact value map
 	valuesMap := make(map[string]struct{})
 	for _, value := range values {
@@ -42,7 +45,7 @@ func NewTraceStateFilter(logger *zap.Logger, key string, values []string) Policy
 	}
 	return &traceStateFilter{
 		key:    key,
-		logger: logger,
+		logger: settings.Logger,
 		matcher: func(toMatch string) bool {
 			_, matched := valuesMap[toMatch]
 			return matched
@@ -51,7 +54,7 @@ func NewTraceStateFilter(logger *zap.Logger, key string, values []string) Policy
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (tsf *traceStateFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (tsf *traceStateFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
 	batches := trace.ReceivedBatches
 	trace.Unlock()

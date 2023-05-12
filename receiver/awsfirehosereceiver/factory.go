@@ -24,13 +24,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 )
 
 const (
-	typeStr           = "awsfirehose"
-	stability         = component.StabilityLevelAlpha
 	defaultRecordType = cwmetricstream.TypeStr
 	defaultEndpoint   = "0.0.0.0:4433"
 )
@@ -46,9 +45,9 @@ var (
 // available in metrics pipelines.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // validateRecordType checks the available record types for the

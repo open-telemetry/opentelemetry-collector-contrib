@@ -56,11 +56,11 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesProcessor(
-	_ context.Context,
+	ctx context.Context,
 	params processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	tCfg := cfg.(*Config)
-	return newTracesProcessor(params.Logger, nextConsumer, *tCfg)
+	return newTracesProcessor(ctx, params.TelemetrySettings, nextConsumer, *tCfg)
 }

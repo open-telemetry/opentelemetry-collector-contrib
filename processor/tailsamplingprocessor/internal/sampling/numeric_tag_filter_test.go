@@ -15,20 +15,21 @@
 package sampling
 
 import (
+	"context"
 	"math"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestNumericTagFilter(t *testing.T) {
 
 	var empty = map[string]interface{}{}
-	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
+	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", math.MinInt32, math.MaxInt32)
 
 	resAttr := map[string]interface{}{}
 	resAttr["example"] = 8
@@ -68,7 +69,7 @@ func TestNumericTagFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			u, _ := uuid.NewRandom()
-			decision, err := filter.Evaluate(pcommon.TraceID(u), c.Trace)
+			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})

@@ -24,12 +24,10 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "kafka"
-	stability = component.StabilityLevelBeta
-
 	defaultTopic    = "otlp_spans"
 	defaultEncoding = "otlp_proto"
 	defaultBroker   = "localhost:9092"
@@ -92,11 +90,11 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 		o(f)
 	}
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, stability),
-		receiver.WithMetrics(f.createMetricsReceiver, stability),
-		receiver.WithLogs(f.createLogsReceiver, stability),
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
 	)
 }
 
