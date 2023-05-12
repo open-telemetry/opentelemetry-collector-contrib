@@ -22,11 +22,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
 const (
-	typeStr              = "googlecloudpubsub"
-	stability            = component.StabilityLevelBeta
 	reportTransport      = "pubsub"
 	reportFormatProtobuf = "protobuf"
 )
@@ -36,11 +36,11 @@ func NewFactory() receiver.Factory {
 		receivers: make(map[*Config]*pubsubReceiver),
 	}
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		f.CreateDefaultConfig,
-		receiver.WithTraces(f.CreateTracesReceiver, stability),
-		receiver.WithMetrics(f.CreateMetricsReceiver, stability),
-		receiver.WithLogs(f.CreateLogsReceiver, stability),
+		receiver.WithTraces(f.CreateTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(f.CreateMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(f.CreateLogsReceiver, metadata.LogsStability),
 	)
 }
 

@@ -27,19 +27,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-)
-
-const (
-	typeStr   = "journald"
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver/internal/metadata"
 )
 
 // NewFactory creates a dummy factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, stability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 type JournaldConfig struct {

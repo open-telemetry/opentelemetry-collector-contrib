@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 type k8seventsReceiver struct {
@@ -116,7 +118,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 		ctx := kr.obsrecv.StartLogsOp(kr.ctx)
 		consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
-		kr.obsrecv.EndLogsOp(ctx, typeStr, 1, consumerErr)
+		kr.obsrecv.EndLogsOp(ctx, metadata.Type, 1, consumerErr)
 	}
 }
 

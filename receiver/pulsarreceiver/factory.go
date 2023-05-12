@@ -20,11 +20,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver/internal/metadata"
 )
 
 const (
-	typeStr             = "pulsar"
-	stability           = component.StabilityLevelAlpha
 	defaultEncoding     = "otlp_proto"
 	defaultTraceTopic   = "otlp_spans"
 	defaultMeticsTopic  = "otlp_metrics"
@@ -76,11 +76,11 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 		o(f)
 	}
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, stability),
-		receiver.WithMetrics(f.createMetricsReceiver, stability),
-		receiver.WithLogs(f.createLogsReceiver, stability),
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
 	)
 }
 

@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
@@ -31,7 +33,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	logger := zap.New(logCore).With(zap.String("name", "receiver_creator"))
 	rcs := receivertest.NewNopCreateSettings()
 	rcs.Logger = logger
-	run := &receiverRunner{params: rcs, idNamespace: component.NewIDWithName(typeStr, "1")}
+	run := &receiverRunner{params: rcs, idNamespace: component.NewIDWithName(metadata.Type, "1")}
 	exampleFactory := &nopWithEndpointFactory{}
 	template, err := newReceiverTemplate("nop/1", nil)
 	require.NoError(t, err)

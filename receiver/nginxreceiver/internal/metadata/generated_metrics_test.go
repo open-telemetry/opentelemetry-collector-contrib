@@ -70,6 +70,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNginxRequestsDataPoint(ts, 1)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeState(1))
+
 			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
@@ -152,6 +156,23 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "temp.connections_current":
+					assert.False(t, validatedMetrics["temp.connections_current"], "Found a duplicate in the metrics slice: temp.connections_current")
+					validatedMetrics["temp.connections_current"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Temporary placeholder for new version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.", ms.At(i).Description())
+					assert.Equal(t, "connections", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "active", attrVal.Str())
 				}
 			}
 		})

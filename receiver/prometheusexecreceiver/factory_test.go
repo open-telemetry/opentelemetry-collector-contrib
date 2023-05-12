@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
@@ -44,7 +45,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewID(typeStr).String())
+	sub, err := cm.Sub(component.NewID(metadata.Type).String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -61,11 +62,11 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	assert.Error(t, component.ValidateConfig(cfg))
 
 	// Test CreateMetricsReceiver
-	sub, err = cm.Sub(component.NewIDWithName(typeStr, "test").String())
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "test").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	set := receivertest.NewNopCreateSettings()
-	set.ID = component.NewID(typeStr)
+	set.ID = component.NewID(metadata.Type)
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.Equal(t, nil, err)
 
@@ -81,7 +82,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 						ScrapeTimeout:   model.Duration(defaultTimeoutInterval),
 						Scheme:          "http",
 						MetricsPath:     "/metrics",
-						JobName:         typeStr,
+						JobName:         metadata.Type,
 						HonorLabels:     false,
 						HonorTimestamps: true,
 						ServiceDiscoveryConfigs: discovery.Configs{

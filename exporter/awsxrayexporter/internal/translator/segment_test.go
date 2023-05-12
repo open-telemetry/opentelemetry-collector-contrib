@@ -15,9 +15,9 @@
 package translator
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"strings"
 	"testing"
 	"time"

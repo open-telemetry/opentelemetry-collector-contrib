@@ -21,14 +21,10 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
-	// Value of "type" key in configuration.
-	typeStr = "k8s_cluster"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelBeta
-
 	// supported distributions
 	distributionKubernetes = "kubernetes"
 	distributionOpenShift  = "openshift"
@@ -54,7 +50,7 @@ func createDefaultConfig() component.Config {
 // NewFactory creates a factory for k8s_cluster receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(newReceiver, stability))
+		receiver.WithMetrics(newReceiver, metadata.MetricsStability))
 }

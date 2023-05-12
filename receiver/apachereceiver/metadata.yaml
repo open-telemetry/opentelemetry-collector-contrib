@@ -1,4 +1,4 @@
-type: apachereceiver
+type: apache
 
 status:
   class: receiver

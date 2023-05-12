@@ -26,16 +26,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/metadata"
 )
 
 // Factory for awscontainermetrics
 const (
-	// Key to invoke this receiver (awsecscontainermetrics)
-	typeStr = "awsecscontainermetrics"
-
-	// Stability level of the receiver
-	stability = component.StabilityLevelBeta
-
 	// Default collection interval. Every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
 	defaultCollectionInterval = 20 * time.Second
 )
@@ -43,9 +38,9 @@ const (
 // NewFactory creates a factory for AWS ECS Container Metrics receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig returns a default config for the receiver.

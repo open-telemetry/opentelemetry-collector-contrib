@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -150,7 +152,7 @@ func TestLoadConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			loaded, err := cm.Sub(component.NewIDWithName(typeStr, tc.name).String())
+			loaded, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(loaded, cfg))
 			require.Equal(t, tc.expectedConfig, cfg)

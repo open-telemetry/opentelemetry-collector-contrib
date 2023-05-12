@@ -25,6 +25,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -48,6 +49,29 @@ type client struct {
 	hecWorker         hecWorker
 	buildInfo         component.BuildInfo
 	heartbeater       *heartbeater
+	bufferStatePool   bufferStatePool
+}
+
+func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+	return &client{
+		config:            cfg,
+		logger:            set.Logger,
+		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
+		bufferStatePool:   newBufferStatePool(maxContentLength, !cfg.DisableCompression, cfg.MaxEventSize),
+	}
+}
+
+func newLogsClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthLogs)
+}
+
+func newTracesClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthTraces)
+}
+
+func newMetricsClient(set exporter.CreateSettings, cfg *Config) *client {
+	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
 func (c *client) pushMetricsData(
@@ -148,7 +172,8 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 					continue
 				}
 				if profilingBufState == nil {
-					profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
+					profilingBufState = c.bufferStatePool.get()
+					defer c.bufferStatePool.put(profilingBufState)
 				}
 				profilingBufState.resource, profilingBufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, profilingBufState, profilingLocalHeaders)
@@ -158,7 +183,8 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 					continue
 				}
 				if bufState == nil {
-					bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.config.MaxEventSize)
+					bufState = c.bufferStatePool.get()
+					defer c.bufferStatePool.put(bufState)
 				}
 				bufState.resource, bufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, bufState, headers)
@@ -381,7 +407,9 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression, c.config.MaxEventSize)
+	bufState := c.bufferStatePool.get()
+	defer c.bufferStatePool.put(bufState)
+
 	var permanentErrors []error
 
 	var rms = md.ResourceMetrics()
@@ -416,7 +444,9 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
-	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression, c.config.MaxEventSize)
+	bufState := c.bufferStatePool.get()
+	defer c.bufferStatePool.put(bufState)
+
 	var permanentErrors []error
 
 	var rts = td.ResourceSpans()

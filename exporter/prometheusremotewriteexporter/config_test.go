@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -44,11 +45,11 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				RetrySettings: exporterhelper.RetrySettings{
@@ -89,11 +90,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "negative_queue_size"),
+			id:           component.NewIDWithName(metadata.Type, "negative_queue_size"),
 			errorMessage: "remote write queue size can't be negative",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "negative_num_consumers"),
+			id:           component.NewIDWithName(metadata.Type, "negative_num_consumers"),
 			errorMessage: "remote write consumer number can't be negative",
 		},
 	}
@@ -123,7 +124,7 @@ func TestDisabledQueue(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "disabled_queue").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "disabled_queue").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -136,7 +137,7 @@ func TestDisabledTargetInfo(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "disabled_target_info").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "disabled_target_info").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
