@@ -16,13 +16,13 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
-	"github.com/scalyr/dataset-go/pkg/buffer_config"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"os"
 	"time"
 
 	"github.com/scalyr/dataset-go/pkg/buffer"
+	"github.com/scalyr/dataset-go/pkg/buffer_config"
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )

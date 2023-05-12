@@ -99,10 +99,12 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 	defer server.Close()
 
 	config := &Config{
-		DatasetURL:      server.URL,
-		APIKey:          "key-lib",
-		MaxDelay:        maxDelay,
-		GroupBy:         []string{"attributes.container_id"},
+		DatasetURL: server.URL,
+		APIKey:     "key-lib",
+		BufferSettings: BufferSettings{
+			MaxLifetime: maxDelay,
+			GroupBy:     []string{"attributes.container_id"},
+		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),

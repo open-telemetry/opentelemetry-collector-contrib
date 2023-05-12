@@ -16,12 +16,12 @@ package datasetexporter
 
 import (
 	"fmt"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
