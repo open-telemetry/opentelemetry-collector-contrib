@@ -22,13 +22,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 // This file implements factory for Cloud Foundry receiver.
 
 const (
-	typeStr                  = "cloudfoundry"
-	stability                = component.StabilityLevelBeta
 	defaultUAAUsername       = "admin"
 	defaultRLPGatewayShardID = "opentelemetry"
 	defaultURL               = "https://localhost"
@@ -37,9 +37,9 @@ const (
 // NewFactory creates a factory for collectd receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

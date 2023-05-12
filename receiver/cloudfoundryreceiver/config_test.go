@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "one"),
+			id: component.NewIDWithName(metadata.Type, "one"),
 			expected: &Config{
 				RLPGateway: RLPGatewayConfig{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -65,11 +67,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "empty"),
+			id:           component.NewIDWithName(metadata.Type, "empty"),
 			errorMessage: "UAA password not specified",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid"),
+			id:           component.NewIDWithName(metadata.Type, "invalid"),
 			errorMessage: "failed to parse rlp_gateway.endpoint as url: parse \"https://[invalid\": missing ']' in host",
 		},
 	}
