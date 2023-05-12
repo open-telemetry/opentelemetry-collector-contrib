@@ -450,7 +450,7 @@ func generateSimpleEvent(
 	}
 }
 
-func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphans() {
+func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphansWithTracker() {
 	tracker := newSpanTracker(time.Second)
 	traces := GenerateTracesTreesAndOrphans()
 	was := buildEventsFromTraces(traces, tracker)
@@ -567,6 +567,80 @@ func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphans() {
 	time.Sleep(time.Second)
 	s.Equal(2, tracker.purge())
 	s.Equal(0, len(tracker.spans))
+}
+
+func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphansWithoutTracker() {
+	traces := GenerateTracesTreesAndOrphans()
+	was := buildEventsFromTraces(traces, nil)
+
+	statusUnset := ptrace.NewStatus()
+	statusError := ptrace.NewStatus()
+	statusError.SetCode(ptrace.StatusCodeError)
+
+	expected := []*add_events.EventBundle{
+		{
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102030101010101", "0102010101010101", statusError, 2100, 3800, "sAAA", "sAAA"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102020101010101", "0102010101010101", statusError, 200, 2000, "sAAA", "sAAA"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("04040404040404040404040404040404", "0405040404040404", "0404040404040404", statusUnset, 40000, 50000, "sAAA", "sAAA"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("03030303030303030303030303030303", "0304030303030303", "0306030303030303", statusUnset, 23000, 24000, "sBBB", "sBBB"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("03030303030303030303030303030303", "0303030303030303", "0305030303030303", statusError, 21000, 22000, "sBBB", "sBBB"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("02020202020202020202020202020202", "0203020202020202", "0202020202020202", statusUnset, 10100, 19900, "sBBB", "sBBB"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0103010101010101", "0101010101010101", statusUnset, 5100, 9900, "sBBB", "sBBB"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102010101010101", "0101010101010101", statusUnset, 100, 4900, "sBBB", "sBBB"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("02020202020202020202020202020202", "0202020202020202", "", statusUnset, 10000, 20000, "sCCC", "sCCC"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0101010101010101", "", statusUnset, 0, 10000, "sCCC", "sCCC"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102040101010101", "0102010101010101", statusUnset, 4000, 4800, "sCCC", "sCCC"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+		{
+			Event:  generateSimpleEvent("04040404040404040404040404040404", "0404040404040404", "", statusUnset, 40100, 49900, "sCCC", "sCCC"),
+			Thread: testTThread,
+			Log:    testTLog,
+		},
+	}
+
+	s.Equal(expected, was)
 }
 
 func (s *SuiteTracesExporter) TestUpdateResource() {

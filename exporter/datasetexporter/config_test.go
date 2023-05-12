@@ -161,7 +161,8 @@ func (s *SuiteConfig) TestConfigString() {
 			GroupBy:     []string{"field1", "field2"},
 		},
 		TracesSettings: TracesSettings{
-			MaxWait: 45 * time.Second,
+			Aggregate: true,
+			MaxWait:   45 * time.Second,
 		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
@@ -169,7 +170,7 @@ func (s *SuiteConfig) TestConfigString() {
 	}
 
 	s.Equal(
-		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:true MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 		config.String(),
 	)
 }

@@ -22,8 +22,15 @@ See the [Getting Started](https://app.scalyr.com/help/getting-started) guide.
 
 ### Optional Settings
 
-- `max_delay_ms` (default = "15000"): The maximum delay between sending batches from the same source.
-- `group_by` (default = []): The list of attributes based on which events should be grouped.
+- `buffer`:
+  - `max_lifetime` (default = 5s): The maximum delay between sending batches from the same source.
+  - `group_by` (default = []): The list of attributes based on which events should be grouped.
+  - retry_initial_interval (default = 5s): Time to wait after the first failure before retrying.
+  - retry_max_interval (default = 30s): Is the upper bound on backoff.
+  - max_elapsed_time (default = 300s): Is the maximum amount of time spent trying to send a buffer.
+- `traces`:
+  - `aggregate` (default = false): Count the number of spans and errors belonging to a trace.
+  - `max_wait` (default = 5s): The maximum waiting for all spans from single trace to arrive; ignored if `aggregate` is false.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
@@ -39,20 +46,21 @@ exporters:
     dataset_url: https://app.scalyr.com
     # API Key
     api_key: your_api_key
-    # Send batch to the API at least every 15s
-    max_delay_ms: 15000
-    # Group data based on these attributes
-    group_by:
-      - attributes.container_id
-      - attributes.log.file.path
-      - body.map.kubernetes.container_hash
-      - body.map.kubernetes.pod_id
-      - body.map.kubernetes.docker_id
-      - body.map.stream
+    buffer:
+      # Send buffer to the API at least every 10s
+      max_lifetime: 10s
+      # Group data based on these attributes
+      group_by:
+        - attributes.container_id
 
 service:
   pipelines:
     logs:
+      receivers: [otlp]
+      processors: [batch]
+      # add dataset among your exporters
+      exporters: [dataset]
+    traces:
       receivers: [otlp]
       processors: [batch]
       # add dataset among your exporters

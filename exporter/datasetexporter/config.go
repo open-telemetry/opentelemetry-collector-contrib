@@ -28,15 +28,18 @@ import (
 )
 
 const tracesMaxWait = 5 * time.Second
+const tracesAggregate = false
 
 type TracesSettings struct {
-	MaxWait time.Duration `mapstructure:"max_wait"`
+	Aggregate bool          `mapstructure:"aggregate"`
+	MaxWait   time.Duration `mapstructure:"max_wait"`
 }
 
 // newDefaultTracesSettings returns the default settings for TracesSettings.
 func newDefaultTracesSettings() TracesSettings {
 	return TracesSettings{
-		MaxWait: tracesMaxWait,
+		Aggregate: tracesAggregate,
+		MaxWait:   tracesMaxWait,
 	}
 }
 

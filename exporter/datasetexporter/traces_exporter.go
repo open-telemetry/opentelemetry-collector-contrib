@@ -53,7 +53,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 
 func buildEventFromSpan(
 	bundle spanBundle,
-	tracker spanTracker,
+	tracker *spanTracker,
 ) *add_events.EventBundle {
 	span := bundle.span
 	resource := bundle.resource
@@ -91,40 +91,42 @@ func buildEventFromSpan(
 		attrs["services"] = service.AsString()
 	}
 
-	// find tracking info
-	if !span.TraceID().IsEmpty() {
-		key := newTraceAndSpan(span.TraceID(), span.SpanID())
+	if tracker != nil {
+		// find tracking info
+		if !span.TraceID().IsEmpty() {
+			key := newTraceAndSpan(span.TraceID(), span.SpanID())
 
-		// find previous information
-		info, ok := tracker.spans[key]
-		if ok {
-			// don't count itself
-			attrs["span_count"] = info.spanCount
-			attrs["error_count"] = info.errorCount
-			updateServices(attrs, info.services)
-
-			delete(tracker.spans, key)
-		}
-
-		// propagate those values to the parent
-		pKey := newTraceAndSpan(span.TraceID(), span.ParentSpanID())
-		if !span.ParentSpanID().IsEmpty() {
 			// find previous information
-			pInfo, pOk := tracker.spans[pKey]
-			if pOk {
-				// so we know that this span is parent of something
-				pInfo.spanCount += info.spanCount
-				pInfo.errorCount += info.errorCount
-				for k, v := range info.services {
-					pInfo.services[k] = v
-				}
-				tracker.spans[pKey] = pInfo
-			} else {
-				attrs["missing_parent"] = 1
+			info, ok := tracker.spans[key]
+			if ok {
+				// don't count itself
+				attrs["span_count"] = info.spanCount
+				attrs["error_count"] = info.errorCount
+				updateServices(attrs, info.services)
+
+				delete(tracker.spans, key)
 			}
-		} else {
-			// we have processed parent, so lets remove it
-			delete(tracker.spans, pKey)
+
+			// propagate those values to the parent
+			pKey := newTraceAndSpan(span.TraceID(), span.ParentSpanID())
+			if !span.ParentSpanID().IsEmpty() {
+				// find previous information
+				pInfo, pOk := tracker.spans[pKey]
+				if pOk {
+					// so we know that this span is parent of something
+					pInfo.spanCount += info.spanCount
+					pInfo.errorCount += info.errorCount
+					for k, v := range info.services {
+						pInfo.services[k] = v
+					}
+					tracker.spans[pKey] = pInfo
+				} else {
+					attrs["missing_parent"] = 1
+				}
+			} else {
+				// we have processed parent, so lets remove it
+				delete(tracker.spans, pKey)
+			}
 		}
 	}
 
@@ -204,7 +206,7 @@ type spanBundle struct {
 	scope    pcommon.InstrumentationScope
 }
 
-func buildEventsFromTraces(ld ptrace.Traces, tracker spanTracker) []*add_events.EventBundle {
+func buildEventsFromTraces(ld ptrace.Traces, tracker *spanTracker) []*add_events.EventBundle {
 	var events []*add_events.EventBundle
 	var spans = make([]spanBundle, 0)
 
@@ -223,27 +225,33 @@ func buildEventsFromTraces(ld ptrace.Traces, tracker spanTracker) []*add_events.
 		}
 	}
 
-	// sort by end time
-	// there is no guarantee that parent ends last, so lets place at least all root nodes
-	// at the end
-	// to get even better results, we should do topological sorting, but still events
-	// can be in multiple batches, so it will not be perfect either
-	// this should be implemented on the backend to support multiple collectors anyway
-	sort.Slice(spans, func(i, j int) bool {
-		if spans[i].span.ParentSpanID().IsEmpty() == spans[j].span.ParentSpanID().IsEmpty() {
-			return spans[i].span.EndTimestamp() < spans[j].span.EndTimestamp()
-		}
+	if tracker != nil {
+		// sort by end time
+		// there is no guarantee that parent ends last, so lets place at least all root nodes
+		// at the end
+		// to get even better results, we should do topological sorting, but still events
+		// can be in multiple batches, so it will not be perfect either
+		// this should be implemented on the backend to support multiple collectors anyway
+		sort.Slice(spans, func(i, j int) bool {
+			if spans[i].span.ParentSpanID().IsEmpty() == spans[j].span.ParentSpanID().IsEmpty() {
+				return spans[i].span.EndTimestamp() < spans[j].span.EndTimestamp()
+			}
 
-		return !spans[i].span.ParentSpanID().IsEmpty()
-	})
+			return !spans[i].span.ParentSpanID().IsEmpty()
+		})
+	}
 
 	for _, span := range spans {
-		tracker.update(span)
+		if tracker != nil {
+			tracker.update(span)
+		}
 		events = append(events, buildEventFromSpan(span, tracker))
 	}
 
-	// purge old values
-	tracker.purge()
+	if tracker != nil {
+		// purge old values
+		tracker.purge()
+	}
 
 	return events
 }
@@ -286,8 +294,8 @@ type spanTracker struct {
 	purgeEvery time.Duration
 }
 
-func newSpanTracker(purgeEvery time.Duration) spanTracker {
-	return spanTracker{
+func newSpanTracker(purgeEvery time.Duration) *spanTracker {
+	return &spanTracker{
 		spans:      make(map[TraceAndSpan]spanInfo),
 		purgedAt:   time.Now(),
 		purgeEvery: purgeEvery,

@@ -154,7 +154,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {MaxWait:0s}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:false MaxWait:0s}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
@@ -164,6 +164,10 @@ func createExporterTests() []CreateTest {
 				BufferSettings: BufferSettings{
 					MaxLifetime: 12345,
 					GroupBy:     []string{"attributes.container_id"},
+				},
+				TracesSettings: TracesSettings{
+					Aggregate: true,
+					MaxWait:   5 * time.Second,
 				},
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

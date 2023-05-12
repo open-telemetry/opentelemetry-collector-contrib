@@ -34,7 +34,7 @@ type DatasetExporter struct {
 	limiter     *rate.Limiter
 	logger      *zap.Logger
 	session     string
-	spanTracker spanTracker
+	spanTracker *spanTracker
 }
 
 func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*DatasetExporter, error) {
@@ -60,12 +60,17 @@ func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*Dat
 		return nil, fmt.Errorf("cannot create newDatasetExporter: %w", err)
 	}
 
+	tracker := newSpanTracker(exporterCfg.tracesSettings.MaxWait)
+	if !exporterCfg.tracesSettings.Aggregate {
+		tracker = nil
+	}
+
 	return &DatasetExporter{
 		client:      client,
 		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
 		session:     uuid.New().String(),
 		logger:      logger,
-		spanTracker: newSpanTracker(exporterCfg.tracesSettings.MaxWait),
+		spanTracker: tracker,
 	}, nil
 }
 
