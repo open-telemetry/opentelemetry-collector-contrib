@@ -25,7 +25,7 @@ import (
 )
 
 func Test_Log(t *testing.T) {
-	tests := []struct {
+	noErrorTests := []struct {
 		name     string
 		value    interface{}
 		expected interface{}
@@ -34,16 +34,6 @@ func Test_Log(t *testing.T) {
 			name:     "string",
 			value:    "50",
 			expected: math.Log(50),
-		},
-		{
-			name:     "empty string",
-			value:    "",
-			expected: nil,
-		},
-		{
-			name:     "not a number string",
-			value:    "test",
-			expected: nil,
 		},
 		{
 			name:     "int64",
@@ -60,6 +50,29 @@ func Test_Log(t *testing.T) {
 			value:    float64(55),
 			expected: math.Log(55),
 		},
+	}
+	for _, tt := range noErrorTests {
+		t.Run(tt.name, func(t *testing.T) {
+			exprFunc := logFunc[interface{}](&ottl.StandardGetSetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return tt.value, nil
+				},
+			})
+			result, err := exprFunc(nil, nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+	errorTests := []struct {
+		name     string
+		value    interface{}
+		expected interface{}
+	}{
+		{
+			name:     "not a number string",
+			value:    "test",
+			expected: nil,
+		},
 		{
 			name:     "true",
 			value:    true,
@@ -69,6 +82,16 @@ func Test_Log(t *testing.T) {
 			name:     "false",
 			value:    false,
 			expected: nil,
+		},
+		{
+			name:     "zero is undefined",
+			value:    0,
+			expected: "greater than zero",
+		},
+		{
+			name:     "negative is undefined",
+			value:    -30.3,
+			expected: "greater than zero",
 		},
 		{
 			name:     "nil",
@@ -81,7 +104,7 @@ func Test_Log(t *testing.T) {
 			expected: nil,
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range errorTests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := logFunc[interface{}](&ottl.StandardGetSetter[interface{}]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
@@ -89,8 +112,8 @@ func Test_Log(t *testing.T) {
 				},
 			})
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			assert.ErrorContains(t, err, tt.expected)
+			assert.Equal(t, nil, result)
 		})
 	}
 }

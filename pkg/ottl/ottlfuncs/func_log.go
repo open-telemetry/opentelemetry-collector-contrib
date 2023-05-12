@@ -50,18 +50,26 @@ func logFunc[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 
 		switch value := value.(type) {
 		case int64:
+			if value <= 0 {
+				return nil, fmt.Errorf("expected value greater than zero but got nil %v", value)
+			}
 			return math.Log((float64)(value)), nil
 		case string:
 			fltValue, err := strconv.ParseFloat(value, 64)
 			if err != nil {
-				return nil, nil
+				return nil, err
 			}
-
+			if fltValue <= 0 {
+				return nil, fmt.Errorf("expected value greater than zero but got nil %v", fltValue)
+			}
 			return math.Log(fltValue), nil
 		case float64:
+			if value <= 0 {
+				return nil, fmt.Errorf("expected value greater than zero but got nil %v", value)
+			}
 			return math.Log(value), nil
 		default:
-			return nil, nil
+			return nil, fmt.Errorf("unhanlded type %T", value)
 		}
 	}
 }
