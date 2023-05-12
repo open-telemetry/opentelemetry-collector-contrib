@@ -420,22 +420,22 @@ func (alr *accessLogsReceiver) getClusterCheckpoint(groupID, clusterName string)
 }
 
 func (alr *accessLogsReceiver) setClusterCheckpoint(groupID string, clusterCheckpoint *accessLogStorageRecord) {
-	for key, value := range alr.record {
-		if key == groupID {
-			found := false
-			for idx, v := range value {
-				if v.ClusterName == clusterCheckpoint.ClusterName {
-					found = true
-					alr.record[groupID][idx] = clusterCheckpoint
-				}
-			}
-			if !found {
-				alr.record[groupID] = append(alr.record[groupID], clusterCheckpoint)
-			}
-			return
-		}
-	}
-
-	// If we get here, we didn't find the groupID in the map, so we need to add it
+	value, ok := alr.record[groupID]
+	if !ok {
 	alr.record[groupID] = []*accessLogStorageRecord{clusterCheckpoint}
+	}
+	
+	if key == groupID {
+		var found bool
+		for idx, v := range value {
+			if v.ClusterName == clusterCheckpoint.ClusterName {
+				found = true
+				alr.record[groupID][idx] = clusterCheckpoint
+			}
+		}
+		if !found {
+			alr.record[groupID] = append(alr.record[groupID], clusterCheckpoint)
+		}
+		return
+	}
 }
