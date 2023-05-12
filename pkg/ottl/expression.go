@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -153,6 +154,10 @@ type IntGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (int64, error)
 }
 
+type FloatGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (float64, error)
+}
+
 type PMapGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 }
@@ -221,6 +226,56 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 		if err != nil {
 			return nil, fmt.Errorf("unsupported type: %T", v)
 		}
+	}
+	return &result, nil
+}
+
+// FloatLikeGetter is a Getter that returns a float64 by converting the underlying value to a float64 if necessary.
+type FloatLikeGetter[K any] interface {
+	// Get retrieves a float64 value.
+	// Unlike `FloatGetter`, the expectation is that the underlying value is converted to a float64 if possible.
+	// If the value cannot be converted to a float64, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) (*float64, error)
+}
+
+type StandardFloatLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result float64
+	switch v := val.(type) {
+	case float64:
+		result = v
+	case int64:
+		result = float64(v)
+	case string:
+		result, err = strconv.ParseFloat(v, 64)
+		if err != nil {
+			return nil, err
+		}
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeDouble:
+			result = v.Double()
+		case pcommon.ValueTypeInt:
+			result = float64(v.Int())
+		case pcommon.ValueTypeStr:
+			result, err = strconv.ParseFloat(v.Str(), 64)
+			if err != nil {
+				return nil, err
+			}
+		}
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", v)
 	}
 	return &result, nil
 }

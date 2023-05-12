@@ -808,3 +808,113 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 		})
 	}
 }
+
+func Test_StandardFloatLikeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           FloatLikeGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "string type",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "1.0", nil
+				},
+			},
+			want:  1.0,
+			valid: true,
+		},
+		{
+			name: "int64 type",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return int64(1), nil
+				},
+			},
+			want:  float64(1),
+			valid: true,
+		},
+		{
+			name: "float64 type",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1.1, nil
+				},
+			},
+			want:  1.1,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type int",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueInt(int64(100))
+					return v, nil
+				},
+			},
+			want:  float64(100),
+			valid: true,
+		},
+		{
+			name: "pcommon.value type float",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueDouble(float64(1.1))
+					return v, nil
+				},
+			},
+			want:  1.1,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type string",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueStr("1.1")
+					return v, nil
+				},
+			},
+			want:  1.1,
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "invalid type",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				if tt.want == nil {
+					assert.Nil(t, val)
+				} else {
+					assert.Equal(t, tt.want, *val)
+				}
+			} else {
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
