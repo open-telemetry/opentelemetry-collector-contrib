@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,12 +40,12 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id:          component.NewIDWithName(typeStr, ""),
+			id:          component.NewIDWithName(metadata.Type, ""),
 			expectedErr: "missing required field(s): `endpoint`, `target_system`",
 			expected:    createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "all"),
+			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:12345",
@@ -78,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingendpoint"),
+			id:          component.NewIDWithName(metadata.Type, "missingendpoint"),
 			expectedErr: "missing required field(s): `endpoint`",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
@@ -93,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingtarget"),
+			id:          component.NewIDWithName(metadata.Type, "missingtarget"),
 			expectedErr: "missing required field(s): `target_system`",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
@@ -108,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalidinterval"),
+			id:          component.NewIDWithName(metadata.Type, "invalidinterval"),
 			expectedErr: "`interval` must be positive: -100ms",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
@@ -124,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalidotlptimeout"),
+			id:          component.NewIDWithName(metadata.Type, "invalidotlptimeout"),
 			expectedErr: "`otlp.timeout` must be positive: -100ms",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
@@ -141,7 +143,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		{
-			id: component.NewIDWithName(typeStr, "nonexistentjar"),
+			id: component.NewIDWithName(metadata.Type, "nonexistentjar"),
 			// Error is different based on OS, which is why this is contains, not equals
 			expectedErr: "invalid `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:",
 			expected: &Config{
@@ -158,7 +160,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalidjar"),
+			id:          component.NewIDWithName(metadata.Type, "invalidjar"),
 			expectedErr: "invalid `jar_path`: jar hash does not match known versions",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx_wrong.jar",
@@ -174,7 +176,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalidloglevel"),
+			id:          component.NewIDWithName(metadata.Type, "invalidloglevel"),
 			expectedErr: "`log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
@@ -191,7 +193,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalidtargetsystem"),
+			id:          component.NewIDWithName(metadata.Type, "invalidtargetsystem"),
 			expectedErr: "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
@@ -244,7 +246,7 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "invalidtargetsystem").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "invalidtargetsystem").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 

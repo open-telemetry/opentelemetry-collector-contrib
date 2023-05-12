@@ -15,9 +15,11 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -32,7 +34,7 @@ var _ PolicyEvaluator = (*statusCodeFilter)(nil)
 
 // NewStatusCodeFilter creates a policy evaluator that samples all traces with
 // a given status code.
-func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyEvaluator, error) {
+func NewStatusCodeFilter(settings component.TelemetrySettings, statusCodeString []string) (PolicyEvaluator, error) {
 	if len(statusCodeString) == 0 {
 		return nil, errors.New("expected at least one status code to filter on")
 	}
@@ -53,13 +55,13 @@ func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyE
 	}
 
 	return &statusCodeFilter{
-		logger:      logger,
+		logger:      settings.Logger,
 		statusCodes: statusCodes,
 	}, nil
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (r *statusCodeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	r.logger.Debug("Evaluating spans in status code filter")
 
 	trace.Lock()

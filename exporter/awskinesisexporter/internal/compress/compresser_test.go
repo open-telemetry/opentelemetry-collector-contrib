@@ -90,7 +90,8 @@ func BenchmarkGzipCompressor_1Mb(b *testing.B) {
 func benchmarkCompressor(b *testing.B, format string, len int) {
 	b.Helper()
 
-	rand.Seed(time.Now().UnixMilli())
+	source := rand.NewSource(time.Now().UnixMilli())
+	genRand := rand.New(source)
 
 	compressor, err := compress.NewCompressor(format)
 	require.NoError(b, err, "Must not error when given a valid format")
@@ -98,7 +99,7 @@ func benchmarkCompressor(b *testing.B, format string, len int) {
 
 	data := make([]byte, len)
 	for i := 0; i < len; i++ {
-		data[i] = byte(rand.Int31())
+		data[i] = byte(genRand.Int31())
 	}
 	b.ReportAllocs()
 	b.ResetTimer()

@@ -22,6 +22,7 @@ var distros = map[string]string{
 	"core":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
 	"contrib": "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
 	"splunk":  "https://github.com/signalfx/splunk-otel-collector",
+	"aws":     "https://github.com/aws-observability/aws-otel-collector",
 }
 
 type Status struct {

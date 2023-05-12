@@ -15,10 +15,12 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"hash/fnv"
 	"math"
 	"math/big"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -37,13 +39,13 @@ var _ PolicyEvaluator = (*probabilisticSampler)(nil)
 
 // NewProbabilisticSampler creates a policy evaluator that samples a percentage of
 // traces.
-func NewProbabilisticSampler(logger *zap.Logger, hashSalt string, samplingPercentage float64) PolicyEvaluator {
+func NewProbabilisticSampler(settings component.TelemetrySettings, hashSalt string, samplingPercentage float64) PolicyEvaluator {
 	if hashSalt == "" {
 		hashSalt = defaultHashSalt
 	}
 
 	return &probabilisticSampler{
-		logger: logger,
+		logger: settings.Logger,
 		// calculate threshold once
 		threshold: calculateThreshold(samplingPercentage / 100),
 		hashSalt:  hashSalt,
@@ -51,7 +53,7 @@ func NewProbabilisticSampler(logger *zap.Logger, hashSalt string, samplingPercen
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (s *probabilisticSampler) Evaluate(traceID pcommon.TraceID, _ *TraceData) (Decision, error) {
+func (s *probabilisticSampler) Evaluate(ctx context.Context, traceID pcommon.TraceID, _ *TraceData) (Decision, error) {
 	s.logger.Debug("Evaluating spans in probabilistic filter")
 
 	if hashTraceID(s.hashSalt, traceID[:]) <= s.threshold {

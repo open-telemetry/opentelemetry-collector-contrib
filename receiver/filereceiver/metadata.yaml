@@ -1,0 +1,8 @@
+type: file
+
+status:
+  class: receiver
+  stability:
+    development: [metrics, traces, logs]
+  distributions: [contrib]
+  

@@ -58,9 +58,9 @@ func TestDefaultReceivers(t *testing.T) {
 	rcvrFactories := allFactories.Receivers
 
 	tests := []struct {
+		getConfigFn  getReceiverConfigFn
 		receiver     component.Type
 		skipLifecyle bool
-		getConfigFn  getReceiverConfigFn
 	}{
 		{
 			receiver:     "active_directory_ds",
@@ -182,6 +182,10 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.InputConfig.Include = []string{filepath.Join(t.TempDir(), "*")}
 				return cfg
 			},
+		},
+		{
+			receiver:     "file",
+			skipLifecyle: true, // Requires an existing JSONL file
 		},
 		{
 			receiver: "filestats",

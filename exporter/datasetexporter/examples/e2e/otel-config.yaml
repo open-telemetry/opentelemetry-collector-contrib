@@ -35,8 +35,11 @@ exporters:
       max_lifetime: 5s
       group_by:
         - resource.attributes.host.id
+      retry_initial_interval: 5s
+      retry_max_interval: 30s
+      retry_max_elapsed_time: 300s
     retry_on_failure:
-      max_interval: 300
+      max_interval: 30
       max_elapsed_time: 300
     sending_queue:
       storage: file_storage
@@ -45,11 +48,14 @@ exporters:
     api_key: your-api-key
     dataset_url: https://app.eu.scalyr.com
     buffer:
-      max_lifetime: 17s
+      max_lifetime: 11s
+      retry_initial_interval: 5s
+      retry_max_interval: 30s
+      retry_max_elapsed_time: 300s
     traces:
       max_wait: 10s
     retry_on_failure:
-      max_interval: 300
+      max_interval: 30
       max_elapsed_time: 300
     sending_queue:
       storage: file_storage

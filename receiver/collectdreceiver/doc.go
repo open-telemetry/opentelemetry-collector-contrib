@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package collectdreceiver implements a receiver that can be used by the
 // Opentelemetry collector to receive traces from CollectD http_write plugin
 // in JSON format.
