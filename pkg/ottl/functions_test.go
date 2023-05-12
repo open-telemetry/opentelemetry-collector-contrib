@@ -708,6 +708,29 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "floatlikegetter slice arg",
+			inv: invocation{
+				Function: "testing_floatlikegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("1.1"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1.1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "setter arg",
 			inv: invocation{
 				Function: "testing_setter",
@@ -860,6 +883,18 @@ func Test_NewFunctionCall(t *testing.T) {
 			name: "stringlikegetter arg",
 			inv: invocation{
 				Function: "testing_stringlikegetter",
+				Arguments: []value{
+					{
+						Bool: (*boolean)(ottltest.Boolp(false)),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "floatlikegetter arg",
+			inv: invocation{
+				Function: "testing_floatlikegetter",
 				Arguments: []value{
 					{
 						Bool: (*boolean)(ottltest.Boolp(false)),
@@ -1111,6 +1146,16 @@ func functionWithStringLikeGetterSlice(getters []StringLikeGetter[interface{}]) 
 	}, nil
 }
 
+type floatLikeGetterSliceArguments struct {
+	FloatLikeGetters []FloatLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 type setterArguments struct {
 	SetterArg Setter[any] `ottlarg:"0"`
 }
@@ -1156,6 +1201,16 @@ type stringLikeGetterArguments struct {
 }
 
 func functionWithStringLikeGetter(StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type floatLikeGetterArguments struct {
+	FloatLikeGetterArg FloatLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFloatLikeGetter(FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -1351,6 +1406,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithStringLikeGetterSlice,
 		),
 		createFactory[any](
+			"testing_floatlikegetter_slice",
+			&floatLikeGetterSliceArguments{},
+			functionWithFloatLikeGetterSlice,
+		),
+		createFactory[any](
 			"testing_pmapgetter_slice",
 			&pMapGetterSliceArguments{},
 			functionWithPMapGetterSlice,
@@ -1379,6 +1439,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_stringlikegetter",
 			&stringLikeGetterArguments{},
 			functionWithStringLikeGetter,
+		),
+		createFactory[any](
+			"testing_floatlikegetter",
+			&floatLikeGetterArguments{},
+			functionWithFloatLikeGetter,
 		),
 		createFactory[any](
 			"testing_intgetter",
