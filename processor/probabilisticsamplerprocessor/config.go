@@ -16,6 +16,7 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"fmt"
+	"math"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -37,14 +38,22 @@ var validAttributeSource = map[AttributeSource]bool{
 // Config has the configuration guiding the sampler processor.
 type Config struct {
 
-	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to zero, i.e.: no sample.
-	// Values greater or equal 100 are treated as "sample all traces/logs".
+	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to
+	// zero, i.e.: no sample.  Values greater or equal 100 are treated as "sample all traces/logs".  This is
+	// treated as having four significant figures when conveying the sampling probability.
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
 
-	// HashSeed allows one to configure the hashing seed. This is important in scenarios where multiple layers of collectors
-	// have different sampling rates: if they use the same seed all passing one layer may pass the other even if they have
-	// different sampling rates, configuring different seeds avoids that.
+	// HashSeed allows one to configure the legacy hashing seed.  The current version of this protocol assumes
+	// that tracecontext v2 TraceIDs are being used, which ensures 7 bytes of randomness are available.  We assume
+	// this is the case when HashSeed == 0.
+	//
+	// This is important in scenarios where multiple layers of collectors have different sampling rates: if they
+	// use the same seed all passing one layer may pass the other even if they have different sampling rates,
+	// configuring different seeds avoids that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
+
+	///////
+	// Logs only fields below.
 
 	// AttributeSource (logs only) defines where to look for the attribute in from_attribute. The allowed values are
 	// `traceID` or `record`. Default is `traceID`.
@@ -63,9 +72,19 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.SamplingPercentage < 0 {
-		return fmt.Errorf("negative sampling rate: %.2f", cfg.SamplingPercentage)
+	ratio := float64(cfg.SamplingPercentage) / 100.0
+
+	switch {
+	case ratio < 0:
+		return fmt.Errorf("negative sampling rate: %.2f%%", cfg.SamplingPercentage)
+	case ratio == 0:
+		// Special case
+	case ratio < 0x1p-56:
+		return fmt.Errorf("sampling rate is too small: %.2f%%", cfg.SamplingPercentage)
+	case math.IsInf(ratio, 0) || math.IsNaN(ratio):
+		return fmt.Errorf("sampling rate is invalid: %.2f%%", cfg.SamplingPercentage)
 	}
+
 	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {
 		return fmt.Errorf("invalid attribute source: %v. Expected: %v or %v", cfg.AttributeSource, traceIDAttributeSource, recordAttributeSource)
 	}

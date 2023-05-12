@@ -18,6 +18,8 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/consumer"
@@ -50,22 +52,53 @@ const (
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1
 	percentageScaleFactor = numHashBuckets / 100.0
+
+	zeroTvalue = "t:0"
 )
 
 type traceSamplerProcessor struct {
-	scaledSamplingRate uint32
-	hashSeed           uint32
-	logger             *zap.Logger
+	// Legacy hash-based calculation
+	hashScaledSamplingRate uint32
+	hashSeed               uint32
+
+	// Modern TraceID-randomness-based calculation
+	traceIDThreshold sampling.Threshold
+	tValueEncoding   string
+
+	logger *zap.Logger
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	tsp := &traceSamplerProcessor{
+		logger: set.Logger,
+	}
+	// README allows percents >100 to equal 100%, but t-value
+	// encoding does not.  Correct it here.
+	pct := float64(cfg.SamplingPercentage)
+	if pct > 100 {
+		pct = 100
+	}
+
+	if cfg.HashSeed != 0 {
 		// Adjust sampling percentage on private so recalculations are avoided.
-		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
-		hashSeed:           cfg.HashSeed,
-		logger:             set.Logger,
+		tsp.hashScaledSamplingRate = uint32(pct * percentageScaleFactor)
+		tsp.hashSeed = cfg.HashSeed
+	} else {
+		// Encode t-value (OTEP 226), like %.4f.  (See FormatFloat().)
+		ratio := pct / 100
+		tval, err := sampling.ProbabilityToTvalue(ratio, 'f', 4)
+		if err != nil {
+			return nil, err
+		}
+		threshold, err := sampling.ProbabilityToThreshold(ratio)
+		if err != nil {
+			return nil, err
+		}
+
+		tsp.tValueEncoding = tval
+		tsp.traceIDThreshold = threshold
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -75,6 +108,21 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		nextConsumer,
 		tsp.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+}
+
+func (tsp *traceSamplerProcessor) probabilitySampleFromTraceID(input pcommon.TraceID) (sample, consistent bool) {
+	// When the hash seed is set, fall back to the legacy behavior
+	// using the FNV hash.
+	if tsp.hashSeed != 0 {
+		// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
+		// with various different criteria to generate trace id and perhaps were already sampled without hashing.
+		// Hashing here prevents bias due to such systems.
+		return computeHash(input[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.hashScaledSamplingRate, false
+	}
+
+	// Hash seed zero => assume tracecontext v2
+
+	return tsp.traceIDThreshold.ShouldSample(input), true
 }
 
 func (tsp *traceSamplerProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
@@ -94,24 +142,48 @@ func (tsp *traceSamplerProcessor) processTraces(ctx context.Context, td ptrace.T
 					return true
 				}
 
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
-					statCountTracesSampled.M(int64(1)),
-				)
+				forceSample := sp == mustSampleSpan
 
-				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
-				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
-				// Hashing here prevents bias due to such systems.
-				tidBytes := s.TraceID()
-				sampled := sp == mustSampleSpan ||
-					computeHash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
+				probSample, consistent := tsp.probabilitySampleFromTraceID(s.TraceID())
 
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
-					statCountTracesSampled.M(int64(1)),
-				)
+				sampled := forceSample || probSample
+
+				if forceSample {
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
+						statCountTracesSampled.M(int64(1)),
+					)
+				} else {
+					_ = stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
+						statCountTracesSampled.M(int64(1)),
+					)
+				}
+
+				if consistent {
+					// Attach the t-value!
+					ts := s.TraceState()
+
+					// Get the t-value encoding.
+					enc := tsp.tValueEncoding
+					if !probSample {
+						// forceSample is implied, use the zero value.
+						enc = zeroTvalue
+					}
+
+					raw := ts.AsRaw()
+					if raw == "" {
+						// No incoming t-value, i.e., the simple case.
+						ts.FromRaw(enc)
+					} else {
+						// Complex case: combine t-values.
+						// TODO @@@ bring in code from
+						// https://github.com/open-telemetry/opentelemetry-go-contrib/tree/main/samplers/probability/consistent
+					}
+				}
+
 				return !sampled
 			})
 			// Filter out empty ScopeMetrics

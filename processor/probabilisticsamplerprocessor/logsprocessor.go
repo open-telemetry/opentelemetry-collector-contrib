@@ -29,12 +29,12 @@ import (
 )
 
 type logSamplerProcessor struct {
-	scaledSamplingRate uint32
-	hashSeed           uint32
-	traceIDEnabled     bool
-	samplingSource     string
-	samplingPriority   string
-	logger             *zap.Logger
+	hashScaledSamplingRate uint32
+	hashSeed               uint32
+	traceIDEnabled         bool
+	samplingSource         string
+	samplingPriority       string
+	logger                 *zap.Logger
 }
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
@@ -42,12 +42,12 @@ type logSamplerProcessor struct {
 func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
 
 	lsp := &logSamplerProcessor{
-		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
-		hashSeed:           cfg.HashSeed,
-		traceIDEnabled:     cfg.AttributeSource == traceIDAttributeSource,
-		samplingPriority:   cfg.SamplingPriority,
-		samplingSource:     cfg.FromAttribute,
-		logger:             set.Logger,
+		hashScaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
+		hashSeed:               cfg.HashSeed,
+		traceIDEnabled:         cfg.AttributeSource == traceIDAttributeSource,
+		samplingPriority:       cfg.SamplingPriority,
+		samplingSource:         cfg.FromAttribute,
+		logger:                 set.Logger,
 	}
 
 	return processorhelper.NewLogsProcessor(
@@ -78,7 +78,7 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 						lidBytes = value.Bytes().AsRaw()
 					}
 				}
-				priority := lsp.scaledSamplingRate
+				priority := lsp.hashScaledSamplingRate
 				if lsp.samplingPriority != "" {
 					if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
 						switch localPriority.Type() {
