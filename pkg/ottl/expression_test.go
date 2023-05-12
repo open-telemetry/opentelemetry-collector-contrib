@@ -848,6 +848,26 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "float64 bool true",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			want:  float64(1),
+			valid: true,
+		},
+		{
+			name: "float64 bool false",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return false, nil
+				},
+			},
+			want:  float64(0),
+			valid: true,
+		},
+		{
 			name: "pcommon.value type int",
 			getter: StandardFloatLikeGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -881,6 +901,28 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "pcommon.value type bool true",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueBool(true)
+					return v, nil
+				},
+			},
+			want:  float64(1),
+			valid: true,
+		},
+		{
+			name: "pcommon.value type bool false",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueBool(false)
+					return v, nil
+				},
+			},
+			want:  float64(0),
+			valid: true,
+		},
+		{
 			name: "nil",
 			getter: StandardFloatLikeGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -894,11 +936,22 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 			name: "invalid type",
 			getter: StandardFloatLikeGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return true, nil
+					return []byte{}, nil
 				},
 			},
 			valid:            false,
-			expectedErrorMsg: "unsupported type: bool",
+			expectedErrorMsg: "unsupported type: []uint8",
+		},
+		{
+			name: "invalid pcommon.Value type",
+			getter: StandardFloatLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueMap()
+					return v, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported value type: Map",
 		},
 	}
 

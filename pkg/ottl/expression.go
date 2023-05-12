@@ -262,6 +262,12 @@ func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, 
 		if err != nil {
 			return nil, err
 		}
+	case bool:
+		if v {
+			result = float64(1)
+		} else {
+			result = float64(0)
+		}
 	case pcommon.Value:
 		switch v.Type() {
 		case pcommon.ValueTypeDouble:
@@ -273,6 +279,14 @@ func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, 
 			if err != nil {
 				return nil, err
 			}
+		case pcommon.ValueTypeBool:
+			if v.Bool() {
+				result = float64(1)
+			} else {
+				result = float64(0)
+			}
+		default:
+			return nil, fmt.Errorf("unsupported value type: %v", v.Type())
 		}
 	default:
 		return nil, fmt.Errorf("unsupported type: %T", v)
