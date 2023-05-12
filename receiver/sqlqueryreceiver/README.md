@@ -24,6 +24,7 @@ The configuration supports the following top-level fields:
   e.g. _host=localhost port=5432 user=me password=s3cr3t sslmode=disable_
 - `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
+- `storage` (optional, default `""`): The ID of a storage extension to be used to [track processed results](#tracking-processed-results).
 
 ### Queries
 
@@ -35,10 +36,10 @@ are quite different.
 
 Additionally, each `query` section supports the following properties:
 
-- `tracking_column` (optional, default "") Applies only to logs. In case of a parameterized query,
+- `tracking_column` (optional, default `""`) Applies only to logs. In case of a parameterized query,
   defines the column to retrieve the value of the parameter on subsequent query runs.
   See the below section [Tracking processed results](#tracking-processed-results).
-- `tracking_start_value` (optional, default 0) Applies only to logs. In case of a parameterized query, defines the initial value for the parameter.
+- `tracking_start_value` (optional, default `""`) Applies only to logs. In case of a parameterized query, defines the initial value for the parameter.
   See the below section [Tracking processed results](#tracking-processed-results).
 
 Example:
@@ -50,7 +51,7 @@ receivers:
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     queries:
       - sql: "select * from my_logs where log_id > $1"
-        tracking_start_value: 10000
+        tracking_start_value: "10000"
         tracking_column: log_id
         logs:
           - body_column: log_body
@@ -73,9 +74,9 @@ the receiver will run the same query every collection interval, which can cause 
 over and over again, unless there's an external actor removing the old rows from the `my_logs` table.
 
 To prevent reading the same rows on every collection interval, use a parameterized query like `select * from my_logs where id_column > ?`,
-together with the `tracking_start_value` configuration property that specifies the initial value for the parameter.
+together with the `tracking_start_value` and `tracking_column` configuration properties.
 The receiver will use the configured `tracking_start_value` as the value for the query parameter when running the query for the first time.
-On each query run, the receiver will retrieve the last value from the `tracking_column` from the result set and use it as the value for the query parameter on next collection interval. To prevent duplicate log downloads, make sure to sort the query results in ascending order by the tracking_column value.
+After each query run, the receiver will store the value of the `tracking_column` from the last row of the result set and use it as the value for the query parameter on next collection interval. To prevent duplicate log downloads, make sure to sort the query results in ascending order by the tracking_column value.
 
 Note that the notation for the parameter depends on the database backend. For example in MySQL this is `?`, in PostgreSQL this is `$1`, in Oracle this is any string identifier starting with a colon `:`, for example `:my_parameter`.
 
@@ -107,9 +108,10 @@ receivers:
   sqlquery:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
+    storage: file_storage
     queries:
       - sql: "select * from my_logs where log_id > $1"
-        tracking_start_value: 10000
+        tracking_start_value: "10000"
         tracking_column: log_id
         logs:
           - body_column: log_body

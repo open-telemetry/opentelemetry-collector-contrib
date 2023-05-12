@@ -27,7 +27,7 @@ create table simple_logs
     insert_time timestamp,
     body text
 );
-grant select on simple_logs to otel;
+grant select, insert on simple_logs to otel;
 
 insert into simple_logs (id, insert_time, body) values
 (1, '2022-06-03 21:59:26+00', '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6197 4 "-" "-" 445af8e6c428303f -'),
