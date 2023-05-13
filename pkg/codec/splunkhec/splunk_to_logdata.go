@@ -14,14 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-const (
-	// splunk metadata
-	index      = "index"
-	source     = "source"
-	sourcetype = "sourcetype"
-	host       = "host"
-)
-
 var (
 	errCannotConvertValue = errors.New("cannot convert field value to attribute")
 )
