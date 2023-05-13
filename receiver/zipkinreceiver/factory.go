@@ -28,15 +28,13 @@ import (
 // This file implements factory for Zipkin receiver.
 
 const (
-	typeStr = "zipkin"
-
 	defaultBindEndpoint = "0.0.0.0:9411"
 )
 
 // NewFactory creates a new Zipkin receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
 	)

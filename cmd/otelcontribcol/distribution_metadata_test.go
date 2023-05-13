@@ -46,7 +46,14 @@ func TestComponentsArePresent(t *testing.T) {
 				tt.Skip("no status present, skipping", metadataComponent)
 				return
 			}
-			if m.Status.Stability == "development" {
+			inDevelopment := false
+			for k, _ := range m.Status.Stability {
+				if k == "development" {
+					inDevelopment = true
+					break
+				}
+			}
+			if inDevelopment {
 				tt.Skip("component in development, skipping", metadataComponent)
 				return
 			}
@@ -91,9 +98,8 @@ type metadata struct {
 }
 
 type status struct {
-	Stability     string   `mapstructure:"stability"`
-	Pipelines     []string `mapstructure:"pipelines"`
-	Distributions []string `mapstructure:"distributions"`
-	Class         string   `mapstructure:"class"`
-	Warnings      []string `mapstructure:"warnings"`
+	Stability     map[string][]interface{} `mapstructure:"stability"`
+	Distributions []string                 `mapstructure:"distributions"`
+	Class         string                   `mapstructure:"class"`
+	Warnings      []string                 `mapstructure:"warnings"`
 }

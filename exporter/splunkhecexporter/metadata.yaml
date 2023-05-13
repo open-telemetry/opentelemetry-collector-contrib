@@ -1,4 +1,4 @@
-type: splunkhecexporter
+type: splunk_hec
 
 status:
   class: exporter

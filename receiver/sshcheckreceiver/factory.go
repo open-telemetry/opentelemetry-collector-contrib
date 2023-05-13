@@ -27,14 +27,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "sshcheck"
-)
-
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -63,7 +59,7 @@ func createMetricsReceiver(ctx context.Context, params receiver.CreateSettings, 
 	}
 
 	sshcheckScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(typeStr, sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
 	if err != nil {
 		return nil, err
 	}

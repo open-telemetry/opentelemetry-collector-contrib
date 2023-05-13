@@ -28,16 +28,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "bigip"
-)
-
 var errConfigNotBigip = errors.New("config was not a Big-IP receiver config")
 
 // NewFactory creates a new receiver factory for Big-IP
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -64,7 +60,7 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	}
 
 	bigipScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(typeStr, bigipScraper.scrape, scraperhelper.WithStart(bigipScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, bigipScraper.scrape, scraperhelper.WithStart(bigipScraper.start))
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-type: httpforwarder
+type: http_forwarder
 
 status:
   class: extension
