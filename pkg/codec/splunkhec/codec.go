@@ -19,10 +19,11 @@ import (
 	"errors"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
