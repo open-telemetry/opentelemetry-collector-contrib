@@ -23,6 +23,10 @@ The following settings can be optionally configured:
 - `include`: List of metrics names or patterns to convert to delta.
 - `exclude`: List of metrics names or patterns to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.**
 - `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
+- `initial_value`: Handling of the first observed point for a given metric identity. Default: `auto`.
+  - `auto`: send iff the startime is set AND the starttime happens after the component started AND the starttime is different from the timestamp.
+  - `keep`: send the observed value as the delta value
+  - `drop`: keep the observed value but don't send
 
 If neither include nor exclude are supplied, no filtering is applied.
 

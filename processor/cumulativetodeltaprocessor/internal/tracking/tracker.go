@@ -17,6 +17,7 @@ package tracking // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -28,6 +29,40 @@ import (
 
 // Allocate a minimum of 64 bytes to the builder initially
 const initialBytes = 64
+
+type InitialValue int
+
+const (
+	InitialValueAuto InitialValue = iota
+	InitialValueKeep
+	InitialValueDrop
+)
+
+func (i *InitialValue) String() string {
+	switch *i {
+	case InitialValueAuto:
+		return "auto"
+	case InitialValueKeep:
+		return "keep"
+	case InitialValueDrop:
+		return "drop"
+	}
+	return "unknown"
+}
+
+func (i *InitialValue) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "auto":
+		*i = InitialValueAuto
+	case "keep":
+		*i = InitialValueKeep
+	case "drop":
+		*i = InitialValueDrop
+	default:
+		return fmt.Errorf("unknown initial_value: %s", text)
+	}
+	return nil
+}
 
 var identityBufferPool = sync.Pool{
 	New: func() interface{} {
@@ -47,8 +82,13 @@ type DeltaValue struct {
 	HistogramValue *HistogramPoint
 }
 
-func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration) *MetricTracker {
-	t := &MetricTracker{logger: logger, maxStaleness: maxStaleness}
+func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration, initalValue InitialValue) *MetricTracker {
+	t := &MetricTracker{
+		logger:       logger,
+		maxStaleness: maxStaleness,
+		initialValue: initalValue,
+		startTime:    pcommon.NewTimestampFromTime(time.Now()),
+	}
 	if maxStaleness > 0 {
 		go t.sweeper(ctx, t.removeStale)
 	}
@@ -59,6 +99,8 @@ type MetricTracker struct {
 	logger       *zap.Logger
 	maxStaleness time.Duration
 	states       sync.Map
+	initialValue InitialValue
+	startTime    pcommon.Timestamp
 }
 
 func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
@@ -81,13 +123,41 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	hashableID := b.String()
 	identityBufferPool.Put(b)
 
+	var keep bool
 	s, ok := t.states.LoadOrStore(hashableID, &State{
 		PrevPoint: metricPoint,
 	})
 	if !ok {
+		switch t.initialValue {
+		case InitialValueDrop:
+			return
+		case InitialValueAuto:
+			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp < metricID.StartTimestamp {
+				return
+			}
+			out.StartTimestamp = metricID.StartTimestamp
+			keep = true
+		case InitialValueKeep:
+			out.StartTimestamp = metricID.StartTimestamp
+			if metricID.StartTimestamp == 0 {
+				out.StartTimestamp = t.startTime
+			}
+			keep = true
+		}
+	}
+
+	valid = true
+
+	if keep {
+		switch metricID.MetricType {
+		case pmetric.MetricTypeHistogram:
+			*out.HistogramValue = metricPoint.HistogramValue.Clone()
+		case pmetric.MetricTypeSum:
+			out.IntValue = metricPoint.IntValue
+			out.FloatValue = metricPoint.FloatValue
+		}
 		return
 	}
-	valid = true
 
 	state := s.(*State)
 	state.Lock()
