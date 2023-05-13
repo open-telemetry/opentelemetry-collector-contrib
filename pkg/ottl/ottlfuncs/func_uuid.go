@@ -29,7 +29,7 @@ func uuid[K any]() (ottl.ExprFunc[K], error) {
 	}, nil
 }
 
-func createUUIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+func createUUIDFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
 	return uuid[K]()
 }
 
