@@ -329,16 +329,16 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if r.logsConsumer != nil {
 		ld, err := r.logCodec.Unmarshal(b)
 		if err != nil {
-			switch err {
-			case splunkhec.ErrIsMetric:
+			switch {
+			case errors.Is(err, splunkhec.ErrIsMetric):
 				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedMetricEvent, ld.LogRecordCount(), err)
-			case splunkhec.ErrNestedJSON:
+			case errors.Is(err, splunkhec.ErrNestedJSON):
 				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, ld.LogRecordCount())), ld.LogRecordCount(), nil)
-			case splunkhec.ErrBlankBody:
+			case errors.Is(err, splunkhec.ErrBlankBody):
 				r.failRequest(ctx, resp, http.StatusBadRequest, eventBlankRespBody, ld.LogRecordCount(), nil)
-			case splunkhec.ErrRequiredBody:
+			case errors.Is(err, splunkhec.ErrRequiredBody):
 				r.failRequest(ctx, resp, http.StatusBadRequest, eventRequiredRespBody, ld.LogRecordCount(), nil)
-			case splunkhec.ErrDecodeJSON:
+			case errors.Is(err, splunkhec.ErrDecodeJSON):
 				r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, ld.LogRecordCount(), nil)
 			default:
 				r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ld.LogRecordCount(), err)
@@ -365,16 +365,16 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	} else {
 		md, err := r.metricCodec.Unmarshal(b)
 		if err != nil {
-			switch err {
-			case splunkhec.ErrIsNotMetric:
+			switch {
+			case errors.Is(err, splunkhec.ErrIsNotMetric):
 				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedMetricEvent, md.MetricCount(), err)
-			case splunkhec.ErrNestedJSON:
+			case errors.Is(err, splunkhec.ErrNestedJSON):
 				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, md.MetricCount())), md.MetricCount(), nil)
-			case splunkhec.ErrBlankBody:
+			case errors.Is(err, splunkhec.ErrBlankBody):
 				r.failRequest(ctx, resp, http.StatusBadRequest, eventBlankRespBody, md.MetricCount(), nil)
-			case splunkhec.ErrRequiredBody:
+			case errors.Is(err, splunkhec.ErrRequiredBody):
 				r.failRequest(ctx, resp, http.StatusBadRequest, eventRequiredRespBody, md.MetricCount(), nil)
-			case splunkhec.ErrDecodeJSON:
+			case errors.Is(err, splunkhec.ErrDecodeJSON):
 				r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, md.MetricCount(), nil)
 			default:
 				r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, md.MetricCount(), err)
