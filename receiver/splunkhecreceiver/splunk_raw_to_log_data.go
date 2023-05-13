@@ -18,9 +18,10 @@ import (
 	"bufio"
 	"net/url"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (

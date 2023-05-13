@@ -20,10 +20,11 @@ import (
 	"io"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_SplunkHecRawToLogData(t *testing.T) {
