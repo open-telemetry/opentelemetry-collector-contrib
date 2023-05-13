@@ -254,12 +254,6 @@ Examples:
 
 - `truncate_all(resource.attributes, 50)`
 
-### uuid
-
-`uuid()`
-
-The `uuid` function generates a v4 uuid string.
-
 ## Converters
 
 Converters are pure functions that take OTTL values as input and output a single value for use within a statement.
@@ -275,6 +269,7 @@ Available Converters:
 - [Split](#split)
 - [TraceID](#traceid)
 - [Substring](#substring)
+- [UUID](#UUID)
 
 ### Concat
 
@@ -453,6 +448,12 @@ If the start/length exceed the length of the `target` string, an error is return
 Examples:
 
 - `Substring("123456789", 0, 3)`
+
+### UUID
+
+`UUID()`
+
+The `UUID` function generates a v4 uuid string.
 
 ## Function syntax
 

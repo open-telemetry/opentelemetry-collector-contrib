@@ -29,10 +29,10 @@ func uuid[K any]() (ottl.ExprFunc[K], error) {
 	}, nil
 }
 
-func createUuidFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+func createUUIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	return uuid[K]()
 }
 
-func NewUuidFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("uuid", nil, createUuidFunction[K])
+func NewUUIDFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("UUID", nil, createUUIDFunction[K])
 }

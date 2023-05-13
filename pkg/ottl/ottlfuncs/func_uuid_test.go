@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Uuid(t *testing.T) {
+func Test_UUID(t *testing.T) {
 	exprFunc, err := uuid[interface{}]()
 	assert.NoError(t, err)
 
