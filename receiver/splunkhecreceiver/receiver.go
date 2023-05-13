@@ -41,10 +41,8 @@ const (
 	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
 	responseErrEventBlank             = `{"text":"Event field cannot be blank","code":13}`
 	responseErrGzipReader             = "Error on gzip body"
-	responseErrUnmarshalBody          = "Failed to unmarshal message body"
 	responseErrInternalServerError    = "Internal Server Error"
 	responseErrUnsupportedMetricEvent = "Unsupported metric event"
-	responseErrUnsupportedLogEvent    = "Unsupported log event"
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
 	responseNoData                    = `{"text":"No data","code":5}`
 	// Centralizing some HTTP and related string constants.
@@ -66,10 +64,8 @@ var (
 	invalidFormatRespBody     = initJSONResponse(responseInvalidDataFormat)
 	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
 	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
-	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
 	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
 	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
-	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
 	noDataRespBody            = initJSONResponse(responseNoData)
 )
 
@@ -357,7 +353,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 
 		consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-		r.obsrecv.EndLogsOp(ctx, typeStr, ld.LogRecordCount(), consumerErr)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, ld.LogRecordCount(), consumerErr)
 		if consumerErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ld.LogRecordCount(), consumerErr)
 		} else {
@@ -393,7 +389,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 
 		consumerErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-		r.obsrecv.EndLogsOp(ctx, typeStr, md.MetricCount(), consumerErr)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, md.MetricCount(), consumerErr)
 		if consumerErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, md.MetricCount(), consumerErr)
 		} else {
