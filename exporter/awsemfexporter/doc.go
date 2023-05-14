@@ -11,9 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//go:generate mdatagen metadata.yaml
 
 // Package awsemfexporter implements an OpenTelemetry Collector exporter that sends EmbeddedMetricFormat to
 // AWS CloudWatch Logs in the region the collector is running in using the PutLogEvents API.
-//
-//go:generate mdatagen metadata.yaml
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
