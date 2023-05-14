@@ -10,43 +10,50 @@ resourceLogs:
     scopeLogs:
       - scope:
           name: otel.profiling
-          logRecords:
-            - attributes:
-                - key: resource1_prof_scope_log1_attr1
-                  value:
-                    stringValue: value1
-              body:
-                stringValue: resource1_prof_scope_log1_body
-              timeUnixNano: "11651379494838206464"
-            - attributes:
-                - key: resource1_prof_scope_log1_attr1
-                  value:
-                    stringValue: value1
-              body:
-                stringValue: resource1_prof_scope_log2_body
-              timeUnixNano: "11651379494838206472"
+        logRecords:
+          - attributes:
+              - key: resource1_prof_scope_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_prof_scope_log1_body
+            timeUnixNano: "11651379494838206464"
+          - attributes:
+              - key: resource1_prof_scope_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_prof_scope_log2_body
+            timeUnixNano: "11651379494838206472"
       - scope:
           name: otel_collector
           version: 0.1.0
-          logRecords:
-            - attributes:
-                - key: resource1_scope1_attr1
-                  value:
-                    stringValue: value1
-              body:
-                stringValue: resource1_scope1_body
-              timeUnixNano: "11651379494838207123"
+        logRecords:
+          - attributes:
+              - key: resource1_scope1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_scope1_body
+            timeUnixNano: "11651379494838207123"
       - scope:
           name: external_service
           version: 0.2.0
-          logRecords:
-            - attributes:
-                - key: resource1_scope2_attr1
-                  value:
-                    stringValue: value1
-              body:
-                stringValue: resource1_log2_body
-              timeUnixNano: "11651379494838207153"
+        logRecords:
+          - attributes:
+              - key: resource1_scope2_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_scope2_log1_body
+            timeUnixNano: "11651379494838207153"
+          - attributes:
+              - key: resource1_scope2_log2_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_scope2_log2_body
+            timeUnixNano: "11651379494838208553"
   - resource:
       attributes:
         - key: resource2_attribute1

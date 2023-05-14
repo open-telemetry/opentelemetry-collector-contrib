@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -1334,7 +1335,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 
-	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs"}, []int{10})
+	profilingData := createLogDataWithCustomLibraries(1, []string{"otel.profiling"}, []int{20})
 	var headers *[]http.Header
 
 	httpClient, headers := newTestClient(200, "OK")
@@ -1342,6 +1344,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
 	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+	err = c.pushLogData(context.Background(), profilingData)
 	require.NoError(t, err)
 	assert.Equal(t, 30, len(*headers))
 
@@ -1394,6 +1398,17 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	config.DisableCompression = true
 	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 	c.hecWorker = &mockHecWorker{}
+	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushLogData)
+	require.NoError(b, err)
+	exp = &baseLogsExporter{
+		Component: exp,
+		Logs: &perScopeBatcher{
+			logsEnabled: true,
+			logger:      zap.NewNop(),
+			next:        exp,
+		},
+	}
 
 	logs := createLogData(numResources, 1, numRecords)
 
@@ -1401,7 +1416,7 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := c.pushLogData(context.Background(), logs)
+		err := exp.ConsumeLogs(context.Background(), logs)
 		require.NoError(b, err)
 	}
 }
@@ -1483,13 +1498,9 @@ func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
 
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-	}
-
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
 	_0_0_0 := &bufferState{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := c.subLogs(logs, _0_0_0, nil)
+	got := subLogs(logs, _0_0_0)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -1503,7 +1514,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
 	_0_1_2 := &bufferState{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _0_1_2, nil)
+	got = subLogs(logs, _0_1_2)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -1516,7 +1527,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &bufferState{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _1_1_2, nil)
+	got = subLogs(logs, _1_1_2)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
@@ -1524,31 +1535,6 @@ func TestSubLogs(t *testing.T) {
 	// The name of the sole log record should be 1_1_2.
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_2", val.AsString())
-
-	// Now see how profiling and log data are merged
-	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
-	slice := &bufferState{resource: 1, library: 0, record: 5}
-	profSlice := &bufferState{resource: 0, library: 1, record: 8}
-
-	got = c.subLogs(logs, slice, profSlice)
-
-	assert.Equal(t, 5+2+10, got.LogRecordCount())
-	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_5", val.AsString())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_9", val.AsString())
-
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_8", val.AsString())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_9", val.AsString())
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_0", val.AsString())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_9", val.AsString())
 }
 
 func TestPushLogRecordsBufferCounters(t *testing.T) {

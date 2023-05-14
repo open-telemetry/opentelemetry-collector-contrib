@@ -20,12 +20,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 // perScopeBatcher is a consumer.Logs that rebatches logs by a type found in the scope name: profiling or regular logs.
 type perScopeBatcher struct {
 	logsEnabled      bool
 	profilingEnabled bool
+	logger           *zap.Logger
 	next             consumer.Logs
 }
 
@@ -53,11 +55,17 @@ func (rb *perScopeBatcher) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 
 	// if we don't have both types of logs, just call next if enabled
 	if !profilingFound || !otherLogsFound {
-		if rb.logsEnabled && otherLogsFound {
-			return rb.next.ConsumeLogs(ctx, logs)
+		if otherLogsFound {
+			if rb.logsEnabled {
+				return rb.next.ConsumeLogs(ctx, logs)
+			}
+			rb.logger.Debug("Log data is not allowed", zap.Int("dropped_records", logs.LogRecordCount()))
 		}
-		if rb.profilingEnabled && profilingFound {
-			return rb.next.ConsumeLogs(ctx, logs)
+		if profilingFound {
+			if rb.profilingEnabled {
+				return rb.next.ConsumeLogs(ctx, logs)
+			}
+			rb.logger.Debug("Profiling data is not allowed", zap.Int("dropped_records", logs.LogRecordCount()))
 		}
 		return nil
 	}
@@ -95,9 +103,15 @@ func (rb *perScopeBatcher) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	var err error
 	if rb.logsEnabled {
 		err = multierr.Append(err, rb.next.ConsumeLogs(ctx, otherLogs))
+	} else {
+		rb.logger.Debug("Log data is not allowed", zap.Int("dropped_records",
+			logs.LogRecordCount()-profilingLogs.LogRecordCount()))
 	}
 	if rb.profilingEnabled {
 		err = multierr.Append(err, rb.next.ConsumeLogs(ctx, profilingLogs))
+	} else {
+		rb.logger.Debug("Profiling data is not allowed", zap.Int("dropped_records",
+			logs.LogRecordCount()-otherLogs.LogRecordCount()))
 	}
 	return err
 }

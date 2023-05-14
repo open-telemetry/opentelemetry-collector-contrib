@@ -183,7 +183,12 @@ func createLogsExporter(
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, logsExporter),
+		Logs: batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, &perScopeBatcher{
+			logsEnabled:      cfg.LogDataEnabled,
+			profilingEnabled: cfg.ProfilingDataEnabled,
+			logger:           set.Logger,
+			next:             logsExporter,
+		}),
 	}
 
 	return wrapped, nil
