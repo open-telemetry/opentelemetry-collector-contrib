@@ -70,6 +70,8 @@ all_set:
   resource_attributes:
     redis.version:
       enabled: true
+    service.instance.id:
+      enabled: true
 none_set:
   metrics:
     redis.clients.blocked:
@@ -140,4 +142,6 @@ none_set:
       enabled: false
   resource_attributes:
     redis.version:
+      enabled: false
+    service.instance.id:
       enabled: false

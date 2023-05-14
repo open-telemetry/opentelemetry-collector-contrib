@@ -33,6 +33,8 @@ func TestRedisRunnable(t *testing.T) {
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()
 	assert.Equal(t, "otelcol/redisreceiver", il.Name())
+	// Only version should be enabled by default at this moment
+	assert.Equal(t, 1, rm.Resource().Attributes().Len())
 }
 
 func TestNewReceiver_invalid_auth_error(t *testing.T) {

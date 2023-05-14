@@ -61,7 +61,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RedisVersion: ResourceAttributeConfig{Enabled: true},
+					RedisVersion:      ResourceAttributeConfig{Enabled: true},
+					ServiceInstanceID: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -104,7 +105,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RedisVersion: ResourceAttributeConfig{Enabled: false},
+					RedisVersion:      ResourceAttributeConfig{Enabled: false},
+					ServiceInstanceID: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},

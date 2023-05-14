@@ -28,6 +28,7 @@ type redisScraper struct {
 	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
 	uptime   time.Duration
+	cfg      *Config
 }
 
 const redisMaxDbs = 16 // Maximum possible number of redis databases
@@ -52,6 +53,7 @@ func newRedisScraperWithClient(client client, settings receiver.CreateSettings, 
 		redisSvc: newRedisSvc(client),
 		settings: settings.TelemetrySettings,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		cfg:      cfg,
 	}
 	return scraperhelper.NewScraper(
 		metadata.Type,
@@ -93,7 +95,7 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordRoleMetrics(now, inf)
 	rs.recordCmdStatsMetrics(now, inf)
-	return rs.mb.Emit(metadata.WithRedisVersion(rs.getRedisVersion(inf))), nil
+	return rs.mb.Emit(metadata.WithRedisVersion(rs.getRedisVersion(inf)), metadata.WithServiceInstanceID(rs.cfg.Endpoint)), nil
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.

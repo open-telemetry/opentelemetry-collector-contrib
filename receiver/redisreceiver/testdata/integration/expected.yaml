@@ -4,6 +4,9 @@ resourceMetrics:
         - key: redis.version
           value:
             stringValue: 6.0.3
+        - key: service.instance.id
+          value:
+            stringValue: localhost:6379
     scopeMetrics:
       - metrics:
           - description: Number of clients pending on a blocking call

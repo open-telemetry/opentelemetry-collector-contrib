@@ -1868,6 +1868,15 @@ func WithRedisVersion(val string) ResourceMetricsOption {
 	}
 }
 
+// WithServiceInstanceID sets provided value as "service.instance.id" attribute for current resource.
+func WithServiceInstanceID(val string) ResourceMetricsOption {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ServiceInstanceID.Enabled {
+			rm.Resource().Attributes().PutStr("service.instance.id", val)
+		}
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {

@@ -11,6 +11,10 @@ resource_attributes:
     description: Redis server's version.
     enabled: true
     type: string
+  service.instance.id:
+    description: Instance identifier of the redis server.  Should be same as endpoint.  Should be enabled by default in the future.
+    enabled: false
+    type: string
 
 attributes:
   state:

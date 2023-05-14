@@ -333,3 +333,4 @@ Redis node's role
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | redis.version | Redis server's version. | Any Str | true |
+| service.instance.id | Instance identifier of the redis server.  Should be same as endpoint.  Should be enabled by default in the future. | Any Str | false |
