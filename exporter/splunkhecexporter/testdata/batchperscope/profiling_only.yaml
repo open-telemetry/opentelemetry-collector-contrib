@@ -10,21 +10,21 @@ resourceLogs:
     scopeLogs:
       - scope:
           name: otel.profiling
-          logRecords:
-            - attributes:
-                - key: resource1_prof_scope_log1_attr1
-                  value:
-                    stringValue: value1
-              body:
-                stringValue: resource1_prof_scope_log1_body
-              timeUnixNano: "11651379494838206464"
-            - attributes:
-                - key: resource1_prof_scope_log1_attr1
-                  value:
-                    stringValue: value1
-              body:
-                stringValue: resource1_prof_scope_log2_body
-              timeUnixNano: "11651379494838206472"
+        logRecords:
+          - attributes:
+              - key: resource1_prof_scope_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_prof_scope_log1_body
+            timeUnixNano: "11651379494838206464"
+          - attributes:
+              - key: resource1_prof_scope_log1_attr1
+                value:
+                  stringValue: value1
+            body:
+              stringValue: resource1_prof_scope_log2_body
+            timeUnixNano: "11651379494838206472"
   - resource:
       attributes:
         - key: resource2_attribute1
