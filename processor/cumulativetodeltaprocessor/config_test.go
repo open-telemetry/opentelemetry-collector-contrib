@@ -61,6 +61,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxStaleness: 10 * time.Second,
+				InitialValue: tracking.InitialValueAuto,
 			},
 		},
 		{
@@ -89,6 +90,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxStaleness: 10 * time.Second,
+				InitialValue: tracking.InitialValueAuto,
 			},
 		},
 		{
