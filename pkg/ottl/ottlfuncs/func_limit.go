@@ -30,7 +30,7 @@ type LimitArguments[K any] struct {
 }
 
 func NewLimitFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Limit", &LimitArguments[K]{}, createLimitFunction[K])
+	return ottl.NewFactory("limit", &LimitArguments[K]{}, createLimitFunction[K])
 }
 
 func createLimitFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
