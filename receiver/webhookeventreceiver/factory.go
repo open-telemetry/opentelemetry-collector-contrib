@@ -16,8 +16,6 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "webhookevent"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelDevelopment
 	// might add this later, for now I wish to require a valid
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
