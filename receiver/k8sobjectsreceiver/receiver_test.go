@@ -50,13 +50,13 @@ func TestPullObject(t *testing.T) {
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "1234"),
 		generatePod("pod2", "default", map[string]interface{}{
 			"environment": "test",
-		}),
+		}, "5678"),
 		generatePod("pod3", "default_ignore", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "9012"),
 	)
 
 	rCfg := createDefaultConfig().(*Config)
@@ -127,13 +127,13 @@ func TestWatchObject(t *testing.T) {
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "1234"),
 		generatePod("pod2", "default", map[string]interface{}{
 			"environment": "test",
-		}),
+		}, "5678"),
 		generatePod("pod3", "default_ignore", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "9012"),
 	)
 	time.Sleep(time.Millisecond * 100)
 	assert.Len(t, consumer.Logs(), 2)
@@ -142,7 +142,7 @@ func TestWatchObject(t *testing.T) {
 	mockClient.createPods(
 		generatePod("pod4", "default", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "3456"),
 	)
 	time.Sleep(time.Millisecond * 100)
 	assert.Len(t, consumer.Logs(), 3)

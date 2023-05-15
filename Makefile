@@ -257,7 +257,7 @@ genotelcontribcol: $(BUILDER)
 otelcontribcolbuilder: $(BUILDER)
 	mkdir -p ./dist
 	$(BUILDER) --skip-compilation --config ./builder/lumigo-builder-config.yaml
-	cd ./dist/ && GOOS=$(go_os) GOARCH=$(go_arch) CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./otelcontribcol_$(go_os)_$(go_arch)$(EXTENSION) \
+	cd ./dist/ && GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 # Build the Collector executable.

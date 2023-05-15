@@ -10,6 +10,7 @@ exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.71.0"
   - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.71.0
   - gomod: "go.opentelemetry.io/collector/exporter/otlphttpexporter v0.71.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.71.0"
 
 extensions:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.71.0"
@@ -18,12 +19,12 @@ extensions:
 
 receivers:
   - gomod: "go.opentelemetry.io/collector/receiver/otlpreceiver v0.71.0"
-  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.71.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.71.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.71.0"
 
 processors:
   - gomod: "go.opentelemetry.io/collector/processor/batchprocessor v0.71.0"
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.71.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.71.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.71.0"
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.71.0"
@@ -33,3 +34,4 @@ processors:
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension v0.71.0 => ../extension/lumigoauthextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionbykeyprocessor v0.71.0 => ../processor/redactionbykeyprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.71.0 => ../receiver/k8sobjectsreceiver

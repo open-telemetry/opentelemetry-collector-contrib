@@ -34,7 +34,8 @@ func newMockDynamicClient() mockDynamicClient {
 	objs := []runtime.Object{}
 
 	gvrToListKind := map[schema.GroupVersionResource]string{
-		{Group: "", Version: "v1", Resource: "pods"}: "PodList",
+		{Group: "", Version: "v1", Resource: "pods"}:   "PodList",
+		{Group: "", Version: "v1", Resource: "events"}: "EventList",
 	}
 
 	fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind, objs...)
@@ -48,6 +49,16 @@ func (c mockDynamicClient) getMockDynamicClient() (dynamic.Interface, error) {
 	return c.client, nil
 }
 
+func (c mockDynamicClient) createEvents(objects ...*unstructured.Unstructured) {
+	events := c.client.Resource(schema.GroupVersionResource{
+		Version:  "v1",
+		Resource: "events",
+	})
+	for _, event := range objects {
+		_, _ = events.Namespace(event.GetNamespace()).Create(context.Background(), event, v1.CreateOptions{})
+	}
+}
+
 func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 	pods := c.client.Resource(schema.GroupVersionResource{
 		Version:  "v1",
@@ -58,15 +69,40 @@ func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 	}
 }
 
-func generatePod(name, namespace string, labels map[string]interface{}) *unstructured.Unstructured {
+func generateEvent(name, namespace string, labels map[string]interface{}, unstructuredInvolvedObject *unstructured.Unstructured) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "Events",
+			"metadata": map[string]interface{}{
+				"namespace": namespace,
+				"name":      name,
+				"labels":    labels,
+			},
+			"involvedObject": map[string]interface{}{
+				"apiVersion":      unstructuredInvolvedObject.GetAPIVersion(),
+				"kind":            unstructuredInvolvedObject.GetKind(),
+				"namespace":       unstructuredInvolvedObject.GetNamespace(),
+				"name":            unstructuredInvolvedObject.GetName(),
+				"uid":             string(unstructuredInvolvedObject.GetUID()),
+				"resourceVersion": unstructuredInvolvedObject.GetResourceVersion(),
+			},
+		},
+	}
+
+}
+
+func generatePod(name, namespace string, labels map[string]interface{}, resourceVersion string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "v1",
 			"kind":       "Pods",
 			"metadata": map[string]interface{}{
-				"namespace": namespace,
-				"name":      name,
-				"labels":    labels,
+				"namespace":       namespace,
+				"name":            name,
+				"labels":          labels,
+				"resourceVersion": resourceVersion,
+				"uid":             name + "4567389457638945",
 			},
 		},
 	}
