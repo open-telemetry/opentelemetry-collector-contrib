@@ -1499,7 +1499,7 @@ func TestSubLogs(t *testing.T) {
 	logs := createLogData(2, 2, 3)
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &bufferState{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
+	_0_0_0 := iterState{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
 	got := subLogs(logs, _0_0_0)
 
 	// Number of logs in subset should equal original logs.
@@ -1513,7 +1513,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &bufferState{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
+	_0_1_2 := iterState{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
 	got = subLogs(logs, _0_1_2)
 
 	assert.Equal(t, 7, got.LogRecordCount())
@@ -1526,7 +1526,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := &bufferState{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
+	_1_1_2 := iterState{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
 	got = subLogs(logs, _1_1_2)
 
 	// Number of logs in subset should be 1.
@@ -1537,30 +1537,48 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 }
 
-func TestPushLogRecordsBufferCounters(t *testing.T) {
+func TestPushLogsPartialSuccess(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ExportRaw = true
-	c := client{
-		config:          cfg,
-		logger:          zap.NewNop(),
-		hecWorker:       &mockHecWorker{},
-		bufferStatePool: newBufferStatePool(6, false, 10),
-	}
+	cfg.MaxContentLengthLogs = 6
+	c := newLogsClient(exportertest.NewNopCreateSettings(), cfg)
 
-	logs := plog.NewResourceLogsSlice()
-	logRecords := logs.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-	logRecords.AppendEmpty().Body().SetStr("12345")    // the first log record should be accepted and sent
-	logRecords.AppendEmpty().Body().SetStr("12345678") // the second log record should be rejected as it's too big
-	logRecords.AppendEmpty().Body().SetStr("12345")    // the third log record should be just accepted
-	bs := c.bufferStatePool.get()
-	defer c.bufferStatePool.put(bs)
+	// The first request succeeds, the second fails.
+	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo())}
 
-	permErrs, err := c.pushLogRecords(context.Background(), logs, bs, nil)
-	assert.NoError(t, err)
-	assert.Len(t, permErrs, 1)
-	assert.ErrorContains(t, permErrs[0], "bytes larger than configured max content length")
+	logs := plog.NewLogs()
+	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	logRecords.AppendEmpty().Body().SetStr("log-1")         // should be successfully sent
+	logRecords.AppendEmpty().Body().SetStr("log-2-too-big") // should be permanently rejected as it's too big
+	logRecords.AppendEmpty().Body().SetStr("log-3")         // should be rejected and returned to for retry
 
-	assert.Equal(t, 2, bs.record, "the buffer counter must be at the latest log record")
+	err := c.pushLogData(context.Background(), logs)
+	expectedErr := consumererror.Logs{}
+	require.ErrorContains(t, err, "503")
+	require.ErrorAs(t, err, &expectedErr)
+	require.Equal(t, 1, expectedErr.Data().LogRecordCount())
+	assert.Equal(t, "log-3", expectedErr.Data().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+
+	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo())}
+
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
+
+	err := c.pushLogData(context.Background(), logs)
+	expectedErr := consumererror.Logs{}
+	require.ErrorContains(t, err, "503")
+	require.ErrorAs(t, err, &expectedErr)
+	assert.Equal(t, logs, expectedErr.Data())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings

@@ -40,6 +40,14 @@ var getPushLogFn = func(c *client) func(ctx context.Context, ld plog.Logs) error
 	return c.pushLogData
 }
 
+// iterState captures a state of iteration over the pdata Logs/Metrics/Traces instances.
+type iterState struct {
+	resource int // index in ResourceLogs/ResourceMetrics/ResourceSpans list
+	library  int // index in ScopeLogs/ScopeMetrics/ScopeSpans list
+	record   int // index in Logs/Metrics/Spans list
+	done     bool
+}
+
 // client sends the data to the splunk backend.
 type client struct {
 	config            *Config
@@ -157,215 +165,173 @@ func isProfilingData(sl plog.ScopeLogs) bool {
 func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers map[string]string) error {
 	bufState := c.bufferStatePool.get()
 	defer c.bufferStatePool.put(bufState)
-
+	is := iterState{}
 	var permanentErrors []error
 
-	var rls = ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
-			var err error
-			var newPermanentErrors []error
-
-			bufState.resource, bufState.library = i, j
-			newPermanentErrors, err = c.pushLogRecords(ctx, rls, bufState, headers)
-
-			if err != nil {
-				return consumererror.NewLogs(err, subLogs(ld, bufState))
+	for {
+		bufState.reset()
+		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, bufState, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if bufState.containsData() {
+			if err := c.postEvents(ctx, bufState, headers); err != nil {
+				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
-
-			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
-	}
-
-	// There's some leftover unsent non-profiling data
-	if bufState.containsData() {
-		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewLogs(err, subLogs(ld, bufState))
+		if latestIterState.done {
+			break
 		}
+		is = latestIterState
 	}
 
 	return multierr.Combine(permanentErrors...)
 }
 
-func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice, state *bufferState, headers map[string]string) (permanentErrors []error, sendingError error) {
-	res := lds.At(state.resource)
-	logs := res.ScopeLogs().At(state.library).LogRecords()
+// fillLogsBuffer fills the buffer with Splunk events until the buffer is full or all logs are processed.
+func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (iterState, []error) {
+	var b []byte
+	var permanentErrors []error
 
-	state.record = 0
-	for k := 0; k < logs.Len(); k++ {
-		var b []byte
+	for i := is.resource; i < logs.ResourceLogs().Len(); i++ {
+		rl := logs.ResourceLogs().At(i)
+		for j := is.library; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			for k := is.record; k < sl.LogRecords().Len(); k++ {
+				logRecord := sl.LogRecords().At(k)
 
-		if c.config.ExportRaw {
-			b = []byte(logs.At(k).Body().AsString() + "\n")
-		} else {
-			// Parsing log record to Splunk event.
-			event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config)
-			// JSON encoding event and writing to buffer.
-			var err error
-			b, err = jsoniter.Marshal(event)
-			if err != nil {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %w", event, err)))
-				continue
+				if c.config.ExportRaw {
+					b = []byte(logRecord.Body().AsString() + "\n")
+				} else {
+					// Parsing log record to Splunk event.
+					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
+					// JSON encoding event and writing to buffer.
+					var err error
+					b, err = jsoniter.Marshal(event)
+					if err != nil {
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+							"dropped log event: %v, error: %w", event, err)))
+						continue
+					}
+				}
+
+				// Continue adding events to buffer up to capacity.
+				accepted, e := bs.accept(b)
+				if e != nil {
+					permanentErrors = append(permanentErrors,
+						consumererror.NewPermanent(fmt.Errorf("error writing the event: %w", e)))
+					continue
+				}
+				if !accepted {
+					if bs.containsData() {
+						return iterState{i, j, k, false}, permanentErrors
+					}
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
+							" content length %d bytes", len(b), bs.bufferMaxLen)))
+					return iterState{i, j, k + 1, false}, permanentErrors
+				}
 			}
-
-		}
-
-		// Continue adding events to buffer up to capacity.
-		accepted, e := state.accept(b)
-		if e != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if accepted {
-			continue
-		}
-
-		if state.containsData() {
-			if err := c.postEvents(ctx, state, headers); err != nil {
-				return permanentErrors, err
-			}
-		}
-		state.reset()
-
-		// Writing truncated bytes back to buffer.
-		accepted, e = state.accept(b)
-		if accepted {
-			state.record = k
-			continue
-		}
-
-		state.record = k + 1
-		if e != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("error writing the event: %w", e)))
-		} else {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 		}
 	}
 
-	return permanentErrors, nil
+	return iterState{done: true}, permanentErrors
 }
 
-func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMetricsSlice, state *bufferState, headers map[string]string) (permanentErrors []error, sendingError error) {
-	res := mds.At(state.resource)
-	metrics := res.ScopeMetrics().At(state.library).Metrics()
+func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is iterState) (iterState, []error) {
+	var permanentErrors []error
 
-	state.record = 0
-	for k := 0; k < metrics.Len(); k++ {
-		// Parsing metric record to Splunk event.
-		events := mapMetricToSplunkEvent(res.Resource(), metrics.At(k), c.config, c.logger)
-		buf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
-		if c.config.UseMultiMetricFormat {
-			merged, err := mergeEventsToMultiMetricFormat(events)
-			if err != nil {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("error merging events: %w", err)))
-			} else {
-				events = merged
+	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := is.record; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+
+				// Parsing metric record to Splunk event.
+				events := mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)
+				buf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
+				if c.config.UseMultiMetricFormat {
+					merged, err := mergeEventsToMultiMetricFormat(events)
+					if err != nil {
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+							"error merging events: %w", err)))
+					} else {
+						events = merged
+					}
+				}
+				for _, event := range events {
+					// JSON encoding event and writing to buffer.
+					b, err := jsoniter.Marshal(event)
+					if err != nil {
+						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
+						continue
+					}
+					buf.Write(b)
+				}
+
+				// Continue adding events to buffer up to capacity.
+				b := buf.Bytes()
+				accepted, e := bs.accept(b)
+				if e != nil {
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+						"error writing the event: %w", e)))
+					continue
+				}
+				if !accepted {
+					if bs.containsData() {
+						return iterState{i, j, k, false}, permanentErrors
+					}
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
+							" content length %d bytes", len(b), bs.bufferMaxLen)))
+					return iterState{i, j, k + 1, false}, permanentErrors
+				}
 			}
-		}
-		for _, event := range events {
-			// JSON encoding event and writing to buffer.
-			b, err := jsoniter.Marshal(event)
-			if err != nil {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
-				continue
-			}
-			buf.Write(b)
-		}
-
-		// Continue adding events to buffer up to capacity.
-		b := buf.Bytes()
-		accepted, e := state.accept(b)
-		if e != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if accepted {
-			continue
-		}
-
-		if state.containsData() {
-			if err := c.postEvents(ctx, state, headers); err != nil {
-				return permanentErrors, err
-			}
-		}
-		state.reset()
-
-		// Writing truncated bytes back to buffer.
-		accepted, e = state.accept(b)
-		if accepted {
-			state.record = k
-			continue
-		}
-
-		state.record = k + 1
-		if e != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("error writing the event: %w", e)))
-		} else {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 		}
 	}
 
-	return permanentErrors, nil
+	return iterState{done: true}, permanentErrors
 }
 
-func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSlice, state *bufferState, headers map[string]string) (permanentErrors []error, sendingError error) {
-	res := tds.At(state.resource)
-	spans := res.ScopeSpans().At(state.library).Spans()
+func (c *client) fillTracesBuffer(traces ptrace.Traces, bs *bufferState, is iterState) (iterState, []error) {
+	var permanentErrors []error
 
-	state.record = 0
-	for k := 0; k < spans.Len(); k++ {
-		// Parsing span record to Splunk event.
-		event := mapSpanToSplunkEvent(res.Resource(), spans.At(k), c.config)
-		// JSON encoding event and writing to buffer.
-		b, err := jsoniter.Marshal(event)
-		if err != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
-			continue
-		}
+	for i := is.resource; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := is.library; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			for k := is.record; k < ss.Spans().Len(); k++ {
+				span := ss.Spans().At(k)
 
-		// Continue adding events to buffer up to capacity.
-		accepted, e := state.accept(b)
-		if e != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("error writing the event: %w", e)))
-			continue
-		}
-		if accepted {
-			continue
-		}
+				// Parsing span record to Splunk event.
+				event := mapSpanToSplunkEvent(rs.Resource(), span, c.config)
+				// JSON encoding event and writing to buffer.
+				b, err := jsoniter.Marshal(event)
+				if err != nil {
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
+					continue
+				}
 
-		if state.containsData() {
-			if err = c.postEvents(ctx, state, headers); err != nil {
-				return permanentErrors, err
+				// Continue adding events to buffer up to capacity.
+				accepted, e := bs.accept(b)
+				if e != nil {
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+						"error writing the event: %w", e)))
+					continue
+				}
+				if !accepted {
+					if bs.containsData() {
+						return iterState{i, j, k, false}, permanentErrors
+					}
+					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
+							" content length %d bytes", len(b), bs.bufferMaxLen)))
+					return iterState{i, j, k + 1, false}, permanentErrors
+				}
 			}
-		}
-		state.reset()
-
-		// Writing truncated bytes back to buffer.
-		accepted, e = state.accept(b)
-		if accepted {
-			state.record = k
-			continue
-		}
-
-		state.record = k + 1
-		if e != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("error writing the event: %w", e)))
-		} else {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
-				fmt.Errorf("dropped trace event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 		}
 	}
 
-	return permanentErrors, nil
+	return iterState{done: true}, permanentErrors
 }
 
 // pushMetricsDataInBatches sends batches of Splunk events in JSON format.
@@ -374,32 +340,22 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
 	bufState := c.bufferStatePool.get()
 	defer c.bufferStatePool.put(bufState)
-
+	is := iterState{}
 	var permanentErrors []error
 
-	var rms = md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			var err error
-			var newPermanentErrors []error
-
-			bufState.resource, bufState.library = i, j
-			newPermanentErrors, err = c.pushMetricsRecords(ctx, rms, bufState, headers)
-
-			if err != nil {
-				return consumererror.NewMetrics(err, subMetrics(md, bufState))
+	for {
+		bufState.reset()
+		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, bufState, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if bufState.containsData() {
+			if err := c.postEvents(ctx, bufState, headers); err != nil {
+				return consumererror.NewMetrics(err, subMetrics(md, is))
 			}
-
-			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
-	}
-
-	// There's some leftover unsent metrics
-	if bufState.containsData() {
-		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewMetrics(err, subMetrics(md, bufState))
+		if latestIterState.done {
+			break
 		}
+		is = latestIterState
 	}
 
 	return multierr.Combine(permanentErrors...)
@@ -411,32 +367,22 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, headers map[string]string) error {
 	bufState := c.bufferStatePool.get()
 	defer c.bufferStatePool.put(bufState)
-
+	is := iterState{}
 	var permanentErrors []error
 
-	var rts = td.ResourceSpans()
-	for i := 0; i < rts.Len(); i++ {
-		ilts := rts.At(i).ScopeSpans()
-		for j := 0; j < ilts.Len(); j++ {
-			var err error
-			var newPermanentErrors []error
-
-			bufState.resource, bufState.library = i, j
-			newPermanentErrors, err = c.pushTracesData(ctx, rts, bufState, headers)
-
-			if err != nil {
-				return consumererror.NewTraces(err, subTraces(td, bufState))
+	for {
+		bufState.reset()
+		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, bufState, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if bufState.containsData() {
+			if err := c.postEvents(ctx, bufState, headers); err != nil {
+				return consumererror.NewTraces(err, subTraces(td, is))
 			}
-
-			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
-	}
-
-	// There's some leftover unsent traces
-	if bufState.containsData() {
-		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewTraces(err, subTraces(td, bufState))
+		if latestIterState.done {
+			break
 		}
+		is = latestIterState
 	}
 
 	return multierr.Combine(permanentErrors...)
@@ -450,7 +396,7 @@ func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers 
 }
 
 // subLogs returns a subset of logs starting from the state.
-func subLogs(src plog.Logs, state *bufferState) plog.Logs {
+func subLogs(src plog.Logs, state iterState) plog.Logs {
 	dst := plog.NewLogs()
 	resources := src.ResourceLogs()
 	resourcesSub := dst.ResourceLogs()
@@ -492,7 +438,7 @@ func subLogs(src plog.Logs, state *bufferState) plog.Logs {
 }
 
 // subMetrics returns a subset of metrics starting from the state.
-func subMetrics(src pmetric.Metrics, state *bufferState) pmetric.Metrics {
+func subMetrics(src pmetric.Metrics, state iterState) pmetric.Metrics {
 	dst := pmetric.NewMetrics()
 	resources := src.ResourceMetrics()
 	resourcesSub := dst.ResourceMetrics()
@@ -533,7 +479,7 @@ func subMetrics(src pmetric.Metrics, state *bufferState) pmetric.Metrics {
 	return dst
 }
 
-func subTraces(src ptrace.Traces, state *bufferState) ptrace.Traces {
+func subTraces(src ptrace.Traces, state iterState) ptrace.Traces {
 	dst := ptrace.NewTraces()
 	resources := src.ResourceSpans()
 	resourcesSub := dst.ResourceSpans()
