@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for bigipreceiver metrics.
+// MetricsConfig provides config for bigip metrics.
 type MetricsConfig struct {
 	BigipNodeAvailability             MetricConfig `mapstructure:"bigip.node.availability"`
 	BigipNodeConnectionCount          MetricConfig `mapstructure:"bigip.node.connection.count"`
@@ -145,7 +145,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for bigipreceiver resource attributes.
+// ResourceAttributesConfig provides config for bigip resource attributes.
 type ResourceAttributesConfig struct {
 	BigipNodeIPAddress            ResourceAttributeConfig `mapstructure:"bigip.node.ip_address"`
 	BigipNodeName                 ResourceAttributeConfig `mapstructure:"bigip.node.name"`
@@ -182,7 +182,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for bigipreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for bigip metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
