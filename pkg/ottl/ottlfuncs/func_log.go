@@ -24,7 +24,7 @@ import (
 )
 
 type LogArguments[K any] struct {
-	Target ottl.Getter[K] `ottlarg:"0"`
+	Target ottl.FloatLikeGetter[K] `ottlarg:"0"`
 }
 
 func NewLogFactory[K any]() ottl.Factory[K] {
@@ -41,35 +41,16 @@ func createLogFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	return logFunc(args.Target), nil
 }
 
-func logFunc[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
+func logFunc[K any](target ottl.FloatLikeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		switch value := value.(type) {
-		case int64:
-			if value <= 0 {
-				return nil, fmt.Errorf("expected value greater than zero but got nil %v", value)
-			}
-			return math.Log((float64)(value)), nil
-		case string:
-			fltValue, err := strconv.ParseFloat(value, 64)
-			if err != nil {
-				return nil, err
-			}
-			if fltValue <= 0 {
-				return nil, fmt.Errorf("expected value greater than zero but got nil %v", fltValue)
-			}
-			return math.Log(fltValue), nil
-		case float64:
-			if value <= 0 {
-				return nil, fmt.Errorf("expected value greater than zero but got nil %v", value)
-			}
-			return math.Log(value), nil
-		default:
-			return nil, fmt.Errorf("unhanlded type %T", value)
+		if *value <= 0 {
+			return nil, fmt.Errorf("expected value greater than zero but got nil %v", *value)
 		}
+		return math.Log(*value), nil
 	}
 }
