@@ -16,11 +16,19 @@ package splunkhecexporter
 
 import (
 	"context"
+	"errors"
 )
 
-type mockHecWorker struct{}
+var errHecSendFailed = errors.New("hec send failed")
 
-func (m *mockHecWorker) send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
+type mockHecWorker struct {
+	failSend bool
+}
+
+func (m *mockHecWorker) send(_ context.Context, _ *bufferState, _ map[string]string) error {
+	if m.failSend {
+		return errHecSendFailed
+	}
 	return nil
 }
 

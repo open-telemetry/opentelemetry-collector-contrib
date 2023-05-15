@@ -1421,6 +1421,27 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	}
 }
 
+func BenchmarkConsumeLogsRejected(b *testing.B) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+	c.hecWorker = &mockHecWorker{failSend: true}
+
+	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushLogData)
+	require.NoError(b, err)
+
+	logs := createLogData(10, 1, 100)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := exp.ConsumeLogs(context.Background(), logs)
+		require.Error(b, err)
+	}
+}
+
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = 1
