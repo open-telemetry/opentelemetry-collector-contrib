@@ -40,7 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      false,
 			NumConsumers: 10,
-			QueueSize:    5000,
+			QueueSize:    1000,
 		},
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:             true,
