@@ -291,6 +291,18 @@ transform:
         - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
 ``` 
 
+### Comnbine two attributes
+Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        # Use Concat function to combine any number of string, separated by a delimiter.
+        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " ")
+```
+
 ### Parsing JSON logs
 
 Given the following json body
