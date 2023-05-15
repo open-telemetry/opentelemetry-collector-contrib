@@ -16,22 +16,20 @@ package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 )
 
 const (
-	defaultCollectionInterval = 60 * time.Second
+	defaultCollectionInterval = time.Minute
 	defaultEndpoint           = "http://localhost:4040"
 )
 
 var (
-	errInvalidEndpoint = errors.New(`endpoint [%s] must be in the form of <scheme>://<hostname>:<port>`)
+	errInvalidEndpoint = errors.New("'endpoint' must be in the form of <scheme>://<hostname>:<port>")
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -47,7 +45,7 @@ func (cfg *Config) Validate() error {
 
 	_, parseErr := url.Parse(cfg.Endpoint)
 	if parseErr != nil {
-		err = multierr.Append(err, fmt.Errorf(errInvalidEndpoint.Error(), cfg.Endpoint))
+		return errInvalidEndpoint
 	}
 	return err
 }

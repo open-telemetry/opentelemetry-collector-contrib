@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -32,7 +34,7 @@ func TestNewFactory(t *testing.T) {
 			desc: "creates a new factory with correct type",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				require.EqualValues(t, typeStr, factory.Type())
+				require.EqualValues(t, metadata.Type, factory.Type())
 			},
 		},
 		{

@@ -15,7 +15,6 @@
 package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver"
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,7 +39,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "invalid://endpoint  12efg",
 				},
 			},
-			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "invalid://endpoint  12efg"),
+			expectedErr: errInvalidEndpoint,
 		},
 	}
 

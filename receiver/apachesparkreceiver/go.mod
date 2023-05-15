@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
 
-go 1.18
+go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
@@ -8,7 +8,6 @@ require (
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/consumer v0.77.0
 	go.opentelemetry.io/collector/receiver v0.77.0
-	go.uber.org/multierr v1.11.0
 )
 
 require (
@@ -40,6 +39,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
 	go.opentelemetry.io/otel/trace v1.15.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
