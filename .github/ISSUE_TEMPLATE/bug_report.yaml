@@ -70,6 +70,7 @@ body:
       - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
+      - exporter/syslog
       - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
