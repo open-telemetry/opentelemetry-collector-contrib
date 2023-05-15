@@ -45,7 +45,14 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitter := NewLogEmitter(params.Logger.Sugar())
+		emitterOpts := []emitterOption{}
+		if baseCfg.maxBatchSize > 0 {
+			emitterOpts = append(emitterOpts, withMaxBatchSize(baseCfg.maxBatchSize))
+		}
+		if baseCfg.flushInterval > 0 {
+			emitterOpts = append(emitterOpts, withFlushInterval(baseCfg.flushInterval))
+		}
+		emitter := NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
