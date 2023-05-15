@@ -36,9 +36,6 @@ type bufferState struct {
 	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
-	resource             int // index in ResourceLogs/ResourceMetrics/ResourceSpans list
-	library              int // index in ScopeLogs/ScopeMetrics/ScopeSpans list
-	record               int // index in Logs/Metrics/Spans list
 	rawLength            int
 }
 
@@ -190,9 +187,7 @@ type bufferStatePool struct {
 
 // get returns a bufferState from the pool.
 func (p bufferStatePool) get() *bufferState {
-	bf := p.pool.Get().(*bufferState)
-	bf.reset()
-	return bf
+	return p.pool.Get().(*bufferState)
 }
 
 // put returns a bufferState to the pool.
