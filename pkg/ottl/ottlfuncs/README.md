@@ -369,17 +369,20 @@ Examples:
 
 `Log(value)`
 
-The `Log` factory function takes a logarithm of the value if it's numeric.
+The `Log` Converter returns the logarithm of the `target`.
 
-The returned type is float64.
+`target` is either a path expression to a telemetry field to retrieve or a literal.
 
-The input `value` types:
-* float64, string, and Int64. Converts to a Float64 and returns `math.Log()` of the converted value
-* bool. Returns `nil` because log(1) is zero and log(0) is undefined so neither are useful.
+The function take the logarithm of the target, returning an error if the target is less than or equal to zero.
 
-If `value` is another type or parsing failed nil is always returned.
+If target is not a float64, it will be converted to one:
 
-The `value` is either a path expression to a telemetry field to retrieve or a literal.
+- int64s are converted to float64s
+- strings are converted using `strconv`
+- booleans are converted using `1` for `true` and `0` for `false`.  This means passing `false` to the function will cause an error.
+- int, float, string, and bool OTLP Values are converted following the above rules depending on their type.  Other types cause an error.
+
+If target is nil an error is returned.
 
 Examples:
 
