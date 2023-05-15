@@ -30,7 +30,7 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.Stability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.

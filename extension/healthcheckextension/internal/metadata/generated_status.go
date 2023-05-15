@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "health_check"
-	Stability = component.StabilityLevelBeta
+	Type               = "health_check"
+	ExtensionStability = component.StabilityLevelBeta
 )

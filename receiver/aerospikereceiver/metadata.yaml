@@ -1,9 +1,9 @@
-type: aerospikereceiver
+type: aerospike
 
 status:
   class: receiver
-  stability: alpha
-  pipelines: [metrics]
+  stability:
+    alpha: [metrics]
   distributions: [contrib]
 
 resource_attributes:

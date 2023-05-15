@@ -29,8 +29,6 @@ import (
 )
 
 const (
-	typeStr = "apache"
-
 	httpDefaultPort  = "80"
 	httpsDefaultPort = "443"
 )
@@ -38,9 +36,9 @@ const (
 // NewFactory creates a factory for apache receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.Stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -56,7 +54,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func parseResourseAttributes(endpoint string) (string, string, error) {
+func parseResourceAttributes(endpoint string) (string, string, error) {
 	u, err := url.Parse(endpoint)
 	serverName := u.Hostname()
 	port := u.Port()
@@ -80,13 +78,13 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 
 	ns := newApacheScraper(params, cfg, serverName, port)
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

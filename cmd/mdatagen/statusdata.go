@@ -21,12 +21,13 @@ package main
 var distros = map[string]string{
 	"core":    "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
 	"contrib": "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
+	"splunk":  "https://github.com/signalfx/splunk-otel-collector",
+	"aws":     "https://github.com/aws-observability/aws-otel-collector",
 }
 
 type Status struct {
-	Stability     string   `mapstructure:"stability"`
-	Pipelines     []string `mapstructure:"pipelines"`
-	Distributions []string `mapstructure:"distributions"`
-	Class         string   `mapstructure:"class"`
-	Warnings      []string `mapstructure:"warnings"`
+	Stability     map[string][]string `mapstructure:"stability"`
+	Distributions []string            `mapstructure:"distributions"`
+	Class         string              `mapstructure:"class"`
+	Warnings      []string            `mapstructure:"warnings"`
 }

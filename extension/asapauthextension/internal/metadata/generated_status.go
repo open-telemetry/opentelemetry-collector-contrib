@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "asapclient"
-	Stability = component.StabilityLevelBeta
+	Type               = "asapclient"
+	ExtensionStability = component.StabilityLevelBeta
 )

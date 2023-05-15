@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -58,9 +54,15 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			allMetricsCount++
+			mb.RecordOracledbConsistentGetsDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbCPUTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -171,8 +173,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("oracledb.instance.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.OracledbInstanceName.Enabled, ok)
-			if mb.resourceAttributesSettings.OracledbInstanceName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.OracledbInstanceName.Enabled, ok)
+			if mb.resourceAttributesConfig.OracledbInstanceName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -190,6 +192,20 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "oracledb.consistent_gets":
+					assert.False(t, validatedMetrics["oracledb.consistent_gets"], "Found a duplicate in the metrics slice: oracledb.consistent_gets")
+					validatedMetrics["oracledb.consistent_gets"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times a consistent read was requested for a block from the buffer cache.", ms.At(i).Description())
+					assert.Equal(t, "{gets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.cpu_time":
 					assert.False(t, validatedMetrics["oracledb.cpu_time"], "Found a duplicate in the metrics slice: oracledb.cpu_time")
 					validatedMetrics["oracledb.cpu_time"] = true
@@ -204,6 +220,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "oracledb.db_block_gets":
+					assert.False(t, validatedMetrics["oracledb.db_block_gets"], "Found a duplicate in the metrics slice: oracledb.db_block_gets")
+					validatedMetrics["oracledb.db_block_gets"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times a current block was requested from the buffer cache.", ms.At(i).Description())
+					assert.Equal(t, "{gets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.dml_locks.limit":
 					assert.False(t, validatedMetrics["oracledb.dml_locks.limit"], "Found a duplicate in the metrics slice: oracledb.dml_locks.limit")
 					validatedMetrics["oracledb.dml_locks.limit"] = true
@@ -528,14 +558,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

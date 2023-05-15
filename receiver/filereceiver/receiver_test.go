@@ -46,8 +46,8 @@ func TestReceiver(t *testing.T) {
 }
 
 type testConsumer struct {
-	mu       sync.Mutex
 	consumed []pmetric.Metrics
+	mu       sync.Mutex
 }
 
 func (c *testConsumer) Capabilities() consumer.Capabilities {

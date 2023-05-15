@@ -56,9 +56,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
-		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
-		exporter.WithLogs(createLogsExporter, metadata.Stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -109,12 +109,7 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newTracesClient(set, cfg)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -136,12 +131,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newMetricsClient(set, cfg)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
@@ -173,12 +163,7 @@ func createLogsExporter(
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newLogsClient(set, cfg)
 
 	logsExporter, err := exporterhelper.NewLogsExporter(
 		ctx,
@@ -198,7 +183,12 @@ func createLogsExporter(
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, logsExporter),
+		Logs: batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, &perScopeBatcher{
+			logsEnabled:      cfg.LogDataEnabled,
+			profilingEnabled: cfg.ProfilingDataEnabled,
+			logger:           set.Logger,
+			next:             logsExporter,
+		}),
 	}
 
 	return wrapped, nil

@@ -25,12 +25,11 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "jaeger"
-	stability = component.StabilityLevelBeta
-
 	// Protocol values.
 	protoGRPC          = "grpc"
 	protoThriftHTTP    = "thrift_http"
@@ -47,9 +46,9 @@ const (
 // NewFactory creates a new Jaeger receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.

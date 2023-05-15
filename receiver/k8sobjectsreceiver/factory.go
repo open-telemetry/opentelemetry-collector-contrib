@@ -22,20 +22,16 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-)
-
-const (
-	typeStr   = "k8sobjects"
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(
 			createLogsReceiver,
-			stability,
+			metadata.LogsStability,
 		),
 	)
 }

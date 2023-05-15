@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "splunkhecexporter"
-	Stability = component.StabilityLevelBeta
+	Type             = "splunkhecexporter"
+	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

@@ -31,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
@@ -74,7 +76,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "customname").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "customname").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 

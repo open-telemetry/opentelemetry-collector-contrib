@@ -36,10 +36,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestReceiver(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -89,7 +90,7 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -110,7 +111,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -148,7 +149,7 @@ var consumeMetadataInvocation = func() {
 }
 
 func TestReceiverWithMetadata(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -271,7 +272,7 @@ func newFakeClientWithAllResources() *fake.Clientset {
 		{
 			GroupVersion: "autoscaling/v2beta2",
 			APIResources: []v1.APIResource{
-				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+				gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 			},
 		},
 	}

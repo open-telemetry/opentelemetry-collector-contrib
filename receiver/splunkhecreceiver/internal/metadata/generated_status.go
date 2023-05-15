@@ -7,6 +7,7 @@ import (
 )
 
 const (
-	Type      = "splunk_hec"
-	Stability = component.StabilityLevelBeta
+	Type             = "splunk_hec"
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

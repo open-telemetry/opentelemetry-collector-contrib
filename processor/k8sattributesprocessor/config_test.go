@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,14 +36,14 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewID(typeStr),
+			id: component.NewID(metadata.Type),
 			expected: &Config{
 				APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 				Exclude:   ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 				Passthrough: false,
@@ -113,7 +114,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "3"),
+			id: component.NewIDWithName(metadata.Type, "3"),
 			expected: &Config{
 				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 				Passthrough: false,

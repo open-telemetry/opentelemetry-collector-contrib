@@ -25,9 +25,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
-var errConfigNotActiveDirectory = fmt.Errorf("config is not valid for the '%s' receiver", typeStr)
+var errConfigNotActiveDirectory = fmt.Errorf("config is not valid for the '%s' receiver", metadata.Type)
 
 func createMetricsReceiver(
 	ctx context.Context,
@@ -42,7 +44,7 @@ func createMetricsReceiver(
 
 	adds := newActiveDirectoryDSScraper(c.MetricsBuilderConfig, params)
 	scraper, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		adds.scrape,
 		scraperhelper.WithStart(adds.start),
 		scraperhelper.WithShutdown(adds.shutdown),

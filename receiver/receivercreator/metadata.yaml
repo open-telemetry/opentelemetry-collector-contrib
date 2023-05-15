@@ -1,0 +1,8 @@
+type: receiver_creator
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  

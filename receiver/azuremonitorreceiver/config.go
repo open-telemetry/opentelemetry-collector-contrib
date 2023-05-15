@@ -243,6 +243,7 @@ type Config struct {
 	CacheResources                          float64                       `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions               float64                       `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall           int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
+	AppendTagsAsAttributes                  bool                          `mapstructure:"append_tags_as_attributes"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

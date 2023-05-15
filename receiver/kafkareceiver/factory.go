@@ -24,17 +24,16 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "kafka"
-	stability = component.StabilityLevelBeta
-
-	defaultTopic    = "otlp_spans"
-	defaultEncoding = "otlp_proto"
-	defaultBroker   = "localhost:9092"
-	defaultClientID = "otel-collector"
-	defaultGroupID  = defaultClientID
+	defaultTopic         = "otlp_spans"
+	defaultEncoding      = "otlp_proto"
+	defaultBroker        = "localhost:9092"
+	defaultClientID      = "otel-collector"
+	defaultGroupID       = defaultClientID
+	defaultInitialOffset = offsetLatest
 
 	// default from sarama.NewConfig()
 	defaultMetadataRetryMax = 3
@@ -92,21 +91,22 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 		o(f)
 	}
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, stability),
-		receiver.WithMetrics(f.createMetricsReceiver, stability),
-		receiver.WithLogs(f.createLogsReceiver, stability),
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Topic:    defaultTopic,
-		Encoding: defaultEncoding,
-		Brokers:  []string{defaultBroker},
-		ClientID: defaultClientID,
-		GroupID:  defaultGroupID,
+		Topic:         defaultTopic,
+		Encoding:      defaultEncoding,
+		Brokers:       []string{defaultBroker},
+		ClientID:      defaultClientID,
+		GroupID:       defaultGroupID,
+		InitialOffset: defaultInitialOffset,
 		Metadata: kafkaexporter.Metadata{
 			Full: defaultMetadataFull,
 			Retry: kafkaexporter.MetadataRetry{

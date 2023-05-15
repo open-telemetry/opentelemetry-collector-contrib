@@ -15,6 +15,9 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -28,15 +31,15 @@ type latency struct {
 var _ PolicyEvaluator = (*latency)(nil)
 
 // NewLatency creates a policy evaluator sampling traces with a duration higher than a configured threshold
-func NewLatency(logger *zap.Logger, thresholdMs int64) PolicyEvaluator {
+func NewLatency(settings component.TelemetrySettings, thresholdMs int64) PolicyEvaluator {
 	return &latency{
-		logger:      logger,
+		logger:      settings.Logger,
 		thresholdMs: thresholdMs,
 	}
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (l *latency) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
+func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	l.logger.Debug("Evaluating spans in latency filter")
 
 	traceData.Lock()

@@ -187,7 +187,7 @@ type FilterConfig struct {
 	// Then the NodeFromEnv field can be set to `K8S_NODE_NAME` to filter all pods by the node that
 	// the agent is running on.
 	//
-	// More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/
+	// More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
 	NodeFromEnvVar string `mapstructure:"node_from_env_var"`
 
 	// Namespace filters all pods by the provided namespace. All other pods are ignored.

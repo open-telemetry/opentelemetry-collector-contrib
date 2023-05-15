@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "bearertokenauth"
-	Stability = component.StabilityLevelBeta
+	Type               = "bearertokenauth"
+	ExtensionStability = component.StabilityLevelBeta
 )

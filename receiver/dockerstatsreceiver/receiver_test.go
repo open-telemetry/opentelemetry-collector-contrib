@@ -42,8 +42,8 @@ import (
 var mockFolder = filepath.Join("testdata", "mock")
 
 var (
-	metricEnabled     = metadata.MetricSettings{Enabled: true}
-	allMetricsEnabled = metadata.MetricsSettings{
+	metricEnabled     = metadata.MetricConfig{Enabled: true}
+	allMetricsEnabled = metadata.MetricsConfig{
 		ContainerBlockioIoMergedRecursive:          metricEnabled,
 		ContainerBlockioIoQueuedRecursive:          metricEnabled,
 		ContainerBlockioIoServiceBytesRecursive:    metricEnabled,
@@ -149,7 +149,9 @@ func TestScrapeV2(t *testing.T) {
 	containerIDs := []string{
 		"10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326",
 		"89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7",
-		"a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce"}
+		"a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce",
+		"f97ed5bca0a5a0b85bfd52c4144b96174e825c92a138bc0458f0e196f2c7c1b4",
+	}
 
 	singleContainerEngineMock, err := dockerMockServer(&map[string]string{
 		"/v1.22/containers/json":                          filepath.Join(mockFolder, "single_container", "containers.json"),
@@ -169,6 +171,14 @@ func TestScrapeV2(t *testing.T) {
 	assert.NoError(t, err)
 	defer twoContainerEngineMock.Close()
 
+	cgroupsV2Mock, err := dockerMockServer(&map[string]string{
+		"/v1.22/containers/json":                          filepath.Join(mockFolder, "cgroups_v2", "containers.json"),
+		"/v1.22/containers/" + containerIDs[3] + "/json":  filepath.Join(mockFolder, "cgroups_v2", "container.json"),
+		"/v1.22/containers/" + containerIDs[3] + "/stats": filepath.Join(mockFolder, "cgroups_v2", "stats.json"),
+	})
+	assert.NoError(t, err)
+	defer cgroupsV2Mock.Close()
+
 	testCases := []struct {
 		desc                string
 		expectedMetricsFile string
@@ -183,6 +193,11 @@ func TestScrapeV2(t *testing.T) {
 			desc:                "scrapeV2_two_containers",
 			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.yaml"),
 			mockDockerEngine:    twoContainerEngineMock,
+		},
+		{
+			desc:                "cgroups_v2_container",
+			expectedMetricsFile: filepath.Join(mockFolder, "cgroups_v2", "expected_metrics.yaml"),
+			mockDockerEngine:    cgroupsV2Mock,
 		},
 	}
 
@@ -200,6 +215,9 @@ func TestScrapeV2(t *testing.T) {
 
 			actualMetrics, err := receiver.scrapeV2(context.Background())
 			require.NoError(t, err)
+
+			// Uncomment to regenerate 'expected_metrics.yaml' files
+			// golden.WriteMetrics(t, tc.expectedMetricsFile, actualMetrics)
 
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 

@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 type logsReceiver struct {
@@ -45,7 +47,7 @@ type logsReceiver struct {
 }
 
 const secretHeaderName = "X-CF-Secret"
-const receiverScopeName = "otelcol/" + typeStr
+const receiverScopeName = "otelcol/" + metadata.Type
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{

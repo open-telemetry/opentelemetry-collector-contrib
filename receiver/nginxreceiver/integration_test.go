@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -80,13 +81,17 @@ func TestNginxIntegration(t *testing.T) {
 
 	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
+
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	require.Eventuallyf(t, func() bool {
-		return len(consumer.AllMetrics()) > 0
-	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+	defer func() {
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
 
-	actualMetrics := consumer.AllMetrics()[0]
+	compareOpts := []pmetrictest.CompareMetricsOption{
+		pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	}
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	require.Eventually(t, scraperinttest.EqualsLatestMetrics(expectedMetrics, consumer, compareOpts), 30*time.Second, 1*time.Second)
 }

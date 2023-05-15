@@ -28,18 +28,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "oracledb"
-)
-
 // NewFactory creates a new Oracle receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
 			return sql.Open("oracle", dataSourceName)
-		}, newDbClient), metadata.Stability))
+		}, newDbClient), metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

@@ -28,8 +28,8 @@ import (
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
-		exporter.WithLogs(createLogsExporter, metadata.Stability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 

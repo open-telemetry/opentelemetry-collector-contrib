@@ -26,6 +26,7 @@ import (
 	awscloudwatchlogsexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	awsemfexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	awskinesisexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
+	awss3exporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 	awsxrayexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	azuredataexplorerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	azuremonitorexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
@@ -34,6 +35,7 @@ import (
 	clickhouseexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	coralogixexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	datadogexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	datasetexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	dynatraceexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	elasticsearchexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	f5cloudexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
@@ -74,6 +76,7 @@ import (
 	httpforwarder "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	jaegerremotesampling "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	oauth2clientauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
+	dockerobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 	ecstaskobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	hostobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	k8sobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
@@ -123,6 +126,7 @@ import (
 	elasticsearchreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	expvarreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver"
 	filelogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	filereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver"
 	filestatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 	flinkmetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 	fluentforwardreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
@@ -201,6 +205,7 @@ func components() (otelcol.Factories, error) {
 		ecstaskobserver.NewFactory(),
 		hostobserver.NewFactory(),
 		k8sobserver.NewFactory(),
+		dockerobserver.NewFactory(),
 		oidcauthextension.NewFactory(),
 		pprofextension.NewFactory(),
 		sigv4authextension.NewFactory(),
@@ -235,6 +240,7 @@ func components() (otelcol.Factories, error) {
 		expvarreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		filestatsreceiver.NewFactory(),
+		filereceiver.NewFactory(),
 		flinkmetricsreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
@@ -304,6 +310,7 @@ func components() (otelcol.Factories, error) {
 		awscloudwatchlogsexporter.NewFactory(),
 		awsemfexporter.NewFactory(),
 		awskinesisexporter.NewFactory(),
+		awss3exporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
 		azuredataexplorerexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
@@ -312,6 +319,7 @@ func components() (otelcol.Factories, error) {
 		cassandraexporter.NewFactory(),
 		coralogixexporter.NewFactory(),
 		datadogexporter.NewFactory(),
+		datasetexporter.NewFactory(),
 		dynatraceexporter.NewFactory(),
 		elasticsearchexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),

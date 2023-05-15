@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,13 +41,14 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				Topic:    "spans",
-				Encoding: "otlp_proto",
-				Brokers:  []string{"foo:123", "bar:456"},
-				ClientID: "otel-collector",
-				GroupID:  "otel-collector",
+				Topic:         "spans",
+				Encoding:      "otlp_proto",
+				Brokers:       []string{"foo:123", "bar:456"},
+				ClientID:      "otel-collector",
+				GroupID:       "otel-collector",
+				InitialOffset: "latest",
 				Authentication: kafkaexporter.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -71,13 +73,14 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 
-			id: component.NewIDWithName(typeStr, "logs"),
+			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
-				Topic:    "logs",
-				Encoding: "direct",
-				Brokers:  []string{"coffee:123", "foobar:456"},
-				ClientID: "otel-collector",
-				GroupID:  "otel-collector",
+				Topic:         "logs",
+				Encoding:      "direct",
+				Brokers:       []string{"coffee:123", "foobar:456"},
+				ClientID:      "otel-collector",
+				GroupID:       "otel-collector",
+				InitialOffset: "earliest",
 				Authentication: kafkaexporter.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{

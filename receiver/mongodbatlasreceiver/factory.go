@@ -31,7 +31,6 @@ import (
 
 const (
 	typeStr              = "mongodbatlas"
-	stability            = component.StabilityLevelBeta
 	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
 	defaultLogsEnabled   = false
@@ -42,8 +41,8 @@ func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, stability),
-		rcvr.WithLogs(createCombinedLogReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		rcvr.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
 
 }
 
@@ -72,7 +71,7 @@ func createCombinedLogReceiver(
 	cfg := rConf.(*Config)
 
 	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && cfg.Events == nil {
-		return nil, errors.New("one of 'alerts', 'events' or 'logs' must be enabled")
+		return nil, errors.New("one of 'alerts', 'events', or 'logs' must be enabled")
 	}
 
 	var err error
@@ -90,6 +89,13 @@ func createCombinedLogReceiver(
 
 	if cfg.Logs.Enabled {
 		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
+		// Confirm at least one project is enabled for access logs before adding
+		for _, project := range cfg.Logs.Projects {
+			if project.AccessLogs != nil && project.AccessLogs.IsEnabled() {
+				recv.accessLogs = newAccessLogsReceiver(params, cfg, consumer)
+				break
+			}
+		}
 	}
 
 	if cfg.Events != nil {
@@ -114,7 +120,7 @@ func createDefaultConfig() component.Config {
 		},
 		Logs: LogConfig{
 			Enabled:  defaultLogsEnabled,
-			Projects: []*ProjectConfig{},
+			Projects: []*LogsProjectConfig{},
 		},
 	}
 	// reset default of 1 minute to be 3 minutes in order to avoid null values for some metrics that do not publish

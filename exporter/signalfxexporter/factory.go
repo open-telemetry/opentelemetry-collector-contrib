@@ -34,8 +34,13 @@ import (
 
 const (
 	defaultHTTPTimeout = time.Second * 5
+	defaultMaxConns    = 100
 
-	defaultMaxConns = 100
+	defaultDimMaxBuffered         = 10000
+	defaultDimSendDelay           = 10 * time.Second
+	defaultDimMaxConnsPerHost     = 20
+	defaultDimMaxIdleConns        = 20
+	defaultDimMaxIdleConnsPerHost = 20
 )
 
 // NewFactory creates a factory for SignalFx exporter.
@@ -43,9 +48,9 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
-		exporter.WithLogs(createLogsExporter, metadata.Stability),
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
@@ -68,6 +73,14 @@ func createDefaultConfig() component.Config {
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
+		DimensionClient: DimensionClientConfig{
+			SendDelay:           defaultDimSendDelay,
+			MaxBuffered:         defaultDimMaxBuffered,
+			MaxConnsPerHost:     defaultDimMaxConnsPerHost,
+			MaxIdleConns:        defaultDimMaxIdleConns,
+			MaxIdleConnsPerHost: defaultDimMaxIdleConnsPerHost,
+			IdleConnTimeout:     idleConnTimeout,
+		},
 	}
 }
 

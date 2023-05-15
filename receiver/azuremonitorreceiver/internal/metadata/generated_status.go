@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "azuremonitor"
-	Stability = component.StabilityLevelDevelopment
+	Type             = "azuremonitor"
+	MetricsStability = component.StabilityLevelDevelopment
 )

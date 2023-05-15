@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -111,50 +107,50 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("process.command")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommand.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessCommand.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessCommand.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessCommand.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.command_line")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommandLine.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessCommandLine.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessCommandLine.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessCommandLine.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutableName.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessExecutableName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessExecutableName.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessExecutableName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.path")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutablePath.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessExecutablePath.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessExecutablePath.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessExecutablePath.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.owner")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessOwner.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessOwner.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessOwner.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessOwner.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.parent_pid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessParentPid.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessParentPid.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessParentPid.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessParentPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, 1, attrVal.Int())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.pid")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ProcessPid.Enabled, ok)
-			if mb.resourceAttributesSettings.ProcessPid.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ProcessPid.Enabled, ok)
+			if mb.resourceAttributesConfig.ProcessPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, 1, attrVal.Int())
 			}
@@ -358,14 +354,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

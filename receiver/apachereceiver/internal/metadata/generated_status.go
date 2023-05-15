@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "apachereceiver"
-	Stability = component.StabilityLevelBeta
+	Type             = "apache"
+	MetricsStability = component.StabilityLevelBeta
 )

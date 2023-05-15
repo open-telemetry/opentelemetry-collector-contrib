@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "deltatorate"
-	Stability = component.StabilityLevelDevelopment
+	Type             = "deltatorate"
+	MetricsStability = component.StabilityLevelDevelopment
 )
