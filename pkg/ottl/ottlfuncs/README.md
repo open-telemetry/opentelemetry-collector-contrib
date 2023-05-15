@@ -269,6 +269,7 @@ Available Converters:
 - [Split](#split)
 - [TraceID](#traceid)
 - [Substring](#substring)
+- [UUID](#UUID)
 
 ### Concat
 
@@ -447,6 +448,12 @@ If the start/length exceed the length of the `target` string, an error is return
 Examples:
 
 - `Substring("123456789", 0, 3)`
+
+### UUID
+
+`UUID()`
+
+The `UUID` function generates a v4 uuid string.
 
 ## Function syntax
 
