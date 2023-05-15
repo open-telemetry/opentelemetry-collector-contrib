@@ -1,0 +1,8 @@
+type: generic_webhook
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: 
+  

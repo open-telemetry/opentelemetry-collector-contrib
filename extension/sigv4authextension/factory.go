@@ -21,16 +21,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-)
 
-const (
-	// The value of extension "type" in configuration.
-	typeStr = "sigv4auth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension/internal/metadata"
 )
 
 // NewFactory creates a factory for the Sigv4 Authenticator extension.
 func NewFactory() extension.Factory {
-	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+	return extension.NewFactory(metadata.Type, createDefaultConfig, createExtension, metadata.ExtensionStability)
 }
 
 // createDefaultConfig() creates a Config struct with default values.

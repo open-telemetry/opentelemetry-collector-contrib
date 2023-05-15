@@ -114,11 +114,27 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
+	if ld.ResourceLogs().Len() == 0 {
+		return nil
+	}
+
 	localHeaders := map[string]string{}
-	if ld.ResourceLogs().Len() != 0 {
-		accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+
+	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
+	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+	if found {
+		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+	}
+
+	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
+	// so we can just check the first one.
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		sls := ld.ResourceLogs().At(i).ScopeLogs()
+		if sls.Len() > 0 {
+			if isProfilingData(sls.At(0)) {
+				localHeaders[libraryHeaderName] = profilingLibraryName
+			}
+			break
 		}
 	}
 
@@ -131,10 +147,6 @@ const bufCapPadding = uint(4096)
 const libraryHeaderName = "X-Splunk-Instrumentation-Library"
 const profilingLibraryName = "otel.profiling"
 
-var profilingHeaders = map[string]string{
-	libraryHeaderName: profilingLibraryName,
-}
-
 func isProfilingData(sl plog.ScopeLogs) bool {
 	return sl.Scope().Name() == profilingLibraryName
 }
@@ -142,81 +154,34 @@ func isProfilingData(sl plog.ScopeLogs) bool {
 // pushLogDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthLogs.
 // ld log records are parsed to Splunk events.
-// The input data may contain both logs and profiling data.
-// They are batched separately and sent with different HTTP headers
 func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers map[string]string) error {
-	profilingLocalHeaders := map[string]string{}
-	for k, v := range profilingHeaders {
-		profilingLocalHeaders[k] = v
-	}
+	bufState := c.bufferStatePool.get()
+	defer c.bufferStatePool.put(bufState)
 
-	for k, v := range headers {
-		profilingLocalHeaders[k] = v
-	}
-
-	var bufState *bufferState
-	var profilingBufState *bufferState
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
-	var droppedProfilingDataRecords, droppedLogRecords int
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
 			var err error
 			var newPermanentErrors []error
 
-			if isProfilingData(ills.At(j)) {
-				if !c.config.ProfilingDataEnabled {
-					droppedProfilingDataRecords += ills.At(j).LogRecords().Len()
-					continue
-				}
-				if profilingBufState == nil {
-					profilingBufState = c.bufferStatePool.get()
-					defer c.bufferStatePool.put(profilingBufState)
-				}
-				profilingBufState.resource, profilingBufState.library = i, j
-				newPermanentErrors, err = c.pushLogRecords(ctx, rls, profilingBufState, profilingLocalHeaders)
-			} else {
-				if !c.config.LogDataEnabled {
-					droppedLogRecords += ills.At(j).LogRecords().Len()
-					continue
-				}
-				if bufState == nil {
-					bufState = c.bufferStatePool.get()
-					defer c.bufferStatePool.put(bufState)
-				}
-				bufState.resource, bufState.library = i, j
-				newPermanentErrors, err = c.pushLogRecords(ctx, rls, bufState, headers)
-			}
+			bufState.resource, bufState.library = i, j
+			newPermanentErrors, err = c.pushLogRecords(ctx, rls, bufState, headers)
 
 			if err != nil {
-				return consumererror.NewLogs(err, c.subLogs(ld, bufState, profilingBufState))
+				return consumererror.NewLogs(err, subLogs(ld, bufState))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
 	}
 
-	if droppedProfilingDataRecords != 0 {
-		c.logger.Debug("Profiling data is not allowed", zap.Int("dropped_records", droppedProfilingDataRecords))
-	}
-	if droppedLogRecords != 0 {
-		c.logger.Debug("Log data is not allowed", zap.Int("dropped_records", droppedLogRecords))
-	}
-
 	// There's some leftover unsent non-profiling data
-	if bufState != nil && bufState.containsData() {
+	if bufState.containsData() {
 		if err := c.postEvents(ctx, bufState, headers); err != nil {
-			return consumererror.NewLogs(err, c.subLogs(ld, bufState, profilingBufState))
-		}
-	}
-
-	// There's some leftover unsent profiling data
-	if profilingBufState != nil && profilingBufState.containsData() {
-		if err := c.postEvents(ctx, profilingBufState, profilingLocalHeaders); err != nil {
-			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState))
+			return consumererror.NewLogs(err, subLogs(ld, bufState))
 		}
 	}
 
@@ -484,22 +449,9 @@ func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers 
 	return c.hecWorker.send(ctx, bufState, headers)
 }
 
-// subLogs returns a subset of `ld` starting from `profilingState` for profiling data
-// plus starting from `state` for non-profiling data.
-func (c *client) subLogs(ld plog.Logs, state *bufferState, profilingState *bufferState) plog.Logs {
-	subset := plog.NewLogs()
-	if c.config.LogDataEnabled && state != nil {
-		subLogsByType(ld, state, subset, false)
-	}
-	if c.config.ProfilingDataEnabled && profilingState != nil {
-		subLogsByType(ld, profilingState, subset, true)
-	}
-
-	return subset
-}
-
-// subLogs returns a subset of logs starting the state.
-func subLogsByType(src plog.Logs, state *bufferState, dst plog.Logs, profiling bool) {
+// subLogs returns a subset of logs starting from the state.
+func subLogs(src plog.Logs, state *bufferState) plog.Logs {
+	dst := plog.NewLogs()
 	resources := src.ResourceLogs()
 	resourcesSub := dst.ResourceLogs()
 
@@ -516,11 +468,6 @@ func subLogsByType(src plog.Logs, state *bufferState, dst plog.Logs, profiling b
 		}
 		for jSub := 0; j < libraries.Len(); j++ {
 			lib := libraries.At(j)
-
-			// Only copy profiling data if requested. If not requested, only copy non-profiling data
-			if profiling != isProfilingData(lib) {
-				continue
-			}
 
 			newLibSub := librariesSub.AppendEmpty()
 			lib.Scope().CopyTo(newLibSub.Scope())
@@ -540,6 +487,8 @@ func subLogsByType(src plog.Logs, state *bufferState, dst plog.Logs, profiling b
 			}
 		}
 	}
+
+	return dst
 }
 
 // subMetrics returns a subset of metrics starting from the state.
