@@ -48,6 +48,10 @@ type iterState struct {
 	done     bool
 }
 
+func (s iterState) empty() bool {
+	return s.resource == 0 && s.library == 0 && s.record == 0
+}
+
 // client sends the data to the splunk backend.
 type client struct {
 	config            *Config
@@ -397,6 +401,10 @@ func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers 
 
 // subLogs returns a subset of logs starting from the state.
 func subLogs(src plog.Logs, state iterState) plog.Logs {
+	if state.empty() {
+		return src
+	}
+
 	dst := plog.NewLogs()
 	resources := src.ResourceLogs()
 	resourcesSub := dst.ResourceLogs()
@@ -439,6 +447,10 @@ func subLogs(src plog.Logs, state iterState) plog.Logs {
 
 // subMetrics returns a subset of metrics starting from the state.
 func subMetrics(src pmetric.Metrics, state iterState) pmetric.Metrics {
+	if state.empty() {
+		return src
+	}
+
 	dst := pmetric.NewMetrics()
 	resources := src.ResourceMetrics()
 	resourcesSub := dst.ResourceMetrics()
@@ -480,6 +492,10 @@ func subMetrics(src pmetric.Metrics, state iterState) pmetric.Metrics {
 }
 
 func subTraces(src ptrace.Traces, state iterState) ptrace.Traces {
+	if state.empty() {
+		return src
+	}
+
 	dst := ptrace.NewTraces()
 	resources := src.ResourceSpans()
 	resourcesSub := dst.ResourceSpans()
