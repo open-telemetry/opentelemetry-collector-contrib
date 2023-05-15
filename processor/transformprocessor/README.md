@@ -15,6 +15,13 @@ The transform processor modifies telemetry based on configuration using the [Ope
 For each signal type, the processor takes a list of statements associated to a [Context type](#contexts) and executes the statements against the incoming telemetry in the order specified in the config.
 Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
+- [Config](#config)
+- [Grammar](#grammar)
+- [Contexts](#contexts)
+- [Supported functions](#supported-functions)
+- [Examples](#examples)
+- [Contributing](#contributing)
+
 ## Config
 
 The transform processor allows configuring multiple context statements for traces, metrics, and logs.
@@ -57,7 +64,7 @@ Valid values for `context` are:
 | metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
 | log_statements    | `resource`, `scope`, and `log`                 |
 
-## Example
+### Example
 
 The example takes advantage of context efficiency by grouping transformations with the context which it intends to transform.
 See [Contexts](#contexts) for more details.
@@ -177,7 +184,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 
-## convert_sum_to_gauge
+### convert_sum_to_gauge
 
 `convert_sum_to_gauge()`
 
@@ -189,7 +196,7 @@ Examples:
 
 - `convert_sum_to_gauge()`
 
-## convert_gauge_to_sum
+### convert_gauge_to_sum
 
 `convert_gauge_to_sum(aggregation_temporality, is_monotonic)`
 
@@ -206,7 +213,7 @@ Examples:
 
 - `convert_gauge_to_sum("delta", true)`
 
-## convert_summary_count_val_to_sum
+### convert_summary_count_val_to_sum
 
 `convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)`
 
@@ -225,7 +232,7 @@ Examples:
 
 - `convert_summary_count_val_to_sum("cumulative", false)`
 
-## convert_summary_sum_val_to_sum
+### convert_summary_sum_val_to_sum
 
 `convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)`
 
@@ -243,6 +250,83 @@ Examples:
 
 
 - `convert_summary_sum_val_to_sum("cumulative", false)`
+
+## Examples
+
+### Perform transformation if field does not exist
+Set attribute `test` to `"pass"` if the attribute `test` does not exist:
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: span
+      statements:
+        # accessing a map with a key that does not exist will return nil. 
+        - set(attributes["test"], "pass") where attributes["test"] == nil
+``` 
+
+### Rename attribute
+There are 2 ways to rename an attribute key:
+
+You can either set a new attribute and delete the old:
+
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        - set(attributes["namespace"], attributes["k8s.namespace.name"])
+        - delete_key(attributes, "k8s.namespace.name") 
+``` 
+
+Or you can update the key using regex:
+
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
+``` 
+
+### Parsing JSON logs
+
+Given the following json body
+
+```json
+{
+  "name": "log",
+  "attr1": "foo",
+  "attr2": "bar",
+  "nested": {
+    "attr3": "example"
+  }
+}
+```
+
+add specific fields as attributes on the log:
+
+```yaml
+transform:
+  error_mode: ignore
+  log_statements:
+    - context: log
+      statements:
+        # Parse body as JSON and merge the resulting map with the cache map, ignoring non-json bodies.
+        # cache is a field exposed by OTTL that is a temporary storage place for complex operations.
+        - merge_maps(cache, ParseJSON(body), "upsert") where IsMatch(body, "^\\{") 
+          
+        # Set attributes using the values merged into cache.
+        # If the attribute doesn't exist in cache then nothing happens.
+        - set(attributes["attr1"], cache["attr1"])
+        - set(attributes["attr2"], cache["attr2"])
+        
+        # To access nested maps you can chain index ([]) operations.
+        # If nested or attr3 do no exist in cache then nothing happens.
+        - set(attributes["nested.attr3"], cache["nested"]["attr3"])
+```
 
 ## Contributing
 

@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 type dataConsumer interface {
@@ -106,7 +108,7 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventh
 
 	receiver.logger.Debug("Log Records", zap.Any("logs", logs))
 	err = receiver.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	receiver.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
+	receiver.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
 
 	return err
 }
@@ -131,7 +133,7 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eve
 	receiver.logger.Debug("Metric Records", zap.Any("metrics", metrics))
 	err = receiver.nextMetricsConsumer.ConsumeMetrics(metricsContext, metrics)
 
-	receiver.obsrecv.EndMetricsOp(metricsContext, typeStr, 1, err)
+	receiver.obsrecv.EndMetricsOp(metricsContext, metadata.Type, 1, err)
 
 	return err
 }

@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -44,7 +45,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -1033,11 +1033,8 @@ func Test_PushMetricsData_Histogram_NaN_Sum(t *testing.T) {
 	dp := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zap.NewNop(),
-		hecWorker: &mockHecWorker{},
-	}
+	c := newMetricsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
 	assert.NoError(t, permanentErrors)
@@ -1052,11 +1049,8 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 	dp := summary.SetEmptySummary().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zap.NewNop(),
-		hecWorker: &mockHecWorker{},
-	}
+	c := newMetricsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
 	assert.NoError(t, permanentErrors)
@@ -1213,10 +1207,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		},
 	}
 
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-		logger: zaptest.NewLogger(t),
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
 
 	for _, test := range tests {
 		for _, disabled := range []bool{true, false} {
@@ -1231,10 +1222,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-		logger: zaptest.NewLogger(t),
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
 
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -1247,11 +1235,8 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zaptest.NewLogger(t),
-		hecWorker: &defaultHecWorker{url: &url.URL{Host: "in va lid"}},
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+	c.hecWorker = &defaultHecWorker{url: &url.URL{Host: "in va lid"}}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
 	logs := createLogData(1, 1, 2000)
@@ -1289,10 +1274,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	splunkClient := client{
-		config: config,
-		logger: zaptest.NewLogger(t),
-	}
+	splunkClient := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
 	logs := createLogData(1, 1, 1)
 
 	responseBody := `some error occurred`
@@ -1320,17 +1302,15 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
+
+	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
+	config.MaxContentLengthLogs, config.DisableCompression = 250, true
+
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := client{
-		config: config,
-		logger: zaptest.NewLogger(t),
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 
 	// Just two records
 	logs := createLogData(2, 1, 1)
-
-	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
 
 	// The first record is to be sent successfully, the second one should not
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
@@ -1349,22 +1329,23 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := client{
-		config: config,
-		logger: zaptest.NewLogger(t),
-	}
 
-	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
+	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	config.MaxContentLengthLogs, config.DisableCompression = 300, true
+
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs"}, []int{10})
+	profilingData := createLogDataWithCustomLibraries(1, []string{"otel.profiling"}, []int{20})
 	var headers *[]http.Header
 
 	httpClient, headers := newTestClient(200, "OK")
+	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
-	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
-
 	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+	err = c.pushLogData(context.Background(), profilingData)
 	require.NoError(t, err)
 	assert.Equal(t, 30, len(*headers))
 
@@ -1381,76 +1362,76 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	assert.Equal(t, 10, nonProfilingCount)
 }
 
-func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
-	benchPushLogData(b, 100, 10, 10, 1024)
+// 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
+func Benchmark_pushLogData_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 1024)
 }
 
-func Benchmark_pushLogData_10_100_100_1024(b *testing.B) {
-	benchPushLogData(b, 10, 100, 100, 1024)
+// 10 resources, 10 records, 8Kb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 8*1024)
 }
 
-func Benchmark_pushLogData_10_0_100_1024(b *testing.B) {
-	benchPushLogData(b, 10, 0, 100, 1024)
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_10_10_2M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 2*1024*1024)
 }
 
-func Benchmark_pushLogData_10_100_0_1024(b *testing.B) {
-	benchPushLogData(b, 10, 100, 0, 1024)
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_10_200_2M(b *testing.B) {
+	benchPushLogData(b, 10, 200, 2*1024*1024)
 }
 
-func Benchmark_pushLogData_10_10_10_256(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 256)
+// 100 resources, 200 records, 2Mb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_100_200_2M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 2*1024*1024)
 }
 
-func Benchmark_pushLogData_10_10_10_1024(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 1024)
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushLogData_100_200_5M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 5*1024*1024)
 }
 
-func Benchmark_pushLogData_10_10_10_8K(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 8*1024)
-}
-
-func Benchmark_pushLogData_10_10_10_1M(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 1024*1024)
-}
-func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
-	benchPushLogData(b, 10, 1, 1, 1024)
-}
-
-func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
+func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := client{
-		config: config,
-		logger: zaptest.NewLogger(b),
+	config.MaxContentLengthLogs = bufSize
+	config.DisableCompression = true
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+	c.hecWorker = &mockHecWorker{}
+	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushLogData)
+	require.NoError(b, err)
+	exp = &baseLogsExporter{
+		Component: exp,
+		Logs: &perScopeBatcher{
+			logsEnabled: true,
+			logger:      zap.NewNop(),
+			next:        exp,
+		},
 	}
 
-	httpClient, _ := newTestClient(200, "OK")
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
+	logs := createLogData(numResources, 1, numRecords)
 
-	c.config.MaxContentLengthLogs = bufSize
-	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
-
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := c.pushLogData(context.Background(), logs)
+		err := exp.ConsumeLogs(context.Background(), logs)
 		require.NoError(b, err)
 	}
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	c := client{
-		config:    config,
-		logger:    zaptest.NewLogger(t),
-		hecWorker: &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())},
-	}
-	c.config.MaxContentLengthLogs = 1
+	config.MaxContentLengthLogs = 1
 
 	logs := createLogData(1, 1, 2000)
 
 	for _, disable := range []bool{true, false} {
-		c.config.DisableCompression = disable
+		config.DisableCompression = disable
+
+		c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
 		err := c.pushLogData(context.Background(), logs)
 		require.Error(t, err)
@@ -1517,13 +1498,9 @@ func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
 
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-	}
-
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &index{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := c.subLogs(logs, _0_0_0, nil)
+	_0_0_0 := &bufferState{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
+	got := subLogs(logs, _0_0_0)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -1536,8 +1513,8 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _0_1_2, nil)
+	_0_1_2 := &bufferState{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
+	got = subLogs(logs, _0_1_2)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -1549,8 +1526,8 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _1_1_2, nil)
+	_1_1_2 := &bufferState{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
+	got = subLogs(logs, _1_1_2)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
@@ -1558,40 +1535,16 @@ func TestSubLogs(t *testing.T) {
 	// The name of the sole log record should be 1_1_2.
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_2", val.AsString())
-
-	// Now see how profiling and log data are merged
-	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
-	slice := &index{resource: 1, library: 0, record: 5}
-	profSlice := &index{resource: 0, library: 1, record: 8}
-
-	got = c.subLogs(logs, slice, profSlice)
-
-	assert.Equal(t, 5+2+10, got.LogRecordCount())
-	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_5", val.AsString())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_9", val.AsString())
-
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_8", val.AsString())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_9", val.AsString())
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_0", val.AsString())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_9", val.AsString())
 }
 
 func TestPushLogRecordsBufferCounters(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ExportRaw = true
 	c := client{
-		config:    cfg,
-		logger:    zap.NewNop(),
-		hecWorker: &mockHecWorker{},
+		config:          cfg,
+		logger:          zap.NewNop(),
+		hecWorker:       &mockHecWorker{},
+		bufferStatePool: newBufferStatePool(6, false, 10),
 	}
 
 	logs := plog.NewResourceLogsSlice()
@@ -1599,14 +1552,15 @@ func TestPushLogRecordsBufferCounters(t *testing.T) {
 	logRecords.AppendEmpty().Body().SetStr("12345")    // the first log record should be accepted and sent
 	logRecords.AppendEmpty().Body().SetStr("12345678") // the second log record should be rejected as it's too big
 	logRecords.AppendEmpty().Body().SetStr("12345")    // the third log record should be just accepted
-	bs := makeBlankBufferState(6, false, 10)
+	bs := c.bufferStatePool.get()
+	defer c.bufferStatePool.put(bs)
 
 	permErrs, err := c.pushLogRecords(context.Background(), logs, bs, nil)
 	assert.NoError(t, err)
 	assert.Len(t, permErrs, 1)
 	assert.ErrorContains(t, permErrs[0], "bytes larger than configured max content length")
 
-	assert.Equal(t, 2, bs.bufFront.record, "the buffer counter must be at the latest log record")
+	assert.Equal(t, 2, bs.record, "the buffer counter must be at the latest log record")
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings
@@ -1621,22 +1575,4 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 		assert.Contains(t, string(p), e)
 	}
 
-}
-
-func BenchmarkPushLogRecords(b *testing.B) {
-	logs := createLogData(1, 1, 1)
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zap.NewNop(),
-		hecWorker: &mockHecWorker{},
-	}
-
-	state := makeBlankBufferState(4096, true, 4096)
-	for n := 0; n < b.N; n++ {
-		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), state, map[string]string{})
-		assert.NoError(b, sendingErr)
-		for _, permanentErr := range permanentErrs {
-			assert.NoError(b, permanentErr)
-		}
-	}
 }

@@ -1,4 +1,4 @@
-type: activedirectorydsreceiver
+type: active_directory_ds
 
 status:
   class: receiver

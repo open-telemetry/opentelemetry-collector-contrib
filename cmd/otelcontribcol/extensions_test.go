@@ -60,8 +60,8 @@ func TestDefaultExtensions(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		extension     component.Type
 		getConfigFn   getExtensionConfigFn
+		extension     component.Type
 		skipLifecycle bool
 	}{
 		{

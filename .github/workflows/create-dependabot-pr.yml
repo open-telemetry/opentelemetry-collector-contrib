@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: ~1.19.8
+          cache: false
       - name: Run dependabot-pr.sh
         run: ./.github/workflows/scripts/dependabot-pr.sh
         env:

@@ -25,16 +25,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
-)
-
-const (
-	typeStr   = "syslog"
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver/internal/metadata"
 )
 
 // NewFactory creates a factory for syslog receiver
 func NewFactory() receiver.Factory {
-	return adapter.NewFactory(ReceiverType{}, stability)
+	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -43,7 +39,7 @@ type ReceiverType struct{}
 
 // Type is the receiver type
 func (f ReceiverType) Type() component.Type {
-	return typeStr
+	return metadata.Type
 }
 
 // CreateDefaultConfig creates a config with type and version

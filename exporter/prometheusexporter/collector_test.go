@@ -123,7 +123,7 @@ func setTextExemplarWithIntValue(exemplar pmetric.Exemplar, value int64) {
 	exemplar.SetIntValue(value)
 }
 
-func exemplarsEqual(t *testing.T, otelExemplar pmetric.Exemplar, promExemplar io_prometheus_client.Exemplar) {
+func exemplarsEqual(t *testing.T, otelExemplar pmetric.Exemplar, promExemplar *io_prometheus_client.Exemplar) {
 	var givenValue float64
 	switch otelExemplar.ValueType() {
 	case pmetric.ExemplarValueTypeDouble:
@@ -186,7 +186,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	require.Equal(t, 3, len(buckets))
 
 	require.Equal(t, 3.0, buckets[0].GetExemplar().GetValue())
-	exemplarsEqual(t, promExporterExemplars, *buckets[0].GetExemplar())
+	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())
 }
 
 func TestConvertMonotonicSumExemplar(t *testing.T) {
@@ -225,7 +225,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 
 	promCounter := outMetric.GetCounter()
 	require.Equal(t, 1.0, promCounter.GetValue())
-	exemplarsEqual(t, exemplar, *promCounter.GetExemplar())
+	exemplarsEqual(t, exemplar, promCounter.GetExemplar())
 }
 
 // errorCheckCore keeps track of logged errors
@@ -579,7 +579,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					require.Nil(t, pbMetric.Gauge)
 					require.Nil(t, pbMetric.Counter)
 
-					h := *pbMetric.Histogram
+					h := pbMetric.Histogram
 					require.Equal(t, tt.histogramCount, h.GetSampleCount())
 					require.Equal(t, tt.histogramSum, h.GetSampleSum())
 					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
@@ -683,7 +683,7 @@ func TestAccumulateSummary(t *testing.T) {
 					require.Nil(t, pbMetric.Counter)
 					require.Nil(t, pbMetric.Histogram)
 
-					s := *pbMetric.Summary
+					s := pbMetric.Summary
 					require.Equal(t, tt.wantCount, *s.SampleCount)
 					require.Equal(t, tt.wantSum, *s.SampleSum)
 					// To ensure that we can compare quantiles, we need to just extract their values.

@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver/internal/metadata"
 )
 
 func TestLoadConfig_Validate_Invalid(t *testing.T) {
@@ -44,16 +46,16 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:           component.NewIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "path cannot be empty",
 		}, {
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				Path:     "./filename.json",
 				Throttle: 1,
 			},
 		}, {
-			id:           component.NewIDWithName(typeStr, "2"),
+			id:           component.NewIDWithName(metadata.Type, "2"),
 			errorMessage: "throttle cannot be negative",
 		},
 	}

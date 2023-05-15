@@ -24,11 +24,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr             = "azureblob"
 	logsContainerName   = "logs"
 	tracesContainerName = "traces"
 )
@@ -48,10 +47,10 @@ func NewFactory() receiver.Factory {
 	}
 
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		f.createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, component.StabilityLevelBeta),
-		receiver.WithLogs(f.createLogsReceiver, component.StabilityLevelBeta))
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() component.Config {

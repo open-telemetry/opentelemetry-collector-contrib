@@ -20,19 +20,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-)
 
-const (
-	typeStr        = "awscloudwatch"
-	stabilityLevel = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
 
 // NewFactory returns the component factory for the awscloudwatchreceiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, stabilityLevel),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 

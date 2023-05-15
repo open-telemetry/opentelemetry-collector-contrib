@@ -1,6 +1,7 @@
-FROM ubuntu:20.04 as download
+FROM ubuntu:22.04 as download
 
 RUN \
+    apt-get autoremove -qq && \
     apt-get update -qq && \
     apt-get install -qq -y curl && \
     curl -L -o /riak.deb https://files.tiot.jp/riak/kv/3.0/3.0.9/ubuntu/focal64/riak_3.0.9-OTP20.3_amd64.deb

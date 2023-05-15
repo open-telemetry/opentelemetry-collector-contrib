@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -26,7 +27,7 @@ import (
 
 func TestAndHelper(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
-		actual, err := getNewAndPolicy(zap.NewNop(), &AndCfg{
+		actual, err := getNewAndPolicy(componenttest.NewNopTelemetrySettings(), &AndCfg{
 			SubPolicyCfg: []AndSubPolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
@@ -40,13 +41,13 @@ func TestAndHelper(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := sampling.NewAnd(zap.NewNop(), []sampling.PolicyEvaluator{
-			sampling.NewLatency(zap.NewNop(), 100),
+			sampling.NewLatency(componenttest.NewNopTelemetrySettings(), 100),
 		})
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("unsupported sampling policy type", func(t *testing.T) {
-		_, err := getNewAndPolicy(zap.NewNop(), &AndCfg{
+		_, err := getNewAndPolicy(componenttest.NewNopTelemetrySettings(), &AndCfg{
 			SubPolicyCfg: []AndSubPolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{

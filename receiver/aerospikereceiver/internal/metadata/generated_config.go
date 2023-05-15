@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for aerospikereceiver metrics.
+// MetricsConfig provides config for aerospike metrics.
 type MetricsConfig struct {
 	AerospikeNamespaceDiskAvailable                   MetricConfig `mapstructure:"aerospike.namespace.disk.available"`
 	AerospikeNamespaceGeojsonRegionQueryCells         MetricConfig `mapstructure:"aerospike.namespace.geojson.region_query_cells"`
@@ -93,7 +93,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for aerospikereceiver resource attributes.
+// ResourceAttributesConfig provides config for aerospike resource attributes.
 type ResourceAttributesConfig struct {
 	AerospikeNamespace ResourceAttributeConfig `mapstructure:"aerospike.namespace"`
 	AerospikeNodeName  ResourceAttributeConfig `mapstructure:"aerospike.node.name"`
@@ -110,7 +110,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for aerospikereceiver metrics builder.
+// MetricsBuilderConfig is a configuration for aerospike metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

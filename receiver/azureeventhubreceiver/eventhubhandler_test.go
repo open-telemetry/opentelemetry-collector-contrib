@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 type mockHubWrapper struct {
@@ -88,7 +90,7 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) e
 	}
 
 	err = m.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	m.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
+	m.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
 
 	return err
 }
@@ -119,7 +121,7 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 
 	sink := new(consumertest.LogsSink)
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             component.NewID(typeStr),
+		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              "",
 		LongLivedCtx:           false,
 		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),

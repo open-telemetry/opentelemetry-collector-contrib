@@ -21,13 +21,11 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "generic_webhook"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelDevelopment
 	// Default endpoints to bind to.
 	defaultEndpoint = ":8080"
 )
@@ -35,9 +33,9 @@ const (
 // NewFactory creates a factory for Generic Webhook Receiver.
 func NewFactory() component.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithLogs(createLogsReceiver, stability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 

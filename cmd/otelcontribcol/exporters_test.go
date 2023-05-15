@@ -85,8 +85,8 @@ func TestDefaultExporters(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		exporter      component.Type
 		getConfigFn   getExporterConfigFn
+		exporter      component.Type
 		skipLifecycle bool
 	}{
 		{

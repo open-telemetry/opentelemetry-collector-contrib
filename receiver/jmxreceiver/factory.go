@@ -22,19 +22,19 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
 
 const (
-	typeStr      = "jmx"
-	stability    = component.StabilityLevelAlpha
 	otlpEndpoint = "0.0.0.0:0"
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createReceiver, stability))
+		receiver.WithMetrics(createReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
