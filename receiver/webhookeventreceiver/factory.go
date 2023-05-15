@@ -14,8 +14,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "webhookevent"
 	// might add this later, for now I wish to require a valid
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
