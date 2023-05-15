@@ -412,7 +412,7 @@ func subLogs(src plog.Logs, state iterState) plog.Logs {
 		if i == state.resource {
 			j = state.library
 		}
-		for jSub := 0; j < libraries.Len(); j++ {
+		for ; j < libraries.Len(); j++ {
 			lib := libraries.At(j)
 
 			newLibSub := librariesSub.AppendEmpty()
@@ -420,16 +420,13 @@ func subLogs(src plog.Logs, state iterState) plog.Logs {
 
 			logs := lib.LogRecords()
 			logsSub := newLibSub.LogRecords()
-			jSub++
 
 			k := 0
 			if i == state.resource && j == state.library {
 				k = state.record
 			}
-
-			for kSub := 0; k < logs.Len(); k++ { //revive:disable-line:var-naming
+			for ; k < logs.Len(); k++ {
 				logs.At(k).CopyTo(logsSub.AppendEmpty())
-				kSub++
 			}
 		}
 	}
@@ -454,7 +451,7 @@ func subMetrics(src pmetric.Metrics, state iterState) pmetric.Metrics {
 		if i == state.resource {
 			j = state.library
 		}
-		for jSub := 0; j < libraries.Len(); j++ {
+		for ; j < libraries.Len(); j++ {
 			lib := libraries.At(j)
 
 			newLibSub := librariesSub.AppendEmpty()
@@ -462,16 +459,13 @@ func subMetrics(src pmetric.Metrics, state iterState) pmetric.Metrics {
 
 			metrics := lib.Metrics()
 			metricsSub := newLibSub.Metrics()
-			jSub++
 
 			k := 0
 			if i == state.resource && j == state.library {
 				k = state.record
 			}
-
-			for kSub := 0; k < metrics.Len(); k++ { //revive:disable-line:var-naming
+			for ; k < metrics.Len(); k++ {
 				metrics.At(k).CopyTo(metricsSub.AppendEmpty())
-				kSub++
 			}
 		}
 	}
@@ -508,7 +502,6 @@ func subTraces(src ptrace.Traces, state iterState) ptrace.Traces {
 			if i == state.resource && j == state.library {
 				k = state.record
 			}
-
 			for ; k < traces.Len(); k++ {
 				traces.At(k).CopyTo(tracesSub.AppendEmpty())
 			}
