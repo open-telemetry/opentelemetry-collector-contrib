@@ -75,7 +75,7 @@ type opsrampOTLPExporter struct {
 func newExporter(cfg component.Config, set exporter.CreateSettings) (*opsrampOTLPExporter, error) {
 	oCfg := cfg.(*Config)
 
-	accessToken, err := getAuthToken(oCfg.Security, counter)
+	accessToken, err := getAuthToken(oCfg.Security)
 	if err != nil {
 		tokenRenewInProgress = false
 		return nil, fmt.Errorf("access token isn't available: %w", err)
@@ -103,12 +103,13 @@ type Person struct {
 	Age  int    `json:"age"`
 }
 
-func getAuthToken(cfg SecuritySettings, a int) (string, error) {
+func getAuthToken(cfg SecuritySettings) (string, error) {
 
 	if tokenRenewInProgress {
 		for tokenRenewInProgress {
 			time.Sleep(time.Second * 5)
 		}
+		tokenRenewInProgress = true
 		return credentials.AccessToken, nil
 	}
 	tokenRenewInProgress = true
@@ -137,8 +138,6 @@ func getAuthToken(cfg SecuritySettings, a int) (string, error) {
 	if err := json.Unmarshal(jsonResp, &credentials); err != nil {
 		return "", err
 	}
-	fmt.Println("opsramp token renew in Progres acess token dead time: ", credentials.ExpiresIn, " $ access token was: ", credentials.AccessToken)
-	fmt.Println("opsramp token renewprogress completed count was: ", a)
 	return credentials.AccessToken, nil
 
 }
@@ -163,7 +162,6 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
 	}
-
 	return
 }
 
@@ -238,11 +236,7 @@ func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error 
 }
 
 func (e *opsrampOTLPExporter) updateExpiredToken() error {
-	fmt.Println("$$$$$$ opsramp token renew starting: ", tokenRenewInProgress)
-	fmt.Println("$$$$$$ opsramp token renew in Progress ", tokenRenewInProgress)
-	counter += 1
-	accessToken, err := getAuthToken(e.config.Security, counter)
-	fmt.Println("opsramp token getting error: ", err)
+	accessToken, err := getAuthToken(e.config.Security)
 	if err != nil {
 		tokenRenewInProgress = false
 		return err
@@ -250,9 +244,7 @@ func (e *opsrampOTLPExporter) updateExpiredToken() error {
 	e.mut.Lock()
 	defer e.mut.Unlock()
 	e.accessToken = accessToken
-	fmt.Println("opsramp token code is failing", counter)
 	if tokenRenewInProgress {
-		fmt.Println("opsramp token writing into metadata: ", e.accessToken)
 		e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
 	}
 	tokenRenewInProgress = false
