@@ -1520,8 +1520,7 @@ func TestSubLogs(t *testing.T) {
 	logs := createLogData(2, 2, 3)
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := iterState{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := subLogs(logs, _0_0_0)
+	got := subLogs(logs, iterState{resource: 0, library: 0, record: 0})
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -1534,8 +1533,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := iterState{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(logs, _0_1_2)
+	got = subLogs(logs, iterState{resource: 0, library: 1, record: 2})
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -1547,8 +1545,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := iterState{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = subLogs(logs, _1_1_2)
+	got = subLogs(logs, iterState{resource: 1, library: 1, record: 2})
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
