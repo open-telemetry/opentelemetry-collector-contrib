@@ -91,15 +91,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			}
 			for j := 0; j < spans.ScopeSpans().Len(); j++ {
 				rs := spans.ScopeSpans().At(j).Spans()
+				scopeName := spans.ScopeSpans().At(j).Scope().Name()
+				scopeVersion := spans.ScopeSpans().At(j).Scope().Version()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					spanAttr := attributesToMap(r.Attributes())
-					if spans.ScopeSpans().At(j).Scope().Name() != "" {
-						spanAttr[conventions.AttributeOtelScopeName] = spans.ScopeSpans().At(j).Scope().Name()
-					}
-					if spans.ScopeSpans().At(j).Scope().Version() != "" {
-						spanAttr[conventions.AttributeOtelScopeVersion] = spans.ScopeSpans().At(j).Scope().Version()
-					}
 					status := r.Status()
 					eventTimes, eventNames, eventAttrs := convertEvents(r.Events())
 					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())
@@ -113,6 +109,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 						traceutil.SpanKindStr(r.Kind()),
 						serviceName,
 						resAttr,
+						scopeName,
+						scopeVersion,
 						spanAttr,
 						r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
 						traceutil.StatusCodeStr(status.Code()),
@@ -184,6 +182,8 @@ CREATE TABLE IF NOT EXISTS %s (
      SpanKind LowCardinality(String) CODEC(ZSTD(1)),
      ServiceName LowCardinality(String) CODEC(ZSTD(1)),
      ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+     ScopeName String CODEC(ZSTD(1)),
+     ScopeVersion String CODEC(ZSTD(1)),
      SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      Duration Int64 CODEC(ZSTD(1)),
      StatusCode LowCardinality(String) CODEC(ZSTD(1)),
@@ -221,7 +221,9 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SpanName,
                         SpanKind,
                         ServiceName,
-                        ResourceAttributes,
+					    ResourceAttributes,
+						ScopeName,
+						ScopeVersion,
                         SpanAttributes,
                         Duration,
                         StatusCode,
@@ -234,6 +236,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Links.TraceState,
                         Links.Attributes
                         ) VALUES (
+                                  ?,
+                                  ?,
                                   ?,
                                   ?,
                                   ?,
