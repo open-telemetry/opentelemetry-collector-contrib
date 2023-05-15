@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/json-iterator/go v1.1.12
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
@@ -42,6 +43,8 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 retract (
 	v0.76.2

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -84,6 +85,9 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		}
 		if path[1].Name == "string" {
 			return accessStringKind[K](), nil
+		}
+		if path[1].Name == "deprecated_string" {
+			return accessDeprecatedStringKind[K](), nil
 		}
 	case "start_time_unix_nano":
 		return accessStartTimeUnixNano[K](), nil
@@ -323,6 +327,35 @@ func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 				case "Producer":
 					kind = ptrace.SpanKindProducer
 				case "Consumer":
+					kind = ptrace.SpanKindConsumer
+				default:
+					kind = ptrace.SpanKindUnspecified
+				}
+				tCtx.GetSpan().SetKind(kind)
+			}
+			return nil
+		},
+	}
+}
+
+func accessDeprecatedStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return traceutil.SpanKindStr(tCtx.GetSpan().Kind()), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if s, ok := val.(string); ok {
+				var kind ptrace.SpanKind
+				switch s {
+				case "SPAN_KIND_INTERNAL":
+					kind = ptrace.SpanKindInternal
+				case "SPAN_KIND_SERVER":
+					kind = ptrace.SpanKindServer
+				case "SPAN_KIND_CLIENT":
+					kind = ptrace.SpanKindClient
+				case "SPAN_KIND_PRODUCER":
+					kind = ptrace.SpanKindProducer
+				case "SPAN_KIND_CONSUMER":
 					kind = ptrace.SpanKindConsumer
 				default:
 					kind = ptrace.SpanKindUnspecified
