@@ -55,9 +55,9 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 	const maxDelay = 200 * time.Millisecond
 	createSettings := exportertest.NewNopCreateSettings()
 
-	const MaxBatchCount = 20
-	const LogsPerBatch = 10000
-	const ExpectedLogs = uint64(MaxBatchCount * LogsPerBatch)
+	const maxBatchCount = 20
+	const logsPerBatch = 10000
+	const expectedLogs = uint64(maxBatchCount * logsPerBatch)
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}
@@ -116,11 +116,11 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 		err = logs.Start(context.Background(), componenttest.NewNopHost())
 		s.NoError(err)
 
-		for bI := 0; bI < MaxBatchCount; bI++ {
+		for bI := 0; bI < maxBatchCount; bI++ {
 			batch := plog.NewLogs()
 			rL := batch.ResourceLogs().AppendEmpty()
 			sL := rL.ScopeLogs().AppendEmpty()
-			for lI := 0; lI < LogsPerBatch; lI++ {
+			for lI := 0; lI < logsPerBatch; lI++ {
 				key := fmt.Sprintf("%04d-%06d", bI, lI)
 				log := sL.LogRecords().AppendEmpty()
 				log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -142,11 +142,11 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 		lastProcessed := uint64(0)
 		sameNumber := 0
 		for {
-			s.T().Logf("Processed events: %d / %d", processedEvents.Load(), ExpectedLogs)
+			s.T().Logf("Processed events: %d / %d", processedEvents.Load(), expectedLogs)
 			if lastProcessed == processedEvents.Load() {
 				sameNumber++
 			}
-			if processedEvents.Load() >= ExpectedLogs || sameNumber > 10 {
+			if processedEvents.Load() >= expectedLogs || sameNumber > 10 {
 				break
 			}
 			lastProcessed = processedEvents.Load()
@@ -160,6 +160,6 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 	s.True(wasSuccessful.Load())
 
 	s.Equal(seenKeys, expectedKeys)
-	s.Equal(ExpectedLogs, processedEvents.Load(), "processed items")
-	s.Equal(ExpectedLogs, uint64(len(seenKeys)), "unique items")
+	s.Equal(expectedLogs, processedEvents.Load(), "processed items")
+	s.Equal(expectedLogs, uint64(len(seenKeys)), "unique items")
 }
