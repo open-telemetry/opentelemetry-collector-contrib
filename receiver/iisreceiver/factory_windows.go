@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
 
 func createMetricsReceiver(
@@ -35,7 +37,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	rcvr := newIisReceiver(params, cfg, nextConsumer)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, rcvr.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, rcvr.scrape,
 		scraperhelper.WithStart(rcvr.start),
 		scraperhelper.WithShutdown(rcvr.shutdown))
 	if err != nil {

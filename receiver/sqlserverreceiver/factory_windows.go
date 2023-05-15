@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 var errConfigNotSqlServer = errors.New("config was not a sqlserver receiver config")
@@ -42,7 +44,7 @@ func createMetricsReceiver(
 	}
 	sqlServerScraper := newSqlServerScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, sqlServerScraper.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sqlServerScraper.scrape,
 		scraperhelper.WithStart(sqlServerScraper.start),
 		scraperhelper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {
