@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -47,9 +46,12 @@ func logFunc[K any](target ottl.FloatLikeGetter[K]) ottl.ExprFunc[K] {
 		if err != nil {
 			return nil, err
 		}
+		if value == nil {
+			return nil, fmt.Errorf("invalid input: %v", value)
+		}
 
 		if *value <= 0 {
-			return nil, fmt.Errorf("expected value greater than zero but got nil %v", *value)
+			return nil, fmt.Errorf("invalid input: expected number greater than zero but got %v", *value)
 		}
 		return math.Log(*value), nil
 	}

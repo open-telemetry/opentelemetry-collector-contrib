@@ -50,10 +50,15 @@ func Test_Log(t *testing.T) {
 			value:    float64(55),
 			expected: math.Log(55),
 		},
+		{
+			name:     "true",
+			value:    true, // casts to 1 which Log(1) is 0 so it works.
+			expected: float64(0),
+		},
 	}
 	for _, tt := range noErrorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := logFunc[interface{}](&ottl.StandardGetSetter[interface{}]{
+			exprFunc := logFunc[interface{}](&ottl.StandardFloatLikeGetter[interface{}]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
@@ -66,53 +71,48 @@ func Test_Log(t *testing.T) {
 	errorTests := []struct {
 		name     string
 		value    interface{}
-		expected interface{}
+		errorStr string
 	}{
 		{
 			name:     "not a number string",
 			value:    "test",
-			expected: nil,
-		},
-		{
-			name:     "true",
-			value:    true,
-			expected: nil,
+			errorStr: "invalid",
 		},
 		{
 			name:     "false",
 			value:    false,
-			expected: nil,
+			errorStr: "invalid",
 		},
 		{
 			name:     "zero is undefined",
-			value:    0,
-			expected: "greater than zero",
+			value:    0.0,
+			errorStr: "greater than zero",
 		},
 		{
 			name:     "negative is undefined",
 			value:    -30.3,
-			expected: "greater than zero",
+			errorStr: "greater than zero",
 		},
 		{
 			name:     "nil",
 			value:    nil,
-			expected: nil,
+			errorStr: "invalid",
 		},
 		{
 			name:     "some struct",
 			value:    struct{}{},
-			expected: nil,
+			errorStr: "unsupported",
 		},
 	}
 	for _, tt := range errorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := logFunc[interface{}](&ottl.StandardGetSetter[interface{}]{
+			exprFunc := logFunc[interface{}](&ottl.StandardFloatLikeGetter[interface{}]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
 			})
 			result, err := exprFunc(nil, nil)
-			assert.ErrorContains(t, err, tt.expected)
+			assert.ErrorContains(t, err, tt.errorStr)
 			assert.Equal(t, nil, result)
 		})
 	}
