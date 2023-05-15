@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "test"
-	Stability = component.StabilityLevelAlpha
+	Type             = "test"
+	MetricsStability = component.StabilityLevelAlpha
 )
