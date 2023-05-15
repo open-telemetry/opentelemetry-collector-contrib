@@ -44,15 +44,15 @@ require (
 	github.com/alecthomas/participle/v2 v2.0.0 // indirect
 	github.com/antonmedv/expr v1.12.5 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.44.255 // indirect
+	github.com/aws/aws-sdk-go v1.44.261 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cskr/pubsub v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.5+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
+	github.com/docker/docker v23.0.6+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
@@ -174,3 +174,29 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ../../processor/resourcedetectionprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension => ../../extension/pprofextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ../../extension/healthcheckextension
