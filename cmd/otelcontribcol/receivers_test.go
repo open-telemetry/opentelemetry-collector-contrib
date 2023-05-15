@@ -73,6 +73,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "apache",
 		},
 		{
+			receiver: "apachespark",
+		},
+		{
 			receiver: "awscloudwatch",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchreceiver.Config)
