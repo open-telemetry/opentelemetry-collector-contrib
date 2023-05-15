@@ -52,7 +52,7 @@ type fileReader struct {
 }
 
 func newFileReader(consumer consumerType, file *os.File, timer *replayTimer, format string) fileReader {
-	mt.Println("file_reader.go:55: NEW FILE READER")
+	fmt.Println("file_reader.go:55: NEW FILE READER")
 	bts := make([]byte, 10000)
 	fmt.Println(file.Read(bts))
 	fmt.Println(binary.BigEndian.Uint64(bts[:8]))
