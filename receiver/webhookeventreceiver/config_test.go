@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -85,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	// LoadConf includes the TypeStr which NewFactory does not set
-	id := component.NewIDWithName(typeStr, "valid_config")
+	id := component.NewIDWithName(metadata.Type, "valid_config")
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 
