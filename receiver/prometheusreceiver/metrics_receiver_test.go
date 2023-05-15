@@ -1560,7 +1560,9 @@ scrape_configs:
 	ctx := context.Background()
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-	defer receiver.Shutdown(ctx)
+	t.Cleanup(func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	})
 
 	gotUA := <-uaCh
 
