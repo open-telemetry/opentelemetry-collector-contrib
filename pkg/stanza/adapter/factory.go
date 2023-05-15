@@ -54,7 +54,11 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			return nil, err
 		}
 
-		converter := NewConverter(params.Logger)
+		converterOpts := []converterOption{}
+		if baseCfg.numWorkers > 0 {
+			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
+		}
+		converter := NewConverter(params.Logger, converterOpts...)
 		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
