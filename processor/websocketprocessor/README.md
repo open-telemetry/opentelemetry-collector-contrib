@@ -4,11 +4,10 @@ The WebSocket processor, which can be positioned anywhere in a pipeline, allows
 data to pass through to the next component. Simultaneously, it makes a portion
 of the data accessible to WebSocket clients connecting on a configurable port.
 This functionality resembles that of the Unix `tee` command, which enables data
-to
-flow through while duplicating and redirecting it for inspection.
+to flow through while duplicating and redirecting it for inspection.
 
-To avoid overloading clients, the amount of telemetry transmitted via WebSockets
-is limited and can be adjusted according to user preferences.
+To avoid overloading clients, the amount of telemetry duplicated over 
+any open WebSockets is rate limited by an adjustable amount.
 
 ## Config
 
