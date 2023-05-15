@@ -53,6 +53,7 @@ exporters:
       retry_max_interval: 30s
       retry_max_elapsed_time: 300s
     traces:
+      aggregate: true
       max_wait: 10s
     retry_on_failure:
       max_interval: 30

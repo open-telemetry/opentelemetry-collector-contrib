@@ -20,8 +20,8 @@ services:
        - --otlp-endpoint=otel-collector-dataset:4317
        - --otlp-insecure
        - --otlp-attributes=key1="open-telemetry-collector-LOGS"
-       - --rate=10      # generate 10 records per second
-       - --duration=1h  # generate it for 1 hour
+       - --rate=10       # generate 10 records per second
+       - --duration=10m  # generate it for 10 minutes
        - --workers=2     # run 2 workers
     depends_on:
       - otel-collector-dataset
@@ -36,8 +36,8 @@ services:
       - --otlp-endpoint=otel-collector-dataset:4317
       - --otlp-insecure
       - --otlp-attributes=key1="open-telemetry-collector-TRACES"
-      - --rate=10      # generate 10 records per second
-      - --duration=1h  # generate it for 1 hour
+      - --rate=10       # generate 10 records per second
+      - --duration=10m  # generate it for 10 minutes
       - --workers=2     # run 2 workers
     depends_on:
       - otel-collector-dataset
