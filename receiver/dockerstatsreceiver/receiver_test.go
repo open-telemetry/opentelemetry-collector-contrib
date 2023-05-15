@@ -102,6 +102,17 @@ var (
 		ContainerMemoryAnon:                        metricEnabled,
 		ContainerMemoryFile:                        metricEnabled,
 	}
+
+	resourceAttributeEnabled     = metadata.ResourceAttributeConfig{Enabled: true}
+	allResourceAttributesEnabled = metadata.ResourceAttributesConfig{
+		ContainerCommandLine: resourceAttributeEnabled,
+		ContainerHostname:    resourceAttributeEnabled,
+		ContainerID:          resourceAttributeEnabled,
+		ContainerImageID:     resourceAttributeEnabled,
+		ContainerImageName:   resourceAttributeEnabled,
+		ContainerName:        resourceAttributeEnabled,
+		ContainerRuntime:     resourceAttributeEnabled,
+	}
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -349,12 +360,12 @@ func (cb *testConfigBuilder) withEndpoint(endpoint string) *testConfigBuilder {
 	return cb
 }
 
-func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsSettings) *testConfigBuilder {
+func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsConfig) *testConfigBuilder {
 	cb.config.MetricsBuilderConfig.Metrics = ms
 	return cb
 }
 
-func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesSettings) *testConfigBuilder {
+func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesConfig) *testConfigBuilder {
 	cb.config.MetricsBuilderConfig.ResourceAttributes = ras
 	return cb
 }

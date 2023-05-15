@@ -718,7 +718,7 @@ Time elapsed since container start time.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| container.command | The command executed by the container. | Any Str | false |
+| container.command_line | The full command executed by the container. | Any Str | false |
 | container.hostname | The hostname of the container. | Any Str | true |
 | container.id | The ID of the container. | Any Str | true |
 | container.image.id | The ID of the container image. | Any Str | false |

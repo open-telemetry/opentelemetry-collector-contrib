@@ -289,10 +289,10 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("container.command")
+			attrVal, ok := rm.Resource().Attributes().Get("container.command_line")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerCommand.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerCommand.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ContainerCommandLine.Enabled, ok)
+			if mb.resourceAttributesConfig.ContainerCommandLine.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

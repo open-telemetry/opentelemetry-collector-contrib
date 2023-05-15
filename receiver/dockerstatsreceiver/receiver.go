@@ -134,7 +134,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 		metadata.WithContainerImageName(container.Config.Image),
 		metadata.WithContainerName(strings.TrimPrefix(container.Name, "/")),
 		metadata.WithContainerImageID(container.Image),
-		metadata.WithContainerCommand(strings.Join(container.Config.Cmd, ",")),
+		metadata.WithContainerCommandLine(strings.Join(container.Config.Cmd, " ")),
 	)
 
 	for k, label := range r.config.EnvVarsToMetricLabels {

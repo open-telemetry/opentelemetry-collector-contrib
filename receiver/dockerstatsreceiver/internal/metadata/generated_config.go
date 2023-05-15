@@ -307,18 +307,18 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for docker_stats resource attributes.
 type ResourceAttributesConfig struct {
-	ContainerCommand   ResourceAttributeConfig `mapstructure:"container.command"`
-	ContainerHostname  ResourceAttributeConfig `mapstructure:"container.hostname"`
-	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
-	ContainerImageID   ResourceAttributeConfig `mapstructure:"container.image.id"`
-	ContainerImageName ResourceAttributeConfig `mapstructure:"container.image.name"`
-	ContainerName      ResourceAttributeConfig `mapstructure:"container.name"`
-	ContainerRuntime   ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerCommandLine ResourceAttributeConfig `mapstructure:"container.command_line"`
+	ContainerHostname    ResourceAttributeConfig `mapstructure:"container.hostname"`
+	ContainerID          ResourceAttributeConfig `mapstructure:"container.id"`
+	ContainerImageID     ResourceAttributeConfig `mapstructure:"container.image.id"`
+	ContainerImageName   ResourceAttributeConfig `mapstructure:"container.image.name"`
+	ContainerName        ResourceAttributeConfig `mapstructure:"container.name"`
+	ContainerRuntime     ResourceAttributeConfig `mapstructure:"container.runtime"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		ContainerCommand: ResourceAttributeConfig{
+		ContainerCommandLine: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		ContainerHostname: ResourceAttributeConfig{

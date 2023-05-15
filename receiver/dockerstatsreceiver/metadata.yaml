@@ -34,8 +34,8 @@ resource_attributes:
     description: "The ID of the container image."
     type: string
     enabled: false
-  container.command:
-    description: "The command executed by the container."
+  container.command_line:
+    description: "The full command executed by the container."
     type: string
     enabled: false
 

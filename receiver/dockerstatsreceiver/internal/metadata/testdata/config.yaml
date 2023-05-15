@@ -136,7 +136,7 @@ all_set:
     container.uptime:
       enabled: true
   resource_attributes:
-    container.command:
+    container.command_line:
       enabled: true
     container.hostname:
       enabled: true
@@ -287,7 +287,7 @@ none_set:
     container.uptime:
       enabled: false
   resource_attributes:
-    container.command:
+    container.command_line:
       enabled: false
     container.hostname:
       enabled: false
