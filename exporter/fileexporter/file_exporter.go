@@ -17,6 +17,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -47,9 +48,10 @@ type exportFunc func(e *fileExporter, buf []byte) error
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
-	path  string
-	file  io.WriteCloser
-	mutex sync.Mutex
+	path    string
+	file    io.WriteCloser
+	mutex   sync.Mutex
+	rWriter *riegeli.Writer
 
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
@@ -106,15 +108,12 @@ func exportMessageAsLine(e *fileExporter, buf []byte) error {
 	return nil
 }
 
-type Message struct {
-}
-
 func exportMessageAsRiegeliRecord(e *fileExporter, buf []byte) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
-	rw := riegeli.NewWriter(e.file, &riegeli.WriterOptions{ChunkSize: 1 << 20, Compression: riegeli.NoCompression, Transpose: false})
-	err := rw.Put(buf)
+	fmt.Println("file_exporter.go:114: riegeli record being written")
+	err := e.rWriter.Put(buf)
 	if err != nil {
 		return err
 	}
@@ -158,6 +157,7 @@ func (e *fileExporter) startFlusher() {
 			case <-e.flushTicker.C:
 				e.mutex.Lock()
 				ff.flush()
+				e.rWriter.Flush()
 				e.mutex.Unlock()
 			case <-e.stopTicker:
 				return
@@ -184,6 +184,10 @@ func (e *fileExporter) Shutdown(context.Context) error {
 		e.flushTicker.Stop()
 		// Stop the go routine.
 		close(e.stopTicker)
+	}
+	err := e.rWriter.Close()
+	if err != nil {
+		return err
 	}
 	return e.file.Close()
 }
