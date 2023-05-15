@@ -121,6 +121,14 @@ Please note that *the official otelcol images do not contain the journald binary
 
 When installing otelcol as a linux package, you will most likely need to add the `otelcol-contrib` or `otel` user to the `systemd-journal` group. The exact user and group might vary depending on your package and linux distribution of choice.
 
+You can test if the user has sufficient permissions by running something like (you might need to adjust according to available shell and opentelemetry user)
+
+```sh
+sudo su -s /bin/bash -c 'journalctl --lines 5' otelcol-contrib
+```
+
+if the permissions are set correctly you will see some logs, otherwise a clear error message.
+
 ### Kubernetes
 
 See the instructions for [Docker](#Docker) and adapt according to your Kubernetes distribution and node OS.
