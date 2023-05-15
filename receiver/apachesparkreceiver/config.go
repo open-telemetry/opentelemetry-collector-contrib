@@ -41,11 +41,9 @@ type Config struct {
 
 // Validate validates missing and invalid configuration fields.
 func (cfg *Config) Validate() error {
-	var err error
-
 	_, parseErr := url.Parse(cfg.Endpoint)
 	if parseErr != nil {
 		return errInvalidEndpoint
 	}
-	return err
+	return nil
 }
