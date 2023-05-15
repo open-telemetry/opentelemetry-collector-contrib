@@ -227,6 +227,7 @@ receiver/simpleprometheusreceiver/                       @open-telemetry/collect
 receiver/skywalkingreceiver/                             @open-telemetry/collector-contrib-approvers @JaredTan95
 receiver/snmpreceiver/                                   @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek @tamir-michaeli
 receiver/solacereceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski @mcardy
+receiver/splunkenterprisereceiver/                       @open-telemetry/collector-contrib-approvers @shalper2 @MovieStoreGuy
 receiver/splunkhecreceiver/                              @open-telemetry/collector-contrib-approvers @atoulme
 receiver/snowflakereceiver/                              @open-telemetry/collector-contrib-approvers @dmitryax @shalper2
 receiver/sqlqueryreceiver/                               @open-telemetry/collector-contrib-approvers @dmitryax @pmcollins
