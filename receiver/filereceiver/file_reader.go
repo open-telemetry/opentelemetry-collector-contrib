@@ -17,14 +17,18 @@ package filereceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bufio"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 
-	"go.opentelemetry.io/collector/consumer"
+	// "go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"kythe.io/kythe/go/util/riegeli"
 )
 
 // stringReader is the only function we use from *bufio.Reader. We define it
@@ -32,22 +36,74 @@ import (
 type stringReader interface {
 	ReadString(delim byte) (string, error)
 }
+type unmarshaler struct {
+	metricsUnm pmetric.Unmarshaler
+	tracesUnm  ptrace.Unmarshaler
+	logsUnm    plog.Unmarshaler
+}
 
 // fileReader
 type fileReader struct {
 	stringReader stringReader
-	unm          pmetric.Unmarshaler
-	consumer     consumer.Metrics
+	unmarshaler  unmarshaler
+	consumer     consumerType
 	timer        *replayTimer
+	ioread       *bufio.Reader
 }
 
-func newFileReader(consumer consumer.Metrics, file *os.File, timer *replayTimer) fileReader {
-	return fileReader{
+func newFileReader(consumer consumerType, file *os.File, timer *replayTimer, format string) fileReader {
+	mt.Println("file_reader.go:55: NEW FILE READER")
+	bts := make([]byte, 10000)
+	fmt.Println(file.Read(bts))
+	fmt.Println(binary.BigEndian.Uint64(bts[:8]))
+	fr := fileReader{
 		consumer:     consumer,
 		stringReader: bufio.NewReader(file),
-		unm:          &pmetric.JSONUnmarshaler{},
 		timer:        timer,
+		ioread:       bufio.NewReader(file),
 	}
+
+	if format == formatTypeProto {
+		switch {
+		case fr.consumer.tracesConsumer != nil:
+			fr.unmarshaler.tracesUnm = &ptrace.ProtoUnmarshaler{}
+		case fr.consumer.logsConsumer != nil:
+			fr.unmarshaler.logsUnm = &plog.ProtoUnmarshaler{}
+		case fr.consumer.metricsConsumer != nil:
+			fr.unmarshaler.metricsUnm = &pmetric.ProtoUnmarshaler{}
+		}
+	} else { // default to json
+		switch {
+		case fr.consumer.tracesConsumer != nil:
+			fr.unmarshaler.tracesUnm = &ptrace.JSONUnmarshaler{}
+		case fr.consumer.logsConsumer != nil:
+			fr.unmarshaler.logsUnm = &plog.JSONUnmarshaler{}
+		case fr.consumer.metricsConsumer != nil:
+			fr.unmarshaler.metricsUnm = &pmetric.JSONUnmarshaler{}
+		}
+	}
+	fmt.Println("file_reader.go:85: PEEK AT FIRST 8 BYTES")
+	bt, _ := fr.ioread.Peek(8)
+	fmt.Println(bt)
+	rr := riegeli.NewReader(file)
+	buf, _ := rr.Next()
+	fmt.Println("file_reader.go:90: THIS IS THE RIEGELI RECORD")
+	fmt.Println(buf)
+
+	return fr
+}
+
+func (fr fileReader) readProto(_ context.Context) error {
+	rr := riegeli.NewReader(fr.ioread)
+	buf, err := rr.Next()
+	fmt.Println("file_reader.go:99: THIS IS A RECORD FROM READER")
+	fmt.Println(buf)
+	fmt.Println(err)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 // readAll calls readline for each line in the file until all lines have been
@@ -58,7 +114,16 @@ func (fr fileReader) readAll(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			err := fr.readLine(ctx)
+			var err error
+			switch {
+			case fr.consumer.tracesConsumer != nil:
+				err = fr.readTraceLine(ctx)
+			case fr.consumer.metricsConsumer != nil:
+				err = fr.readMetricLine(ctx)
+			case fr.consumer.logsConsumer != nil:
+				err = fr.readLogLine(ctx)
+			}
+
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					return nil
@@ -69,25 +134,95 @@ func (fr fileReader) readAll(ctx context.Context) error {
 	}
 }
 
-// readLine reads the next line in the file, converting it into metrics and
+// readLogLine reads the next line in the file, converting it into logs and
 // passing it to the the consumer member.
-func (fr fileReader) readLine(ctx context.Context) error {
+func (fr fileReader) readLogLine(ctx context.Context) error {
 	line, err := fr.stringReader.ReadString('\n')
 	if err != nil {
 		return fmt.Errorf("failed to read line from input file: %w", err)
 	}
-	metrics, err := fr.unm.UnmarshalMetrics([]byte(line))
+	logs, err := fr.unmarshaler.logsUnm.UnmarshalLogs([]byte(line))
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal metrics: %w", err)
 	}
-	err = fr.timer.wait(ctx, getFirstTimestamp(metrics))
+	err = fr.timer.wait(ctx, getFirstTimestampFromLogs(logs))
 	if err != nil {
 		return fmt.Errorf("readLine interrupted while waiting for timer: %w", err)
 	}
-	return fr.consumer.ConsumeMetrics(ctx, metrics)
+	return fr.consumer.logsConsumer.ConsumeLogs(ctx, logs)
 }
 
-func getFirstTimestamp(metrics pmetric.Metrics) pcommon.Timestamp {
+// readTraceLine reads the next line in the file, converting it into traces and
+// passing it to the the consumer member.
+func (fr fileReader) readTraceLine(ctx context.Context) error {
+	line, err := fr.stringReader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("failed to read line from input file: %w", err)
+	}
+	traces, err := fr.unmarshaler.tracesUnm.UnmarshalTraces([]byte(line))
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal metrics: %w", err)
+	}
+	err = fr.timer.wait(ctx, getFirstTimestampFromTraces(traces))
+	if err != nil {
+		return fmt.Errorf("readLine interrupted while waiting for timer: %w", err)
+	}
+	return fr.consumer.tracesConsumer.ConsumeTraces(ctx, traces)
+}
+
+// readMetricLine reads the next line in the file, converting it into metrics and
+// passing it to the the consumer member.
+func (fr fileReader) readMetricLine(ctx context.Context) error {
+	line, err := fr.stringReader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("failed to read line from input file: %w", err)
+	}
+	metrics, err := fr.unmarshaler.metricsUnm.UnmarshalMetrics([]byte(line))
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal metrics: %w", err)
+	}
+	err = fr.timer.wait(ctx, getFirstTimestampFromMetrics(metrics))
+	if err != nil {
+		return fmt.Errorf("readLine interrupted while waiting for timer: %w", err)
+	}
+	return fr.consumer.metricsConsumer.ConsumeMetrics(ctx, metrics)
+}
+
+func getFirstTimestampFromLogs(logs plog.Logs) pcommon.Timestamp {
+	resourceLogs := logs.ResourceLogs()
+	if resourceLogs.Len() == 0 {
+		return 0
+	}
+	scopeLogs := resourceLogs.At(0).ScopeLogs()
+	if scopeLogs.Len() == 0 {
+		return 0
+	}
+	logSlice := scopeLogs.At(0).LogRecords()
+	if logSlice.Len() == 0 {
+		return 0
+	}
+
+	return logSlice.At(0).Timestamp()
+}
+
+func getFirstTimestampFromTraces(traces ptrace.Traces) pcommon.Timestamp {
+	resourceSpans := traces.ResourceSpans()
+	if resourceSpans.Len() == 0 {
+		return 0
+	}
+	scopeSpans := resourceSpans.At(0).ScopeSpans()
+	if scopeSpans.Len() == 0 {
+		return 0
+	}
+	spanSlice := scopeSpans.At(0).Spans()
+	if spanSlice.Len() == 0 {
+		return 0
+	}
+
+	return spanSlice.At(0).StartTimestamp()
+}
+
+func getFirstTimestampFromMetrics(metrics pmetric.Metrics) pcommon.Timestamp {
 	resourceMetrics := metrics.ResourceMetrics()
 	if resourceMetrics.Len() == 0 {
 		return 0
@@ -100,10 +235,8 @@ func getFirstTimestamp(metrics pmetric.Metrics) pcommon.Timestamp {
 	if metricSlice.Len() == 0 {
 		return 0
 	}
-	return getFirstTimestampFromMetric(metricSlice.At(0))
-}
 
-func getFirstTimestampFromMetric(metric pmetric.Metric) pcommon.Timestamp {
+	metric := metricSlice.At(0)
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := metric.Gauge().DataPoints()

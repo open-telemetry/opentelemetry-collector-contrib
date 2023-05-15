@@ -31,7 +31,15 @@ type Config struct {
 	// replay will be slower by a corresponding amount. Use a value between 0 and 1
 	// to replay telemetry at a higher speed. Default: 1.
 	Throttle float64 `mapstructure:"throttle"`
+	// Format will specify the format of the file to be read.
+	// Currently support json and proto options.
+	FormatType string `mapstructure:"format"`
 }
+
+const (
+	formatTypeJSON  = "json"
+	formatTypeProto = "proto"
+)
 
 func createDefaultConfig() component.Config {
 	return &Config{
@@ -46,5 +54,8 @@ func (c Config) Validate() error {
 	if c.Throttle < 0 {
 		return errors.New("throttle cannot be negative")
 	}
+	// if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
+	// 	return errors.New("format must be json or proto")
+	// }
 	return nil
 }

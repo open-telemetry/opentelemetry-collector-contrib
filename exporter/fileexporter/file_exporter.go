@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"kythe.io/kythe/go/util/riegeli"
 )
 
 // Marshaler configuration used for marhsaling Protobuf
@@ -70,7 +71,7 @@ func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	buf = e.compressor(buf)
+	// buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -79,7 +80,7 @@ func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	buf = e.compressor(buf)
+	// buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -88,7 +89,7 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	buf = e.compressor(buf)
+	// buf = e.compressor(buf)
 	return e.exporter(e, buf)
 }
 
@@ -100,6 +101,21 @@ func exportMessageAsLine(e *fileExporter, buf []byte) error {
 		return err
 	}
 	if _, err := io.WriteString(e.file, "\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+type Message struct {
+}
+
+func exportMessageAsRiegeliRecord(e *fileExporter, buf []byte) error {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+
+	rw := riegeli.NewWriter(e.file, &riegeli.WriterOptions{ChunkSize: 1 << 20, Compression: riegeli.NoCompression, Transpose: false})
+	err := rw.Put(buf)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -174,7 +190,7 @@ func (e *fileExporter) Shutdown(context.Context) error {
 
 func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
 	if cfg.FormatType == formatTypeProto {
-		return exportMessageAsBuffer
+		return exportMessageAsRiegeliRecord
 	}
 	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
 	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {

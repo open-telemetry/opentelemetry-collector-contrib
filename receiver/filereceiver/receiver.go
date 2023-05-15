@@ -26,12 +26,18 @@ import (
 	"go.uber.org/zap"
 )
 
+type consumerType struct {
+	metricsConsumer consumer.Metrics
+	tracesConsumer  consumer.Traces
+	logsConsumer    consumer.Logs
+}
 type fileReceiver struct {
-	consumer consumer.Metrics
+	consumer consumerType
 	path     string
 	logger   *zap.Logger
 	cancel   context.CancelFunc
 	throttle float64
+	format   string
 }
 
 func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
@@ -43,14 +49,21 @@ func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
 		return fmt.Errorf("failed to open file %q: %w", r.path, err)
 	}
 
-	fr := newFileReader(r.consumer, file, newReplayTimer(r.throttle))
+	fmt.Println("receiver.go:52: THIS IS THE FORMAT")
+	fmt.Println(r.format)
+	fr := newFileReader(r.consumer, file, newReplayTimer(r.throttle), r.format)
 	go func() {
-		err := fr.readAll(ctx)
+		var err error
+		if r.format == formatTypeJSON {
+			err = fr.readAll(ctx)
+		} else {
+			err = fr.readProto(ctx)
+		}
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				r.logger.Debug("EOF reached")
 			} else {
-				r.logger.Error("failed to read input file", zap.Error(err))
+				r.logger.Error("failed to read input fileee", zap.Error(err))
 			}
 		}
 	}()

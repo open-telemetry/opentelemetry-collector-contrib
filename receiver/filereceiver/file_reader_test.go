@@ -29,10 +29,13 @@ import (
 
 func TestFileReader_Readline(t *testing.T) {
 	tc := testConsumer{}
+	cons := consumerType{
+		metricsConsumer: &tc,
+	}
 	f, err := os.Open(filepath.Join("testdata", "metrics.json"))
 	require.NoError(t, err)
-	fr := newFileReader(&tc, f, newReplayTimer(0))
-	err = fr.readLine(context.Background())
+	fr := newFileReader(cons, f, newReplayTimer(0), "json")
+	err = fr.readMetricLine(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(tc.consumed))
 	metrics := tc.consumed[0]
@@ -46,7 +49,9 @@ func TestFileReader_Readline(t *testing.T) {
 
 func TestFileReader_Cancellation(t *testing.T) {
 	fr := fileReader{
-		consumer:     consumertest.NewNop(),
+		consumer: consumerType{
+			metricsConsumer: consumertest.NewNop(),
+		},
 		stringReader: blockingStringReader{},
 	}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -58,6 +63,9 @@ func TestFileReader_Cancellation(t *testing.T) {
 
 func TestFileReader_ReadAll(t *testing.T) {
 	tc := testConsumer{}
+	cons := consumerType{
+		metricsConsumer: &tc,
+	}
 	f, err := os.Open(filepath.Join("testdata", "metrics.json"))
 	require.NoError(t, err)
 	sleeper := &fakeSleeper{}
@@ -65,7 +73,7 @@ func TestFileReader_ReadAll(t *testing.T) {
 		throttle:  2,
 		sleepFunc: sleeper.fakeSleep,
 	}
-	fr := newFileReader(&tc, f, rt)
+	fr := newFileReader(cons, f, rt, "json")
 	err = fr.readAll(context.Background())
 	require.NoError(t, err)
 	const expectedSleeps = 10

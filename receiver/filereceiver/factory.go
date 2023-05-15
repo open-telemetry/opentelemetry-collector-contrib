@@ -32,6 +32,8 @@ func NewFactory() receiver.Factory {
 		typeStr,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithTraces(createTracesReceiver, stability),
+		receiver.WithLogs(createLogsReceiver, stability),
 	)
 }
 
@@ -43,9 +45,48 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := cc.(*Config)
 	return &fileReceiver{
-		consumer: consumer,
+		consumer: consumerType{
+			metricsConsumer: consumer,
+		},
 		path:     cfg.Path,
 		logger:   settings.Logger,
 		throttle: cfg.Throttle,
+		format:   cfg.FormatType,
+	}, nil
+}
+
+func createTracesReceiver(
+	_ context.Context,
+	settings receiver.CreateSettings,
+	cc component.Config,
+	consumer consumer.Traces,
+) (receiver.Traces, error) {
+	cfg := cc.(*Config)
+	return &fileReceiver{
+		consumer: consumerType{
+			tracesConsumer: consumer,
+		},
+		path:     cfg.Path,
+		logger:   settings.Logger,
+		throttle: cfg.Throttle,
+		format:   cfg.FormatType,
+	}, nil
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	settings receiver.CreateSettings,
+	cc component.Config,
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
+	cfg := cc.(*Config)
+	return &fileReceiver{
+		consumer: consumerType{
+			logsConsumer: consumer,
+		},
+		path:     cfg.Path,
+		logger:   settings.Logger,
+		throttle: cfg.Throttle,
+		format:   cfg.FormatType,
 	}, nil
 }

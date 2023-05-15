@@ -41,6 +41,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
@@ -295,6 +296,14 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "otlpjsonfile",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["otlpjsonfile"].CreateDefaultConfig().(*otlpjsonfilereceiver.Config)
+				cfg.Include = []string{"/tmp/*.log"}
+				return cfg
+			},
+		},
+		{
+			receiver: "file",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["file"].CreateDefaultConfig().(*filereceiver.Config)
 				cfg.Include = []string{"/tmp/*.log"}
 				return cfg
 			},
