@@ -18,9 +18,9 @@ Exporter supports the following features：
 Please note that there is no guarantee that exact field names will remain stable.
 This intended for primarily for debugging Collector without setting up backends.
 
-The official [opentelemetry-collector-contrib container](https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags#!) does not have a writable filesystem by default since it's built using the special `from scratch` layer. As such, you will need to create a writable directory for the path, potentially by creating writable volumes or creating a custom image.
-
-## Getting Started
+The official [opentelemetry-collector-contrib container](https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags#!) does not have a writable filesystem by default since it's built on the `scratch` layer.
+As such, you will need to create a writable directory for the path, potentially by mounting writable volumes or creating a custom image.
+## Configuration options:
 
 The following settings are required:
 
@@ -93,6 +93,44 @@ exporters:
     flush_interval: 5
 ```
 
+## Get Started in an existing cluster
+We will follow the [documentation](https://opentelemetry.io/docs/k8s-operator/) to first install the operator in an existing cluster
+and then create an OpenTelemetry Collector (otelcol) instance, 
+mounting an additional volume under `/data` under which the file exporter will write `metrics.json`:
+``` shell
+kubectl apply -f - <<EOF
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: fileexporter
+spec:
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+
+    exporters:
+      logging:
+      file:
+        path: /data/metrics.json
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: []
+          exporters: [logging,file]
+  volumes:
+    - name: file
+      emptyDir: {}
+  volumeMounts: 
+    - name: file
+      mountPath: /data
+EOF
+```
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
