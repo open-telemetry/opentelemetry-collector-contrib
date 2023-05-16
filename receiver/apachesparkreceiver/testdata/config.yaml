@@ -1,0 +1,13 @@
+# ./bin/otelcontribcol_darwin_arm64 --config ./receiver/apachesparkreceiver/testdata/config.yaml
+receivers:
+  apachespark:
+    collection_interval: 15s
+exporters:
+  file:
+    path: ./receiver/apachesparkreceiver/output/metrics.json
+
+service:
+  pipelines:
+    metrics:
+      receivers: [apachespark]
+      exporters: [file]
