@@ -109,7 +109,7 @@ service:
 
 ## AWS Costs
 
-This receiver uses the [GetMetricData](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html) API call, this call is *not* in the AWS free tier. Please refer to [Amazon's pricing](https://aws.amazon.com/cloudwatch/pricing/) for further information about expected costs. For `us-east-1`, the current pricing is $0.01 per 1,000 metrics requested as of February 2023.
+This receiver uses the [GetMetricData](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html) API call, this call is *not* in the AWS free tier. Please refer to [Amazon's pricing](https://aws.amazon.com/cloudwatch/pricing/) for further information about expected costs.
 
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
