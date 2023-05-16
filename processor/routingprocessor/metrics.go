@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -39,12 +41,26 @@ type metricsProcessor struct {
 
 	extractor extractor
 	router    router[exporter.Metrics, ottldatapoint.TransformContext]
+
+	nonRoutedMetricPointsCounter metric.Int64Counter
 }
 
-func newMetricProcessor(settings component.TelemetrySettings, config component.Config) *metricsProcessor {
+func newMetricProcessor(settings component.TelemetrySettings, config component.Config) (*metricsProcessor, error) {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
-	dataPointParser, _ := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings)
+	dataPointParser, err := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings)
+	if err != nil {
+		return nil, err
+	}
+
+	meter := settings.MeterProvider.Meter(scopeName + nameSep + "metrics")
+	nonRoutedMetricPointsCounter, err := meter.Int64Counter(
+		typeStr+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
+		metric.WithDescription("Number of metric points that were not routed to some or all exporters."),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &metricsProcessor{
 		logger: settings.Logger,
@@ -55,8 +71,9 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 			settings,
 			dataPointParser,
 		),
-		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
-	}
+		extractor:                    newExtractor(cfg.FromAttribute, settings.Logger),
+		nonRoutedMetricPointsCounter: nonRoutedMetricPointsCounter,
+	}, nil
 }
 
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
@@ -113,6 +130,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 					return err
 				}
 				p.group("", groups, p.router.defaultExporters, rmetrics)
+				p.recordNonRoutedForResourceMetrics(ctx, "", rmetrics)
 				continue
 			}
 			if !isMatch {
@@ -125,6 +143,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		if matchCount == 0 {
 			// no route conditions are matched, add resource metrics to default exporters group
 			p.group("", groups, p.router.defaultExporters, rmetrics)
+			p.recordNonRoutedForResourceMetrics(ctx, "", rmetrics)
 		}
 	}
 
@@ -151,14 +170,40 @@ func (p *metricsProcessor) group(
 	groups[key] = group
 }
 
+func (p *metricsProcessor) recordNonRoutedForResourceMetrics(ctx context.Context, routingKey string, rm pmetric.ResourceMetrics) {
+	metricPointsCount := 0
+	sm := rm.ScopeMetrics()
+	for j := 0; j < sm.Len(); j++ {
+		metricPointsCount += sm.At(j).Metrics().Len()
+	}
+
+	p.nonRoutedMetricPointsCounter.Add(
+		ctx,
+		int64(metricPointsCount),
+		metric.WithAttributes(
+			attribute.String("routing_key", routingKey),
+		),
+	)
+}
+
 func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metrics) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
+	if value == "" { // "" is a  key for default exporters
+		p.nonRoutedMetricPointsCounter.Add(
+			ctx,
+			int64(m.MetricCount()),
+			metric.WithAttributes(
+				attribute.String("routing_key", p.extractor.fromAttr),
+			),
+		)
+	}
 
 	var errs error
 	for _, e := range exporters {
 		errs = multierr.Append(errs, e.ConsumeMetrics(ctx, m))
 	}
+
 	return errs
 }
 
