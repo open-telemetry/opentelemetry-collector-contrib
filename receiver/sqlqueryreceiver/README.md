@@ -24,7 +24,9 @@ The configuration supports the following top-level fields:
   e.g. _host=localhost port=5432 user=me password=s3cr3t sslmode=disable_
 - `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
-- `storage` (optional, default `""`): The ID of a storage extension to be used to [track processed results](#tracking-processed-results).
+- `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
+
+[storage_extension]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
 
 ### Queries
 
