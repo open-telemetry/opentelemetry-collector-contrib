@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracestate
+package sampling
 
 import (
 	"errors"
@@ -210,6 +210,7 @@ func TestParseTraceStateExtra(t *testing.T) {
 	}
 	const notset = ""
 	for _, test := range []testCase{
+		//
 		{"t:2", "2", nil, nil},
 		{"t:1;", notset, nil, strconv.ErrSyntax},
 		{"t:1", "1", nil, nil},
@@ -228,10 +229,11 @@ func TestParseTraceStateExtra(t *testing.T) {
 		{"t:72057594037927936", "72057594037927936", nil, nil}, // max t-value = 0x1p+56
 		{"t:0x1p-56", "0x1p-56", nil, nil},                     // min t-value
 
-		{"t:0x1p+57", notset, nil, strconv.ErrRange},           // out-of-range
-		{"t:72057594037927937", notset, nil, strconv.ErrRange}, // out-of-range
-		{"t:$", notset, nil, strconv.ErrSyntax},                // not-hexadecimal
-		{"p:-1", notset, nil, strconv.ErrSyntax},               // non-negative
+		// various errors
+		{"t:0x1p+57", notset, nil, ErrAdjustedCountOnlyInteger},     // integer syntax
+		{"t:72057594037927937", notset, nil, ErrAdjustedCountRange}, // out-of-range
+		{"t:$", notset, nil, strconv.ErrSyntax},                     // not-hexadecimal
+		{"t:-1", notset, nil, ErrProbabilityRange},                  // non-negative
 
 		// one field
 		{"e100:1", notset, []string{"e100:1"}, nil},
@@ -274,7 +276,7 @@ func TestParseTraceStateExtra(t *testing.T) {
 			otts, err := parseOTelTraceState(test.in)
 
 			if test.expectErr != nil {
-				require.True(t, errors.Is(err, test.expectErr), "not expecting %v", err)
+				require.True(t, errors.Is(err, test.expectErr), "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
 			} else {
 				require.NoError(t, err)
 			}

@@ -15,7 +15,6 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"strconv"
@@ -23,19 +22,25 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+// Threshold is an opaque type used to compare with the least-significant 7 bytes of the TraceID.
+type Threshold struct {
+	// limit in range [1, 0x1p+56]
+	limit uint64
+}
+
 const (
-	MinSamplingProb        = 0x1p-56
-	MaxAdjustedCount int64 = 0x1p+56 // i.e., 1 / MinSamplingProb
+	MinSamplingProb  = 0x1p-56
+	MaxAdjustedCount = 0x1p+56 // i.e., 1 / MinSamplingProb
+
+	LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
 )
 
 var (
 	ErrPrecisionRange           = fmt.Errorf("sampling precision out of range (-1 <= valid <= 14)")
 	ErrProbabilityRange         = fmt.Errorf("sampling probability out of range (0x1p-56 <= valid <= 1)")
 	ErrAdjustedCountRange       = fmt.Errorf("sampling adjusted count out of range (1 <= valid <= 0x1p+56)")
-	ErrAdjustedCountOnlyInteger = fmt.Errorf("sampling adjusted count out of range (1 <= valid <= 0x1p+56)")
+	ErrAdjustedCountOnlyInteger = fmt.Errorf("sampling adjusted count must be an integer")
 )
-
-type Threshold [7]byte
 
 func probabilityInRange(prob float64) bool {
 	return prob <= 1 && prob >= MinSamplingProb
@@ -90,14 +95,16 @@ func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
 	case number == 0:
 
 	case number < MinSamplingProb:
-		return 0, 0, ErrAdjustedCountRange
-	case number > float64(MaxAdjustedCount):
-		return 0, 0, ErrAdjustedCountRange
-	case number >= 1:
-		// It's an integer adjusted count; re-parse as an integer.
+		return 0, 0, ErrProbabilityRange
+	case number > 1:
+		// Greater than 1 indicates adjusted count; re-parse
+		// as a decimal integer.
 		integer, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
 			return 0, 0, ErrAdjustedCountOnlyInteger
+		}
+		if integer > MaxAdjustedCount {
+			return 0, 0, ErrAdjustedCountRange
 		}
 		adjusted = float64(integer)
 		number = 1 / adjusted
@@ -108,25 +115,20 @@ func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
 	return number, adjusted, nil
 }
 
-func ProbabilityToThreshold(prob float64) (t Threshold, _ error) {
+func ProbabilityToThreshold(prob float64) (Threshold, error) {
 	if !probabilityInRange(prob) {
-		return t, ErrProbabilityRange
+		return Threshold{}, ErrProbabilityRange
 	}
-
-	unsigned := uint64(prob * 0x1p+56)
-	var bytes [8]byte
-	binary.BigEndian.PutUint64(bytes[:], unsigned)
-	copy(t[:], bytes[1:])
-	return t, nil
+	return Threshold{
+		limit: uint64(prob * 0x1p+56),
+	}, nil
 }
 
 func ThresholdToProbability(t Threshold) float64 {
-	var eight [8]byte
-	copy(eight[1:8], t[:])
-	b56 := binary.BigEndian.Uint64(eight[:])
-	return float64(b56) / 0x1p56
+	return float64(t.limit) / MaxAdjustedCount
 }
 
 func (t Threshold) ShouldSample(id pcommon.TraceID) bool {
-	return bytes.Compare(id[9:16], t[:]) < 0
+	value := binary.BigEndian.Uint64(id[8:]) & LeastHalfTraceIDThresholdMask
+	return value < t.limit
 }

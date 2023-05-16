@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracestate // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/tracestate"
+package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ var (
 
 type otelTraceState struct {
 	tvalueString string
-	tvalueParsed float64
+	tvalueParsed Threshold
 	unknown      []string
 }
 
@@ -138,6 +138,7 @@ func parseOTelTraceState(ts string) (otelTraceState, error) { // nolint: revive
 			break
 		}
 
+		// Here, handle recognized fields.
 		if key == tValueSubkey {
 			tval = ts[0 : sepPos+eqPos+1]
 		} else {
@@ -160,24 +161,26 @@ func parseOTelTraceState(ts string) (otelTraceState, error) { // nolint: revive
 		}
 	}
 
-	// @@@ Use ../sampling
-	tv, err := strconv.ParseFloat(tval, 64)
-	if err != nil {
-		err = fmt.Errorf("otel tracestate t-value: %w", strconv.ErrSyntax)
-	}
-	switch {
-	case tv < 0:
-
-	case tv == 0:
-	case tv < 0x1p-56:
-	case tv > 0x1p+56:
-	}
-
 	otts := newTraceState()
 	otts.unknown = unknown
-	otts.tvalueString = tval
-	otts.tvalueParsed = tv
 
+	if tval != "" {
+		if len(tval) == 1 {
+			return otts, fmt.Errorf("otel tracestate t-value: %w", strconv.ErrSyntax)
+		}
+		prob, _, err := TvalueToProbabilityAndAdjustedCount(tval[2:])
+		if err != nil {
+			return otts, fmt.Errorf("otel tracestate t-value: %w", err)
+		}
+
+		th, err := ProbabilityToThreshold(prob)
+		if err != nil {
+			return otts, fmt.Errorf("otel tracestate t-value: %w", err)
+		}
+
+		otts.tvalueString = tval
+		otts.tvalueParsed = th
+	}
 	return otts, nil
 }
 
