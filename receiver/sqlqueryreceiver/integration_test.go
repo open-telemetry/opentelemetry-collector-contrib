@@ -42,7 +42,8 @@ import (
 func TestLogsTrackingWithoutStorageInPostgres(t *testing.T) {
 	// Start Postgres container.
 	externalPort := "15430"
-	startPostgresDbContainer(t, externalPort)
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer dbContainer.Terminate(context.Background())
 
 	// Start the SQL Query receiver.
 	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
@@ -121,7 +122,8 @@ func TestLogsTrackingWithoutStorageInPostgres(t *testing.T) {
 func TestLogsTrackingWithStorageInPostgres(t *testing.T) {
 	// start Postgres container
 	externalPort := "15431"
-	container := startPostgresDbContainer(t, externalPort)
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer dbContainer.Terminate(context.Background())
 
 	// create a File Storage extension writing to a temporary directory in local filesystem
 	storageDir := t.TempDir()
@@ -200,7 +202,7 @@ func TestLogsTrackingWithStorageInPostgres(t *testing.T) {
 
 	// write a number of new logs to the database
 	newLogCount := 3
-	insertPostgresSimpleLogs(t, container, initialLogCount, newLogCount)
+	insertPostgresSimpleLogs(t, dbContainer, initialLogCount, newLogCount)
 
 	// start the SQL Query receiver again
 	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
@@ -231,6 +233,10 @@ func TestLogsTrackingWithStorageInPostgres(t *testing.T) {
 		1*time.Second,
 		"failed to receive more than 0 logs",
 	)
+
+	// stop the SQL Query receiver
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
 
 	// Verify that the newly added logs were received.
 	require.Equal(t, newLogCount, consumer.LogRecordCount())
@@ -315,7 +321,8 @@ func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, 
 
 func TestPostgresIntegration(t *testing.T) {
 	externalPort := "15432"
-	startPostgresDbContainer(t, externalPort)
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer dbContainer.Terminate(context.Background())
 
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
@@ -484,15 +491,16 @@ func TestOracleDBIntegration(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	container, err := testcontainers.GenericContainer(
+	dbContainer, err := testcontainers.GenericContainer(
 		ctx,
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
 		},
 	)
-	require.NotNil(t, container)
+	require.NotNil(t, dbContainer)
 	require.NoError(t, err)
+	defer dbContainer.Terminate(ctx)
 
 	genreKey := "GENRE"
 	factory := NewFactory()
@@ -599,14 +607,16 @@ func TestMysqlIntegration(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	_, err := testcontainers.GenericContainer(
+	dbContainer, err := testcontainers.GenericContainer(
 		ctx,
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
 		},
 	)
+	require.NotNil(t, dbContainer)
 	require.NoError(t, err)
+	defer dbContainer.Terminate(ctx)
 
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
