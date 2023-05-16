@@ -1,0 +1,54 @@
+type: tlscheckreceiver
+
+status:
+  class: receiver
+  stability: development
+  pipelines: [metrics]
+  distributions: [contrib]
+  warnings: []
+
+resource_attributes:
+
+attributes:
+  error.message:
+    description: Error message recorded during check
+    type: string
+
+metrics:
+  tlscheck.days_left:
+    enabled: true
+    description: Days until X.509 certificate expiration.
+    unit: s
+    gauge:
+      value_type: int
+  tlscheck.seconds_left:
+    enabled: true
+    description: Seconds until X.509 certificate expiration.
+    unit: s
+    gauge:
+      value_type: int
+  tlscheck.issued_days:
+    enabled: true
+    description: Day duration of timespan certificate is issued for.
+    unit: s
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+  tlscheck.issued_seconds:
+    enabled: true
+    description: Second duration of timespan certificate is issued for.
+    unit: s
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+  tlscheck.error:
+    description: Records errors occurring during HTTP check.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    unit: "{error}"
+    attributes: [error.message]

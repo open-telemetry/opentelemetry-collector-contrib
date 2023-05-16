@@ -1,0 +1,27 @@
+default:
+all_set:
+  metrics:
+    tlscheck.days_left:
+      enabled: true
+    tlscheck.error:
+      enabled: true
+    tlscheck.issued_days:
+      enabled: true
+    tlscheck.issued_seconds:
+      enabled: true
+    tlscheck.seconds_left:
+      enabled: true
+  resource_attributes:
+none_set:
+  metrics:
+    tlscheck.days_left:
+      enabled: false
+    tlscheck.error:
+      enabled: false
+    tlscheck.issued_days:
+      enabled: false
+    tlscheck.issued_seconds:
+      enabled: false
+    tlscheck.seconds_left:
+      enabled: false
+  resource_attributes:
