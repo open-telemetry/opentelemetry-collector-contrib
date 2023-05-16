@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
@@ -42,7 +44,8 @@ type logsReceiver struct {
 	collectionIntervalTicker *time.Ticker
 	shutdownRequested        chan struct{}
 
-	id component.ID
+	id            component.ID
+	storageClient storage.Client
 }
 
 func newLogsReceiver(
@@ -64,26 +67,7 @@ func newLogsReceiver(
 		id:                settings.ID,
 	}
 
-	receiver.createQueryReceivers()
-
 	return receiver, nil
-}
-
-func (receiver *logsReceiver) createQueryReceivers() {
-	for i, query := range receiver.config.Queries {
-		if len(query.Logs) == 0 {
-			continue
-		}
-		id := fmt.Sprintf("query-%d: %s", i, query.SQL)
-		queryReceiver := newLogsQueryReceiver(
-			id,
-			query,
-			receiver.createConnection,
-			receiver.createClient,
-			receiver.settings.Logger,
-		)
-		receiver.queryReceivers = append(receiver.queryReceivers, queryReceiver)
-	}
 }
 
 func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) error {
@@ -94,8 +78,19 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 	receiver.settings.Logger.Debug("starting...")
 	receiver.isStarted = true
 
+	var err error
+	receiver.storageClient, err = adapter.GetStorageClient(ctx, host, receiver.config.StorageID, receiver.settings.ID)
+	if err != nil {
+		return fmt.Errorf("error connecting to storage: %w", err)
+	}
+
+	err = receiver.createQueryReceivers()
+	if err != nil {
+		return err
+	}
+
 	for _, queryReceiver := range receiver.queryReceivers {
-		err := queryReceiver.start()
+		err := queryReceiver.start(ctx)
 		if err != nil {
 			if err := observability.RecordErrors(observability.StartError, receiver.id.String(), queryReceiver.ID()); err != nil {
 				receiver.settings.Logger.Debug("error recording metric for errors count", zap.Error(err))
@@ -107,9 +102,28 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 			receiver.settings.Logger.Debug("error recording metric for errors count", zap.Error(err))
 		}
 	}
-
 	receiver.startCollecting()
 	receiver.settings.Logger.Debug("started.")
+	return nil
+}
+
+func (receiver *logsReceiver) createQueryReceivers() error {
+	receiver.queryReceivers = nil
+	for i, query := range receiver.config.Queries {
+		if len(query.Logs) == 0 {
+			continue
+		}
+		id := fmt.Sprintf("query-%d: %s", i, query.SQL)
+		queryReceiver := newLogsQueryReceiver(
+			id,
+			query,
+			receiver.createConnection,
+			receiver.createClient,
+			receiver.settings.Logger,
+			receiver.storageClient,
+		)
+		receiver.queryReceivers = append(receiver.queryReceivers, queryReceiver)
+	}
 	return nil
 }
 
@@ -134,7 +148,7 @@ func (receiver *logsReceiver) collect() {
 		go func(queryReceiver *logsQueryReceiver) {
 			logs, err := queryReceiver.collect(context.Background())
 			if err != nil {
-				receiver.settings.Logger.Error("Error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
+				receiver.settings.Logger.Error("error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
 				if err := observability.RecordErrors(observability.CollectError, receiver.id.String(), queryReceiver.ID()); err != nil {
 					receiver.settings.Logger.Debug("error for recording metric for errors count", zap.Error(err))
 				}
@@ -174,10 +188,15 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 		queryReceiver.shutdown(ctx)
 	}
 
+	var errors error
+	if receiver.storageClient != nil {
+		errors = multierr.Append(errors, receiver.storageClient.Close(ctx))
+	}
+
 	receiver.isStarted = false
 	receiver.settings.Logger.Debug("stopped.")
 
-	return nil
+	return errors
 }
 
 func (receiver *logsReceiver) stopCollecting() {
@@ -195,6 +214,9 @@ type logsQueryReceiver struct {
 	db            *sql.DB
 	client        dbClient
 	trackingValue string
+	// TODO: Extract persistence into its own component
+	storageClient           storage.Client
+	trackingValueStorageKey string
 }
 
 func newLogsQueryReceiver(
@@ -203,15 +225,18 @@ func newLogsQueryReceiver(
 	dbProviderFunc dbProviderFunc,
 	clientProviderFunc clientProviderFunc,
 	logger *zap.Logger,
+	storageClient storage.Client,
 ) *logsQueryReceiver {
 	queryReceiver := &logsQueryReceiver{
-		id:           id,
-		query:        query,
-		createDb:     dbProviderFunc,
-		createClient: clientProviderFunc,
-		logger:       logger,
+		id:            id,
+		query:         query,
+		createDb:      dbProviderFunc,
+		createClient:  clientProviderFunc,
+		logger:        logger,
+		storageClient: storageClient,
 	}
 	queryReceiver.trackingValue = queryReceiver.query.TrackingStartValue
+	queryReceiver.trackingValueStorageKey = fmt.Sprintf("%s.%s", queryReceiver.id, "trackingValue")
 	return queryReceiver
 }
 
@@ -219,7 +244,7 @@ func (queryReceiver *logsQueryReceiver) ID() string {
 	return queryReceiver.id
 }
 
-func (queryReceiver *logsQueryReceiver) start() error {
+func (queryReceiver *logsQueryReceiver) start(ctx context.Context) error {
 	var err error
 	queryReceiver.db, err = queryReceiver.createDb()
 	if err != nil {
@@ -227,7 +252,26 @@ func (queryReceiver *logsQueryReceiver) start() error {
 	}
 	queryReceiver.client = queryReceiver.createClient(dbWrapper{queryReceiver.db}, queryReceiver.query.SQL, queryReceiver.logger)
 
+	queryReceiver.trackingValue = queryReceiver.retrieveTrackingValue(ctx)
+
 	return nil
+}
+
+// retrieveTrackingValue retrieves the tracking value from storage, if storage is configured.
+// Otherwise, it returns the tracking value configured in `tracking_start_value`.
+func (queryReceiver *logsQueryReceiver) retrieveTrackingValue(ctx context.Context) string {
+	trackingValueFromConfig := queryReceiver.query.TrackingStartValue
+	if queryReceiver.storageClient == nil {
+		return trackingValueFromConfig
+	}
+
+	storedTrackingValueBytes, err := queryReceiver.storageClient.Get(ctx, queryReceiver.trackingValueStorageKey)
+	if err != nil || storedTrackingValueBytes == nil {
+		return trackingValueFromConfig
+	}
+
+	return string(storedTrackingValueBytes)
+
 }
 
 func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {
@@ -253,19 +297,21 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 				errs = multierr.Append(errs, err)
 			}
 			if logsConfigIndex == 0 {
-				queryReceiver.storeTrackingValue(row)
+				queryReceiver.storeTrackingValue(ctx, row)
 			}
 		}
 	}
 	return logs, nil
 }
 
-func (queryReceiver *logsQueryReceiver) storeTrackingValue(row stringMap) {
+func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row stringMap) {
 	if queryReceiver.query.TrackingColumn == "" {
 		return
 	}
-	currentTrackingColumnValueString := row[queryReceiver.query.TrackingColumn]
-	queryReceiver.trackingValue = currentTrackingColumnValueString
+	queryReceiver.trackingValue = row[queryReceiver.query.TrackingColumn]
+	if queryReceiver.storageClient != nil {
+		queryReceiver.storageClient.Set(ctx, queryReceiver.trackingValueStorageKey, []byte(queryReceiver.trackingValue))
+	}
 }
 
 func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error {

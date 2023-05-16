@@ -26,9 +26,10 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Driver                                  string  `mapstructure:"driver"`
-	DataSource                              string  `mapstructure:"datasource"`
-	Queries                                 []Query `mapstructure:"queries"`
+	Driver                                  string        `mapstructure:"driver"`
+	DataSource                              string        `mapstructure:"datasource"`
+	Queries                                 []Query       `mapstructure:"queries"`
+	StorageID                               *component.ID `mapstructure:"storage"`
 }
 
 func (c Config) Validate() error {

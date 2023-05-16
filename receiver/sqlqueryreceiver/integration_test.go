@@ -19,11 +19,14 @@ package sqlqueryreceiver
 import (
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -33,10 +36,214 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 )
 
-func TestPostgresIntegration(t *testing.T) {
-	externalPort := "15432"
+func TestLogsTrackingWithoutStorageInPostgres(t *testing.T) {
+	// Start Postgres container.
+	externalPort := "15430"
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer dbContainer.Terminate(context.Background())
+
+	// Start the SQL Query receiver.
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
+	config.CollectionInterval = time.Second
+	config.Queries = []Query{
+		{
+			SQL: "select * from simple_logs where id > $1",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+			TrackingColumn:     "id",
+			TrackingStartValue: "0",
+		},
+	}
+	host := componenttest.NewNopHost()
+	err := receiver.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	// Verify there's 5 logs received.
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.LogRecordCount() > 0
+		},
+		3*time.Second,
+		1*time.Second,
+		"failed to receive more than 0 logs",
+	)
+	require.Equal(t, 5, consumer.LogRecordCount())
+	testAllSimpleLogs(t, consumer.AllLogs())
+
+	// Stop the SQL Query receiver.
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// Start new SQL Query receiver with the same configuration.
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	config.CollectionInterval = time.Second
+	config.Queries = []Query{
+		{
+			SQL: "select * from simple_logs where id > $1",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+			TrackingColumn:     "id",
+			TrackingStartValue: "0",
+		},
+	}
+	err = receiver.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	// Wait for some logs to come in.
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.LogRecordCount() > 0
+		},
+		3*time.Second,
+		1*time.Second,
+		"failed to receive more than 0 logs",
+	)
+
+	// stop the SQL Query receiver
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// Verify that the same logs are collected again.
+	require.Equal(t, 5, consumer.LogRecordCount())
+	testAllSimpleLogs(t, consumer.AllLogs())
+}
+
+func TestLogsTrackingWithStorageInPostgres(t *testing.T) {
+	// start Postgres container
+	externalPort := "15431"
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer dbContainer.Terminate(context.Background())
+
+	// create a File Storage extension writing to a temporary directory in local filesystem
+	storageDir := t.TempDir()
+	storageExtension := storagetest.NewFileBackedStorageExtension("test", storageDir)
+
+	// create SQL Query receiver configured with the File Storage extension
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
+	config.CollectionInterval = time.Second
+	config.StorageID = &storageExtension.ID
+	config.Queries = []Query{
+		{
+			SQL: "select * from simple_logs where id > $1",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+			TrackingColumn:     "id",
+			TrackingStartValue: "0",
+		},
+	}
+
+	// start the SQL Query receiver
+	host := storagetest.NewStorageHost().WithExtension(storageExtension.ID, storageExtension)
+	err := receiver.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	// Wait for logs to come in.
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.LogRecordCount() > 0
+		},
+		3*time.Second,
+		1*time.Second,
+		"failed to receive more than 0 logs",
+	)
+
+	// stop the SQL Query receiver
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// verify there's 5 logs received
+	initialLogCount := 5
+	require.Equal(t, initialLogCount, consumer.LogRecordCount())
+	testAllSimpleLogs(t, consumer.AllLogs())
+
+	// start the SQL Query receiver again
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	config.CollectionInterval = time.Second
+	config.StorageID = &storageExtension.ID
+	config.Queries = []Query{
+		{
+			SQL: "select * from simple_logs where id > $1",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+			TrackingColumn:     "id",
+			TrackingStartValue: "0",
+		},
+	}
+	err = receiver.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	// Wait for some logs to come in.
+	time.Sleep(3 * time.Second)
+
+	// stop the SQL Query receiver
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// Verify that no new logs came in
+	require.Equal(t, 0, consumer.LogRecordCount())
+
+	// write a number of new logs to the database
+	newLogCount := 3
+	insertPostgresSimpleLogs(t, dbContainer, initialLogCount, newLogCount)
+
+	// start the SQL Query receiver again
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	config.CollectionInterval = time.Second
+	config.StorageID = &storageExtension.ID
+	config.Queries = []Query{
+		{
+			SQL: "select * from simple_logs where id > $1",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+			TrackingColumn:     "id",
+			TrackingStartValue: "0",
+		},
+	}
+	err = receiver.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	// Wait for new logs to come in.
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.LogRecordCount() > 0
+		},
+		3*time.Second,
+		1*time.Second,
+		"failed to receive more than 0 logs",
+	)
+
+	// stop the SQL Query receiver
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	// Verify that the newly added logs were received.
+	require.Equal(t, newLogCount, consumer.LogRecordCount())
+	printLogs(consumer.AllLogs())
+}
+
+func startPostgresDbContainer(t *testing.T, externalPort string) testcontainers.Container {
 	internalPort := "5432"
 	waitStrategy := wait.ForListeningPort(nat.Port(internalPort)).WithStartupTimeout(2 * time.Minute)
 	req := testcontainers.ContainerRequest{
@@ -47,16 +254,75 @@ func TestPostgresIntegration(t *testing.T) {
 		ExposedPorts: []string{externalPort + ":" + internalPort},
 		WaitingFor:   waitStrategy,
 	}
-	ctx := context.Background()
 
-	_, err := testcontainers.GenericContainer(
-		ctx,
+	container, err := testcontainers.GenericContainer(
+		context.Background(),
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
 		},
 	)
 	require.NoError(t, err)
+	return container
+}
+
+func createTestLogsReceiverForPostgres(t *testing.T, externalPort string) (*logsReceiver, *Config, *consumertest.LogsSink) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.CollectionInterval = time.Second
+	config.Driver = "postgres"
+	config.DataSource = fmt.Sprintf("host=localhost port=%s user=otel password=otel sslmode=disable", externalPort)
+
+	consumer := &consumertest.LogsSink{}
+	receiverCreateSettings := receivertest.NewNopCreateSettings()
+	receiverCreateSettings.Logger = zap.NewExample()
+	receiver, err := factory.CreateLogsReceiver(
+		context.Background(),
+		receiverCreateSettings,
+		config,
+		consumer,
+	)
+	require.NoError(t, err)
+	return receiver.(*logsReceiver), config, consumer
+}
+
+func printLogs(allLogs []plog.Logs) {
+	for logIndex := 0; logIndex < len(allLogs); logIndex++ {
+		logs := allLogs[logIndex]
+		for resourceIndex := 0; resourceIndex < logs.ResourceLogs().Len(); resourceIndex++ {
+			resource := logs.ResourceLogs().At(resourceIndex)
+			for scopeIndex := 0; scopeIndex < resource.ScopeLogs().Len(); scopeIndex++ {
+				scope := resource.ScopeLogs().At(scopeIndex)
+				for recordIndex := 0; recordIndex < scope.LogRecords().Len(); recordIndex++ {
+					logRecord := scope.LogRecords().At(recordIndex)
+					fmt.Printf("log %v resource %v scope %v log %v body: %v\n", logIndex, resourceIndex, scopeIndex, recordIndex, logRecord.Body().Str())
+				}
+			}
+		}
+	}
+}
+
+func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, existingLogId, newLogCount int) {
+	for newLogId := existingLogId + 1; newLogId <= existingLogId+newLogCount; newLogId++ {
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body) values (%d, now(), 'another log %d');", newLogId, newLogId)
+		returnValue, returnMessageReader, err := container.Exec(context.Background(), []string{
+			"psql", "-U", "otel", "-c", query,
+		})
+		require.NoError(t, err)
+		returnMessageBuffer := new(strings.Builder)
+		_, err = io.Copy(returnMessageBuffer, returnMessageReader)
+		require.NoError(t, err)
+		returnMessage := returnMessageBuffer.String()
+
+		assert.Equal(t, 0, returnValue)
+		assert.Contains(t, returnMessage, "INSERT 0 1")
+	}
+}
+
+func TestPostgresIntegration(t *testing.T) {
+	externalPort := "15432"
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer dbContainer.Terminate(context.Background())
 
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
@@ -137,28 +403,9 @@ func TestPostgresIntegration(t *testing.T) {
 				},
 			},
 		},
-		{
-			SQL:                "select * from simple_logs where id > $1",
-			TrackingColumn:     "id",
-			TrackingStartValue: "2",
-			Logs: []LogsCfg{
-				{
-					BodyColumn: "body",
-				},
-			},
-		},
-		{
-			SQL:                "select * from simple_logs where insert_time > $1",
-			TrackingColumn:     "insert_time",
-			TrackingStartValue: "2022-06-03 21:59:28+00",
-			Logs: []LogsCfg{
-				{
-					BodyColumn: "body",
-				},
-			},
-		},
 	}
 	consumer := &consumertest.MetricsSink{}
+	ctx := context.Background()
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
 		receivertest.NewNopCreateSettings(),
@@ -182,14 +429,30 @@ func TestPostgresIntegration(t *testing.T) {
 	testMovieMetrics(t, rms.At(0), genreKey)
 	testPGTypeMetrics(t, rms.At(1))
 
-	logsConsumer := &consumertest.LogsSink{}
-	logsReceiver, err := factory.CreateLogsReceiver(
-		ctx,
-		receivertest.NewNopCreateSettings(),
-		config,
-		logsConsumer,
-	)
-	require.NoError(t, err)
+	logsReceiver, logsConfig, logsConsumer := createTestLogsReceiverForPostgres(t, externalPort)
+	logsConfig.Queries = []Query{
+		{
+			SQL: "select * from simple_logs where id > $1",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+			TrackingColumn:     "id",
+			TrackingStartValue: "2",
+		},
+		{
+			SQL: "select * from simple_logs where insert_time > $1",
+			Logs: []LogsCfg{
+				{
+					BodyColumn: "body",
+				},
+			},
+			TrackingColumn:     "insert_time",
+			TrackingStartValue: "2022-06-03 21:59:28+00",
+		},
+	}
+
 	err = logsReceiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.Eventuallyf(
@@ -197,10 +460,15 @@ func TestPostgresIntegration(t *testing.T) {
 		func() bool {
 			return logsConsumer.LogRecordCount() > 2
 		},
-		2*time.Minute,
+		20*time.Second,
 		1*time.Second,
 		"failed to receive more than 2 logs",
 	)
+
+	// stop the SQL Query receiver
+	err = logsReceiver.Shutdown(context.Background())
+	require.NoError(t, err)
+
 	testSimpleLogs(t, logsConsumer.AllLogs())
 }
 
@@ -223,15 +491,16 @@ func TestOracleDBIntegration(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	container, err := testcontainers.GenericContainer(
+	dbContainer, err := testcontainers.GenericContainer(
 		ctx,
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
 		},
 	)
-	require.NotNil(t, container)
+	require.NotNil(t, dbContainer)
 	require.NoError(t, err)
+	defer dbContainer.Terminate(ctx)
 
 	genreKey := "GENRE"
 	factory := NewFactory()
@@ -338,14 +607,16 @@ func TestMysqlIntegration(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	_, err := testcontainers.GenericContainer(
+	dbContainer, err := testcontainers.GenericContainer(
 		ctx,
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
 		},
 	)
+	require.NotNil(t, dbContainer)
 	require.NoError(t, err)
+	defer dbContainer.Terminate(ctx)
 
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
@@ -586,6 +857,23 @@ func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) {
 
 func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) {
 	assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.1)
+}
+
+func testAllSimpleLogs(t *testing.T, logs []plog.Logs) {
+	assert.Equal(t, 1, len(logs))
+	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
+	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
+	expectedEntries := []string{
+		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6197 4 \"-\" \"-\" 445af8e6c428303f -",
+		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6205 5 \"-\" \"-\" 3285f43cd4baa202 -",
+		"- - - [03/Jun/2022:21:59:29 +0000] \"GET /api/health HTTP/1.1\" 200 6233 4 \"-\" \"-\" 579e8362d3185b61 -",
+		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6207 5 \"-\" \"-\" 8c6ac61ae66e509f -",
+		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
+	}
+	assert.Equal(t, len(expectedEntries), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+	for i := range expectedEntries {
+		assert.Equal(t, expectedEntries[i], logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).Body().Str())
+	}
 }
 
 func testSimpleLogs(t *testing.T, logs []plog.Logs) {
