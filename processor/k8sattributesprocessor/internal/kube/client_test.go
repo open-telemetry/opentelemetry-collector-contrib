@@ -478,7 +478,7 @@ func TestGetIgnoredPod(t *testing.T) {
 }
 
 func TestHandlerWrongType(t *testing.T) {
-	c, logs := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, logs := newTestClientWithRulesAndFilters(t, Filters{})
 	assert.Equal(t, 0, logs.Len())
 	c.handlePodAdd(1)
 	c.handlePodDelete(1)
@@ -490,7 +490,7 @@ func TestHandlerWrongType(t *testing.T) {
 }
 
 func TestExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
 
@@ -789,7 +789,7 @@ func TestExtractionRules(t *testing.T) {
 }
 
 func TestNamespaceExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
 	namespace := &api_v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -933,7 +933,7 @@ func TestFilters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, tc.filters)
+			c, _ := newTestClientWithRulesAndFilters(t, tc.filters)
 			inf := c.informer.(*FakeInformer)
 			assert.Equal(t, tc.filters.Namespace, inf.namespace)
 			assert.Equal(t, tc.labels, inf.labelSelector.String())
@@ -1315,7 +1315,7 @@ func TestErrorSelectorsFromFilters(t *testing.T) {
 }
 
 func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	testCases := []struct {
 		name                   string
 		shouldExtractNamespace bool
@@ -1373,7 +1373,7 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 	}
 }
 
-func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters) (*WatchClient, *observer.ObservedLogs) {
+func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
 	exclude := Excludes{
@@ -1399,11 +1399,11 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 			},
 		},
 	}
-	c, err := New(logger, k8sconfig.APIConfig{}, e, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer)
+	c, err := New(logger, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
-	return newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	return newTestClientWithRulesAndFilters(t, Filters{})
 }
