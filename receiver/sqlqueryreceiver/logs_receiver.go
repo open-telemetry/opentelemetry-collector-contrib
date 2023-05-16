@@ -306,9 +306,5 @@ func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error {
 }
 
 func (queryReceiver *logsQueryReceiver) shutdown(ctx context.Context) error {
-	var errors error
-	// if queryReceiver.db != nil {
-	// 	errors = multierr.Append(errors, queryReceiver.db.Close())
-	// }
-	return errors
+	return nil
 }

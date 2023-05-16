@@ -73,6 +73,3 @@ func (cl dbSQLClient) queryRows(ctx context.Context, args ...any) ([]stringMap, 
 	}
 	return out, warnings
 }
-
-// getRowsSinceId(ctx context.Context, id int)
-// getRowsSinceTimestamp(ctx context.Context, timestamp time.Time)
