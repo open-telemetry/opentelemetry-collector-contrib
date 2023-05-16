@@ -6,8 +6,9 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
 
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -15,8 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Build telemetrygen
         uses: docker/build-push-action@v4
         with:
@@ -30,8 +30,7 @@ jobs:
     permissions:
       packages: write
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -51,8 +50,7 @@ jobs:
     permissions:
       packages: write
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh

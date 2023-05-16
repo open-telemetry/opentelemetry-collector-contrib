@@ -19,19 +19,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-)
 
-const (
-	typeStr = "headers_setter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/metadata"
 )
 
 // NewFactory creates a factory for the headers setter extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelDevelopment,
+		metadata.ExtensionStability,
 	)
 }
 

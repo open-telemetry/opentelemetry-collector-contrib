@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
+	require.Equal(t, cfg.(*Config).ScraperControllerSettings.CollectionInterval, 3*time.Minute)
 	recv, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, recv, "receiver creation failed")

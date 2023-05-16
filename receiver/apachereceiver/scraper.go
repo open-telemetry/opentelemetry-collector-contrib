@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ func newApacheScraper(
 	a := &apacheScraper{
 		settings:   settings.TelemetrySettings,
 		cfg:        cfg,
-		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		serverName: serverName,
 		port:       port,
 	}

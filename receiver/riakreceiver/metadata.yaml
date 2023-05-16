@@ -1,5 +1,11 @@
-name: riakreceiver
+type: riakreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   riak.node.name:
     description: The name this node uses to identify itself.

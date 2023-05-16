@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,11 +46,12 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
-		TTLDays:          7,
+		TTLDays:          0,
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -151,14 +151,30 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
 func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *kube.Pod) {
 	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
-	if containerName == "" {
+	containerID := stringAttributeFromMap(attrs, conventions.AttributeContainerID)
+	var (
+		containerSpec *kube.Container
+		ok            bool
+	)
+	switch {
+	case containerName != "":
+		containerSpec, ok = pod.Containers.ByName[containerName]
+		if !ok {
+			return
+		}
+	case containerID != "":
+		containerSpec, ok = pod.Containers.ByID[containerID]
+		if !ok {
+			return
+		}
+	default:
 		return
 	}
-	containerSpec, ok := pod.Containers[containerName]
-	if !ok {
-		return
+	if containerSpec.Name != "" {
+		if _, found := attrs.Get(conventions.AttributeK8SContainerName); !found {
+			attrs.PutStr(conventions.AttributeK8SContainerName, containerSpec.Name)
+		}
 	}
-
 	if containerSpec.ImageName != "" {
 		if _, found := attrs.Get(conventions.AttributeContainerImageName); !found {
 			attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
@@ -169,18 +185,29 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 			attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 		}
 	}
-
+	// attempt to get container ID from restart count
+	runID := -1
 	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
 	if ok {
-		runID, err := intFromAttribute(runIDAttr)
-		if err == nil {
-			if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
-				if _, found := attrs.Get(conventions.AttributeContainerID); !found {
-					attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
-				}
-			}
-		} else {
+		containerRunID, err := intFromAttribute(runIDAttr)
+		if err != nil {
 			kp.logger.Debug(err.Error())
+		} else {
+			runID = containerRunID
+		}
+	} else {
+		// take the highest runID (restart count) which represents the currently running container in most cases
+		for containerRunID := range containerSpec.Statuses {
+			if containerRunID > runID {
+				runID = containerRunID
+			}
+		}
+	}
+	if runID != -1 {
+		if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
+			if _, found := attrs.Get(conventions.AttributeContainerID); !found {
+				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+			}
 		}
 	}
 }

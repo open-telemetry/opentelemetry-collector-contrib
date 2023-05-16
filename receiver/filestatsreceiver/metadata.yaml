@@ -1,0 +1,57 @@
+type: filestats
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+
+
+resource_attributes:
+  file.name:
+    description: The name of the file
+    enabled: true
+    type: string
+  file.path:
+    description: The absolute path of the file
+    enabled: false
+    type: string
+
+attributes:
+  file.permissions:
+    description: the permissions associated with the file, using an octal format.
+    type: string
+
+metrics:
+  file.mtime:
+    description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
+    enabled: true
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    unit: "s"
+  file.ctime:
+    description: Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.
+    enabled: false
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    unit: "s"
+    attributes:
+      - file.permissions
+  file.atime:
+    description: Elapsed time since last access of the file or folder, in seconds since Epoch.
+    enabled: false
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    unit: "s"
+  file.size:
+    description: The size of the file or folder, in bytes.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "b"

@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -129,7 +129,7 @@ func main() {
 	commonLabels := []attribute.KeyValue{serverAttribute}
 	requestCount, _ := meter.Int64Counter(
 		"demo_server/request_counts",
-		instrument.WithDescription("The number of requests received"),
+		metric.WithDescription("The number of requests received"),
 	)
 
 	// create a handler wrapped in OpenTelemetry instrumentation
@@ -151,7 +151,7 @@ func main() {
 		}
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 		ctx := req.Context()
-		requestCount.Add(ctx, 1, commonLabels...)
+		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 		span := trace.SpanFromContext(ctx)
 		bag := baggage.FromContext(ctx)
 
@@ -172,8 +172,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/hello", otelhttp.NewHandler(handler, "/hello"))
 	server := &http.Server{
-		Addr:    ":7080",
-		Handler: mux,
+		Addr:              ":7080",
+		Handler:           mux,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		handleErr(err, "server failed to serve")

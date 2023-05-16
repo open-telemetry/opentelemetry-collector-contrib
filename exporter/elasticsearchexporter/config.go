@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,11 +23,12 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the

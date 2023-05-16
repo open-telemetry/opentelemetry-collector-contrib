@@ -94,14 +94,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Metrics = metadata.DefaultMetricsSettings()
-	expected.Metrics.SaphanaCPUUsed.Enabled = false
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.MetricsBuilderConfig.Metrics.SaphanaCPUUsed.Enabled = false
 	expected.Endpoint = "example.com:30015"
 	expected.Username = "otel"
 	expected.Password = "password"
 	expected.CollectionInterval = 2 * time.Minute
 
-	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
 

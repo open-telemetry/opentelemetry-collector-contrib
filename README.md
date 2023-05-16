@@ -76,6 +76,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
+- [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
@@ -86,15 +87,18 @@ Emeritus Triagers:
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
+- [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
+- [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:
+
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
@@ -108,6 +112,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers
+
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).

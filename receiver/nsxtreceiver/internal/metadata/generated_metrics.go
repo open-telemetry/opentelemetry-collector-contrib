@@ -6,111 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for nsxtreceiver metrics.
-type MetricsSettings struct {
-	NsxtNodeCPUUtilization        MetricSettings `mapstructure:"nsxt.node.cpu.utilization"`
-	NsxtNodeFilesystemUsage       MetricSettings `mapstructure:"nsxt.node.filesystem.usage"`
-	NsxtNodeFilesystemUtilization MetricSettings `mapstructure:"nsxt.node.filesystem.utilization"`
-	NsxtNodeMemoryCacheUsage      MetricSettings `mapstructure:"nsxt.node.memory.cache.usage"`
-	NsxtNodeMemoryUsage           MetricSettings `mapstructure:"nsxt.node.memory.usage"`
-	NsxtNodeNetworkIo             MetricSettings `mapstructure:"nsxt.node.network.io"`
-	NsxtNodeNetworkPacketCount    MetricSettings `mapstructure:"nsxt.node.network.packet.count"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		NsxtNodeCPUUtilization: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeFilesystemUsage: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeFilesystemUtilization: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeMemoryCacheUsage: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		NsxtNodeNetworkPacketCount: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// ResourceAttributesSettings provides settings for nsxtreceiver metrics.
-type ResourceAttributesSettings struct {
-	DeviceID     ResourceAttributeSettings `mapstructure:"device.id"`
-	NsxtNodeID   ResourceAttributeSettings `mapstructure:"nsxt.node.id"`
-	NsxtNodeName ResourceAttributeSettings `mapstructure:"nsxt.node.name"`
-	NsxtNodeType ResourceAttributeSettings `mapstructure:"nsxt.node.type"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		DeviceID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		NsxtNodeID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		NsxtNodeName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		NsxtNodeType: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeClass specifies the a value class attribute.
 type AttributeClass int
@@ -222,7 +121,7 @@ var MapAttributePacketType = map[string]AttributePacketType{
 
 type metricNsxtNodeCPUUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -236,7 +135,7 @@ func (m *metricNsxtNodeCPUUtilization) init() {
 }
 
 func (m *metricNsxtNodeCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, classAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -255,16 +154,16 @@ func (m *metricNsxtNodeCPUUtilization) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeCPUUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNsxtNodeCPUUtilization(settings MetricSettings) metricNsxtNodeCPUUtilization {
-	m := metricNsxtNodeCPUUtilization{settings: settings}
-	if settings.Enabled {
+func newMetricNsxtNodeCPUUtilization(cfg MetricConfig) metricNsxtNodeCPUUtilization {
+	m := metricNsxtNodeCPUUtilization{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -273,7 +172,7 @@ func newMetricNsxtNodeCPUUtilization(settings MetricSettings) metricNsxtNodeCPUU
 
 type metricNsxtNodeFilesystemUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -289,7 +188,7 @@ func (m *metricNsxtNodeFilesystemUsage) init() {
 }
 
 func (m *metricNsxtNodeFilesystemUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskStateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -308,16 +207,16 @@ func (m *metricNsxtNodeFilesystemUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeFilesystemUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNsxtNodeFilesystemUsage(settings MetricSettings) metricNsxtNodeFilesystemUsage {
-	m := metricNsxtNodeFilesystemUsage{settings: settings}
-	if settings.Enabled {
+func newMetricNsxtNodeFilesystemUsage(cfg MetricConfig) metricNsxtNodeFilesystemUsage {
+	m := metricNsxtNodeFilesystemUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -326,7 +225,7 @@ func newMetricNsxtNodeFilesystemUsage(settings MetricSettings) metricNsxtNodeFil
 
 type metricNsxtNodeFilesystemUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -339,7 +238,7 @@ func (m *metricNsxtNodeFilesystemUtilization) init() {
 }
 
 func (m *metricNsxtNodeFilesystemUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -357,16 +256,16 @@ func (m *metricNsxtNodeFilesystemUtilization) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeFilesystemUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNsxtNodeFilesystemUtilization(settings MetricSettings) metricNsxtNodeFilesystemUtilization {
-	m := metricNsxtNodeFilesystemUtilization{settings: settings}
-	if settings.Enabled {
+func newMetricNsxtNodeFilesystemUtilization(cfg MetricConfig) metricNsxtNodeFilesystemUtilization {
+	m := metricNsxtNodeFilesystemUtilization{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -375,7 +274,7 @@ func newMetricNsxtNodeFilesystemUtilization(settings MetricSettings) metricNsxtN
 
 type metricNsxtNodeMemoryCacheUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -390,7 +289,7 @@ func (m *metricNsxtNodeMemoryCacheUsage) init() {
 }
 
 func (m *metricNsxtNodeMemoryCacheUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -408,16 +307,16 @@ func (m *metricNsxtNodeMemoryCacheUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeMemoryCacheUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNsxtNodeMemoryCacheUsage(settings MetricSettings) metricNsxtNodeMemoryCacheUsage {
-	m := metricNsxtNodeMemoryCacheUsage{settings: settings}
-	if settings.Enabled {
+func newMetricNsxtNodeMemoryCacheUsage(cfg MetricConfig) metricNsxtNodeMemoryCacheUsage {
+	m := metricNsxtNodeMemoryCacheUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -426,7 +325,7 @@ func newMetricNsxtNodeMemoryCacheUsage(settings MetricSettings) metricNsxtNodeMe
 
 type metricNsxtNodeMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -441,7 +340,7 @@ func (m *metricNsxtNodeMemoryUsage) init() {
 }
 
 func (m *metricNsxtNodeMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -459,16 +358,16 @@ func (m *metricNsxtNodeMemoryUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeMemoryUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNsxtNodeMemoryUsage(settings MetricSettings) metricNsxtNodeMemoryUsage {
-	m := metricNsxtNodeMemoryUsage{settings: settings}
-	if settings.Enabled {
+func newMetricNsxtNodeMemoryUsage(cfg MetricConfig) metricNsxtNodeMemoryUsage {
+	m := metricNsxtNodeMemoryUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -477,7 +376,7 @@ func newMetricNsxtNodeMemoryUsage(settings MetricSettings) metricNsxtNodeMemoryU
 
 type metricNsxtNodeNetworkIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -493,7 +392,7 @@ func (m *metricNsxtNodeNetworkIo) init() {
 }
 
 func (m *metricNsxtNodeNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -512,16 +411,16 @@ func (m *metricNsxtNodeNetworkIo) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNsxtNodeNetworkIo(settings MetricSettings) metricNsxtNodeNetworkIo {
-	m := metricNsxtNodeNetworkIo{settings: settings}
-	if settings.Enabled {
+func newMetricNsxtNodeNetworkIo(cfg MetricConfig) metricNsxtNodeNetworkIo {
+	m := metricNsxtNodeNetworkIo{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -530,7 +429,7 @@ func newMetricNsxtNodeNetworkIo(settings MetricSettings) metricNsxtNodeNetworkIo
 
 type metricNsxtNodeNetworkPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -546,7 +445,7 @@ func (m *metricNsxtNodeNetworkPacketCount) init() {
 }
 
 func (m *metricNsxtNodeNetworkPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string, packetTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -566,16 +465,16 @@ func (m *metricNsxtNodeNetworkPacketCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNsxtNodeNetworkPacketCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNsxtNodeNetworkPacketCount(settings MetricSettings) metricNsxtNodeNetworkPacketCount {
-	m := metricNsxtNodeNetworkPacketCount{settings: settings}
-	if settings.Enabled {
+func newMetricNsxtNodeNetworkPacketCount(cfg MetricConfig) metricNsxtNodeNetworkPacketCount {
+	m := metricNsxtNodeNetworkPacketCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -583,14 +482,14 @@ func newMetricNsxtNodeNetworkPacketCount(settings MetricSettings) metricNsxtNode
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                           pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                     int                 // maximum observed number of metrics per resource.
 	resourceCapacity                    int                 // maximum observed number of resource attributes.
 	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo // contains version information
-	resourceAttributesSettings          ResourceAttributesSettings
+	resourceAttributesConfig            ResourceAttributesConfig
 	metricNsxtNodeCPUUtilization        metricNsxtNodeCPUUtilization
 	metricNsxtNodeFilesystemUsage       metricNsxtNodeFilesystemUsage
 	metricNsxtNodeFilesystemUtilization metricNsxtNodeFilesystemUtilization
@@ -610,26 +509,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
-	}
-}
-
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
-		resourceAttributesSettings:          DefaultResourceAttributesSettings(),
-		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(ms.NsxtNodeCPUUtilization),
-		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(ms.NsxtNodeFilesystemUsage),
-		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(ms.NsxtNodeFilesystemUtilization),
-		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(ms.NsxtNodeMemoryCacheUsage),
-		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(ms.NsxtNodeMemoryUsage),
-		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(ms.NsxtNodeNetworkIo),
-		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(ms.NsxtNodeNetworkPacketCount),
+		resourceAttributesConfig:            mbc.ResourceAttributes,
+		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(mbc.Metrics.NsxtNodeCPUUtilization),
+		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(mbc.Metrics.NsxtNodeFilesystemUsage),
+		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(mbc.Metrics.NsxtNodeFilesystemUtilization),
+		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(mbc.Metrics.NsxtNodeMemoryCacheUsage),
+		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(mbc.Metrics.NsxtNodeMemoryUsage),
+		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(mbc.Metrics.NsxtNodeNetworkIo),
+		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(mbc.Metrics.NsxtNodeNetworkPacketCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -648,12 +540,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithDeviceID sets provided value as "device.id" attribute for current resource.
 func WithDeviceID(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.DeviceID.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.DeviceID.Enabled {
 			rm.Resource().Attributes().PutStr("device.id", val)
 		}
 	}
@@ -661,8 +553,8 @@ func WithDeviceID(val string) ResourceMetricsOption {
 
 // WithNsxtNodeID sets provided value as "nsxt.node.id" attribute for current resource.
 func WithNsxtNodeID(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.NsxtNodeID.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.NsxtNodeID.Enabled {
 			rm.Resource().Attributes().PutStr("nsxt.node.id", val)
 		}
 	}
@@ -670,8 +562,8 @@ func WithNsxtNodeID(val string) ResourceMetricsOption {
 
 // WithNsxtNodeName sets provided value as "nsxt.node.name" attribute for current resource.
 func WithNsxtNodeName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.NsxtNodeName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.NsxtNodeName.Enabled {
 			rm.Resource().Attributes().PutStr("nsxt.node.name", val)
 		}
 	}
@@ -679,8 +571,8 @@ func WithNsxtNodeName(val string) ResourceMetricsOption {
 
 // WithNsxtNodeType sets provided value as "nsxt.node.type" attribute for current resource.
 func WithNsxtNodeType(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.NsxtNodeType.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.NsxtNodeType.Enabled {
 			rm.Resource().Attributes().PutStr("nsxt.node.type", val)
 		}
 	}
@@ -689,7 +581,7 @@ func WithNsxtNodeType(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -727,7 +619,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricNsxtNodeNetworkPacketCount.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -737,7 +629,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

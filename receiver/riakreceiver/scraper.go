@@ -47,7 +47,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 

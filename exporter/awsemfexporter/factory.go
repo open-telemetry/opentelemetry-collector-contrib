@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -42,22 +44,37 @@ func NewFactory() exporter.Factory {
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		AWSSessionSettings:    awsutil.CreateDefaultSessionConfig(),
-		LogGroupName:          "",
-		LogStreamName:         "",
-		Namespace:             "",
-		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
-		OutputDestination:     "cloudwatch",
-		logger:                zap.NewNop(),
+		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
+		LogGroupName:                    "",
+		LogStreamName:                   "",
+		Namespace:                       "",
+		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
+		Version:                         "1",
+		RetainInitialValueOfDeltaMetric: false,
+		OutputDestination:               "cloudwatch",
+		logger:                          zap.NewNop(),
 	}
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
-func createMetricsExporter(_ context.Context,
-	params exporter.CreateSettings,
-	config component.Config) (exporter.Metrics, error) {
-
+func createMetricsExporter(ctx context.Context, params exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
 	expCfg := config.(*Config)
 
-	return newEmfExporter(expCfg, params)
+	emfExp, err := newEmfExporter(expCfg, params)
+	if err != nil {
+		return nil, err
+	}
+
+	exporter, err := exporterhelper.NewMetricsExporter(
+		ctx,
+		params,
+		config,
+		emfExp.pushMetricsData,
+		exporterhelper.WithShutdown(emfExp.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return resourcetotelemetry.WrapMetricsExporter(expCfg.ResourceToTelemetrySettings, exporter), nil
 }

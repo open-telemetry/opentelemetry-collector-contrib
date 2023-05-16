@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "riak"
-	stability = component.StabilityLevelBeta
+	typeStr = "riak"
 )
 
 var errConfigNotRiak = errors.New("config was not a Riak receiver config")
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -52,7 +51,7 @@ func createDefaultConfig() component.Config {
 			Endpoint: defaultEndpoint,
 			Timeout:  10 * time.Second,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

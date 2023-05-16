@@ -30,7 +30,7 @@ func Test_deleteKey(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardGetSetter[pcommon.Map]{
+	target := &ottl.StandardTypeGetter[pcommon.Map, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -38,7 +38,7 @@ func Test_deleteKey(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		target ottl.Getter[pcommon.Map]
+		target ottl.PMapGetter[pcommon.Map]
 		key    string
 		want   func(pcommon.Map)
 	}{
@@ -76,10 +76,9 @@ func Test_deleteKey(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := DeleteKey(tt.target, tt.key)
-			assert.NoError(t, err)
+			exprFunc := deleteKey(tt.target, tt.key)
 
-			_, err = exprFunc(nil, scenarioMap)
+			_, err := exprFunc(nil, scenarioMap)
 			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
@@ -92,42 +91,29 @@ func Test_deleteKey(t *testing.T) {
 
 func Test_deleteKey_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
-		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
-			t.Errorf("nothing should be set in this scenario")
-			return nil
 		},
 	}
 
 	key := "anything"
 
-	exprFunc, err := DeleteKey[interface{}](target, key)
-	assert.NoError(t, err)
-	result, err := exprFunc(nil, input)
-	assert.NoError(t, err)
-	assert.Nil(t, result)
-	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
+	exprFunc := deleteKey[interface{}](target, key)
+	_, err := exprFunc(nil, input)
+	assert.Error(t, err)
 }
 
 func Test_deleteKey_get_nil(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
-		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
-			t.Errorf("nothing should be set in this scenario")
-			return nil
 		},
 	}
 
 	key := "anything"
 
-	exprFunc, err := DeleteKey[interface{}](target, key)
-	assert.NoError(t, err)
-	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
-	assert.Nil(t, result)
+	exprFunc := deleteKey[interface{}](target, key)
+	_, err := exprFunc(nil, nil)
+	assert.Error(t, err)
 }

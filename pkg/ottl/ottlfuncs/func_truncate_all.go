@@ -23,7 +23,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K], error) {
+type TruncateAllArguments[K any] struct {
+	Target ottl.PMapGetter[K] `ottlarg:"0"`
+	Limit  int64              `ottlarg:"1"`
+}
+
+func NewTruncateAllFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("truncate_all", &TruncateAllArguments[K]{}, createTruncateAllFunction[K])
+}
+
+func createTruncateAllFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*TruncateAllArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("TruncateAllFactory args must be of type *TruncateAllArguments[K]")
+	}
+
+	return TruncateAll(args.Target, args.Limit)
+}
+
+func TruncateAll[K any](target ottl.PMapGetter[K], limit int64) (ottl.ExprFunc[K], error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}
@@ -36,28 +55,13 @@ func TruncateAll[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K]
 		if err != nil {
 			return nil, err
 		}
-		if val == nil {
-			return nil, nil
-		}
-
-		attrs, ok := val.(pcommon.Map)
-		if !ok {
-			return nil, nil
-		}
-
-		updated := pcommon.NewMap()
-		attrs.CopyTo(updated)
-		updated.Range(func(key string, value pcommon.Value) bool {
+		val.Range(func(key string, value pcommon.Value) bool {
 			stringVal := value.Str()
 			if int64(len(stringVal)) > limit {
 				value.SetStr(stringVal[:limit])
 			}
 			return true
 		})
-		err = target.Set(ctx, tCtx, updated)
-		if err != nil {
-			return nil, err
-		}
 		// TODO: Write log when truncation is performed
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		return nil, nil

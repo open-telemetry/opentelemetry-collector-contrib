@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ func TestRedisRunnable(t *testing.T) {
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
-	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.Metrics, settings)}
+	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)}
 	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())

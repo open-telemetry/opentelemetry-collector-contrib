@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		name                         string
 		expectedMetricsFilename      string
 		expectedResourceAttributes   map[string]string
-		metricsSettings              func() metadata.MetricsSettings
+		metricsConfig                func() metadata.MetricsConfig
 		mockedZKOutputSourceFilename string
 		mockZKConnectionErr          bool
 		expectedLogs                 []logMsg
@@ -191,8 +191,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		},
 		{
 			name: "Disable zookeeper.watches metric",
-			metricsSettings: func() metadata.MetricsSettings {
-				ms := metadata.DefaultMetricsSettings()
+			metricsConfig: func() metadata.MetricsConfig {
+				ms := metadata.DefaultMetricsConfig()
 				ms.ZookeeperWatchCount.Enabled = false
 				return ms
 			},
@@ -222,8 +222,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 			cfg := createDefaultConfig().(*Config)
 			cfg.TCPAddr.Endpoint = localAddr
-			if tt.metricsSettings != nil {
-				cfg.Metrics = tt.metricsSettings()
+			if tt.metricsConfig != nil {
+				cfg.MetricsBuilderConfig.Metrics = tt.metricsConfig()
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
@@ -266,7 +266,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.json", tt.expectedMetricsFilename))
+			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.yaml", tt.expectedMetricsFilename))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 

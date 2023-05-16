@@ -95,7 +95,7 @@ exporters:
     ## @param endpoint - string - required
     ## Endpoint where to send telemetry. On gateway mode, we set it to the gateway host IP.
     #
-    # endpoint: ${GATEWAY_HOST_IP}:4317
+    # endpoint: ${env:GATEWAY_HOST_IP}:4317
 
   # The Datadog exporter is necessary for exporting telemetry signals to Datadog.
   datadog:
@@ -169,6 +169,7 @@ exporters:
 
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
+      # histogram:
         ## @param mode - string - optional - default: distributions
         ## How to report histograms. Valid values are:
         ##
@@ -178,10 +179,17 @@ exporters:
         #
         # mode: distributions
 
+        ## Deprecated [v0.75.0]: use `send_aggreggations` instead.
         ## @param send_count_sum_metrics - boolean - optional - default: false
-        ## Whether to report sum and count as separate histogram metrics.
+        ## Whether to report sum, count, min and max as separate histogram metrics.
         #
         # send_count_sum_metrics: false
+
+        ## @param send_aggregation_metrics - boolean - optional - default: false
+        ## Whether to report sum, count, min and max as separate histogram metrics.
+        #
+        # send_aggregation_metrics: false
+
 
       ## @param sums - custom object - optional
       ## Sums specific configuration.

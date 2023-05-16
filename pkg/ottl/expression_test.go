@@ -16,17 +16,55 @@ package ottl
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func hello[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func hello() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
 		return "world", nil
+	}, nil
+}
+
+func pmap() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
+		m := pcommon.NewMap()
+		m.PutEmptyMap("foo").PutStr("bar", "pass")
+		return m, nil
+	}, nil
+}
+
+func basicMap() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
+		return map[string]interface{}{
+			"foo": map[string]interface{}{
+				"bar": "pass",
+			},
+		}, nil
+	}, nil
+}
+
+func pslice() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
+		s := pcommon.NewSlice()
+		s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("pass")
+		return s, nil
+	}, nil
+}
+
+func basicSlice() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (interface{}, error) {
+		return []interface{}{
+			[]interface{}{
+				"pass",
+			},
+		}, nil
 	}, nil
 }
 
@@ -99,6 +137,29 @@ func Test_newGetter(t *testing.T) {
 			want: "bear",
 		},
 		{
+			name: "complex path expression",
+			val: value{
+				Literal: &mathExprLiteral{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "attributes",
+								Keys: []Key{
+									{
+										String: ottltest.Strp("foo"),
+									},
+									{
+										String: ottltest.Strp("bar"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
 			name: "function call",
 			val: value{
 				Literal: &mathExprLiteral{
@@ -108,6 +169,82 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want: "world",
+		},
+		{
+			name: "function call nested pcommon map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("foo"),
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Map",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("foo"),
+							},
+							{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PSlice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Slice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
 		},
 		{
 			name: "enum",
@@ -288,7 +425,13 @@ func Test_newGetter(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{"Hello": hello[interface{}]}
+	functions := CreateFactoryMap(
+		createFactory("Hello", &struct{}{}, hello),
+		createFactory("PMap", &struct{}{}, pmap),
+		createFactory("Map", &struct{}{}, basicMap),
+		createFactory("PSlice", &struct{}{}, pslice),
+		createFactory("Slice", &struct{}{}, basicSlice),
+	)
 
 	p, _ := NewParser[any](
 		functions,
@@ -308,7 +451,8 @@ func Test_newGetter(t *testing.T) {
 				tCtx = tt.ctx
 			}
 
-			val, _ := reader.Get(context.Background(), tCtx)
+			val, err := reader.Get(context.Background(), tCtx)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -317,6 +461,166 @@ func Test_newGetter(t *testing.T) {
 		_, err := p.newGetter(value{})
 		assert.Error(t, err)
 	})
+}
+func Test_exprGetter_Get_Invalid(t *testing.T) {
+	tests := []struct {
+		name string
+		val  value
+		err  error
+	}{
+		{
+			name: "key not in pcommon map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PMap",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("unknown key"),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("key not found in map"),
+		},
+		{
+			name: "key not in map",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Map",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("unknown key"),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("key not found in map"),
+		},
+		{
+			name: "index too large for pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PSlice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(100),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index 100 out of bounds"),
+		},
+		{
+			name: "negative for pcommon slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "PSlice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(-1),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index -1 out of bounds"),
+		},
+		{
+			name: "index too large for Go slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Slice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(100),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index 100 out of bounds"),
+		},
+		{
+			name: "negative for Go slice",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Slice",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(-1),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("index -1 out of bounds"),
+		},
+		{
+			name: "invalid int indexing type",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Hello",
+						Keys: []Key{
+							{
+								Int: ottltest.Intp(-1),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("type, string, does not support int indexing"),
+		},
+		{
+			name: "invalid string indexing type",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "Hello",
+						Keys: []Key{
+							{
+								String: ottltest.Strp("test"),
+							},
+						},
+					},
+				},
+			},
+			err: fmt.Errorf("type, string, does not support string indexing"),
+		},
+	}
+
+	functions := CreateFactoryMap(
+		createFactory("Hello", &struct{}{}, hello),
+		createFactory("PMap", &struct{}{}, pmap),
+		createFactory("Map", &struct{}{}, basicMap),
+		createFactory("PSlice", &struct{}{}, pslice),
+		createFactory("Slice", &struct{}{}, basicSlice),
+	)
+
+	p, _ := NewParser[any](
+		functions,
+		testParsePath,
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader, err := p.newGetter(tt.val)
+			assert.NoError(t, err)
+			_, err = reader.Get(context.Background(), nil)
+			assert.Equal(t, tt.err, err)
+		})
+	}
 }
 
 func Test_StandardTypeGetter(t *testing.T) {
@@ -365,6 +669,139 @@ func Test_StandardTypeGetter(t *testing.T) {
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
+			} else {
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_StandardStringLikeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StringLikeGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "string type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			want:  "str",
+			valid: true,
+		},
+		{
+			name: "bool type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			want:  "true",
+			valid: true,
+		},
+		{
+			name: "int64 type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return int64(1), nil
+				},
+			},
+			want:  "1",
+			valid: true,
+		},
+		{
+			name: "float64 type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1.1, nil
+				},
+			},
+			want:  "1.1",
+			valid: true,
+		},
+		{
+			name: "byte[] type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return []byte{0}, nil
+				},
+			},
+			want:  "00",
+			valid: true,
+		},
+		{
+			name: "pcommon.map type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					m := pcommon.NewMap()
+					m.PutStr("test", "passed")
+					return m, nil
+				},
+			},
+			want:  `{"test":"passed"}`,
+			valid: true,
+		},
+		{
+			name: "pcommon.slice type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					s := pcommon.NewSlice()
+					v := s.AppendEmpty()
+					v.SetStr("test")
+					return s, nil
+				},
+			},
+			want:  `["test"]`,
+			valid: true,
+		},
+		{
+			name: "pcommon.value type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueInt(int64(100))
+					return v, nil
+				},
+			},
+			want:  "100",
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "invalid type",
+			getter: StandardStringLikeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return make(chan int), nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: chan int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				if tt.want == nil {
+					assert.Nil(t, val)
+				} else {
+					assert.Equal(t, tt.want, *val)
+				}
 			} else {
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}

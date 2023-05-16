@@ -37,7 +37,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
+	grpc_creds "google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -101,7 +101,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 		certpath := filepath.Join(basepath, filepath.Join("testdata", "test_cert.pem"))
 		keypath := filepath.Join(basepath, filepath.Join("testdata", "test_key.pem"))
 
-		creds, err := credentials.NewServerTLSFromFile(certpath, keypath)
+		creds, err := grpc_creds.NewServerTLSFromFile(certpath, keypath)
 		if err != nil {
 			return nil, err
 		}
@@ -126,6 +126,7 @@ func otlpTracesReceiverOnGRPCServer(ln net.Listener, useTLS bool) (*mockTracesRe
 }
 
 type mockLogsReceiver struct {
+	plogotlp.UnimplementedGRPCServer
 	mockReceiver
 	lastRequest plog.Logs
 }
@@ -166,6 +167,7 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 }
 
 type mockMetricsReceiver struct {
+	pmetricotlp.UnimplementedGRPCServer
 	mockReceiver
 	lastRequest pmetric.Metrics
 }

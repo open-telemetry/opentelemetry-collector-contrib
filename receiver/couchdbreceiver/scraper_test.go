@@ -56,7 +56,7 @@ func TestScrape(t *testing.T) {
 		actualMetrics, err := scraper.scrape(context.Background())
 		require.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
@@ -73,7 +73,7 @@ func TestScrape(t *testing.T) {
 		actualMetrics, err := scraper.scrape(context.Background())
 		require.NoError(t, err)
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
@@ -157,18 +157,20 @@ func TestStart(t *testing.T) {
 func TestMetricSettings(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics = metadata.MetricsConfig{
+		CouchdbAverageRequestTime: metadata.MetricConfig{Enabled: false},
+		CouchdbDatabaseOpen:       metadata.MetricConfig{Enabled: false},
+		CouchdbDatabaseOperations: metadata.MetricConfig{Enabled: true},
+		CouchdbFileDescriptorOpen: metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdBulkRequests:  metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdRequests:      metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdResponses:     metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
+	}
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
-		Metrics: metadata.MetricsSettings{
-			CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
-			CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
-			CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
-			CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
-			CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
-		},
+		HTTPClientSettings:   confighttp.HTTPClientSettings{},
+		MetricsBuilderConfig: mbc,
 	}
 	scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)
 	scraper.client = mockClient
@@ -176,7 +178,7 @@ func TestMetricSettings(t *testing.T) {
 	metrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.json"))
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.yaml"))
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metrics, pmetrictest.IgnoreMetricDataPointsOrder(),

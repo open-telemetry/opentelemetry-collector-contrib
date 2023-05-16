@@ -1,4 +1,10 @@
-name: iisreceiver
+type: iisreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
 
 resource_attributes:
   iis.site:

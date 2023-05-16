@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -39,21 +40,24 @@ type filterMetricProcessor struct {
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[ottldatapoint.TransformContext]
+	logger            *zap.Logger
 }
 
 func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*filterMetricProcessor, error) {
 	var err error
-	fsp := &filterMetricProcessor{}
+	fsp := &filterMetricProcessor{
+		logger: set.Logger,
+	}
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
-			fsp.skipMetricExpr, err = common.ParseMetric(cfg.Metrics.MetricConditions, set)
+			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, common.MetricFunctions(), cfg.ErrorMode, set)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 		if cfg.Metrics.DataPointConditions != nil {
-			fsp.skipDataPointExpr, err = common.ParseDataPoint(cfg.Metrics.DataPointConditions, set)
+			fsp.skipDataPointExpr, err = filterottl.NewBoolExprForDataPoint(cfg.Metrics.DataPointConditions, filterottl.StandardDataPointFuncs(), cfg.ErrorMode, set)
 			if err != nil {
 				return nil, err
 			}
@@ -169,6 +173,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	})
 
 	if errors != nil {
+		fmp.logger.Error("failed processing metrics", zap.Error(errors))
 		return md, errors
 	}
 	if md.ResourceMetrics().Len() == 0 {

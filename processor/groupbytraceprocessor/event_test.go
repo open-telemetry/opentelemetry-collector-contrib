@@ -18,6 +18,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -357,8 +357,8 @@ func TestEventShutdown(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	traceReceivedFired := atomic.NewInt64(0)
-	traceExpiredFired := atomic.NewInt64(0)
+	traceReceivedFired := &atomic.Int64{}
+	traceExpiredFired := &atomic.Int64{}
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
 	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
 		traceReceivedFired.Store(1)

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confignet.TCPAddr                       `mapstructure:",squash"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 
 	// Timeout within which requests should be completed.
 	Timeout time.Duration `mapstructure:"timeout"`

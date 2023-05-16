@@ -119,9 +119,9 @@ func TestLoadConfig(t *testing.T) {
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 
-	testMetrics := metadata.DefaultMetricsSettings()
-	testMetrics.SnowflakeDatabaseBytesScannedAvg.Enabled = true
-	testMetrics.SnowflakeQueryBytesDeletedAvg.Enabled = false
+	testMetrics := metadata.DefaultMetricsBuilderConfig()
+	testMetrics.Metrics.SnowflakeDatabaseBytesScannedAvg.Enabled = true
+	testMetrics.Metrics.SnowflakeQueryBytesDeletedAvg.Enabled = false
 
 	expected := &Config{
 		Username:  "snowflakeuser",
@@ -131,10 +131,10 @@ func TestLoadConfig(t *testing.T) {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 18 * time.Minute,
 		},
-		Role:     "customMonitoringRole",
-		Database: "SNOWFLAKE",
-		Schema:   "ACCOUNT_USAGE",
-		Metrics:  testMetrics,
+		Role:                 "customMonitoringRole",
+		Database:             "SNOWFLAKE",
+		Schema:               "ACCOUNT_USAGE",
+		MetricsBuilderConfig: testMetrics,
 	}
 
 	factory := NewFactory()
@@ -143,7 +143,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(cmNoStr, cfg))
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}))
 	if diff != "" {
 		t.Errorf("config mismatch (-expected / +actual)\n%s", diff)
 	}

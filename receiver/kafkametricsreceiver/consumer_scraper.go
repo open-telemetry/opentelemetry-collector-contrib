@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ func (s *consumerScraper) Name() string {
 }
 
 func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings)
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 

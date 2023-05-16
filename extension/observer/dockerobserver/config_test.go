@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,11 +35,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(metadata.Type, "all_settings"),
 			expected: &Config{
 				Endpoint:              "unix:///var/run/docker.sock",
 				CacheSyncInterval:     5 * time.Minute,

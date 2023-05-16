@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -30,7 +31,6 @@ import (
 
 const (
 	typeStr              = "mongodbatlas"
-	stability            = component.StabilityLevelBeta
 	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
 	defaultLogsEnabled   = false
@@ -41,8 +41,8 @@ func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, stability),
-		rcvr.WithLogs(createCombinedLogReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		rcvr.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
 
 }
 
@@ -75,7 +75,10 @@ func createCombinedLogReceiver(
 	}
 
 	var err error
-	recv := &combinedLogsReceiver{}
+	recv := &combinedLogsReceiver{
+		id:        params.ID,
+		storageID: cfg.StorageID,
+	}
 
 	if cfg.Alerts.Enabled {
 		recv.alerts, err = newAlertsReceiver(params, cfg, consumer)
@@ -96,11 +99,11 @@ func createCombinedLogReceiver(
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
+	c := &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-		Metrics:                   metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		Alerts: AlertConfig{
 			Enabled:      defaultAlertsEnabled,
 			Mode:         alertModeListen,
@@ -113,4 +116,8 @@ func createDefaultConfig() component.Config {
 			Projects: []*ProjectConfig{},
 		},
 	}
+	// reset default of 1 minute to be 3 minutes in order to avoid null values for some metrics that do not publish
+	// more frequently
+	c.ScraperControllerSettings.CollectionInterval = 3 * time.Minute
+	return c
 }

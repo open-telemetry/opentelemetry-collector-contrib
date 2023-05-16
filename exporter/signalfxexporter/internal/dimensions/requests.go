@@ -1,4 +1,4 @@
-// Copyright OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 // ReqSender is a direct port of
@@ -57,7 +56,7 @@ func NewReqSender(ctx context.Context, client *http.Client,
 		requests:       make(chan *http.Request),
 		workerCount:    workerCount,
 		ctx:            ctx,
-		runningWorkers: atomic.NewInt64(0),
+		runningWorkers: &atomic.Int64{},
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ import (
 var mockFolder = filepath.Join("testdata", "mock")
 
 var (
-	metricEnabled     = metadata.MetricSettings{Enabled: true}
-	allMetricsEnabled = metadata.MetricsSettings{
+	metricEnabled     = metadata.MetricConfig{Enabled: true}
+	allMetricsEnabled = metadata.MetricsConfig{
 		ContainerBlockioIoMergedRecursive:          metricEnabled,
 		ContainerBlockioIoQueuedRecursive:          metricEnabled,
 		ContainerBlockioIoServiceBytesRecursive:    metricEnabled,
@@ -176,12 +176,12 @@ func TestScrapeV2(t *testing.T) {
 	}{
 		{
 			desc:                "scrapeV2_single_container",
-			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.json"),
+			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.yaml"),
 			mockDockerEngine:    singleContainerEngineMock,
 		},
 		{
 			desc:                "scrapeV2_two_containers",
-			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
+			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.yaml"),
 			mockDockerEngine:    twoContainerEngineMock,
 		},
 	}
@@ -192,7 +192,7 @@ func TestScrapeV2(t *testing.T) {
 			cfg.Endpoint = tc.mockDockerEngine.URL
 			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
 			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
-			cfg.MetricsConfig = allMetricsEnabled
+			cfg.MetricsBuilderConfig.Metrics = allMetricsEnabled
 
 			receiver := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 			err := receiver.start(context.Background(), componenttest.NewNopHost())

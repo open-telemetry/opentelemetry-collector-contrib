@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,4 +36,5 @@ import (
 	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "go.opentelemetry.io/collector/cmd/builder"
 	_ "golang.org/x/tools/cmd/goimports"
+	_ "golang.org/x/vuln/cmd/govulncheck"
 )

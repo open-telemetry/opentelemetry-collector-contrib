@@ -1,4 +1,4 @@
-// Copyright OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,4 +63,12 @@ func applyInstrumentationScopeValueToDataProperties(dataProperties map[string]st
 	if instrumentationScope.Version() != "" {
 		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
 	}
+}
+
+// Applies attributes as Application Insights properties
+func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
+	attributeMap.Range(func(k string, v pcommon.Value) bool {
+		properties[k] = v.AsString()
+		return true
+	})
 }

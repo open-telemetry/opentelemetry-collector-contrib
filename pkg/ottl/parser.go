@@ -43,7 +43,7 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 }
 
 type Parser[K any] struct {
-	functions         map[string]interface{}
+	functions         map[string]Factory[K]
 	pathParser        PathExpressionParser[K]
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
@@ -77,7 +77,7 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 }
 
 func NewParser[K any](
-	functions map[string]interface{},
+	functions map[string]Factory[K],
 	pathParser PathExpressionParser[K],
 	settings component.TelemetrySettings,
 	options ...Option[K],
@@ -210,4 +210,26 @@ func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 		}
 	}
 	return nil
+}
+
+// Eval returns true if any statement's condition is true and returns false otherwise.
+// Does not execute the statement's function.
+// When errorMode is `propagate`, errors cause the evaluation to be false and an error is returned.
+// When errorMode is `ignore`, errors cause evaluation to continue to the next statement.
+func (s *Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	for _, statement := range s.statements {
+		match, err := statement.condition.Eval(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == PropagateError {
+				err = fmt.Errorf("failed to eval statement: %v, %w", statement.origText, err)
+				return false, err
+			}
+			s.telemetrySettings.Logger.Warn("failed to eval statement", zap.Error(err), zap.String("statement", statement.origText))
+			continue
+		}
+		if match {
+			return true, nil
+		}
+	}
+	return false, nil
 }

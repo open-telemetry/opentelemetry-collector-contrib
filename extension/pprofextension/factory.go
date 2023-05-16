@@ -21,22 +21,21 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension/internal/metadata"
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr = "pprof"
-
 	defaultEndpoint = "localhost:1777"
 )
 
 // NewFactory creates a factory for pprof extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 

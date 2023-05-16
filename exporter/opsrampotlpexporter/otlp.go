@@ -47,7 +47,6 @@ import (
 )
 
 var tokenRenewInProgress bool
-var counter int
 var credentials Credentials
 
 type opsrampOTLPExporter struct {

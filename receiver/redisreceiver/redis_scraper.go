@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ func newRedisScraperWithClient(client client, settings receiver.CreateSettings, 
 		client:   client,
 		redisSvc: newRedisSvc(client),
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 	return scraperhelper.NewScraper(
 		typeStr,

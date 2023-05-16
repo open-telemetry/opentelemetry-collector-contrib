@@ -151,10 +151,10 @@ func TestCompareLogs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := filepath.Join("testdata", tc.name)
 
-			expected, err := golden.ReadLogs(filepath.Join(dir, "expected.json"))
+			expected, err := golden.ReadLogs(filepath.Join(dir, "expected.yaml"))
 			require.NoError(t, err)
 
-			actual, err := golden.ReadLogs(filepath.Join(dir, "actual.json"))
+			actual, err := golden.ReadLogs(filepath.Join(dir, "actual.yaml"))
 			require.NoError(t, err)
 
 			err = CompareLogs(expected, actual)

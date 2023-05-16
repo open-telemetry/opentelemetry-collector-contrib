@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -185,11 +185,7 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	dsn, err := cfg.buildDSN(cfg.Database)
-	if err != nil {
-		return nil, err
-	}
-	db, err := sql.Open(driverName, dsn)
+	db, err := cfg.buildDB(cfg.Database)
 	if err != nil {
 		return nil, err
 	}
@@ -197,17 +193,14 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 func createDatabase(ctx context.Context, cfg *Config) error {
+	// use default database to create new database
 	if cfg.Database == defaultDatabase {
 		return nil
 	}
-	// use default database to create new database
-	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
+
+	db, err := cfg.buildDB(defaultDatabase)
 	if err != nil {
 		return err
-	}
-	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
-	if err != nil {
-		return fmt.Errorf("sql.Open:%w", err)
 	}
 	defer func() {
 		_ = db.Close()

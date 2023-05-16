@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type logNameTest struct {
@@ -713,6 +714,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		conditions       []string
 		filterEverything bool
 		want             func(ld plog.Logs)
+		errorMode        ottl.ErrorMode
 	}{
 		{
 			name: "drop logs",
@@ -727,21 +729,32 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 					return log.Body().AsString() == "operationA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop everything by dropping all logs",
 			conditions: []string{
-				`IsMatch(body, "operation.*") == true`,
+				`IsMatch(body, "operation.*")`,
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
 			conditions: []string{
-				`IsMatch(body, "wrong name") == true`,
-				`IsMatch(body, "operation.*") == true`,
+				`IsMatch(body, "wrong name")`,
+				`IsMatch(body, "operation.*")`,
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "with error conditions",
+			conditions: []string{
+				`Substring("", 0, 100) == "test"`,
+			},
+			want:      func(ld plog.Logs) {},
+			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {

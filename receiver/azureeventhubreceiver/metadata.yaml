@@ -1,0 +1,7 @@
+type: azureeventhubreceiver
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics, logs]
+  distributions: [contrib]

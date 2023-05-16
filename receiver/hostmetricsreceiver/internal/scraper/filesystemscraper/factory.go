@@ -44,7 +44,7 @@ func (f *Factory) Type() string {
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
 	return &Config{
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

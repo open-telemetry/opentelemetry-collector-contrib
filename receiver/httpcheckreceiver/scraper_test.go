@@ -105,7 +105,7 @@ func TestScaperScrape(t *testing.T) {
 			desc:             "Successful Collection",
 			expectedResponse: 200,
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -123,7 +123,7 @@ func TestScaperScrape(t *testing.T) {
 			desc:             "Endpoint returning 404",
 			expectedResponse: 404,
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "endpoint_404.json")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "endpoint_404.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -141,7 +141,7 @@ func TestScaperScrape(t *testing.T) {
 			desc:     "Invalid endpoint",
 			endpoint: "http://invalid-endpoint",
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "invalid_endpoint.json")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "invalid_endpoint.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics

@@ -223,7 +223,13 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
 	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, clusterMajorVersion)
 	if err != nil && !errors.Is(err, io.EOF) {
-		s.log.Warn("Failed to retrieve logs from: "+logName, zap.Error(err))
+		s.log.Warn("Failed to retrieve host logs", zap.Error(err), zap.String("log", logName))
+		return
+	}
+
+	if len(logs) == 0 {
+		s.log.Warn("Attempted to retrieve host logs but received 0 logs", zap.Error(err), zap.String("log", logName))
+		return
 	}
 
 	plog := mongodbEventToLogData(s.log,
@@ -247,16 +253,27 @@ func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName, cl
 	)
 
 	if err != nil && !errors.Is(err, io.EOF) {
-		s.log.Warn("Failed to retrieve audit logs: "+logName, zap.Error(err))
+		s.log.Warn("Failed to retrieve audit logs", zap.Error(err), zap.String("log", logName))
+		return
 	}
 
-	plog := mongodbAuditEventToLogData(s.log,
+	if len(logs) == 0 {
+		s.log.Warn("Attempted to retrieve audit logs but received 0 logs", zap.Error(err), zap.String("log", logName))
+		return
+	}
+
+	plog, err := mongodbAuditEventToLogData(s.log,
 		logs,
 		pc,
 		hostname,
 		logName,
 		clusterName,
 		clusterMajorVersion)
+	if err != nil {
+		s.log.Warn("Failed to translate audit logs: "+logName, zap.Error(err))
+		return
+	}
+
 	err = s.consumer.ConsumeLogs(context.Background(), plog)
 	if err != nil {
 		s.log.Error("Failed to consume logs", zap.Error(err))

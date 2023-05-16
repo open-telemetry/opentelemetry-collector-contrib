@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
 import (
@@ -19,21 +21,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "tencentcloud_logservice"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for tencentcloud LogService exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.

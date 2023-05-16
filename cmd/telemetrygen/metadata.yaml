@@ -1,0 +1,7 @@
+type: telemetrygen
+
+status:
+  class: cmd
+  stability:
+    alpha: [traces]
+    development: [metrics, logs]

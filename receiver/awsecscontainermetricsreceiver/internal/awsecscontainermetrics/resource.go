@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ func taskResource(tm ecsutil.TaskMetadata) pcommon.Resource {
 	resource.Attributes().PutStr(attributeECSTaskRevision, tm.Revision)
 	resource.Attributes().PutStr(conventions.AttributeAWSECSTaskRevision, tm.Revision)
 
-	resource.Attributes().PutStr(attributeECSServiceName, "undefined")
+	resource.Attributes().PutStr(attributeECSServiceName, tm.ServiceName)
 
 	resource.Attributes().PutStr(conventions.AttributeCloudAvailabilityZone, tm.AvailabilityZone)
 	resource.Attributes().PutStr(attributeECSTaskPullStartedAt, tm.PullStartedAt)

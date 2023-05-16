@@ -1,4 +1,11 @@
-name: httpcheckreceiver
+type: httpcheckreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  warnings: []
 
 resource_attributes:
 

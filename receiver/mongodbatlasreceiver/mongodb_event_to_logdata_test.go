@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -125,7 +125,8 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "5.0")
+	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "5.0")
+	require.NoError(t, err)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
@@ -181,7 +182,8 @@ func TestMongoEventToAuditLogData4_2(t *testing.T) {
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	ld := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "4.2")
+	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", "clusterName", "4.2")
+	require.NoError(t, err)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)

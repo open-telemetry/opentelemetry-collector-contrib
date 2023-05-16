@@ -519,3 +519,22 @@ metadata:
         data:
           type: "gauge"
         unit: "second"
+#
+# -------------------------------------------- Table Size Stats ------------------------------------------------------
+#
+  - name: "hourly table size stats"
+    query: "SELECT * FROM SPANNER_SYS.TABLE_SIZES_STATS_1HOUR WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, USED_BYTES DESC"
+    metric_name_prefix: "database/spanner/table_sizes/top/"
+    timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
+    labels:
+      - name: "table_name"
+        column_name: "TABLE_NAME"
+        value_type: "string"
+    metrics:
+      - name: "used_bytes"
+        column_name: "USED_BYTES"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "byte"

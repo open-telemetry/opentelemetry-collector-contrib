@@ -149,7 +149,8 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		go func(r *Reader) {
 			defer wg.Done()
 			r.ReadToEnd(ctx)
-			if m.deleteAfterRead {
+			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
+			if m.deleteAfterRead && r.eof {
 				r.Close()
 				if err := os.Remove(r.file.Name()); err != nil {
 					m.Errorf("could not delete %s", r.file.Name())
@@ -159,9 +160,20 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
+	// Save off any files that were not fully read
 	if m.deleteAfterRead {
-		// no need to track files since they were deleted
-		return
+		unfinished := make([]*Reader, 0, len(readers))
+		for _, r := range readers {
+			if !r.eof {
+				unfinished = append(unfinished, r)
+			}
+		}
+		readers = unfinished
+
+		// If all files were read and deleted then no need to do bookkeeping on readers
+		if len(readers) == 0 {
+			return
+		}
 	}
 
 	// Any new files that appear should be consumed entirely
@@ -212,7 +224,7 @@ OUTER:
 		fp := fps[i]
 		if len(fp.FirstBytes) == 0 {
 			if err := files[i].Close(); err != nil {
-				m.Errorf("problem closing file", "file", files[i].Name())
+				m.Errorf("problem closing file %s", files[i].Name())
 			}
 			// Empty file, don't read it until we can compare its fingerprint
 			fps = append(fps[:i], fps[i+1:]...)
@@ -225,7 +237,7 @@ OUTER:
 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 				// Exclude
 				if err := files[i].Close(); err != nil {
-					m.Errorf("problem closing file", "file", files[i].Name())
+					m.Errorf("problem closing file %s", files[i].Name())
 				}
 				fps = append(fps[:i], fps[i+1:]...)
 				files = append(files[:i], files[i+1:]...)
@@ -282,6 +294,9 @@ func (m *Manager) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
 		oldReader := m.knownFiles[i]
 		if fp.StartsWith(oldReader.Fingerprint) {
+			// Remove the old reader from the list of known files. We will
+			// add it back in saveCurrent if it is still alive.
+			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
 			return oldReader, true
 		}
 	}

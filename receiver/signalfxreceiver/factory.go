@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,15 +25,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
 // This file implements factory for SignalFx receiver.
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "signalfx"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelBeta
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
@@ -42,10 +40,10 @@ const (
 // NewFactory creates a factory for SignalFx receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
-		receiver.WithLogs(createLogsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {

@@ -20,22 +20,21 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver/internal/metadata"
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr component.Type = "host_observer"
-
 	defaultCollectionInterval = 10
 )
 
 // NewFactory creates a factory for HostObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 

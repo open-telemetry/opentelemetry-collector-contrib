@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ type Config struct {
 	// Docker client API version. Default is 1.22
 	DockerAPIVersion float64 `mapstructure:"api_version"`
 
-	// Metrics config. Enable or disable stats by name.
-	MetricsConfig metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig config. Enable or disable stats by name.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {

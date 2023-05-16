@@ -19,19 +19,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-)
 
-const (
-	typeStr = "basicauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/metadata"
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 

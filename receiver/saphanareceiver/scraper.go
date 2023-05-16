@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string)
 	key := string(bytes)
 	mb, ok := s.mbs[key]
 	if !ok {
-		mb = metadata.NewMetricsBuilder(s.cfg.Metrics, s.settings)
+		mb = metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings)
 		s.mbs[key] = mb
 	}
 

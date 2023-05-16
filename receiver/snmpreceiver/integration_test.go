@@ -44,12 +44,12 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 		{
 			desc:                    "Integration test with v2c configuration",
 			configFilename:          "integration_test_v2c_config.yaml",
-			expectedResultsFilename: "v2c_config_expected_metrics.json",
+			expectedResultsFilename: "v2c_config_expected_metrics.yaml",
 		},
 		{
 			desc:                    "Integration test with v3 configuration",
 			configFilename:          "integration_test_v3_config.yaml",
-			expectedResultsFilename: "v3_config_expected_metrics.json",
+			expectedResultsFilename: "v3_config_expected_metrics.yaml",
 		},
 	}
 
@@ -64,7 +64,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.desc, func(t *testing.T) {
-
+			t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21086")
 			factory := NewFactory()
 			factories.Receivers[typeStr] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)

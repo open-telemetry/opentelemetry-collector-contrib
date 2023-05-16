@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
-					RequestTimeoutSeconds: 30,
+					RequestTimeoutSeconds: 120,
 					MaxRetries:            2,
 					NoVerifySSL:           false,
 					ProxyAddress:          "",

@@ -25,8 +25,7 @@ import (
 )
 
 const (
-	typeStr   = "iis"
-	stability = component.StabilityLevelBeta
+	typeStr = "iis"
 )
 
 // NewFactory creates a factory for iis receiver.
@@ -34,7 +33,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -42,6 +41,6 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: time.Minute,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }

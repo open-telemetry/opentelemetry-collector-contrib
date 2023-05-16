@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -245,11 +245,11 @@ var (
 			in: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2").
 					addIntDatapoint(1, 2, 3, "label1-value1", "label2-value1").
-					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").build(),
+					addIntDatapoint(1, 2, 1, "label1-value1", "label2-value2").addDescription("foobar").build(),
 			},
 			out: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1").
-					addIntDatapoint(1, 2, 4, "label1-value1").build(),
+					addIntDatapoint(1, 2, 4, "label1-value1").addDescription("foobar").build(),
 			},
 		},
 		{

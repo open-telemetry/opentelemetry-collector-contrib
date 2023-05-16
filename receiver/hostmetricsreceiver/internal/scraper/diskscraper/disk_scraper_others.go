@@ -83,7 +83,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	}
 
 	s.startTime = pcommon.Timestamp(bootTime * 1e9)
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings, metadata.WithStartTime(s.startTime))
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(s.startTime))
 	return nil
 }
 

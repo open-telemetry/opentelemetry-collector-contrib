@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -616,7 +616,7 @@ func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, log
 	return buf, nil
 }
 
-// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
+// GetClusters retrieves the clusters from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
 func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
 	options := mongodbatlas.ListOptions{}
 
@@ -663,8 +663,8 @@ type GetEventsOptions struct {
 	MaxDate time.Time
 }
 
-// GetEvents returns the events specified for the set projects
-func (s *MongoDBAtlasClient) GetEvents(ctx context.Context, groupID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
+// GetProjectEvents returns the events specified for the set projects
+func (s *MongoDBAtlasClient) GetProjectEvents(ctx context.Context, groupID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
 	lo := mongodbatlas.ListOptions{
 		PageNum:      opts.PageNum,
 		ItemsPerPage: opts.PageSize,
@@ -680,6 +680,30 @@ func (s *MongoDBAtlasClient) GetEvents(ctx context.Context, groupID string, opts
 	}
 
 	events, response, err := s.client.Events.ListProjectEvents(ctx, groupID, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, false, err
+	}
+	return events.Results, hasNext(response.Links), nil
+}
+
+// GetOrgEvents returns the events specified for the set organizations
+func (s *MongoDBAtlasClient) GetOrganizationEvents(ctx context.Context, orgID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
+	lo := mongodbatlas.ListOptions{
+		PageNum:      opts.PageNum,
+		ItemsPerPage: opts.PageSize,
+	}
+	options := mongodbatlas.EventListOptions{
+		ListOptions: lo,
+		// Earliest Timestamp in ISO 8601 date and time format in UTC from when Atlas should return events.
+		MinDate: opts.MinDate.Format(time.RFC3339),
+	}
+
+	if len(opts.EventTypes) > 0 {
+		options.EventType = opts.EventTypes
+	}
+
+	events, response, err := s.client.Events.ListOrganizationEvents(ctx, orgID, &options)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
 		return nil, false, err

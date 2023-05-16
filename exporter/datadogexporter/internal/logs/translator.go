@@ -21,10 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -166,13 +166,13 @@ func Transform(lr plog.LogRecord, res pcommon.Resource, logger *zap.Logger) data
 }
 
 func extractHostNameAndServiceName(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (host string, service string) {
-	if src, ok := attributes.SourceFromAttributes(resourceAttrs, true); ok && src.Kind == source.HostnameKind {
+	if src, ok := attributes.SourceFromAttrs(resourceAttrs); ok && src.Kind == source.HostnameKind {
 		host = src.Identifier
 	}
 	// hostName is blank from resource
 	// we need to derive from log attributes
 	if host == "" {
-		if src, ok := attributes.SourceFromAttributes(logAttrs, true); ok && src.Kind == source.HostnameKind {
+		if src, ok := attributes.SourceFromAttrs(logAttrs); ok && src.Kind == source.HostnameKind {
 			host = src.Identifier
 		}
 	}
