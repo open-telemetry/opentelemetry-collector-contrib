@@ -1,4 +1,4 @@
-type: memcachedreceiver
+type: memcached
 
 status:
   class: receiver
