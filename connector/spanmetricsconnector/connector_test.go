@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -978,6 +979,101 @@ func TestConnector_durationsToUnits(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
 			got := durationsToUnits(tt.input, unitDivider(tt.unit))
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConnector_initHistogramMetrics(t *testing.T) {
+	defaultHistogramBucketsSeconds := make([]float64, len(defaultHistogramBucketsMs))
+	for i, v := range defaultHistogramBucketsMs {
+		defaultHistogramBucketsSeconds[i] = v / 1000
+	}
+
+	tests := []struct {
+		name   string
+		config *Config
+		want   metrics.HistogramMetrics
+	}{
+		{
+			name:   "initialize histogram with no config provided",
+			config: &Config{},
+			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
+		},
+		{
+			name: "initialize explicit histogram with default bounds (ms)",
+			config: &Config{
+				Histogram: HistogramConfig{
+					Unit: metrics.Milliseconds,
+				},
+			},
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
+		},
+		{
+			name: "initialize explicit histogram with default bounds (seconds)",
+			config: &Config{
+				Histogram: HistogramConfig{
+					Unit: metrics.Seconds,
+				},
+			},
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds),
+		},
+		{
+			name: "initialize explicit histogram with bounds (seconds)",
+			config: &Config{
+				Histogram: HistogramConfig{
+					Unit: metrics.Seconds,
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{
+							100 * time.Millisecond,
+							1000 * time.Millisecond,
+						},
+					},
+				},
+			},
+			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}),
+		},
+		{
+			name: "initialize explicit histogram with bounds (ms)",
+			config: &Config{
+				Histogram: HistogramConfig{
+					Unit: metrics.Milliseconds,
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{
+							100 * time.Millisecond,
+							1000 * time.Millisecond,
+						},
+					},
+				},
+			},
+			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}),
+		},
+		{
+			name: "initialize exponential histogram",
+			config: &Config{
+				Histogram: HistogramConfig{
+					Unit: metrics.Milliseconds,
+					Exponential: &ExponentialHistogramConfig{
+						MaxSize: 10,
+					},
+				},
+			},
+			want: metrics.NewExponentialHistogramMetrics(10),
+		},
+		{
+			name: "initialize exponential histogram with default max buckets count",
+			config: &Config{
+				Histogram: HistogramConfig{
+					Unit:        metrics.Milliseconds,
+					Exponential: &ExponentialHistogramConfig{},
+				},
+			},
+			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize),
+		},
+	}
+	for _, tt := range tests {
+		t.Run("", func(t *testing.T) {
+			got := initHistogramMetrics(tt.config)
 			assert.Equal(t, tt.want, got)
 		})
 	}

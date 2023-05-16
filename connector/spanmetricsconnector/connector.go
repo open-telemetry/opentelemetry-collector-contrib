@@ -116,8 +116,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 	}, nil
 }
 
-func (p *connectorImp) initHistogramMetrics() metrics.HistogramMetrics {
-	cfg := p.config
+func initHistogramMetrics(cfg *Config) metrics.HistogramMetrics {
 	if cfg.Histogram.Exponential != nil {
 		maxSize := structure.DefaultMaxSize
 		if cfg.Histogram.Exponential.MaxSize != 0 {
@@ -125,10 +124,22 @@ func (p *connectorImp) initHistogramMetrics() metrics.HistogramMetrics {
 		}
 		return metrics.NewExponentialHistogramMetrics(maxSize)
 	}
-	bounds := defaultHistogramBucketsMs
+
+	var bounds []float64
 	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
 		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
+	} else {
+		switch cfg.Histogram.Unit {
+		case metrics.Milliseconds:
+			bounds = defaultHistogramBucketsMs
+		case metrics.Seconds:
+			bounds = make([]float64, len(defaultHistogramBucketsMs))
+			for i, v := range defaultHistogramBucketsMs {
+				bounds[i] = v / float64(time.Second.Milliseconds())
+			}
+		}
 	}
+
 	return metrics.NewExplicitHistogramMetrics(bounds)
 }
 
@@ -314,7 +325,7 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	v, ok := p.resourceMetrics[key]
 	if !ok {
 		v = &resourceMetrics{
-			histograms: p.initHistogramMetrics(),
+			histograms: initHistogramMetrics(&p.config),
 			sums:       metrics.NewSumMetrics(),
 			attributes: attr,
 		}
