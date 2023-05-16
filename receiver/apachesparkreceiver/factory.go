@@ -16,6 +16,7 @@ package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -25,6 +26,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 )
+
+var errConfigNotSpark = errors.New("config was not a Spark receiver config")
+
+type SparkReceiver struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
 
 // NewFactory creates a new receiver factory for Spark
 func NewFactory() receiver.Factory {
@@ -53,5 +61,10 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return nil, nil
+	_, ok := config.(*Config)
+	if !ok {
+		return nil, errConfigNotSpark
+	}
+
+	return SparkReceiver{}, nil
 }

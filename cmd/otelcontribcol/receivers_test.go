@@ -73,8 +73,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "apache",
 		},
 		{
-			receiver:     "apachespark",
-			skipLifecyle: true, // TODO: skipped until the receiver has is out of development status
+			receiver: "apachespark",
 		},
 		{
 			receiver: "awscloudwatch",
