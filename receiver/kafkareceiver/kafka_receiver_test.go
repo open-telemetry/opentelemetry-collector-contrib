@@ -82,6 +82,17 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 	assert.Nil(t, r)
 }
 
+func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
+	c := Config{
+		InitialOffset: "foo",
+		Encoding:      defaultEncoding,
+	}
+	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
+	require.Error(t, err)
+	assert.Nil(t, r)
+	assert.EqualError(t, err, errInvalidInitialOffset.Error())
+}
+
 func TestTracesReceiverStart(t *testing.T) {
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
@@ -328,6 +339,17 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 	assert.Nil(t, r)
 }
 
+func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
+	c := Config{
+		InitialOffset: "foo",
+		Encoding:      defaultEncoding,
+	}
+	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), defaultMetricsUnmarshalers(), consumertest.NewNop())
+	require.Error(t, err)
+	assert.Nil(t, r)
+	assert.EqualError(t, err, errInvalidInitialOffset.Error())
+}
+
 func TestMetricsReceiverStart(t *testing.T) {
 	c := kafkaMetricsConsumer{
 		nextConsumer:  consumertest.NewNop(),
@@ -572,6 +594,17 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 	assert.Nil(t, r)
 }
 
+func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
+	c := Config{
+		InitialOffset: "foo",
+		Encoding:      defaultEncoding,
+	}
+	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
+	require.Error(t, err)
+	assert.Nil(t, r)
+	assert.EqualError(t, err, errInvalidInitialOffset.Error())
+}
+
 func TestLogsReceiverStart(t *testing.T) {
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
@@ -773,6 +806,33 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
 	close(groupClaim.messageChan)
 	wg.Wait()
+}
+
+func TestToSaramaInitialOffset_earliest(t *testing.T) {
+	saramaInitialOffset, err := toSaramaInitialOffset(offsetEarliest)
+
+	require.NoError(t, err)
+	assert.Equal(t, sarama.OffsetOldest, saramaInitialOffset)
+}
+
+func TestToSaramaInitialOffset_latest(t *testing.T) {
+	saramaInitialOffset, err := toSaramaInitialOffset(offsetLatest)
+
+	require.NoError(t, err)
+	assert.Equal(t, sarama.OffsetNewest, saramaInitialOffset)
+}
+
+func TestToSaramaInitialOffset_default(t *testing.T) {
+	saramaInitialOffset, err := toSaramaInitialOffset("")
+
+	require.NoError(t, err)
+	assert.Equal(t, sarama.OffsetNewest, saramaInitialOffset)
+}
+
+func TestToSaramaInitialOffset_invalid(t *testing.T) {
+	_, err := toSaramaInitialOffset("other")
+
+	assert.Equal(t, err, errInvalidInitialOffset)
 }
 
 type testConsumerGroupClaim struct {

@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -38,7 +37,8 @@ func TestLogProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
+	p, err := newLogProcessor(noopTelemetrySettings, config)
+	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	// verify
@@ -56,7 +56,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -67,6 +67,8 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	l := plog.NewLogs()
@@ -115,7 +117,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -126,6 +128,8 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -168,7 +172,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -180,6 +184,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	l := plog.NewLogs()
@@ -210,7 +216,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -221,6 +227,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	l := plog.NewLogs()
 
@@ -264,7 +271,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -277,6 +284,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	require.NoError(t, exp.Start(context.Background(), host))
 

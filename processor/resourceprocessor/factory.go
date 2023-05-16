@@ -26,17 +26,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "resource"
-)
-
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Resource processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),

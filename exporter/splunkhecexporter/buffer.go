@@ -19,6 +19,9 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
+	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -35,9 +38,7 @@ type bufferState struct {
 	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
-	resource             int // index in ResourceLogs/ResourceMetrics/ResourceSpans list
-	library              int // index in ScopeLogs/ScopeMetrics/ScopeSpans list
-	record               int // index in Logs/Metrics/Spans list
+	jsonStream           *jsoniter.Stream
 	rawLength            int
 }
 
@@ -52,7 +53,9 @@ func (b *bufferState) containsData() bool {
 
 func (b *bufferState) reset() {
 	b.buf.Reset()
-	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
+	if _, ok := b.writer.(*cancellableBytesWriter); !ok {
+		b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
+	}
 	b.rawLength = 0
 }
 
@@ -180,18 +183,37 @@ func (c *cancellableGzipWriter) close() error {
 	return c.innerWriter.Close()
 }
 
-func makeBlankBufferState(bufCap uint, compressionAvailable bool, maxEventLength uint) *bufferState {
-	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
-	buf := bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
+// bufferStatePool is a pool of bufferState objects.
+type bufferStatePool struct {
+	pool *sync.Pool
+}
 
-	return &bufferState{
-		compressionAvailable: compressionAvailable,
-		writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
-		buf:                  buf,
-		bufferMaxLen:         bufCap,
-		maxEventLength:       maxEventLength,
-		resource:             0,
-		library:              0,
-		record:               0,
+// get returns a bufferState from the pool.
+func (p bufferStatePool) get() *bufferState {
+	return p.pool.Get().(*bufferState)
+}
+
+// put returns a bufferState to the pool.
+func (p bufferStatePool) put(bf *bufferState) {
+	p.pool.Put(bf)
+}
+
+const initBufferCap = 512
+
+func newBufferStatePool(bufCap uint, compressionAvailable bool, maxEventLength uint) bufferStatePool {
+	return bufferStatePool{
+		&sync.Pool{
+			New: func() interface{} {
+				buf := bytes.NewBuffer(make([]byte, 0, initBufferCap))
+				return &bufferState{
+					compressionAvailable: compressionAvailable,
+					writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
+					buf:                  buf,
+					jsonStream:           jsoniter.NewStream(jsoniter.ConfigDefault, nil, initBufferCap),
+					bufferMaxLen:         bufCap,
+					maxEventLength:       maxEventLength,
+				}
+			},
+		},
 	}
 }

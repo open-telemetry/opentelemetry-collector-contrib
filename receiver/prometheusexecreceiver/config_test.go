@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
@@ -39,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "test"),
+			id: component.NewIDWithName(metadata.Type, "test"),
 			expected: &Config{
 				ScrapeInterval: 60 * time.Second,
 				ScrapeTimeout:  10 * time.Second,
@@ -51,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "test2"),
+			id: component.NewIDWithName(metadata.Type, "test2"),
 			expected: &Config{
 				ScrapeInterval: 90 * time.Second,
 				ScrapeTimeout:  10 * time.Second,
@@ -62,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "end_to_end_test/1"),
+			id: component.NewIDWithName(metadata.Type, "end_to_end_test/1"),
 			expected: &Config{
 				ScrapeInterval: 1 * time.Second,
 				ScrapeTimeout:  1 * time.Second,
@@ -83,7 +84,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "end_to_end_test/2"),
+			id: component.NewIDWithName(metadata.Type, "end_to_end_test/2"),
 			expected: &Config{
 				ScrapeInterval: 1 * time.Second,
 				ScrapeTimeout:  1 * time.Second,

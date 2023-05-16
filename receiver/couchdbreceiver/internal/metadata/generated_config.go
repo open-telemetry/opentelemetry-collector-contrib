@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for couchdbreceiver metrics.
+// MetricsConfig provides config for couchdb metrics.
 type MetricsConfig struct {
 	CouchdbAverageRequestTime MetricConfig `mapstructure:"couchdb.average_request_time"`
 	CouchdbDatabaseOpen       MetricConfig `mapstructure:"couchdb.database.open"`
@@ -69,7 +69,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for couchdbreceiver resource attributes.
+// ResourceAttributesConfig provides config for couchdb resource attributes.
 type ResourceAttributesConfig struct {
 	CouchdbNodeName ResourceAttributeConfig `mapstructure:"couchdb.node.name"`
 }
@@ -82,7 +82,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for couchdbreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for couchdb metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

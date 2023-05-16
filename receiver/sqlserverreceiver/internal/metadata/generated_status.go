@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "sqlserverreceiver"
+	Type             = "sqlserver"
 	MetricsStability = component.StabilityLevelBeta
 )

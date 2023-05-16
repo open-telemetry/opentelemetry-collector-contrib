@@ -23,22 +23,16 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
-)
-
-const (
-	// typeStr is the type of the exporter
-	typeStr = "dynatrace"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a Dynatrace exporter factory
 func NewFactory() exp.Factory {
 	return exp.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exp.WithMetrics(createMetricsExporter, stability),
+		exp.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 

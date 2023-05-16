@@ -1,4 +1,4 @@
-type: postgresqlreceiver
+type: postgresql
 
 
 status:

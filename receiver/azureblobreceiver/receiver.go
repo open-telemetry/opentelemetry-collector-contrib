@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 type logsDataConsumer interface {
@@ -80,7 +82,7 @@ func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 
 	err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
 
-	b.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
+	b.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
 
 	return err
 }
@@ -99,7 +101,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 
 	err = b.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
 
-	b.obsrecv.EndTracesOp(tracesContext, typeStr, 1, err)
+	b.obsrecv.EndTracesOp(tracesContext, metadata.Type, 1, err)
 
 	return err
 }

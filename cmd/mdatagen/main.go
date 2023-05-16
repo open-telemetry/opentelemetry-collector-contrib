@@ -79,7 +79,7 @@ func run(ymlPath string) error {
 			return err
 		}
 	}
-	if len(md.Metrics) == 0 {
+	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
 		return nil
 	}
 
@@ -98,6 +98,10 @@ func run(ymlPath string) error {
 	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
 		filepath.Join(codeDir, "generated_config_test.go"), md); err != nil {
 		return err
+	}
+
+	if len(md.Metrics) == 0 {
+		return nil
 	}
 
 	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),

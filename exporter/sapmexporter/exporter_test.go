@@ -16,12 +16,11 @@ package sapmexporter
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
@@ -123,7 +122,7 @@ func hasToken(batches []*model.Batch) bool {
 	return false
 }
 
-func buildTestTrace() ptrace.Traces {
+func buildTestTrace() (ptrace.Traces, error) {
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
@@ -133,15 +132,20 @@ func buildTestTrace() ptrace.Traces {
 		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("MySpan")
 
-		rand.Seed(time.Now().Unix())
 		var traceIDBytes [16]byte
 		var spanIDBytes [8]byte
-		rand.Read(traceIDBytes[:])
-		rand.Read(spanIDBytes[:])
+		_, err := rand.Read(traceIDBytes[:])
+		if err != nil {
+			return trace, err
+		}
+		_, err = rand.Read(spanIDBytes[:])
+		if err != nil {
+			return trace, err
+		}
 		span.SetTraceID(traceIDBytes)
 		span.SetSpanID(spanIDBytes)
 	}
-	return trace
+	return trace, nil
 }
 
 func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
@@ -205,7 +209,8 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 
-			trace := buildTestTrace()
+			trace, testTraceErr := buildTestTrace()
+			require.NoError(t, testTraceErr)
 			err = se.pushTraceData(context.Background(), trace)
 
 			if tt.sendError {

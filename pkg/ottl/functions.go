@@ -155,6 +155,18 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "FloatGetter"):
+		arg, err := buildSlice[FloatGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "FloatLikeGetter"):
+		arg, err := buildSlice[FloatLikeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
 		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
 	}
@@ -193,6 +205,18 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardStringLikeGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "FloatGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardTypeGetter[K, float64]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "FloatLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardFloatLikeGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "IntGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {

@@ -1,4 +1,4 @@
-type: oracledbreceiver
+type: oracledb
 
 status:
   class: receiver

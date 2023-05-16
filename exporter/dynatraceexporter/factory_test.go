@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -63,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "defaults"),
+			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &dtconfig.Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -79,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "valid"),
+			id: component.NewIDWithName(metadata.Type, "valid"),
 			expected: &dtconfig.Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -102,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "valid_tags"),
+			id: component.NewIDWithName(metadata.Type, "valid_tags"),
 			expected: &dtconfig.Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -123,11 +124,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_endpoint"),
+			id:           component.NewIDWithName(metadata.Type, "bad_endpoint"),
 			errorMessage: "endpoint must start with https:// or http://",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_token"),
+			id:           component.NewIDWithName(metadata.Type, "missing_token"),
 			errorMessage: "api_token is required if Endpoint is provided",
 		},
 	}

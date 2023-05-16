@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,11 +38,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:8765",
@@ -49,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "parse_strings"),
+			id: component.NewIDWithName(metadata.Type, "parse_strings"),
 			expected: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: defaultBindEndpoint,

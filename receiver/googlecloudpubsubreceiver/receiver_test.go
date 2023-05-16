@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/testdata"
 )
 
@@ -88,7 +89,7 @@ func TestReceiver(t *testing.T) {
 	logSink := new(consumertest.LogsSink)
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             component.NewID(typeStr),
+		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              reportTransport,
 		LongLivedCtx:           false,
 		ReceiverCreateSettings: params,

@@ -30,7 +30,6 @@ import (
 )
 
 const (
-	typeStr              = "mongodbatlas"
 	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
 	defaultLogsEnabled   = false
@@ -39,7 +38,7 @@ const (
 // NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		rcvr.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
@@ -107,7 +106,7 @@ func createCombinedLogReceiver(
 
 func createDefaultConfig() component.Config {
 	c := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),

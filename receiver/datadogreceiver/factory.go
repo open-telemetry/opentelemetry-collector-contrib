@@ -24,18 +24,15 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
-)
-
-const (
-	typeStr = "datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 // NewFactory creates a factory for DataDog receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, component.StabilityLevelAlpha))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 
 }
 

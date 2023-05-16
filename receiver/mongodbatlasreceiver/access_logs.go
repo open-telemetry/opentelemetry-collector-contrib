@@ -167,7 +167,7 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 				ClusterName:       cluster.Name,
 				NextPollStartTime: st,
 			}
-			alr.record[project.ID] = append(alr.record[project.ID], clusterCheckpoint)
+			alr.setClusterCheckpoint(project.ID, clusterCheckpoint)
 		}
 		clusterCheckpoint.NextPollStartTime = alr.pollCluster(ctx, pc, project, cluster, clusterCheckpoint.NextPollStartTime, et)
 		if err = alr.checkpoint(ctx, project.ID); err != nil {
@@ -227,7 +227,7 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectC
 				// data and don't want to risk duplicated data by re-polling the same data again.
 				nextPollStartTime = now
 			} else {
-				nextPollStartTime = mostRecentLogTimestamp.Add(1 * time.Millisecond)
+				nextPollStartTime = mostRecentLogTimestamp.Add(100 * time.Millisecond)
 			}
 		}
 
@@ -417,4 +417,22 @@ func (alr *accessLogsReceiver) getClusterCheckpoint(groupID, clusterName string)
 		}
 	}
 	return nil
+}
+
+func (alr *accessLogsReceiver) setClusterCheckpoint(groupID string, clusterCheckpoint *accessLogStorageRecord) {
+	groupCheckpoints, ok := alr.record[groupID]
+	if !ok {
+		alr.record[groupID] = []*accessLogStorageRecord{clusterCheckpoint}
+	}
+
+	var found bool
+	for idx, v := range groupCheckpoints {
+		if v.ClusterName == clusterCheckpoint.ClusterName {
+			found = true
+			alr.record[groupID][idx] = clusterCheckpoint
+		}
+	}
+	if !found {
+		alr.record[groupID] = append(alr.record[groupID], clusterCheckpoint)
+	}
 }

@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -267,28 +268,96 @@ func populateMetrics(t *testing.T, host *as.Host) {
 }
 
 func TestAerospikeIntegration(t *testing.T) {
-	t.Parallel()
+	t.Run("6.2", test6_2.run)
+	t.Run("6.2-cluster", test6_2Cluster.run)
+}
 
-	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "aerospike:ce-6.2.0.2",
-		ExposedPorts: []string{"3000/tcp"},
-		WaitingFor:   wait.ForListeningPort("3000/tcp"),
+type testCase struct {
+	name      string
+	container testcontainers.ContainerRequest
+	cfgMod    func(defaultCfg *Config, endpoint string)
+}
+
+var (
+	test6_2 = testCase{
+		name: "6.2",
+		container: testcontainers.ContainerRequest{
+			Image:        "aerospike:ce-6.2.0.2",
+			ExposedPorts: []string{"3000/tcp"},
+			WaitingFor:   wait.ForListeningPort("3000/tcp"),
+		},
+		cfgMod: func(defaultCfg *Config, endpoint string) {
+			defaultCfg.Endpoint = endpoint
+			defaultCfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+		},
 	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.Nil(t, err)
-	require.NotNil(t, container)
+	test6_2Cluster = testCase{
+		name: "6.2",
+		container: testcontainers.ContainerRequest{
+			Image:        "aerospike:ce-6.2.0.2",
+			ExposedPorts: []string{"3000/tcp"},
+			WaitingFor:   wait.ForListeningPort("3000/tcp"),
+		},
+		cfgMod: func(defaultCfg *Config, endpoint string) {
+			defaultCfg.Endpoint = endpoint
+			defaultCfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+			defaultCfg.CollectClusterMetrics = true
+		},
+	}
+)
+
+func (tt testCase) run(t *testing.T) {
+	container, host := getContainer(t, tt.container)
+	defer func() {
+		require.NoError(t, container.Terminate(context.Background()))
+	}()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	tt.cfgMod(cfg, host)
+
+	consumer := new(consumertest.MetricsSink)
+	settings := receivertest.NewNopCreateSettings()
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	require.NoError(t, err, "failed creating metrics receiver")
+
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "failed starting metrics receiver")
+	defer func() {
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
+
+	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err, "failed reading expected metrics")
+
+	compareOpts := []pmetrictest.CompareMetricsOption{
+		pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreResourceAttributeValue("aerospike.node.name"),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	}
+
+	require.Eventually(t, scraperinttest.EqualsLatestMetrics(expectedMetrics, consumer, compareOpts), 30*time.Second, time.Second)
+}
+
+func getContainer(t *testing.T, req testcontainers.ContainerRequest) (testcontainers.Container, string) {
+	require.NoError(t, req.Validate())
+	ctx := context.Background()
+
+	container, err := testcontainers.GenericContainer(
+		ctx,
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
+	require.NoError(t, err)
 
 	mappedPort, err := container.MappedPort(ctx, "3000")
 	require.Nil(t, err)
 
 	hostIP, err := container.Host(ctx)
 	require.Nil(t, err)
-
-	time.Sleep(time.Second * 2)
 
 	host := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 	ip, portStr, err := net.SplitHostPort(host)
@@ -300,54 +369,5 @@ func TestAerospikeIntegration(t *testing.T) {
 	asHost := as.NewHost(ip, port)
 	populateMetrics(t, asHost)
 
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = host
-	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
-
-	consumer := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopCreateSettings()
-	receiver, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "failed starting metrics receiver")
-	time.Sleep(time.Second / 2)
-
-	require.Eventually(t, func() bool {
-		return consumer.DataPointCount() > 0
-	}, 2*time.Minute, time.Second, "failed to receive more than 0 metrics")
-	require.NoError(t, receiver.Shutdown(context.Background()), "failed shutting down metrics receiver")
-
-	actualMetrics := consumer.AllMetrics()[0]
-	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err, "failed reading expected metrics")
-
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-		pmetrictest.IgnoreResourceAttributeValue("aerospike.node.name"),
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-
-	// now do a run in cluster mode
-	cfg.CollectClusterMetrics = true
-
-	consumer = new(consumertest.MetricsSink)
-	settings = receivertest.NewNopCreateSettings()
-	receiver, err = f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-	require.NoError(t, err, "failed creating metrics receiver")
-	time.Sleep(time.Second / 2)
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "failed starting metrics receiver")
-
-	require.Eventually(t, func() bool {
-		return consumer.DataPointCount() > 0
-	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-	require.NoError(t, receiver.Shutdown(context.Background()), "failed shutting down metrics receiver")
-
-	actualMetrics = consumer.AllMetrics()[0]
-	expectedFile = filepath.Join("testdata", "integration", "expected.yaml")
-	expectedMetrics, err = golden.ReadMetrics(expectedFile)
-	require.NoError(t, err, "failed reading expected metrics")
-
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-		pmetrictest.IgnoreResourceAttributeValue("aerospike.node.name"),
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-
+	return container, host
 }

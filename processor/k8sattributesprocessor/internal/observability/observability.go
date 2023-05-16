@@ -38,14 +38,17 @@ func init() {
 }
 
 var (
-	mPodsUpdated       = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
-	mPodsAdded         = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
-	mPodsDeleted       = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
-	mPodTableSize      = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
-	mIPLookupMiss      = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
-	mNamespacesUpdated = stats.Int64("otelsvc/k8s/namespace_updated", "Number of namespace update events received", "1")
-	mNamespacesAdded   = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
-	mNamespacesDeleted = stats.Int64("otelsvc/k8s/namespace_deleted", "Number of namespace delete events received", "1")
+	mPodsUpdated        = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
+	mPodsAdded          = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
+	mPodsDeleted        = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
+	mPodTableSize       = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
+	mIPLookupMiss       = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
+	mNamespacesUpdated  = stats.Int64("otelsvc/k8s/namespace_updated", "Number of namespace update events received", "1")
+	mNamespacesAdded    = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
+	mNamespacesDeleted  = stats.Int64("otelsvc/k8s/namespace_deleted", "Number of namespace delete events received", "1")
+	mReplicaSetsUpdated = stats.Int64("otelsvc/k8s/replicaset_updated", "Number of ReplicaSet update events received", "1")
+	mReplicaSetsAdded   = stats.Int64("otelsvc/k8s/replicaset_added", "Number of ReplicaSet add events received", "1")
+	mReplicaSetsDeleted = stats.Int64("otelsvc/k8s/replicaset_deleted", "Number of ReplicaSet delete events received", "1")
 )
 
 var viewPodsUpdated = &view.View{
@@ -142,4 +145,19 @@ func RecordNamespaceAdded() {
 // RecordNamespaceDeleted increments the metric that records namespace events deleted.
 func RecordNamespaceDeleted() {
 	stats.Record(context.Background(), mNamespacesDeleted.M(int64(1)))
+}
+
+// RecordReplicaSetUpdated increments the metric that records ReplicaSet update events received.
+func RecordReplicaSetUpdated() {
+	stats.Record(context.Background(), mReplicaSetsUpdated.M(int64(1)))
+}
+
+// RecordReplicaSetAdded increments the metric that records ReplicaSet add events receiver.
+func RecordReplicaSetAdded() {
+	stats.Record(context.Background(), mReplicaSetsAdded.M(int64(1)))
+}
+
+// RecordReplicaSetDeleted increments the metric that records ReplicaSet events deleted.
+func RecordReplicaSetDeleted() {
+	stats.Record(context.Background(), mReplicaSetsDeleted.M(int64(1)))
 }

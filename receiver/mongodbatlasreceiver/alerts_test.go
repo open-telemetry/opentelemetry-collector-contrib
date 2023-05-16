@@ -44,6 +44,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
@@ -457,7 +458,7 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "default",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{
@@ -503,7 +504,7 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "project cluster inclusions",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{
@@ -531,7 +532,7 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "hostname and port missing",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{

@@ -35,12 +35,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
-)
-
-const (
-	// typeStr is the type of the exporter
-	typeStr = "datadog"
 )
 
 var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -99,11 +95,11 @@ func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings
 func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
 	f := &factory{registry: registry}
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		f.createDefaultConfig,
-		exporter.WithMetrics(f.createMetricsExporter, component.StabilityLevelBeta),
-		exporter.WithTraces(f.createTracesExporter, component.StabilityLevelBeta),
-		exporter.WithLogs(f.createLogsExporter, component.StabilityLevelAlpha),
+		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
 	)
 }
 

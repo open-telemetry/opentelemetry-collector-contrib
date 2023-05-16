@@ -65,7 +65,7 @@ func newRedisScraperWithClient(client client, settings receiver.CreateSettings, 
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 	return scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		rs.Scrape,
 		scraperhelper.WithShutdown(rs.shutdown),
 	)

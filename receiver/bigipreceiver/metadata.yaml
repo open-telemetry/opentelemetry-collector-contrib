@@ -1,4 +1,4 @@
-type: bigipreceiver
+type: bigip
 
 status:
   class: receiver

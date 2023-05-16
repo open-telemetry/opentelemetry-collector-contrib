@@ -36,6 +36,7 @@ const (
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+var errInvalidInitialOffset = fmt.Errorf("invalid initial offset")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
@@ -96,6 +97,11 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
+		c.Consumer.Offsets.Initial = initialOffset
+	} else {
+		return nil, err
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -184,7 +190,11 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
-
+	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
+		c.Consumer.Offsets.Initial = initialOffset
+	} else {
+		return nil, err
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -273,6 +283,11 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
 	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	if initialOffset, err := toSaramaInitialOffset(config.InitialOffset); err == nil {
+		c.Consumer.Offsets.Initial = initialOffset
+	} else {
+		return nil, err
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -625,5 +640,18 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 		case <-session.Context().Done():
 			return nil
 		}
+	}
+}
+
+func toSaramaInitialOffset(initialOffset string) (int64, error) {
+	switch initialOffset {
+	case offsetEarliest:
+		return sarama.OffsetOldest, nil
+	case offsetLatest:
+		fallthrough
+	case "":
+		return sarama.OffsetNewest, nil
+	default:
+		return 0, errInvalidInitialOffset
 	}
 }

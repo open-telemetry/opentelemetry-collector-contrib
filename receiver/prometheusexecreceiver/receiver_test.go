@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
@@ -46,7 +47,7 @@ func TestEndToEnd(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "end_to_end_test/2").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "end_to_end_test/2").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -122,7 +123,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 	}{
 		{
 			name: "no command",
-			id:   component.NewID(typeStr),
+			id:   component.NewID(metadata.Type),
 			cfg: &Config{
 				ScrapeInterval: 60 * time.Second,
 				ScrapeTimeout:  10 * time.Second,
@@ -163,7 +164,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		},
 		{
 			name: "normal config",
-			id:   component.NewIDWithName(typeStr, "mysqld"),
+			id:   component.NewIDWithName(metadata.Type, "mysqld"),
 			cfg: &Config{
 				ScrapeInterval: 90 * time.Second,
 				ScrapeTimeout:  10 * time.Second,
@@ -215,7 +216,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		},
 		{
 			name: "lots of defaults",
-			id:   component.NewIDWithName(typeStr, "postgres/test"),
+			id:   component.NewIDWithName(metadata.Type, "postgres/test"),
 			cfg: &Config{
 				ScrapeInterval: 60 * time.Second,
 				ScrapeTimeout:  10 * time.Second,

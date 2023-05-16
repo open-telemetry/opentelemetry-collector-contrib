@@ -1,9 +1,9 @@
-type: sshcheckreceiver
+type: sshcheck
 
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   
 resource_attributes:
