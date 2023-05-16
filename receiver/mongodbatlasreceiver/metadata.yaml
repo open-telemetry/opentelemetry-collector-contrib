@@ -1,4 +1,4 @@
-type: mongoatlasreceiver
+type: mongodbatlas
 
 status:
   class: receiver

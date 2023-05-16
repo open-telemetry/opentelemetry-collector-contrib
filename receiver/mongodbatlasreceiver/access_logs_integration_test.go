@@ -34,6 +34,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func TestAccessLogsIntegration(t *testing.T) {
@@ -68,7 +69,7 @@ func TestAccessLogsIntegration(t *testing.T) {
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
 		&Config{
-			ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+			ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			Logs: LogConfig{
 				Enabled: true,
 				Projects: []*LogsProjectConfig{
