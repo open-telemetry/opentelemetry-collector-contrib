@@ -4,6 +4,7 @@
 package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -11,7 +12,8 @@ import (
 	"strings"
 
 	"github.com/Showmax/go-fqdn"
-	"github.com/shirou/gopsutil/v3/host"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -53,7 +55,7 @@ type Provider interface {
 	ReverseLookupHost() (string, error)
 
 	// HostID returns Host Unique Identifier
-	HostID() (string, error)
+	HostID(ctx context.Context) (string, error)
 }
 
 type systemMetadataProvider struct {
@@ -117,6 +119,22 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 	return "", fmt.Errorf("reverseLookup failed to convert IP addresses to name: %w", err)
 }
 
-func (p systemMetadataProvider) HostID() (string, error) {
-	return host.HostID()
+func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
+	res, err := resource.New(ctx,
+		resource.WithHostID(),
+	)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to obtain host id: %w", err)
+	}
+
+	iter := res.Iter()
+
+	for iter.Next() {
+		if iter.Attribute().Key == conventions.AttributeHostID {
+			return iter.Attribute().Value.Emit(), nil
+		}
+	}
+
+	return "", fmt.Errorf("failed to obtain host id")
 }

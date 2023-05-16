@@ -5,7 +5,7 @@ change_type: enhancement
 component: resourcedetectionprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: use gopsutil for host id detection
+note: "use opentelemetry-go library for `host.id` detection in the `system` detector"
 
 # One or more tracking issues related to the change
 issues: [18533]
