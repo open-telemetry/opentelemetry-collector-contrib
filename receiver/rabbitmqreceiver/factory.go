@@ -28,16 +28,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "rabbitmq"
-)
-
 var errConfigNotRabbit = errors.New("config was not a RabbitMQ receiver config")
 
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -62,7 +58,7 @@ func createMetricsReceiver(ctx context.Context, params receiver.CreateSettings, 
 	}
 
 	rabbitScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(typeStr, rabbitScraper.scrape, scraperhelper.WithStart(rabbitScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, rabbitScraper.scrape, scraperhelper.WithStart(rabbitScraper.start))
 	if err != nil {
 		return nil, err
 	}
