@@ -56,7 +56,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: errNoMetricsConfigured,
 		},
 		{
-			name: "No named defined",
+			name: "No named config defined",
 			config: Config{
 				Region:       "eu-west-1",
 				PollInterval: time.Minute * 5,
