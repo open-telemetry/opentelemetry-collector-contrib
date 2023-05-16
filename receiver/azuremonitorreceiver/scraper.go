@@ -72,20 +72,9 @@ type azureResource struct {
 	location                  string
 }
 
-type metricsCompositeKey struct {
-	dimensions []string
-	timeGrain  string
-}
-
-func (s metricsCompositeKey) Hash() string {
-	h := sha256.New()
-	h.Write([]byte(s.timeGrain))
-	h.Write([]byte(strings.Join(s.dimensions, ",")))
-	return string(h.Sum(nil))
-}
-
 type azureResourceMetrics struct {
-	compositeKey         metricsCompositeKey
+	dimensions           []string
+	timeGrain            string
 	metrics              []string
 	metricsValuesUpdated time.Time
 }
@@ -273,7 +262,6 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			name := *v.Name.Value
-			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
 
 			if len(v.Dimensions) > 0 {
 				var dimensionsSlice []string
@@ -282,24 +270,30 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 						dimensionsSlice = append(dimensionsSlice, *dimension.Value)
 					}
 				}
-				dimensionsCompositeKey := metricsCompositeKey{timeGrain: timeGrain, dimensions: dimensionsSlice}
-				s.storeMetricsDefinition(resourceID, name, dimensionsCompositeKey)
+				s.storeMetricsDefinition(resourceID, name, timeGrain, dimensionsSlice)
 			} else {
-				s.storeMetricsDefinition(resourceID, name, compositeKey)
+				s.storeMetricsDefinition(resourceID, name, timeGrain, []string{})
 			}
 		}
 	}
 	s.resources[resourceID].metricsDefinitionsUpdated = time.Now()
 }
 
-func (s *azureScraper) storeMetricsDefinition(resourceID, name string, compositeKey metricsCompositeKey) {
-	hash := compositeKey.Hash()
+func (s *azureScraper) calculateHash(timeGrain string, dimensions []string) string {
+	h := sha256.New()
+	h.Write([]byte(timeGrain))
+	h.Write([]byte(strings.Join(dimensions, ",")))
+	return string(h.Sum(nil))
+}
+
+func (s *azureScraper) storeMetricsDefinition(resourceID, name string, timeGrain string, dimensions []string) {
+	hash := s.calculateHash(timeGrain, dimensions)
 	if _, ok := s.resources[resourceID].metricsByCompositeKey[hash]; ok {
 		s.resources[resourceID].metricsByCompositeKey[hash].metrics = append(
 			s.resources[resourceID].metricsByCompositeKey[hash].metrics, name,
 		)
 	} else {
-		s.resources[resourceID].metricsByCompositeKey[hash] = &azureResourceMetrics{metrics: []string{name}, compositeKey: compositeKey}
+		s.resources[resourceID].metricsByCompositeKey[hash] = &azureResourceMetrics{metrics: []string{name}, timeGrain: timeGrain, dimensions: dimensions}
 	}
 }
 
@@ -308,7 +302,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 	for _, metricsByGrain := range res.metricsByCompositeKey {
 
-		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[metricsByGrain.compositeKey.timeGrain]) {
+		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[metricsByGrain.timeGrain]) {
 			continue
 		}
 		metricsByGrain.metricsValuesUpdated = time.Now()
@@ -324,8 +318,8 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 			opts := getResourceMetricsValuesRequestOptions(
 				metricsByGrain.metrics,
-				metricsByGrain.compositeKey.dimensions,
-				metricsByGrain.compositeKey.timeGrain,
+				metricsByGrain.dimensions,
+				metricsByGrain.timeGrain,
 				start,
 				end,
 			)
