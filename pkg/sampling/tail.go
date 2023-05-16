@@ -120,15 +120,15 @@ func ProbabilityToThreshold(prob float64) (Threshold, error) {
 		return Threshold{}, ErrProbabilityRange
 	}
 	return Threshold{
-		limit: uint64(prob * 0x1p+56),
+		limit: uint64(prob * MaxAdjustedCount),
 	}, nil
-}
-
-func ThresholdToProbability(t Threshold) float64 {
-	return float64(t.limit) / MaxAdjustedCount
 }
 
 func (t Threshold) ShouldSample(id pcommon.TraceID) bool {
 	value := binary.BigEndian.Uint64(id[8:]) & LeastHalfTraceIDThresholdMask
 	return value < t.limit
+}
+
+func (t Threshold) Probability() float64 {
+	return float64(t.limit) / MaxAdjustedCount
 }
