@@ -37,6 +37,7 @@ import (
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
@@ -93,7 +94,8 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mockConsumer)
 	require.NoError(t, err)
-	dyn := rcvr.(*receiverCreator)
+	sc := rcvr.(*sharedcomponent.SharedComponent)
+	dyn := sc.Component.(*receiverCreator)
 	require.NoError(t, rcvr.Start(context.Background(), host))
 
 	var shutdownOnce sync.Once
@@ -111,7 +113,8 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
-		example := receiver.(*nopWithEndpointReceiver)
+		wr := receiver.(*wrappedReceiver)
+		example := wr.metrics.(*nopWithEndpointReceiver)
 		md := pmetric.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("attr", "1")

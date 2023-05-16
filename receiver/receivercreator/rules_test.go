@@ -74,7 +74,7 @@ func Test_newRule(t *testing.T) {
 		wantErr bool
 	}{
 		{"empty rule", args{""}, true},
-		{"does not start with type", args{"port == 1234"}, true},
+		{"does not startMetrics with type", args{"port == 1234"}, true},
 		{"invalid syntax", args{"port =="}, true},
 		{"valid port", args{`type == "port" && port_name == "http"`}, false},
 		{"valid pod", args{`type=="pod" && port_name == "http"`}, false},
