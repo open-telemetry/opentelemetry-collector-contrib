@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
@@ -46,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "openshift"),
+			id: component.NewIDWithName(metadata.Type, "openshift"),
 			expected: &Config{
 				Detectors: []string{"openshift"},
 				DetectorConfig: DetectorConfig{
@@ -63,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "gcp"),
+			id: component.NewIDWithName(metadata.Type, "gcp"),
 			expected: &Config{
 				Detectors:          []string{"env", "gcp"},
 				HTTPClientSettings: cfg,
@@ -71,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "ec2"),
+			id: component.NewIDWithName(metadata.Type, "ec2"),
 			expected: &Config{
 				Detectors: []string{"env", "ec2"},
 				DetectorConfig: DetectorConfig{
@@ -84,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "system"),
+			id: component.NewIDWithName(metadata.Type, "system"),
 			expected: &Config{
 				Detectors: []string{"env", "system"},
 				DetectorConfig: DetectorConfig{
@@ -98,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "heroku"),
+			id: component.NewIDWithName(metadata.Type, "heroku"),
 			expected: &Config{
 				Detectors:          []string{"env", "heroku"},
 				HTTPClientSettings: cfg,
@@ -106,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "lambda"),
+			id: component.NewIDWithName(metadata.Type, "lambda"),
 			expected: &Config{
 				Detectors:          []string{"env", "lambda"},
 				HTTPClientSettings: cfg,
@@ -114,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid"),
+			id:           component.NewIDWithName(metadata.Type, "invalid"),
 			errorMessage: "hostname_sources contains invalid value: \"invalid_source\"",
 		},
 	}

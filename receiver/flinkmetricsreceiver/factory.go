@@ -28,16 +28,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "flinkmetrics"
-)
-
 var errConfigNotflinkmetrics = errors.New("config was not a flinkmetrics receiver config")
 
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
@@ -67,7 +63,7 @@ func createMetricsReceiver(
 		return nil, errConfigNotflinkmetrics
 	}
 	ns := newflinkScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

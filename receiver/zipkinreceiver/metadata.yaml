@@ -1,4 +1,4 @@
-type: zipkinreceiver
+type: zipkin
 
 status:
   class: receiver

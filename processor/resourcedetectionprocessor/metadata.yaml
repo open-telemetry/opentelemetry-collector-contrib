@@ -1,4 +1,4 @@
-type: resourcedetectionprocessor
+type: resourcedetection
 
 status:
   class: processor

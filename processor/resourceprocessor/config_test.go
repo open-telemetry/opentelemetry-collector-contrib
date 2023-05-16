@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		valid    bool
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				AttributesActions: []attraction.ActionKeyValue{
 					{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
@@ -46,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 			valid: true,
 		},
 		{
-			id:       component.NewIDWithName(typeStr, "invalid"),
+			id:       component.NewIDWithName(metadata.Type, "invalid"),
 			expected: createDefaultConfig(),
 		},
 	}

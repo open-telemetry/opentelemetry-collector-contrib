@@ -26,14 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "haproxy"
-)
-
 // NewFactory creates a new HAProxy receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		newDefaultConfig,
 		receiver.WithMetrics(newReceiver, metadata.MetricsStability))
 }
