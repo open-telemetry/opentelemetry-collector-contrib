@@ -172,7 +172,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -180,9 +180,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
@@ -347,7 +344,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -355,9 +352,6 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewMetrics(err, subMetrics(md, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
@@ -374,7 +368,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -382,9 +376,6 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewTraces(err, subTraces(td, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
