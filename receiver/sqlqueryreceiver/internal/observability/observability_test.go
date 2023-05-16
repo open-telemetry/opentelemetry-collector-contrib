@@ -86,20 +86,34 @@ func metricReader(chData chan []*metricdata.Metric, fail chan struct{}, count in
 }
 
 func TestMetrics(t *testing.T) {
-	const (
-		receiver      = "sqlquery/my-name"
-		queryReceiver = "query-0: select * from simple_logs"
-	)
 	type testCase struct {
-		name       string
-		recordFunc string
-		value      int64
+		name        string
+		recordFunc  string
+		value       int64
+		labels      map[string]string
+		labelsOrder []string // order of labels in timeseries, label values have the same order as keys in the metric descriptor
 	}
 	tests := []testCase{
 		{
 			name:       "receiver/accepted/log/records",
 			recordFunc: "RecordAcceptedLogs",
 			value:      10,
+			labels: map[string]string{
+				"receiver": "sqlquery/my-name",
+				"query":    "query-0: select * from simple_logs",
+			},
+			labelsOrder: []string{"query", "receiver"},
+		},
+		{
+			name:       "receiver/errors",
+			recordFunc: "RecordErrors",
+			value:      1,
+			labels: map[string]string{
+				"receiver":   "sqlquery/my-logs",
+				"query":      "query-1: select * from simple_logs",
+				"error_type": StartError,
+			},
+			labelsOrder: []string{"error_type", "query", "receiver"},
 		},
 	}
 
@@ -113,7 +127,11 @@ func TestMetrics(t *testing.T) {
 	for _, tt := range tests {
 		switch tt.recordFunc {
 		case "RecordAcceptedLogs":
-			require.NoError(t, RecordAcceptedLogs(tt.value, receiver, queryReceiver))
+			require.NoError(t, RecordAcceptedLogs(tt.value, tt.labels["receiver"], tt.labels["query"]))
+		case "RecordErrors":
+			require.NoError(t, RecordErrors(tt.labels["error_type"], tt.labels["receiver"], tt.labels["query"]))
+		case "RecordNoErrors":
+			require.NoError(t, RecordNoErrors(tt.labels["error_type"], tt.labels["receiver"], tt.labels["query"]))
 		}
 	}
 
@@ -141,11 +159,14 @@ func TestMetrics(t *testing.T) {
 			require.Len(t, d.TimeSeries, 1)
 			require.Len(t, d.TimeSeries[0].Points, 1)
 			assert.Equal(t, d.TimeSeries[0].Points[0].Value, tt.value)
-			require.Len(t, d.TimeSeries[0].LabelValues, 2)
-			require.True(t, d.TimeSeries[0].LabelValues[0].Present)
-			assert.Equal(t, d.TimeSeries[0].LabelValues[0].Value, queryReceiver)
-			require.True(t, d.TimeSeries[0].LabelValues[1].Present)
-			assert.Equal(t, d.TimeSeries[0].LabelValues[1].Value, receiver)
+			require.Len(t, d.TimeSeries[0].LabelValues, len(tt.labels))
+
+			for i, label := range d.TimeSeries[0].LabelValues {
+				val, ok := tt.labels[tt.labelsOrder[i]]
+				assert.True(t, ok)
+				assert.True(t, label.Present)
+				assert.Equal(t, label.Value, val)
+			}
 		})
 	}
 }
