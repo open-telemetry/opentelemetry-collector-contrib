@@ -328,7 +328,10 @@ func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 					kind = ptrace.SpanKindProducer
 				case "Consumer":
 					kind = ptrace.SpanKindConsumer
+				case "Unspecified":
+					kind = ptrace.SpanKindUnspecified
 				default:
+					fmt.Printf("unknown span kind, %v, setting Unspecified instead.\n", s)
 					kind = ptrace.SpanKindUnspecified
 				}
 				tCtx.GetSpan().SetKind(kind)
@@ -357,7 +360,10 @@ func accessDeprecatedStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 					kind = ptrace.SpanKindProducer
 				case "SPAN_KIND_CONSUMER":
 					kind = ptrace.SpanKindConsumer
+				case "SPAN_KIND_UNSPECIFIED":
+					kind = ptrace.SpanKindUnspecified
 				default:
+					fmt.Printf("unknown span kind, %v, setting Unspecified instead.\n", s)
 					kind = ptrace.SpanKindUnspecified
 				}
 				tCtx.GetSpan().SetKind(kind)
