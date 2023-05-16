@@ -31,7 +31,7 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["minor", "major"]
+        "enabled": false
       }
     ],
     "ignoreDeps": [
