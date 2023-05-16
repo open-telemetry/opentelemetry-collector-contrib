@@ -32,12 +32,13 @@ type consumerType struct {
 	logsConsumer    consumer.Logs
 }
 type fileReceiver struct {
-	consumer consumerType
-	path     string
-	logger   *zap.Logger
-	cancel   context.CancelFunc
-	throttle float64
-	format   string
+	consumer   consumerType
+	path       string
+	logger     *zap.Logger
+	cancel     context.CancelFunc
+	throttle   float64
+	format     string
+	compressed bool
 }
 
 func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
@@ -51,13 +52,13 @@ func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
 
 	fmt.Println("receiver.go:52: THIS IS THE FORMAT")
 	fmt.Println(r.format)
-	fr := newFileReader(r.consumer, file, newReplayTimer(r.throttle), r.format)
+	fr := newFileReader(r.consumer, file, newReplayTimer(r.throttle), r.compressed)
 	go func() {
 		var err error
-		if r.format == formatTypeJSON {
-			err = fr.readAll(ctx)
+		if r.compressed {
+			err = fr.readAllChunks(ctx)
 		} else {
-			err = fr.readProto(ctx)
+			err = fr.readAllLines(ctx)
 		}
 		if err != nil {
 			if errors.Is(err, io.EOF) {

@@ -48,10 +48,11 @@ func createMetricsReceiver(
 		consumer: consumerType{
 			metricsConsumer: consumer,
 		},
-		path:     cfg.Path,
-		logger:   settings.Logger,
-		throttle: cfg.Throttle,
-		format:   cfg.FormatType,
+		path:       cfg.Path,
+		logger:     settings.Logger,
+		throttle:   cfg.Throttle,
+		format:     cfg.FormatType,
+		compressed: cfg.Compressed,
 	}, nil
 }
 
@@ -66,10 +67,11 @@ func createTracesReceiver(
 		consumer: consumerType{
 			tracesConsumer: consumer,
 		},
-		path:     cfg.Path,
-		logger:   settings.Logger,
-		throttle: cfg.Throttle,
-		format:   cfg.FormatType,
+		path:       cfg.Path,
+		logger:     settings.Logger,
+		throttle:   cfg.Throttle,
+		format:     cfg.FormatType,
+		compressed: cfg.Compressed,
 	}, nil
 }
 
@@ -84,9 +86,10 @@ func createLogsReceiver(
 		consumer: consumerType{
 			logsConsumer: consumer,
 		},
-		path:     cfg.Path,
-		logger:   settings.Logger,
-		throttle: cfg.Throttle,
-		format:   cfg.FormatType,
+		path:       cfg.Path,
+		logger:     settings.Logger,
+		throttle:   cfg.Throttle,
+		format:     cfg.FormatType,
+		compressed: cfg.Compressed,
 	}, nil
 }

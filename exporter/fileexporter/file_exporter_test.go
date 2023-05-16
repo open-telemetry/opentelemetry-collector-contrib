@@ -143,12 +143,12 @@ func TestFileTracesExporter(t *testing.T) {
 				formatType:      conf.FormatType,
 				file:            writer,
 				tracesMarshaler: tracesMarshalers[conf.FormatType],
-				exporter:        buildExportFunc(conf),
 				compression:     conf.Compression,
 				compressor:      buildCompressor(conf.Compression),
 				flushInterval:   conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
+			fe.exporter = fe.createExporterWriter(conf)
 
 			td := testdata.GenerateTracesTwoSpansSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -185,9 +185,11 @@ func TestFileTracesExporter(t *testing.T) {
 func TestFileTracesExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:            mf,
-		formatType:      formatTypeJSON,
-		exporter:        exportMessageAsLine,
+		file:       mf,
+		formatType: formatTypeJSON,
+		exporter: &lineWriter{
+			file: mf,
+		},
 		tracesMarshaler: tracesMarshalers[formatTypeJSON],
 		compressor:      noneCompress,
 	}
@@ -278,12 +280,12 @@ func TestFileMetricsExporter(t *testing.T) {
 				formatType:       conf.FormatType,
 				file:             writer,
 				metricsMarshaler: metricsMarshalers[conf.FormatType],
-				exporter:         buildExportFunc(conf),
 				compression:      conf.Compression,
 				compressor:       buildCompressor(conf.Compression),
 				flushInterval:    conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
+			fe.exporter = fe.createExporterWriter(conf)
 
 			md := testdata.GenerateMetricsTwoMetrics()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -322,9 +324,11 @@ func TestFileMetricsExporter(t *testing.T) {
 func TestFileMetricsExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:             mf,
-		formatType:       formatTypeJSON,
-		exporter:         exportMessageAsLine,
+		file:       mf,
+		formatType: formatTypeJSON,
+		exporter: &lineWriter{
+			file: mf,
+		},
 		metricsMarshaler: metricsMarshalers[formatTypeJSON],
 		compressor:       noneCompress,
 	}
@@ -415,12 +419,12 @@ func TestFileLogsExporter(t *testing.T) {
 				formatType:    conf.FormatType,
 				file:          writer,
 				logsMarshaler: logsMarshalers[conf.FormatType],
-				exporter:      buildExportFunc(conf),
 				compression:   conf.Compression,
 				compressor:    buildCompressor(conf.Compression),
 				flushInterval: conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
+			fe.exporter = fe.createExporterWriter(conf)
 
 			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -459,9 +463,11 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	fe := &fileExporter{
 		file:          mf,
 		formatType:    formatTypeJSON,
-		exporter:      exportMessageAsLine,
 		logsMarshaler: logsMarshalers[formatTypeJSON],
-		compressor:    noneCompress,
+		exporter: &lineWriter{
+			file: mf,
+		},
+		compressor: noneCompress,
 	}
 	require.NotNil(t, fe)
 
@@ -481,15 +487,18 @@ func TestExportMessageAsBuffer(t *testing.T) {
 			MaxSize:  1,
 		},
 		logsMarshaler: logsMarshalers[formatTypeProto],
-		exporter:      exportMessageAsBuffer,
 	}
 	require.NotNil(t, fe)
+	fe.exporter = &fileWriter{
+		file: fe.file,
+	}
 	//
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
 	marshaler := &plog.ProtoMarshaler{}
 	buf, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
-	assert.Error(t, exportMessageAsBuffer(fe, buf))
+	_, err = fe.exporter.Write(buf)
+	assert.Error(t, err)
 	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 

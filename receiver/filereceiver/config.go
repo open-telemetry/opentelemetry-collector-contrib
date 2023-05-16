@@ -34,12 +34,8 @@ type Config struct {
 	// Format will specify the format of the file to be read.
 	// Currently support json and proto options.
 	FormatType string `mapstructure:"format"`
+	Compressed bool   `mapstructure:"compressed"`
 }
-
-const (
-	formatTypeJSON  = "json"
-	formatTypeProto = "proto"
-)
 
 func createDefaultConfig() component.Config {
 	return &Config{

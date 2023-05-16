@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"kythe.io/kythe/go/util/riegeli"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
@@ -136,19 +135,19 @@ func createLogsExporter(
 }
 
 func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
-	return &fileExporter{
+	fe := &fileExporter{
 		path:             conf.Path,
 		formatType:       conf.FormatType,
 		file:             writer,
-		rWriter:          riegeli.NewWriter(writer, &riegeli.WriterOptions{ChunkSize: 1 << 20, Compression: riegeli.NoCompression, Transpose: false}),
 		tracesMarshaler:  tracesMarshalers[conf.FormatType],
 		metricsMarshaler: metricsMarshalers[conf.FormatType],
 		logsMarshaler:    logsMarshalers[conf.FormatType],
-		exporter:         buildExportFunc(conf),
 		compression:      conf.Compression,
 		compressor:       buildCompressor(conf.Compression),
 		flushInterval:    conf.FlushInterval,
 	}
+	fe.exporter = fe.createExporterWriter(conf)
+	return fe
 }
 
 func buildFileWriter(cfg *Config) (io.WriteCloser, error) {

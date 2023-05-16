@@ -34,7 +34,7 @@ func TestFileReader_Readline(t *testing.T) {
 	}
 	f, err := os.Open(filepath.Join("testdata", "metrics.json"))
 	require.NoError(t, err)
-	fr := newFileReader(cons, f, newReplayTimer(0), "json")
+	fr := newFileReader(cons, f, newReplayTimer(0), false)
 	err = fr.readMetricLine(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(tc.consumed))
@@ -56,7 +56,7 @@ func TestFileReader_Cancellation(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		_ = fr.readAll(ctx)
+		_ = fr.readAllLines(ctx)
 	}()
 	cancel()
 }
@@ -73,8 +73,8 @@ func TestFileReader_ReadAll(t *testing.T) {
 		throttle:  2,
 		sleepFunc: sleeper.fakeSleep,
 	}
-	fr := newFileReader(cons, f, rt, "json")
-	err = fr.readAll(context.Background())
+	fr := newFileReader(cons, f, rt, false)
+	err = fr.readAllLines(context.Background())
 	require.NoError(t, err)
 	const expectedSleeps = 10
 	assert.Len(t, sleeper.durations, expectedSleeps)

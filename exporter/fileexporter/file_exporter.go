@@ -17,16 +17,15 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"sync"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"kythe.io/kythe/go/util/riegeli"
 )
 
 // Marshaler configuration used for marhsaling Protobuf
@@ -43,15 +42,11 @@ var logsMarshalers = map[string]plog.Marshaler{
 	formatTypeProto: &plog.ProtoMarshaler{},
 }
 
-// exportFunc defines how to export encoded telemetry data.
-type exportFunc func(e *fileExporter, buf []byte) error
-
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
-	path    string
-	file    io.WriteCloser
-	mutex   sync.Mutex
-	rWriter *riegeli.Writer
+	path  string
+	file  io.WriteCloser
+	mutex sync.Mutex
 
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
@@ -61,7 +56,7 @@ type fileExporter struct {
 	compressor  compressFunc
 
 	formatType string
-	exporter   exportFunc
+	exporter   io.Writer
 
 	flushInterval time.Duration
 	flushTicker   *time.Ticker
@@ -73,8 +68,9 @@ func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	// buf = e.compressor(buf)
-	return e.exporter(e, buf)
+	buf = e.compressor(buf)
+	_, err = e.exporter.Write(buf)
+	return err
 }
 
 func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -82,8 +78,9 @@ func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	// buf = e.compressor(buf)
-	return e.exporter(e, buf)
+	buf = e.compressor(buf)
+	_, err = e.exporter.Write(buf)
+	return err
 }
 
 func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
@@ -91,49 +88,48 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	// buf = e.compressor(buf)
-	return e.exporter(e, buf)
+	buf = e.compressor(buf)
+	_, err = e.exporter.Write(buf)
+	return err
 }
 
-func exportMessageAsLine(e *fileExporter, buf []byte) error {
+type lineWriter struct {
+	mutex sync.Mutex
+	file  io.WriteCloser
+}
+
+func (lw *lineWriter) Write(buf []byte) (int, error) {
 	// Ensure only one write operation happens at a time.
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	if _, err := e.file.Write(buf); err != nil {
-		return err
+	lw.mutex.Lock()
+	defer lw.mutex.Unlock()
+	if _, err := lw.file.Write(buf); err != nil {
+		return 0, err
 	}
-	if _, err := io.WriteString(e.file, "\n"); err != nil {
-		return err
+	if _, err := io.WriteString(lw.file, "\n"); err != nil {
+		return 0, err
 	}
-	return nil
+	return 1 + len(buf), nil
 }
 
-func exportMessageAsRiegeliRecord(e *fileExporter, buf []byte) error {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	fmt.Println("file_exporter.go:114: riegeli record being written")
-	err := e.rWriter.Put(buf)
-	if err != nil {
-		return err
-	}
-	return nil
+type fileWriter struct {
+	mutex sync.Mutex
+	file  io.WriteCloser
 }
 
-func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
+func (fw *fileWriter) Write(buf []byte) (int, error) {
 	// Ensure only one write operation happens at a time.
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+	fw.mutex.Lock()
+	defer fw.mutex.Unlock()
 	// write the size of each message before writing the message itself.  https://developers.google.com/protocol-buffers/docs/techniques
 	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
 	data := make([]byte, 4, 4+len(buf))
 	binary.BigEndian.PutUint32(data, uint32(len(buf)))
 	data = append(data, buf...)
-	if err := binary.Write(e.file, binary.BigEndian, data); err != nil {
-		return err
+	if err := binary.Write(fw.file, binary.BigEndian, data); err != nil {
+		return 0, err
 	}
 
-	return nil
+	return len(data), nil
 }
 
 // startFlusher starts the flusher.
@@ -157,7 +153,6 @@ func (e *fileExporter) startFlusher() {
 			case <-e.flushTicker.C:
 				e.mutex.Lock()
 				ff.flush()
-				e.rWriter.Flush()
 				e.mutex.Unlock()
 			case <-e.stopTicker:
 				return
@@ -185,20 +180,24 @@ func (e *fileExporter) Shutdown(context.Context) error {
 		// Stop the go routine.
 		close(e.stopTicker)
 	}
-	err := e.rWriter.Close()
-	if err != nil {
-		return err
-	}
 	return e.file.Close()
 }
 
-func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
-	if cfg.FormatType == formatTypeProto {
-		return exportMessageAsRiegeliRecord
-	}
+func (e *fileExporter) createExporterWriter(cfg *Config) io.Writer {
+	// if cfg.FormatType == formatTypeProto {
+	// 	fw, _ := zstd.NewWriter(e.file)
+	// 	return &fileWriter{
+	// 		file: fw,
+	// 	}
+	// }
 	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
 	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
-		return exportMessageAsBuffer
+		fw, _ := zstd.NewWriter(e.file)
+		return &fileWriter{
+			file: fw,
+		}
 	}
-	return exportMessageAsLine
+	return &lineWriter{
+		file: e.file,
+	}
 }
