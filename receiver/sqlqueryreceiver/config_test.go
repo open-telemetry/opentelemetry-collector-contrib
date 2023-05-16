@@ -117,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			fname: "config-logs.yaml",
-			id:    component.NewIDWithName(typeStr, ""),
+			id:    component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 10 * time.Second,
@@ -140,7 +140,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			fname:        "config-logs-missing-body-column.yaml",
-			id:           component.NewIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "'body_column' must not be empty",
 		},
 		{
