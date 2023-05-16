@@ -145,6 +145,7 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
+      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
