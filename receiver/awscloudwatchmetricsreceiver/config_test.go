@@ -150,7 +150,7 @@ func TestValidate(t *testing.T) {
 						Period:         time.Second * 60,
 						AwsAggregation: "TS99",
 					},
-						{
+					{
 							Namespace:      "AWS/EC2",
 							MetricName:     "CPUUtilizaition",
 							Period:         time.Second * 60,
