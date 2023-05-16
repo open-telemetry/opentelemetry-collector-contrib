@@ -203,7 +203,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: errEmptyDimensions,
 		},
 		{
-			name: "Namespace name begins with colon",
+			name: "Dimension name begins with colon",
 			config: Config{
 				Region:       "eu-west-1",
 				PollInterval: time.Minute * 5,
