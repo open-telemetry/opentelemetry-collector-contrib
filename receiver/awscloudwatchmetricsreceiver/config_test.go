@@ -214,7 +214,7 @@ func TestValidate(t *testing.T) {
 						Period:         time.Second * 60,
 						AwsAggregation: "Sum",
 						Dimensions: []MetricDimensionsConfig{{
-							Name:  ":",
+							Name:  ":BucketName",
 							Value: "Test",
 						}},
 					}},
