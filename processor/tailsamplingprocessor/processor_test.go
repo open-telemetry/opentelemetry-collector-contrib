@@ -50,7 +50,8 @@ func TestSequentialTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
+
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
@@ -81,7 +82,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
@@ -121,7 +122,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
@@ -151,7 +152,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTracesProcessor(zap.NewNop(), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	tsp.tickerFrequency = 100 * time.Millisecond
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
@@ -709,7 +710,7 @@ type mockPolicyEvaluator struct {
 
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
 
-func (m *mockPolicyEvaluator) Evaluate(pcommon.TraceID, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(context.Context, pcommon.TraceID, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }

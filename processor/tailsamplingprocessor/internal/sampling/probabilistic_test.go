@@ -15,13 +15,14 @@
 package sampling
 
 import (
+	"context"
 	"encoding/binary"
 	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/zap"
 )
 
 func TestProbabilisticSampling(t *testing.T) {
@@ -78,13 +79,13 @@ func TestProbabilisticSampling(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			traceCount := 100_000
 
-			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), tt.hashSalt, tt.samplingPercentage)
+			probabilisticSampler := NewProbabilisticSampler(componenttest.NewNopTelemetrySettings(), tt.hashSalt, tt.samplingPercentage)
 
 			sampled := 0
 			for _, traceID := range genRandomTraceIDs(traceCount) {
 				trace := newTraceStringAttrs(nil, "example", "value")
 
-				decision, err := probabilisticSampler.Evaluate(traceID, trace)
+				decision, err := probabilisticSampler.Evaluate(context.Background(), traceID, trace)
 				assert.NoError(t, err)
 
 				if decision == Sampled {

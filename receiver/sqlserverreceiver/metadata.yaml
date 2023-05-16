@@ -1,4 +1,4 @@
-type: sqlserverreceiver
+type: sqlserver
 
 status:
   class: receiver

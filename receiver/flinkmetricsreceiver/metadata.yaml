@@ -1,4 +1,4 @@
-type: flinkmetricsreceiver
+type: flinkmetrics
 
 status:
   class: receiver

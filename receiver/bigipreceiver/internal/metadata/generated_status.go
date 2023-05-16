@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "bigipreceiver"
+	Type             = "bigip"
 	MetricsStability = component.StabilityLevelBeta
 )

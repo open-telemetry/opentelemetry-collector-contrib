@@ -1,4 +1,4 @@
-type: elasticsearchreceiver
+type: elasticsearch
 
 status:
   class: receiver

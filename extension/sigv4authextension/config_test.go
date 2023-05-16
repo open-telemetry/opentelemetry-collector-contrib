@@ -23,6 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub(component.NewID(typeStr).String())
+	sub, err := cm.Sub(component.NewID(metadata.Type).String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -58,7 +60,7 @@ func TestLoadConfigError(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "missing_credentials").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "missing_credentials").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Error(t, component.ValidateConfig(cfg))

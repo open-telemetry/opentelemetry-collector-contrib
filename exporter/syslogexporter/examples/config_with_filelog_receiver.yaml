@@ -1,0 +1,71 @@
+extensions:
+  file_storage/syslog:
+    directory: /tmp/otc
+    timeout: 10s
+
+exporters:
+  syslog:
+    network: tcp
+    port: 514
+    endpoint: 127.0.0.1
+    tls:
+      ca_file: certs/servercert.pem
+      cert_file: certs/cert.pem
+      key_file: certs/key.pem
+    protocol: rfc5424
+
+    # for below described queueing and retry related configuration please refer to:
+    # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration
+    retry_on_failure:
+      # default = true
+      enabled: true
+      # time to wait after the first failure before retrying;
+      # ignored if enabled is false, default = 5s
+      initial_interval: 10s
+      # is the upper bound on backoff; ignored if enabled is false, default = 30s
+      max_interval: 40s
+      # is the maximum amount of time spent trying to send a batch;
+      # ignored if enabled is false, default = 120s
+      max_elapsed_time: 150s
+
+    sending_queue:
+      # default = false
+      enabled: true
+      # number of consumers that dequeue batches; ignored if enabled is false,
+      # default = 10
+      num_consumers: 20
+      # when set, enables persistence and uses the component specified as a storage extension for the persistent queue
+      # make sure to configure and add a `file_storage` extension in `service.extensions`.
+      # default = None
+      storage: file_storage/syslog
+      # maximum number of batches kept in memory before data;
+      # ignored if enabled is false, default = 5000
+      #
+      # user should calculate this as num_seconds * requests_per_second where:
+      # num_seconds is the number of seconds to buffer in case of a backend outage,
+      # requests_per_second is the average number of requests per seconds.
+      queue_size: 10000
+    # Time to wait per individual attempt to send data to a backend
+    # default = 5s
+    timeout: 1s
+receivers:
+  filelog:
+    start_at: beginning
+    include:
+    - /other/path/**/*.txt
+    operators:
+      - type: syslog_parser
+        protocol: rfc5424
+
+service:
+  telemetry:
+      logs:
+        level: "debug"
+  extensions:
+    - file_storage/syslog
+  pipelines:
+    logs:
+      receivers:
+        - filelog
+      exporters:
+        - syslog

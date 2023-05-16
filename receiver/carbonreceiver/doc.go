@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package carbonreceiver implements a receiver that can be used by the
 // OpenTelemetry collector to receive data in the Carbon supported formats.
 // Carbon is the backend used by Graphite, see

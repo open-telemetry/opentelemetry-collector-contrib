@@ -31,8 +31,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr                = "splunk_hec"
 	defaultMaxIdleCons     = 100
 	defaultHTTPTimeout     = 10 * time.Second
 	defaultIdleConnTimeout = 10 * time.Second
@@ -54,7 +52,7 @@ type baseLogsExporter struct {
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
@@ -183,7 +181,12 @@ func createLogsExporter(
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, logsExporter),
+		Logs: batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, &perScopeBatcher{
+			logsEnabled:      cfg.LogDataEnabled,
+			profilingEnabled: cfg.ProfilingDataEnabled,
+			logger:           set.Logger,
+			next:             logsExporter,
+		}),
 	}
 
 	return wrapped, nil

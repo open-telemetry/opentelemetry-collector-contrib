@@ -15,6 +15,8 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -37,11 +39,11 @@ func NewAnd(
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *And) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
 	// If any subpolicy returns NotSampled, it returns NotSampled Decision.
 	for _, sub := range c.subpolicies {
-		decision, err := sub.Evaluate(traceID, trace)
+		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
 			return Unspecified, err
 		}

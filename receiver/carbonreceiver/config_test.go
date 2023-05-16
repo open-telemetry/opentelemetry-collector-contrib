@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
@@ -39,11 +40,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "receiver_settings"),
+			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "localhost:8080",
@@ -57,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "regex"),
+			id: component.NewIDWithName(metadata.Type, "regex"),
 			expected: &Config{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "localhost:2003",

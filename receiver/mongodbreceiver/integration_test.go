@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -41,31 +42,80 @@ const (
 )
 
 var (
-	LPUSetupScript      = []string{"/lpu.sh"}
-	setupScript         = []string{"/setup.sh"}
-	containerRequest4_0 = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mongodb.4_0",
+	LPUSetupScript = []string{"/lpu.sh"}
+	setupScript    = []string{"/setup.sh"}
+
+	test4_0 = testCase{
+		name:   "4_0",
+		script: setupScript,
+		container: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    filepath.Join("testdata", "integration"),
+				Dockerfile: "Dockerfile.mongodb.4_0",
+			},
+			ExposedPorts: []string{mongoDBPort},
+			WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 		},
-		ExposedPorts: []string{mongoDBPort},
-		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
+		cfgMod: func(cfg *Config, endpoint string) {
+			cfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
+			cfg.Hosts = []confignet.NetAddr{
+				{
+					Endpoint: endpoint,
+				},
+			}
+			cfg.Insecure = true
+		},
 	}
-	containerRequest4_4LPU = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mongodb.4_4.lpu",
+
+	test4_0LPU = testCase{
+		name:   "4_4.lpu",
+		script: LPUSetupScript,
+		container: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    filepath.Join("testdata", "integration"),
+				Dockerfile: "Dockerfile.mongodb.4_4.lpu",
+			},
+			ExposedPorts: []string{mongoDBPort},
+			WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 		},
-		ExposedPorts: []string{mongoDBPort},
-		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
+		cfgMod: func(cfg *Config, endpoint string) {
+			cfg.Username = "otelu"
+			cfg.Password = "otelp"
+			cfg.Hosts = []confignet.NetAddr{
+				{
+					Endpoint: endpoint,
+				},
+			}
+			cfg.Insecure = true
+		},
 	}
-	containerRequest5_0 = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mongodb.5_0",
+
+	test5_0 = testCase{
+		name:   "5_0",
+		script: setupScript,
+		container: testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    filepath.Join("testdata", "integration"),
+				Dockerfile: "Dockerfile.mongodb.5_0",
+			},
+			ExposedPorts: []string{mongoDBPort},
+			WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 		},
-		ExposedPorts: []string{mongoDBPort},
-		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
+		cfgMod: func(cfg *Config, endpoint string) {
+			cfg.Hosts = []confignet.NetAddr{
+				{
+					Endpoint: endpoint,
+				},
+			}
+			cfg.Insecure = true
+		},
+	}
+
+	compareOpts = []pmetrictest.CompareMetricsOption{
+		pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
 	}
 )
 
@@ -77,54 +127,9 @@ type testCase struct {
 }
 
 func TestMongodbIntegration(t *testing.T) {
-	testCases := []testCase{
-		{
-			name:      "4_0",
-			script:    setupScript,
-			container: containerRequest4_0,
-			cfgMod: func(cfg *Config, endpoint string) {
-				cfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
-				cfg.Hosts = []confignet.NetAddr{
-					{
-						Endpoint: endpoint,
-					},
-				}
-				cfg.Insecure = true
-			},
-		},
-		{
-			name:      "4_4.lpu",
-			script:    LPUSetupScript,
-			container: containerRequest4_4LPU,
-			cfgMod: func(cfg *Config, endpoint string) {
-				cfg.Username = "otelu"
-				cfg.Password = "otelp"
-				cfg.Hosts = []confignet.NetAddr{
-					{
-						Endpoint: endpoint,
-					},
-				}
-				cfg.Insecure = true
-			},
-		},
-		{
-			name:      "5_0",
-			script:    setupScript,
-			container: containerRequest5_0,
-			cfgMod: func(cfg *Config, endpoint string) {
-				cfg.Hosts = []confignet.NetAddr{
-					{
-						Endpoint: endpoint,
-					},
-				}
-				cfg.Insecure = true
-			},
-		},
-	}
-
-	for _, tt := range testCases {
-		t.Run(tt.name, tt.run)
-	}
+	t.Run("4.0", test4_0.run)
+	t.Run("4.0LPU", test4_0LPU.run)
+	t.Run("5.0", test5_0.run)
 }
 
 func (tt testCase) run(t *testing.T) {
@@ -153,15 +158,7 @@ func (tt testCase) run(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	// Wait for multiple collections, in case the first represents partially started system
-	require.Eventuallyf(t, func() bool {
-		return len(consumer.AllMetrics()) > 0 && consumer.AllMetrics()[len(consumer.AllMetrics())-1].MetricCount() == expectedMetrics.MetricCount()
-	}, 2*time.Minute, 1*time.Second, "failed to receive all metric data points")
-
-	actualMetrics := consumer.AllMetrics()[len(consumer.AllMetrics())-1]
-
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	require.Eventually(t, scraperinttest.EqualsLatestMetrics(expectedMetrics, consumer, compareOpts), 2*time.Minute, 1*time.Second)
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []string) (testcontainers.Container, string) {

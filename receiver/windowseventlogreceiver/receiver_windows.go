@@ -28,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
-
 // NewFactory creates a factory for windowseventlog receiver
 func NewFactory() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, metadata.LogsStability)

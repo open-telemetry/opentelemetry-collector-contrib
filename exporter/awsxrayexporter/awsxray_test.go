@@ -16,9 +16,9 @@ package awsxrayexporter
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -276,8 +276,9 @@ func newTraceID() pcommon.TraceID {
 
 func constructW3CTraceID() pcommon.TraceID {
 	var r [16]byte
-	for i := range r {
-		r[i] = byte(rand.Intn(128))
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
 	}
 	return r
 }

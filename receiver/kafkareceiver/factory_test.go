@@ -35,6 +35,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, defaultTopic, cfg.Topic)
 	assert.Equal(t, defaultGroupID, cfg.GroupID)
 	assert.Equal(t, defaultClientID, cfg.ClientID)
+	assert.Equal(t, defaultInitialOffset, cfg.InitialOffset)
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

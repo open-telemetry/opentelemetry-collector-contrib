@@ -258,12 +258,50 @@ Set attribute `test` to `"pass"` if the attribute `test` does not exist:
 ```yaml
 transform:
   error_mode: ignore
-  span_statements:
+  trace_statements:
     - context: span
       statements:
         # accessing a map with a key that does not exist will return nil. 
         - set(attributes["test"], "pass") where attributes["test"] == nil
 ``` 
+
+### Rename attribute
+There are 2 ways to rename an attribute key:
+
+You can either set a new attribute and delete the old:
+
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        - set(attributes["namespace"], attributes["k8s.namespace.name"])
+        - delete_key(attributes, "k8s.namespace.name") 
+``` 
+
+Or you can update the key using regex:
+
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
+``` 
+
+### Comnbine two attributes
+Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        # Use Concat function to combine any number of string, separated by a delimiter.
+        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " ")
+```
 
 ### Parsing JSON logs
 

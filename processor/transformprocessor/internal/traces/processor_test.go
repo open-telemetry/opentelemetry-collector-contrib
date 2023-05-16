@@ -373,6 +373,12 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("json_test", "pass")
 			},
 		},
+		{
+			statement: `limit(attributes, 0, []) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(s string, v pcommon.Value) bool { return true })
+			},
+		},
 	}
 
 	for _, tt := range tests {

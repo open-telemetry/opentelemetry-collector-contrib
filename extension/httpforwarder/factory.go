@@ -26,9 +26,6 @@ import (
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr component.Type = "http_forwarder"
-
 	// Default endpoints to bind to.
 	defaultEndpoint = ":6060"
 )
@@ -36,7 +33,7 @@ const (
 // NewFactory creates a factory for HostObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.ExtensionStability)
