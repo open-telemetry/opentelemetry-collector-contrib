@@ -34,7 +34,7 @@ var (
 	errMissingPasswordAndKeyFile = errors.New(`either "password" or "keyfile" is required`)
 
 	errConfigNotSSHCheck  = errors.New("config was not a SSH check receiver config")
-	errWindowsUnsupported = errors.New(typeStr + " is unsupported on Windows.")
+	errWindowsUnsupported = errors.New(metadata.Type + " is unsupported on Windows.")
 )
 
 type Config struct {

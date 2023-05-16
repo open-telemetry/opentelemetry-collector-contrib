@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,11 +37,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				Ingress: confighttp.HTTPServerSettings{
 					Endpoint: "http://localhost:7070",

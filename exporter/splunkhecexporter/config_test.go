@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -50,11 +51,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				Token:                   "00000000-0000-0000-0000-0000000000000",
 				Source:                  "otel",

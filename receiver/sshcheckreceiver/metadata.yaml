@@ -1,4 +1,4 @@
-type: sshcheckreceiver
+type: sshcheck
 
 status:
   class: receiver

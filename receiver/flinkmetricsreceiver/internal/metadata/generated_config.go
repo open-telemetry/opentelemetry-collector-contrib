@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for flinkmetricsreceiver metrics.
+// MetricsConfig provides config for flinkmetrics metrics.
 type MetricsConfig struct {
 	FlinkJobCheckpointCount           MetricConfig `mapstructure:"flink.job.checkpoint.count"`
 	FlinkJobCheckpointInProgress      MetricConfig `mapstructure:"flink.job.checkpoint.in_progress"`
@@ -153,7 +153,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for flinkmetricsreceiver resource attributes.
+// ResourceAttributesConfig provides config for flinkmetrics resource attributes.
 type ResourceAttributesConfig struct {
 	FlinkJobName       ResourceAttributeConfig `mapstructure:"flink.job.name"`
 	FlinkResourceType  ResourceAttributeConfig `mapstructure:"flink.resource.type"`
@@ -186,7 +186,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for flinkmetricsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for flinkmetrics metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

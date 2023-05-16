@@ -1,4 +1,4 @@
-type: iisreceiver
+type: iis
 
 status:
   class: receiver

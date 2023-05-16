@@ -1,4 +1,4 @@
-type: nginxreceiver
+type: nginx
 
 status:
   class: receiver

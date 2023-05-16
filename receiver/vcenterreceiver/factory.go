@@ -28,14 +28,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "vcenter"
-)
-
 // NewFactory returns the receiver factory for the vcenterreceiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
@@ -66,7 +62,7 @@ func createMetricsReceiver(
 	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
 
 	scraper, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		vr.scrape,
 		scraperhelper.WithStart(vr.Start),
 		scraperhelper.WithShutdown(vr.Shutdown),

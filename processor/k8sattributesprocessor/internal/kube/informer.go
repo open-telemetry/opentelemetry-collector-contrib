@@ -17,6 +17,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
+	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -40,6 +41,13 @@ type InformerProvider func(
 // allow passing custom shared informers to the watch client for fetching namespace objects.
 type InformerProviderNamespace func(
 	client kubernetes.Interface,
+) cache.SharedInformer
+
+// InformerProviderReplicaSet defines a function type that returns a new SharedInformer. It is used to
+// allow passing custom shared informers to the watch client.
+type InformerProviderReplicaSet func(
+	client kubernetes.Interface,
+	namespace string,
 ) cache.SharedInformer
 
 func newSharedInformer(
@@ -100,5 +108,32 @@ func namespaceInformerListFunc(client kubernetes.Interface) cache.ListFunc {
 func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.CoreV1().Namespaces().Watch(context.Background(), opts)
+	}
+}
+
+func newReplicaSetSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  replicasetListFuncWithSelectors(client, namespace),
+			WatchFunc: replicasetWatchFuncWithSelectors(client, namespace),
+		},
+		&apps_v1.ReplicaSet{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.AppsV1().ReplicaSets(namespace).List(context.Background(), opts)
+	}
+}
+
+func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.AppsV1().ReplicaSets(namespace).Watch(context.Background(), opts)
 	}
 }

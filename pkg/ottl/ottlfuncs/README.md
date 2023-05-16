@@ -264,6 +264,7 @@ Available Converters:
 - [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
+- [Log](#log)
 - [ParseJSON](#parsejson)
 - [SpanID](#spanid)
 - [Split](#split)
@@ -364,6 +365,32 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+### Log
+
+`Log(value)`
+
+The `Log` Converter returns the logarithm of the `target`.
+
+`target` is either a path expression to a telemetry field to retrieve or a literal.
+
+The function take the logarithm of the target, returning an error if the target is less than or equal to zero.
+
+If target is not a float64, it will be converted to one:
+
+- int64s are converted to float64s
+- strings are converted using `strconv`
+- booleans are converted using `1` for `true` and `0` for `false`.  This means passing `false` to the function will cause an error.
+- int, float, string, and bool OTLP Values are converted following the above rules depending on their type.  Other types cause an error.
+
+If target is nil an error is returned.
+
+Examples:
+
+- `Log(attributes["duration_ms"])`
+
+
+- `Int(Log(attributes["duration_ms"])`
 
 ### ParseJSON
 

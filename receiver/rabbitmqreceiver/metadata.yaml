@@ -1,4 +1,4 @@
-type: rabbitmqreceiver
+type: rabbitmq
 
 status:
   class: receiver

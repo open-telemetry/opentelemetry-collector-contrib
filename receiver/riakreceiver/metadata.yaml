@@ -1,4 +1,4 @@
-type: riakreceiver
+type: riak
 
 status:
   class: receiver
