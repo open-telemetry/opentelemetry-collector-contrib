@@ -43,6 +43,7 @@ func Functions[K any]() map[string]ottl.Factory[K] {
 		ottlfuncs.NewDeleteKeyFactory[K](),
 		ottlfuncs.NewDeleteMatchingKeysFactory[K](),
 		ottlfuncs.NewMergeMapsFactory[K](),
+		ottlfuncs.NewLogFactory[K](),
 	)
 }
 

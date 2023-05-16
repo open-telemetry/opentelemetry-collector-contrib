@@ -379,6 +379,12 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(s string, v pcommon.Value) bool { return true })
 			},
 		},
+		{
+			statement: `set(attributes["test"], Log(1)) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutDouble("test", 0.0)
+			},
+		},
 	}
 
 	for _, tt := range tests {
