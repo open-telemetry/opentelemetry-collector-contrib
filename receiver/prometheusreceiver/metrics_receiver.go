@@ -28,6 +28,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/api"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
@@ -61,6 +62,7 @@ type pReceiver struct {
 	registry         *featuregate.Registry
 	scrapeManager    *scrape.Manager
 	discoveryManager *discovery.Manager
+	api              *api.API
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -105,6 +107,16 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	apiConf := r.cfg.APIConfig
+	if apiConf != nil {
+		a, err := api.NewAPI(apiConf, r.settings.Logger, host, r.settings.TelemetrySettings, r.scrapeManager)
+		if err != nil {
+			return err
+		}
+		r.api = a
+		r.api.Run()
 	}
 
 	r.loadConfigOnce.Do(func() {
@@ -209,7 +221,7 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 		return nil, err
 	}
 
-	resp, err := http.Get(scrapeConfigsURL) //nolint
+	resp, err := http.Get(scrapeConfigsURL) // nolint
 	if err != nil {
 		return nil, err
 	}
@@ -312,13 +324,17 @@ func gcInterval(cfg *config.Config) time.Duration {
 }
 
 // Shutdown stops and cancels the underlying Prometheus scrapers.
-func (r *pReceiver) Shutdown(context.Context) error {
+func (r *pReceiver) Shutdown(ctx context.Context) error {
 	if r.cancelFunc != nil {
 		r.cancelFunc()
 	}
 	if r.scrapeManager != nil {
 		r.scrapeManager.Stop()
 	}
+	var err error
+	if r.api != nil {
+		err = r.api.Shutdown(ctx)
+	}
 	close(r.targetAllocatorStop)
-	return nil
+	return err
 }
