@@ -276,18 +276,8 @@ func cloneMapWithSelector(fields map[string]interface{}, selector func(string) b
 	return newFields
 }
 
-func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) *float64 {
-	if ts == 0 {
-		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
-		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
-		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
-		// at indexing time, which will be much more useful than a 0-epoch-time value.
-		return nil
-	}
-
-	val := math.Round(float64(ts)/1e6) / 1e3
-
-	return &val
+func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) float64 {
+	return math.Round(float64(ts)/1e6) / 1e3
 }
 
 func float64ToDimValue(f float64) string {

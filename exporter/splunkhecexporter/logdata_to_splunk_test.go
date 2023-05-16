@@ -460,7 +460,7 @@ func commonLogSplunkEvent(
 
 func Test_emptyLogRecord(t *testing.T) {
 	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{})
-	assert.Nil(t, event.Time)
+	assert.Zero(t, event.Time)
 	assert.Equal(t, event.Host, "unknown")
 	assert.Zero(t, event.Source)
 	assert.Zero(t, event.SourceType)
@@ -471,11 +471,11 @@ func Test_emptyLogRecord(t *testing.T) {
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-	assert.Equal(t, 1.001, *splunkTs)
+	assert.Equal(t, 1.001, splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-	assert.Equal(t, 1.002, *splunkTs)
+	assert.Equal(t, 1.002, splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(0)
-	assert.True(t, nil == splunkTs)
+	assert.Zero(t, splunkTs)
 }
 
 func Test_mergeValue(t *testing.T) {

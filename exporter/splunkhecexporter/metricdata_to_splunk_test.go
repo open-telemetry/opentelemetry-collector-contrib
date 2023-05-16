@@ -667,7 +667,7 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 
 func commonSplunkMetric(
 	metricName string,
-	ts *float64,
+	ts float64,
 	keys []string,
 	values []interface{},
 	val interface{},
@@ -695,22 +695,22 @@ func commonSplunkMetric(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := pcommon.Timestamp(32001000345)
-	assert.Equal(t, 32.001, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.001, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := pcommon.Timestamp(32001999345)
-	assert.Equal(t, 32.002, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.002, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRoundingWithNanos(t *testing.T) {
 	ts := pcommon.Timestamp(9999999999991500001)
-	assert.Equal(t, 9999999999.992, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 9999999999.992, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pcommon.Timestamp(0)
-	assert.Nil(t, timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Zero(t, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestMergeEvents(t *testing.T) {

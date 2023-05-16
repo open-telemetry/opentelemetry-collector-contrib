@@ -129,12 +129,8 @@ func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float6
 	attributes.CopyTo(doublePt.Attributes())
 }
 
-func convertTimestamp(sec *float64) pcommon.Timestamp {
-	if sec == nil {
-		return 0
-	}
-
-	return pcommon.Timestamp(*sec * 1e9)
+func convertTimestamp(sec float64) pcommon.Timestamp {
+	return pcommon.Timestamp(sec * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point attributes.
