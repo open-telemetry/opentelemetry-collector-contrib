@@ -123,34 +123,29 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	hashableID := b.String()
 	identityBufferPool.Put(b)
 
-	var keep bool
 	s, ok := t.states.LoadOrStore(hashableID, &State{
 		PrevPoint: metricPoint,
 	})
 	if !ok {
+		switch metricID.MetricType {
+		case pmetric.MetricTypeHistogram:
+			*out.HistogramValue = metricPoint.HistogramValue.Clone()
+		case pmetric.MetricTypeSum:
+			out.IntValue = metricPoint.IntValue
+			out.FloatValue = metricPoint.FloatValue
+		}
 		switch t.initialValue {
-		case InitialValueDrop:
-			return
 		case InitialValueAuto:
 			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
 				return
 			}
 			out.StartTimestamp = metricID.StartTimestamp
-			keep = true
+			valid = true
 		case InitialValueKeep:
-			keep = true
+			valid = true
+		case InitialValueDrop:
 		}
-		if keep {
-			switch metricID.MetricType {
-			case pmetric.MetricTypeHistogram:
-				*out.HistogramValue = metricPoint.HistogramValue.Clone()
-			case pmetric.MetricTypeSum:
-				out.IntValue = metricPoint.IntValue
-				out.FloatValue = metricPoint.FloatValue
-			}
-			return
-		}
-
+		return
 	}
 
 	valid = true
