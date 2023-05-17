@@ -65,7 +65,7 @@ func TestIntegration(t *testing.T) {
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = fmt.Sprintf("redis://%s:%s", hostIP, mappedPort.Port())
+	cfg.Endpoint = fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 
 	consumer := new(consumertest.MetricsSink)
 
@@ -80,4 +80,10 @@ func TestIntegration(t *testing.T) {
 	}, 15*time.Second, 1*time.Second, "failed to receive any metrics")
 
 	assert.NoError(t, rcvr.Shutdown(context.Background()))
+	require.Greater(t, len(consumer.AllMetrics()), 0)
+	require.Greater(t, consumer.AllMetrics()[0].ResourceMetrics().Len(), 0)
+	require.Greater(t, consumer.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Len(), 0)
+	id, ok := consumer.AllMetrics()[0].ResourceMetrics().At(0).Resource().Attributes().Get("redis.version")
+	require.True(t, ok)
+	require.Equal(t, "6.0.3", id.Str())
 }
