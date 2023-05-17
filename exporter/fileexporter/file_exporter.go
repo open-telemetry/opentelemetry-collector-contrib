@@ -15,6 +15,7 @@
 package fileexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 
 import (
+	"bufio"
 	"context"
 	"encoding/binary"
 	"io"
@@ -92,7 +93,31 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 
 type lineWriter struct {
 	mutex sync.Mutex
-	file  io.WriteCloser
+	file  io.Writer
+}
+
+func NewLineWriter(cfg *Config, file io.Writer) io.Writer {
+	if cfg.Compression == "zstd" {
+		if fw, err := zstd.NewWriter(file); err == nil {
+			// flushing the compressed writer every second.
+			go func() {
+				for {
+					time.Sleep(1 * time.Second)
+					if fw.Flush() != nil {
+						return
+					}
+				}
+			}()
+
+			return &lineWriter{
+				file: bufio.NewWriter(fw),
+			}
+		}
+	}
+
+	return &lineWriter{
+		file: bufio.NewWriter(file),
+	}
 }
 
 func (lw *lineWriter) Write(buf []byte) (int, error) {
@@ -110,7 +135,30 @@ func (lw *lineWriter) Write(buf []byte) (int, error) {
 
 type fileWriter struct {
 	mutex sync.Mutex
-	file  io.WriteCloser
+	file  io.Writer
+}
+
+func NewFileWriter(cfg *Config, file io.Writer) io.Writer {
+	if cfg.Compression == "zstd" {
+		if fw, err := zstd.NewWriter(file); err == nil {
+			// flushing the compressed writer every second.
+			go func() {
+				for {
+					time.Sleep(1 * time.Second)
+					if fw.Flush() != nil {
+						return
+					}
+				}
+			}()
+			return &fileWriter{
+				file: bufio.NewWriter(fw),
+			}
+		}
+	}
+
+	return &fileWriter{
+		file: bufio.NewWriter(file),
+	}
 }
 
 func (fw *fileWriter) Write(buf []byte) (int, error) {
@@ -182,31 +230,8 @@ func (e *fileExporter) Shutdown(context.Context) error {
 
 func (e *fileExporter) createExporterWriter(cfg *Config) io.Writer {
 	if cfg.FormatType == formatTypeProto {
-		if cfg.Compression == "zstd" {
-			if fw, err := zstd.NewWriter(e.file); err == nil {
-				return &fileWriter{
-					file: fw,
-				}
-			}
-		}
-
-		return &fileWriter{
-			file: e.file,
-		}
+		return NewFileWriter(cfg, e.file)
 	}
 
-	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
-	if cfg.FormatType == formatTypeJSON {
-		if cfg.Compression == "zstd" {
-			if fw, err := zstd.NewWriter(e.file); err == nil {
-				return &lineWriter{
-					file: fw,
-				}
-			}
-		}
-	}
-
-	return &lineWriter{
-		file: e.file,
-	}
+	return NewLineWriter(cfg, e.file)
 }

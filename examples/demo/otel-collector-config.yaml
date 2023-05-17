@@ -15,7 +15,7 @@ receivers:
   file:
     path: ./bar
     format: proto
-    compressed: true
+    compression: zstd
   file/2:
     path: ./foo
     format: json
@@ -26,10 +26,16 @@ exporters:
   file:
     path: ./bar
     format: proto
-  file/2:
-    path: ./foo2
-    format: json
     compression: zstd
+  file/2:
+    path: ./foo
+    format: proto
+    compression: zstd
+    rotation:
+      max_megabytes: 3
+      max_days: 0
+      localtime: false
+      max_backups: 100
 
 processors:
   batch:
@@ -41,6 +47,6 @@ service:
 #      processors: [batch]
 #      exporters: [logging]
     metrics:
-      receivers: [file/2]
+      receivers: [otlp, prometheus]
       processors: [batch]
       exporters: [logging, file]

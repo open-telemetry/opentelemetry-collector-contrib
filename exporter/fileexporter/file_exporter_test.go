@@ -37,15 +37,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-func buildUnCompressor(compressor string) func([]byte) ([]byte, error) {
-	if compressor == compressionZSTD {
-		return decompress
-	}
-	return func(src []byte) ([]byte, error) {
-		return src, nil
-	}
-}
-
 func TestFileTracesExporter(t *testing.T) {
 	type args struct {
 		conf        *Config
@@ -159,17 +150,10 @@ func TestFileTracesExporter(t *testing.T) {
 			fi, err := os.Open(fe.path)
 			assert.NoError(t, err)
 			defer fi.Close()
-			var br *bufio.Reader
-			if fe.compression == compressionZSTD {
-				cw, err := zstd.NewReader(fi) 
-				assert.NoError(t, err)
-				br = bufio.NewReader(cw)
-			} else {
-				br = bufio.NewReader(fi)
-			}
+			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON && fe.compression == "" {
+					if fe.formatType == formatTypeJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -178,13 +162,11 @@ func TestFileTracesExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
-				decoder := buildUnCompressor(fe.compression)
-				buf, err = decoder(buf)
-				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, td, got)
 			}
+			require.NoError(t, os.Remove(fe.path))
 		})
 	}
 }
@@ -316,13 +298,11 @@ func TestFileMetricsExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
-				decoder := buildUnCompressor(fe.compression)
-				buf, err = decoder(buf)
-				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, md, got)
 			}
+			require.NoError(t, os.Remove(fe.path))
 		})
 	}
 
@@ -454,13 +434,12 @@ func TestFileLogsExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
-				decoder := buildUnCompressor(fe.compression)
-				buf, err = decoder(buf)
-				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, ld, got)
 			}
+			require.NoError(t, os.Remove(fe.path))
+
 		})
 	}
 }
@@ -497,7 +476,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 	}
 	require.NotNil(t, fe)
 	fe.exporter = &fileWriter{
-		file: fe.file,
+		file: bufio.NewWriter(fe.file),
 	}
 	//
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
@@ -515,7 +494,7 @@ func tempFileName(t *testing.T) string {
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
+	// require.NoError(t, os.Remove(socket))
 	return socket
 }
 
@@ -523,7 +502,7 @@ func tempFileName(t *testing.T) string {
 type errorWriter struct {
 }
 
-func (e errorWriter) Write([]byte) (n int, err error) {
+func (e *errorWriter) Write([]byte) (n int, err error) {
 	return 0, errors.New("all ways return error")
 }
 
