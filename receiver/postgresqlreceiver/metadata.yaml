@@ -5,7 +5,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, splunk]
 
 resource_attributes:
   postgresql.database.name:

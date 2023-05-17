@@ -1,10 +1,10 @@
 # File Exporter
 
-| Status                   |                       |
-| ------------------------ | --------------------- |
-| Stability                | [alpha]               |
-| Supported pipeline types | traces, metrics, logs |
-| Distributions            | [core], [contrib]     |
+| Status                   |                             |
+| ------------------------ |-----------------------------|
+| Stability                | [alpha]                     |
+| Supported pipeline types | traces, metrics, logs       |
+| Distributions            | [core], [contrib], [splunk] |
 
 Exporter supports the following features：
 
@@ -135,3 +135,4 @@ EOF
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+[splunk]: https://github.com/signalfx/splunk-otel-collector
