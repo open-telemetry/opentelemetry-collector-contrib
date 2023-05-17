@@ -1,10 +1,10 @@
 # StatsD Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [contrib, splunk] |
 
 StatsD receiver for ingesting StatsD messages(https://github.com/statsd/statsd/blob/master/docs/metric_types.md) into the OpenTelemetry Collector.
 
@@ -151,4 +151,5 @@ A simple way to send a metric to `localhost:8125`:
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[splunk]: https://github.com/signalfx/splunk-otel-collector
 
