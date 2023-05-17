@@ -19,7 +19,6 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/api/request"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -307,7 +307,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	assert.True(wasSuccessful.Load())
+	assert.True(t, wasSuccessful.Load())
 	assert.Equal(t,
 		add_events.AddEventsRequest{
 			AuthParams: request.AuthParams{
