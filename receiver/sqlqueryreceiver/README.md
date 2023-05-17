@@ -88,6 +88,8 @@ After each query run, the receiver will store the value of the `tracking_column`
 
 Note that the notation for the parameter depends on the database backend. For example in MySQL this is `?`, in PostgreSQL this is `$1`, in Oracle this is any string identifier starting with a colon `:`, for example `:my_parameter`.
 
+Use the `storage` configuration property of the receiver to persist the tracking value across collector restarts.
+
 #### Metrics queries
 
 Each `metrics` section consists of a
