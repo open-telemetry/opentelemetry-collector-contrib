@@ -1,10 +1,10 @@
 # Prometheus Exporter
 
-| Status                   |                   |
-| ------------------------ |-------------------|
-| Stability                | [beta]            |
-| Supported pipeline types | metrics           |
-| Distributions            | [core], [contrib] |
+| Status                   |                               |
+| ------------------------ |-------------------------------|
+| Stability                | [beta]                        |
+| Supported pipeline types | metrics                       |
+| Distributions            | [core], [contrib], [observiq] |
 
 Exports data in the [Prometheus format](https://prometheus.io/docs/concepts/data_model/), which allows it to be scraped by a [Prometheus](https://prometheus.io/) server.
 
@@ -54,3 +54,4 @@ OpenTelemetry metric names and attributes are normalized to be compliant with Pr
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+[observiq]: https://github.com/observIQ/observiq-otel-collector
