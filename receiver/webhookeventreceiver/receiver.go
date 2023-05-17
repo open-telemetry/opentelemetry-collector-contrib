@@ -178,7 +178,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	// finish reading the body into a log
 	sc := bufio.NewScanner(bodyReader)
-	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg, er.settings.ID.String())
+	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg, er.settings)
 	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
@@ -192,6 +192,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	}
 }
 
+// Simple healthcheck endpoint. 
 func (er *eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

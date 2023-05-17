@@ -24,6 +24,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestReqToLog(t *testing.T) {
@@ -31,14 +33,12 @@ func TestReqToLog(t *testing.T) {
 
 	tests := []struct {
 		desc   string
-		idName string
 		sc     *bufio.Scanner
 		query  url.Values
-		tt     func(t *testing.T, reqLog plog.Logs, reqLen int, idName string)
+		tt     func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings)
 	}{
 		{
 			desc:   "Valid query valid event",
-			idName: "testWebhook",
 			sc: func() *bufio.Scanner {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
@@ -50,7 +50,7 @@ func TestReqToLog(t *testing.T) {
 				}
 				return v
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, idName string) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings) {
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -73,12 +73,11 @@ func TestReqToLog(t *testing.T) {
 		},
 		{
 			desc:   "Query is empty",
-			idName: "testWebhook",
 			sc: func() *bufio.Scanner {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, idName string) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings) {
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -92,8 +91,8 @@ func TestReqToLog(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, test.idName)
-			test.tt(t, reqLog, reqLen, test.idName)
+			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, receivertest.NewNopCreateSettings())
+			test.tt(t, reqLog, reqLen, receivertest.NewNopCreateSettings())
 		})
 	}
 }

@@ -19,6 +19,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
@@ -26,13 +27,15 @@ import (
 func reqToLog(sc *bufio.Scanner,
 	query url.Values,
 	_config *Config,
-	idName string) (plog.Logs, int) {
+	settings receiver.CreateSettings) (plog.Logs, int) {
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
 	appendMetadata(resourceLog, query)
 	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 
-	scopeLog.Scope().Attributes().PutStr("source", idName)
+    scopeLog.Scope().SetName(scopeLogName)
+    scopeLog.Scope().SetVersion(settings.BuildInfo.Version)
+	scopeLog.Scope().Attributes().PutStr("source", settings.ID.String())
 	scopeLog.Scope().Attributes().PutStr("receiver", metadata.Type)
 
 	for sc.Scan() {
