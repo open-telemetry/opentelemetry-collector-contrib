@@ -144,6 +144,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Panics after test have completed, requires a wait group
 		},
 		{
+			receiver:     "cloudflare",
+			skipLifecyle: true,
+		},
+		{
 			receiver:     "cloudfoundry",
 			skipLifecyle: true, // Requires UAA (auth) endpoint to run
 		},

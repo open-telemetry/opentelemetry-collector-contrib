@@ -42,7 +42,7 @@ type Config struct {
 
 type Authentication struct {
 	TLS    *TLS    `mapstructure:"tls"`
-	Token  *Token  `mapstructure:"Token"`
+	Token  *Token  `mapstructure:"token"`
 	Athenz *Athenz `mapstructure:"athenz"`
 	OAuth2 *OAuth2 `mapstructure:"oauth2"`
 }
@@ -53,7 +53,7 @@ type TLS struct {
 }
 
 type Token struct {
-	Token string `mapstructure:"Token"`
+	Token string `mapstructure:"token"`
 }
 
 type Athenz struct {

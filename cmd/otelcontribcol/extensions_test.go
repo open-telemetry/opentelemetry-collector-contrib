@@ -144,6 +144,10 @@ func TestDefaultExtensions(t *testing.T) {
 			},
 		},
 		{
+			extension:     "ecs_observer",
+			skipLifecycle: true,
+		},
+		{
 			extension: "ecs_task_observer",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["ecs_task_observer"].CreateDefaultConfig().(*ecstaskobserver.Config)

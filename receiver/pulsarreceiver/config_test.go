@@ -48,3 +48,9 @@ func TestLoadConfig(t *testing.T) {
 		cfg,
 	)
 }
+
+func TestDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	require.NoError(t, cfg.Validate())
+}
