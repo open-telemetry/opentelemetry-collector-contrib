@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, splunk]
 
 resource_attributes:
   oracledb.instance.name:

@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -864,6 +865,57 @@ func TestReceiveRaw(t *testing.T) {
 			assert.Equal(t, test.text, string(req.body))
 		})
 	}
+}
+
+func TestReceiveLogEvent(t *testing.T) {
+	logs := createLogData(1, 1, 1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runLogExport(cfg, logs, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_log_event.json")
+}
+
+func TestReceiveMetricEvent(t *testing.T) {
+	metrics := createMetricsData(1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runMetricsExport(cfg, metrics, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_metric_event.json")
+}
+
+func TestReceiveSpanEvent(t *testing.T) {
+	traces := createTraceData(1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runTraceExport(cfg, traces, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_span_event.json")
+}
+
+// compareWithTestData compares hec output with a json file using maps instead of strings to avoid key ordering
+// issues (jsoniter doesn't sort the keys).
+func compareWithTestData(t *testing.T, actual []byte, file string) {
+	wantStr, err := os.ReadFile(file)
+	require.NoError(t, err)
+	wantMap := map[string]any{}
+	err = jsoniter.Unmarshal(wantStr, &wantMap)
+	require.NoError(t, err)
+
+	gotMap := map[string]any{}
+	err = jsoniter.Unmarshal(actual, &gotMap)
+	require.NoError(t, err)
+	assert.Equal(t, wantMap, gotMap)
 }
 
 func TestReceiveMetrics(t *testing.T) {

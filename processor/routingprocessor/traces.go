@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -39,12 +41,26 @@ type tracesProcessor struct {
 
 	extractor extractor
 	router    router[exporter.Traces, ottlspan.TransformContext]
+
+	nonRoutedSpansCounter metric.Int64Counter
 }
 
-func newTracesProcessor(settings component.TelemetrySettings, config component.Config) *tracesProcessor {
+func newTracesProcessor(settings component.TelemetrySettings, config component.Config) (*tracesProcessor, error) {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
-	spanParser, _ := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+	spanParser, err := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
+	if err != nil {
+		return nil, err
+	}
+
+	meter := settings.MeterProvider.Meter(scopeName + nameSep + "traces")
+	nonRoutedSpansCounter, err := meter.Int64Counter(
+		typeStr+metricSep+processorKey+metricSep+nonRoutedSpansKey,
+		metric.WithDescription("Number of spans that were not routed to some or all exporters."),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &tracesProcessor{
 		logger: settings.Logger,
@@ -56,7 +72,9 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 			spanParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
-	}
+
+		nonRoutedSpansCounter: nonRoutedSpansCounter,
+	}, nil
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
@@ -111,6 +129,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 					return err
 				}
 				p.group("", groups, p.router.defaultExporters, rspans)
+				p.recordNonRoutedResourceSpans(ctx, key, rspans)
 				continue
 			}
 			if !isMatch {
@@ -123,6 +142,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 		if matchCount == 0 {
 			// no route conditions are matched, add resource spans to default exporters group
 			p.group("", groups, p.router.defaultExporters, rspans)
+			p.recordNonRoutedResourceSpans(ctx, "", rspans)
 		}
 	}
 
@@ -144,9 +164,34 @@ func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporte
 	groups[key] = group
 }
 
+func (p *tracesProcessor) recordNonRoutedResourceSpans(ctx context.Context, routingKey string, rspans ptrace.ResourceSpans) {
+	spanCount := 0
+	ilss := rspans.ScopeSpans()
+	for j := 0; j < ilss.Len(); j++ {
+		spanCount += ilss.At(j).Spans().Len()
+	}
+
+	p.nonRoutedSpansCounter.Add(
+		ctx,
+		int64(spanCount),
+		metric.WithAttributes(
+			attribute.String("routing_key", routingKey),
+		),
+	)
+}
+
 func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
+	if value == "" { // "" is a  key for default exporters
+		p.nonRoutedSpansCounter.Add(
+			ctx,
+			int64(t.SpanCount()),
+			metric.WithAttributes(
+				attribute.String("routing_key", p.extractor.fromAttr),
+			),
+		)
+	}
 
 	var errs error
 	for _, e := range exporters {

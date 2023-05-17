@@ -29,7 +29,6 @@ import (
 )
 
 const (
-	typeStr          = "nginx"
 	connectionsAsSum = "receiver.nginx.emitConnectionsCurrentAsSum"
 )
 
@@ -44,7 +43,7 @@ var connectorsAsSumGate = featuregate.GlobalRegistry().MustRegister(
 // NewFactory creates a factory for nginx receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -71,7 +70,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newNginxScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

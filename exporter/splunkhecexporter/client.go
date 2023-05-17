@@ -172,7 +172,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -180,9 +180,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
@@ -207,9 +204,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (
 				} else {
 					// Parsing log record to Splunk event.
 					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
+
 					// JSON encoding event and writing to buffer.
 					var err error
-					b, err = jsoniter.Marshal(event)
+					b, err = marshalEvent(event, bs.jsonStream)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 							"dropped log event: %v, error: %w", event, err)))
@@ -264,7 +262,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is 
 				}
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
-					b, err := jsoniter.Marshal(event)
+					b, err := marshalEvent(event, bs.jsonStream)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
 						continue
@@ -308,8 +306,9 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, bs *bufferState, is iter
 
 				// Parsing span record to Splunk event.
 				event := mapSpanToSplunkEvent(rs.Resource(), span, c.config)
+
 				// JSON encoding event and writing to buffer.
-				b, err := jsoniter.Marshal(event)
+				b, err := marshalEvent(event, bs.jsonStream)
 				if err != nil {
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
 					continue
@@ -347,7 +346,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -355,9 +354,6 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewMetrics(err, subMetrics(md, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
@@ -374,7 +370,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -382,9 +378,6 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewTraces(err, subTraces(td, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
@@ -605,4 +598,15 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"__splunk_app_name":    config.SplunkAppName,
 		"__splunk_app_version": config.SplunkAppVersion,
 	}
+}
+
+// marshalEvent marshals an event to JSON using a reusable jsoniter stream.
+func marshalEvent(event *splunk.Event, stream *jsoniter.Stream) ([]byte, error) {
+	stream.Reset(nil)
+	stream.Error = nil
+	stream.WriteVal(event)
+	if stream.Error != nil {
+		return nil, stream.Error
+	}
+	return stream.Buffer(), nil
 }

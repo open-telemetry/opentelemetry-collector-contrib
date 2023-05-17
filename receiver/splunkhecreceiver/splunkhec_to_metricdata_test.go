@@ -36,7 +36,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	buildDefaultSplunkDataPt := func() *splunk.Event {
 		return &splunk.Event{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "localhost",
 			Source:     "source",
 			SourceType: "sourcetype",
@@ -243,7 +243,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			name: "zero_timestamp",
 			splunkDataPoint: func() *splunk.Event {
 				pt := buildDefaultSplunkDataPt()
-				pt.Time = new(float64)
+				pt.Time = 0
 				return pt
 			}(),
 			wantMetricsData: func() pmetric.Metrics {
@@ -319,7 +319,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 	nanoseconds := int64(sec * 1e9)
 	events := []*splunk.Event{
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "1",
 			SourceType: "1",
@@ -330,7 +330,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "2",
 			SourceType: "2",
@@ -341,7 +341,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "1",
 			SourceType: "1",
@@ -352,7 +352,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "2",
 			SourceType: "2",
@@ -364,7 +364,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "2",
 			SourceType: "1",
@@ -375,7 +375,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "1",
 			SourceType: "2",

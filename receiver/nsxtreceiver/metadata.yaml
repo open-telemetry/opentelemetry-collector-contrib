@@ -1,4 +1,4 @@
-type: nsxtreceiver
+type: nsxt
 
 status:
   class: receiver

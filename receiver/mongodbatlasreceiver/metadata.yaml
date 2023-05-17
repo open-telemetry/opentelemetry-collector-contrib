@@ -1,10 +1,10 @@
-type: mongoatlasreceiver
+type: mongodbatlas
 
 status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib]
+  distributions: [contrib, splunk]
   
 resource_attributes:
   mongodb_atlas.org_name:

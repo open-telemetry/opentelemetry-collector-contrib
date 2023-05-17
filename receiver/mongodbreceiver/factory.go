@@ -28,14 +28,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "mongodb"
-)
-
 // NewFactory creates a factory for mongodb receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -65,7 +61,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	ms := newMongodbScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape,
 		scraperhelper.WithStart(ms.start),
 		scraperhelper.WithShutdown(ms.shutdown))
 	if err != nil {

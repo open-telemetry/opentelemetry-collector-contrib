@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for rabbitmqreceiver metrics.
+// MetricsConfig provides config for rabbitmq metrics.
 type MetricsConfig struct {
 	RabbitmqConsumerCount       MetricConfig `mapstructure:"rabbitmq.consumer.count"`
 	RabbitmqMessageAcknowledged MetricConfig `mapstructure:"rabbitmq.message.acknowledged"`
@@ -61,7 +61,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for rabbitmqreceiver resource attributes.
+// ResourceAttributesConfig provides config for rabbitmq resource attributes.
 type ResourceAttributesConfig struct {
 	RabbitmqNodeName  ResourceAttributeConfig `mapstructure:"rabbitmq.node.name"`
 	RabbitmqQueueName ResourceAttributeConfig `mapstructure:"rabbitmq.queue.name"`
@@ -82,7 +82,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for rabbitmqreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for rabbitmq metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

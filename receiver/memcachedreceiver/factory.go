@@ -28,7 +28,6 @@ import (
 )
 
 const (
-	typeStr                   = "memcached"
 	defaultEndpoint           = "localhost:11211"
 	defaultTimeout            = 10 * time.Second
 	defaultCollectionInterval = 10 * time.Second
@@ -37,7 +36,7 @@ const (
 // NewFactory creates a factory for memcached receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -65,7 +64,7 @@ func createMetricsReceiver(
 
 	ms := newMemcachedScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape)
 	if err != nil {
 		return nil, err
 	}

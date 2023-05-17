@@ -8,4 +8,4 @@ component: exporter/splunkhec
 note: Improve performance and reduce memory consumption.
 
 # One or more tracking issues related to the change
-issues: [21765, 21791]
+issues: [22018]
