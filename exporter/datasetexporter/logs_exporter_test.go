@@ -273,6 +273,7 @@ func (s *SuiteLogsExporter) TestConsumeLogsShouldSucceed() {
 	wasSuccessful := atomic.Bool{}
 	addRequest := add_events.AddEventsRequest{}
 
+	// dummy change
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		attempt.Add(1)
 		cer, err := extract(req)
