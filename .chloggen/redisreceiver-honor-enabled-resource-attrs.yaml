@@ -1,0 +1,10 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: "enhancement"
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: "redisreceiver"
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Honor the enabled flag for resource attributes (flag was introduced after creation of this receiver)"
+
+issues: [22044]
