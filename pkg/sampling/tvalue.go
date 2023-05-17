@@ -39,16 +39,18 @@ const (
 
 	// TValueZeroEncoding is the encoding for 0 adjusted count.
 	TValueZeroEncoding = "t:0"
-	TValueOneEncoding  = "t:1"
+
+	// TValueOneEncoding is the encoding for 100% sampling.
+	TValueOneEncoding = "t:1"
 )
 
-// Threshold is an opaque type used to compare with the least-significant 7 bytes of the TraceID.
+// Threshold used to compare with the least-significant 7 bytes of the TraceID.
 type Threshold struct {
-	// limit is in the range [0, 0x1p+56].
-	// - 0 represents zero probability (no TraceID values are less-than)
+	// unsigned is in the range [0, MaxAdjustedCount]
+	// - 0 represents zero probability (0 TraceID values are less-than)
 	// - 1 represents MinSamplingProb (1 TraceID value is less-than)
 	// - MaxAdjustedCount represents 100% sampling (all TraceID values are less-than).
-	limit uint64
+	unsigned uint64
 }
 
 var (
@@ -65,23 +67,28 @@ var (
 	ErrPrecisionRange = fmt.Errorf("sampling precision out of range (-1 <= valid <= 14)")
 )
 
+// probabilityInRange tests MinSamplingProb <= prob <= 1.
 func probabilityInRange(prob float64) bool {
-	return prob <= 1 && prob >= MinSamplingProb
+	return prob >= MinSamplingProb && prob <= 1
 }
 
+// AdjustedCountToTvalue encodes a t-value given an adjusted count. In
+// this form, the encoding is a decimal integer.
 func AdjustedCountToTvalue(count uint64) (string, error) {
 	switch {
 	case count == 0:
-		// Special case.
+		return TValueZeroEncoding, nil
 	case count < 0:
 		return "", ErrProbabilityRange
 	case count > uint64(MaxAdjustedCount):
 		return "", ErrAdjustedCountRange
 	}
-	return strconv.FormatInt(int64(count), 10), nil
+	return "t:" + strconv.FormatInt(int64(count), 10), nil
 }
 
-// E.g., 3/7 w/ prec=2 -> "0x1.b7p-02"
+// ProbabilityToTvalue encodes a t-value given a probability.  In this
+// form, the user controls floating-point format and precision.  See
+// strconv.FormatFloat() for an explanation of `format` and `prec`.
 func ProbabilityToTvalue(prob float64, format byte, prec int) (string, error) {
 	// Probability cases
 	switch {
@@ -107,6 +114,13 @@ func ProbabilityToTvalue(prob float64, format byte, prec int) (string, error) {
 	return "t:" + strconv.FormatFloat(prob, format, prec, 64), nil
 }
 
+// TvalueToProbabilityAndAdjustedCount parses the t-value and returns
+// both the probability and the adjusted count.  In a Span-to-Metrics
+// pipeline, users should count either the inverse of probability or
+// the adjusted count.  When the arriving t-value encodes adjusted
+// count as opposed to probability, the adjusted count will be exactly
+// the specified integer value; in these cases, probability corresponds
+// with exactly implemented sampling ratio.
 func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
 	if !strings.HasPrefix(s, "t:") {
 		return 0, 0, strconv.ErrSyntax
@@ -141,6 +155,8 @@ func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
 	return number, adjusted, nil
 }
 
+// ProbabilityToThreshold returns the sampling threshold exactly
+// corresponding with the input probability.
 func ProbabilityToThreshold(prob float64) (Threshold, error) {
 	// Note: prob == 0 is an allowed special case.  Because we
 	// use less-than, all spans are unsampled with Threshold{0}.
@@ -148,19 +164,25 @@ func ProbabilityToThreshold(prob float64) (Threshold, error) {
 		return Threshold{}, ErrProbabilityRange
 	}
 	return Threshold{
-		limit: uint64(prob * MaxAdjustedCount),
+		unsigned: uint64(prob * MaxAdjustedCount),
 	}, nil
 }
 
+// ShouldSample returns true when the span passes this sampler's
+// consistent sampling decision.
 func (t Threshold) ShouldSample(id pcommon.TraceID) bool {
 	value := binary.BigEndian.Uint64(id[8:]) & LeastHalfTraceIDThresholdMask
-	return value < t.limit
+	return value < t.unsigned
 }
 
+// Probability is the sampling ratio in the range [MinSamplingProb, 1].
 func (t Threshold) Probability() float64 {
-	return float64(t.limit) / MaxAdjustedCount
+	return float64(t.unsigned) / MaxAdjustedCount
 }
 
+// Unsigned is an unsigned integer that scales with the sampling
+// threshold.  This is useful to compare two thresholds without
+// floating point conversions.
 func (t Threshold) Unsigned() uint64 {
-	return t.limit
+	return t.unsigned
 }

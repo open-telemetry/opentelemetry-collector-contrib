@@ -20,70 +20,38 @@ import (
 	"strings"
 )
 
-const (
-	traceStateSizeLimit = 256
-)
+// errTraceStateSyntax is returned for a variety of syntax errors.
+var errTraceStateSyntax = fmt.Errorf("otel tracestate: %w", strconv.ErrSyntax)
 
-var (
-	errTraceStateSyntax = fmt.Errorf("otel tracestate: %w", strconv.ErrSyntax)
-)
-
+// anyTraceStateParser describes how to instance types recognize
+// specific fields.
 type anyTraceStateParser[Instance any] interface {
 	parseField(instance *Instance, key, input string) error
 }
 
-type baseTraceState struct {
-	fields []string
-}
-
-type baseTraceStateParser struct {
-}
-
-func (bp baseTraceStateParser) parseField(instance *baseTraceState, _, input string) error {
-	instance.fields = append(instance.fields, input)
-	return nil
-}
-
+// anyTraceStateSyntax describes a variable key/value syntax.
 type anyTraceStateSyntax[Instance any, Parser anyTraceStateParser[Instance]] struct {
 	separator  byte
 	equality   byte
 	allowPunct string
 }
 
-func (a *anyTraceStateSyntax[Instance, Parser]) serialize(base *baseTraceState, sb *strings.Builder) {
+// serializeBase adds the base fields to the output.
+func (syntax anyTraceStateSyntax[Instance, Parser]) serializeBase(base *baseTraceState, sb *strings.Builder) {
 	for _, field := range base.fields {
-		ex := 0
-		if sb.Len() != 0 {
-			ex = 1
-		}
-		if sb.Len()+ex+len(field) > traceStateSizeLimit {
-			// Note: should this generate an explicit error?
-			break
-		}
-		a.separate(sb)
+		syntax.separate(sb)
 		_, _ = sb.WriteString(field)
 	}
 }
 
-func (a *anyTraceStateSyntax[Instance, Parser]) separate(sb *strings.Builder) {
+// separate adds a separator to the output.
+func (syntax anyTraceStateSyntax[Instance, Parser]) separate(sb *strings.Builder) {
 	if sb.Len() != 0 {
-		_ = sb.WriteByte(a.separator)
+		_ = sb.WriteByte(syntax.separator)
 	}
 }
 
-var (
-	w3cSyntax = anyTraceStateSyntax[W3CTraceState, w3CTraceStateParser]{
-		separator:  ',',
-		equality:   '=',
-		allowPunct: ";:._-+",
-	}
-	otelSyntax = anyTraceStateSyntax[OTelTraceState, otelTraceStateParser]{
-		separator:  ';',
-		equality:   ':',
-		allowPunct: "._-+",
-	}
-)
-
+// parse uses variable syntax to parse the input string into key/value fields.
 func (syntax anyTraceStateSyntax[Instance, Parser]) parse(input string) (Instance, error) {
 	var parser Parser
 	var invalid Instance
@@ -91,10 +59,6 @@ func (syntax anyTraceStateSyntax[Instance, Parser]) parse(input string) (Instanc
 
 	if len(input) == 0 {
 		return invalid, nil
-	}
-
-	if len(input) > traceStateSizeLimit {
-		return invalid, errTraceStateSyntax
 	}
 
 	for len(input) > 0 {
@@ -147,6 +111,9 @@ func (syntax anyTraceStateSyntax[Instance, Parser]) parse(input string) (Instanc
 	return instance, nil
 }
 
+// isValueByte determines whether the byte is valid as part of a
+// tracestate value.  This is based on the syntax, since the W3C syntax
+// allows the OTel separator and equality symbol to appear in values.
 func (syntax anyTraceStateSyntax[Instance, Parser]) isValueByte(r byte) bool {
 	if isLCAlphaNum(r) {
 		return true
@@ -157,6 +124,22 @@ func (syntax anyTraceStateSyntax[Instance, Parser]) isValueByte(r byte) bool {
 	return strings.ContainsRune(syntax.allowPunct, rune(r))
 }
 
+// baseTraceState encodes not-specified fields as a list.  They will
+// be re-encoded when serialized.
+type baseTraceState struct {
+	fields []string
+}
+
+// baseTraceStateParser parses not-specified fields into a list.
+type baseTraceStateParser struct{}
+
+// parseField adds to the list of not-specified fields.
+func (bp baseTraceStateParser) parseField(instance *baseTraceState, _, input string) error {
+	instance.fields = append(instance.fields, input)
+	return nil
+}
+
+// isLCAlphaNum returns true for a-z, 0-9
 func isLCAlphaNum(r byte) bool {
 	if isLCAlpha(r) {
 		return true
@@ -164,14 +147,17 @@ func isLCAlphaNum(r byte) bool {
 	return r >= '0' && r <= '9'
 }
 
+// isLCAlphaNum returns true for a-z
 func isLCAlpha(r byte) bool {
 	return r >= 'a' && r <= 'z'
 }
 
+// isLCAlphaNum returns true for A-Z
 func isUCAlpha(r byte) bool {
 	return r >= 'A' && r <= 'Z'
 }
 
+// stripKey removes a fixed prefix from an formatted string.
 func stripKey(key, input string) (string, error) {
 	if len(input) < len(key)+1 {
 		return "", errTraceStateSyntax
