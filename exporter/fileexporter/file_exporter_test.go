@@ -159,7 +159,14 @@ func TestFileTracesExporter(t *testing.T) {
 			fi, err := os.Open(fe.path)
 			assert.NoError(t, err)
 			defer fi.Close()
-			br := bufio.NewReader(fi)
+			var br *bufio.Reader
+			if fe.compression == compressionZSTD {
+				cw, err := zstd.NewReader(fi) 
+				assert.NoError(t, err)
+				br = bufio.NewReader(cw)
+			} else {
+				br = bufio.NewReader(fi)
+			}
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
 					if fe.formatType == formatTypeJSON && fe.compression == "" {

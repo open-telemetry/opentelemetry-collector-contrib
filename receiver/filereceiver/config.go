@@ -24,7 +24,6 @@ const (
 	formatTypeJSON      = "json"
 	formatTypeProto     = "proto"
 	compressionTypeZSTD = "zstd"
-	compressionTypeNone = "none"
 )
 
 // Config defines the configuration for the file receiver.
@@ -47,9 +46,8 @@ type Config struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Throttle:    1,
-		Compression: compressionTypeNone,
-		FormatType:  formatTypeJSON,
+		Throttle:   1,
+		FormatType: formatTypeJSON,
 	}
 }
 
@@ -60,10 +58,10 @@ func (c Config) Validate() error {
 	if c.Throttle < 0 {
 		return errors.New("throttle cannot be negative")
 	}
-	if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
+	if c.FormatType != "" && c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
 		return errors.New("format must be json or proto")
 	}
-	if c.Compression != compressionTypeNone && c.Compression != compressionTypeZSTD {
+	if c.Compression != "" && c.Compression != compressionTypeZSTD {
 		return errors.New("compression must be zstd or none")
 	}
 	return nil

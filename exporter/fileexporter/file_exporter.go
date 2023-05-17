@@ -68,7 +68,6 @@ func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	// buf = e.compressor(buf)
 	_, err = e.exporter.Write(buf)
 	return err
 }
@@ -78,7 +77,6 @@ func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	// buf = e.compressor(buf)
 	_, err = e.exporter.Write(buf)
 	return err
 }
@@ -88,7 +86,6 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	// buf = e.compressor(buf)
 	_, err = e.exporter.Write(buf)
 	return err
 }
