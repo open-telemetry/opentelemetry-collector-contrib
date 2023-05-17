@@ -18,24 +18,17 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
-
-// AttributeKey is used to allow strings and type defined
-// strings to be used within the creation of creating an `AttributeChangeSet`
-type AttributeKey interface {
-	~string
-}
 
 // AttributeChangeSet represents an unscoped entry that can be applied.
 //
 // The listed changes are duplicated twice
 // to allow for simplified means of transition to or from a revision.
 type AttributeChangeSet struct {
-	updates  map[alias.AttributeKey]alias.AttributeKey
-	rollback map[alias.AttributeKey]alias.AttributeKey
+	updates  ast.AttributeMap
+	rollback ast.AttributeMap
 }
 
 // AttributeChangeSetSlice allows for `AttributeChangeSet`
@@ -45,14 +38,14 @@ type AttributeChangeSetSlice []*AttributeChangeSet
 
 // NewAttributeChangeSet allows for typed strings to be used as part
 // of the invocation that will be converted into the default string type.
-func NewAttributeChangeSet[Key AttributeKey, Value AttributeKey](mappings map[Key]Value) *AttributeChangeSet {
+func NewAttributeChangeSet(mappings ast.AttributeMap) *AttributeChangeSet {
 	attr := &AttributeChangeSet{
 		updates:  make(map[string]string, len(mappings)),
 		rollback: make(map[string]string, len(mappings)),
 	}
 	for k, v := range mappings {
-		attr.updates[string(k)] = string(v)
-		attr.rollback[string(v)] = string(k)
+		attr.updates[k] = v
+		attr.rollback[v] = k
 	}
 	return attr
 }

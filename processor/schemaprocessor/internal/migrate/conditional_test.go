@@ -33,7 +33,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 	}{
 		{
 			name:  "No changes defined",
-			cond:  NewConditionalAttributeSet[string, string, string](map[string]string{}),
+			cond:  NewConditionalAttributeSet[string](map[string]string{}),
 			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
@@ -60,7 +60,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 		},
 		{
 			name: "No condition set, applys to all",
-			cond: NewConditionalAttributeSet[string, string, string](
+			cond: NewConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
 				},
@@ -113,7 +113,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 	}{
 		{
 			name:  "No changes defined",
-			cond:  NewConditionalAttributeSet[string, string, string](map[string]string{}),
+			cond:  NewConditionalAttributeSet[string](map[string]string{}),
 			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
@@ -140,7 +140,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 		},
 		{
 			name: "No condition set, applys to all",
-			cond: NewConditionalAttributeSet[string, string, string](
+			cond: NewConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
 				},
@@ -205,7 +205,7 @@ func TestConditionalAttribueSetSliceApply(t *testing.T) {
 		{
 			name: "Not matched check value",
 			slice: NewConditionalAttributeSetSlice(
-				NewConditionalAttributeSet[string, string, string](
+				NewConditionalAttributeSet[string](
 					map[string]string{
 						"service_version": "service.version",
 					},
@@ -262,7 +262,7 @@ func TestConditionalAttribueSetSliceRollback(t *testing.T) {
 		{
 			name: "Not matched check value",
 			slice: NewConditionalAttributeSetSlice(
-				NewConditionalAttributeSet[string, string, string](
+				NewConditionalAttributeSet[string](
 					map[string]string{
 						"service_version": "service.version",
 					},

@@ -21,9 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type testTypeDefKey string
-type testTypeDefValue string
-
 func testHelperBuildMap(opts ...func(pcommon.Map)) pcommon.Map {
 	m := pcommon.NewMap()
 	for _, opt := range opts {
@@ -48,25 +45,6 @@ func TestNewAttributeChangeSet(t *testing.T) {
 			},
 			rollback: map[string]string{
 				"world": "hello",
-			},
-		}
-
-		assert.Equal(t, expect, acs, "Must match the expected value")
-	})
-
-	t.Run("typedef string values", func(t *testing.T) {
-		t.Parallel()
-
-		acs := NewAttributeChangeSet(map[testTypeDefKey]testTypeDefValue{
-			"awesome": "awesome.service",
-		})
-
-		expect := &AttributeChangeSet{
-			updates: map[string]string{
-				"awesome": "awesome.service",
-			},
-			rollback: map[string]string{
-				"awesome.service": "awesome",
 			},
 		}
 
@@ -106,8 +84,6 @@ func TestAttributeChangeSetApply(t *testing.T) {
 				m.PutStr("service.version", "v0.0.1")
 			}),
 		},
-		// Due to the way `pcommon.Map.RemoveIf` works,
-		// it forces both values to be removed from the the attributes.
 		{
 			name: "naming loop",
 			acs: NewAttributeChangeSet(map[string]string{

@@ -174,7 +174,7 @@ func TestNewRevision(t *testing.T) {
 						map[string]string{"service_version": "service.version"},
 						"application start",
 					),
-					migrate.NewConditionalAttributeSet[string, string, string](
+					migrate.NewConditionalAttributeSet[string](
 						map[string]string{"deployment.environment": "service.deployment.environment"},
 					),
 				),
