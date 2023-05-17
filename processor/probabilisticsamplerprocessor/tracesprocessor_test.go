@@ -99,7 +99,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 5,
 			},
-			numBatches:        1e5,
+			numBatches:        1e6,
 			numTracesPerBatch: 2,
 			acceptableDelta:   0.01,
 		},

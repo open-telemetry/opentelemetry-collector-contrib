@@ -34,7 +34,7 @@ func TestParseW3CTraceState(t *testing.T) {
 		{"ot=t:100", "t:100", nil},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {
-			otts, err := w3cSyntax.parse(test.in)
+			wts, err := w3cSyntax.parse(test.in)
 
 			if test.expectErr != nil {
 				require.True(t, errors.Is(err, test.expectErr), "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
@@ -42,16 +42,16 @@ func TestParseW3CTraceState(t *testing.T) {
 				require.NoError(t, err)
 			}
 			if test.otval != notset {
-				require.True(t, otts.hasOTelValue())
-				require.Equal(t, "ot="+test.otval, otts.otelString)
+				require.True(t, wts.hasOTelValue())
+				require.Equal(t, "ot="+test.otval, wts.otelString)
 			} else {
 
-				require.False(t, otts.hasOTelValue(), "should have no otel value")
+				require.False(t, wts.hasOTelValue(), "should have no otel value")
 			}
 
 			// on success w/o t-value, serialize() should not modify
-			if !otts.hasOTelValue() && test.expectErr == nil {
-				require.Equal(t, test.in, otts.serialize())
+			if !wts.hasOTelValue() && test.expectErr == nil {
+				require.Equal(t, test.in, wts.serialize())
 			}
 		})
 	}

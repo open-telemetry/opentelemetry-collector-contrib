@@ -18,28 +18,51 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+const (
+	// MinSamplingProb is one in 2^56.
+	MinSamplingProb = 0x1p-56
+
+	// MaxAdjustedCount is the adjusted count corresponding with
+	// MinSamplingProb (i.e., 1 / MinSamplingProb).  0x1p+56
+	MaxAdjustedCount = 1 / MinSamplingProb
+
+	// LeastHalfTraceIDThresholdMask is the mask to use on the
+	// least-significant half of the TraceID, i.e., bytes 8-15.
+	// Because this is a 56 bit mask, the result after masking is
+	// the unsigned value of bytes 9 through 15.
+	LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
+
+	// TValueZeroEncoding is the encoding for 0 adjusted count.
+	TValueZeroEncoding = "t:0"
+	TValueOneEncoding  = "t:1"
+)
+
 // Threshold is an opaque type used to compare with the least-significant 7 bytes of the TraceID.
 type Threshold struct {
-	// limit in range [1, 0x1p+56]
+	// limit is in the range [0, 0x1p+56].
+	// - 0 represents zero probability (no TraceID values are less-than)
+	// - 1 represents MinSamplingProb (1 TraceID value is less-than)
+	// - MaxAdjustedCount represents 100% sampling (all TraceID values are less-than).
 	limit uint64
 }
 
-const (
-	MinSamplingProb  = 0x1p-56
-	MaxAdjustedCount = 0x1p+56 // i.e., 1 / MinSamplingProb
-
-	LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
-)
-
 var (
-	ErrPrecisionRange           = fmt.Errorf("sampling precision out of range (-1 <= valid <= 14)")
-	ErrProbabilityRange         = fmt.Errorf("sampling probability out of range (0x1p-56 <= valid <= 1)")
-	ErrAdjustedCountRange       = fmt.Errorf("sampling adjusted count out of range (1 <= valid <= 0x1p+56)")
+	// ErrProbabilityRange is returned when a value should be in the range [MinSamplingProb, 1].
+	ErrProbabilityRange = fmt.Errorf("sampling probability out of range (0x1p-56 <= valid <= 1)")
+
+	// ErrAdjustedCountRange is returned when a value should be in the range [1, MaxAdjustedCount].
+	ErrAdjustedCountRange = fmt.Errorf("sampling adjusted count out of range (1 <= valid <= 0x1p+56)")
+
+	// ErrAdjustedCountOnlyInteger is returned when a floating-point syntax is used to convey adjusted count.
 	ErrAdjustedCountOnlyInteger = fmt.Errorf("sampling adjusted count must be an integer")
+
+	// ErrPrecisionRange is returned when the precision argument is out of range.
+	ErrPrecisionRange = fmt.Errorf("sampling precision out of range (-1 <= valid <= 14)")
 )
 
 func probabilityInRange(prob float64) bool {
@@ -63,9 +86,9 @@ func ProbabilityToTvalue(prob float64, format byte, prec int) (string, error) {
 	// Probability cases
 	switch {
 	case prob == 1:
-		return "1", nil
+		return TValueOneEncoding, nil
 	case prob == 0:
-		return "0", nil
+		return TValueZeroEncoding, nil
 	case !probabilityInRange(prob):
 		return "", ErrProbabilityRange
 	}
@@ -81,11 +104,14 @@ func ProbabilityToTvalue(prob float64, format byte, prec int) (string, error) {
 		return "", ErrPrecisionRange
 
 	}
-	return strconv.FormatFloat(prob, format, prec, 64), nil
+	return "t:" + strconv.FormatFloat(prob, format, prec, 64), nil
 }
 
 func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
-	number, err := strconv.ParseFloat(s, 64) // e.g., "0x1.b7p-02" -> approx 3/7
+	if !strings.HasPrefix(s, "t:") {
+		return 0, 0, strconv.ErrSyntax
+	}
+	number, err := strconv.ParseFloat(s[2:], 64) // e.g., "0x1.b7p-02" -> approx 3/7
 	if err != nil {
 		return 0, 0, err
 	}
@@ -99,7 +125,7 @@ func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
 	case number > 1:
 		// Greater than 1 indicates adjusted count; re-parse
 		// as a decimal integer.
-		integer, err := strconv.ParseInt(s, 10, 64)
+		integer, err := strconv.ParseInt(s[2:], 10, 64)
 		if err != nil {
 			return 0, 0, ErrAdjustedCountOnlyInteger
 		}
@@ -116,7 +142,9 @@ func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
 }
 
 func ProbabilityToThreshold(prob float64) (Threshold, error) {
-	if !probabilityInRange(prob) {
+	// Note: prob == 0 is an allowed special case.  Because we
+	// use less-than, all spans are unsampled with Threshold{0}.
+	if prob != 0 && !probabilityInRange(prob) {
 		return Threshold{}, ErrProbabilityRange
 	}
 	return Threshold{
@@ -131,4 +159,8 @@ func (t Threshold) ShouldSample(id pcommon.TraceID) bool {
 
 func (t Threshold) Probability() float64 {
 	return float64(t.limit) / MaxAdjustedCount
+}
+
+func (t Threshold) Unsigned() uint64 {
+	return t.limit
 }

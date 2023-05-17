@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-type otelTraceState struct {
+type OTelTraceState struct {
 	tvalueString string
 	tvalueParsed Threshold
 	baseTraceState
@@ -27,7 +27,7 @@ type otelTraceState struct {
 
 type otelTraceStateParser struct{}
 
-func (wp otelTraceStateParser) parseField(concrete *otelTraceState, key, input string) error {
+func (wp otelTraceStateParser) parseField(instance *OTelTraceState, key, input string) error {
 	switch {
 	case key == "t":
 		value, err := stripKey(key, input)
@@ -45,19 +45,19 @@ func (wp otelTraceStateParser) parseField(concrete *otelTraceState, key, input s
 			return fmt.Errorf("otel tracestate t-value: %w", err)
 		}
 
-		concrete.tvalueString = input
-		concrete.tvalueParsed = th
+		instance.tvalueString = input
+		instance.tvalueParsed = th
 
 		return nil
 	}
 
-	return baseTraceStateParser{}.parseField(&concrete.baseTraceState, key, input)
+	return baseTraceStateParser{}.parseField(&instance.baseTraceState, key, input)
 }
 
-func (otts otelTraceState) serialize() string {
+func (otts *OTelTraceState) serialize() string {
 	var sb strings.Builder
 
-	if otts.hasTValue() {
+	if otts.TValue() != "" {
 		_, _ = sb.WriteString(otts.tvalueString)
 	}
 
@@ -66,6 +66,24 @@ func (otts otelTraceState) serialize() string {
 	return sb.String()
 }
 
-func (otts otelTraceState) hasTValue() bool {
+func (otts *OTelTraceState) HasTValue() bool {
 	return otts.tvalueString != ""
+}
+
+func (otts *OTelTraceState) UnsetTValue() {
+	otts.tvalueString = ""
+	otts.tvalueParsed = Threshold{}
+}
+
+func (otts *OTelTraceState) TValue() string {
+	return otts.tvalueString
+}
+
+func (otts *OTelTraceState) TValueThreshold() Threshold {
+	return otts.tvalueParsed
+}
+
+func (otts *OTelTraceState) SetTValue(encoded string, threshold Threshold) {
+	otts.tvalueString = encoded
+	otts.tvalueParsed = threshold
 }

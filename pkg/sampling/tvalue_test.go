@@ -61,6 +61,7 @@ func TestValidProbabilityToTvalue(t *testing.T) {
 	require.Equal(t, "0x1p-56", must(ProbabilityToTvalue(0x1p-56, 'x', -1)))
 	require.Equal(t, "0x1.555p-02", must(ProbabilityToTvalue(1/3., 'x', 3)))
 	require.Equal(t, "0", must(ProbabilityToTvalue(0, 'x', 3)))
+	require.Equal(t, "0", must(ProbabilityToTvalue(0, 'f', 4)))
 }
 
 func TestInvalidProbabilityToTvalue(t *testing.T) {

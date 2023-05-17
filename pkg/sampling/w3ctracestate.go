@@ -19,15 +19,18 @@ import (
 	"strings"
 )
 
-type w3CTraceState struct {
-	otelString string
-	otelParsed otelTraceState
+type W3CTraceState struct {
+	otelParsed OTelTraceState
 	baseTraceState
 }
 
 type w3CTraceStateParser struct{}
 
-func (wp w3CTraceStateParser) parseField(concrete *w3CTraceState, key, input string) error {
+func NewW3CTraceState(input string) (W3CTraceState, error) {
+	return w3cSyntax.parse(input)
+}
+
+func (wp w3CTraceStateParser) parseField(instance *W3CTraceState, key, input string) error {
 	switch {
 	case key == "ot":
 		value, err := stripKey(key, input)
@@ -41,19 +44,20 @@ func (wp w3CTraceStateParser) parseField(concrete *w3CTraceState, key, input str
 			return fmt.Errorf("w3c tracestate otel value: %w", err)
 		}
 
-		concrete.otelString = input
-		concrete.otelParsed = otts
+		instance.otelParsed = otts
 		return nil
 	}
 
-	return baseTraceStateParser{}.parseField(&concrete.baseTraceState, key, input)
+	return baseTraceStateParser{}.parseField(&instance.baseTraceState, key, input)
 }
 
-func (wts w3CTraceState) serialize() string {
+func (wts *W3CTraceState) Serialize() string {
 	var sb strings.Builder
 
-	if wts.hasOTelValue() {
-		_, _ = sb.WriteString(wts.otelString)
+	ots := wts.otelParsed.serialize()
+	if ots != "" {
+		_, _ = sb.WriteString("ot=")
+		_, _ = sb.WriteString(ots)
 	}
 
 	w3cSyntax.serialize(&wts.baseTraceState, &sb)
@@ -61,6 +65,6 @@ func (wts w3CTraceState) serialize() string {
 	return sb.String()
 }
 
-func (wts w3CTraceState) hasOTelValue() bool {
-	return wts.otelString != ""
+func (wts *W3CTraceState) OTelValue() *OTelTraceState {
+	return &wts.otelParsed
 }

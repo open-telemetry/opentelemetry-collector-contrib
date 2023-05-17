@@ -45,9 +45,9 @@ func (bp baseTraceStateParser) parseField(instance *baseTraceState, _, input str
 }
 
 type anyTraceStateSyntax[Instance any, Parser anyTraceStateParser[Instance]] struct {
-	separator byte
-	equality  byte
-	valid     string
+	separator  byte
+	equality   byte
+	allowPunct string
 }
 
 func (a *anyTraceStateSyntax[Instance, Parser]) serialize(base *baseTraceState, sb *strings.Builder) {
@@ -72,15 +72,15 @@ func (a *anyTraceStateSyntax[Instance, Parser]) separate(sb *strings.Builder) {
 }
 
 var (
-	w3cSyntax = anyTraceStateSyntax[w3CTraceState, w3CTraceStateParser]{
-		separator: ',',
-		equality:  '=',
-		valid:     ";:._-+",
+	w3cSyntax = anyTraceStateSyntax[W3CTraceState, w3CTraceStateParser]{
+		separator:  ',',
+		equality:   '=',
+		allowPunct: ";:._-+",
 	}
-	otelSyntax = anyTraceStateSyntax[otelTraceState, otelTraceStateParser]{
-		separator: ';',
-		equality:  ':',
-		valid:     "._-+",
+	otelSyntax = anyTraceStateSyntax[OTelTraceState, otelTraceStateParser]{
+		separator:  ';',
+		equality:   ':',
+		allowPunct: "._-+",
 	}
 )
 
@@ -154,7 +154,7 @@ func (syntax anyTraceStateSyntax[Instance, Parser]) isValueByte(r byte) bool {
 	if isUCAlpha(r) {
 		return true
 	}
-	return strings.ContainsRune(syntax.valid, rune(r))
+	return strings.ContainsRune(syntax.allowPunct, rune(r))
 }
 
 func isLCAlphaNum(r byte) bool {
