@@ -59,6 +59,8 @@ func riakContainer(t *testing.T) testcontainers.Container {
 }
 
 func TestRiakIntegration(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17556")
+
 	container := riakContainer(t)
 	defer func() {
 		require.NoError(t, container.Terminate(context.Background()))
