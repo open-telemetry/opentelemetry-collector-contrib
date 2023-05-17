@@ -58,7 +58,7 @@ receivers:
     driver: postgres
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     queries:
-      - sql: "select * from my_logs where log_id > $1"
+      - sql: "select * from my_logs where log_id > $$1"
         tracking_start_value: "10000"
         tracking_column: log_id
         logs:
@@ -120,7 +120,7 @@ receivers:
     datasource: "host=localhost port=5432 user=postgres password=s3cr3t sslmode=disable"
     storage: file_storage
     queries:
-      - sql: "select * from my_logs where log_id > $1"
+      - sql: "select * from my_logs where log_id > $$1"
         tracking_start_value: "10000"
         tracking_column: log_id
         logs:
