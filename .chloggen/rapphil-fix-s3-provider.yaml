@@ -8,7 +8,7 @@ component: confmap/provider/s3provider
 note: Properly handle bucket names containing dot characters
 
 # One or more tracking issues related to the change
-issues: [21097]
+issues: [22054]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
