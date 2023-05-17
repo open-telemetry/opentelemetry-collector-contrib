@@ -72,7 +72,7 @@ exporter/prometheusremotewriteexporter/                  @open-telemetry/collect
 exporter/pulsarexporter/                                 @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
 exporter/sapmexporter/                                   @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 exporter/sentryexporter/                                 @open-telemetry/collector-contrib-approvers @AbhiPrasad
-exporter/signalfxexporter/                               @open-telemetry/collector-contrib-approvers @dmitryax
+exporter/signalfxexporter/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers @liqiangz
 exporter/splunkhecexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 exporter/sumologicexporter/                              @open-telemetry/collector-contrib-approvers @sumo-drosiek
