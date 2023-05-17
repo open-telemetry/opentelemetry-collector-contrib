@@ -91,6 +91,7 @@ var (
 )
 
 func TestElasticsearchIntegration(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19755")
 	t.Run("7.0.0", test7_0_0.run)
 	t.Run("7.9.3", test7_9_3.run)
 	t.Run("7.16.3", test7_16_3.run)
