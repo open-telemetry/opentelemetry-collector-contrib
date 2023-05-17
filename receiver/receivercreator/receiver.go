@@ -30,23 +30,53 @@ var _ receiver.Metrics = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	params          receiver.CreateSettings
-	cfg             *Config
-	nextConsumer    consumer.Metrics
-	observerHandler *observerHandler
-	observables     []observer.Observable
+	params              receiver.CreateSettings
+	cfg                 *Config
+	nextLogsConsumer    consumer.Logs
+	nextMetricsConsumer consumer.Metrics
+	nextTracesConsumer  consumer.Traces
+	observerHandler     *observerHandler
+	observables         []observer.Observable
 }
 
-// newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+// newLogsReceiverCreator creates the receiver_creator with the given parameters.
+func newLogsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &receiverCreator{
-		params:       params,
-		cfg:          cfg,
-		nextConsumer: nextConsumer,
+		params:           params,
+		cfg:              cfg,
+		nextLogsConsumer: nextConsumer,
+	}
+	return r, nil
+}
+
+// newMetricsReceiverCreator creates the receiver_creator with the given parameters.
+func newMetricsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+	if nextConsumer == nil {
+		return nil, component.ErrNilNextConsumer
+	}
+
+	r := &receiverCreator{
+		params:              params,
+		cfg:                 cfg,
+		nextMetricsConsumer: nextConsumer,
+	}
+	return r, nil
+}
+
+// newTracesReceiverCreator creates the receiver_creator with the given parameters.
+func newTracesReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (receiver.Traces, error) {
+	if nextConsumer == nil {
+		return nil, component.ErrNilNextConsumer
+	}
+
+	r := &receiverCreator{
+		params:             params,
+		cfg:                cfg,
+		nextTracesConsumer: nextConsumer,
 	}
 	return r, nil
 }
@@ -70,12 +100,10 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 		config:                rc.cfg,
 		params:                rc.params,
 		receiversByEndpointID: receiverMap{},
-		nextConsumer:          rc.nextConsumer,
-		runner: &receiverRunner{
-			params:      rc.params,
-			idNamespace: rc.params.ID,
-			host:        &loggingHost{host, rc.params.Logger},
-		},
+		nextLogsConsumer:      rc.nextLogsConsumer,
+		nextMetricsConsumer:   rc.nextMetricsConsumer,
+		nextTracesConsumer:    rc.nextTracesConsumer,
+		runner:                newReceiverRunner(rc.params, &loggingHost{host, rc.params.Logger}),
 	}
 
 	observers := map[component.ID]observer.Observable{}

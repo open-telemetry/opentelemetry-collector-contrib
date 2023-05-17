@@ -81,6 +81,10 @@ func TestLoadConfig(t *testing.T) {
 			expected: createDefaultConfig(),
 		},
 		{
+			id:       component.NewIDWithName("receiver_creator", ""),
+			expected: createDefaultConfig(),
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				receiverTemplates: map[string]receiverTemplate{
@@ -176,7 +180,9 @@ type nopWithEndpointFactory struct {
 
 type nopWithEndpointReceiver struct {
 	mockComponent
+	consumer.Logs
 	consumer.Metrics
+	consumer.Traces
 	rcvr.CreateSettings
 	cfg component.Config
 }
@@ -192,6 +198,18 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
+func (*nopWithEndpointFactory) CreateLogsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	return &nopWithEndpointReceiver{
+		Logs:           nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
 	rcs rcvr.CreateSettings,
@@ -199,6 +217,18 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
 		Metrics:        nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithEndpointFactory) CreateTracesReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	return &nopWithEndpointReceiver{
+		Traces:         nextConsumer,
 		CreateSettings: rcs,
 		cfg:            cfg,
 	}, nil
@@ -215,7 +245,9 @@ type nopWithoutEndpointFactory struct {
 
 type nopWithoutEndpointReceiver struct {
 	mockComponent
+	consumer.Logs
 	consumer.Metrics
+	consumer.Traces
 	rcvr.CreateSettings
 	cfg component.Config
 }
@@ -226,6 +258,18 @@ func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
 	}
 }
 
+func (*nopWithoutEndpointFactory) CreateLogsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	return &nopWithoutEndpointReceiver{
+		Logs:           nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
 func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
 	rcs rcvr.CreateSettings,
@@ -233,6 +277,18 @@ func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithoutEndpointReceiver{
 		Metrics:        nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithoutEndpointFactory) CreateTracesReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	return &nopWithoutEndpointReceiver{
+		Traces:         nextConsumer,
 		CreateSettings: rcs,
 		cfg:            cfg,
 	}, nil

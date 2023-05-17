@@ -16,38 +16,54 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
 // runner starts and stops receiver instances.
 type runner interface {
-	// start a receiver instance from its static config and discovered config.
-	start(receiver receiverConfig, discoveredConfig userConfigMap, nextConsumer consumer.Metrics) (component.Component, error)
+	// start a metrics receiver instance from its static config and discovered config.
+	start(receiver receiverConfig, discoveredConfig userConfigMap, consumer *enhancingConsumer) (component.Component, error)
 	// shutdown a receiver.
 	shutdown(rcvr component.Component) error
 }
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
+	logger      *zap.Logger
 	params      rcvr.CreateSettings
 	idNamespace component.ID
 	host        component.Host
+	receivers   map[string]*wrappedReceiver
+	lock        *sync.Mutex
+}
+
+func newReceiverRunner(params rcvr.CreateSettings, host component.Host) *receiverRunner {
+	return &receiverRunner{
+		logger:      params.Logger,
+		params:      params,
+		idNamespace: params.ID,
+		host:        &loggingHost{host, params.Logger},
+		receivers:   map[string]*wrappedReceiver{},
+		lock:        &sync.Mutex{},
+	}
 }
 
 var _ runner = (*receiverRunner)(nil)
 
-// start a receiver instance from its static config and discovered config.
 func (run *receiverRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
-	nextConsumer consumer.Metrics,
+	consumer *enhancingConsumer,
 ) (component.Component, error) {
 	factory := run.host.GetFactory(component.KindReceiver, receiver.id.Type())
 
@@ -65,16 +81,48 @@ func (run *receiverRunner) start(
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}/<EndpointID>.
 	id := component.NewIDWithName(factory.Type(), fmt.Sprintf("%s/%s{endpoint=%q}/%s", receiver.id.Name(), run.idNamespace, targetEndpoint, receiver.endpointID))
 
-	recvr, err := run.createRuntimeReceiver(receiverFactory, id, cfg, nextConsumer)
-	if err != nil {
-		return nil, err
+	wr := &wrappedReceiver{}
+	var createError error
+	if consumer.logs != nil {
+		if wr.logs, err = run.createLogsRuntimeReceiver(receiverFactory, id, cfg, consumer); err != nil {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+				run.logger.Info("instantiated receiver doesn't support logs", zap.String("receiver", receiver.id.String()), zap.Error(err))
+				wr.logs = nil
+			} else {
+				createError = multierr.Combine(createError, err)
+			}
+		}
+	}
+	if consumer.metrics != nil {
+		if wr.metrics, err = run.createMetricsRuntimeReceiver(receiverFactory, id, cfg, consumer); err != nil {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+				run.logger.Info("instantiated receiver doesn't support metrics", zap.String("receiver", receiver.id.String()), zap.Error(err))
+				wr.metrics = nil
+			} else {
+				createError = multierr.Combine(createError, err)
+			}
+		}
+	}
+	if consumer.traces != nil {
+		if wr.traces, err = run.createTracesRuntimeReceiver(receiverFactory, id, cfg, consumer); err != nil {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+				run.logger.Info("instantiated receiver doesn't support traces", zap.String("receiver", receiver.id.String()), zap.Error(err))
+				wr.traces = nil
+			} else {
+				createError = multierr.Combine(createError, err)
+			}
+		}
 	}
 
-	if err = recvr.Start(context.Background(), run.host); err != nil {
-		return nil, err
+	if createError != nil {
+		return nil, fmt.Errorf("failed creating endpoint-derived receiver: %w", createError)
 	}
 
-	return recvr, nil
+	if err = wr.Start(context.Background(), run.host); err != nil {
+		return nil, fmt.Errorf("failed starting endpoint-derived receiver: %w", createError)
+	}
+
+	return wr, nil
 }
 
 // shutdown the given receiver.
@@ -133,8 +181,21 @@ func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discove
 	return templatedConfig, targetEndpoint, nil
 }
 
-// createRuntimeReceiver creates a receiver that is discovered at runtime.
-func (run *receiverRunner) createRuntimeReceiver(
+// createLogsRuntimeReceiver creates a receiver that is discovered at runtime.
+func (run *receiverRunner) createLogsRuntimeReceiver(
+	factory rcvr.Factory,
+	id component.ID,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
+	runParams := run.params
+	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
+	runParams.ID = id
+	return factory.CreateLogsReceiver(context.Background(), runParams, cfg, nextConsumer)
+}
+
+// createMetricsRuntimeReceiver creates a receiver that is discovered at runtime.
+func (run *receiverRunner) createMetricsRuntimeReceiver(
 	factory rcvr.Factory,
 	id component.ID,
 	cfg component.Config,
@@ -144,4 +205,49 @@ func (run *receiverRunner) createRuntimeReceiver(
 	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
 	runParams.ID = id
 	return factory.CreateMetricsReceiver(context.Background(), runParams, cfg, nextConsumer)
+}
+
+// createTracesRuntimeReceiver creates a receiver that is discovered at runtime.
+func (run *receiverRunner) createTracesRuntimeReceiver(
+	factory rcvr.Factory,
+	id component.ID,
+	cfg component.Config,
+	nextConsumer consumer.Traces,
+) (rcvr.Traces, error) {
+	runParams := run.params
+	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
+	runParams.ID = id
+	return factory.CreateTracesReceiver(context.Background(), runParams, cfg, nextConsumer)
+}
+
+var _ component.Component = (*wrappedReceiver)(nil)
+
+type wrappedReceiver struct {
+	logs    rcvr.Logs
+	metrics rcvr.Metrics
+	traces  rcvr.Traces
+}
+
+func (w *wrappedReceiver) Start(ctx context.Context, host component.Host) error {
+	var err error
+	for _, r := range []component.Component{w.logs, w.metrics, w.traces} {
+		if r != nil {
+			if e := r.Start(ctx, host); e != nil {
+				err = multierr.Combine(err, e)
+			}
+		}
+	}
+	return err
+}
+
+func (w *wrappedReceiver) Shutdown(ctx context.Context) error {
+	var err error
+	for _, r := range []component.Component{w.logs, w.metrics, w.traces} {
+		if r != nil {
+			if e := r.Shutdown(ctx); e != nil {
+				err = multierr.Combine(err, e)
+			}
+		}
+	}
+	return err
 }
