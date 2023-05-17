@@ -714,6 +714,26 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			want:      func(md pmetric.Metrics) {},
 			errorMode: ottl.IgnoreError,
 		},
+		{
+			name: "HasAttrOnDatapoint",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`HasAttrOnDatapoint("attr1", "test1")`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "HasAttrOnDatapoint",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`HasAttrKeyOnDatapoint("attr1")`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
