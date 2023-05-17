@@ -81,9 +81,8 @@ func TestMetricTracker_Convert(t *testing.T) {
 						IntValue:          100,
 					},
 					wantOut: DeltaValue{
-						StartTimestamp: pcommon.NewTimestampFromTime(future.Add(-time.Minute)),
-						FloatValue:     100,
-						IntValue:       100,
+						FloatValue: 100,
+						IntValue:   100,
 					},
 				},
 				keepSubsequentTest,

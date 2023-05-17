@@ -132,16 +132,12 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		case InitialValueDrop:
 			return
 		case InitialValueAuto:
-			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp < metricID.StartTimestamp {
+			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
 				return
 			}
 			out.StartTimestamp = metricID.StartTimestamp
 			keep = true
 		case InitialValueKeep:
-			out.StartTimestamp = metricID.StartTimestamp
-			if metricID.StartTimestamp == 0 {
-				out.StartTimestamp = t.startTime
-			}
 			keep = true
 		}
 	}
@@ -163,7 +159,9 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	state.Lock()
 	defer state.Unlock()
 
-	out.StartTimestamp = state.PrevPoint.ObservedTimestamp
+	if ok {
+		out.StartTimestamp = state.PrevPoint.ObservedTimestamp
+	}
 
 	switch metricID.MetricType {
 	case pmetric.MetricTypeHistogram:
