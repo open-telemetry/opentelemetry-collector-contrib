@@ -25,10 +25,18 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
   name to publish events to. The default value is `logs-generic-default`
+- `logs_dynamic_index` (optional): 
+  takes resource or log record attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
+  resulting dynamically prefixed / suffixed indexing based on `logs_index`. (priority: resource attribute > log record attribute)
+  - `enabled`(default=false): Enable/Disable dynamic index for log records
 - `traces_index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
   name to publish traces to. The default value is `traces-generic-default`.
+- `traces_dynamic_index` (optional):
+  takes resource or span attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
+  resulting dynamically prefixed / suffixed indexing based on `traces_index`. (priority: resource attribute > span attribute)
+  - `enabled`(default=false): Enable/Disable dynamic index for trace spans
 - `pipeline` (optional): Optional [Ingest Node](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html)
   pipeline ID used for processing documents published by the exporter.
 - `flush`: Event bulk buffer flush settings

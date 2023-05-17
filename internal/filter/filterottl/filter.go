@@ -172,6 +172,9 @@ func standardFuncs[K any]() map[string]ottl.Factory[K] {
 		ottlfuncs.NewIntFactory[K](),
 		ottlfuncs.NewConvertCaseFactory[K](),
 		ottlfuncs.NewSubstringFactory[K](),
+		ottlfuncs.NewLogFactory[K](),
+		ottlfuncs.NewUUIDFactory[K](),
+		ottlfuncs.NewParseJSONFactory[K](),
 		newDropFactory[K](),
 	)
 }

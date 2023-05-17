@@ -1,4 +1,4 @@
-type: couchdbreceiver
+type: couchdb
 
 status:
   class: receiver

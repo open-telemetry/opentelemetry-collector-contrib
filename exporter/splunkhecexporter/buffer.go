@@ -20,6 +20,8 @@ import (
 	"errors"
 	"io"
 	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -36,9 +38,7 @@ type bufferState struct {
 	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
-	resource             int // index in ResourceLogs/ResourceMetrics/ResourceSpans list
-	library              int // index in ScopeLogs/ScopeMetrics/ScopeSpans list
-	record               int // index in Logs/Metrics/Spans list
+	jsonStream           *jsoniter.Stream
 	rawLength            int
 }
 
@@ -190,9 +190,7 @@ type bufferStatePool struct {
 
 // get returns a bufferState from the pool.
 func (p bufferStatePool) get() *bufferState {
-	bf := p.pool.Get().(*bufferState)
-	bf.reset()
-	return bf
+	return p.pool.Get().(*bufferState)
 }
 
 // put returns a bufferState to the pool.
@@ -200,15 +198,18 @@ func (p bufferStatePool) put(bf *bufferState) {
 	p.pool.Put(bf)
 }
 
+const initBufferCap = 512
+
 func newBufferStatePool(bufCap uint, compressionAvailable bool, maxEventLength uint) bufferStatePool {
 	return bufferStatePool{
 		&sync.Pool{
 			New: func() interface{} {
-				buf := new(bytes.Buffer)
+				buf := bytes.NewBuffer(make([]byte, 0, initBufferCap))
 				return &bufferState{
 					compressionAvailable: compressionAvailable,
 					writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
 					buf:                  buf,
+					jsonStream:           jsoniter.NewStream(jsoniter.ConfigDefault, nil, initBufferCap),
 					bufferMaxLen:         bufCap,
 					maxEventLength:       maxEventLength,
 				}

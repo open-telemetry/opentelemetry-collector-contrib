@@ -27,16 +27,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "nsxt"
-)
-
 var errConfigNotNSX = errors.New("config was not a NSX receiver config")
 
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
@@ -59,7 +55,7 @@ func createMetricsReceiver(ctx context.Context, params receiver.CreateSettings, 
 	s := newScraper(cfg, params)
 
 	scraper, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

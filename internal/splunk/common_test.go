@@ -76,7 +76,7 @@ func TestDecodeJsonWithNoTime(t *testing.T) {
 	var msg Event
 	err := dec.Decode(&msg)
 	assert.NoError(t, err)
-	assert.Nil(t, msg.Time)
+	assert.Zero(t, msg.Time)
 }
 
 func TestDecodeJsonWithNumberTime(t *testing.T) {
@@ -86,7 +86,7 @@ func TestDecodeJsonWithNumberTime(t *testing.T) {
 	var msg Event
 	err := dec.Decode(&msg)
 	assert.NoError(t, err)
-	assert.Equal(t, 1610760752.606, *msg.Time)
+	assert.Equal(t, 1610760752.606, msg.Time)
 }
 
 func TestDecodeJsonWithStringTime(t *testing.T) {
@@ -96,7 +96,7 @@ func TestDecodeJsonWithStringTime(t *testing.T) {
 	var msg Event
 	err := dec.Decode(&msg)
 	assert.NoError(t, err)
-	assert.Equal(t, 1610760752.606, *msg.Time)
+	assert.Equal(t, 1610760752.606, msg.Time)
 }
 
 func TestDecodeJsonWithInvalidStringTime(t *testing.T) {

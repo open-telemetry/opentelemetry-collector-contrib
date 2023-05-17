@@ -29,8 +29,9 @@ import (
 type elasticsearchTracesExporter struct {
 	logger *zap.Logger
 
-	index       string
-	maxAttempts int
+	index        string
+	dynamicIndex bool
+	maxAttempts  int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -65,9 +66,10 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:       cfg.TracesIndex,
-		maxAttempts: maxAttempts,
-		model:       model,
+		index:        cfg.TracesIndex,
+		dynamicIndex: cfg.TracesDynamicIndex.Enabled,
+		maxAttempts:  maxAttempts,
+		model:        model,
 	}, nil
 }
 
@@ -102,9 +104,17 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 }
 
 func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, span)
+		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, span)
+
+		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
 	document, err := e.model.encodeSpan(resource, span)
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, e.index, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
 }

@@ -25,6 +25,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type itemRequest struct {
@@ -222,4 +226,39 @@ func itemsHasError(resp []itemResponse) bool {
 		}
 	}
 	return false
+}
+
+func newLogsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) plog.Logs {
+	logs := plog.NewLogs()
+	resourceSpans := logs.ResourceLogs()
+	rs := resourceSpans.AppendEmpty()
+
+	scopeAttr := rs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
+	fillResourceAttributeMap(scopeAttr, attrMp)
+
+	resAttr := rs.Resource().Attributes()
+	fillResourceAttributeMap(resAttr, resMp)
+
+	return logs
+}
+
+func newTracesWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans()
+	rs := resourceSpans.AppendEmpty()
+
+	scopeAttr := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
+	fillResourceAttributeMap(scopeAttr, attrMp)
+
+	resAttr := rs.Resource().Attributes()
+	fillResourceAttributeMap(resAttr, resMp)
+
+	return traces
+}
+
+func fillResourceAttributeMap(attrs pcommon.Map, mp map[string]string) {
+	attrs.EnsureCapacity(len(mp))
+	for k, v := range mp {
+		attrs.PutStr(k, v)
+	}
 }

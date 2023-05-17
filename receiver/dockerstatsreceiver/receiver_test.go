@@ -205,8 +205,14 @@ func TestScrapeV2(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = tc.mockDockerEngine.URL
-			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
-			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
+			cfg.EnvVarsToMetricLabels = map[string]string{
+				"ENV_VAR":   "env-var-metric-label",
+				"ENV_VAR_2": "env-var-metric-label-2",
+			}
+			cfg.ContainerLabelsToMetricLabels = map[string]string{
+				"container.label":   "container-metric-label",
+				"container.label.2": "container-metric-label-2",
+			}
 			cfg.MetricsBuilderConfig.Metrics = allMetricsEnabled
 
 			receiver := newReceiver(receivertest.NewNopCreateSettings(), cfg)

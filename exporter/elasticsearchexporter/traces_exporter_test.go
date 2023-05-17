@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"runtime"
@@ -136,6 +137,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14759")
 	}
+
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -148,6 +150,51 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with dynamic index", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]interface{}{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]interface{})
+
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesIndex = index
+			cfg.TracesDynamicIndex.Enabled = true
+		})
+
+		mustSendTracesWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
+
+		rec.WaitItems(1)
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -311,6 +358,15 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		assert.Equal(t, [3]int{1, 2, 1}, attempts)
 	})
 }
+func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchLogsExporter {
+	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.TODO()))
+	})
+	return exporter
+}
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchTracesExporter {
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
@@ -337,5 +393,15 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 
 func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
 	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	require.NoError(t, err)
+}
+
+// send trace with span & resource attributes
+func mustSendTracesWithAttributes(t *testing.T, exporter *elasticsearchTracesExporter, attrMp map[string]string, resMp map[string]string) {
+	traces := newTracesWithAttributeAndResourceMap(attrMp, resMp)
+	resSpans := traces.ResourceSpans().At(0)
+	span := resSpans.ScopeSpans().At(0).Spans().At(0)
+
+	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span)
 	require.NoError(t, err)
 }

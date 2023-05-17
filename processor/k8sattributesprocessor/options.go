@@ -86,7 +86,9 @@ func withExtractMetadata(fields ...string) option {
 			case metadataPodStartTime:
 				p.rules.StartTime = true
 			case conventions.AttributeK8SDeploymentName:
-				p.rules.Deployment = true
+				p.rules.DeploymentName = true
+			case conventions.AttributeK8SDeploymentUID:
+				p.rules.DeploymentUID = true
 			case conventions.AttributeK8SReplicaSetName:
 				p.rules.ReplicaSetName = true
 			case conventions.AttributeK8SReplicaSetUID:

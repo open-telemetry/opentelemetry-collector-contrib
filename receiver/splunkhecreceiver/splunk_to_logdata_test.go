@@ -55,7 +55,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "happy_path",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -76,7 +76,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "double",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -99,7 +99,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "array",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -126,7 +126,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "complex_structure",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -158,7 +158,6 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "nil_timestamp",
 			events: []*splunk.Event{
 				{
-					Time:       new(float64),
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -179,7 +178,6 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "custom_config_mapping",
 			events: []*splunk.Event{
 				{
-					Time:       new(float64),
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -220,7 +218,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "group_events_by_resource_attributes",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "1",
 					SourceType: "1",
@@ -231,7 +229,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "2",
 					SourceType: "2",
@@ -242,7 +240,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "1",
 					SourceType: "1",
@@ -253,7 +251,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "2",
 					SourceType: "2",
@@ -264,7 +262,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "2",
 					SourceType: "1",
@@ -275,7 +273,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "1",
 					SourceType: "2",

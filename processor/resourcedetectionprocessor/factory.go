@@ -44,11 +44,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "resourcedetection"
-)
-
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 type factory struct {
@@ -85,7 +80,7 @@ func NewFactory() processor.Factory {
 	}
 
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
@@ -94,7 +89,7 @@ func NewFactory() processor.Factory {
 
 // Type gets the type of the Option config created by this factory.
 func (*factory) Type() component.Type {
-	return typeStr
+	return metadata.Type
 }
 
 func createDefaultConfig() component.Config {

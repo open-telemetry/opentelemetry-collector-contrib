@@ -309,7 +309,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.True(t, p.rules.StartTime)
-	assert.True(t, p.rules.Deployment)
+	assert.True(t, p.rules.DeploymentName)
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
@@ -323,7 +323,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.False(t, p.rules.StartTime)
-	assert.False(t, p.rules.Deployment)
+	assert.False(t, p.rules.DeploymentName)
 	assert.False(t, p.rules.Node)
 }
 
