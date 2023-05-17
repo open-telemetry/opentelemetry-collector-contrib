@@ -17,8 +17,10 @@ See the [Getting Started](https://app.scalyr.com/help/getting-started) guide.
 
 ### Required Settings
 
-- `dataset_url` (no default): The URL of the DataSet API that ingests the data. Most likely https://app.scalyr.com. If not specified env variable `DATASET_URL` is used.
-- `api_key` (no default): The "Log Write" API Key required to use API. Instructions how to get [API key](https://app.scalyr.com/help/api-keys). If not specified env variable `DATASET_API_KEY` is used.
+- `dataset_url` (no default): The URL of the DataSet API that ingests the data. Most likely https://app.scalyr.com.
+- `api_key` (no default): The "Log Write" API Key required to use API. Instructions how to get [API key](https://app.scalyr.com/help/api-keys).
+
+If you do not want to specify `api_key` in the file, you can use the [builtin functionality](https://opentelemetry.io/docs/collector/configuration/#configuration-environment-variables) and use `api_key: ${env:DATASET_API_KEY}`.
 
 ### Optional Settings
 

@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -52,37 +51,6 @@ func (s *SuiteConfig) TestConfigUnmarshalUnknownAttributes() {
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)
 
 	s.Equal(expectedError.Error(), err.Error())
-}
-
-func (s *SuiteConfig) TestConfigKeepValuesWhenEnvSet() {
-	s.T().Setenv("DATASET_URL", "https://example.org")
-	s.T().Setenv("DATASET_API_KEY", "api_key")
-
-	f := NewFactory()
-	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
-		"dataset_url": "https://example.com",
-		"api_key":     configopaque.String("secret"),
-	})
-	err := config.Unmarshal(configMap)
-	s.Nil(err)
-
-	s.Equal("https://example.com", config.DatasetURL)
-	s.Equal(configopaque.String("secret"), config.APIKey)
-}
-
-func (s *SuiteConfig) TestConfigUseEnvWhenSet() {
-	s.T().Setenv("DATASET_URL", "https://example.org")
-	s.T().Setenv("DATASET_API_KEY", "api_key")
-
-	f := NewFactory()
-	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{})
-	err := config.Unmarshal(configMap)
-	s.Nil(err)
-
-	s.Equal("https://example.org", config.DatasetURL)
-	s.Equal("api_key", string(config.APIKey))
 }
 
 func (s *SuiteConfig) TestConfigUseDefaults() {

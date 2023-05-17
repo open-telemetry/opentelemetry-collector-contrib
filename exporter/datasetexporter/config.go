@@ -16,7 +16,6 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/scalyr/dataset-go/pkg/buffer"
@@ -80,17 +79,6 @@ type Config struct {
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(c, confmap.WithErrorUnused()); err != nil {
 		return fmt.Errorf("cannot unmarshal config: %w", err)
-	}
-
-	if len(c.DatasetURL) == 0 {
-		c.DatasetURL = os.Getenv("DATASET_URL")
-	}
-	if len(c.APIKey) == 0 {
-		c.APIKey = configopaque.String(os.Getenv("DATASET_API_KEY"))
-	}
-
-	if c.TracesSettings.MaxWait == 0 {
-		c.TracesSettings.MaxWait = tracesMaxWait
 	}
 
 	return nil
