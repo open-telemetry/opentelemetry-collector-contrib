@@ -140,28 +140,26 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		case InitialValueKeep:
 			keep = true
 		}
+		if keep {
+			switch metricID.MetricType {
+			case pmetric.MetricTypeHistogram:
+				*out.HistogramValue = metricPoint.HistogramValue.Clone()
+			case pmetric.MetricTypeSum:
+				out.IntValue = metricPoint.IntValue
+				out.FloatValue = metricPoint.FloatValue
+			}
+			return
+		}
+
 	}
 
 	valid = true
-
-	if keep {
-		switch metricID.MetricType {
-		case pmetric.MetricTypeHistogram:
-			*out.HistogramValue = metricPoint.HistogramValue.Clone()
-		case pmetric.MetricTypeSum:
-			out.IntValue = metricPoint.IntValue
-			out.FloatValue = metricPoint.FloatValue
-		}
-		return
-	}
 
 	state := s.(*State)
 	state.Lock()
 	defer state.Unlock()
 
-	if ok {
-		out.StartTimestamp = state.PrevPoint.ObservedTimestamp
-	}
+	out.StartTimestamp = state.PrevPoint.ObservedTimestamp
 
 	switch metricID.MetricType {
 	case pmetric.MetricTypeHistogram:
