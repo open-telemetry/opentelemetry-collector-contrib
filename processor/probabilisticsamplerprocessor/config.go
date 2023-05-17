@@ -43,6 +43,9 @@ type Config struct {
 	// treated as having four significant figures when conveying the sampling probability.
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
 
+	// @@@ TODO
+	// SamplingOneInN int64
+
 	// HashSeed allows one to configure the legacy hashing seed.  The current version of this protocol assumes
 	// that tracecontext v2 TraceIDs are being used, which ensures 7 bytes of randomness are available.  We assume
 	// this is the case when HashSeed == 0.

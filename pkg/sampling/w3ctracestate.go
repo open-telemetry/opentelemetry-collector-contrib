@@ -19,53 +19,48 @@ import (
 	"strings"
 )
 
-type otelTraceState struct {
-	tvalueString string
-	tvalueParsed Threshold
+type w3CTraceState struct {
+	otelString string
+	otelParsed otelTraceState
 	baseTraceState
 }
 
-type otelTraceStateParser struct{}
+type w3CTraceStateParser struct{}
 
-func (wp otelTraceStateParser) parseField(concrete *otelTraceState, key, input string) error {
+func (wp w3CTraceStateParser) parseField(concrete *w3CTraceState, key, input string) error {
 	switch {
-	case key == "t":
+	case key == "ot":
 		value, err := stripKey(key, input)
 		if err != nil {
 			return err
 		}
 
-		prob, _, err := TvalueToProbabilityAndAdjustedCount(value)
+		otts, err := otelSyntax.parse(value)
+
 		if err != nil {
-			return fmt.Errorf("otel tracestate t-value: %w", err)
+			return fmt.Errorf("w3c tracestate otel value: %w", err)
 		}
 
-		th, err := ProbabilityToThreshold(prob)
-		if err != nil {
-			return fmt.Errorf("otel tracestate t-value: %w", err)
-		}
-
-		concrete.tvalueString = input
-		concrete.tvalueParsed = th
-
+		concrete.otelString = input
+		concrete.otelParsed = otts
 		return nil
 	}
 
 	return baseTraceStateParser{}.parseField(&concrete.baseTraceState, key, input)
 }
 
-func (otts otelTraceState) serialize() string {
+func (wts w3CTraceState) serialize() string {
 	var sb strings.Builder
 
-	if otts.hasTValue() {
-		_, _ = sb.WriteString(otts.tvalueString)
+	if wts.hasOTelValue() {
+		_, _ = sb.WriteString(wts.otelString)
 	}
 
-	otelSyntax.serialize(&otts.baseTraceState, &sb)
+	w3cSyntax.serialize(&wts.baseTraceState, &sb)
 
 	return sb.String()
 }
 
-func (otts otelTraceState) hasTValue() bool {
-	return otts.tvalueString != ""
+func (wts w3CTraceState) hasOTelValue() bool {
+	return wts.otelString != ""
 }
