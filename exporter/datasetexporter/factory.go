@@ -15,9 +15,6 @@
 package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
-	"context"
-	"fmt"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -39,45 +36,15 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MaxDelayMs:      maxDelayMs,
+		BufferSettings:  newDefaultBufferSettings(),
+		TracesSettings:  newDefaultTracesSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 }
 
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
-	cfg := config.(*Config)
-	e, err := getDatasetExporter("logs", cfg, set.Logger)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
-	}
-
-	return exporterhelper.NewLogsExporter(
-		ctx,
-		set,
-		config,
-		e.consumeLogs,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-	)
-}
-
-func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
-	cfg := config.(*Config)
-	e, err := getDatasetExporter("traces", cfg, set.Logger)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
-	}
-
-	return exporterhelper.NewTracesExporter(
-		ctx,
-		set,
-		config,
-		e.consumeTraces,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-	)
+// castConfig casts it to the Dataset Config struct.
+func castConfig(c component.Config) *Config {
+	return c.(*Config)
 }
