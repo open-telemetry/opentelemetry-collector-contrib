@@ -65,14 +65,6 @@ type fileExporter struct {
 	stopTicker    chan struct{}
 }
 
-type binaryExporter struct {
-	*fileExporter
-}
-
-type lineExporter struct {
-	*fileExporter
-}
-
 func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error {
 	buf, err := e.tracesMarshaler.MarshalTraces(td)
 	if err != nil {
@@ -91,7 +83,7 @@ func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) err
 	return e.exporter(e, buf)
 }
 
-func (e fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
+func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	buf, err := e.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
@@ -100,22 +92,20 @@ func (e fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	return e.exporter(e, buf)
 }
 
-func (e lineExporter) Write(buf []byte) (int, error) {
+func exportMessageAsLine(e *fileExporter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	n1, err := e.file.Write(buf)
-	if err != nil {
+	if _, err := e.file.Write(buf); err != nil {
 		return err
 	}
-	n2, err := io.WriteString(e.file, "\n")
-	if err != nil {
+	if _, err := io.WriteString(e.file, "\n"); err != nil {
 		return err
 	}
-	return n1 + n2, nil
+	return nil
 }
 
-func (e *binaryExporter) Write(buf []byte) (int, error) {
+func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -125,10 +115,10 @@ func (e *binaryExporter) Write(buf []byte) (int, error) {
 	binary.BigEndian.PutUint32(data, uint32(len(buf)))
 	data = append(data, buf...)
 	if err := binary.Write(e.file, binary.BigEndian, data); err != nil {
-		return -1, err
+		return err
 	}
 
-	return len(data), nil
+	return nil
 }
 
 // startFlusher starts the flusher.
@@ -182,13 +172,13 @@ func (e *fileExporter) Shutdown(context.Context) error {
 	return e.file.Close()
 }
 
-func (e *fileExporter) buildExportFunc(cfg *Config) (io.Writer, error) {
+func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
 	if cfg.FormatType == formatTypeProto {
-		return binaryExporter{e}
+		return exportMessageAsBuffer
 	}
 	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
 	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
-		return binaryExporter{fileExporter: e}, nil
+		return exportMessageAsBuffer
 	}
-	return lineExporter{fileExporter: e}, nil
+	return exportMessageAsLine
 }
