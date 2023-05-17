@@ -672,7 +672,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "intgetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_intgetter_slice",
 				Arguments: []value{
 					{
@@ -780,7 +780,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "intlikegetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_intlikegetter_slice",
 				Arguments: []value{
 					{
@@ -1002,7 +1002,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "intlikegetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_intgetter",
 				Arguments: []value{
 					{
