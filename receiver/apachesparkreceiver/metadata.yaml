@@ -34,16 +34,16 @@ attributes:
     type: int
   stage_active:
     description: Whether the stage for which the metric was recorded is active.
-    type: boolean
+    type: bool
   stage_complete:
     description: Whether the stage for which the metric was recorded is complete.
-    type: boolean
+    type: bool
   stage_pending:
     description: Whether the stage for which the metric was recorded is pending.
-    type: boolean
+    type: bool
   stage_failed:
     description: Whether the stage for which the metric was recorded is failed.
-    type: boolean
+    type: bool
   stage_task_result:
     description: The result of the stage tasks for which the metric was recorded.
     type: string

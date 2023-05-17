@@ -25,7 +25,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for apachespark metrics.
 type MetricsConfig struct {
-	SparkDriverBlockManagerDiskDiskSpaceUsed                MetricConfig `mapstructure:"spark.driver.block_manager.disk.diskSpaceUsed"`
+	SparkDriverBlockManagerDiskSpaceUsed                    MetricConfig `mapstructure:"spark.driver.block_manager.disk.space_used"`
 	SparkDriverBlockManagerMemoryRemaining                  MetricConfig `mapstructure:"spark.driver.block_manager.memory.remaining"`
 	SparkDriverBlockManagerMemoryUsed                       MetricConfig `mapstructure:"spark.driver.block_manager.memory.used"`
 	SparkDriverCodeGeneratorCompilationAverageTime          MetricConfig `mapstructure:"spark.driver.code_generator.compilation.average_time"`
@@ -36,17 +36,17 @@ type MetricsConfig struct {
 	SparkDriverCodeGeneratorGeneratedMethodCount            MetricConfig `mapstructure:"spark.driver.code_generator.generated_method.count"`
 	SparkDriverCodeGeneratorSourceCodeAverageSize           MetricConfig `mapstructure:"spark.driver.code_generator.source_code.average_size"`
 	SparkDriverCodeGeneratorSourceCodeCount                 MetricConfig `mapstructure:"spark.driver.code_generator.source_code.count"`
-	SparkDriverDagSchedulerJobActiveJobs                    MetricConfig `mapstructure:"spark.driver.dag_scheduler.job.active_jobs"`
-	SparkDriverDagSchedulerJobAllJobs                       MetricConfig `mapstructure:"spark.driver.dag_scheduler.job.all_jobs"`
-	SparkDriverDagSchedulerStageFailedStages                MetricConfig `mapstructure:"spark.driver.dag_scheduler.stage.failed_stages"`
-	SparkDriverDagSchedulerStageRunningStages               MetricConfig `mapstructure:"spark.driver.dag_scheduler.stage.running_stages"`
-	SparkDriverDagSchedulerStageWaitingStages               MetricConfig `mapstructure:"spark.driver.dag_scheduler.stage.waiting_stages"`
-	SparkDriverExecutorMetricsExecutionMemory               MetricConfig `mapstructure:"spark.driver.executor_metrics.execution_memory"`
-	SparkDriverExecutorMetricsGcCount                       MetricConfig `mapstructure:"spark.driver.executor_metrics.gc_count"`
-	SparkDriverExecutorMetricsGcTime                        MetricConfig `mapstructure:"spark.driver.executor_metrics.gc_time"`
+	SparkDriverDagSchedulerJobsActive                       MetricConfig `mapstructure:"spark.driver.dag_scheduler.jobs.active"`
+	SparkDriverDagSchedulerJobsAll                          MetricConfig `mapstructure:"spark.driver.dag_scheduler.jobs.all"`
+	SparkDriverDagSchedulerStagesFailed                     MetricConfig `mapstructure:"spark.driver.dag_scheduler.stages.failed"`
+	SparkDriverDagSchedulerStagesRunning                    MetricConfig `mapstructure:"spark.driver.dag_scheduler.stages.running"`
+	SparkDriverDagSchedulerStagesWaiting                    MetricConfig `mapstructure:"spark.driver.dag_scheduler.stages.waiting"`
+	SparkDriverExecutorMetricsGcCount                       MetricConfig `mapstructure:"spark.driver.executor_metrics.gc.count"`
+	SparkDriverExecutorMetricsGcTime                        MetricConfig `mapstructure:"spark.driver.executor_metrics.gc.time"`
 	SparkDriverExecutorMetricsJvmMemory                     MetricConfig `mapstructure:"spark.driver.executor_metrics.jvm_memory"`
-	SparkDriverExecutorMetricsPoolMemory                    MetricConfig `mapstructure:"spark.driver.executor_metrics.pool_memory"`
-	SparkDriverExecutorMetricsStorageMemory                 MetricConfig `mapstructure:"spark.driver.executor_metrics.storage_memory"`
+	SparkDriverExecutorMetricsMemoryExecution               MetricConfig `mapstructure:"spark.driver.executor_metrics.memory.execution"`
+	SparkDriverExecutorMetricsMemoryPool                    MetricConfig `mapstructure:"spark.driver.executor_metrics.memory.pool"`
+	SparkDriverExecutorMetricsMemoryStorage                 MetricConfig `mapstructure:"spark.driver.executor_metrics.memory.storage"`
 	SparkDriverHiveExternalCatalogFileCacheHits             MetricConfig `mapstructure:"spark.driver.hive_external_catalog.file_cache_hits"`
 	SparkDriverHiveExternalCatalogFilesDiscovered           MetricConfig `mapstructure:"spark.driver.hive_external_catalog.files_discovered"`
 	SparkDriverHiveExternalCatalogHiveClientCalls           MetricConfig `mapstructure:"spark.driver.hive_external_catalog.hive_client_calls"`
@@ -57,56 +57,43 @@ type MetricsConfig struct {
 	SparkDriverLiveListenerBusEventsPosted                  MetricConfig `mapstructure:"spark.driver.live_listener_bus.events_posted"`
 	SparkDriverLiveListenerBusListenerProcessingTimeAverage MetricConfig `mapstructure:"spark.driver.live_listener_bus.listener_processing_time.average"`
 	SparkDriverLiveListenerBusQueueSize                     MetricConfig `mapstructure:"spark.driver.live_listener_bus.queue_size"`
-	SparkExecutorActiveTasks                                MetricConfig `mapstructure:"spark.executor.active_tasks"`
-	SparkExecutorCompletedTasks                             MetricConfig `mapstructure:"spark.executor.completed_tasks"`
 	SparkExecutorDiskUsed                                   MetricConfig `mapstructure:"spark.executor.disk_used"`
 	SparkExecutorDuration                                   MetricConfig `mapstructure:"spark.executor.duration"`
-	SparkExecutorFailedTasks                                MetricConfig `mapstructure:"spark.executor.failed_tasks"`
 	SparkExecutorGcTime                                     MetricConfig `mapstructure:"spark.executor.gc_time"`
-	SparkExecutorInputBytes                                 MetricConfig `mapstructure:"spark.executor.input_bytes"`
-	SparkExecutorMaxTasks                                   MetricConfig `mapstructure:"spark.executor.max_tasks"`
+	SparkExecutorInputSize                                  MetricConfig `mapstructure:"spark.executor.input_size"`
 	SparkExecutorMemoryUsed                                 MetricConfig `mapstructure:"spark.executor.memory_used"`
-	SparkExecutorShuffleReadBytes                           MetricConfig `mapstructure:"spark.executor.shuffle_read_bytes"`
-	SparkExecutorShuffleWriteBytes                          MetricConfig `mapstructure:"spark.executor.shuffle_write_bytes"`
-	SparkExecutorTotalStorageMemory                         MetricConfig `mapstructure:"spark.executor.total_storage_memory"`
-	SparkExecutorUsedStorageMemory                          MetricConfig `mapstructure:"spark.executor.used_storage_memory"`
-	SparkJobActiveStages                                    MetricConfig `mapstructure:"spark.job.active_stages"`
-	SparkJobActiveTasks                                     MetricConfig `mapstructure:"spark.job.active_tasks"`
-	SparkJobCompletedStages                                 MetricConfig `mapstructure:"spark.job.completed_stages"`
-	SparkJobCompletedTasks                                  MetricConfig `mapstructure:"spark.job.completed_tasks"`
-	SparkJobFailedStages                                    MetricConfig `mapstructure:"spark.job.failed_stages"`
-	SparkJobFailedTasks                                     MetricConfig `mapstructure:"spark.job.failed_tasks"`
-	SparkJobSkippedStages                                   MetricConfig `mapstructure:"spark.job.skipped_stages"`
-	SparkJobSkippedTasks                                    MetricConfig `mapstructure:"spark.job.skipped_tasks"`
-	SparkStageActiveTasks                                   MetricConfig `mapstructure:"spark.stage.active_tasks"`
-	SparkStageCompleteTasks                                 MetricConfig `mapstructure:"spark.stage.complete_tasks"`
+	SparkExecutorShuffleIoSize                              MetricConfig `mapstructure:"spark.executor.shuffle.io.size"`
+	SparkExecutorStorageMemoryTotal                         MetricConfig `mapstructure:"spark.executor.storage_memory.total"`
+	SparkExecutorStorageMemoryUsed                          MetricConfig `mapstructure:"spark.executor.storage_memory.used"`
+	SparkExecutorTasksActive                                MetricConfig `mapstructure:"spark.executor.tasks.active"`
+	SparkExecutorTasksMax                                   MetricConfig `mapstructure:"spark.executor.tasks.max"`
+	SparkExecutorTasksResults                               MetricConfig `mapstructure:"spark.executor.tasks.results"`
+	SparkJobStagesActive                                    MetricConfig `mapstructure:"spark.job.stages.active"`
+	SparkJobStagesResults                                   MetricConfig `mapstructure:"spark.job.stages.results"`
+	SparkJobTasksActive                                     MetricConfig `mapstructure:"spark.job.tasks.active"`
+	SparkJobTasksResults                                    MetricConfig `mapstructure:"spark.job.tasks.results"`
 	SparkStageDiskSpaceSpilled                              MetricConfig `mapstructure:"spark.stage.disk_space_spilled"`
-	SparkStageExecutorCPUTime                               MetricConfig `mapstructure:"spark.stage.executor_cpu_time"`
-	SparkStageExecutorRunTime                               MetricConfig `mapstructure:"spark.stage.executor_run_time"`
-	SparkStageFailedTasks                                   MetricConfig `mapstructure:"spark.stage.failed_tasks"`
-	SparkStageInputBytes                                    MetricConfig `mapstructure:"spark.stage.input_bytes"`
-	SparkStageInputRecords                                  MetricConfig `mapstructure:"spark.stage.input_records"`
+	SparkStageExecutorCPUTime                               MetricConfig `mapstructure:"spark.stage.executor.cpu_time"`
+	SparkStageExecutorRunTime                               MetricConfig `mapstructure:"spark.stage.executor.run_time"`
+	SparkStageIoRecords                                     MetricConfig `mapstructure:"spark.stage.io.records"`
+	SparkStageIoSize                                        MetricConfig `mapstructure:"spark.stage.io.size"`
 	SparkStageJvmGcTime                                     MetricConfig `mapstructure:"spark.stage.jvm_gc_time"`
-	SparkStageKilledTasks                                   MetricConfig `mapstructure:"spark.stage.killed_tasks"`
 	SparkStageMemorySpilled                                 MetricConfig `mapstructure:"spark.stage.memory_spilled"`
-	SparkStageOutputBytes                                   MetricConfig `mapstructure:"spark.stage.output_bytes"`
-	SparkStageOutputRecords                                 MetricConfig `mapstructure:"spark.stage.output_records"`
 	SparkStagePeakExecutionMemory                           MetricConfig `mapstructure:"spark.stage.peak_execution_memory"`
-	SparkStageResultSize                                    MetricConfig `mapstructure:"spark.stage.result_size"`
 	SparkStageShuffleBlocksFetched                          MetricConfig `mapstructure:"spark.stage.shuffle.blocks_fetched"`
-	SparkStageShuffleBytesRead                              MetricConfig `mapstructure:"spark.stage.shuffle.bytes_read"`
 	SparkStageShuffleFetchWaitTime                          MetricConfig `mapstructure:"spark.stage.shuffle.fetch_wait_time"`
-	SparkStageShuffleReadBytes                              MetricConfig `mapstructure:"spark.stage.shuffle.read_bytes"`
-	SparkStageShuffleReadRecords                            MetricConfig `mapstructure:"spark.stage.shuffle.read_records"`
-	SparkStageShuffleRemoteBytesReadToDisk                  MetricConfig `mapstructure:"spark.stage.shuffle.remote_bytes_read_to_disk"`
-	SparkStageShuffleWriteBytes                             MetricConfig `mapstructure:"spark.stage.shuffle.write_bytes"`
-	SparkStageShuffleWriteRecords                           MetricConfig `mapstructure:"spark.stage.shuffle.write_records"`
+	SparkStageShuffleIoRecords                              MetricConfig `mapstructure:"spark.stage.shuffle.io.records"`
+	SparkStageShuffleIoSize                                 MetricConfig `mapstructure:"spark.stage.shuffle.io.size"`
+	SparkStageShuffleRemoteDataReadToDisk                   MetricConfig `mapstructure:"spark.stage.shuffle.remote_data_read_to_disk"`
 	SparkStageShuffleWriteTime                              MetricConfig `mapstructure:"spark.stage.shuffle.write_time"`
+	SparkStageTaskActive                                    MetricConfig `mapstructure:"spark.stage.task.active"`
+	SparkStageTaskResultSize                                MetricConfig `mapstructure:"spark.stage.task.result_size"`
+	SparkStageTaskResults                                   MetricConfig `mapstructure:"spark.stage.task.results"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SparkDriverBlockManagerDiskDiskSpaceUsed: MetricConfig{
+		SparkDriverBlockManagerDiskSpaceUsed: MetricConfig{
 			Enabled: true,
 		},
 		SparkDriverBlockManagerMemoryRemaining: MetricConfig{
@@ -139,22 +126,19 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkDriverCodeGeneratorSourceCodeCount: MetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerJobActiveJobs: MetricConfig{
+		SparkDriverDagSchedulerJobsActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerJobAllJobs: MetricConfig{
+		SparkDriverDagSchedulerJobsAll: MetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerStageFailedStages: MetricConfig{
+		SparkDriverDagSchedulerStagesFailed: MetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerStageRunningStages: MetricConfig{
+		SparkDriverDagSchedulerStagesRunning: MetricConfig{
 			Enabled: true,
 		},
-		SparkDriverDagSchedulerStageWaitingStages: MetricConfig{
-			Enabled: true,
-		},
-		SparkDriverExecutorMetricsExecutionMemory: MetricConfig{
+		SparkDriverDagSchedulerStagesWaiting: MetricConfig{
 			Enabled: true,
 		},
 		SparkDriverExecutorMetricsGcCount: MetricConfig{
@@ -166,10 +150,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkDriverExecutorMetricsJvmMemory: MetricConfig{
 			Enabled: true,
 		},
-		SparkDriverExecutorMetricsPoolMemory: MetricConfig{
+		SparkDriverExecutorMetricsMemoryExecution: MetricConfig{
 			Enabled: true,
 		},
-		SparkDriverExecutorMetricsStorageMemory: MetricConfig{
+		SparkDriverExecutorMetricsMemoryPool: MetricConfig{
+			Enabled: true,
+		},
+		SparkDriverExecutorMetricsMemoryStorage: MetricConfig{
 			Enabled: true,
 		},
 		SparkDriverHiveExternalCatalogFileCacheHits: MetricConfig{
@@ -202,73 +189,49 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkDriverLiveListenerBusQueueSize: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorActiveTasks: MetricConfig{
-			Enabled: true,
-		},
-		SparkExecutorCompletedTasks: MetricConfig{
-			Enabled: true,
-		},
 		SparkExecutorDiskUsed: MetricConfig{
 			Enabled: true,
 		},
 		SparkExecutorDuration: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorFailedTasks: MetricConfig{
-			Enabled: true,
-		},
 		SparkExecutorGcTime: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorInputBytes: MetricConfig{
-			Enabled: true,
-		},
-		SparkExecutorMaxTasks: MetricConfig{
+		SparkExecutorInputSize: MetricConfig{
 			Enabled: true,
 		},
 		SparkExecutorMemoryUsed: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorShuffleReadBytes: MetricConfig{
+		SparkExecutorShuffleIoSize: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorShuffleWriteBytes: MetricConfig{
+		SparkExecutorStorageMemoryTotal: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorTotalStorageMemory: MetricConfig{
+		SparkExecutorStorageMemoryUsed: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorUsedStorageMemory: MetricConfig{
+		SparkExecutorTasksActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobActiveStages: MetricConfig{
+		SparkExecutorTasksMax: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobActiveTasks: MetricConfig{
+		SparkExecutorTasksResults: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobCompletedStages: MetricConfig{
+		SparkJobStagesActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobCompletedTasks: MetricConfig{
+		SparkJobStagesResults: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobFailedStages: MetricConfig{
+		SparkJobTasksActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobFailedTasks: MetricConfig{
-			Enabled: true,
-		},
-		SparkJobSkippedStages: MetricConfig{
-			Enabled: true,
-		},
-		SparkJobSkippedTasks: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageActiveTasks: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageCompleteTasks: MetricConfig{
+		SparkJobTasksResults: MetricConfig{
 			Enabled: true,
 		},
 		SparkStageDiskSpaceSpilled: MetricConfig{
@@ -280,61 +243,80 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkStageExecutorRunTime: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageFailedTasks: MetricConfig{
+		SparkStageIoRecords: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageInputBytes: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageInputRecords: MetricConfig{
+		SparkStageIoSize: MetricConfig{
 			Enabled: true,
 		},
 		SparkStageJvmGcTime: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageKilledTasks: MetricConfig{
-			Enabled: true,
-		},
 		SparkStageMemorySpilled: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageOutputBytes: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageOutputRecords: MetricConfig{
 			Enabled: true,
 		},
 		SparkStagePeakExecutionMemory: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageResultSize: MetricConfig{
-			Enabled: true,
-		},
 		SparkStageShuffleBlocksFetched: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageShuffleBytesRead: MetricConfig{
 			Enabled: true,
 		},
 		SparkStageShuffleFetchWaitTime: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleReadBytes: MetricConfig{
+		SparkStageShuffleIoRecords: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleReadRecords: MetricConfig{
+		SparkStageShuffleIoSize: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleRemoteBytesReadToDisk: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageShuffleWriteBytes: MetricConfig{
-			Enabled: true,
-		},
-		SparkStageShuffleWriteRecords: MetricConfig{
+		SparkStageShuffleRemoteDataReadToDisk: MetricConfig{
 			Enabled: true,
 		},
 		SparkStageShuffleWriteTime: MetricConfig{
+			Enabled: true,
+		},
+		SparkStageTaskActive: MetricConfig{
+			Enabled: true,
+		},
+		SparkStageTaskResultSize: MetricConfig{
+			Enabled: true,
+		},
+		SparkStageTaskResults: MetricConfig{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeConfig provides common config for a particular resource attribute.
+type ResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+// ResourceAttributesConfig provides config for apachespark resource attributes.
+type ResourceAttributesConfig struct {
+	SparkApplicationID   ResourceAttributeConfig `mapstructure:"spark.application.id"`
+	SparkApplicationName ResourceAttributeConfig `mapstructure:"spark.application.name"`
+	SparkExecutorID      ResourceAttributeConfig `mapstructure:"spark.executor.id"`
+	SparkJobID           ResourceAttributeConfig `mapstructure:"spark.job.id"`
+	SparkStageID         ResourceAttributeConfig `mapstructure:"spark.stage.id"`
+}
+
+func DefaultResourceAttributesConfig() ResourceAttributesConfig {
+	return ResourceAttributesConfig{
+		SparkApplicationID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		SparkApplicationName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		SparkExecutorID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		SparkJobID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		SparkStageID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
@@ -342,11 +324,13 @@ func DefaultMetricsConfig() MetricsConfig {
 
 // MetricsBuilderConfig is a configuration for apachespark metrics builder.
 type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
+	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsConfig(),
+		Metrics:            DefaultMetricsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
