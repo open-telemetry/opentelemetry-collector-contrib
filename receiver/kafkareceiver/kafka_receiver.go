@@ -17,6 +17,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/Shopify/sarama"
@@ -271,11 +272,6 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 }
 
 func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
-	unmarshaler := unmarshalers[config.Encoding]
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-
 	c := sarama.NewConfig()
 	c.ClientID = config.ClientID
 	c.Metadata.Full = config.Metadata.Full
@@ -288,14 +284,19 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	} else {
 		return nil, err
 	}
+	unmarshaler, err := getLogsUnmarshaler(config.Encoding, unmarshalers)
+	if err != nil {
+		return nil, err
+	}
 	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
+		var version sarama.KafkaVersion
+		version, err = sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
 			return nil, err
 		}
 		c.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err = kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 	client, err := sarama.NewConsumerGroup(config.Brokers, config.GroupID, c)
@@ -311,6 +312,33 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
 	}, nil
+}
+
+func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
+	var enc string
+	unmarshaler, ok := unmarshalers[encoding]
+	if !ok {
+		split := strings.SplitN(encoding, "_", 2)
+		prefix := split[0]
+		if len(split) > 1 {
+			enc = split[1]
+		}
+		unmarshaler, ok = unmarshalers[prefix].(LogsUnmarshalerWithEnc)
+		if !ok {
+			return nil, errUnrecognizedEncoding
+		}
+	}
+
+	if unmarshalerWithEnc, ok := unmarshaler.(LogsUnmarshalerWithEnc); ok {
+		// This should be called even when enc is an empty string to initialize the encoding.
+		unmarshaler, err := unmarshalerWithEnc.WithEnc(enc)
+		if err != nil {
+			return nil, err
+		}
+		return unmarshaler, nil
+	}
+
+	return unmarshaler, nil
 }
 
 func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
