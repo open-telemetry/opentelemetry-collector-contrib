@@ -1,0 +1,18 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: pkg/translator/prometheusremotewrite
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Allow control over the metrics names normalization via a flag instead of the feature gate.
+
+# One or more tracking issues related to the change
+issues: [22040]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  It is more convenient to control metrics name normalization via a flag
+  when `pkg/translator/prometheusremotewrite` is used as a third-party dependency.

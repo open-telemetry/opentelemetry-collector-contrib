@@ -69,10 +69,11 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		clientSettings:  &cfg.HTTPClientSettings,
 		settings:        set.TelemetrySettings,
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:           cfg.Namespace,
-			ExternalLabels:      sanitizedLabels,
-			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
-			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
+			Namespace:             cfg.Namespace,
+			ExternalLabels:        sanitizedLabels,
+			DisableTargetInfo:     !cfg.TargetInfo.Enabled,
+			DisableNormalizeNames: !prometheustranslator.IsNormalizeNameGateEnabled(),
+			ExportCreatedMetric:   cfg.CreatedMetric.Enabled,
 		},
 	}
 	if cfg.WAL == nil {

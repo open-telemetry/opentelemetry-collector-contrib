@@ -58,7 +58,7 @@ func TestAddSingleGaugeNumberDataPoint(t *testing.T) {
 					metric.Gauge().DataPoints().At(x),
 					pcommon.NewResource(),
 					metric,
-					Settings{},
+					Settings{DisableNormalizeNames: false},
 					gotSeries,
 				)
 			}
@@ -70,9 +70,10 @@ func TestAddSingleGaugeNumberDataPoint(t *testing.T) {
 func TestAddSingleSumNumberDataPoint(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
-		name   string
-		metric func() pmetric.Metric
-		want   func() map[string]*prompb.TimeSeries
+		name                 string
+		metric               func() pmetric.Metric
+		disableNormalization bool
+		want                 func() map[string]*prompb.TimeSeries
 	}{
 		{
 			name: "sum",
@@ -145,12 +146,13 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 
 				return metric
 			},
+			disableNormalization: true,
 			want: func() map[string]*prompb.TimeSeries {
 				labels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_sum_total"},
+					{Name: model.MetricNameLabel, Value: "test_sum"},
 				}
 				createdLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_sum_total" + createdSuffix},
+					{Name: model.MetricNameLabel, Value: "test_sum" + createdSuffix},
 				}
 				return map[string]*prompb.TimeSeries{
 					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
@@ -181,6 +183,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 
 				return metric
 			},
+			disableNormalization: false,
 			want: func() map[string]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_sum_total"},
@@ -234,7 +237,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					metric.Sum().DataPoints().At(x),
 					pcommon.NewResource(),
 					metric,
-					Settings{ExportCreatedMetric: true},
+					Settings{ExportCreatedMetric: true, DisableNormalizeNames: tt.disableNormalization},
 					got,
 				)
 			}

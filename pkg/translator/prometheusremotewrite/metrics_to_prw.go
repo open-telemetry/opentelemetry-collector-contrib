@@ -16,10 +16,11 @@ import (
 )
 
 type Settings struct {
-	Namespace           string
-	ExternalLabels      map[string]string
-	DisableTargetInfo   bool
-	ExportCreatedMetric bool
+	Namespace             string
+	ExternalLabels        map[string]string
+	DisableNormalizeNames bool
+	DisableTargetInfo     bool
+	ExportCreatedMetric   bool
 }
 
 // FromMetrics converts pmetric.Metrics to prometheus remote write format.
@@ -79,7 +80,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
-					name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+					name := prometheustranslator.BuildPrometheusMetricName(metric, settings.Namespace, !settings.DisableNormalizeNames)
 					for x := 0; x < dataPoints.Len(); x++ {
 						errs = multierr.Append(
 							errs,

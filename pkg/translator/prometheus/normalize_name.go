@@ -78,6 +78,11 @@ var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 )
 
+// IsNormalizeNameGateEnabled returns true if conversion to the Prometheus naming convention enabled
+func IsNormalizeNameGateEnabled() bool {
+	return normalizeNameGate.IsEnabled()
+}
+
 // Build a Prometheus-compliant metric name for the specified metric
 //
 // Metric name is prefixed with specified namespace and underscore (if any).
@@ -87,10 +92,21 @@ var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
 // and https://prometheus.io/docs/practices/naming/#metric-and-label-naming
 func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
+	return BuildPrometheusMetricName(metric, namespace, IsNormalizeNameGateEnabled())
+}
+
+// BuildPrometheusMetricName builds a Prometheus metric name for the specified metric.
+//
+// Metric name is prefixed with specified namespace and underscore (if any).
+// Namespace is not cleaned up. Make sure specified namespace follows Prometheus
+// naming convention.
+// If normalize is true then a metric name will be normalized accordingly to rules
+// described in `pkg/translator/prometheus/README.md`
+func BuildPrometheusMetricName(metric pmetric.Metric, namespace string, normalize bool) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
-	if normalizeNameGate.IsEnabled() {
+	if normalize {
 		return normalizeName(metric, namespace)
 	}
 

@@ -247,3 +247,8 @@ func TestBuildPromCompliantNameWithoutNormalize(t *testing.T) {
 	require.Equal(t, ":foo::bar", BuildPromCompliantName(createCounter(":foo::bar", ""), ""))
 
 }
+
+func TestBuildPrometheusMetricName(t *testing.T) {
+	require.Equal(t, "foo_bar_total", BuildPrometheusMetricName(createCounter(":foo::bar", ""), "", true))
+	require.Equal(t, ":foo::bar", BuildPrometheusMetricName(createCounter(":foo::bar", ""), "", false))
+}
