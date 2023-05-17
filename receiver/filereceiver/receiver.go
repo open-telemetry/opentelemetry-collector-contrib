@@ -32,13 +32,13 @@ type consumerType struct {
 	logsConsumer    consumer.Logs
 }
 type fileReceiver struct {
-	consumer   consumerType
-	path       string
-	logger     *zap.Logger
-	cancel     context.CancelFunc
-	throttle   float64
-	format     string
-	compressed bool
+	consumer    consumerType
+	path        string
+	logger      *zap.Logger
+	cancel      context.CancelFunc
+	throttle    float64
+	format      string
+	compression string
 }
 
 func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
@@ -50,12 +50,10 @@ func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
 		return fmt.Errorf("failed to open file %q: %w", r.path, err)
 	}
 
-	fmt.Println("receiver.go:52: THIS IS THE FORMAT")
-	fmt.Println(r.format)
-	fr := newFileReader(r.consumer, file, newReplayTimer(r.throttle), r.compressed)
+	fr := newFileReader(r.consumer, file, newReplayTimer(r.throttle), r.format, r.compression)
 	go func() {
 		var err error
-		if r.compressed {
+		if r.format == formatTypeProto {
 			err = fr.readAllChunks(ctx)
 		} else {
 			err = fr.readAllLines(ctx)

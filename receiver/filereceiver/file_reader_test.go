@@ -34,7 +34,7 @@ func TestFileReader_Readline(t *testing.T) {
 	}
 	f, err := os.Open(filepath.Join("testdata", "metrics.json"))
 	require.NoError(t, err)
-	fr := newFileReader(cons, f, newReplayTimer(0), false)
+	fr := newFileReader(cons, f, newReplayTimer(0), "json", "none")
 	err = fr.readMetricLine(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(tc.consumed))
@@ -73,7 +73,7 @@ func TestFileReader_ReadAll(t *testing.T) {
 		throttle:  2,
 		sleepFunc: sleeper.fakeSleep,
 	}
-	fr := newFileReader(cons, f, rt, false)
+	fr := newFileReader(cons, f, rt, "json", "none")
 	err = fr.readAllLines(context.Background())
 	require.NoError(t, err)
 	const expectedSleeps = 10
@@ -92,6 +92,10 @@ type blockingStringReader struct {
 
 func (sr blockingStringReader) ReadString(byte) (string, error) {
 	select {}
+}
+
+func (sr blockingStringReader) Read([]byte) (int, error) {
+	return 0, nil
 }
 
 func metricsByName(pm pmetric.Metrics) map[string]pmetric.Metric {

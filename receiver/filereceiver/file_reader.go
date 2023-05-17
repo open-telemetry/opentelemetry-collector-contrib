@@ -34,7 +34,9 @@ import (
 // so that it can be swapped out for testing.
 type stringReader interface {
 	ReadString(delim byte) (string, error)
+	Read(buf []byte) (int, error)
 }
+
 type unmarshaler struct {
 	metricsUnm pmetric.Unmarshaler
 	tracesUnm  ptrace.Unmarshaler
@@ -47,27 +49,39 @@ type fileReader struct {
 	unmarshaler  unmarshaler
 	consumer     consumerType
 	timer        *replayTimer
-	compReader   io.Reader
 }
 
-func newFileReader(consumer consumerType, file *os.File, timer *replayTimer, compressed bool) fileReader {
+func newFileReader(consumer consumerType, file *os.File, timer *replayTimer, format string, compression string) fileReader {
 	fr := fileReader{
-		consumer:     consumer,
-		timer:        timer,
-		stringReader: bufio.NewReader(file),
+		consumer: consumer,
+		timer:    timer,
 	}
 
-	if compressed {
-		fr.compReader, _ = zstd.NewReader(file)
+	if compression == compressionTypeZSTD {
+		cr, _ := zstd.NewReader(file)
+		fr.stringReader = bufio.NewReader(cr)
+	} else { // no compression
+		fr.stringReader = bufio.NewReader(file)
 	}
 
-	switch {
-	case fr.consumer.tracesConsumer != nil:
-		fr.unmarshaler.tracesUnm = &ptrace.JSONUnmarshaler{}
-	case fr.consumer.logsConsumer != nil:
-		fr.unmarshaler.logsUnm = &plog.JSONUnmarshaler{}
-	case fr.consumer.metricsConsumer != nil:
-		fr.unmarshaler.metricsUnm = &pmetric.JSONUnmarshaler{}
+	if format == formatTypeProto {
+		switch {
+		case fr.consumer.tracesConsumer != nil:
+			fr.unmarshaler.tracesUnm = &ptrace.ProtoUnmarshaler{}
+		case fr.consumer.logsConsumer != nil:
+			fr.unmarshaler.logsUnm = &plog.ProtoUnmarshaler{}
+		case fr.consumer.metricsConsumer != nil:
+			fr.unmarshaler.metricsUnm = &pmetric.ProtoUnmarshaler{}
+		}
+	} else { // default to json
+		switch {
+		case fr.consumer.tracesConsumer != nil:
+			fr.unmarshaler.tracesUnm = &ptrace.JSONUnmarshaler{}
+		case fr.consumer.logsConsumer != nil:
+			fr.unmarshaler.logsUnm = &plog.JSONUnmarshaler{}
+		case fr.consumer.metricsConsumer != nil:
+			fr.unmarshaler.metricsUnm = &pmetric.JSONUnmarshaler{}
+		}
 	}
 
 	return fr
@@ -99,33 +113,6 @@ func (fr fileReader) readAllLines(ctx context.Context) error {
 			}
 		}
 	}
-}
-
-func (fr fileReader) readAllChunks(ctx context.Context) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			var err error
-			// switch {
-			// case fr.consumer.tracesConsumer != nil:
-			// 	err = fr.readTraceChunk(ctx)
-			if fr.consumer.metricsConsumer != nil {
-				err = fr.readMetricChunk(ctx)
-				// case fr.consumer.logsConsumer != nil:
-				// 	err = fr.readLogChunk(ctx)
-			}
-
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					return nil
-				}
-				return err
-			}
-		}
-	}
-
 }
 
 // readLogLine reads the next line in the file, converting it into logs and
@@ -182,20 +169,42 @@ func (fr fileReader) readMetricLine(ctx context.Context) error {
 	return fr.consumer.metricsConsumer.ConsumeMetrics(ctx, metrics)
 }
 
+// readAllChunks reads the next chunk of data where each chunk is prefixed with
+// the size of the data chunk.
+func (fr fileReader) readAllChunks(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			var err error
+			switch {
+			case fr.consumer.tracesConsumer != nil:
+				err = fr.readTraceChunk(ctx)
+			case fr.consumer.metricsConsumer != nil:
+				err = fr.readMetricChunk(ctx)
+			case fr.consumer.logsConsumer != nil:
+				err = fr.readLogChunk(ctx)
+			}
+
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					return nil
+				}
+				return err
+			}
+		}
+	}
+}
+
 func (fr fileReader) readMetricChunk(ctx context.Context) error {
-	// find how large the chunk is
-	szBuf := make([]byte, 4)
-	_, err := fr.compReader.Read(szBuf)
+	var sz int32
+	err := binary.Read(fr.stringReader, binary.BigEndian, &sz)
 	if err != nil {
 		return err
 	}
-	sz := binary.BigEndian.Uint32(szBuf)
-	fmt.Println("file_reader.go:193: THIS IS THE SIZE")
-	fmt.Println(sz)
-	dataBuffer := make([]byte, sz+1)
-	_, err = fr.compReader.Read(dataBuffer)
-	fmt.Println("file_reader.go:197: THIS IS DATA BUFFER")
-	fmt.Println(string(dataBuffer))
+	dataBuffer := make([]byte, sz)
+	err = binary.Read(fr.stringReader, binary.BigEndian, &dataBuffer)
 	if err != nil {
 		return fmt.Errorf("failed to read line from input file: %w", err)
 	}
@@ -209,6 +218,55 @@ func (fr fileReader) readMetricChunk(ctx context.Context) error {
 	}
 	return fr.consumer.metricsConsumer.ConsumeMetrics(ctx, metrics)
 }
+
+func (fr fileReader) readTraceChunk(ctx context.Context) error {
+	var sz int32
+	err := binary.Read(fr.stringReader, binary.BigEndian, &sz)
+	if err != nil {
+		return err
+	}
+
+	dataBuffer := make([]byte, sz)
+	err = binary.Read(fr.stringReader, binary.BigEndian, &dataBuffer)
+	if err != nil {
+		return fmt.Errorf("failed to read line from input file: %w", err)
+	}
+
+	traces, err := fr.unmarshaler.tracesUnm.UnmarshalTraces(dataBuffer)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal traces: %w", err)
+	}
+	err = fr.timer.wait(ctx, getFirstTimestampFromTraces(traces))
+	if err != nil {
+		return fmt.Errorf("readLine interrupted while waiting for timer: %w", err)
+	}
+	return fr.consumer.tracesConsumer.ConsumeTraces(ctx, traces)
+}
+
+func (fr fileReader) readLogChunk(ctx context.Context) error {
+	var sz int32
+	err := binary.Read(fr.stringReader, binary.BigEndian, &sz)
+	if err != nil {
+		return err
+	}
+
+	dataBuffer := make([]byte, sz)
+	err = binary.Read(fr.stringReader, binary.BigEndian, &dataBuffer)
+	if err != nil {
+		return fmt.Errorf("failed to read line from input file: %w", err)
+	}
+
+	logs, err := fr.unmarshaler.logsUnm.UnmarshalLogs(dataBuffer)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal logs: %w", err)
+	}
+	err = fr.timer.wait(ctx, getFirstTimestampFromLogs(logs))
+	if err != nil {
+		return fmt.Errorf("readLine interrupted while waiting for timer: %w", err)
+	}
+	return fr.consumer.logsConsumer.ConsumeLogs(ctx, logs)
+}
+
 func getFirstTimestampFromLogs(logs plog.Logs) pcommon.Timestamp {
 	resourceLogs := logs.ResourceLogs()
 	if resourceLogs.Len() == 0 {

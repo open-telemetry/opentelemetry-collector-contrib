@@ -20,6 +20,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+const (
+	formatTypeJSON      = "json"
+	formatTypeProto     = "proto"
+	compressionTypeZSTD = "zstd"
+	compressionTypeNone = "none"
+)
+
 // Config defines the configuration for the file receiver.
 type Config struct {
 	// Path of the file to read from. Path is relative to current directory.
@@ -34,12 +41,15 @@ type Config struct {
 	// Format will specify the format of the file to be read.
 	// Currently support json and proto options.
 	FormatType string `mapstructure:"format"`
-	Compressed bool   `mapstructure:"compressed"`
+	// type of compression algorithm used. Currently supports zstd.
+	Compression string `mapstructure:"compression"`
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Throttle: 1,
+		Throttle:    1,
+		Compression: compressionTypeNone,
+		FormatType:  formatTypeJSON,
 	}
 }
 
@@ -50,8 +60,11 @@ func (c Config) Validate() error {
 	if c.Throttle < 0 {
 		return errors.New("throttle cannot be negative")
 	}
-	// if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
-	// 	return errors.New("format must be json or proto")
-	// }
+	if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
+		return errors.New("format must be json or proto")
+	}
+	if c.Compression != compressionTypeNone && c.Compression != compressionTypeZSTD {
+		return errors.New("compression must be zstd or none")
+	}
 	return nil
 }

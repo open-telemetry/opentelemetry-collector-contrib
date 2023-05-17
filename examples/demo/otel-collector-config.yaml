@@ -15,8 +15,9 @@ receivers:
   file:
     path: ./bar
     format: proto
+    compressed: true
   file/2:
-    path: ./foo
+    path: ./foo2
     format: json
     compressed: true
 
@@ -26,8 +27,9 @@ exporters:
   file:
     path: ./bar
     format: proto
+    compression: zstd
   file/2:
-    path: ./foo
+    path: ./foo2
     format: json
     compression: zstd
 
@@ -41,6 +43,6 @@ service:
 #      processors: [batch]
 #      exporters: [logging]
     metrics:
-      receivers: [file/2]
+      receivers: [file]
       processors: [batch]
       exporters: [logging]

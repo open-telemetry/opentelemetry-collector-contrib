@@ -68,7 +68,7 @@ func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	buf = e.compressor(buf)
+	// buf = e.compressor(buf)
 	_, err = e.exporter.Write(buf)
 	return err
 }
@@ -78,7 +78,7 @@ func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	buf = e.compressor(buf)
+	// buf = e.compressor(buf)
 	_, err = e.exporter.Write(buf)
 	return err
 }
@@ -88,7 +88,7 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	buf = e.compressor(buf)
+	// buf = e.compressor(buf)
 	_, err = e.exporter.Write(buf)
 	return err
 }
@@ -184,19 +184,31 @@ func (e *fileExporter) Shutdown(context.Context) error {
 }
 
 func (e *fileExporter) createExporterWriter(cfg *Config) io.Writer {
-	// if cfg.FormatType == formatTypeProto {
-	// 	fw, _ := zstd.NewWriter(e.file)
-	// 	return &fileWriter{
-	// 		file: fw,
-	// 	}
-	// }
-	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
-	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
-		fw, _ := zstd.NewWriter(e.file)
+	if cfg.FormatType == formatTypeProto {
+		if cfg.Compression == "zstd" {
+			if fw, err := zstd.NewWriter(e.file); err == nil {
+				return &fileWriter{
+					file: fw,
+				}
+			}
+		}
+
 		return &fileWriter{
-			file: fw,
+			file: e.file,
 		}
 	}
+
+	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
+	if cfg.FormatType == formatTypeJSON {
+		if cfg.Compression == "zstd" {
+			if fw, err := zstd.NewWriter(e.file); err == nil {
+				return &lineWriter{
+					file: fw,
+				}
+			}
+		}
+	}
+
 	return &lineWriter{
 		file: e.file,
 	}
