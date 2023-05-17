@@ -4,7 +4,7 @@
 |--------------------------|-----------------------|
 | Stability                | [beta]                |
 | Supported pipeline types | logs, traces, metrics |
-| Distributions            | [contrib]             |
+| Distributions            | [contrib], [observiq] |
 
 This exporter sends logs, traces and metrics to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 
@@ -78,3 +78,4 @@ This exporter saves metrics to Application Insights `customMetrics` table.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector

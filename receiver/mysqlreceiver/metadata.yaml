@@ -4,8 +4,8 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq]
+
 resource_attributes:
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.

@@ -1,10 +1,10 @@
 # OpenCensus gRPC Exporter
 
-| Status                   |                    |
-| ------------------------ |--------------------|
-| Stability                | [beta]             |
-| Supported pipeline types | trace, metrics |
-| Distributions            | [contrib]          |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | trace, metrics        |
+| Distributions            | [contrib], [observiq] |
 
 Exports traces and/or metrics via gRPC using
 [OpenCensus](https://opencensus.io/) format.
@@ -54,3 +54,4 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector

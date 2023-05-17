@@ -5,4 +5,4 @@ status:
   stability:
     alpha: [logs]
     beta: [traces, metrics]
-  distributions: [contrib, aws]
+  distributions: [contrib, aws, observiq]
