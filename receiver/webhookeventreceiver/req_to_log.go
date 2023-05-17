@@ -33,8 +33,8 @@ func reqToLog(sc *bufio.Scanner,
 	appendMetadata(resourceLog, query)
 	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 
-    scopeLog.Scope().SetName(scopeLogName)
-    scopeLog.Scope().SetVersion(settings.BuildInfo.Version)
+	scopeLog.Scope().SetName(scopeLogName)
+	scopeLog.Scope().SetVersion(settings.BuildInfo.Version)
 	scopeLog.Scope().Attributes().PutStr("source", settings.ID.String())
 	scopeLog.Scope().Attributes().PutStr("receiver", metadata.Type)
 

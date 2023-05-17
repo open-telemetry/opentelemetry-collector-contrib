@@ -32,13 +32,13 @@ func TestReqToLog(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 
 	tests := []struct {
-		desc   string
-		sc     *bufio.Scanner
-		query  url.Values
-		tt     func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings)
+		desc  string
+		sc    *bufio.Scanner
+		query url.Values
+		tt    func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings)
 	}{
 		{
-			desc:   "Valid query valid event",
+			desc: "Valid query valid event",
 			sc: func() *bufio.Scanner {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
@@ -72,7 +72,7 @@ func TestReqToLog(t *testing.T) {
 			},
 		},
 		{
-			desc:   "Query is empty",
+			desc: "Query is empty",
 			sc: func() *bufio.Scanner {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)

@@ -18,7 +18,7 @@ const (
 	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
 	// defaultEndpoint = "localhost:8080"
-    scopeLogName        = "otlp/" + metadata.Type
+	scopeLogName        = "otlp/" + metadata.Type
 	defaultReadTimeout  = "500ms"
 	defaultWriteTimeout = "500ms"
 	defaultPath         = "/events"
