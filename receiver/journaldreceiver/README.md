@@ -105,7 +105,7 @@ which is going to effectively retrieve all entries which matches the following s
 
 The user running the collector must have enough permissions to access the journal; not granting them will lead to issues.
 
-When running in a containerized enviroment, differences in the systemd version running on the host and on the container may prevent access to logs due to different features and configurations (e.g. zstd compression, keyed hash etc).
+When running in a containerized environment, differences in the systemd version running on the host and on the container may prevent access to logs due to different features and configurations (e.g. zstd compression, keyed hash etc).
 
 ### Docker
 
