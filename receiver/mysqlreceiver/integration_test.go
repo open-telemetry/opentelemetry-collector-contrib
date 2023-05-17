@@ -37,51 +37,49 @@ import (
 )
 
 func TestMySqlIntegration(t *testing.T) {
-	t.Run("Running mysql version 8.0", func(t *testing.T) {
-		t.Parallel()
-		container := getContainer(t, containerRequest8_0)
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
+	t.Parallel()
+	container := getContainer(t, containerRequest8_0)
+	defer func() {
+		require.NoError(t, container.Terminate(context.Background()))
+	}()
+	hostname, err := container.Host(context.Background())
+	require.NoError(t, err)
 
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.CollectionInterval = time.Second
-		cfg.Endpoint = net.JoinHostPort(hostname, "3306")
-		cfg.Username = "otel"
-		cfg.Password = "otel"
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.CollectionInterval = time.Second
+	cfg.Endpoint = net.JoinHostPort(hostname, "3306")
+	cfg.Username = "otel"
+	cfg.Password = "otel"
 
-		consumer := new(consumertest.MetricsSink)
-		settings := receivertest.NewNopCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
+	consumer := new(consumertest.MetricsSink)
+	settings := receivertest.NewNopCreateSettings()
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	require.NoError(t, err, "failed creating metrics receiver")
 
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		defer func() {
-			require.NoError(t, rcvr.Shutdown(context.Background()))
-		}()
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.8_0.yaml")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
+	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
 
-		compareOpts := []pmetrictest.CompareMetricsOption{
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()}
+	compareOpts := []pmetrictest.CompareMetricsOption{
+		pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp()}
 
-		require.Eventually(t, scraperinttest.EqualsLatestMetrics(expectedMetrics, consumer, compareOpts), 30*time.Second, time.Second)
-	})
+	require.Eventually(t, scraperinttest.EqualsLatestMetrics(expectedMetrics, consumer, compareOpts), 30*time.Second, time.Second)
 }
 
 var (
 	containerRequest8_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mysql.8_0",
+			Dockerfile: "Dockerfile.mysql",
 		},
 		ExposedPorts: []string{"3306:3306"},
 		WaitingFor: wait.ForListeningPort("3306").
