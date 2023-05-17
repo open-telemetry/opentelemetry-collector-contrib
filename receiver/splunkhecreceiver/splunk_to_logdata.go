@@ -65,9 +65,7 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
 		// by 1 billion.
-		if event.Time != nil {
-			logRecord.SetTimestamp(pcommon.Timestamp(*event.Time * 1e9))
-		}
+		logRecord.SetTimestamp(pcommon.Timestamp(event.Time * 1e9))
 
 		// Set event fields first, so the specialized attributes overwrite them if needed.
 		keys := make([]string, 0, len(event.Fields))
