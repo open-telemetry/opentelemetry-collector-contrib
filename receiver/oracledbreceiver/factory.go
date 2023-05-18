@@ -6,6 +6,7 @@ package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -47,6 +48,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
+		sqlCfg.DataSource = getDataSource(*sqlCfg)
 		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsBuilderConfig, settings)
 
 		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
@@ -64,6 +66,16 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 			opt,
 		)
 	}
+}
+
+func getDataSource(cfg Config) string {
+	if cfg.DataSource != "" {
+		return cfg.DataSource
+	}
+
+	// Data source string is format of:
+	// oracle://username:password@endpoint/OracleDBService
+	return fmt.Sprintf("oracle://%s:%s@%s/%s", cfg.Username, cfg.Password, cfg.Endpoint, cfg.Service)
 }
 
 func getInstanceName(datasource string) string {

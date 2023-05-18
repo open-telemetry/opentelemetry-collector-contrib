@@ -17,8 +17,14 @@ The receiver connects to a database host and performs periodically queries.
 
 ## Getting Started
 
-The following settings are required:
+To use the OracleDB receiver you must define how to connect to your DB. This can be done in two ways,
+defined in the [Primary](#primary-configuration-option) and [Secondary](#secondary-configuration-option) configuration
+option sections. Defining one of the two configurations is required. If both are defined, the primary
+option will be used.
 
+### Primary Configuration Option
+
+Required options:
 - `datasource`: Oracle database connection string. Refer to Oracle Go Driver go_ora documentation for full connection string options.
 
 Example:
@@ -27,6 +33,24 @@ Example:
 receivers:
   oracledb:
     datasource: "oracle://otel:password@localhost:51521/XE"
+```
+
+### Secondary Configuration Option
+
+Required options:
+- `endpoint`: Endpoint used to connect to the OracleDB server. Must be in the format of `host:port`
+- `password`: Password for the OracleDB connection
+- `service`: OracleDB Service that the receiver should connect to.
+- `username`: Username for the OracleDB connection
+
+Example:
+```yaml
+receivers:
+  oracledb:
+    endpoint: localhost:51521
+    password: password
+    service: XE
+    username: otel
 ```
 
 ## Permissions
@@ -42,7 +66,7 @@ GRANT SELECT ON DBA_DATA_FILES TO <username>;
 
 ## Enabling metrics.
 
-See [documentation.md].
+See [documentation](./documentation).
 
 You can enable or disable selective metrics.
 
