@@ -40,8 +40,9 @@ func TestLoadConfig(t *testing.T) {
 		}, {
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				Path:     "./filename.json",
-				Throttle: 1,
+				Path:       "./filename.json",
+				Throttle:   1,
+				FormatType: "json",
 			},
 		}, {
 			id:           component.NewIDWithName(metadata.Type, "2"),

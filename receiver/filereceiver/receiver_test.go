@@ -19,9 +19,12 @@ import (
 
 func TestReceiver(t *testing.T) {
 	tc := &testConsumer{}
+	cons := consumerType{
+		metricsConsumer: tc,
+	}
 	r := &fileReceiver{
 		path:     "testdata/metrics.json",
-		consumer: tc,
+		consumer: cons,
 		logger:   zap.NewNop(),
 	}
 	err := r.Start(context.Background(), componenttest.NewNopHost())
