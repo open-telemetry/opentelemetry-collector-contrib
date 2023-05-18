@@ -1,10 +1,10 @@
 # Span Metrics Processor
 
-| Status                   |                                 |
-| ------------------------ |---------------------------------|
-| Stability                | [deprecated]                    |
-| Supported pipeline types | traces                          |
-| Distributions            | [contrib], [splunk], [observiq] |
+| Status                   |                                         |
+| ------------------------ |-----------------------------------------|
+| Stability                | [deprecated]                            |
+| Supported pipeline types | traces                                  |
+| Distributions            | [contrib], [observiq], [splunk], [sumo] |
 
 **Note**: The `spanmetrics` processor is **deprecated** in favour of the [spanmetrics](../../connector/spanmetricsconnector/README.md) connector.
 
@@ -145,3 +145,4 @@ For more example configuration covering various other use cases, please visit th
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

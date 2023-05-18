@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib, observiq]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   saphana.host:

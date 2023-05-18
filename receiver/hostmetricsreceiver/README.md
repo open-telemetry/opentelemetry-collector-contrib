@@ -1,10 +1,10 @@
 # Host Metrics Receiver
 
-| Status                   |                                         |
-| ------------------------ |-----------------------------------------|
-| Stability                | [beta]                                  |
-| Supported pipeline types | metrics                                 |
-| Distributions            | [core], [contrib], [splunk], [observiq] |
+| Status                   |                                                 |
+| ------------------------ |-------------------------------------------------|
+| Stability                | [beta]                                          |
+| Supported pipeline types | metrics                                         |
+| Distributions            | [core], [contrib], [observiq], [splunk], [sumo] |
 
 The Host Metrics receiver generates metrics about the host system scraped
 from various sources. This is intended to be used when the collector is
@@ -184,3 +184,4 @@ export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

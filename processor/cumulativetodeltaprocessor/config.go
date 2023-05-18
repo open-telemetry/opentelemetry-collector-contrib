@@ -10,13 +10,20 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 // Config defines the configuration for the processor.
 type Config struct {
-
 	// MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
 	MaxStaleness time.Duration `mapstructure:"max_staleness"`
+
+	// InitialValue determines how to handle the first datapoint for a given metric. Valid values:
+	//
+	//   - auto: (default) send the first point iff the startime is set AND the starttime happens after the component started AND the starttime is different from the timestamp
+	//   - keep: always send the first point
+	//   - drop: don't send the first point, but store it for subsequent delta calculations
+	InitialValue tracking.InitialValue `mapstructure:"initial_value"`
 
 	// Include specifies a filter on the metrics that should be converted.
 	// Exclude specifies a filter on the metrics that should not be converted.

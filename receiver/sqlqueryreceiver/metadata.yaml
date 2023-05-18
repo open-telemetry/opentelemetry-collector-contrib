@@ -5,5 +5,4 @@ status:
   stability:
     alpha: [metrics]
     development: [logs]
-  distributions: [contrib, splunk, observiq]
-
+  distributions: [contrib, splunk, observiq, sumo]

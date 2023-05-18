@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, observiq]
+  distributions: [contrib, splunk, observiq, sumo]
 
 resource_attributes:
   redis.version:
