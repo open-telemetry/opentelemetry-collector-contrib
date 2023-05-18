@@ -4,7 +4,7 @@
 | ------------------------ |-----------------------|
 | Stability                | [beta]                |
 | Supported pipeline types | traces, logs, metrics |
-| Distributions            | [contrib, observiq]   |
+| Distributions            | [contrib], [observiq] |
 
 Exports data via HTTP to [F5 Cloud](https://portal.cloudservices.f5.com/).
 

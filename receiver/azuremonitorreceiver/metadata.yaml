@@ -4,7 +4,7 @@ status:
    class: receiver
    stability:
     development: [metrics]
-   distributions: [contrib]
+   distributions: [contrib, sumo]
 
 resource_attributes:
   azuremonitor.tenant_id:

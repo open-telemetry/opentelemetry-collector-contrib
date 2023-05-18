@@ -4,5 +4,5 @@ status:
   class: receiver
   stability:
     beta: [metrics, traces]
-  distributions: [core, contrib, observiq]
+  distributions: [core, contrib, observiq, sumo]
 
