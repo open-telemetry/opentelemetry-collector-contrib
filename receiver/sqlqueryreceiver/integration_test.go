@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -37,13 +36,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 )
 
 func TestLogsTrackingWithoutStorageInPostgres(t *testing.T) {
 	// Start Postgres container.
 	externalPort := "15430"
 	dbContainer := startPostgresDbContainer(t, externalPort)
-	defer dbContainer.Terminate(context.Background())
+	defer func() {
+		require.NoError(t, dbContainer.Terminate(context.Background()))
+	}()
 
 	// Start the SQL Query receiver.
 	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
@@ -123,7 +126,9 @@ func TestLogsTrackingWithStorageInPostgres(t *testing.T) {
 	// start Postgres container
 	externalPort := "15431"
 	dbContainer := startPostgresDbContainer(t, externalPort)
-	defer dbContainer.Terminate(context.Background())
+	defer func() {
+		require.NoError(t, dbContainer.Terminate(context.Background()))
+	}()
 
 	// create a File Storage extension writing to a temporary directory in local filesystem
 	storageDir := t.TempDir()
@@ -302,9 +307,9 @@ func printLogs(allLogs []plog.Logs) {
 	}
 }
 
-func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, existingLogId, newLogCount int) {
-	for newLogId := existingLogId + 1; newLogId <= existingLogId+newLogCount; newLogId++ {
-		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body) values (%d, now(), 'another log %d');", newLogId, newLogId)
+func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, existingLogID, newLogCount int) {
+	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body) values (%d, now(), 'another log %d');", newLogID, newLogID)
 		returnValue, returnMessageReader, err := container.Exec(context.Background(), []string{
 			"psql", "-U", "otel", "-c", query,
 		})
@@ -322,7 +327,9 @@ func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, 
 func TestPostgresIntegration(t *testing.T) {
 	externalPort := "15432"
 	dbContainer := startPostgresDbContainer(t, externalPort)
-	defer dbContainer.Terminate(context.Background())
+	defer func() {
+		require.NoError(t, dbContainer.Terminate(context.Background()))
+	}()
 
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
@@ -500,7 +507,9 @@ func TestOracleDBIntegration(t *testing.T) {
 	)
 	require.NotNil(t, dbContainer)
 	require.NoError(t, err)
-	defer dbContainer.Terminate(ctx)
+	defer func() {
+		require.NoError(t, dbContainer.Terminate(context.Background()))
+	}()
 
 	genreKey := "GENRE"
 	factory := NewFactory()
@@ -616,7 +625,9 @@ func TestMysqlIntegration(t *testing.T) {
 	)
 	require.NotNil(t, dbContainer)
 	require.NoError(t, err)
-	defer dbContainer.Terminate(ctx)
+	defer func() {
+		require.NoError(t, dbContainer.Terminate(context.Background()))
+	}()
 
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
@@ -891,7 +902,7 @@ func testScopeLogsSLiceFromSimpleLogs(t *testing.T, scopeLogsSlice plog.ScopeLog
 		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
 	}
 	assert.Equal(t, len(expectedEntries), scopeLogsSlice.At(0).LogRecords().Len())
-	for i, _ := range expectedEntries {
+	for i := range expectedEntries {
 		assert.Equal(t, expectedEntries[i], scopeLogsSlice.At(0).LogRecords().At(i).Body().Str())
 	}
 }

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -29,6 +28,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/observability"
 )
 
@@ -54,7 +54,7 @@ func newLogsReceiver(
 	sqlOpenerFunc sqlOpenerFunc,
 	createClient clientProviderFunc,
 	nextConsumer consumer.Logs,
-) (*logsReceiver, error) {
+) *logsReceiver {
 	receiver := &logsReceiver{
 		config:   config,
 		settings: settings,
@@ -67,7 +67,7 @@ func newLogsReceiver(
 		id:                settings.ID,
 	}
 
-	return receiver, nil
+	return receiver
 }
 
 func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) error {
@@ -92,7 +92,7 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 	for _, queryReceiver := range receiver.queryReceivers {
 		err := queryReceiver.start(ctx)
 		if err != nil {
-			if err := observability.RecordErrors(observability.StartError, receiver.id.String(), queryReceiver.ID()); err != nil {
+			if err = observability.RecordErrors(observability.StartError, receiver.id.String(), queryReceiver.ID()); err != nil {
 				receiver.settings.Logger.Debug("error recording metric for errors count", zap.Error(err))
 			}
 			return err
@@ -172,7 +172,10 @@ func (receiver *logsReceiver) collect() {
 		logs.ResourceLogs().MoveAndAppendTo(allLogs.ResourceLogs())
 	}
 	if allLogs.LogRecordCount() > 0 {
-		receiver.nextConsumer.ConsumeLogs(context.Background(), allLogs)
+		err := receiver.nextConsumer.ConsumeLogs(context.Background(), allLogs)
+		if err != nil {
+			receiver.settings.Logger.Error("failed to send logs: %w", zap.Error(err))
+		}
 	}
 }
 
@@ -297,28 +300,31 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 				errs = multierr.Append(errs, err)
 			}
 			if logsConfigIndex == 0 {
-				queryReceiver.storeTrackingValue(ctx, row)
+				errs = multierr.Append(errs, queryReceiver.storeTrackingValue(ctx, row))
 			}
 		}
 	}
 	return logs, nil
 }
 
-func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row stringMap) {
+func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row stringMap) error {
 	if queryReceiver.query.TrackingColumn == "" {
-		return
+		return nil
 	}
 	queryReceiver.trackingValue = row[queryReceiver.query.TrackingColumn]
 	if queryReceiver.storageClient != nil {
-		queryReceiver.storageClient.Set(ctx, queryReceiver.trackingValueStorageKey, []byte(queryReceiver.trackingValue))
+		err := queryReceiver.storageClient.Set(ctx, queryReceiver.trackingValueStorageKey, []byte(queryReceiver.trackingValue))
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error {
+func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error { //nolint:unparam
 	logRecord.Body().SetStr(row[config.BodyColumn])
 	return nil
 }
 
-func (queryReceiver *logsQueryReceiver) shutdown(ctx context.Context) error {
-	return nil
+func (queryReceiver *logsQueryReceiver) shutdown(ctx context.Context) {
 }
