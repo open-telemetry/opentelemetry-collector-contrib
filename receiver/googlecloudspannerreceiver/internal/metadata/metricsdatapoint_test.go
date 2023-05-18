@@ -153,8 +153,8 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 }
 
 func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
-	strSliceLabelValueMetadata, _ := NewLabelValueMetadata("query_text", "stringLabelColumnName", StringValueType)
-	labelValue1 := stringSliceLabelValue{metadata: strSliceLabelValueMetadata, value: "SELECT 1"}
+	strLabelValueMetadata, _ := NewLabelValueMetadata("query_text", "stringLabelColumnName", StringValueType)
+	labelValue1 := stringLabelValue{metadata: strLabelValueMetadata, value: "SELECT 1"}
 	metricValues := allPossibleMetricValues(metricDataType)
 	labelValues := []LabelValue{labelValue1}
 	timestamp := time.Now().UTC()

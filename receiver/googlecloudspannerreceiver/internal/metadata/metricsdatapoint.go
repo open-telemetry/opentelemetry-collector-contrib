@@ -8,13 +8,14 @@ import (
 	"hash/fnv"
 	"strings"
 	"time"
+	"unicode/utf8"
+
 	"github.com/mitchellh/hashstructure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
-	"unicode/utf8"
 )
 
 const (
@@ -151,15 +152,15 @@ func (mdp *MetricsDataPoint) HideLockStatsRowrangestartkeyPII() {
 }
 
 func TruncateString(str string, length int) string {
-    if length <= 0 {
-        return ""
-    }
+	if length <= 0 {
+		return ""
+	}
 
-    if utf8.RuneCountInString(str) < length {
-        return str
-    }
+	if utf8.RuneCountInString(str) < length {
+		return str
+	}
 
-    return string([]rune(str)[:length])
+	return string([]rune(str)[:length])
 }
 
 func (mdp *MetricsDataPoint) TruncateQueryText(length int) {
@@ -174,7 +175,6 @@ func (mdp *MetricsDataPoint) TruncateQueryText(length int) {
 		}
 	}
 }
-
 
 func (mdp *MetricsDataPoint) hash() (string, error) {
 	hashedData, err := hashstructure.Hash(mdp.toDataForHashing(), nil)
