@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
+// +build windows
 
 package activedirectorydsreceiver
 
@@ -50,5 +51,4 @@ func TestIntegration(t *testing.T) {
 
 	err = recv.Shutdown(context.Background())
 	require.NoError(t, err)
-
 }
