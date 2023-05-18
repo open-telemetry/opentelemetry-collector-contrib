@@ -725,7 +725,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			errorMode:        ottl.IgnoreError,
 		},
 		{
-			name: "HasAttrOnDatapoint",
+			name: "HasAttrKeyOnDatapoint",
 			conditions: MetricFilters{
 				MetricConditions: []string{
 					`HasAttrKeyOnDatapoint("attr1")`,
