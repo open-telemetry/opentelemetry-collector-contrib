@@ -1,4 +1,4 @@
-type: mysqlreceiver
+type: mysql
 
 status:
   class: receiver
