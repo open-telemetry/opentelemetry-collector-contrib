@@ -172,6 +172,11 @@ type policyMetrics struct {
 }
 
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
+	defer func() {
+		if err := recover(); err != nil {
+			tsp.logger.Error("Recovered from nil pointer panic in policies:", zap.Any("error", err))
+		}
+	}()
 	metrics := policyMetrics{}
 
 	startTime := time.Now()
@@ -184,21 +189,32 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 			metrics.idNotFoundOnMapCount++
 			continue
 		}
-		trace := d.(*sampling.TraceData)
-		trace.DecisionTime = time.Now()
 
-		decision, policy := tsp.makeDecision(id, trace, &metrics)
+		func() {
+			// Defer function to recover from panic and continue
+			defer func() {
+				if err := recover(); err != nil {
+					tsp.logger.Error("Recovered from nil pointer panic in policies:", zap.Any("error", err))
+					metrics.evaluateErrorCount++
+				}
+			}()
 
-		// Sampled or not, remove the batches
-		trace.Lock()
-		allSpans := trace.ReceivedBatches
-		trace.FinalDecision = decision
-		trace.ReceivedBatches = ptrace.NewTraces()
-		trace.Unlock()
+			trace := d.(*sampling.TraceData)
+			trace.DecisionTime = time.Now()
 
-		if decision == sampling.Sampled {
-			_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
-		}
+			decision, policy := tsp.makeDecision(id, trace, &metrics)
+
+			// Sampled or not, remove the batches
+			trace.Lock()
+			allSpans := trace.ReceivedBatches
+			trace.FinalDecision = decision
+			trace.ReceivedBatches = ptrace.NewTraces()
+			trace.Unlock()
+
+			if decision == sampling.Sampled {
+				_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
+			}
+		}()
 	}
 
 	stats.Record(tsp.ctx,
