@@ -392,12 +392,6 @@ github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnu
 github.com/observiq/ctimefmt v1.0.0 h1:r7vTJ+Slkrt9fZ67mkf+mA6zAdR5nGIJRMTzkUyvilk=
 github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYheqHN3eOjvc=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.77.0 h1:UU5IzATj3qbO6E3eY27pe5JrP/GiKOal58vWRNzqt94=
-github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.77.0/go.mod h1:oVDNuwHckAtSasbtLsWUOC3ALPuIhnZt3J76U6m+2Ls=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0 h1:oD1N4IGyW2HRQj9VHDjc3+dwzlSdnzyQWYteRDBBCSE=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0/go.mod h1:eNiZXR4qNR6g61BNlntCVm7VudTOBrl6vWeChQDR6QQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.77.0 h1:UGgb2bYSrRTbCcLNEOc4ZCbKx2H1uwkKR+FpffQ7d0o=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.77.0/go.mod h1:nENVAU79yHGHoCe+pUHvYUy5LR+CHeFvhBkfRcNjRZ8=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0-rc2 h1:2zx/Stx4Wc5pIPDvIxHXvXtQFW/7XWJGmnM7r3wg034=
