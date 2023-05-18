@@ -56,91 +56,127 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkBlockManagerDiskUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkBlockManagerMemoryRemainingDataPoint(ts, 1, AttributeLocation(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkBlockManagerMemoryUsedDataPoint(ts, 1, AttributeLocation(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorCompilationAverageTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorCompilationCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorGeneratedClassCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorGeneratedMethodCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkCodeGeneratorSourceCodeOperationsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordSparkComponenntExecutorMemoryExecutionDataPoint(ts, 1, AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkComponentExecutorGcOperationsDataPoint(ts, 1, AttributeGcType(1))
+			mb.RecordSparkDriverBlockManagerDiskUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkComponentExecutorGcTimeDataPoint(ts, 1, AttributeGcType(1))
+			mb.RecordSparkDriverBlockManagerMemoryRemainingDataPoint(ts, 1, AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkComponentExecutorJvmMemoryDataPoint(ts, 1, AttributeLocation(1))
+			mb.RecordSparkDriverBlockManagerMemoryUsedDataPoint(ts, 1, AttributeLocation(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkComponentExecutorMemoryPoolDataPoint(ts, 1, AttributePoolMemoryType(1))
+			mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkComponentExecutorMemoryStorageDataPoint(ts, 1, AttributeLocation(1))
+			mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkComponentJvmCPUTimeDataPoint(ts, 1)
+			mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDagSchedulerJobsActiveDataPoint(ts, 1)
+			mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDagSchedulerJobsCountDataPoint(ts, 1)
+			mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDagSchedulerStagesDataPoint(ts, 1, true, true)
+			mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDagSchedulerStagesFailedDataPoint(ts, 1)
+			mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverDagSchedulerJobsActiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverDagSchedulerJobsCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverDagSchedulerStagesDataPoint(ts, 1, true, true)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverDagSchedulerStagesFailedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 1, AttributeGcType(1))
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 1, AttributeGcType(1))
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverExecutorJvmMemoryDataPoint(ts, 1, AttributeLocation(1))
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 1, AttributePoolMemoryType(1))
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 1, AttributeLocation(1))
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverLiveListenerBusEventsDroppedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverLiveListenerBusEventsPostedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -188,26 +224,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkHiveExternalCatalogFileCacheHitsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkHiveExternalCatalogHiveClientCallsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkHiveExternalCatalogParallelListingJobsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordSparkJobStagesActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -221,22 +237,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSparkJobTasksResultsDataPoint(ts, 1, AttributeJobTaskResult(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkLiveListenerBusEventsDroppedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkLiveListenerBusEventsPostedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkLiveListenerBusProcessingTimeAverageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkLiveListenerBusQueueSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -306,7 +306,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultsDataPoint(ts, 1, 1, true, true, true, true, AttributeStageTaskResult(1))
 
-			metrics := mb.Emit(WithSparkApplicationID("attr-val"), WithSparkApplicationName("attr-val"), WithSparkComponentType("attr-val"), WithSparkExecutorID("attr-val"), WithSparkJobID(1), WithSparkStageID(1))
+			metrics := mb.Emit(WithSparkApplicationID("attr-val"), WithSparkApplicationName("attr-val"), WithSparkExecutorID("attr-val"), WithSparkJobID(1), WithSparkStageID(1))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -328,13 +328,6 @@ func TestMetricsBuilder(t *testing.T) {
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.SparkApplicationName.Enabled, ok)
 			if mb.resourceAttributesConfig.SparkApplicationName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("spark.component.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SparkComponentType.Enabled, ok)
-			if mb.resourceAttributesConfig.SparkComponentType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -360,7 +353,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.EqualValues(t, 1, attrVal.Int())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 6)
+			assert.Equal(t, attrCount, 5)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -373,9 +366,26 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "spark.block_manager.disk.usage":
-					assert.False(t, validatedMetrics["spark.block_manager.disk.usage"], "Found a duplicate in the metrics slice: spark.block_manager.disk.usage")
-					validatedMetrics["spark.block_manager.disk.usage"] = true
+				case "spark.componennt.executor.memory.execution":
+					assert.False(t, validatedMetrics["spark.componennt.executor.memory.execution"], "Found a duplicate in the metrics slice: spark.componennt.executor.memory.execution")
+					validatedMetrics["spark.componennt.executor.memory.execution"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of execution memory currently used by the driver.", ms.At(i).Description())
+					assert.Equal(t, "bytes", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("location")
+					assert.True(t, ok)
+					assert.Equal(t, "on_heap", attrVal.Str())
+				case "spark.driver.block_manager.disk.usage":
+					assert.False(t, validatedMetrics["spark.driver.block_manager.disk.usage"], "Found a duplicate in the metrics slice: spark.driver.block_manager.disk.usage")
+					validatedMetrics["spark.driver.block_manager.disk.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Disk space used by the BlockManager.", ms.At(i).Description())
@@ -387,9 +397,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.block_manager.memory.remaining":
-					assert.False(t, validatedMetrics["spark.block_manager.memory.remaining"], "Found a duplicate in the metrics slice: spark.block_manager.memory.remaining")
-					validatedMetrics["spark.block_manager.memory.remaining"] = true
+				case "spark.driver.block_manager.memory.remaining":
+					assert.False(t, validatedMetrics["spark.driver.block_manager.memory.remaining"], "Found a duplicate in the metrics slice: spark.driver.block_manager.memory.remaining")
+					validatedMetrics["spark.driver.block_manager.memory.remaining"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Memory remaining for the BlockManager.", ms.At(i).Description())
@@ -404,9 +414,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("location")
 					assert.True(t, ok)
 					assert.Equal(t, "on_heap", attrVal.Str())
-				case "spark.block_manager.memory.used":
-					assert.False(t, validatedMetrics["spark.block_manager.memory.used"], "Found a duplicate in the metrics slice: spark.block_manager.memory.used")
-					validatedMetrics["spark.block_manager.memory.used"] = true
+				case "spark.driver.block_manager.memory.used":
+					assert.False(t, validatedMetrics["spark.driver.block_manager.memory.used"], "Found a duplicate in the metrics slice: spark.driver.block_manager.memory.used")
+					validatedMetrics["spark.driver.block_manager.memory.used"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Memory used by the BlockManager.", ms.At(i).Description())
@@ -421,9 +431,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("location")
 					assert.True(t, ok)
 					assert.Equal(t, "on_heap", attrVal.Str())
-				case "spark.code_generator.compilation.average_time":
-					assert.False(t, validatedMetrics["spark.code_generator.compilation.average_time"], "Found a duplicate in the metrics slice: spark.code_generator.compilation.average_time")
-					validatedMetrics["spark.code_generator.compilation.average_time"] = true
+				case "spark.driver.code_generator.compilation.average_time":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.compilation.average_time"], "Found a duplicate in the metrics slice: spark.driver.code_generator.compilation.average_time")
+					validatedMetrics["spark.driver.code_generator.compilation.average_time"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Average time spent during CodeGenerator source code compilation operations.", ms.At(i).Description())
@@ -433,9 +443,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "spark.code_generator.compilation.count":
-					assert.False(t, validatedMetrics["spark.code_generator.compilation.count"], "Found a duplicate in the metrics slice: spark.code_generator.compilation.count")
-					validatedMetrics["spark.code_generator.compilation.count"] = true
+				case "spark.driver.code_generator.compilation.count":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.compilation.count"], "Found a duplicate in the metrics slice: spark.driver.code_generator.compilation.count")
+					validatedMetrics["spark.driver.code_generator.compilation.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of source code compilation operations performed by the CodeGenerator.", ms.At(i).Description())
@@ -447,9 +457,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.code_generator.generated_class.average_size":
-					assert.False(t, validatedMetrics["spark.code_generator.generated_class.average_size"], "Found a duplicate in the metrics slice: spark.code_generator.generated_class.average_size")
-					validatedMetrics["spark.code_generator.generated_class.average_size"] = true
+				case "spark.driver.code_generator.generated_class.average_size":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_class.average_size"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_class.average_size")
+					validatedMetrics["spark.driver.code_generator.generated_class.average_size"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Average class size of the classes generated by the CodeGenerator.", ms.At(i).Description())
@@ -459,9 +469,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "spark.code_generator.generated_class.count":
-					assert.False(t, validatedMetrics["spark.code_generator.generated_class.count"], "Found a duplicate in the metrics slice: spark.code_generator.generated_class.count")
-					validatedMetrics["spark.code_generator.generated_class.count"] = true
+				case "spark.driver.code_generator.generated_class.count":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_class.count"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_class.count")
+					validatedMetrics["spark.driver.code_generator.generated_class.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of classes generated by the CodeGenerator.", ms.At(i).Description())
@@ -473,9 +483,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.code_generator.generated_method.average_size":
-					assert.False(t, validatedMetrics["spark.code_generator.generated_method.average_size"], "Found a duplicate in the metrics slice: spark.code_generator.generated_method.average_size")
-					validatedMetrics["spark.code_generator.generated_method.average_size"] = true
+				case "spark.driver.code_generator.generated_method.average_size":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_method.average_size"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_method.average_size")
+					validatedMetrics["spark.driver.code_generator.generated_method.average_size"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Average method size of the classes generated by the CodeGenerator.", ms.At(i).Description())
@@ -485,9 +495,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "spark.code_generator.generated_method.count":
-					assert.False(t, validatedMetrics["spark.code_generator.generated_method.count"], "Found a duplicate in the metrics slice: spark.code_generator.generated_method.count")
-					validatedMetrics["spark.code_generator.generated_method.count"] = true
+				case "spark.driver.code_generator.generated_method.count":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.generated_method.count"], "Found a duplicate in the metrics slice: spark.driver.code_generator.generated_method.count")
+					validatedMetrics["spark.driver.code_generator.generated_method.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of methods generated by the CodeGenerator.", ms.At(i).Description())
@@ -499,9 +509,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.code_generator.source_code.average_size":
-					assert.False(t, validatedMetrics["spark.code_generator.source_code.average_size"], "Found a duplicate in the metrics slice: spark.code_generator.source_code.average_size")
-					validatedMetrics["spark.code_generator.source_code.average_size"] = true
+				case "spark.driver.code_generator.source_code.average_size":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.source_code.average_size"], "Found a duplicate in the metrics slice: spark.driver.code_generator.source_code.average_size")
+					validatedMetrics["spark.driver.code_generator.source_code.average_size"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Average size of the source code generated by a CodeGenerator code generation operation.", ms.At(i).Description())
@@ -511,9 +521,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "spark.code_generator.source_code.operations":
-					assert.False(t, validatedMetrics["spark.code_generator.source_code.operations"], "Found a duplicate in the metrics slice: spark.code_generator.source_code.operations")
-					validatedMetrics["spark.code_generator.source_code.operations"] = true
+				case "spark.driver.code_generator.source_code.operations":
+					assert.False(t, validatedMetrics["spark.driver.code_generator.source_code.operations"], "Found a duplicate in the metrics slice: spark.driver.code_generator.source_code.operations")
+					validatedMetrics["spark.driver.code_generator.source_code.operations"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of source code generation operations performed by the CodeGenerator.", ms.At(i).Description())
@@ -525,125 +535,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.componennt.executor.memory.execution":
-					assert.False(t, validatedMetrics["spark.componennt.executor.memory.execution"], "Found a duplicate in the metrics slice: spark.componennt.executor.memory.execution")
-					validatedMetrics["spark.componennt.executor.memory.execution"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Amount of execution memory currently used by the component.", ms.At(i).Description())
-					assert.Equal(t, "bytes", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("location")
-					assert.True(t, ok)
-					assert.Equal(t, "on_heap", attrVal.Str())
-				case "spark.component.executor.gc.operations":
-					assert.False(t, validatedMetrics["spark.component.executor.gc.operations"], "Found a duplicate in the metrics slice: spark.component.executor.gc.operations")
-					validatedMetrics["spark.component.executor.gc.operations"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of garbage collection operations performed by the component.", ms.At(i).Description())
-					assert.Equal(t, "{ gc_operations }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("gc_type")
-					assert.True(t, ok)
-					assert.Equal(t, "major", attrVal.Str())
-				case "spark.component.executor.gc.time":
-					assert.False(t, validatedMetrics["spark.component.executor.gc.time"], "Found a duplicate in the metrics slice: spark.component.executor.gc.time")
-					validatedMetrics["spark.component.executor.gc.time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total elapsed time during garbage collection operations performed by the component.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("gc_type")
-					assert.True(t, ok)
-					assert.Equal(t, "major", attrVal.Str())
-				case "spark.component.executor.jvm_memory":
-					assert.False(t, validatedMetrics["spark.component.executor.jvm_memory"], "Found a duplicate in the metrics slice: spark.component.executor.jvm_memory")
-					validatedMetrics["spark.component.executor.jvm_memory"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Amount of memory used by the component's JVM.", ms.At(i).Description())
-					assert.Equal(t, "bytes", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("location")
-					assert.True(t, ok)
-					assert.Equal(t, "on_heap", attrVal.Str())
-				case "spark.component.executor.memory.pool":
-					assert.False(t, validatedMetrics["spark.component.executor.memory.pool"], "Found a duplicate in the metrics slice: spark.component.executor.memory.pool")
-					validatedMetrics["spark.component.executor.memory.pool"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Amount of pool memory currently used by the component.", ms.At(i).Description())
-					assert.Equal(t, "bytes", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("pool_memory_type")
-					assert.True(t, ok)
-					assert.Equal(t, "direct", attrVal.Str())
-				case "spark.component.executor.memory.storage":
-					assert.False(t, validatedMetrics["spark.component.executor.memory.storage"], "Found a duplicate in the metrics slice: spark.component.executor.memory.storage")
-					validatedMetrics["spark.component.executor.memory.storage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Amount of storage memory currently used by the component.", ms.At(i).Description())
-					assert.Equal(t, "bytes", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("location")
-					assert.True(t, ok)
-					assert.Equal(t, "on_heap", attrVal.Str())
-				case "spark.component.jvm_cpu_time":
-					assert.False(t, validatedMetrics["spark.component.jvm_cpu_time"], "Found a duplicate in the metrics slice: spark.component.jvm_cpu_time")
-					validatedMetrics["spark.component.jvm_cpu_time"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Current CPU time taken by the Spark component.", ms.At(i).Description())
-					assert.Equal(t, "ns", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.dag_scheduler.jobs.active":
-					assert.False(t, validatedMetrics["spark.dag_scheduler.jobs.active"], "Found a duplicate in the metrics slice: spark.dag_scheduler.jobs.active")
-					validatedMetrics["spark.dag_scheduler.jobs.active"] = true
+				case "spark.driver.dag_scheduler.jobs.active":
+					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.jobs.active"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.jobs.active")
+					validatedMetrics["spark.driver.dag_scheduler.jobs.active"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of active jobs currently being processed by the DAGScheduler.", ms.At(i).Description())
@@ -655,9 +549,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.dag_scheduler.jobs.count":
-					assert.False(t, validatedMetrics["spark.dag_scheduler.jobs.count"], "Found a duplicate in the metrics slice: spark.dag_scheduler.jobs.count")
-					validatedMetrics["spark.dag_scheduler.jobs.count"] = true
+				case "spark.driver.dag_scheduler.jobs.count":
+					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.jobs.count"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.jobs.count")
+					validatedMetrics["spark.driver.dag_scheduler.jobs.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of jobs that have been submitted to the DAGScheduler.", ms.At(i).Description())
@@ -669,9 +563,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.dag_scheduler.stages":
-					assert.False(t, validatedMetrics["spark.dag_scheduler.stages"], "Found a duplicate in the metrics slice: spark.dag_scheduler.stages")
-					validatedMetrics["spark.dag_scheduler.stages"] = true
+				case "spark.driver.dag_scheduler.stages":
+					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.stages"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.stages")
+					validatedMetrics["spark.driver.dag_scheduler.stages"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of stages the DAGScheduler is either running or needs to run.", ms.At(i).Description())
@@ -689,14 +583,237 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("scheduler_running")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
-				case "spark.dag_scheduler.stages.failed":
-					assert.False(t, validatedMetrics["spark.dag_scheduler.stages.failed"], "Found a duplicate in the metrics slice: spark.dag_scheduler.stages.failed")
-					validatedMetrics["spark.dag_scheduler.stages.failed"] = true
+				case "spark.driver.dag_scheduler.stages.failed":
+					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.stages.failed"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.stages.failed")
+					validatedMetrics["spark.driver.dag_scheduler.stages.failed"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of failed stages run by the DAGScheduler.", ms.At(i).Description())
 					assert.Equal(t, "{ stages }", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.executor.gc.operations":
+					assert.False(t, validatedMetrics["spark.driver.executor.gc.operations"], "Found a duplicate in the metrics slice: spark.driver.executor.gc.operations")
+					validatedMetrics["spark.driver.executor.gc.operations"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of garbage collection operations performed by the driver.", ms.At(i).Description())
+					assert.Equal(t, "{ gc_operations }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("gc_type")
+					assert.True(t, ok)
+					assert.Equal(t, "major", attrVal.Str())
+				case "spark.driver.executor.gc.time":
+					assert.False(t, validatedMetrics["spark.driver.executor.gc.time"], "Found a duplicate in the metrics slice: spark.driver.executor.gc.time")
+					validatedMetrics["spark.driver.executor.gc.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total elapsed time during garbage collection operations performed by the driver.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("gc_type")
+					assert.True(t, ok)
+					assert.Equal(t, "major", attrVal.Str())
+				case "spark.driver.executor.jvm_memory":
+					assert.False(t, validatedMetrics["spark.driver.executor.jvm_memory"], "Found a duplicate in the metrics slice: spark.driver.executor.jvm_memory")
+					validatedMetrics["spark.driver.executor.jvm_memory"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of memory used by the driver's JVM.", ms.At(i).Description())
+					assert.Equal(t, "bytes", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("location")
+					assert.True(t, ok)
+					assert.Equal(t, "on_heap", attrVal.Str())
+				case "spark.driver.executor.memory.pool":
+					assert.False(t, validatedMetrics["spark.driver.executor.memory.pool"], "Found a duplicate in the metrics slice: spark.driver.executor.memory.pool")
+					validatedMetrics["spark.driver.executor.memory.pool"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of pool memory currently used by the driver.", ms.At(i).Description())
+					assert.Equal(t, "bytes", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("pool_memory_type")
+					assert.True(t, ok)
+					assert.Equal(t, "direct", attrVal.Str())
+				case "spark.driver.executor.memory.storage":
+					assert.False(t, validatedMetrics["spark.driver.executor.memory.storage"], "Found a duplicate in the metrics slice: spark.driver.executor.memory.storage")
+					validatedMetrics["spark.driver.executor.memory.storage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of storage memory currently used by the driver.", ms.At(i).Description())
+					assert.Equal(t, "bytes", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("location")
+					assert.True(t, ok)
+					assert.Equal(t, "on_heap", attrVal.Str())
+				case "spark.driver.hive_external_catalog.file_cache_hits":
+					assert.False(t, validatedMetrics["spark.driver.hive_external_catalog.file_cache_hits"], "Found a duplicate in the metrics slice: spark.driver.hive_external_catalog.file_cache_hits")
+					validatedMetrics["spark.driver.hive_external_catalog.file_cache_hits"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of file cache hits on the HiveExternalCatalog.", ms.At(i).Description())
+					assert.Equal(t, "{ hits }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.hive_external_catalog.files_discovered":
+					assert.False(t, validatedMetrics["spark.driver.hive_external_catalog.files_discovered"], "Found a duplicate in the metrics slice: spark.driver.hive_external_catalog.files_discovered")
+					validatedMetrics["spark.driver.hive_external_catalog.files_discovered"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of files discovered while listing the partitions of a table in the Hive metastore", ms.At(i).Description())
+					assert.Equal(t, "{ files }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.hive_external_catalog.hive_client_calls":
+					assert.False(t, validatedMetrics["spark.driver.hive_external_catalog.hive_client_calls"], "Found a duplicate in the metrics slice: spark.driver.hive_external_catalog.hive_client_calls")
+					validatedMetrics["spark.driver.hive_external_catalog.hive_client_calls"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of calls to the underlying Hive Metastore client made by the Spark application.", ms.At(i).Description())
+					assert.Equal(t, "{ calls }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.hive_external_catalog.parallel_listing_jobs":
+					assert.False(t, validatedMetrics["spark.driver.hive_external_catalog.parallel_listing_jobs"], "Found a duplicate in the metrics slice: spark.driver.hive_external_catalog.parallel_listing_jobs")
+					validatedMetrics["spark.driver.hive_external_catalog.parallel_listing_jobs"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of parallel listing jobs initiated by the HiveExternalCatalog when listing partitions of a table.", ms.At(i).Description())
+					assert.Equal(t, "{ listing_jobs }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.hive_external_catalog.partitions_fetched":
+					assert.False(t, validatedMetrics["spark.driver.hive_external_catalog.partitions_fetched"], "Found a duplicate in the metrics slice: spark.driver.hive_external_catalog.partitions_fetched")
+					validatedMetrics["spark.driver.hive_external_catalog.partitions_fetched"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Table partitions fetched by the HiveExternalCatalog.", ms.At(i).Description())
+					assert.Equal(t, "{ partitions }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.jvm_cpu_time":
+					assert.False(t, validatedMetrics["spark.driver.jvm_cpu_time"], "Found a duplicate in the metrics slice: spark.driver.jvm_cpu_time")
+					validatedMetrics["spark.driver.jvm_cpu_time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Current CPU time taken by the Spark driver.", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.live_listener_bus.events_dropped":
+					assert.False(t, validatedMetrics["spark.driver.live_listener_bus.events_dropped"], "Found a duplicate in the metrics slice: spark.driver.live_listener_bus.events_dropped")
+					validatedMetrics["spark.driver.live_listener_bus.events_dropped"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of events that have been dropped by the LiveListenerBus.", ms.At(i).Description())
+					assert.Equal(t, "{ events }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.live_listener_bus.events_posted":
+					assert.False(t, validatedMetrics["spark.driver.live_listener_bus.events_posted"], "Found a duplicate in the metrics slice: spark.driver.live_listener_bus.events_posted")
+					validatedMetrics["spark.driver.live_listener_bus.events_posted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of events that have been posted on the LiveListenerBus.", ms.At(i).Description())
+					assert.Equal(t, "{ events }", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "spark.driver.live_listener_bus.processing_time.average":
+					assert.False(t, validatedMetrics["spark.driver.live_listener_bus.processing_time.average"], "Found a duplicate in the metrics slice: spark.driver.live_listener_bus.processing_time.average")
+					validatedMetrics["spark.driver.live_listener_bus.processing_time.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average time taken for the LiveListenerBus to process an event posted to it.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "spark.driver.live_listener_bus.queue_size":
+					assert.False(t, validatedMetrics["spark.driver.live_listener_bus.queue_size"], "Found a duplicate in the metrics slice: spark.driver.live_listener_bus.queue_size")
+					validatedMetrics["spark.driver.live_listener_bus.queue_size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of events currently waiting to be processed by the LiveListenerBus.", ms.At(i).Description())
+					assert.Equal(t, "{ events }", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -869,76 +986,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.hive_external_catalog.file_cache_hits":
-					assert.False(t, validatedMetrics["spark.hive_external_catalog.file_cache_hits"], "Found a duplicate in the metrics slice: spark.hive_external_catalog.file_cache_hits")
-					validatedMetrics["spark.hive_external_catalog.file_cache_hits"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of file cache hits on the HiveExternalCatalog.", ms.At(i).Description())
-					assert.Equal(t, "{ hits }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.hive_external_catalog.files_discovered":
-					assert.False(t, validatedMetrics["spark.hive_external_catalog.files_discovered"], "Found a duplicate in the metrics slice: spark.hive_external_catalog.files_discovered")
-					validatedMetrics["spark.hive_external_catalog.files_discovered"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of files discovered while listing the partitions of a table in the Hive metastore", ms.At(i).Description())
-					assert.Equal(t, "{ files }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.hive_external_catalog.hive_client_calls":
-					assert.False(t, validatedMetrics["spark.hive_external_catalog.hive_client_calls"], "Found a duplicate in the metrics slice: spark.hive_external_catalog.hive_client_calls")
-					validatedMetrics["spark.hive_external_catalog.hive_client_calls"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of calls to the underlying Hive Metastore client made by the Spark application.", ms.At(i).Description())
-					assert.Equal(t, "{ calls }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.hive_external_catalog.parallel_listing_jobs":
-					assert.False(t, validatedMetrics["spark.hive_external_catalog.parallel_listing_jobs"], "Found a duplicate in the metrics slice: spark.hive_external_catalog.parallel_listing_jobs")
-					validatedMetrics["spark.hive_external_catalog.parallel_listing_jobs"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of parallel listing jobs initiated by the HiveExternalCatalog when listing partitions of a table.", ms.At(i).Description())
-					assert.Equal(t, "{ listing_jobs }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.hive_external_catalog.partitions_fetched":
-					assert.False(t, validatedMetrics["spark.hive_external_catalog.partitions_fetched"], "Found a duplicate in the metrics slice: spark.hive_external_catalog.partitions_fetched")
-					validatedMetrics["spark.hive_external_catalog.partitions_fetched"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Table partitions fetched by the HiveExternalCatalog.", ms.At(i).Description())
-					assert.Equal(t, "{ partitions }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "spark.job.stages.active":
 					assert.False(t, validatedMetrics["spark.job.stages.active"], "Found a duplicate in the metrics slice: spark.job.stages.active")
 					validatedMetrics["spark.job.stages.active"] = true
@@ -1001,60 +1048,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("job_task_result")
 					assert.True(t, ok)
 					assert.Equal(t, "completed", attrVal.Str())
-				case "spark.live_listener_bus.events_dropped":
-					assert.False(t, validatedMetrics["spark.live_listener_bus.events_dropped"], "Found a duplicate in the metrics slice: spark.live_listener_bus.events_dropped")
-					validatedMetrics["spark.live_listener_bus.events_dropped"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of events that have been dropped by the LiveListenerBus.", ms.At(i).Description())
-					assert.Equal(t, "{ events }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.live_listener_bus.events_posted":
-					assert.False(t, validatedMetrics["spark.live_listener_bus.events_posted"], "Found a duplicate in the metrics slice: spark.live_listener_bus.events_posted")
-					validatedMetrics["spark.live_listener_bus.events_posted"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of events that have been posted on the LiveListenerBus.", ms.At(i).Description())
-					assert.Equal(t, "{ events }", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.live_listener_bus.processing_time.average":
-					assert.False(t, validatedMetrics["spark.live_listener_bus.processing_time.average"], "Found a duplicate in the metrics slice: spark.live_listener_bus.processing_time.average")
-					validatedMetrics["spark.live_listener_bus.processing_time.average"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average time taken for the LiveListenerBus to process an event posted to it.", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "spark.live_listener_bus.queue_size":
-					assert.False(t, validatedMetrics["spark.live_listener_bus.queue_size"], "Found a duplicate in the metrics slice: spark.live_listener_bus.queue_size")
-					validatedMetrics["spark.live_listener_bus.queue_size"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of events currently waiting to be processed by the LiveListenerBus.", ms.At(i).Description())
-					assert.Equal(t, "{ events }", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "spark.stage.disk.spilled":
 					assert.False(t, validatedMetrics["spark.stage.disk.spilled"], "Found a duplicate in the metrics slice: spark.stage.disk.spilled")
 					validatedMetrics["spark.stage.disk.spilled"] = true
