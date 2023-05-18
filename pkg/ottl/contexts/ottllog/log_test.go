@@ -6,6 +6,7 @@ package ottllog
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"testing"
 	"time"
 
@@ -25,7 +26,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, refIS, refResource := createTelemetry()
+	refLog, refIS, refResource := createTelemetry("string")
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -36,6 +37,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	newPMap := pcommon.NewMap()
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
+
+	newBodyMap := pcommon.NewMap()
+	newBodyMap.PutStr("new", "value")
+
+	newBodySlice := pcommon.NewSlice()
+	newBodySlice.AppendEmpty().SetStr("data")
 
 	newMap := make(map[string]interface{})
 	newMap2 := make(map[string]interface{})
@@ -48,6 +55,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		orig     interface{}
 		newVal   interface{}
 		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		bodyType string
 	}{
 		{
 			name: "time_unix_nano",
@@ -113,6 +121,81 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Body().SetStr("head")
 			},
+		},
+		{
+			name: "map body",
+			path: []ottl.Field{
+				{
+					Name: "body",
+				},
+			},
+			orig: func() pcommon.Map {
+				log, _, _ := createTelemetry("map")
+				return log.Body().Map()
+			}(),
+			newVal: newBodyMap,
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				newBodyMap.CopyTo(log.Body().Map())
+			},
+			bodyType: "map",
+		},
+		{
+			name: "map body index",
+			path: []ottl.Field{
+				{
+					Name: "body",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("key"),
+						},
+					},
+				},
+			},
+			orig:   "val",
+			newVal: "val2",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				log.Body().Map().PutStr("key", "val2")
+			},
+			bodyType: "map",
+		},
+		{
+			name: "slice body",
+			path: []ottl.Field{
+				{
+					Name: "body",
+				},
+			},
+			orig: func() pcommon.Slice {
+				log, _, _ := createTelemetry("slice")
+				return log.Body().Slice()
+			}(),
+			newVal: newBodySlice,
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				fmt.Println(log.Body().Slice().At(0).AsString())
+				newBodySlice.CopyTo(log.Body().Slice())
+				fmt.Println(log.Body().Slice().At(0).AsString())
+
+			},
+			bodyType: "slice",
+		},
+		{
+			name: "slice body index",
+			path: []ottl.Field{
+				{
+					Name: "body",
+					Keys: []ottl.Key{
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig:   "body",
+			newVal: "head",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				log.Body().Slice().At(0).SetStr("head")
+			},
+			bodyType: "slice",
 		},
 		{
 			name: "flags",
@@ -572,7 +655,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			log, il, resource := createTelemetry()
+			log, il, resource := createTelemetry(tt.bodyType)
 
 			tCtx := NewTransformContext(log, il, resource)
 			got, err := accessor.Get(context.Background(), tCtx)
@@ -583,11 +666,11 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.Nil(t, err)
 
-			exSpan, exIl, exRes := createTelemetry()
+			exLog, exIl, exRes := createTelemetry(tt.bodyType)
 			exCache := pcommon.NewMap()
-			tt.modified(exSpan, exIl, exRes, exCache)
+			tt.modified(exLog, exIl, exRes, exCache)
 
-			assert.Equal(t, exSpan, log)
+			assert.Equal(t, exLog, log)
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
 			assert.Equal(t, exCache, tCtx.getCache())
@@ -595,13 +678,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 }
 
-func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
+func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	log := plog.NewLogRecord()
 	log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 	log.SetSeverityNumber(plog.SeverityNumberFatal)
 	log.SetSeverityText("blue screen of death")
-	log.Body().SetStr("body")
 	log.Attributes().PutStr("str", "val")
 	log.Attributes().PutBool("bool", true)
 	log.Attributes().PutInt("int", 10)
@@ -637,6 +719,17 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	s := log.Attributes().PutEmptySlice("slice")
 	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
 
+	switch bodyType {
+	case "map":
+		log.Body().SetEmptyMap().PutStr("key", "val")
+	case "slice":
+		log.Body().SetEmptySlice().AppendEmpty().SetStr("body")
+	case "string":
+		fallthrough
+	default:
+		log.Body().SetStr("body")
+	}
+
 	log.SetDroppedAttributesCount(10)
 
 	log.SetFlags(plog.LogRecordFlags(4))
@@ -652,6 +745,32 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().CopyTo(resource.Attributes())
 
 	return log, il, resource
+}
+
+func Test_InvalidBodyIndexing(t *testing.T) {
+	path := []ottl.Field{
+		{
+			Name: "body",
+			Keys: []ottl.Key{
+				{
+					String: ottltest.Strp("key"),
+				},
+			},
+		},
+	}
+
+	accessor, err := newPathGetSetter(path)
+	assert.NoError(t, err)
+
+	log, il, resource := createTelemetry("string")
+
+	tCtx := NewTransformContext(log, il, resource)
+	_, err = accessor.Get(context.Background(), tCtx)
+	assert.Error(t, err)
+
+	tCtx = NewTransformContext(log, il, resource)
+	err = accessor.Set(context.Background(), tCtx, nil)
+	assert.Error(t, err)
 }
 
 func Test_ParseEnum(t *testing.T) {
