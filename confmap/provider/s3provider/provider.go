@@ -129,7 +129,7 @@ func s3URISplit(uri string) (string, string, string, error) {
 	// parse the uri as [scheme:][//[userinfo@]host][/]path[?query][#fragment], then extract components from
 	u, err := url.Parse(uri)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed parse s3 uri: %w", err)
+		return "", "", "", fmt.Errorf("failed to parse s3 uri: %w", err)
 	}
 	// extract components
 	key := strings.TrimPrefix(u.Path, "/")
