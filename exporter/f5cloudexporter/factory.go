@@ -14,9 +14,9 @@ import (
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
-)
 
-const typeStr = "f5cloud" // The value of "type" key in configuration.
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter/internal/metadata"
+)
 
 type TokenSourceGetter func(config *Config) (oauth2.TokenSource, error)
 
@@ -35,7 +35,7 @@ func NewFactoryWithTokenSourceGetter(tsg TokenSourceGetter) exporter.Factory {
 }
 
 func (f *f5cloudFactory) Type() component.Type {
-	return typeStr
+	return metadata.Type
 }
 
 func (f *f5cloudFactory) CreateMetricsExporter(
