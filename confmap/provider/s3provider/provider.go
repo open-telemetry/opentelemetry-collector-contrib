@@ -34,7 +34,7 @@ const (
 	s3Pattern = `^s3:\/\/([a-z0-9\.\-]{3,63})\.s3\.([a-z0-9\-]+).amazonaws\.com\/.`
 )
 
-var s3Regexp *regexp.Regexp = regexp.MustCompile(s3Pattern)
+var s3Regexp = regexp.MustCompile(s3Pattern)
 
 type s3Client interface {
 	GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error)
