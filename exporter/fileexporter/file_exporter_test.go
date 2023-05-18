@@ -1,5 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
+
 package fileexporter
 
 import (
@@ -25,15 +26,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
-
-func buildUnCompressor(compressor string) func([]byte) ([]byte, error) {
-	if compressor == compressionZSTD {
-		return decompress
-	}
-	return func(src []byte) ([]byte, error) {
-		return src, nil
-	}
-}
 
 func TestFileTracesExporter(t *testing.T) {
 	type args struct {
@@ -132,12 +124,12 @@ func TestFileTracesExporter(t *testing.T) {
 				formatType:      conf.FormatType,
 				file:            writer,
 				tracesMarshaler: tracesMarshalers[conf.FormatType],
-				exporter:        buildExportFunc(conf),
 				compression:     conf.Compression,
 				compressor:      buildCompressor(conf.Compression),
 				flushInterval:   conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
+			fe.exporter = fe.createExporterWriter(conf)
 
 			td := testdata.GenerateTracesTwoSpansSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -151,7 +143,7 @@ func TestFileTracesExporter(t *testing.T) {
 			br := bufio.NewReader(fi)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON && fe.compression == "" {
+					if fe.formatType == formatTypeJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -160,13 +152,11 @@ func TestFileTracesExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
-				decoder := buildUnCompressor(fe.compression)
-				buf, err = decoder(buf)
-				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, td, got)
 			}
+			require.NoError(t, os.Remove(fe.path))
 		})
 	}
 }
@@ -174,9 +164,11 @@ func TestFileTracesExporter(t *testing.T) {
 func TestFileTracesExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:            mf,
-		formatType:      formatTypeJSON,
-		exporter:        exportMessageAsLine,
+		file:       mf,
+		formatType: formatTypeJSON,
+		exporter: &lineWriter{
+			file: mf,
+		},
 		tracesMarshaler: tracesMarshalers[formatTypeJSON],
 		compressor:      noneCompress,
 	}
@@ -267,12 +259,12 @@ func TestFileMetricsExporter(t *testing.T) {
 				formatType:       conf.FormatType,
 				file:             writer,
 				metricsMarshaler: metricsMarshalers[conf.FormatType],
-				exporter:         buildExportFunc(conf),
 				compression:      conf.Compression,
 				compressor:       buildCompressor(conf.Compression),
 				flushInterval:    conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
+			fe.exporter = fe.createExporterWriter(conf)
 
 			md := testdata.GenerateMetricsTwoMetrics()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -296,13 +288,11 @@ func TestFileMetricsExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
-				decoder := buildUnCompressor(fe.compression)
-				buf, err = decoder(buf)
-				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, md, got)
 			}
+			require.NoError(t, os.Remove(fe.path))
 		})
 	}
 
@@ -311,9 +301,11 @@ func TestFileMetricsExporter(t *testing.T) {
 func TestFileMetricsExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:             mf,
-		formatType:       formatTypeJSON,
-		exporter:         exportMessageAsLine,
+		file:       mf,
+		formatType: formatTypeJSON,
+		exporter: &lineWriter{
+			file: mf,
+		},
 		metricsMarshaler: metricsMarshalers[formatTypeJSON],
 		compressor:       noneCompress,
 	}
@@ -404,12 +396,12 @@ func TestFileLogsExporter(t *testing.T) {
 				formatType:    conf.FormatType,
 				file:          writer,
 				logsMarshaler: logsMarshalers[conf.FormatType],
-				exporter:      buildExportFunc(conf),
 				compression:   conf.Compression,
 				compressor:    buildCompressor(conf.Compression),
 				flushInterval: conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
+			fe.exporter = fe.createExporterWriter(conf)
 
 			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -432,13 +424,12 @@ func TestFileLogsExporter(t *testing.T) {
 				if isEnd {
 					break
 				}
-				decoder := buildUnCompressor(fe.compression)
-				buf, err = decoder(buf)
-				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
 				assert.NoError(t, err)
 				assert.EqualValues(t, ld, got)
 			}
+			require.NoError(t, os.Remove(fe.path))
+
 		})
 	}
 }
@@ -448,9 +439,11 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	fe := &fileExporter{
 		file:          mf,
 		formatType:    formatTypeJSON,
-		exporter:      exportMessageAsLine,
 		logsMarshaler: logsMarshalers[formatTypeJSON],
-		compressor:    noneCompress,
+		exporter: &lineWriter{
+			file: mf,
+		},
+		compressor: noneCompress,
 	}
 	require.NotNil(t, fe)
 
@@ -470,16 +463,20 @@ func TestExportMessageAsBuffer(t *testing.T) {
 			MaxSize:  1,
 		},
 		logsMarshaler: logsMarshalers[formatTypeProto],
-		exporter:      exportMessageAsBuffer,
 	}
 	require.NotNil(t, fe)
+	fe.exporter = &fileWriter{
+		file: fe.file,
+	}
 	//
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
 	marshaler := &plog.ProtoMarshaler{}
 	buf, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
-	assert.Error(t, exportMessageAsBuffer(fe, buf))
+	_, err = fe.exporter.Write(buf)
+	assert.Error(t, err)
 	assert.NoError(t, fe.Shutdown(context.Background()))
+	require.NoError(t, os.Remove(path))
 }
 
 // tempFileName provides a temporary file name for testing.
@@ -488,7 +485,6 @@ func tempFileName(t *testing.T) string {
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
-	require.NoError(t, os.Remove(socket))
 	return socket
 }
 
@@ -496,7 +492,7 @@ func tempFileName(t *testing.T) string {
 type errorWriter struct {
 }
 
-func (e errorWriter) Write([]byte) (n int, err error) {
+func (e *errorWriter) Write([]byte) (n int, err error) {
 	return 0, errors.New("all ways return error")
 }
 
