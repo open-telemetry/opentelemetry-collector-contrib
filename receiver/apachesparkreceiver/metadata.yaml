@@ -1,0 +1,7 @@
+type: apachespark
+
+status:
+  class: receiver
+  stability: 
+    development: [metrics]
+  distributions: [contrib]

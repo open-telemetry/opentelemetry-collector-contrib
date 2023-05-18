@@ -4,5 +4,5 @@ status:
   class: exporter
   stability:
     beta: [traces]
-  distributions: [core, contrib]
+  distributions: [core, contrib, observiq]
 

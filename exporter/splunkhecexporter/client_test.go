@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -25,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -37,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -865,6 +856,57 @@ func TestReceiveRaw(t *testing.T) {
 	}
 }
 
+func TestReceiveLogEvent(t *testing.T) {
+	logs := createLogData(1, 1, 1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runLogExport(cfg, logs, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_log_event.json")
+}
+
+func TestReceiveMetricEvent(t *testing.T) {
+	metrics := createMetricsData(1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runMetricsExport(cfg, metrics, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_metric_event.json")
+}
+
+func TestReceiveSpanEvent(t *testing.T) {
+	traces := createTraceData(1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runTraceExport(cfg, traces, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_span_event.json")
+}
+
+// compareWithTestData compares hec output with a json file using maps instead of strings to avoid key ordering
+// issues (jsoniter doesn't sort the keys).
+func compareWithTestData(t *testing.T, actual []byte, file string) {
+	wantStr, err := os.ReadFile(file)
+	require.NoError(t, err)
+	wantMap := map[string]any{}
+	err = jsoniter.Unmarshal(wantStr, &wantMap)
+	require.NoError(t, err)
+
+	gotMap := map[string]any{}
+	err = jsoniter.Unmarshal(actual, &gotMap)
+	require.NoError(t, err)
+	assert.Equal(t, wantMap, gotMap)
+}
+
 func TestReceiveMetrics(t *testing.T) {
 	md := createMetricsData(3)
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
@@ -1334,7 +1376,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 
-	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs"}, []int{10})
+	profilingData := createLogDataWithCustomLibraries(1, []string{"otel.profiling"}, []int{20})
 	var headers *[]http.Header
 
 	httpClient, headers := newTestClient(200, "OK")
@@ -1342,6 +1385,8 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
 	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+	err = c.pushLogData(context.Background(), profilingData)
 	require.NoError(t, err)
 	assert.Equal(t, 30, len(*headers))
 
@@ -1394,6 +1439,17 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	config.DisableCompression = true
 	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 	c.hecWorker = &mockHecWorker{}
+	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushLogData)
+	require.NoError(b, err)
+	exp = &baseLogsExporter{
+		Component: exp,
+		Logs: &perScopeBatcher{
+			logsEnabled: true,
+			logger:      zap.NewNop(),
+			next:        exp,
+		},
+	}
 
 	logs := createLogData(numResources, 1, numRecords)
 
@@ -1401,8 +1457,29 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := c.pushLogData(context.Background(), logs)
+		err := exp.ConsumeLogs(context.Background(), logs)
 		require.NoError(b, err)
+	}
+}
+
+func BenchmarkConsumeLogsRejected(b *testing.B) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+	c.hecWorker = &mockHecWorker{failSend: true}
+
+	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushLogData)
+	require.NoError(b, err)
+
+	logs := createLogData(10, 1, 100)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := exp.ConsumeLogs(context.Background(), logs)
+		require.Error(b, err)
 	}
 }
 
@@ -1483,13 +1560,8 @@ func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
 
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-	}
-
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &bufferState{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := c.subLogs(logs, _0_0_0, nil)
+	got := subLogs(logs, iterState{resource: 0, library: 0, record: 0})
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -1502,8 +1574,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &bufferState{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _0_1_2, nil)
+	got = subLogs(logs, iterState{resource: 0, library: 1, record: 2})
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -1515,8 +1586,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := &bufferState{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _1_1_2, nil)
+	got = subLogs(logs, iterState{resource: 1, library: 1, record: 2})
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
@@ -1524,57 +1594,50 @@ func TestSubLogs(t *testing.T) {
 	// The name of the sole log record should be 1_1_2.
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_2", val.AsString())
-
-	// Now see how profiling and log data are merged
-	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
-	slice := &bufferState{resource: 1, library: 0, record: 5}
-	profSlice := &bufferState{resource: 0, library: 1, record: 8}
-
-	got = c.subLogs(logs, slice, profSlice)
-
-	assert.Equal(t, 5+2+10, got.LogRecordCount())
-	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_5", val.AsString())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_9", val.AsString())
-
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_8", val.AsString())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_9", val.AsString())
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_0", val.AsString())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_9", val.AsString())
 }
 
-func TestPushLogRecordsBufferCounters(t *testing.T) {
+func TestPushLogsPartialSuccess(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ExportRaw = true
-	c := client{
-		config:          cfg,
-		logger:          zap.NewNop(),
-		hecWorker:       &mockHecWorker{},
-		bufferStatePool: newBufferStatePool(6, false, 10),
-	}
+	cfg.MaxContentLengthLogs = 6
+	c := newLogsClient(exportertest.NewNopCreateSettings(), cfg)
 
-	logs := plog.NewResourceLogsSlice()
-	logRecords := logs.AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-	logRecords.AppendEmpty().Body().SetStr("12345")    // the first log record should be accepted and sent
-	logRecords.AppendEmpty().Body().SetStr("12345678") // the second log record should be rejected as it's too big
-	logRecords.AppendEmpty().Body().SetStr("12345")    // the third log record should be just accepted
-	bs := c.bufferStatePool.get()
-	defer c.bufferStatePool.put(bs)
+	// The first request succeeds, the second fails.
+	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo())}
 
-	permErrs, err := c.pushLogRecords(context.Background(), logs, bs, nil)
-	assert.NoError(t, err)
-	assert.Len(t, permErrs, 1)
-	assert.ErrorContains(t, permErrs[0], "bytes larger than configured max content length")
+	logs := plog.NewLogs()
+	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	logRecords.AppendEmpty().Body().SetStr("log-1")         // should be successfully sent
+	logRecords.AppendEmpty().Body().SetStr("log-2-too-big") // should be permanently rejected as it's too big
+	logRecords.AppendEmpty().Body().SetStr("log-3")         // should be rejected and returned to for retry
 
-	assert.Equal(t, 2, bs.record, "the buffer counter must be at the latest log record")
+	err := c.pushLogData(context.Background(), logs)
+	expectedErr := consumererror.Logs{}
+	require.ErrorContains(t, err, "503")
+	require.ErrorAs(t, err, &expectedErr)
+	require.Equal(t, 1, expectedErr.Data().LogRecordCount())
+	assert.Equal(t, "log-3", expectedErr.Data().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+
+	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo())}
+
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
+
+	err := c.pushLogData(context.Background(), logs)
+	expectedErr := consumererror.Logs{}
+	require.ErrorContains(t, err, "503")
+	require.ErrorAs(t, err, &expectedErr)
+	assert.Equal(t, logs, expectedErr.Data())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings

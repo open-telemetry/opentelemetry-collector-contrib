@@ -1,10 +1,10 @@
 # Carbon Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                               |
+| ------------------------ | ----------------------------- |
+| Stability                | [beta]                        |
+| Supported pipeline types | metrics                       |
+| Distributions            | [contrib], [observiq], [sumo] |
 
 The [Carbon](https://github.com/graphite-project/carbon) exporter supports
 Carbon's [plaintext
@@ -38,5 +38,7 @@ exporters:
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

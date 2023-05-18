@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
 // +build integration
@@ -19,14 +8,10 @@ package rabbitmqreceiver
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
-	"unicode"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -36,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -48,6 +34,11 @@ var (
 		ExposedPorts: []string{"15672:15672"},
 		Hostname:     "localhost",
 		WaitingFor:   waitStrategy{},
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+			PostStarts: []testcontainers.ContainerHook{
+				scraperinttest.RunScript([]string{"./setup.sh"}),
+			},
+		}},
 	}
 )
 
@@ -87,7 +78,11 @@ func TestRabbitmqIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues()))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreMetricValues(),
+		))
 	})
 }
 
@@ -111,25 +106,5 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 		WaitUntilReady(ctx, st); err != nil {
 		return err
 	}
-
-	code, r, err := st.Exec(context.Background(), []string{"./setup.sh"})
-	if err != nil {
-		return err
-	}
-	if code == 0 {
-		return nil
-	}
-
-	// Try to read the error message for the sake of debugging
-	if errBytes, readerErr := io.ReadAll(r); readerErr == nil {
-		// Error message may have non-printable chars, so clean it up
-		errStr := strings.Map(func(r rune) rune {
-			if unicode.IsPrint(r) {
-				return r
-			}
-			return -1
-		}, string(errBytes))
-		return errors.New(strings.TrimSpace(errStr))
-	}
-	return errors.New("setup script returned non-zero exit code")
+	return nil
 }

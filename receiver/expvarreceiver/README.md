@@ -1,10 +1,10 @@
 # Expvar Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [alpha]   |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [alpha]           |
+| Supported pipeline types | metrics           |
+| Distributions            | [contrib], [sumo] |
 
 An Expvar Receiver scrapes metrics from [expvar](https://pkg.go.dev/expvar), 
 which exposes data in JSON format from an HTTP endpoint. The metrics are 
@@ -53,3 +53,4 @@ receivers:
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -460,7 +449,7 @@ func commonLogSplunkEvent(
 
 func Test_emptyLogRecord(t *testing.T) {
 	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{})
-	assert.Nil(t, event.Time)
+	assert.Zero(t, event.Time)
 	assert.Equal(t, event.Host, "unknown")
 	assert.Zero(t, event.Source)
 	assert.Zero(t, event.SourceType)
@@ -471,11 +460,11 @@ func Test_emptyLogRecord(t *testing.T) {
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-	assert.Equal(t, 1.001, *splunkTs)
+	assert.Equal(t, 1.001, splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-	assert.Equal(t, 1.002, *splunkTs)
+	assert.Equal(t, 1.002, splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(0)
-	assert.True(t, nil == splunkTs)
+	assert.Zero(t, splunkTs)
 }
 
 func Test_mergeValue(t *testing.T) {

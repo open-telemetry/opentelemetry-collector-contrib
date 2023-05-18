@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -667,7 +656,7 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 
 func commonSplunkMetric(
 	metricName string,
-	ts *float64,
+	ts float64,
 	keys []string,
 	values []interface{},
 	val interface{},
@@ -695,22 +684,22 @@ func commonSplunkMetric(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := pcommon.Timestamp(32001000345)
-	assert.Equal(t, 32.001, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.001, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := pcommon.Timestamp(32001999345)
-	assert.Equal(t, 32.002, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.002, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRoundingWithNanos(t *testing.T) {
 	ts := pcommon.Timestamp(9999999999991500001)
-	assert.Equal(t, 9999999999.992, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 9999999999.992, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pcommon.Timestamp(0)
-	assert.Nil(t, timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Zero(t, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestMergeEvents(t *testing.T) {
