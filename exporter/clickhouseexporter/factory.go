@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
-
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
