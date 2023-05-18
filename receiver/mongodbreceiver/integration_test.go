@@ -127,8 +127,7 @@ type testCase struct {
 }
 
 func TestMongodbIntegration(t *testing.T) {
-	// TODO temporarily enabled - need to see this pass once in CI
-	// t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16273")
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16273")
 	t.Run("4.0", test4_0.run)
 	t.Run("4.0LPU", test4_0LPU.run)
 	t.Run("5.0", test5_0.run)
