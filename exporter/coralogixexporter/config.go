@@ -6,7 +6,6 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -14,9 +13,6 @@ import (
 )
 
 const (
-	typeStr = "coralogix"
-	// The stability level of the exporter.
-	stability               = component.StabilityLevelBeta
 	cxAppNameAttrName       = "cx.application.name"
 	cxSubsystemNameAttrName = "cx.subsystem.name"
 )
