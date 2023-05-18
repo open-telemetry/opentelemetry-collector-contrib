@@ -4,7 +4,7 @@
 | ------------------------ |-----------------------|
 | Stability                | [development]         |
 | Supported pipeline types | metrics, traces, logs |
-| Distributions            | none                  |
+| Distributions            | [sumo]                |
 
 The _Schema Processor_ is used to convert existing telemetry data or signals to a version of the semantic convention defined as part of the configuration.
 The processor works by using a set of target schema URLs that are used to match incoming signals.
@@ -56,3 +56,4 @@ processors:
 For more complete examples, please refer to [config.yml](./testdata/config.yml).
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

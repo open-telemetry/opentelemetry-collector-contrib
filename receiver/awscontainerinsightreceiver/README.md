@@ -1,10 +1,10 @@
 # AWS Container Insights Receiver
 
-| Status                   |                       |
-| ------------------------ |-----------------------|
-| Stability                | [beta]                |
-| Supported pipeline types | metrics               |
-| Distributions            | [contrib], [observiq] |
+| Status                   |                               |
+| ------------------------ |-------------------------------|
+| Stability                | [beta]                        |
+| Supported pipeline types | metrics                       |
+| Distributions            | [contrib], [observiq], [sumo] |
 
 ## Overview
 
@@ -872,3 +872,4 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

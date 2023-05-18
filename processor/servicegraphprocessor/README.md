@@ -1,10 +1,10 @@
 # Service graph processor
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [alpha]   |
-| Supported pipeline types | traces    |
-| Distributions            | [contrib] |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [alpha]           |
+| Supported pipeline types | traces            |
+| Distributions            | [contrib], [sumo] |
 
 The service graphs processor is a traces processor that builds a map representing the interrelationships between various services in a system.
 The processor will analyse trace data and generate metrics describing the relationship between the services.
@@ -168,3 +168,4 @@ See the [Collector feature gates](https://github.com/open-telemetry/opentelemetr
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
