@@ -21,10 +21,16 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
+	"github.com/scalyr/dataset-go/pkg/api/request"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -181,30 +187,30 @@ var testLEventRaw = &add_events.Event{
 	},
 }
 
-// var testLEventReq = &add_events.Event{
-//	Thread: testLEventRaw.Thread,
-//	Log:    testLEventRaw.Log,
-//	Sev:    testLEventRaw.Sev,
-//	Ts:     testLEventRaw.Ts,
-//	Attrs: map[string]interface{}{
-//		"attributes.app":                    "server",
-//		"attributes.instance_num":           float64(1),
-//		"body.str":                          "This is a log message",
-//		"body.type":                         "Str",
-//		"dropped_attributes_count":          float64(1),
-//		"flag.is_sampled":                   false,
-//		"flags":                             float64(plog.LogRecordFlags(0)),
-//		"message":                           "OtelExporter - Log - This is a log message",
-//		"resource.attributes.resource-attr": "resource-attr-val-1",
-//		"scope.name":                        "",
-//		"severity.number":                   float64(plog.SeverityNumberInfo),
-//		"severity.text":                     "Info",
-//		"span_id":                           "0102040800000000",
-//		"timestamp":                         "2020-02-11 20:26:13.000000789 +0000 UTC",
-//		"trace_id":                          "08040201000000000000000000000000",
-//		"bundle_key":                        "d41d8cd98f00b204e9800998ecf8427e",
-//	},
-// }
+var testLEventReq = &add_events.Event{
+	Thread: testLEventRaw.Thread,
+	Log:    testLEventRaw.Log,
+	Sev:    testLEventRaw.Sev,
+	Ts:     testLEventRaw.Ts,
+	Attrs: map[string]interface{}{
+		"attributes.app":                    "server",
+		"attributes.instance_num":           float64(1),
+		"body.str":                          "This is a log message",
+		"body.type":                         "Str",
+		"dropped_attributes_count":          float64(1),
+		"flag.is_sampled":                   false,
+		"flags":                             float64(plog.LogRecordFlags(0)),
+		"message":                           "OtelExporter - Log - This is a log message",
+		"resource.attributes.resource-attr": "resource-attr-val-1",
+		"scope.name":                        "",
+		"severity.number":                   float64(plog.SeverityNumberInfo),
+		"severity.text":                     "Info",
+		"span_id":                           "0102040800000000",
+		"timestamp":                         "2020-02-11 20:26:13.000000789 +0000 UTC",
+		"trace_id":                          "08040201000000000000000000000000",
+		"bundle_key":                        "d41d8cd98f00b204e9800998ecf8427e",
+	},
+}
 
 var testLThread = &add_events.Thread{
 	Id:   "TL",
@@ -248,73 +254,72 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 }
 
 func TestConsumeLogsShouldSucceed(t *testing.T) {
-	assert.True(t, true)
-	// createSettings := exportertest.NewNopCreateSettings()
-	//
-	// attempt := atomic.Uint64{}
-	// wasSuccessful := atomic.Bool{}
-	// addRequest := add_events.AddEventsRequest{}
-	//
-	// //  dummy change
-	// server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-	// 	attempt.Add(1)
-	// 	cer, err := extract(req)
-	// 	addRequest = cer
-	//
-	// 	assert.NoError(t, err, "Error reading request: %v", err)
-	//
-	// 	wasSuccessful.Store(true)
-	// 	payload, err := json.Marshal(map[string]interface{}{
-	// 		"status":       "success",
-	// 		"bytesCharged": 42,
-	// 	})
-	// 	assert.NoError(t, err)
-	// 	l, err := w.Write(payload)
-	// 	assert.Greater(t, l, 1)
-	// 	assert.NoError(t, err)
-	// }))
-	// defer server.Close()
-	//
-	// config := &Config{
-	// 	DatasetURL: server.URL,
-	// 	APIKey:     "key-lib",
-	// 	BufferSettings: BufferSettings{
-	// 		MaxLifetime: time.Millisecond,
-	// 		GroupBy:     []string{"attributes.container_id"},
-	// 	},
-	// 	RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-	// 	QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-	// 	TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-	// }
-	//
-	// lr := testdata.GenerateLogsOneLogRecord()
-	//
-	// logs, err := createLogsExporter(context.Background(), createSettings, config)
-	// if assert.NoError(t, err) {
-	// 	err = logs.Start(context.Background(), componenttest.NewNopHost())
-	// 	assert.NoError(t, err)
-	//
-	// 	assert.NotNil(t, logs)
-	// 	err = logs.ConsumeLogs(context.Background(), lr)
-	// 	assert.Nil(t, err)
-	// 	time.Sleep(time.Second)
-	// 	err = logs.Shutdown(context.Background())
-	// 	assert.Nil(t, err)
-	// }
-	//
-	// assert.True(t, wasSuccessful.Load())
-	// assert.Equal(t,
-	// 	add_events.AddEventsRequest{
-	// 		AuthParams: request.AuthParams{
-	// 			Token: "key-lib",
-	// 		},
-	// 		AddEventsRequestParams: add_events.AddEventsRequestParams{
-	// 			Session: addRequest.Session,
-	// 			Events:  []*add_events.Event{testLEventReq},
-	// 			Threads: []*add_events.Thread{testLThread},
-	// 			Logs:    []*add_events.Log{testLLog},
-	// 		},
-	// 	},
-	// 	addRequest,
-	// )
+	createSettings := exportertest.NewNopCreateSettings()
+
+	attempt := atomic.Uint64{}
+	wasSuccessful := atomic.Bool{}
+	addRequest := add_events.AddEventsRequest{}
+
+	//  dummy change
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		attempt.Add(1)
+		cer, err := extract(req)
+		addRequest = cer
+
+		assert.NoError(t, err, "Error reading request: %v", err)
+
+		wasSuccessful.Store(true)
+		payload, err := json.Marshal(map[string]interface{}{
+			"status":       "success",
+			"bytesCharged": 42,
+		})
+		assert.NoError(t, err)
+		l, err := w.Write(payload)
+		assert.Greater(t, l, 1)
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	config := &Config{
+		DatasetURL: server.URL,
+		APIKey:     "key-lib",
+		BufferSettings: BufferSettings{
+			MaxLifetime: time.Millisecond,
+			GroupBy:     []string{"attributes.container_id"},
+		},
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+	}
+
+	lr := testdata.GenerateLogsOneLogRecord()
+
+	logs, err := createLogsExporter(context.Background(), createSettings, config)
+	if assert.NoError(t, err) {
+		err = logs.Start(context.Background(), componenttest.NewNopHost())
+		assert.NoError(t, err)
+
+		assert.NotNil(t, logs)
+		err = logs.ConsumeLogs(context.Background(), lr)
+		assert.Nil(t, err)
+		time.Sleep(time.Second)
+		err = logs.Shutdown(context.Background())
+		assert.Nil(t, err)
+	}
+
+	assert.True(t, wasSuccessful.Load())
+	assert.Equal(t,
+		add_events.AddEventsRequest{
+			AuthParams: request.AuthParams{
+				Token: "key-lib",
+			},
+			AddEventsRequestParams: add_events.AddEventsRequestParams{
+				Session: addRequest.Session,
+				Events:  []*add_events.Event{testLEventReq},
+				Threads: []*add_events.Thread{testLThread},
+				Logs:    []*add_events.Log{testLLog},
+			},
+		},
+		addRequest,
+	)
 }
