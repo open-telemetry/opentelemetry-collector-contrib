@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
@@ -30,6 +19,15 @@ const (
 	typeStr = "routing"
 	// The stability level of the processor.
 	stability = component.StabilityLevelBeta
+
+	scopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
+	nameSep   = "/"
+
+	processorKey             = "processor"
+	metricSep                = "_"
+	nonRoutedSpansKey        = "non_routed_spans"
+	nonRoutedMetricPointsKey = "non_routed_metric_points"
+	nonRoutedLogRecordsKey   = "non_routed_log_records"
 )
 
 // NewFactory creates a factory for the routing processor.
@@ -52,17 +50,17 @@ func createDefaultConfig() component.Config {
 
 func createTracesProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newTracesProcessor(params.TelemetrySettings, cfg), nil
+	return newTracesProcessor(params.TelemetrySettings, cfg)
 }
 
 func createMetricsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newMetricProcessor(params.TelemetrySettings, cfg), nil
+	return newMetricProcessor(params.TelemetrySettings, cfg)
 }
 
 func createLogsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newLogProcessor(params.TelemetrySettings, cfg), nil
+	return newLogProcessor(params.TelemetrySettings, cfg)
 }
 
 func warnIfNotLastInPipeline(nextConsumer interface{}, logger *zap.Logger) {

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "couchdbreceiver"
+	Type             = "couchdb"
 	MetricsStability = component.StabilityLevelBeta
 )

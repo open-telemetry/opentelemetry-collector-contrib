@@ -1,10 +1,10 @@
 # Kubelet Stats Receiver
 
-| Status                   |           |
-| ------------------------ | --------- |
-| Stability                | [beta]    |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                                 |
+| ------------------------ |---------------------------------|
+| Stability                | [beta]                          |
+| Supported pipeline types | metrics                         |
+| Distributions            | [contrib], [splunk], [observiq] |
 
 The Kubelet Stats Receiver pulls pod metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
@@ -218,3 +218,5 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector

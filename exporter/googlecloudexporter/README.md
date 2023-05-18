@@ -4,7 +4,7 @@
 | ------------------------ |-----------------------|
 | Stability                | [beta]                |
 | Supported pipeline types | traces, metrics, logs |
-| Distributions            | [contrib]             |
+| Distributions            | [contrib], [observiq] |
 
 This exporter can be used to send metrics to [Google Cloud Monitoring](https://cloud.google.com/monitoring)
 (formerly Stackdriver), traces to [Google Cloud Trace](https://cloud.google.com/trace),
@@ -355,3 +355,4 @@ See the [Collector feature gates](https://github.com/open-telemetry/opentelemetr
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector

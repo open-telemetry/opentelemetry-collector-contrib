@@ -19,9 +19,15 @@ resourceMetrics:
         - key: env-var-metric-label
           value:
             stringValue: env-var
+        - key: env-var-metric-label-2
+          value:
+            stringValue: env-var-2
         - key: container-metric-label
           value:
             stringValue: container-label
+        - key: container-metric-label-2
+          value:
+            stringValue: container-label-2
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:

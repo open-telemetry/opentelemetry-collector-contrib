@@ -1,0 +1,7 @@
+type: splunkenterprise
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions:

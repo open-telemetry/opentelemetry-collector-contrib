@@ -1,9 +1,9 @@
 # File Storage
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [beta]               |
-| Distributions            | [contrib]            |
+| Status                   |                                 |
+| ------------------------ |---------------------------------|
+| Stability                | [beta]                          |
+| Distributions            | [contrib], [splunk], [observiq] |
 
 The File Storage extension can persist state to the local file system. 
 
@@ -88,3 +88,4 @@ exporters:
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[splunk]: https://github.com/signalfx/splunk-otel-collector

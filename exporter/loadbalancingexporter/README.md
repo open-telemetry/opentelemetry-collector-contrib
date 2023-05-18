@@ -1,10 +1,10 @@
 # Trace ID/Service-name aware load-balancing exporter
 
-| Status                   |              |
-| ------------------------ |--------------|
-| Stability                | [beta]       |
-| Supported pipeline types | traces, logs |
-| Distributions            | [contrib]    |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs          |
+| Distributions            | [contrib], [observiq] |
 
 This is an exporter that will consistently export spans and logs depending on the `routing_key` configured. If no `routing_key` is configured, the default routing mechanism is `traceID`. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
 
@@ -201,3 +201,4 @@ The following metrics are recorded by this processor:
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector

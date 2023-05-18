@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Type             = "mongoatlasreceiver"
+	Type             = "mongodbatlas"
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta
 )

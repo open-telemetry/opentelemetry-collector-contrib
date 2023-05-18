@@ -1,10 +1,10 @@
 # Kafka Exporter
 
-| Status                   |                       |
-| ------------------------ |-----------------------|
-| Stability                | [beta]                |
-| Supported pipeline types | traces, logs, metrics |
-| Distributions            | [contrib]             |
+| Status                   |                                 |
+| ------------------------ |---------------------------------|
+| Stability                | [beta]                          |
+| Supported pipeline types | traces, logs, metrics           |
+| Distributions            | [contrib], [splunk], [observiq] |
 
 Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a synchronous producer
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
@@ -90,3 +90,5 @@ exporters:
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector
