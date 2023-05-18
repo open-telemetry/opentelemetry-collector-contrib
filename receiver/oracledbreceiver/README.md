@@ -66,7 +66,7 @@ GRANT SELECT ON DBA_DATA_FILES TO <username>;
 
 ## Enabling metrics.
 
-See [documentation](./documentation).
+See [documentation](./documentation.md).
 
 You can enable or disable selective metrics.
 
