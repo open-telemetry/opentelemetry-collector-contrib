@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 const defaultEndpoint = "clickhouse://127.0.0.1:9000"
@@ -34,11 +36,11 @@ func TestLoadConfig(t *testing.T) {
 	}{
 
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "full"),
+			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				Endpoint:         defaultEndpoint,
 				Database:         "otel",
