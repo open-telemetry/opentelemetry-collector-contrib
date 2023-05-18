@@ -628,7 +628,7 @@ metrics:
       value_type: int
     unit: "{ events }"
     attributes: []
-  spark.jvm_cpu_time:
+  spark.component.jvm_cpu_time:
     description: Current CPU time taken by the Spark component.
     enabled: true
     sum:
@@ -637,7 +637,7 @@ metrics:
       value_type: int
     unit: ns
     attributes: []
-  spark.executor.jvm_memory:
+  spark.component.executor.jvm_memory:
     description: Amount of memory used by the component's JVM.
     enabled: true
     sum:
@@ -646,7 +646,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [location]
-  spark.executor.memory.execution:
+  spark.componennt.executor.memory.execution:
     description: Amount of execution memory currently used by the component.
     enabled: true
     sum:
@@ -655,7 +655,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [location]
-  spark.executor.memory.storage:
+  spark.component.executor.memory.storage:
     description: Amount of storage memory currently used by the component.
     enabled: true
     sum:
@@ -664,7 +664,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [location]
-  spark.executor.memory.pool:
+  spark.component.executor.memory.pool:
     description: Amount of pool memory currently used by the component.
     enabled: true
     sum:
@@ -673,7 +673,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [pool_memory_type]
-  spark.executor.gc.operations:
+  spark.component.executor.gc.operations:
     description: Number of garbage collection operations performed by the component.
     enabled: true
     sum:
@@ -682,7 +682,7 @@ metrics:
       value_type: int
     unit: "{ gc_operations }"
     attributes: [gc_type]
-  spark.executor.gc.time:
+  spark.component.executor.gc.time:
     description: Total elapsed time during garbage collection operations performed by the component.
     enabled: true
     sum:

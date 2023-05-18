@@ -23,6 +23,20 @@ all_set:
       enabled: true
     spark.code_generator.source_code.operations:
       enabled: true
+    spark.componennt.executor.memory.execution:
+      enabled: true
+    spark.component.executor.gc.operations:
+      enabled: true
+    spark.component.executor.gc.time:
+      enabled: true
+    spark.component.executor.jvm_memory:
+      enabled: true
+    spark.component.executor.memory.pool:
+      enabled: true
+    spark.component.executor.memory.storage:
+      enabled: true
+    spark.component.jvm_cpu_time:
+      enabled: true
     spark.dag_scheduler.jobs.active:
       enabled: true
     spark.dag_scheduler.jobs.count:
@@ -33,21 +47,9 @@ all_set:
       enabled: true
     spark.executor.disk.usage:
       enabled: true
-    spark.executor.gc.operations:
-      enabled: true
-    spark.executor.gc.time:
-      enabled: true
     spark.executor.gc_time:
       enabled: true
     spark.executor.input_size:
-      enabled: true
-    spark.executor.jvm_memory:
-      enabled: true
-    spark.executor.memory.execution:
-      enabled: true
-    spark.executor.memory.pool:
-      enabled: true
-    spark.executor.memory.storage:
       enabled: true
     spark.executor.memory.usage:
       enabled: true
@@ -82,8 +84,6 @@ all_set:
     spark.job.tasks.active:
       enabled: true
     spark.job.tasks.results:
-      enabled: true
-    spark.jvm_cpu_time:
       enabled: true
     spark.live_listener_bus.events_dropped:
       enabled: true
@@ -164,6 +164,20 @@ none_set:
       enabled: false
     spark.code_generator.source_code.operations:
       enabled: false
+    spark.componennt.executor.memory.execution:
+      enabled: false
+    spark.component.executor.gc.operations:
+      enabled: false
+    spark.component.executor.gc.time:
+      enabled: false
+    spark.component.executor.jvm_memory:
+      enabled: false
+    spark.component.executor.memory.pool:
+      enabled: false
+    spark.component.executor.memory.storage:
+      enabled: false
+    spark.component.jvm_cpu_time:
+      enabled: false
     spark.dag_scheduler.jobs.active:
       enabled: false
     spark.dag_scheduler.jobs.count:
@@ -174,21 +188,9 @@ none_set:
       enabled: false
     spark.executor.disk.usage:
       enabled: false
-    spark.executor.gc.operations:
-      enabled: false
-    spark.executor.gc.time:
-      enabled: false
     spark.executor.gc_time:
       enabled: false
     spark.executor.input_size:
-      enabled: false
-    spark.executor.jvm_memory:
-      enabled: false
-    spark.executor.memory.execution:
-      enabled: false
-    spark.executor.memory.pool:
-      enabled: false
-    spark.executor.memory.storage:
       enabled: false
     spark.executor.memory.usage:
       enabled: false
@@ -223,8 +225,6 @@ none_set:
     spark.job.tasks.active:
       enabled: false
     spark.job.tasks.results:
-      enabled: false
-    spark.jvm_cpu_time:
       enabled: false
     spark.live_listener_bus.events_dropped:
       enabled: false

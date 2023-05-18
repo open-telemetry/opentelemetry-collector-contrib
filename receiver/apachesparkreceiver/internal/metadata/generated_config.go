@@ -36,19 +36,20 @@ type MetricsConfig struct {
 	SparkCodeGeneratorGeneratedMethodCount       MetricConfig `mapstructure:"spark.code_generator.generated_method.count"`
 	SparkCodeGeneratorSourceCodeAverageSize      MetricConfig `mapstructure:"spark.code_generator.source_code.average_size"`
 	SparkCodeGeneratorSourceCodeOperations       MetricConfig `mapstructure:"spark.code_generator.source_code.operations"`
+	SparkComponenntExecutorMemoryExecution       MetricConfig `mapstructure:"spark.componennt.executor.memory.execution"`
+	SparkComponentExecutorGcOperations           MetricConfig `mapstructure:"spark.component.executor.gc.operations"`
+	SparkComponentExecutorGcTime                 MetricConfig `mapstructure:"spark.component.executor.gc.time"`
+	SparkComponentExecutorJvmMemory              MetricConfig `mapstructure:"spark.component.executor.jvm_memory"`
+	SparkComponentExecutorMemoryPool             MetricConfig `mapstructure:"spark.component.executor.memory.pool"`
+	SparkComponentExecutorMemoryStorage          MetricConfig `mapstructure:"spark.component.executor.memory.storage"`
+	SparkComponentJvmCPUTime                     MetricConfig `mapstructure:"spark.component.jvm_cpu_time"`
 	SparkDagSchedulerJobsActive                  MetricConfig `mapstructure:"spark.dag_scheduler.jobs.active"`
 	SparkDagSchedulerJobsCount                   MetricConfig `mapstructure:"spark.dag_scheduler.jobs.count"`
 	SparkDagSchedulerStages                      MetricConfig `mapstructure:"spark.dag_scheduler.stages"`
 	SparkDagSchedulerStagesFailed                MetricConfig `mapstructure:"spark.dag_scheduler.stages.failed"`
 	SparkExecutorDiskUsage                       MetricConfig `mapstructure:"spark.executor.disk.usage"`
-	SparkExecutorGcOperations                    MetricConfig `mapstructure:"spark.executor.gc.operations"`
-	SparkExecutorGcTime                          MetricConfig `mapstructure:"spark.executor.gc.time"`
 	SparkExecutorGcTime                          MetricConfig `mapstructure:"spark.executor.gc_time"`
 	SparkExecutorInputSize                       MetricConfig `mapstructure:"spark.executor.input_size"`
-	SparkExecutorJvmMemory                       MetricConfig `mapstructure:"spark.executor.jvm_memory"`
-	SparkExecutorMemoryExecution                 MetricConfig `mapstructure:"spark.executor.memory.execution"`
-	SparkExecutorMemoryPool                      MetricConfig `mapstructure:"spark.executor.memory.pool"`
-	SparkExecutorMemoryStorage                   MetricConfig `mapstructure:"spark.executor.memory.storage"`
 	SparkExecutorMemoryUsage                     MetricConfig `mapstructure:"spark.executor.memory.usage"`
 	SparkExecutorShuffleIoSize                   MetricConfig `mapstructure:"spark.executor.shuffle.io.size"`
 	SparkExecutorStorageMemoryTotal              MetricConfig `mapstructure:"spark.executor.storage_memory.total"`
@@ -66,7 +67,6 @@ type MetricsConfig struct {
 	SparkJobStagesResults                        MetricConfig `mapstructure:"spark.job.stages.results"`
 	SparkJobTasksActive                          MetricConfig `mapstructure:"spark.job.tasks.active"`
 	SparkJobTasksResults                         MetricConfig `mapstructure:"spark.job.tasks.results"`
-	SparkJvmCPUTime                              MetricConfig `mapstructure:"spark.jvm_cpu_time"`
 	SparkLiveListenerBusEventsDropped            MetricConfig `mapstructure:"spark.live_listener_bus.events_dropped"`
 	SparkLiveListenerBusEventsPosted             MetricConfig `mapstructure:"spark.live_listener_bus.events_posted"`
 	SparkLiveListenerBusProcessingTimeAverage    MetricConfig `mapstructure:"spark.live_listener_bus.processing_time.average"`
@@ -125,6 +125,27 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkCodeGeneratorSourceCodeOperations: MetricConfig{
 			Enabled: true,
 		},
+		SparkComponenntExecutorMemoryExecution: MetricConfig{
+			Enabled: true,
+		},
+		SparkComponentExecutorGcOperations: MetricConfig{
+			Enabled: true,
+		},
+		SparkComponentExecutorGcTime: MetricConfig{
+			Enabled: true,
+		},
+		SparkComponentExecutorJvmMemory: MetricConfig{
+			Enabled: true,
+		},
+		SparkComponentExecutorMemoryPool: MetricConfig{
+			Enabled: true,
+		},
+		SparkComponentExecutorMemoryStorage: MetricConfig{
+			Enabled: true,
+		},
+		SparkComponentJvmCPUTime: MetricConfig{
+			Enabled: true,
+		},
 		SparkDagSchedulerJobsActive: MetricConfig{
 			Enabled: true,
 		},
@@ -140,28 +161,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkExecutorDiskUsage: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorGcOperations: MetricConfig{
-			Enabled: true,
-		},
-		SparkExecutorGcTime: MetricConfig{
-			Enabled: true,
-		},
 		SparkExecutorGcTime: MetricConfig{
 			Enabled: true,
 		},
 		SparkExecutorInputSize: MetricConfig{
-			Enabled: true,
-		},
-		SparkExecutorJvmMemory: MetricConfig{
-			Enabled: true,
-		},
-		SparkExecutorMemoryExecution: MetricConfig{
-			Enabled: true,
-		},
-		SparkExecutorMemoryPool: MetricConfig{
-			Enabled: true,
-		},
-		SparkExecutorMemoryStorage: MetricConfig{
 			Enabled: true,
 		},
 		SparkExecutorMemoryUsage: MetricConfig{
@@ -213,9 +216,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		SparkJobTasksResults: MetricConfig{
-			Enabled: true,
-		},
-		SparkJvmCPUTime: MetricConfig{
 			Enabled: true,
 		},
 		SparkLiveListenerBusEventsDropped: MetricConfig{

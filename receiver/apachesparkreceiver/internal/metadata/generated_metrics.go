@@ -814,6 +814,375 @@ func newMetricSparkCodeGeneratorSourceCodeOperations(cfg MetricConfig) metricSpa
 	return m
 }
 
+type metricSparkComponenntExecutorMemoryExecution struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.componennt.executor.memory.execution metric with initial data.
+func (m *metricSparkComponenntExecutorMemoryExecution) init() {
+	m.data.SetName("spark.componennt.executor.memory.execution")
+	m.data.SetDescription("Amount of execution memory currently used by the component.")
+	m.data.SetUnit("bytes")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkComponenntExecutorMemoryExecution) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("location", locationAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkComponenntExecutorMemoryExecution) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkComponenntExecutorMemoryExecution) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkComponenntExecutorMemoryExecution(cfg MetricConfig) metricSparkComponenntExecutorMemoryExecution {
+	m := metricSparkComponenntExecutorMemoryExecution{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSparkComponentExecutorGcOperations struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.component.executor.gc.operations metric with initial data.
+func (m *metricSparkComponentExecutorGcOperations) init() {
+	m.data.SetName("spark.component.executor.gc.operations")
+	m.data.SetDescription("Number of garbage collection operations performed by the component.")
+	m.data.SetUnit("{ gc_operations }")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkComponentExecutorGcOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, gcTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkComponentExecutorGcOperations) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkComponentExecutorGcOperations) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkComponentExecutorGcOperations(cfg MetricConfig) metricSparkComponentExecutorGcOperations {
+	m := metricSparkComponentExecutorGcOperations{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSparkComponentExecutorGcTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.component.executor.gc.time metric with initial data.
+func (m *metricSparkComponentExecutorGcTime) init() {
+	m.data.SetName("spark.component.executor.gc.time")
+	m.data.SetDescription("Total elapsed time during garbage collection operations performed by the component.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkComponentExecutorGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, gcTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkComponentExecutorGcTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkComponentExecutorGcTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkComponentExecutorGcTime(cfg MetricConfig) metricSparkComponentExecutorGcTime {
+	m := metricSparkComponentExecutorGcTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSparkComponentExecutorJvmMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.component.executor.jvm_memory metric with initial data.
+func (m *metricSparkComponentExecutorJvmMemory) init() {
+	m.data.SetName("spark.component.executor.jvm_memory")
+	m.data.SetDescription("Amount of memory used by the component's JVM.")
+	m.data.SetUnit("bytes")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkComponentExecutorJvmMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("location", locationAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkComponentExecutorJvmMemory) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkComponentExecutorJvmMemory) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkComponentExecutorJvmMemory(cfg MetricConfig) metricSparkComponentExecutorJvmMemory {
+	m := metricSparkComponentExecutorJvmMemory{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSparkComponentExecutorMemoryPool struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.component.executor.memory.pool metric with initial data.
+func (m *metricSparkComponentExecutorMemoryPool) init() {
+	m.data.SetName("spark.component.executor.memory.pool")
+	m.data.SetDescription("Amount of pool memory currently used by the component.")
+	m.data.SetUnit("bytes")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkComponentExecutorMemoryPool) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, poolMemoryTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("pool_memory_type", poolMemoryTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkComponentExecutorMemoryPool) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkComponentExecutorMemoryPool) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkComponentExecutorMemoryPool(cfg MetricConfig) metricSparkComponentExecutorMemoryPool {
+	m := metricSparkComponentExecutorMemoryPool{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSparkComponentExecutorMemoryStorage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.component.executor.memory.storage metric with initial data.
+func (m *metricSparkComponentExecutorMemoryStorage) init() {
+	m.data.SetName("spark.component.executor.memory.storage")
+	m.data.SetDescription("Amount of storage memory currently used by the component.")
+	m.data.SetUnit("bytes")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkComponentExecutorMemoryStorage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("location", locationAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkComponentExecutorMemoryStorage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkComponentExecutorMemoryStorage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkComponentExecutorMemoryStorage(cfg MetricConfig) metricSparkComponentExecutorMemoryStorage {
+	m := metricSparkComponentExecutorMemoryStorage{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSparkComponentJvmCPUTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.component.jvm_cpu_time metric with initial data.
+func (m *metricSparkComponentJvmCPUTime) init() {
+	m.data.SetName("spark.component.jvm_cpu_time")
+	m.data.SetDescription("Current CPU time taken by the Spark component.")
+	m.data.SetUnit("ns")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSparkComponentJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkComponentJvmCPUTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkComponentJvmCPUTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkComponentJvmCPUTime(cfg MetricConfig) metricSparkComponentJvmCPUTime {
+	m := metricSparkComponentJvmCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSparkDagSchedulerJobsActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1072,112 +1441,6 @@ func newMetricSparkExecutorDiskUsage(cfg MetricConfig) metricSparkExecutorDiskUs
 	return m
 }
 
-type metricSparkExecutorGcOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.executor.gc.operations metric with initial data.
-func (m *metricSparkExecutorGcOperations) init() {
-	m.data.SetName("spark.executor.gc.operations")
-	m.data.SetDescription("Number of garbage collection operations performed by the component.")
-	m.data.SetUnit("{ gc_operations }")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkExecutorGcOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, gcTypeAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkExecutorGcOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkExecutorGcOperations) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkExecutorGcOperations(cfg MetricConfig) metricSparkExecutorGcOperations {
-	m := metricSparkExecutorGcOperations{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSparkExecutorGcTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.executor.gc.time metric with initial data.
-func (m *metricSparkExecutorGcTime) init() {
-	m.data.SetName("spark.executor.gc.time")
-	m.data.SetDescription("Total elapsed time during garbage collection operations performed by the component.")
-	m.data.SetUnit("ms")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkExecutorGcTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, gcTypeAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("gc_type", gcTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkExecutorGcTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkExecutorGcTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkExecutorGcTime(cfg MetricConfig) metricSparkExecutorGcTime {
-	m := metricSparkExecutorGcTime{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSparkExecutorGcTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1273,218 +1536,6 @@ func (m *metricSparkExecutorInputSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkExecutorInputSize(cfg MetricConfig) metricSparkExecutorInputSize {
 	m := metricSparkExecutorInputSize{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSparkExecutorJvmMemory struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.executor.jvm_memory metric with initial data.
-func (m *metricSparkExecutorJvmMemory) init() {
-	m.data.SetName("spark.executor.jvm_memory")
-	m.data.SetDescription("Amount of memory used by the component's JVM.")
-	m.data.SetUnit("bytes")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkExecutorJvmMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("location", locationAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkExecutorJvmMemory) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkExecutorJvmMemory) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkExecutorJvmMemory(cfg MetricConfig) metricSparkExecutorJvmMemory {
-	m := metricSparkExecutorJvmMemory{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSparkExecutorMemoryExecution struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.executor.memory.execution metric with initial data.
-func (m *metricSparkExecutorMemoryExecution) init() {
-	m.data.SetName("spark.executor.memory.execution")
-	m.data.SetDescription("Amount of execution memory currently used by the component.")
-	m.data.SetUnit("bytes")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkExecutorMemoryExecution) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("location", locationAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkExecutorMemoryExecution) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkExecutorMemoryExecution) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkExecutorMemoryExecution(cfg MetricConfig) metricSparkExecutorMemoryExecution {
-	m := metricSparkExecutorMemoryExecution{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSparkExecutorMemoryPool struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.executor.memory.pool metric with initial data.
-func (m *metricSparkExecutorMemoryPool) init() {
-	m.data.SetName("spark.executor.memory.pool")
-	m.data.SetDescription("Amount of pool memory currently used by the component.")
-	m.data.SetUnit("bytes")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkExecutorMemoryPool) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, poolMemoryTypeAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("pool_memory_type", poolMemoryTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkExecutorMemoryPool) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkExecutorMemoryPool) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkExecutorMemoryPool(cfg MetricConfig) metricSparkExecutorMemoryPool {
-	m := metricSparkExecutorMemoryPool{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSparkExecutorMemoryStorage struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.executor.memory.storage metric with initial data.
-func (m *metricSparkExecutorMemoryStorage) init() {
-	m.data.SetName("spark.executor.memory.storage")
-	m.data.SetDescription("Amount of storage memory currently used by the component.")
-	m.data.SetUnit("bytes")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkExecutorMemoryStorage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locationAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("location", locationAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkExecutorMemoryStorage) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkExecutorMemoryStorage) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkExecutorMemoryStorage(cfg MetricConfig) metricSparkExecutorMemoryStorage {
-	m := metricSparkExecutorMemoryStorage{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2364,57 +2415,6 @@ func (m *metricSparkJobTasksResults) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkJobTasksResults(cfg MetricConfig) metricSparkJobTasksResults {
 	m := metricSparkJobTasksResults{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSparkJvmCPUTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.jvm_cpu_time metric with initial data.
-func (m *metricSparkJvmCPUTime) init() {
-	m.data.SetName("spark.jvm_cpu_time")
-	m.data.SetDescription("Current CPU time taken by the Spark component.")
-	m.data.SetUnit("ns")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricSparkJvmCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkJvmCPUTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkJvmCPUTime) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkJvmCPUTime(cfg MetricConfig) metricSparkJvmCPUTime {
-	m := metricSparkJvmCPUTime{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3620,19 +3620,20 @@ type MetricsBuilder struct {
 	metricSparkCodeGeneratorGeneratedMethodCount       metricSparkCodeGeneratorGeneratedMethodCount
 	metricSparkCodeGeneratorSourceCodeAverageSize      metricSparkCodeGeneratorSourceCodeAverageSize
 	metricSparkCodeGeneratorSourceCodeOperations       metricSparkCodeGeneratorSourceCodeOperations
+	metricSparkComponenntExecutorMemoryExecution       metricSparkComponenntExecutorMemoryExecution
+	metricSparkComponentExecutorGcOperations           metricSparkComponentExecutorGcOperations
+	metricSparkComponentExecutorGcTime                 metricSparkComponentExecutorGcTime
+	metricSparkComponentExecutorJvmMemory              metricSparkComponentExecutorJvmMemory
+	metricSparkComponentExecutorMemoryPool             metricSparkComponentExecutorMemoryPool
+	metricSparkComponentExecutorMemoryStorage          metricSparkComponentExecutorMemoryStorage
+	metricSparkComponentJvmCPUTime                     metricSparkComponentJvmCPUTime
 	metricSparkDagSchedulerJobsActive                  metricSparkDagSchedulerJobsActive
 	metricSparkDagSchedulerJobsCount                   metricSparkDagSchedulerJobsCount
 	metricSparkDagSchedulerStages                      metricSparkDagSchedulerStages
 	metricSparkDagSchedulerStagesFailed                metricSparkDagSchedulerStagesFailed
 	metricSparkExecutorDiskUsage                       metricSparkExecutorDiskUsage
-	metricSparkExecutorGcOperations                    metricSparkExecutorGcOperations
-	metricSparkExecutorGcTime                          metricSparkExecutorGcTime
 	metricSparkExecutorGcTime                          metricSparkExecutorGcTime
 	metricSparkExecutorInputSize                       metricSparkExecutorInputSize
-	metricSparkExecutorJvmMemory                       metricSparkExecutorJvmMemory
-	metricSparkExecutorMemoryExecution                 metricSparkExecutorMemoryExecution
-	metricSparkExecutorMemoryPool                      metricSparkExecutorMemoryPool
-	metricSparkExecutorMemoryStorage                   metricSparkExecutorMemoryStorage
 	metricSparkExecutorMemoryUsage                     metricSparkExecutorMemoryUsage
 	metricSparkExecutorShuffleIoSize                   metricSparkExecutorShuffleIoSize
 	metricSparkExecutorStorageMemoryTotal              metricSparkExecutorStorageMemoryTotal
@@ -3650,7 +3651,6 @@ type MetricsBuilder struct {
 	metricSparkJobStagesResults                        metricSparkJobStagesResults
 	metricSparkJobTasksActive                          metricSparkJobTasksActive
 	metricSparkJobTasksResults                         metricSparkJobTasksResults
-	metricSparkJvmCPUTime                              metricSparkJvmCPUTime
 	metricSparkLiveListenerBusEventsDropped            metricSparkLiveListenerBusEventsDropped
 	metricSparkLiveListenerBusEventsPosted             metricSparkLiveListenerBusEventsPosted
 	metricSparkLiveListenerBusProcessingTimeAverage    metricSparkLiveListenerBusProcessingTimeAverage
@@ -3701,19 +3701,20 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSparkCodeGeneratorGeneratedMethodCount:       newMetricSparkCodeGeneratorGeneratedMethodCount(mbc.Metrics.SparkCodeGeneratorGeneratedMethodCount),
 		metricSparkCodeGeneratorSourceCodeAverageSize:      newMetricSparkCodeGeneratorSourceCodeAverageSize(mbc.Metrics.SparkCodeGeneratorSourceCodeAverageSize),
 		metricSparkCodeGeneratorSourceCodeOperations:       newMetricSparkCodeGeneratorSourceCodeOperations(mbc.Metrics.SparkCodeGeneratorSourceCodeOperations),
+		metricSparkComponenntExecutorMemoryExecution:       newMetricSparkComponenntExecutorMemoryExecution(mbc.Metrics.SparkComponenntExecutorMemoryExecution),
+		metricSparkComponentExecutorGcOperations:           newMetricSparkComponentExecutorGcOperations(mbc.Metrics.SparkComponentExecutorGcOperations),
+		metricSparkComponentExecutorGcTime:                 newMetricSparkComponentExecutorGcTime(mbc.Metrics.SparkComponentExecutorGcTime),
+		metricSparkComponentExecutorJvmMemory:              newMetricSparkComponentExecutorJvmMemory(mbc.Metrics.SparkComponentExecutorJvmMemory),
+		metricSparkComponentExecutorMemoryPool:             newMetricSparkComponentExecutorMemoryPool(mbc.Metrics.SparkComponentExecutorMemoryPool),
+		metricSparkComponentExecutorMemoryStorage:          newMetricSparkComponentExecutorMemoryStorage(mbc.Metrics.SparkComponentExecutorMemoryStorage),
+		metricSparkComponentJvmCPUTime:                     newMetricSparkComponentJvmCPUTime(mbc.Metrics.SparkComponentJvmCPUTime),
 		metricSparkDagSchedulerJobsActive:                  newMetricSparkDagSchedulerJobsActive(mbc.Metrics.SparkDagSchedulerJobsActive),
 		metricSparkDagSchedulerJobsCount:                   newMetricSparkDagSchedulerJobsCount(mbc.Metrics.SparkDagSchedulerJobsCount),
 		metricSparkDagSchedulerStages:                      newMetricSparkDagSchedulerStages(mbc.Metrics.SparkDagSchedulerStages),
 		metricSparkDagSchedulerStagesFailed:                newMetricSparkDagSchedulerStagesFailed(mbc.Metrics.SparkDagSchedulerStagesFailed),
 		metricSparkExecutorDiskUsage:                       newMetricSparkExecutorDiskUsage(mbc.Metrics.SparkExecutorDiskUsage),
-		metricSparkExecutorGcOperations:                    newMetricSparkExecutorGcOperations(mbc.Metrics.SparkExecutorGcOperations),
-		metricSparkExecutorGcTime:                          newMetricSparkExecutorGcTime(mbc.Metrics.SparkExecutorGcTime),
 		metricSparkExecutorGcTime:                          newMetricSparkExecutorGcTime(mbc.Metrics.SparkExecutorGcTime),
 		metricSparkExecutorInputSize:                       newMetricSparkExecutorInputSize(mbc.Metrics.SparkExecutorInputSize),
-		metricSparkExecutorJvmMemory:                       newMetricSparkExecutorJvmMemory(mbc.Metrics.SparkExecutorJvmMemory),
-		metricSparkExecutorMemoryExecution:                 newMetricSparkExecutorMemoryExecution(mbc.Metrics.SparkExecutorMemoryExecution),
-		metricSparkExecutorMemoryPool:                      newMetricSparkExecutorMemoryPool(mbc.Metrics.SparkExecutorMemoryPool),
-		metricSparkExecutorMemoryStorage:                   newMetricSparkExecutorMemoryStorage(mbc.Metrics.SparkExecutorMemoryStorage),
 		metricSparkExecutorMemoryUsage:                     newMetricSparkExecutorMemoryUsage(mbc.Metrics.SparkExecutorMemoryUsage),
 		metricSparkExecutorShuffleIoSize:                   newMetricSparkExecutorShuffleIoSize(mbc.Metrics.SparkExecutorShuffleIoSize),
 		metricSparkExecutorStorageMemoryTotal:              newMetricSparkExecutorStorageMemoryTotal(mbc.Metrics.SparkExecutorStorageMemoryTotal),
@@ -3731,7 +3732,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSparkJobStagesResults:                        newMetricSparkJobStagesResults(mbc.Metrics.SparkJobStagesResults),
 		metricSparkJobTasksActive:                          newMetricSparkJobTasksActive(mbc.Metrics.SparkJobTasksActive),
 		metricSparkJobTasksResults:                         newMetricSparkJobTasksResults(mbc.Metrics.SparkJobTasksResults),
-		metricSparkJvmCPUTime:                              newMetricSparkJvmCPUTime(mbc.Metrics.SparkJvmCPUTime),
 		metricSparkLiveListenerBusEventsDropped:            newMetricSparkLiveListenerBusEventsDropped(mbc.Metrics.SparkLiveListenerBusEventsDropped),
 		metricSparkLiveListenerBusEventsPosted:             newMetricSparkLiveListenerBusEventsPosted(mbc.Metrics.SparkLiveListenerBusEventsPosted),
 		metricSparkLiveListenerBusProcessingTimeAverage:    newMetricSparkLiveListenerBusProcessingTimeAverage(mbc.Metrics.SparkLiveListenerBusProcessingTimeAverage),
@@ -3870,19 +3870,20 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkCodeGeneratorGeneratedMethodCount.emit(ils.Metrics())
 	mb.metricSparkCodeGeneratorSourceCodeAverageSize.emit(ils.Metrics())
 	mb.metricSparkCodeGeneratorSourceCodeOperations.emit(ils.Metrics())
+	mb.metricSparkComponenntExecutorMemoryExecution.emit(ils.Metrics())
+	mb.metricSparkComponentExecutorGcOperations.emit(ils.Metrics())
+	mb.metricSparkComponentExecutorGcTime.emit(ils.Metrics())
+	mb.metricSparkComponentExecutorJvmMemory.emit(ils.Metrics())
+	mb.metricSparkComponentExecutorMemoryPool.emit(ils.Metrics())
+	mb.metricSparkComponentExecutorMemoryStorage.emit(ils.Metrics())
+	mb.metricSparkComponentJvmCPUTime.emit(ils.Metrics())
 	mb.metricSparkDagSchedulerJobsActive.emit(ils.Metrics())
 	mb.metricSparkDagSchedulerJobsCount.emit(ils.Metrics())
 	mb.metricSparkDagSchedulerStages.emit(ils.Metrics())
 	mb.metricSparkDagSchedulerStagesFailed.emit(ils.Metrics())
 	mb.metricSparkExecutorDiskUsage.emit(ils.Metrics())
-	mb.metricSparkExecutorGcOperations.emit(ils.Metrics())
-	mb.metricSparkExecutorGcTime.emit(ils.Metrics())
 	mb.metricSparkExecutorGcTime.emit(ils.Metrics())
 	mb.metricSparkExecutorInputSize.emit(ils.Metrics())
-	mb.metricSparkExecutorJvmMemory.emit(ils.Metrics())
-	mb.metricSparkExecutorMemoryExecution.emit(ils.Metrics())
-	mb.metricSparkExecutorMemoryPool.emit(ils.Metrics())
-	mb.metricSparkExecutorMemoryStorage.emit(ils.Metrics())
 	mb.metricSparkExecutorMemoryUsage.emit(ils.Metrics())
 	mb.metricSparkExecutorShuffleIoSize.emit(ils.Metrics())
 	mb.metricSparkExecutorStorageMemoryTotal.emit(ils.Metrics())
@@ -3900,7 +3901,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkJobStagesResults.emit(ils.Metrics())
 	mb.metricSparkJobTasksActive.emit(ils.Metrics())
 	mb.metricSparkJobTasksResults.emit(ils.Metrics())
-	mb.metricSparkJvmCPUTime.emit(ils.Metrics())
 	mb.metricSparkLiveListenerBusEventsDropped.emit(ils.Metrics())
 	mb.metricSparkLiveListenerBusEventsPosted.emit(ils.Metrics())
 	mb.metricSparkLiveListenerBusProcessingTimeAverage.emit(ils.Metrics())
@@ -3997,6 +3997,41 @@ func (mb *MetricsBuilder) RecordSparkCodeGeneratorSourceCodeOperationsDataPoint(
 	mb.metricSparkCodeGeneratorSourceCodeOperations.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSparkComponenntExecutorMemoryExecutionDataPoint adds a data point to spark.componennt.executor.memory.execution metric.
+func (mb *MetricsBuilder) RecordSparkComponenntExecutorMemoryExecutionDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
+	mb.metricSparkComponenntExecutorMemoryExecution.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
+}
+
+// RecordSparkComponentExecutorGcOperationsDataPoint adds a data point to spark.component.executor.gc.operations metric.
+func (mb *MetricsBuilder) RecordSparkComponentExecutorGcOperationsDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
+	mb.metricSparkComponentExecutorGcOperations.recordDataPoint(mb.startTime, ts, val, gcTypeAttributeValue.String())
+}
+
+// RecordSparkComponentExecutorGcTimeDataPoint adds a data point to spark.component.executor.gc.time metric.
+func (mb *MetricsBuilder) RecordSparkComponentExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
+	mb.metricSparkComponentExecutorGcTime.recordDataPoint(mb.startTime, ts, val, gcTypeAttributeValue.String())
+}
+
+// RecordSparkComponentExecutorJvmMemoryDataPoint adds a data point to spark.component.executor.jvm_memory metric.
+func (mb *MetricsBuilder) RecordSparkComponentExecutorJvmMemoryDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
+	mb.metricSparkComponentExecutorJvmMemory.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
+}
+
+// RecordSparkComponentExecutorMemoryPoolDataPoint adds a data point to spark.component.executor.memory.pool metric.
+func (mb *MetricsBuilder) RecordSparkComponentExecutorMemoryPoolDataPoint(ts pcommon.Timestamp, val int64, poolMemoryTypeAttributeValue AttributePoolMemoryType) {
+	mb.metricSparkComponentExecutorMemoryPool.recordDataPoint(mb.startTime, ts, val, poolMemoryTypeAttributeValue.String())
+}
+
+// RecordSparkComponentExecutorMemoryStorageDataPoint adds a data point to spark.component.executor.memory.storage metric.
+func (mb *MetricsBuilder) RecordSparkComponentExecutorMemoryStorageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
+	mb.metricSparkComponentExecutorMemoryStorage.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
+}
+
+// RecordSparkComponentJvmCPUTimeDataPoint adds a data point to spark.component.jvm_cpu_time metric.
+func (mb *MetricsBuilder) RecordSparkComponentJvmCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSparkComponentJvmCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordSparkDagSchedulerJobsActiveDataPoint adds a data point to spark.dag_scheduler.jobs.active metric.
 func (mb *MetricsBuilder) RecordSparkDagSchedulerJobsActiveDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSparkDagSchedulerJobsActive.recordDataPoint(mb.startTime, ts, val)
@@ -4022,16 +4057,6 @@ func (mb *MetricsBuilder) RecordSparkExecutorDiskUsageDataPoint(ts pcommon.Times
 	mb.metricSparkExecutorDiskUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSparkExecutorGcOperationsDataPoint adds a data point to spark.executor.gc.operations metric.
-func (mb *MetricsBuilder) RecordSparkExecutorGcOperationsDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
-	mb.metricSparkExecutorGcOperations.recordDataPoint(mb.startTime, ts, val, gcTypeAttributeValue.String())
-}
-
-// RecordSparkExecutorGcTimeDataPoint adds a data point to spark.executor.gc.time metric.
-func (mb *MetricsBuilder) RecordSparkExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
-	mb.metricSparkExecutorGcTime.recordDataPoint(mb.startTime, ts, val, gcTypeAttributeValue.String())
-}
-
 // RecordSparkExecutorGcTimeDataPoint adds a data point to spark.executor.gc_time metric.
 func (mb *MetricsBuilder) RecordSparkExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSparkExecutorGcTime.recordDataPoint(mb.startTime, ts, val)
@@ -4040,26 +4065,6 @@ func (mb *MetricsBuilder) RecordSparkExecutorGcTimeDataPoint(ts pcommon.Timestam
 // RecordSparkExecutorInputSizeDataPoint adds a data point to spark.executor.input_size metric.
 func (mb *MetricsBuilder) RecordSparkExecutorInputSizeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSparkExecutorInputSize.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordSparkExecutorJvmMemoryDataPoint adds a data point to spark.executor.jvm_memory metric.
-func (mb *MetricsBuilder) RecordSparkExecutorJvmMemoryDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
-	mb.metricSparkExecutorJvmMemory.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
-}
-
-// RecordSparkExecutorMemoryExecutionDataPoint adds a data point to spark.executor.memory.execution metric.
-func (mb *MetricsBuilder) RecordSparkExecutorMemoryExecutionDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
-	mb.metricSparkExecutorMemoryExecution.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
-}
-
-// RecordSparkExecutorMemoryPoolDataPoint adds a data point to spark.executor.memory.pool metric.
-func (mb *MetricsBuilder) RecordSparkExecutorMemoryPoolDataPoint(ts pcommon.Timestamp, val int64, poolMemoryTypeAttributeValue AttributePoolMemoryType) {
-	mb.metricSparkExecutorMemoryPool.recordDataPoint(mb.startTime, ts, val, poolMemoryTypeAttributeValue.String())
-}
-
-// RecordSparkExecutorMemoryStorageDataPoint adds a data point to spark.executor.memory.storage metric.
-func (mb *MetricsBuilder) RecordSparkExecutorMemoryStorageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
-	mb.metricSparkExecutorMemoryStorage.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
 }
 
 // RecordSparkExecutorMemoryUsageDataPoint adds a data point to spark.executor.memory.usage metric.
@@ -4145,11 +4150,6 @@ func (mb *MetricsBuilder) RecordSparkJobTasksActiveDataPoint(ts pcommon.Timestam
 // RecordSparkJobTasksResultsDataPoint adds a data point to spark.job.tasks.results metric.
 func (mb *MetricsBuilder) RecordSparkJobTasksResultsDataPoint(ts pcommon.Timestamp, val int64, jobTaskResultAttributeValue AttributeJobTaskResult) {
 	mb.metricSparkJobTasksResults.recordDataPoint(mb.startTime, ts, val, jobTaskResultAttributeValue.String())
-}
-
-// RecordSparkJvmCPUTimeDataPoint adds a data point to spark.jvm_cpu_time metric.
-func (mb *MetricsBuilder) RecordSparkJvmCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkJvmCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSparkLiveListenerBusEventsDroppedDataPoint adds a data point to spark.live_listener_bus.events_dropped metric.

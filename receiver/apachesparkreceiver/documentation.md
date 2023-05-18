@@ -112,6 +112,98 @@ Number of source code generation operations performed by the CodeGenerator.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { operations } | Sum | Int | Cumulative | true |
 
+### spark.componennt.executor.memory.execution
+
+Amount of execution memory currently used by the component.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| bytes | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
+
+### spark.component.executor.gc.operations
+
+Number of garbage collection operations performed by the component.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| { gc_operations } | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
+
+### spark.component.executor.gc.time
+
+Total elapsed time during garbage collection operations performed by the component.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
+
+### spark.component.executor.jvm_memory
+
+Amount of memory used by the component's JVM.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| bytes | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
+
+### spark.component.executor.memory.pool
+
+Amount of pool memory currently used by the component.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| bytes | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| pool_memory_type | The type of pool memory for which the metric was recorded. | Str: ``direct``, ``mapped`` |
+
+### spark.component.executor.memory.storage
+
+Amount of storage memory currently used by the component.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| bytes | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
+
+### spark.component.jvm_cpu_time
+
+Current CPU time taken by the Spark component.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
 ### spark.dag_scheduler.jobs.active
 
 Number of active jobs currently being processed by the DAGScheduler.
@@ -159,34 +251,6 @@ Disk space used by this executor for RDD storage.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | bytes | Sum | Int | Cumulative | false |
 
-### spark.executor.gc.operations
-
-Number of garbage collection operations performed by the component.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| { gc_operations } | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
-
-### spark.executor.gc.time
-
-Total elapsed time during garbage collection operations performed by the component.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
-
 ### spark.executor.gc_time
 
 Elapsed time the JVM spent in garbage collection in this executor.
@@ -202,62 +266,6 @@ Amount of data input for this executor.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | bytes | Sum | Int | Cumulative | true |
-
-### spark.executor.jvm_memory
-
-Amount of memory used by the component's JVM.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| bytes | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
-
-### spark.executor.memory.execution
-
-Amount of execution memory currently used by the component.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| bytes | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
-
-### spark.executor.memory.pool
-
-Amount of pool memory currently used by the component.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| bytes | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| pool_memory_type | The type of pool memory for which the metric was recorded. | Str: ``direct``, ``mapped`` |
-
-### spark.executor.memory.storage
-
-Amount of storage memory currently used by the component.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| bytes | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
 
 ### spark.executor.memory.usage
 
@@ -430,14 +438,6 @@ Number of tasks with a specific result in this job.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | job_task_result | The result of the job tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``skipped`` |
-
-### spark.jvm_cpu_time
-
-Current CPU time taken by the Spark component.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | true |
 
 ### spark.live_listener_bus.events_dropped
 
