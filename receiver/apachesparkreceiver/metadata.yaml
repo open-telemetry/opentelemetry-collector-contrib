@@ -27,6 +27,10 @@ resource_attributes:
     description: The ID of the job for which the metric was recorded.
     type: int
     enabled: true
+  spark.component.type:
+    description: The type of Spark component for which the metric was recorded.
+    type: string
+    enabled: true
 
 attributes:
   attempt_id:
@@ -89,6 +93,12 @@ attributes:
     enum:
       - on_heap
       - off_heap
+  scheduler_waiting:
+    description: Whether the stages which the metric describes are waiting to be run by the DAGScheduler.
+    type: bool
+  scheduler_running:
+    description: Whether the stages which the metric describes are currently being run by the DAGScheduler.
+    type: bool
   pool_memory_type:
     description: The type of pool memory for which the metric was recorded.
     type: string
@@ -164,7 +174,7 @@ metrics:
     unit: ms
     attributes:
       [attempt_id, stage_active, stage_complete, stage_pending, stage_failed]
-  spark.stage.memory_spilled:
+  spark.stage.memory.spilled:
     description: The amount of memory moved to disk due to size constraints (spilled) in this stage.
     enabled: true
     sum:
@@ -174,7 +184,7 @@ metrics:
     unit: bytes
     attributes:
       [attempt_id, stage_active, stage_complete, stage_pending, stage_failed]
-  spark.stage.disk_space_spilled:
+  spark.stage.disk.spilled:
     description: The amount of disk space used for storing portions of overly large data chunks that couldn’t fit in memory in this stage.
     enabled: true
     sum:
@@ -184,7 +194,7 @@ metrics:
     unit: bytes
     attributes:
       [attempt_id, stage_active, stage_complete, stage_pending, stage_failed]
-  spark.stage.peak_execution_memory:
+  spark.stage.memory.peak:
     description: Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.
     enabled: true
     sum:
@@ -234,7 +244,7 @@ metrics:
     unit: ms
     attributes:
       [attempt_id, stage_active, stage_complete, stage_pending, stage_failed]
-  spark.stage.shuffle.remote_data_read_to_disk:
+  spark.stage.shuffle.io.disk:
     description: Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).
     enabled: true
     sum:
@@ -275,7 +285,7 @@ metrics:
     attributes:
       [attempt_id, stage_active, stage_complete, stage_pending, stage_failed]
   #executor
-  spark.executor.memory_used:
+  spark.executor.memory.usage:
     description: Storage memory used by this executor.
     enabled: true
     sum:
@@ -284,7 +294,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes: []
-  spark.executor.disk_used:
+  spark.executor.disk.usage:
     description: Disk space used by this executor for RDD storage.
     enabled: true
     sum:
@@ -320,7 +330,7 @@ metrics:
       value_type: int
     unit: "{ tasks }"
     attributes: [executor_task_result]
-  spark.executor.duration:
+  spark.executor.time:
     description: Elapsed time the JVM spent executing tasks in this executor.
     enabled: true
     sum:
@@ -412,7 +422,7 @@ metrics:
     unit: "{ tasks }"
     attributes: [job_stage_result]
   # metrics
-  spark.driver.block_manager.disk.space_used:
+  spark.block_manager.disk.usage:
     description: Disk space used by the BlockManager.
     enabled: true
     sum:
@@ -421,7 +431,7 @@ metrics:
       value_type: int
     unit: mb
     attributes: []
-  spark.driver.block_manager.memory.used:
+  spark.block_manager.memory.used:
     description: Memory used by the BlockManager.
     enabled: true
     sum:
@@ -430,7 +440,7 @@ metrics:
       value_type: int
     unit: mb
     attributes: [location]
-  spark.driver.block_manager.memory.remaining:
+  spark.block_manager.memory.remaining:
     description: Memory remaining for the BlockManager.
     enabled: true
     sum:
@@ -439,7 +449,7 @@ metrics:
       value_type: int
     unit: mb
     attributes: [location]
-  spark.driver.hive_external_catalog.file_cache_hits:
+  spark.hive_external_catalog.file_cache_hits:
     description: Number of file cache hits on the HiveExternalCatalog.
     enabled: true
     sum:
@@ -448,7 +458,7 @@ metrics:
       value_type: int
     unit: "{ hits }"
     attributes: []
-  spark.driver.hive_external_catalog.files_discovered:
+  spark.hive_external_catalog.files_discovered:
     description: Number of files discovered while listing the partitions of a table in the Hive metastore
     enabled: true
     sum:
@@ -457,7 +467,7 @@ metrics:
       value_type: int
     unit: "{ files }"
     attributes: []
-  spark.driver.hive_external_catalog.hive_client_calls:
+  spark.hive_external_catalog.hive_client_calls:
     description: Number of calls to the underlying Hive Metastore client made by the Spark application.
     enabled: true
     sum:
@@ -466,7 +476,7 @@ metrics:
       value_type: int
     unit: "{ calls }"
     attributes: []
-  spark.driver.hive_external_catalog.parallel_listing_jobs:
+  spark.hive_external_catalog.parallel_listing_jobs:
     description: Number of parallel listing jobs initiated by the HiveExternalCatalog when listing partitions of a table.
     enabled: true
     sum:
@@ -475,7 +485,7 @@ metrics:
       value_type: int
     unit: "{ listing_jobs }"
     attributes: []
-  spark.driver.hive_external_catalog.partitions_fetched:
+  spark.hive_external_catalog.partitions_fetched:
     description: Table partitions fetched by the HiveExternalCatalog.
     enabled: true
     sum:
@@ -484,7 +494,7 @@ metrics:
       value_type: int
     unit: "{ partitions }"
     attributes: []
-  spark.driver.code_generator.compilation.count:
+  spark.code_generator.compilation.count:
     description: Number of source code compilation operations performed by the CodeGenerator.
     enabled: true
     sum:
@@ -493,14 +503,14 @@ metrics:
       value_type: int
     unit: "{ compilations }"
     attributes: []
-  spark.driver.code_generator.compilation.average_time:
+  spark.code_generator.compilation.average_time:
     description: Average time spent during CodeGenerator source code compilation operations.
     enabled: true
     gauge:
       value_type: double
     unit: ms
     attributes: []
-  spark.driver.code_generator.generated_class.count:
+  spark.code_generator.generated_class.count:
     description: Number of classes generated by the CodeGenerator.
     enabled: true
     sum:
@@ -509,14 +519,14 @@ metrics:
       value_type: int
     unit: "{ classes }"
     attributes: []
-  spark.driver.code_generator.generated_class.average_size:
+  spark.code_generator.generated_class.average_size:
     description: Average class size of the classes generated by the CodeGenerator.
     enabled: true
     gauge:
       value_type: double
     unit: bytes
     attributes: []
-  spark.driver.code_generator.generated_method.count:
+  spark.code_generator.generated_method.count:
     description: Number of methods generated by the CodeGenerator.
     enabled: true
     sum:
@@ -525,14 +535,14 @@ metrics:
       value_type: int
     unit: "{ methods }"
     attributes: []
-  spark.driver.code_generator.generated_method.average_size:
+  spark.code_generator.generated_method.average_size:
     description: Average method size of the classes generated by the CodeGenerator.
     enabled: true
     gauge:
       value_type: double
     unit: bytes
     attributes: []
-  spark.driver.code_generator.source_code.count:
+  spark.code_generator.source_code.operations:
     description: Number of source code generation operations performed by the CodeGenerator.
     enabled: true
     sum:
@@ -541,14 +551,14 @@ metrics:
       value_type: int
     unit: "{ operations }"
     attributes: []
-  spark.driver.code_generator.source_code.average_size:
+  spark.code_generator.source_code.average_size:
     description: Average size of the source code generated by a CodeGenerator code generation operation.
     enabled: true
     gauge:
       value_type: double
     unit: bytes
     attributes: []
-  spark.driver.dag_scheduler.jobs.active:
+  spark.dag_scheduler.jobs.active:
     description: Number of active jobs currently being processed by the DAGScheduler.
     enabled: true
     sum:
@@ -557,7 +567,7 @@ metrics:
       value_type: int
     unit: "{ jobs }"
     attributes: []
-  spark.driver.dag_scheduler.jobs.all:
+  spark.dag_scheduler.jobs.count:
     description: Number of jobs that have been submitted to the DAGScheduler.
     enabled: true
     sum:
@@ -566,7 +576,7 @@ metrics:
       value_type: int
     unit: "{ jobs }"
     attributes: []
-  spark.driver.dag_scheduler.stages.failed:
+  spark.dag_scheduler.stages.failed:
     description: Number of failed stages run by the DAGScheduler.
     enabled: true
     sum:
@@ -575,25 +585,16 @@ metrics:
       value_type: int
     unit: "{ stages }"
     attributes: []
-  spark.driver.dag_scheduler.stages.running:
-    description: Number of stages the DAGScheduler is currently running.
+  spark.dag_scheduler.stages:
+    description: Number of stages the DAGScheduler is either running or needs to run.
     enabled: true
     sum:
       aggregation: cumulative
       monotonic: false
       value_type: int
     unit: "{ stages }"
-    attributes: []
-  spark.driver.dag_scheduler.stages.waiting:
-    description: Number of stages waiting to be run by the DAGScheduler.
-    enabled: true
-    sum:
-      aggregation: cumulative
-      monotonic: false
-      value_type: int
-    unit: "{ stages }"
-    attributes: []
-  spark.driver.live_listener_bus.events_posted:
+    attributes: [scheduler_waiting, scheduler_running]
+  spark.live_listener_bus.events_posted:
     description: Number of events that have been posted on the LiveListenerBus.
     enabled: true
     sum:
@@ -602,14 +603,14 @@ metrics:
       value_type: int
     unit: "{ events }"
     attributes: []
-  spark.driver.live_listener_bus.listener_processing_time.average:
+  spark.live_listener_bus.processing_time.average:
     description: Average time taken for the LiveListenerBus to process an event posted to it.
     enabled: true
     gauge:
       value_type: double
     unit: ms
     attributes: []
-  spark.driver.live_listener_bus.events_dropped:
+  spark.live_listener_bus.events_dropped:
     description: Number of events that have been dropped by the LiveListenerBus.
     enabled: true
     sum:
@@ -618,7 +619,7 @@ metrics:
       value_type: int
     unit: "{ events }"
     attributes: []
-  spark.driver.live_listener_bus.queue_size:
+  spark.live_listener_bus.queue_size:
     description: Number of events currently waiting to be processed by the LiveListenerBus.
     enabled: true
     sum:
@@ -627,8 +628,8 @@ metrics:
       value_type: int
     unit: "{ events }"
     attributes: []
-  spark.driver.jvm_cpu_time:
-    description: Current CPU time taken by the Spark driver.
+  spark.jvm_cpu_time:
+    description: Current CPU time taken by the Spark component.
     enabled: true
     sum:
       aggregation: cumulative
@@ -636,8 +637,8 @@ metrics:
       value_type: int
     unit: ns
     attributes: []
-  spark.driver.executor_metrics.jvm_memory:
-    description: Amount of memory used by the driver JVM.
+  spark.executor.jvm_memory:
+    description: Amount of memory used by the component's JVM.
     enabled: true
     sum:
       aggregation: cumulative
@@ -645,8 +646,8 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [location]
-  spark.driver.executor_metrics.memory.execution:
-    description: Amount of execution memory currently used by the driver.
+  spark.executor.memory.execution:
+    description: Amount of execution memory currently used by the component.
     enabled: true
     sum:
       aggregation: cumulative
@@ -654,8 +655,8 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [location]
-  spark.driver.executor_metrics.memory.storage:
-    description: Amount of storage memory currently used by the driver.
+  spark.executor.memory.storage:
+    description: Amount of storage memory currently used by the component.
     enabled: true
     sum:
       aggregation: cumulative
@@ -663,8 +664,8 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [location]
-  spark.driver.executor_metrics.memory.pool:
-    description: Amount of pool memory currently used by the driver.
+  spark.executor.memory.pool:
+    description: Amount of pool memory currently used by the component.
     enabled: true
     sum:
       aggregation: cumulative
@@ -672,8 +673,8 @@ metrics:
       value_type: int
     unit: bytes
     attributes: [pool_memory_type]
-  spark.driver.executor_metrics.gc.count:
-    description: Number of garbage collection operations performed.
+  spark.executor.gc.operations:
+    description: Number of garbage collection operations performed by the component.
     enabled: true
     sum:
       aggregation: cumulative
@@ -681,8 +682,8 @@ metrics:
       value_type: int
     unit: "{ gc_operations }"
     attributes: [gc_type]
-  spark.driver.executor_metrics.gc.time:
-    description: Total elapsed time during garbage collection operations.
+  spark.executor.gc.time:
+    description: Total elapsed time during garbage collection operations performed by the component.
     enabled: true
     sum:
       aggregation: cumulative
