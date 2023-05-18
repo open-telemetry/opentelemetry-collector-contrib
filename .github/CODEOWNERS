@@ -220,7 +220,7 @@ receiver/pulsarreceiver/                                 @open-telemetry/collect
 receiver/purefareceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/receivercreator/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
-receiver/redisreceiver/                                  @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/redisreceiver/                                  @open-telemetry/collector-contrib-approvers @dmitryax @hughesjj
 receiver/riakreceiver/                                   @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
 receiver/saphanareceiver/                                @open-telemetry/collector-contrib-approvers @dehaansa
 receiver/sapmreceiver/                                   @open-telemetry/collector-contrib-approvers @atoulme
