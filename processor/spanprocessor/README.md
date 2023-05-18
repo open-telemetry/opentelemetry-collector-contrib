@@ -1,10 +1,10 @@
 # Span Processor
 
-| Status                   |                             |
-| ------------------------ |-----------------------------|
-| Stability                | [alpha]                     |
-| Supported pipeline types | traces                      |
-| Distributions            | [core], [contrib], [splunk] |
+| Status                   |                                         |
+| ------------------------ |-----------------------------------------|
+| Stability                | [alpha]                                 |
+| Supported pipeline types | traces                                  |
+| Distributions            | [core], [contrib], [splunk], [observiq] |
 
 The span processor modifies the span name based on its attributes or extract span attributes from the span name. It also allows
 to change span status. Please refer to [config.go](./config.go) for the config spec.
@@ -131,3 +131,4 @@ examples on using the processor.
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector

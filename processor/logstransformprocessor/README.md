@@ -1,10 +1,10 @@
 # Logs Transform Processor
 
-| Status                   |               |
-|--------------------------|---------------|
-| Stability                | [development] |
-| Supported pipeline types | logs          |
-| Distributions            | [splunk]      |
+| Status                   |                      |
+|--------------------------|----------------------|
+| Stability                | [development]        |
+| Supported pipeline types | logs                 |
+| Distributions            | [splunk], [observiq] |
 
 NOTE - This processor is experimental, with the intention that its functionality will be reimplemented in the [transform processor](../transformprocessor/README.md) in the future.
 
@@ -31,3 +31,4 @@ examples on using the processor.
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector

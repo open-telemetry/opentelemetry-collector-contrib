@@ -1,11 +1,11 @@
 # Metrics Transform Processor
 
 
-| Status                   |                     |
-| ------------------------ |---------------------|
-| Stability                | [beta]              |
-| Supported pipeline types | metrics             |
-| Distributions            | [contrib], [splunk] |
+| Status                   |                                 |
+| ------------------------ |---------------------------------|
+| Stability                | [beta]                          |
+| Supported pipeline types | metrics                         |
+| Distributions            | [contrib], [splunk], [observiq] |
 
 ## Description
 
@@ -346,3 +346,4 @@ Metric transform processor specific functionality
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector

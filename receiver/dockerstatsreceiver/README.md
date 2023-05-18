@@ -1,10 +1,10 @@
 # Docker Stats Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [alpha]   |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [alpha]               |
+| Supported pipeline types | metrics               |
+| Distributions            | [contrib], [observiq] |
 
 The Docker Stats receiver queries the local Docker daemon's container stats API for
 all desired running containers on a configured interval.  These stats are for container
@@ -69,6 +69,7 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector
 
 ### Migrating from ScraperV1 to ScraperV2
 
