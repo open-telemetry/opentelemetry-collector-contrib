@@ -822,12 +822,11 @@ func BenchmarkConverter(b *testing.B) {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 
-				converter := NewConverter(zap.NewNop())
+				converter := NewConverter(zap.NewNop(), withWorkerCount(wc))
 				converter.Start()
 				defer converter.Stop()
 
 				b.ReportAllocs()
-				b.ResetTimer()
 
 				go func() {
 					for from := 0; from < entryCount; from += int(batchSize) {
