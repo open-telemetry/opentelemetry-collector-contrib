@@ -191,6 +191,38 @@ func TestSpanPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "string kind",
+			path: []ottl.Field{
+				{
+					Name: "kind",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   "Server",
+			newVal: "Client",
+			modified: func(span ptrace.Span) {
+				span.SetKind(ptrace.SpanKindClient)
+			},
+		},
+		{
+			name: "deprecated string kind",
+			path: []ottl.Field{
+				{
+					Name: "kind",
+				},
+				{
+					Name: "deprecated_string",
+				},
+			},
+			orig:   "SPAN_KIND_SERVER",
+			newVal: "SPAN_KIND_CLIENT",
+			modified: func(span ptrace.Span) {
+				span.SetKind(ptrace.SpanKindClient)
+			},
+		},
+		{
 			name: "start_time_unix_nano",
 			path: []ottl.Field{
 				{
