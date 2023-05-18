@@ -1,4 +1,0 @@
-change_type: "bug_fix"
-component: "redisreceiver"
-note: "Fixes a bug in redis e2e test and test it more comprehensively to prevent recurrence or similar issues in the future"
-issues: [22060]
