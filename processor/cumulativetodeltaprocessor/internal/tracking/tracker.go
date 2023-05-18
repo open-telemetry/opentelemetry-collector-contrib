@@ -129,7 +129,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	if !ok {
 		switch metricID.MetricType {
 		case pmetric.MetricTypeHistogram:
-			*out.HistogramValue = metricPoint.HistogramValue.Clone()
+			val := metricPoint.HistogramValue.Clone()
+			out.HistogramValue = &val
 		case pmetric.MetricTypeSum:
 			out.IntValue = metricPoint.IntValue
 			out.FloatValue = metricPoint.FloatValue
@@ -143,7 +144,6 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			valid = true
 		case InitialValueKeep:
 			valid = true
-		case InitialValueDrop:
 		}
 		return
 	}
