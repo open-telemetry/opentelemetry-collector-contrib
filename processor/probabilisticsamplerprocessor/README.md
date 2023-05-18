@@ -1,11 +1,11 @@
 # Probabilistic Sampling Processor
 
-| Status                   |                             |
-| ------------------------ |-----------------------------|
-| Stability                | traces [beta]               |
-|                          | logs [alpha]                |
-| Supported pipeline types | traces, logs                |
-| Distributions            | [core], [contrib], [splunk] |
+| Status                   |                                         |
+| ------------------------ |-----------------------------------------|
+| Stability                | traces [beta]                           |
+|                          | logs [alpha]                            |
+| Supported pipeline types | traces, logs                            |
+| Distributions            | [core], [contrib], [splunk], [observiq] |
 
 The probabilistic sampler supports two types of sampling for traces:
 
@@ -86,3 +86,4 @@ examples on using the processor.
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector

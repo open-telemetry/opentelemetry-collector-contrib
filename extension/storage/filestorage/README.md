@@ -1,9 +1,9 @@
 # File Storage
 
-| Status                   |                     |
-| ------------------------ |---------------------|
-| Stability                | [beta]              |
-| Distributions            | [contrib], [splunk] |
+| Status                   |                                 |
+| ------------------------ |---------------------------------|
+| Stability                | [beta]                          |
+| Distributions            | [contrib], [splunk], [observiq] |
 
 The File Storage extension can persist state to the local file system. 
 

@@ -5,7 +5,7 @@
 | Stability                | traces, metrics [beta] |
 |                          | logs [alpha]           |
 | Supported pipeline types | traces, metrics, logs  |
-| Distributions            | [contrib]              |
+| Distributions            | [contrib], [observiq]  |
 
 The Coralogix exporter sends traces, metrics and logs to [Coralogix](https://coralogix.com/).
 
@@ -269,3 +269,4 @@ Feel free to reach out to us **via our in-app chat** or by sending us an email t
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector

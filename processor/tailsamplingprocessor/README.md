@@ -1,10 +1,10 @@
 # Tail Sampling Processor
 
-| Status                   |                     |
-| ------------------------ |---------------------|
-| Stability                | [beta]              |
-| Supported pipeline types | traces              |
-| Distributions            | [contrib], [splunk] |
+| Status                   |                                 |
+| ------------------------ |---------------------------------|
+| Stability                | [beta]                          |
+| Supported pipeline types | traces                          |
+| Distributions            | [contrib], [splunk], [observiq] |
 
 The tail sampling processor samples traces based on a set of defined policies. All spans for a given trace MUST be received by the same collector instance for effective sampling decisions.
 
@@ -212,3 +212,4 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 [probabilistic_sampling_processor]: ../probabilisticsamplerprocessor
 [loadbalancing_exporter]: ../../exporter/loadbalancingexporter
 [splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector
