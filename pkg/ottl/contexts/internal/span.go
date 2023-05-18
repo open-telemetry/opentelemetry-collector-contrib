@@ -318,6 +318,8 @@ func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 			if s, ok := val.(string); ok {
 				var kind ptrace.SpanKind
 				switch s {
+				case "Unspecified":
+					kind = ptrace.SpanKindUnspecified
 				case "Internal":
 					kind = ptrace.SpanKindInternal
 				case "Server":
@@ -328,11 +330,8 @@ func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 					kind = ptrace.SpanKindProducer
 				case "Consumer":
 					kind = ptrace.SpanKindConsumer
-				case "Unspecified":
-					kind = ptrace.SpanKindUnspecified
 				default:
-					fmt.Printf("unknown span kind, %v, setting Unspecified instead.\n", s)
-					kind = ptrace.SpanKindUnspecified
+					return fmt.Errorf("unknown span kind string, %v", s)
 				}
 				tCtx.GetSpan().SetKind(kind)
 			}
@@ -350,6 +349,8 @@ func accessDeprecatedStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 			if s, ok := val.(string); ok {
 				var kind ptrace.SpanKind
 				switch s {
+				case "SPAN_KIND_UNSPECIFIED":
+					kind = ptrace.SpanKindUnspecified
 				case "SPAN_KIND_INTERNAL":
 					kind = ptrace.SpanKindInternal
 				case "SPAN_KIND_SERVER":
@@ -360,11 +361,8 @@ func accessDeprecatedStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 					kind = ptrace.SpanKindProducer
 				case "SPAN_KIND_CONSUMER":
 					kind = ptrace.SpanKindConsumer
-				case "SPAN_KIND_UNSPECIFIED":
-					kind = ptrace.SpanKindUnspecified
 				default:
-					fmt.Printf("unknown span kind, %v, setting Unspecified instead.\n", s)
-					kind = ptrace.SpanKindUnspecified
+					return fmt.Errorf("unknown span kind deprecated string, %v", s)
 				}
 				tCtx.GetSpan().SetKind(kind)
 			}
