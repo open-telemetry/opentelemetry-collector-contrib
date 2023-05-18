@@ -8,14 +8,10 @@ package rabbitmqreceiver
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
-	"unicode"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -25,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -37,11 +34,17 @@ var (
 		ExposedPorts: []string{"15672:15672"},
 		Hostname:     "localhost",
 		WaitingFor:   waitStrategy{},
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+			PostStarts: []testcontainers.ContainerHook{
+				scraperinttest.RunScript([]string{"./setup.sh"}),
+			},
+		}},
 	}
 )
 
 func TestRabbitmqIntegration(t *testing.T) {
-	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201")
+	// TODO temporarily enabled - need to see this pass once in CI
+	// t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201")
 	t.Run("Running rabbitmq 3.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest3_9)
@@ -76,7 +79,11 @@ func TestRabbitmqIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues()))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreMetricValues(),
+		))
 	})
 }
 
@@ -100,25 +107,5 @@ func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarge
 		WaitUntilReady(ctx, st); err != nil {
 		return err
 	}
-
-	code, r, err := st.Exec(context.Background(), []string{"./setup.sh"})
-	if err != nil {
-		return err
-	}
-	if code == 0 {
-		return nil
-	}
-
-	// Try to read the error message for the sake of debugging
-	if errBytes, readerErr := io.ReadAll(r); readerErr == nil {
-		// Error message may have non-printable chars, so clean it up
-		errStr := strings.Map(func(r rune) rune {
-			if unicode.IsPrint(r) {
-				return r
-			}
-			return -1
-		}, string(errBytes))
-		return errors.New(strings.TrimSpace(errStr))
-	}
-	return errors.New("setup script returned non-zero exit code")
+	return nil
 }
