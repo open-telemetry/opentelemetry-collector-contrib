@@ -11,13 +11,14 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/api/request"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -27,38 +28,50 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-func TestCreateLogsExporter(t *testing.T) {
+type SuiteLogsExporter struct {
+	suite.Suite
+}
+
+func (s *SuiteLogsExporter) SetupTest() {
+	os.Clearenv()
+}
+
+func TestSuiteLogsExporter(t *testing.T) {
+	suite.Run(t, new(SuiteLogsExporter))
+}
+
+func (s *SuiteLogsExporter) TestCreateLogsExporter() {
 	ctx := context.Background()
 	createSettings := exportertest.NewNopCreateSettings()
 	tests := createExporterTests()
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(*testing.T) {
+		s.T().Run(tt.name, func(*testing.T) {
 			logs, err := createLogsExporter(ctx, createSettings, tt.config)
 
 			if err == nil {
-				assert.Nil(t, tt.expectedError, tt.name)
-				assert.NotNil(t, logs, tt.name)
+				s.Nil(tt.expectedError, tt.name)
+				s.NotNil(logs, tt.name)
 			} else {
 				if tt.expectedError == nil {
-					assert.Nil(t, err, tt.name)
+					s.Nil(err, tt.name)
 				} else {
-					assert.Equal(t, tt.expectedError.Error(), err.Error(), tt.name)
-					assert.Nil(t, logs, tt.name)
+					s.Equal(tt.expectedError.Error(), err.Error(), tt.name)
+					s.Nil(logs, tt.name)
 				}
 			}
 		})
 	}
 }
 
-func TestBuildBody(t *testing.T) {
+func (s *SuiteLogsExporter) TestBuildBody() {
 	slice := pcommon.NewValueSlice()
 	err := slice.FromRaw([]any{1, 2, 3})
-	assert.NoError(t, err)
+	s.NoError(err)
 
 	bytes := pcommon.NewValueBytes()
 	err = bytes.FromRaw([]byte{byte(65), byte(66), byte(67)})
-	assert.NoError(t, err)
+	s.NoError(err)
 	tests := []struct {
 		body    pcommon.Value
 		key     string
@@ -110,20 +123,20 @@ func TestBuildBody(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.key, func(*testing.T) {
+		s.T().Run(tt.key, func(*testing.T) {
 			attrs := make(map[string]interface{})
 			msg := buildBody(attrs, tt.body)
 			expectedAttrs := make(map[string]interface{})
 			expectedAttrs["body.type"] = tt.body.Type().String()
 			expectedAttrs[tt.key] = tt.value
 
-			assert.Equal(t, tt.message, msg, tt.key)
-			assert.Equal(t, expectedAttrs, attrs, tt.key)
+			s.Equal(tt.message, msg, tt.key)
+			s.Equal(expectedAttrs, attrs, tt.key)
 		})
 	}
 }
 
-func TestBuildBodyMap(t *testing.T) {
+func (s *SuiteLogsExporter) TestBuildBodyMap() {
 	m := pcommon.NewValueMap()
 	err := m.FromRaw(map[string]any{
 		"scalar": "scalar-value",
@@ -133,7 +146,7 @@ func TestBuildBodyMap(t *testing.T) {
 		},
 		"array": []any{1, 2, 3},
 	})
-	if assert.NoError(t, err) {
+	if s.NoError(err) {
 		attrs := make(map[string]interface{})
 		msg := buildBody(attrs, m)
 		expectedAttrs := make(map[string]interface{})
@@ -147,8 +160,8 @@ func TestBuildBodyMap(t *testing.T) {
 
 		expectedMsg := "{\"array\":[1,2,3],\"map\":{\"m1\":\"v1\",\"m2\":\"v2\"},\"scalar\":\"scalar-value\"}"
 
-		assert.Equal(t, expectedMsg, msg)
-		assert.Equal(t, expectedAttrs, attrs)
+		s.Equal(expectedMsg, msg)
+		s.Equal(expectedAttrs, attrs)
 	}
 }
 
@@ -211,7 +224,7 @@ var testLLog = &add_events.Log{
 	Attrs: map[string]interface{}{},
 }
 
-func TestBuildEventFromLog(t *testing.T) {
+func (s *SuiteLogsExporter) TestBuildEventFromLog() {
 	lr := testdata.GenerateLogsOneLogRecord()
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
@@ -226,7 +239,7 @@ func TestBuildEventFromLog(t *testing.T) {
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
 	)
 
-	assert.Equal(t, expected, was)
+	s.Equal(expected, was)
 }
 
 func extract(req *http.Request) (add_events.AddEventsRequest, error) {
@@ -242,30 +255,29 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 	return *cer, err
 }
 
-func TestConsumeLogsShouldSucceed(t *testing.T) {
+func (s *SuiteLogsExporter) TestConsumeLogsShouldSucceed() {
 	createSettings := exportertest.NewNopCreateSettings()
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}
 	addRequest := add_events.AddEventsRequest{}
 
-	//  dummy change
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		attempt.Add(1)
 		cer, err := extract(req)
 		addRequest = cer
 
-		assert.NoError(t, err, "Error reading request: %v", err)
+		s.NoError(err, "Error reading request: %v", err)
 
 		wasSuccessful.Store(true)
 		payload, err := json.Marshal(map[string]interface{}{
 			"status":       "success",
 			"bytesCharged": 42,
 		})
-		assert.NoError(t, err)
+		s.NoError(err)
 		l, err := w.Write(payload)
-		assert.Greater(t, l, 1)
-		assert.NoError(t, err)
+		s.Greater(l, 1)
+		s.NoError(err)
 	}))
 	defer server.Close()
 
@@ -284,20 +296,20 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	lr := testdata.GenerateLogsOneLogRecord()
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
-	if assert.NoError(t, err) {
+	if s.NoError(err) {
 		err = logs.Start(context.Background(), componenttest.NewNopHost())
-		assert.NoError(t, err)
+		s.NoError(err)
 
-		assert.NotNil(t, logs)
+		s.NotNil(logs)
 		err = logs.ConsumeLogs(context.Background(), lr)
-		assert.Nil(t, err)
+		s.Nil(err)
 		time.Sleep(time.Second)
 		err = logs.Shutdown(context.Background())
-		assert.Nil(t, err)
+		s.Nil(err)
 	}
 
-	assert.True(t, wasSuccessful.Load())
-	assert.Equal(t,
+	s.True(wasSuccessful.Load())
+	s.Equal(
 		add_events.AddEventsRequest{
 			AuthParams: request.AuthParams{
 				Token: "key-lib",
