@@ -30,7 +30,11 @@ import (
 
 const (
 	schemeName = "s3"
+	// Pattern for a s3 uri
+	s3Pattern = `^s3:\/\/([a-z0-9\.\-]{3,63})\.s3\.([a-z0-9\-]+).amazonaws\.com\/.`
 )
+
+var s3Regexp *regexp.Regexp = regexp.MustCompile(s3Pattern)
 
 type s3Client interface {
 	GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error)
@@ -113,16 +117,10 @@ func (*provider) Shutdown(context.Context) error {
 //   - [KEY]    : The key exists in a given bucket, can be used to retrieve a file.
 func s3URISplit(uri string) (string, string, string, error) {
 	// check whether the pattern of s3-uri is correct
-	pattern := `^s3:\/\/([a-z0-9\.\-]{3,63})\.s3\.([a-z0-9\-]+).amazonaws\.com\/.`
-	s3Regexp, err := regexp.Compile(pattern)
-	if err != nil {
-		// this error should never happen since the regexp pattern is hard coded
-		return "", "", "", fmt.Errorf("failed to compile the s3 uri-regexp: %q", pattern)
-	}
 
 	matched := s3Regexp.MatchString(uri)
 	if !matched {
-		return "", "", "", fmt.Errorf("s3 uri does not match the pattern: %q", pattern)
+		return "", "", "", fmt.Errorf("s3 uri does not match the pattern: %q", s3Pattern)
 	}
 
 	captureGroups := s3Regexp.FindStringSubmatch(uri)
