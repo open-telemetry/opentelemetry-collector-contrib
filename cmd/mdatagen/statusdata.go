@@ -3,6 +3,10 @@
 
 package main
 
+import (
+	"sort"
+)
+
 // distros is a collection of distributions that can be referenced in the metadata.yaml files.
 // The rules below apply to every distribution added to this list:
 // - The distribution must be open source.
@@ -20,4 +24,24 @@ type Status struct {
 	Distributions []string            `mapstructure:"distributions"`
 	Class         string              `mapstructure:"class"`
 	Warnings      []string            `mapstructure:"warnings"`
+}
+
+func (s Status) SortedDistributions() []string {
+	sorted := s.Distributions
+	sort.Slice(sorted, func(i, j int) bool {
+		if s.Distributions[i] == "core" {
+			return true
+		}
+		if s.Distributions[i] == "contrib" {
+			return s.Distributions[j] != "core"
+		}
+		if s.Distributions[j] == "core" {
+			return false
+		}
+		if s.Distributions[j] == "contrib" {
+			return s.Distributions[i] == "core"
+		}
+		return s.Distributions[i] < s.Distributions[j]
+	})
+	return sorted
 }
