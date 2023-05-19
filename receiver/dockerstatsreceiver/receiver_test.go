@@ -99,6 +99,7 @@ var (
 		ContainerPidsCount:                         metricEnabled,
 		ContainerPidsLimit:                         metricEnabled,
 		ContainerRestartCount:                      metricEnabled,
+		ContainerRestarts:                          metricEnabled,
 	}
 )
 

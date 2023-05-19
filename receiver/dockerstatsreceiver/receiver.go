@@ -269,5 +269,5 @@ func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.Pi
 func (r *receiver) recordInspectMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) {
 	r.mb.RecordContainerCPULimitDataPoint(now, float64(containerJSON.HostConfig.NanoCPUs)/1e9)
 	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
-	r.mb.RecordContainerRestartCountDataPoint(now, int64(containerJSON.RestartCount))
+	r.mb.RecordContainerRestartsDataPoint(now, int64(containerJSON.RestartCount))
 }

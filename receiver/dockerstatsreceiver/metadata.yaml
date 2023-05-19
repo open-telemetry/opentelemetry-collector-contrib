@@ -655,7 +655,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation: cumulative
-  container.restart.count:
+  container.restarts:
     enabled: false
     description: "Number of restarts for the container."
     unit: "1"
