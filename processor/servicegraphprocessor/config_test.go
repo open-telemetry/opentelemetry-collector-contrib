@@ -4,6 +4,7 @@
 package servicegraphprocessor
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 	"path/filepath"
 	"testing"
 	"time"
@@ -19,8 +20,8 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
-	factories.Processors[typeStr] = NewFactory()
-	factories.Connectors[typeStr] = NewConnectorFactory()
+	factories.Processors[metadata.Type] = NewFactory()
+	factories.Connectors[metadata.Type] = NewConnectorFactory()
 
 	// Test
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
@@ -41,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			StoreExpirationLoop:       10 * time.Second,
 			VirtualNodePeerAttributes: []string{"db.name", "rpc.service"},
 		},
-		cfg.Processors[component.NewID(typeStr)],
+		cfg.Processors[component.NewID(metadata.Type)],
 	)
 
 	cfg, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-connector-config.yaml"), factories)
@@ -60,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			CacheLoop:           time.Minute,
 			StoreExpirationLoop: 2 * time.Second,
 		},
-		cfg.Connectors[component.NewID(typeStr)],
+		cfg.Connectors[component.NewID(metadata.Type)],
 	)
 
 }
