@@ -15,12 +15,9 @@ resource usage of cpu, memory, network, and the
 
 ## Configuration
 
-The following settings are required:
-
-- `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
-
 The following settings are optional:
 
+- `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
 as the specified metric label key.
