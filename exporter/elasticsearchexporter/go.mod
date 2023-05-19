@@ -36,6 +36,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.77.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.77.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.77.0 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
 	go.opentelemetry.io/otel/trace v1.15.1 // indirect
