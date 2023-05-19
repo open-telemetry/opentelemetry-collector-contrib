@@ -4,8 +4,10 @@
 package skywalkingreceiver
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -27,12 +29,50 @@ var (
 	skywalkingReceiver = component.NewIDWithName("skywalking", "receiver_test")
 )
 
+var traceJSON = []byte(`
+	[{
+	"traceId": "a12ff60b-5807-463b-a1f8-fb1c8608219e",
+	"serviceInstance": "User_Service_Instance_Name",
+	"spans": [{
+		"operationName": "/ingress",
+		"startTime": 1588664577013,
+		"endTime": 1588664577028,
+		"spanType": 0,
+		"spanId": 1,
+		"isError": false,
+		"parentSpanId": 0,
+		"componentId": 6000,
+		"peer": "upstream service",
+		"spanLayer": 3
+	}, {
+		"operationName": "/ingress",
+		"startTime": 1588664577013,
+		"tags": [{
+			"key": "http.method",
+			"value": "GET"
+		}, {
+			"key": "http.params",
+			"value": "http://localhost/ingress"
+		}],
+		"endTime": 1588664577028,
+		"spanType": 1,
+		"spanId": 0,
+		"parentSpanId": -1,
+		"isError": false,
+		"spanLayer": 3,
+		"componentId": 6000
+	}],
+	"service": "User_Service_Name",
+	"traceSegmentId": "a12ff60b-5807-463b-a1f8-fb1c8608219e"
+}]`)
+
 func TestTraceSource(t *testing.T) {
 	set := receivertest.NewNopCreateSettings()
 	set.ID = skywalkingReceiver
-	jr, err := newSkywalkingReceiver(&configuration{}, nil, set)
-	require.NoError(t, err)
-	require.NotNil(t, jr)
+	mockSwReceiver := newSkywalkingReceiver(&configuration{}, set)
+	err := mockSwReceiver.registerTraceConsumer(nil)
+	assert.Equal(t, err, component.ErrNilNextConsumer)
+	require.NotNil(t, mockSwReceiver)
 }
 
 func TestStartAndShutdown(t *testing.T) {
@@ -47,9 +87,9 @@ func TestStartAndShutdown(t *testing.T) {
 
 	set := receivertest.NewNopCreateSettings()
 	set.ID = skywalkingReceiver
-	sr, err := newSkywalkingReceiver(config, sink, set)
+	sr := newSkywalkingReceiver(config, set)
+	err := sr.registerTraceConsumer(sink)
 	require.NoError(t, err)
-
 	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, sr.Shutdown(context.Background())) })
 
@@ -64,20 +104,19 @@ func TestGRPCReception(t *testing.T) {
 
 	set := receivertest.NewNopCreateSettings()
 	set.ID = skywalkingReceiver
-	swReceiver, err := newSkywalkingReceiver(config, sink, set)
+	mockSwReceiver := newSkywalkingReceiver(config, set)
+	err := mockSwReceiver.registerTraceConsumer(sink)
 	require.NoError(t, err)
+	require.NoError(t, mockSwReceiver.Start(context.Background(), componenttest.NewNopHost()))
 
-	require.NoError(t, swReceiver.Start(context.Background(), componenttest.NewNopHost()))
-
-	t.Cleanup(func() { require.NoError(t, swReceiver.Shutdown(context.Background())) })
-
+	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(context.Background())) })
 	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
 	segmentCollection := &agent.SegmentCollection{
 		Segments: []*agent.SegmentObject{
-			mockGrpcTraceSegment(1),
+			MockGrpcTraceSegment(1),
 		},
 	}
 
@@ -92,7 +131,39 @@ func TestGRPCReception(t *testing.T) {
 	assert.NotNil(t, commands)
 }
 
-func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {
+func TestHttpReception(t *testing.T) {
+	config := &configuration{
+		CollectorHTTPPort: 12800,
+		CollectorHTTPSettings: confighttp.HTTPServerSettings{
+			Endpoint: fmt.Sprintf(":%d", 12800),
+		},
+	}
+
+	sink := new(consumertest.TracesSink)
+
+	set := receivertest.NewNopCreateSettings()
+	set.ID = skywalkingReceiver
+	mockSwReceiver := newSkywalkingReceiver(config, set)
+	err := mockSwReceiver.registerTraceConsumer(sink)
+	require.NoError(t, err)
+	require.NoError(t, mockSwReceiver.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(context.Background())) })
+	req, err := http.NewRequest("POST", "http://127.0.0.1:12800/v3/segments", bytes.NewBuffer(traceJSON))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(req)
+	// http client send trace data to otel/skywalkingreceiver
+	if err != nil {
+		t.Fatalf("cannot send data in sync mode: %v", err)
+	}
+	// verify
+	assert.NoError(t, err, "send skywalking segment successful.")
+	assert.NotNil(t, response)
+
+}
+
+func MockGrpcTraceSegment(sequence int) *agent.SegmentObject {
 	seq := strconv.Itoa(sequence)
 	return &agent.SegmentObject{
 		TraceId:         "trace" + seq,
