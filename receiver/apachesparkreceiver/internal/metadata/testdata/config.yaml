@@ -1,13 +1,9 @@
 default:
 all_set:
   metrics:
-    spark.componennt.executor.memory.execution:
-      enabled: true
     spark.driver.block_manager.disk.usage:
       enabled: true
-    spark.driver.block_manager.memory.remaining:
-      enabled: true
-    spark.driver.block_manager.memory.used:
+    spark.driver.block_manager.memory.usage:
       enabled: true
     spark.driver.code_generator.compilation.average_time:
       enabled: true
@@ -25,19 +21,21 @@ all_set:
       enabled: true
     spark.driver.code_generator.source_code.operations:
       enabled: true
-    spark.driver.dag_scheduler.jobs.active:
+    spark.driver.dag_scheduler.job.active:
       enabled: true
-    spark.driver.dag_scheduler.jobs.count:
+    spark.driver.dag_scheduler.job.count:
       enabled: true
-    spark.driver.dag_scheduler.stages:
+    spark.driver.dag_scheduler.stage.count:
       enabled: true
-    spark.driver.dag_scheduler.stages.failed:
+    spark.driver.dag_scheduler.stage.failed:
       enabled: true
     spark.driver.executor.gc.operations:
       enabled: true
     spark.driver.executor.gc.time:
       enabled: true
-    spark.driver.executor.jvm_memory:
+    spark.driver.executor.memory.execution:
+      enabled: true
+    spark.driver.executor.memory.jvm:
       enabled: true
     spark.driver.executor.memory.pool:
       enabled: true
@@ -55,9 +53,9 @@ all_set:
       enabled: true
     spark.driver.jvm_cpu_time:
       enabled: true
-    spark.driver.live_listener_bus.events_dropped:
+    spark.driver.live_listener_bus.dropped:
       enabled: true
-    spark.driver.live_listener_bus.events_posted:
+    spark.driver.live_listener_bus.posted:
       enabled: true
     spark.driver.live_listener_bus.processing_time.average:
       enabled: true
@@ -73,25 +71,23 @@ all_set:
       enabled: true
     spark.executor.shuffle.io.size:
       enabled: true
-    spark.executor.storage_memory.total:
+    spark.executor.storage_memory.usage:
       enabled: true
-    spark.executor.storage_memory.used:
+    spark.executor.task.active:
       enabled: true
-    spark.executor.tasks.active:
+    spark.executor.task.max:
       enabled: true
-    spark.executor.tasks.max:
-      enabled: true
-    spark.executor.tasks.results:
+    spark.executor.task.results:
       enabled: true
     spark.executor.time:
       enabled: true
-    spark.job.stages.active:
+    spark.job.stage.active:
       enabled: true
-    spark.job.stages.results:
+    spark.job.stage.results:
       enabled: true
-    spark.job.tasks.active:
+    spark.job.task.active:
       enabled: true
-    spark.job.tasks.results:
+    spark.job.task.results:
       enabled: true
     spark.stage.disk.spilled:
       enabled: true
@@ -135,18 +131,16 @@ all_set:
     spark.executor.id:
       enabled: true
     spark.job.id:
+      enabled: true
+    spark.stage.attempt.id:
       enabled: true
     spark.stage.id:
       enabled: true
 none_set:
   metrics:
-    spark.componennt.executor.memory.execution:
-      enabled: false
     spark.driver.block_manager.disk.usage:
       enabled: false
-    spark.driver.block_manager.memory.remaining:
-      enabled: false
-    spark.driver.block_manager.memory.used:
+    spark.driver.block_manager.memory.usage:
       enabled: false
     spark.driver.code_generator.compilation.average_time:
       enabled: false
@@ -164,19 +158,21 @@ none_set:
       enabled: false
     spark.driver.code_generator.source_code.operations:
       enabled: false
-    spark.driver.dag_scheduler.jobs.active:
+    spark.driver.dag_scheduler.job.active:
       enabled: false
-    spark.driver.dag_scheduler.jobs.count:
+    spark.driver.dag_scheduler.job.count:
       enabled: false
-    spark.driver.dag_scheduler.stages:
+    spark.driver.dag_scheduler.stage.count:
       enabled: false
-    spark.driver.dag_scheduler.stages.failed:
+    spark.driver.dag_scheduler.stage.failed:
       enabled: false
     spark.driver.executor.gc.operations:
       enabled: false
     spark.driver.executor.gc.time:
       enabled: false
-    spark.driver.executor.jvm_memory:
+    spark.driver.executor.memory.execution:
+      enabled: false
+    spark.driver.executor.memory.jvm:
       enabled: false
     spark.driver.executor.memory.pool:
       enabled: false
@@ -194,9 +190,9 @@ none_set:
       enabled: false
     spark.driver.jvm_cpu_time:
       enabled: false
-    spark.driver.live_listener_bus.events_dropped:
+    spark.driver.live_listener_bus.dropped:
       enabled: false
-    spark.driver.live_listener_bus.events_posted:
+    spark.driver.live_listener_bus.posted:
       enabled: false
     spark.driver.live_listener_bus.processing_time.average:
       enabled: false
@@ -212,25 +208,23 @@ none_set:
       enabled: false
     spark.executor.shuffle.io.size:
       enabled: false
-    spark.executor.storage_memory.total:
+    spark.executor.storage_memory.usage:
       enabled: false
-    spark.executor.storage_memory.used:
+    spark.executor.task.active:
       enabled: false
-    spark.executor.tasks.active:
+    spark.executor.task.max:
       enabled: false
-    spark.executor.tasks.max:
-      enabled: false
-    spark.executor.tasks.results:
+    spark.executor.task.results:
       enabled: false
     spark.executor.time:
       enabled: false
-    spark.job.stages.active:
+    spark.job.stage.active:
       enabled: false
-    spark.job.stages.results:
+    spark.job.stage.results:
       enabled: false
-    spark.job.tasks.active:
+    spark.job.task.active:
       enabled: false
-    spark.job.tasks.results:
+    spark.job.task.results:
       enabled: false
     spark.stage.disk.spilled:
       enabled: false
@@ -274,6 +268,8 @@ none_set:
     spark.executor.id:
       enabled: false
     spark.job.id:
+      enabled: false
+    spark.stage.attempt.id:
       enabled: false
     spark.stage.id:
       enabled: false

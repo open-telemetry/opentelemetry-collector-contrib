@@ -12,20 +12,6 @@ metrics:
     enabled: false
 ```
 
-### spark.componennt.executor.memory.execution
-
-Amount of execution memory currently used by the driver.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| bytes | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
-
 ### spark.driver.block_manager.disk.usage
 
 Disk space used by the BlockManager.
@@ -34,23 +20,9 @@ Disk space used by the BlockManager.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | mb | Sum | Int | Cumulative | false |
 
-### spark.driver.block_manager.memory.remaining
+### spark.driver.block_manager.memory.usage
 
-Memory remaining for the BlockManager.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| mb | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
-
-### spark.driver.block_manager.memory.used
-
-Memory used by the BlockManager.
+Memory usage for the driver's BlockManager.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -60,7 +32,8 @@ Memory used by the BlockManager.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` |
+| state | The state of the memory for which the metric was recorded. | Str: ``used``, ``free`` |
 
 ### spark.driver.code_generator.compilation.average_time
 
@@ -126,7 +99,7 @@ Number of source code generation operations performed by the CodeGenerator.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { operation } | Sum | Int | Cumulative | true |
 
-### spark.driver.dag_scheduler.jobs.active
+### spark.driver.dag_scheduler.job.active
 
 Number of active jobs currently being processed by the DAGScheduler.
 
@@ -134,7 +107,7 @@ Number of active jobs currently being processed by the DAGScheduler.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { job } | Sum | Int | Cumulative | false |
 
-### spark.driver.dag_scheduler.jobs.count
+### spark.driver.dag_scheduler.job.count
 
 Number of jobs that have been submitted to the DAGScheduler.
 
@@ -142,7 +115,7 @@ Number of jobs that have been submitted to the DAGScheduler.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { job } | Sum | Int | Cumulative | true |
 
-### spark.driver.dag_scheduler.stages
+### spark.driver.dag_scheduler.stage.count
 
 Number of stages the DAGScheduler is either running or needs to run.
 
@@ -154,10 +127,10 @@ Number of stages the DAGScheduler is either running or needs to run.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| scheduler_waiting | Whether the stages which the metric describes are waiting to be run by the DAGScheduler. | Any Bool |
-| scheduler_running | Whether the stages which the metric describes are currently being run by the DAGScheduler. | Any Bool |
+| scheduler_waiting | Whether the stages for which the metric was recorded are waiting to be run by the DAGScheduler. | Any Bool |
+| scheduler_running | Whether the stages for which the metric was recorded are currently being run by the DAGScheduler. | Any Bool |
 
-### spark.driver.dag_scheduler.stages.failed
+### spark.driver.dag_scheduler.stage.failed
 
 Number of failed stages run by the DAGScheduler.
 
@@ -193,7 +166,21 @@ Total elapsed time during garbage collection operations performed by the driver.
 | ---- | ----------- | ------ |
 | gc_type | The type of the garbage collection performed for the metric. | Str: ``major``, ``minor`` |
 
-### spark.driver.executor.jvm_memory
+### spark.driver.executor.memory.execution
+
+Amount of execution memory currently used by the driver.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| bytes | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` |
+
+### spark.driver.executor.memory.jvm
 
 Amount of memory used by the driver's JVM.
 
@@ -205,7 +192,7 @@ Amount of memory used by the driver's JVM.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` |
 
 ### spark.driver.executor.memory.pool
 
@@ -233,7 +220,7 @@ Amount of storage memory currently used by the driver.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` |
 
 ### spark.driver.hive_external_catalog.file_cache_hits
 
@@ -283,7 +270,7 @@ Current CPU time taken by the Spark driver.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
 
-### spark.driver.live_listener_bus.events_dropped
+### spark.driver.live_listener_bus.dropped
 
 Number of events that have been dropped by the LiveListenerBus.
 
@@ -291,7 +278,7 @@ Number of events that have been dropped by the LiveListenerBus.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { event } | Sum | Int | Cumulative | true |
 
-### spark.driver.live_listener_bus.events_posted
+### spark.driver.live_listener_bus.posted
 
 Number of events that have been posted on the LiveListenerBus.
 
@@ -361,23 +348,9 @@ Amount of data written and read during shuffle operations for this executor.
 | ---- | ----------- | ------ |
 | direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` |
 
-### spark.executor.storage_memory.total
+### spark.executor.storage_memory.usage
 
-Total memory that can be used for storage.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| bytes | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
-
-### spark.executor.storage_memory.used
-
-Amount of memory currently used for storage.
+The executor's storage memory usage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -387,9 +360,10 @@ Amount of memory currently used for storage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| location | The location of the memory which is quantified in the metric. | Str: ``on_heap``, ``off_heap`` |
+| location | The location of the memory for which the metric was recorded.. | Str: ``on_heap``, ``off_heap`` |
+| state | The state of the memory for which the metric was recorded. | Str: ``used``, ``free`` |
 
-### spark.executor.tasks.active
+### spark.executor.task.active
 
 Number of tasks currently running in this executor.
 
@@ -397,7 +371,7 @@ Number of tasks currently running in this executor.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { task } | Sum | Int | Cumulative | false |
 
-### spark.executor.tasks.max
+### spark.executor.task.max
 
 Maximum number of tasks that can run concurrently in this executor.
 
@@ -405,7 +379,7 @@ Maximum number of tasks that can run concurrently in this executor.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { task } | Sum | Int | Cumulative | false |
 
-### spark.executor.tasks.results
+### spark.executor.task.results
 
 Number of tasks with a specific result in this executor.
 
@@ -427,7 +401,7 @@ Elapsed time the JVM spent executing tasks in this executor.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ms | Sum | Int | Cumulative | true |
 
-### spark.job.stages.active
+### spark.job.stage.active
 
 Number of active stages in this job.
 
@@ -435,7 +409,7 @@ Number of active stages in this job.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { task } | Sum | Int | Cumulative | false |
 
-### spark.job.stages.results
+### spark.job.stage.results
 
 Number of stages with a specific result in this job.
 
@@ -449,7 +423,7 @@ Number of stages with a specific result in this job.
 | ---- | ----------- | ------ |
 | job_stage_result | The result of the job stages for which the metric was recorded. | Str: ``completed``, ``failed``, ``skipped`` |
 
-### spark.job.tasks.active
+### spark.job.task.active
 
 Number of active tasks in this job.
 
@@ -457,7 +431,7 @@ Number of active tasks in this job.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { task } | Sum | Int | Cumulative | false |
 
-### spark.job.tasks.results
+### spark.job.task.results
 
 Number of tasks with a specific result in this job.
 
@@ -473,7 +447,7 @@ Number of tasks with a specific result in this job.
 
 ### spark.stage.disk.spilled
 
-The amount of disk space used for storing portions of overly large data chunks that couldn’t fit in memory in this stage.
+The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -483,7 +457,6 @@ The amount of disk space used for storing portions of overly large data chunks t
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -501,7 +474,6 @@ CPU time spent by the executor in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -519,7 +491,6 @@ Amount of time spent by the executor in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -537,7 +508,6 @@ Number of records written and read in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -556,7 +526,6 @@ Amount of data written and read at this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -575,7 +544,6 @@ The amount of time the JVM spent on garbage collection in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -593,7 +561,6 @@ Peak memory used by internal data structures created during shuffles, aggregatio
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -611,7 +578,6 @@ The amount of memory moved to disk due to size constraints (spilled) in this sta
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -629,7 +595,6 @@ Number of blocks fetched in shuffle operations in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -648,7 +613,6 @@ Time spent in this stage waiting for remote shuffle blocks.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -666,7 +630,6 @@ Amount of data read to disk in shuffle operations (sometimes required for large 
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -684,7 +647,6 @@ Number of records written or read in shuffle operations in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -703,7 +665,6 @@ Amount of data written or read in shuffle operations in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -723,7 +684,6 @@ Time spent blocking on writes to disk or buffer cache in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -741,7 +701,6 @@ Number of active tasks in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -759,7 +718,6 @@ The amount of data transmitted back to the driver by all the tasks in this stage
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -777,7 +735,6 @@ Number of tasks with a specific result in this stage.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| attempt_id | The ID of the stage attempt for which the metric was recorded. | Any Int |
 | stage_active | Whether the stage for which the metric was recorded is active. | Any Bool |
 | stage_complete | Whether the stage for which the metric was recorded is complete. | Any Bool |
 | stage_pending | Whether the stage for which the metric was recorded is pending. | Any Bool |
@@ -792,4 +749,5 @@ Number of tasks with a specific result in this stage.
 | spark.application.name | The name of the application for which the metric was recorded. | Any Str | true |
 | spark.executor.id | The ID of the executor for which the metric was recorded. | Any Str | true |
 | spark.job.id | The ID of the job for which the metric was recorded. | Any Int | true |
+| spark.stage.attempt.id | The ID of the stage attempt for which the metric was recorded. | Any Int | false |
 | spark.stage.id | The ID of the application stage for which the metric was recorded. | Any Int | true |
