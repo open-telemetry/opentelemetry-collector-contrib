@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/metadata"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -96,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "apitoken"),
+			id: component.NewIDWithName(metadata.Type, "apitoken"),
 			expected: &Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -110,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "bearertoken"),
+			id: component.NewIDWithName(metadata.Type, "bearertoken"),
 			expected: &Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
