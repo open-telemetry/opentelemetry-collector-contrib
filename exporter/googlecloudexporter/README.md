@@ -196,12 +196,12 @@ The following configuration options are supported:
     - `key`: Key is the OpenTelemetry attribute key
     - `replacement`: Replacement is the attribute sent to Google Cloud Trace
 - `log` (optional): Configuration for sending metrics to Cloud Logging.
-  - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to. D
-  - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `endpoint` (default = `logging.googleapis.com:443`): Endpoint to which log data is going to be sent. [Here](https://cloud.google.com/vpc/docs/regional-service-endpoints#cloud-logging) is a list of available regional endpoints, should you have a data residency requirement.
+  - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if `endpoint` is not left as the default.
   - `default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` attribute set, the exporter will return an error processing that entry.
   - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
-    - `prefix`: Match resource keys by prefix.
-    - `regex`: Match resource keys by regex.
+    - `prefix`: Match resource keys by prefix. Example: `k8s_`
+    - `regex`: Match resource keys by regex. Example: `^k8s_(cluster|namespace|container)_name$`
   - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = false)
