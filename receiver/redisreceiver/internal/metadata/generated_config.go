@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for redisreceiver metrics.
+// MetricsConfig provides config for redis metrics.
 type MetricsConfig struct {
 	RedisClientsBlocked                    MetricConfig `mapstructure:"redis.clients.blocked"`
 	RedisClientsConnected                  MetricConfig `mapstructure:"redis.clients.connected"`
@@ -169,7 +169,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for redisreceiver resource attributes.
+// ResourceAttributesConfig provides config for redis resource attributes.
 type ResourceAttributesConfig struct {
 	RedisVersion ResourceAttributeConfig `mapstructure:"redis.version"`
 }
@@ -182,7 +182,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for redisreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for redis metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

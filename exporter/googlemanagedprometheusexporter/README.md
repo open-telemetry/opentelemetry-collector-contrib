@@ -2,9 +2,9 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [beta](https://github.com/open-telemetry/opentelemetry-collector#beta) |
+| Stability                | [beta]                |
 | Supported pipeline types | metrics               |
-| Distributions            | [contrib](https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib)    |
+| Distributions            | [contrib], [observiq] |
 
 This exporter can be used to send metrics and traces to [Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus).  The difference between this exporter and the `googlecloud` exporter is that metrics sent with this exporter are queried using [promql](https://prometheus.io/docs/prometheus/latest/querying/basics/#querying-prometheus), rather than standard the standard MQL.
 
@@ -174,3 +174,7 @@ processors:
     - cluster
     - location
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector

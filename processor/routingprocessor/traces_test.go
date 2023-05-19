@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor
 
@@ -26,13 +15,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
 
 func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	// prepare
-	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -42,6 +30,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpID := component.NewID("otlp")
@@ -68,7 +57,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 func TestTraces_InvalidExporter(t *testing.T) {
 	//  prepare
-	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -78,6 +67,7 @@ func TestTraces_InvalidExporter(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
@@ -86,7 +76,7 @@ func TestTraces_InvalidExporter(t *testing.T) {
 	})
 
 	// test
-	err := exp.Start(context.Background(), host)
+	err = exp.Start(context.Background(), host)
 
 	// verify
 	assert.Error(t, err)
@@ -103,7 +93,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -114,6 +104,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	tr := ptrace.NewTraces()
 
@@ -158,7 +149,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -169,6 +160,8 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	tr := ptrace.NewTraces()
@@ -217,7 +210,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -228,6 +221,8 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -270,7 +265,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -282,6 +277,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	tr := ptrace.NewTraces()
@@ -316,7 +313,7 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	})
 
-	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -329,6 +326,8 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("span by matched no expressions", func(t *testing.T) {
@@ -436,7 +435,8 @@ func TestTraceProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
+	p, err := newTracesProcessor(noopTelemetrySettings, config)
+	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	// verify

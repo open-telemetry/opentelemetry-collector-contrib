@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package resourcedetectionprocessor
 
@@ -30,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
@@ -46,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "openshift"),
+			id: component.NewIDWithName(metadata.Type, "openshift"),
 			expected: &Config{
 				Detectors: []string{"openshift"},
 				DetectorConfig: DetectorConfig{
@@ -63,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "gcp"),
+			id: component.NewIDWithName(metadata.Type, "gcp"),
 			expected: &Config{
 				Detectors:          []string{"env", "gcp"},
 				HTTPClientSettings: cfg,
@@ -71,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "ec2"),
+			id: component.NewIDWithName(metadata.Type, "ec2"),
 			expected: &Config{
 				Detectors: []string{"env", "ec2"},
 				DetectorConfig: DetectorConfig{
@@ -84,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "system"),
+			id: component.NewIDWithName(metadata.Type, "system"),
 			expected: &Config{
 				Detectors: []string{"env", "system"},
 				DetectorConfig: DetectorConfig{
@@ -98,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "heroku"),
+			id: component.NewIDWithName(metadata.Type, "heroku"),
 			expected: &Config{
 				Detectors:          []string{"env", "heroku"},
 				HTTPClientSettings: cfg,
@@ -106,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "lambda"),
+			id: component.NewIDWithName(metadata.Type, "lambda"),
 			expected: &Config{
 				Detectors:          []string{"env", "lambda"},
 				HTTPClientSettings: cfg,
@@ -114,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid"),
+			id:           component.NewIDWithName(metadata.Type, "invalid"),
 			errorMessage: "hostname_sources contains invalid value: \"invalid_source\"",
 		},
 	}

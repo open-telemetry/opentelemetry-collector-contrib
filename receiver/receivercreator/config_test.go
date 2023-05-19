@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator
 
@@ -78,6 +67,10 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id:       component.NewIDWithName("receiver_creator", ""),
 			expected: createDefaultConfig(),
 		},
 		{
@@ -176,7 +169,9 @@ type nopWithEndpointFactory struct {
 
 type nopWithEndpointReceiver struct {
 	mockComponent
+	consumer.Logs
 	consumer.Metrics
+	consumer.Traces
 	rcvr.CreateSettings
 	cfg component.Config
 }
@@ -192,6 +187,18 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
+func (*nopWithEndpointFactory) CreateLogsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	return &nopWithEndpointReceiver{
+		Logs:           nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
 	rcs rcvr.CreateSettings,
@@ -199,6 +206,18 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
 		Metrics:        nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithEndpointFactory) CreateTracesReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	return &nopWithEndpointReceiver{
+		Traces:         nextConsumer,
 		CreateSettings: rcs,
 		cfg:            cfg,
 	}, nil
@@ -215,7 +234,9 @@ type nopWithoutEndpointFactory struct {
 
 type nopWithoutEndpointReceiver struct {
 	mockComponent
+	consumer.Logs
 	consumer.Metrics
+	consumer.Traces
 	rcvr.CreateSettings
 	cfg component.Config
 }
@@ -226,6 +247,18 @@ func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
 	}
 }
 
+func (*nopWithoutEndpointFactory) CreateLogsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	return &nopWithoutEndpointReceiver{
+		Logs:           nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
 func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
 	rcs rcvr.CreateSettings,
@@ -233,6 +266,18 @@ func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithoutEndpointReceiver{
 		Metrics:        nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithoutEndpointFactory) CreateTracesReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	return &nopWithoutEndpointReceiver{
+		Traces:         nextConsumer,
 		CreateSettings: rcs,
 		cfg:            cfg,
 	}, nil

@@ -1,9 +1,9 @@
 # Database Storage
 
-| Status                   |                  |
-| ------------------------ |------------------|
-| Stability                | [alpha]          |
-| Distributions            | [contrib]        |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [alpha]           |
+| Distributions            | [contrib], [sumo] |
 
 > :construction: This extension is in alpha. Configuration and functionality are subject to change.
 
@@ -44,3 +44,4 @@ exporters:
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

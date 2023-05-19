@@ -1,10 +1,10 @@
 # Routing processor
 
-| Status                   |                       |
-|--------------------------|-----------------------|
-| Stability                | [beta]                |
-| Supported pipeline types | traces, metrics, logs |
-| Distributions            | [contrib]             |
+| Status                   |                                         |
+|--------------------------|-----------------------------------------|
+| Stability                | [beta]                                  |
+| Supported pipeline types | traces, metrics, logs                   |
+| Distributions            | [contrib], [observiq], [splunk], [sumo] |
 
 Routes logs, metrics or traces to specific exporters.
 
@@ -110,3 +110,6 @@ The full list of settings exposed for this processor are documented [here](./con
 [context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/README.md
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [OTTL]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#telemetry-query-language
+[splunk]: https://github.com/signalfx/splunk-otel-collector
+[observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
