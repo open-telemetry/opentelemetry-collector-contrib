@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -30,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
@@ -47,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             false,

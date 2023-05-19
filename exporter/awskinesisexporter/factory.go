@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 
 import (
@@ -11,14 +13,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "awskinesis"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
-
 	defaultEncoding    = "otlp"
 	defaultCompression = "none"
 )
@@ -26,11 +24,11 @@ const (
 // NewFactory creates a factory for Kinesis exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(NewTracesExporter, stability),
-		exporter.WithMetrics(NewMetricsExporter, stability),
-		exporter.WithLogs(NewLogsExporter, stability),
+		exporter.WithTraces(NewTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(NewMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(NewLogsExporter, metadata.LogsStability),
 	)
 }
 
