@@ -17,7 +17,6 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"sort"
 	"strings"
@@ -67,27 +66,18 @@ const (
 )
 
 type azureResource struct {
-	metricsByCompositeKey     map[string]*azureResourceMetrics
+	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 	tags                      map[string]*string
 	location                  string
 }
 
 type metricsCompositeKey struct {
-	dimensions []string
+	dimensions string // comma separated sorted dimensions
 	timeGrain  string
 }
 
-func (s metricsCompositeKey) Hash() string {
-	h := sha256.New()
-	h.Write([]byte(s.timeGrain))
-	sort.Strings(s.dimensions)
-	h.Write([]byte(strings.Join(s.dimensions, ",")))
-	return string(h.Sum(nil))
-}
-
 type azureResourceMetrics struct {
-	compositeKey         metricsCompositeKey
 	metrics              []string
 	metricsValuesUpdated time.Time
 }
@@ -261,7 +251,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 		return
 	}
 
-	s.resources[resourceID].metricsByCompositeKey = map[string]*azureResourceMetrics{}
+	s.resources[resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
 
 	pager := s.clientMetricsDefinitions.NewListPager(resourceID, nil)
 	for pager.More() {
@@ -284,7 +274,8 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 						dimensionsSlice = append(dimensionsSlice, *dimension.Value)
 					}
 				}
-				dimensionsCompositeKey := metricsCompositeKey{timeGrain: timeGrain, dimensions: dimensionsSlice}
+				sort.Strings(dimensionsSlice)
+				dimensionsCompositeKey := metricsCompositeKey{timeGrain: timeGrain, dimensions: strings.Join(dimensionsSlice, ",")}
 				s.storeMetricsDefinition(resourceID, name, dimensionsCompositeKey)
 			} else {
 				s.storeMetricsDefinition(resourceID, name, compositeKey)
@@ -295,22 +286,21 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 }
 
 func (s *azureScraper) storeMetricsDefinition(resourceID, name string, compositeKey metricsCompositeKey) {
-	hash := compositeKey.Hash()
-	if _, ok := s.resources[resourceID].metricsByCompositeKey[hash]; ok {
-		s.resources[resourceID].metricsByCompositeKey[hash].metrics = append(
-			s.resources[resourceID].metricsByCompositeKey[hash].metrics, name,
+	if _, ok := s.resources[resourceID].metricsByCompositeKey[compositeKey]; ok {
+		s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics = append(
+			s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics, name,
 		)
 	} else {
-		s.resources[resourceID].metricsByCompositeKey[hash] = &azureResourceMetrics{metrics: []string{name}, compositeKey: compositeKey}
+		s.resources[resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
 	}
 }
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
 	res := *s.resources[resourceID]
 
-	for _, metricsByGrain := range res.metricsByCompositeKey {
+	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
 
-		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[metricsByGrain.compositeKey.timeGrain]) {
+		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
 		}
 		metricsByGrain.metricsValuesUpdated = time.Now()
@@ -326,8 +316,8 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 			opts := getResourceMetricsValuesRequestOptions(
 				metricsByGrain.metrics,
-				metricsByGrain.compositeKey.dimensions,
-				metricsByGrain.compositeKey.timeGrain,
+				compositeKey.dimensions,
+				compositeKey.timeGrain,
 				start,
 				end,
 			)
@@ -373,7 +363,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 func getResourceMetricsValuesRequestOptions(
 	metrics []string,
-	dimensions []string,
+	dimensionsStr string,
 	timeGrain string,
 	start int,
 	end int,
@@ -386,8 +376,9 @@ func getResourceMetricsValuesRequestOptions(
 		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
 	}
 
-	if len(dimensions) > 0 {
+	if len(dimensionsStr) > 0 {
 		var dimensionsFilter bytes.Buffer
+		dimensions := strings.Split(dimensionsStr, ",")
 		for i, dimension := range dimensions {
 			dimensionsFilter.WriteString(dimension)
 			dimensionsFilter.WriteString(" eq '*' ")
