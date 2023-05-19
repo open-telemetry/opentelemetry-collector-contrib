@@ -1,0 +1,7 @@
+type: file
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [core, contrib, observiq, splunk, sumo]
