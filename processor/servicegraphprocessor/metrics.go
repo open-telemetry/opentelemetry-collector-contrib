@@ -4,10 +4,11 @@
 package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/obsreport"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 )
 
 var (

@@ -4,10 +4,11 @@
 package servicegraphprocessor
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

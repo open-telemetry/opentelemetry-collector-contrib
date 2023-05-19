@@ -5,8 +5,9 @@ package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
