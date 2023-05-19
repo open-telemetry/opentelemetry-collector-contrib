@@ -83,8 +83,20 @@ func Test_statsdreceiver_Start(t *testing.T) {
 			require.NoError(t, err)
 			err = receiver.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
+
+			assert.NoError(t, receiver.Shutdown(context.Background()))
 		})
 	}
+}
+
+func TestStatsdReceiver_ShutdownBeforeStart(t *testing.T) {
+	ctx := context.Background()
+	cfg := createDefaultConfig().(*Config)
+	nextConsumer := consumertest.NewNop()
+	rcv, err := New(receivertest.NewNopCreateSettings(), *cfg, nextConsumer)
+	assert.NoError(t, err)
+	r := rcv.(*statsdReceiver)
+	assert.NoError(t, r.Shutdown(ctx))
 }
 
 func TestStatsdReceiver_Flush(t *testing.T) {
