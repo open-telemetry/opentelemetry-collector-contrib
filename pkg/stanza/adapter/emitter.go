@@ -33,9 +33,37 @@ var (
 	defaultMaxBatchSize  uint = 100
 )
 
+type emitterOption interface {
+	apply(*LogEmitter)
+}
+
+func withMaxBatchSize(maxBatchSize uint) emitterOption {
+	return maxBatchSizeOption{maxBatchSize}
+}
+
+type maxBatchSizeOption struct {
+	maxBatchSize uint
+}
+
+func (o maxBatchSizeOption) apply(e *LogEmitter) {
+	e.maxBatchSize = o.maxBatchSize
+}
+
+func withFlushInterval(flushInterval time.Duration) emitterOption {
+	return flushIntervalOption{flushInterval}
+}
+
+type flushIntervalOption struct {
+	flushInterval time.Duration
+}
+
+func (o flushIntervalOption) apply(e *LogEmitter) {
+	e.flushInterval = o.flushInterval
+}
+
 // NewLogEmitter creates a new receiver output
-func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
-	return &LogEmitter{
+func NewLogEmitter(logger *zap.SugaredLogger, opts ...emitterOption) *LogEmitter {
+	e := &LogEmitter{
 		OutputOperator: helper.OutputOperator{
 			BasicOperator: helper.BasicOperator{
 				OperatorID:    "log_emitter",
@@ -49,6 +77,10 @@ func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
 		flushInterval: defaultFlushInterval,
 		cancel:        func() {},
 	}
+	for _, opt := range opts {
+		opt.apply(e)
+	}
+	return e
 }
 
 // Start starts the goroutine(s) required for this operator

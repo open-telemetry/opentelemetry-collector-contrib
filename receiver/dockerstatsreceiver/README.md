@@ -1,10 +1,10 @@
 # Docker Stats Receiver
 
-| Status                   |                       |
-| ------------------------ |-----------------------|
-| Stability                | [alpha]               |
-| Supported pipeline types | metrics               |
-| Distributions            | [contrib], [observiq] |
+| Status                   |                               |
+| ------------------------ |-------------------------------|
+| Stability                | [alpha]                       |
+| Supported pipeline types | metrics                       |
+| Distributions            | [contrib], [observiq], [sumo] |
 
 The Docker Stats receiver queries the local Docker daemon's container stats API for
 all desired running containers on a configured interval.  These stats are for container
@@ -15,12 +15,9 @@ resource usage of cpu, memory, network, and the
 
 ## Configuration
 
-The following settings are required:
-
-- `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
-
 The following settings are optional:
 
+- `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
 as the specified metric label key.
@@ -70,6 +67,7 @@ with detailed sample configurations [here](./testdata/config.yaml).
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
 
 ### Migrating from ScraperV1 to ScraperV2
 

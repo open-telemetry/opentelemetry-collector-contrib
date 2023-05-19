@@ -1,10 +1,10 @@
 # AWS X-Ray Receiver
 
-| Status                   |                              |
-| ------------------------ |------------------------------|
-| Stability                | [beta]                       |
-| Supported pipeline types | traces                       |
-| Distributions            | [contrib], [AWS], [observiq] |
+| Status                   |                                      |
+| ------------------------ |--------------------------------------|
+| Stability                | [beta]                               |
+| Supported pipeline types | traces                               |
+| Distributions            | [contrib], [AWS], [observiq], [sumo] |
 
 ## Overview
 The AWS X-Ray receiver accepts segments (i.e. spans) in the [X-Ray Segment format](https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html).
@@ -82,3 +82,4 @@ Default: `false`
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [AWS]: https://aws-otel.github.io/docs/components/x-ray-receiver
 [observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

@@ -1,10 +1,10 @@
 # Logs Transform Processor
 
-| Status                   |                      |
-|--------------------------|----------------------|
-| Stability                | [development]        |
-| Supported pipeline types | logs                 |
-| Distributions            | [splunk], [observiq] |
+| Status                   |                              |
+| ------------------------ | ---------------------------- |
+| Stability                | [development]                |
+| Supported pipeline types | logs                         |
+| Distributions            | [observiq], [splunk], [sumo] |
 
 NOTE - This processor is experimental, with the intention that its functionality will be reimplemented in the [transform processor](../transformprocessor/README.md) in the future.
 
@@ -21,7 +21,7 @@ processors:
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
         timestamp:
           parse_from: body.time
-          layout: '%Y-%m-%d'
+          layout: "%Y-%m-%d"
         severity:
           parse_from: body.sev
 ```
@@ -32,3 +32,4 @@ examples on using the processor.
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

@@ -16,11 +16,11 @@ import (
 
 func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 	funcs := filterottl.StandardMetricFuncs()
-	hasAttributeKeyOnDatapoint := newHasAttributeKeyOnDatapointFactory()
-	funcs[hasAttributeKeyOnDatapoint.Name()] = hasAttributeKeyOnDatapoint
+	hasAttributeKeyOnDatapointFactory := newHasAttributeKeyOnDatapointFactory()
+	funcs[hasAttributeKeyOnDatapointFactory.Name()] = hasAttributeKeyOnDatapointFactory
 
-	hasAttributeOnDatapoint := newHasAttributeOnDatapointFactory()
-	funcs[hasAttributeOnDatapoint.Name()] = hasAttributeOnDatapoint
+	hasAttributeOnDatapointFactory := newHasAttributeOnDatapointFactory()
+	funcs[hasAttributeOnDatapointFactory.Name()] = hasAttributeOnDatapointFactory
 	return funcs
 }
 
@@ -58,7 +58,7 @@ func newHasAttributeKeyOnDatapointFactory() ottl.Factory[ottlmetric.TransformCon
 }
 
 func createHasAttributeKeyOnDatapointFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	args, ok := oArgs.(*hasAttributeOnDatapointArguments)
+	args, ok := oArgs.(*hasAttributeKeyOnDatapointArguments)
 
 	if !ok {
 		return nil, fmt.Errorf("hasAttributeKeyOnDatapointFactory args must be of type *hasAttributeOnDatapointArguments")

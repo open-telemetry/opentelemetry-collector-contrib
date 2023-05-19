@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -49,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxStaleness: 10 * time.Second,
+				InitialValue: tracking.InitialValueAuto,
 			},
 		},
 		{
@@ -77,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				MaxStaleness: 10 * time.Second,
+				InitialValue: tracking.InitialValueAuto,
 			},
 		},
 		{
@@ -86,6 +89,24 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "missing_name"),
 			errorMessage: "metrics must be supplied if match_type is set",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "auto"),
+			expected: &Config{
+				InitialValue: tracking.InitialValueAuto,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "keep"),
+			expected: &Config{
+				InitialValue: tracking.InitialValueKeep,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "drop"),
+			expected: &Config{
+				InitialValue: tracking.InitialValueDrop,
+			},
 		},
 	}
 

@@ -1,10 +1,10 @@
 # Span Metrics Connector
 
-| Status                   |                                                            |
-|------------------------- |------------------------------------------------------------|
-| Stability                | [alpha]                                                    |
-| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types)  |
-| Distributions            | [contrib]                                                  |
+| Status                   |                                                           |
+| ------------------------ | --------------------------------------------------------- |
+| Stability                | [alpha]                                                   |
+| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
+| Distributions            | [contrib], [sumo]                                         |
 
 ## Supported Pipeline Types
 
@@ -180,6 +180,8 @@ calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPA
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
-[Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
-[Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
-[Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
+[Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+[Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
+[Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type

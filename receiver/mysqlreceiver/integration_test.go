@@ -73,6 +73,11 @@ var (
 		ExposedPorts: []string{"3306:3306"},
 		WaitingFor: wait.ForListeningPort("3306").
 			WithStartupTimeout(2 * time.Minute),
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+			PostStarts: []testcontainers.ContainerHook{
+				scraperinttest.RunScript([]string{"/setup.sh"}),
+			},
+		}},
 	}
 )
 
@@ -85,9 +90,5 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 			Started:          true,
 		})
 	require.NoError(t, err)
-
-	code, _, err := container.Exec(context.Background(), []string{"/setup.sh"})
-	require.NoError(t, err)
-	require.Equal(t, 0, code)
 	return container
 }

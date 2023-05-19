@@ -184,8 +184,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (
 	for i := is.resource; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
 		for j := is.library; j < rl.ScopeLogs().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
 			sl := rl.ScopeLogs().At(j)
 			for k := is.record; k < sl.LogRecords().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
 				logRecord := sl.LogRecords().At(k)
 
 				if c.config.ExportRaw {
@@ -233,8 +235,10 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is 
 	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
 			sm := rm.ScopeMetrics().At(j)
 			for k := is.record; k < sm.Metrics().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
 				metric := sm.Metrics().At(k)
 
 				// Parsing metric record to Splunk event.
@@ -289,8 +293,10 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, bs *bufferState, is iter
 	for i := is.resource; i < traces.ResourceSpans().Len(); i++ {
 		rs := traces.ResourceSpans().At(i)
 		for j := is.library; j < rs.ScopeSpans().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
 			ss := rs.ScopeSpans().At(j)
 			for k := is.record; k < ss.Spans().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
 				span := ss.Spans().At(k)
 
 				// Parsing span record to Splunk event.

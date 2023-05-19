@@ -1,10 +1,10 @@
 # Metrics Generation Processor
 
-| Status                   |               |
-|--------------------------|---------------|
-| Stability                | [development] |
-| Supported pipeline types | metrics       |
-| Distributions            | [contrib]     |
+| Status                   |                   |
+| ------------------------ | ----------------- |
+| Stability                | [development]     |
+| Supported pipeline types | metrics           |
+| Distributions            | [contrib], [sumo] |
 
 **Status: under development; Not recommended for production usage.**
 
@@ -73,4 +73,5 @@ rules:
 ```
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

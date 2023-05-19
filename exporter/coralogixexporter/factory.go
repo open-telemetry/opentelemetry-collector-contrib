@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
@@ -12,16 +14,18 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
 
 // NewFactory by Coralogix
 func NewFactory() exp.Factory {
 	return exp.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exp.WithTraces(createTraceExporter, stability),
-		exp.WithMetrics(createMetricsExporter, stability),
-		exp.WithLogs(createLogsExporter, component.StabilityLevelAlpha),
+		exp.WithTraces(createTraceExporter, metadata.TracesStability),
+		exp.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exp.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
