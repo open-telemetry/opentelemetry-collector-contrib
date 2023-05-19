@@ -16,15 +16,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "sumologic"
-)
-
 // NewFactory returns a new factory for the sumologic exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
