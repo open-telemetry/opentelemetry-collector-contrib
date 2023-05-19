@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -80,6 +81,7 @@ type metricsCompositeKey struct {
 func (s metricsCompositeKey) Hash() string {
 	h := sha256.New()
 	h.Write([]byte(s.timeGrain))
+	sort.Strings(s.dimensions)
 	h.Write([]byte(strings.Join(s.dimensions, ",")))
 	return string(h.Sum(nil))
 }
