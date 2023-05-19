@@ -204,11 +204,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorTaskMaxDataPoint(ts, 1)
+			mb.RecordSparkExecutorTaskLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkExecutorTaskResultsDataPoint(ts, 1, AttributeExecutorTaskResult(1))
+			mb.RecordSparkExecutorTaskResultDataPoint(ts, 1, AttributeExecutorTaskResult(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -220,7 +220,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobStageResultsDataPoint(ts, 1, AttributeJobStageResult(1))
+			mb.RecordSparkJobStageResultsDataPoint(ts, 1, AttributeJobResult(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -228,75 +228,79 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkJobTaskResultsDataPoint(ts, 1, AttributeJobTaskResult(1))
+			mb.RecordSparkJobTaskResultsDataPoint(ts, 1, AttributeJobResult(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageDiskSpilledDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageDiskSpilledDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageIoRecordsDataPoint(ts, 1, true, true, true, true, AttributeDirection(1))
+			mb.RecordSparkStageIoRecordsDataPoint(ts, 1, AttributeDirection(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageIoSizeDataPoint(ts, 1, true, true, true, true, AttributeDirection(1))
+			mb.RecordSparkStageIoSizeDataPoint(ts, 1, AttributeDirection(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageMemoryPeakDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageMemoryPeakDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, true, true, true, true, AttributeSource(1))
+			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, AttributeSource(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleIoDiskDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageShuffleIoDiskDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 1, true, true, true, true, AttributeDirection(1))
+			mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 1, AttributeDirection(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleIoSizeDataPoint(ts, 1, true, true, true, true, AttributeSource(1), AttributeDirection(1))
+			mb.RecordSparkStageShuffleIoSizeDataPoint(ts, 1, AttributeSource(1), AttributeDirection(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageTaskActiveDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageStatusDataPoint(ts, 1, true, true, true, true)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1, true, true, true, true)
+			mb.RecordSparkStageTaskActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkStageTaskResultsDataPoint(ts, 1, true, true, true, true, AttributeStageTaskResult(1))
+			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSparkStageTaskResultsDataPoint(ts, 1, AttributeStageTaskResult(1))
 
 			metrics := mb.Emit(WithSparkApplicationID("attr-val"), WithSparkApplicationName("attr-val"), WithSparkExecutorID("attr-val"), WithSparkJobID(1), WithSparkStageAttemptID(1), WithSparkStageID(1))
 
@@ -545,10 +549,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("scheduler_waiting")
+					attrVal, ok := dp.Attributes().Get("waiting")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("scheduler_running")
+					attrVal, ok = dp.Attributes().Get("running")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.driver.dag_scheduler.stage.failed":
@@ -647,7 +651,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("pool_memory_type")
+					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
 					assert.Equal(t, "direct", attrVal.Str())
 				case "spark.driver.executor.memory.storage":
@@ -912,9 +916,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.executor.task.max":
-					assert.False(t, validatedMetrics["spark.executor.task.max"], "Found a duplicate in the metrics slice: spark.executor.task.max")
-					validatedMetrics["spark.executor.task.max"] = true
+				case "spark.executor.task.limit":
+					assert.False(t, validatedMetrics["spark.executor.task.limit"], "Found a duplicate in the metrics slice: spark.executor.task.limit")
+					validatedMetrics["spark.executor.task.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Maximum number of tasks that can run concurrently in this executor.", ms.At(i).Description())
@@ -926,9 +930,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "spark.executor.task.results":
-					assert.False(t, validatedMetrics["spark.executor.task.results"], "Found a duplicate in the metrics slice: spark.executor.task.results")
-					validatedMetrics["spark.executor.task.results"] = true
+				case "spark.executor.task.result":
+					assert.False(t, validatedMetrics["spark.executor.task.result"], "Found a duplicate in the metrics slice: spark.executor.task.result")
+					validatedMetrics["spark.executor.task.result"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of tasks with a specific result in this executor.", ms.At(i).Description())
@@ -940,7 +944,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("executor_task_result")
+					attrVal, ok := dp.Attributes().Get("result")
 					assert.True(t, ok)
 					assert.Equal(t, "completed", attrVal.Str())
 				case "spark.executor.time":
@@ -985,7 +989,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("job_stage_result")
+					attrVal, ok := dp.Attributes().Get("result")
 					assert.True(t, ok)
 					assert.Equal(t, "completed", attrVal.Str())
 				case "spark.job.task.active":
@@ -1016,7 +1020,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("job_task_result")
+					attrVal, ok := dp.Attributes().Get("result")
 					assert.True(t, ok)
 					assert.Equal(t, "completed", attrVal.Str())
 				case "spark.stage.disk.spilled":
@@ -1033,18 +1037,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.executor.cpu_time":
 					assert.False(t, validatedMetrics["spark.stage.executor.cpu_time"], "Found a duplicate in the metrics slice: spark.stage.executor.cpu_time")
 					validatedMetrics["spark.stage.executor.cpu_time"] = true
@@ -1059,18 +1051,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.executor.run_time":
 					assert.False(t, validatedMetrics["spark.stage.executor.run_time"], "Found a duplicate in the metrics slice: spark.stage.executor.run_time")
 					validatedMetrics["spark.stage.executor.run_time"] = true
@@ -1085,18 +1065,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.io.records":
 					assert.False(t, validatedMetrics["spark.stage.io.records"], "Found a duplicate in the metrics slice: spark.stage.io.records")
 					validatedMetrics["spark.stage.io.records"] = true
@@ -1111,19 +1079,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("direction")
+					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.Equal(t, "in", attrVal.Str())
 				case "spark.stage.io.size":
@@ -1140,19 +1096,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("direction")
+					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.Equal(t, "in", attrVal.Str())
 				case "spark.stage.jvm_gc_time":
@@ -1169,18 +1113,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.memory.peak":
 					assert.False(t, validatedMetrics["spark.stage.memory.peak"], "Found a duplicate in the metrics slice: spark.stage.memory.peak")
 					validatedMetrics["spark.stage.memory.peak"] = true
@@ -1195,18 +1127,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.memory.spilled":
 					assert.False(t, validatedMetrics["spark.stage.memory.spilled"], "Found a duplicate in the metrics slice: spark.stage.memory.spilled")
 					validatedMetrics["spark.stage.memory.spilled"] = true
@@ -1221,18 +1141,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.shuffle.blocks_fetched":
 					assert.False(t, validatedMetrics["spark.stage.shuffle.blocks_fetched"], "Found a duplicate in the metrics slice: spark.stage.shuffle.blocks_fetched")
 					validatedMetrics["spark.stage.shuffle.blocks_fetched"] = true
@@ -1247,19 +1155,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("source")
+					attrVal, ok := dp.Attributes().Get("source")
 					assert.True(t, ok)
 					assert.Equal(t, "local", attrVal.Str())
 				case "spark.stage.shuffle.fetch_wait_time":
@@ -1276,18 +1172,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.shuffle.io.disk":
 					assert.False(t, validatedMetrics["spark.stage.shuffle.io.disk"], "Found a duplicate in the metrics slice: spark.stage.shuffle.io.disk")
 					validatedMetrics["spark.stage.shuffle.io.disk"] = true
@@ -1302,18 +1186,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.shuffle.io.records":
 					assert.False(t, validatedMetrics["spark.stage.shuffle.io.records"], "Found a duplicate in the metrics slice: spark.stage.shuffle.io.records")
 					validatedMetrics["spark.stage.shuffle.io.records"] = true
@@ -1328,19 +1200,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("direction")
+					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.Equal(t, "in", attrVal.Str())
 				case "spark.stage.shuffle.io.size":
@@ -1357,19 +1217,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("source")
+					attrVal, ok := dp.Attributes().Get("source")
 					assert.True(t, ok)
 					assert.Equal(t, "local", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
@@ -1389,16 +1237,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
+				case "spark.stage.status":
+					assert.False(t, validatedMetrics["spark.stage.status"], "Found a duplicate in the metrics slice: spark.stage.status")
+					validatedMetrics["spark.stage.status"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "A one-hot encoding representing the status of this stage.", ms.At(i).Description())
+					assert.Equal(t, "{ status }", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("active")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
+					attrVal, ok = dp.Attributes().Get("complete")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
+					attrVal, ok = dp.Attributes().Get("pending")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
+					attrVal, ok = dp.Attributes().Get("failed")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.task.active":
@@ -1415,18 +1277,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.task.result_size":
 					assert.False(t, validatedMetrics["spark.stage.task.result_size"], "Found a duplicate in the metrics slice: spark.stage.task.result_size")
 					validatedMetrics["spark.stage.task.result_size"] = true
@@ -1441,18 +1291,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
 				case "spark.stage.task.results":
 					assert.False(t, validatedMetrics["spark.stage.task.results"], "Found a duplicate in the metrics slice: spark.stage.task.results")
 					validatedMetrics["spark.stage.task.results"] = true
@@ -1467,19 +1305,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("stage_active")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_complete")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_pending")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_failed")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("stage_task_result")
+					attrVal, ok := dp.Attributes().Get("result")
 					assert.True(t, ok)
 					assert.Equal(t, "completed", attrVal.Str())
 				}

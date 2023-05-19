@@ -33,18 +33,23 @@ resource_attributes:
 
 attributes:
   stage_active:
+    name_override: active
     description: Whether the stage for which the metric was recorded is active.
     type: bool
   stage_complete:
+    name_override: complete
     description: Whether the stage for which the metric was recorded is complete.
     type: bool
   stage_pending:
+    name_override: pending
     description: Whether the stage for which the metric was recorded is pending.
     type: bool
   stage_failed:
+    name_override: failed
     description: Whether the stage for which the metric was recorded is failed.
     type: bool
   stage_task_result:
+    name_override: result
     description: The result of the stage tasks for which the metric was recorded.
     type: string
     enum:
@@ -52,20 +57,15 @@ attributes:
       - failed
       - killed
   executor_task_result:
+    name_override: result
     description: The result of the executor tasks for which the metric was recorded.
     type: string
     enum:
       - completed
       - failed
-  job_task_result:
-    description: The result of the job tasks for which the metric was recorded.
-    type: string
-    enum:
-      - completed
-      - failed
-      - skipped
-  job_stage_result:
-    description: The result of the job stages for which the metric was recorded.
+  job_result:
+    name_override: result
+    description: The result of the job stages or tasks for which the metric was recorded.
     type: string
     enum:
       - completed
@@ -96,12 +96,15 @@ attributes:
       - used
       - free
   scheduler_waiting:
+    name_override: waiting
     description: Whether the stages for which the metric was recorded are waiting to be run by the DAGScheduler.
     type: bool
   scheduler_running:
+    name_override: running
     description: Whether the stages for which the metric was recorded are currently being run by the DAGScheduler.
     type: bool
   pool_memory_type:
+    name_override: type
     description: The type of pool memory for which the metric was recorded.
     type: string
     enum:
@@ -116,6 +119,16 @@ attributes:
 
 metrics:
   #stage
+  spark.stage.status:
+    description: A one-hot encoding representing the status of this stage.
+    enabled: true
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    unit: "{ status }"
+    attributes:
+      [stage_active, stage_complete, stage_pending, stage_failed]
   spark.stage.task.active:
     description: Number of active tasks in this stage.
     enabled: true
@@ -124,8 +137,7 @@ metrics:
       monotonic: false
       value_type: int
     unit: "{ task }"
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.task.results:
     description: Number of tasks with a specific result in this stage.
     enabled: true
@@ -135,7 +147,7 @@ metrics:
       value_type: int
     unit: "{ task }"
     attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed, stage_task_result]
+      [stage_task_result]
   spark.stage.executor.run_time:
     description: Amount of time spent by the executor in this stage.
     enabled: true
@@ -144,8 +156,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: ms
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.executor.cpu_time:
     description: CPU time spent by the executor in this stage.
     enabled: true
@@ -154,8 +165,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: ns
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.task.result_size:
     description: The amount of data transmitted back to the driver by all the tasks in this stage.
     enabled: true
@@ -164,8 +174,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: bytes
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.jvm_gc_time:
     description: The amount of time the JVM spent on garbage collection in this stage.
     enabled: true
@@ -174,8 +183,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: ms
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.memory.spilled:
     description: The amount of memory moved to disk due to size constraints (spilled) in this stage.
     enabled: true
@@ -184,8 +192,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: bytes
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.disk.spilled:
     description: The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.
     enabled: true
@@ -194,8 +201,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: bytes
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.memory.peak:
     description: Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.
     enabled: true
@@ -204,8 +210,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: bytes
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.io.size:
     description: Amount of data written and read at this stage.
     enabled: true
@@ -215,7 +220,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed, direction]
+      [direction]
   spark.stage.io.records:
     description: Number of records written and read in this stage.
     enabled: true
@@ -225,7 +230,7 @@ metrics:
       value_type: int
     unit: "{ record }"
     attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed, direction]
+      [direction]
   spark.stage.shuffle.blocks_fetched:
     description: Number of blocks fetched in shuffle operations in this stage.
     enabled: true
@@ -235,7 +240,7 @@ metrics:
       value_type: int
     unit: "{ block }"
     attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed, source]
+      [source]
   spark.stage.shuffle.fetch_wait_time:
     description: Time spent in this stage waiting for remote shuffle blocks.
     enabled: true
@@ -244,8 +249,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: ms
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.shuffle.io.disk:
     description: Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).
     enabled: true
@@ -254,8 +258,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: bytes
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   spark.stage.shuffle.io.size:
     description: Amount of data written or read in shuffle operations in this stage.
     enabled: true
@@ -265,7 +268,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed, source, direction]
+      [source, direction]
   spark.stage.shuffle.io.records:
     description: Number of records written or read in shuffle operations in this stage.
     enabled: true
@@ -275,7 +278,7 @@ metrics:
       value_type: int
     unit: "{ record }"
     attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed, direction]
+      [direction]
   spark.stage.shuffle.write_time:
     description: Time spent blocking on writes to disk or buffer cache in this stage.
     enabled: true
@@ -284,8 +287,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: ns
-    attributes:
-      [stage_active, stage_complete, stage_pending, stage_failed]
+    attributes: []
   #executor
   spark.executor.memory.usage:
     description: Storage memory used by this executor.
@@ -305,7 +307,7 @@ metrics:
       value_type: int
     unit: bytes
     attributes: []
-  spark.executor.task.max:
+  spark.executor.task.limit:
     description: Maximum number of tasks that can run concurrently in this executor.
     enabled: true
     sum:
@@ -323,7 +325,7 @@ metrics:
       value_type: int
     unit: "{ task }"
     attributes: []
-  spark.executor.task.results:
+  spark.executor.task.result:
     description: Number of tasks with a specific result in this executor.
     enabled: true
     sum:
@@ -395,7 +397,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{ task }"
-    attributes: [job_task_result]
+    attributes: [job_result]
   spark.job.stage.active:
     description: Number of active stages in this job.
     enabled: true
@@ -413,7 +415,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{ task }"
-    attributes: [job_stage_result]
+    attributes: [job_result]
   # metrics
   spark.driver.block_manager.disk.usage:
     description: Disk space used by the BlockManager.

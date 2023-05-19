@@ -62,8 +62,8 @@ type MetricsConfig struct {
 	SparkExecutorShuffleIoSize                         MetricConfig `mapstructure:"spark.executor.shuffle.io.size"`
 	SparkExecutorStorageMemoryUsage                    MetricConfig `mapstructure:"spark.executor.storage_memory.usage"`
 	SparkExecutorTaskActive                            MetricConfig `mapstructure:"spark.executor.task.active"`
-	SparkExecutorTaskMax                               MetricConfig `mapstructure:"spark.executor.task.max"`
-	SparkExecutorTaskResults                           MetricConfig `mapstructure:"spark.executor.task.results"`
+	SparkExecutorTaskLimit                             MetricConfig `mapstructure:"spark.executor.task.limit"`
+	SparkExecutorTaskResult                            MetricConfig `mapstructure:"spark.executor.task.result"`
 	SparkExecutorTime                                  MetricConfig `mapstructure:"spark.executor.time"`
 	SparkJobStageActive                                MetricConfig `mapstructure:"spark.job.stage.active"`
 	SparkJobStageResults                               MetricConfig `mapstructure:"spark.job.stage.results"`
@@ -83,6 +83,7 @@ type MetricsConfig struct {
 	SparkStageShuffleIoRecords                         MetricConfig `mapstructure:"spark.stage.shuffle.io.records"`
 	SparkStageShuffleIoSize                            MetricConfig `mapstructure:"spark.stage.shuffle.io.size"`
 	SparkStageShuffleWriteTime                         MetricConfig `mapstructure:"spark.stage.shuffle.write_time"`
+	SparkStageStatus                                   MetricConfig `mapstructure:"spark.stage.status"`
 	SparkStageTaskActive                               MetricConfig `mapstructure:"spark.stage.task.active"`
 	SparkStageTaskResultSize                           MetricConfig `mapstructure:"spark.stage.task.result_size"`
 	SparkStageTaskResults                              MetricConfig `mapstructure:"spark.stage.task.results"`
@@ -201,10 +202,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkExecutorTaskActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorTaskMax: MetricConfig{
+		SparkExecutorTaskLimit: MetricConfig{
 			Enabled: true,
 		},
-		SparkExecutorTaskResults: MetricConfig{
+		SparkExecutorTaskResult: MetricConfig{
 			Enabled: true,
 		},
 		SparkExecutorTime: MetricConfig{
@@ -262,6 +263,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		SparkStageShuffleWriteTime: MetricConfig{
+			Enabled: true,
+		},
+		SparkStageStatus: MetricConfig{
 			Enabled: true,
 		},
 		SparkStageTaskActive: MetricConfig{

@@ -75,9 +75,9 @@ all_set:
       enabled: true
     spark.executor.task.active:
       enabled: true
-    spark.executor.task.max:
+    spark.executor.task.limit:
       enabled: true
-    spark.executor.task.results:
+    spark.executor.task.result:
       enabled: true
     spark.executor.time:
       enabled: true
@@ -116,6 +116,8 @@ all_set:
     spark.stage.shuffle.io.size:
       enabled: true
     spark.stage.shuffle.write_time:
+      enabled: true
+    spark.stage.status:
       enabled: true
     spark.stage.task.active:
       enabled: true
@@ -212,9 +214,9 @@ none_set:
       enabled: false
     spark.executor.task.active:
       enabled: false
-    spark.executor.task.max:
+    spark.executor.task.limit:
       enabled: false
-    spark.executor.task.results:
+    spark.executor.task.result:
       enabled: false
     spark.executor.time:
       enabled: false
@@ -253,6 +255,8 @@ none_set:
     spark.stage.shuffle.io.size:
       enabled: false
     spark.stage.shuffle.write_time:
+      enabled: false
+    spark.stage.status:
       enabled: false
     spark.stage.task.active:
       enabled: false
