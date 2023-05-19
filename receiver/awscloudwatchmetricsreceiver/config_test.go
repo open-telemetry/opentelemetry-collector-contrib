@@ -40,8 +40,8 @@ func TestValidate(t *testing.T) {
 						Period:         time.Second * 60,
 						AwsAggregation: "Sum",
 						Dimensions: []MetricDimensionsConfig{{
-							Name:  "Test",
-							Value: "Test",
+							Name:  "InstanceId",
+							Value: " i-1234567890abcdef0",
 						}},
 					}},
 				},
@@ -102,7 +102,7 @@ func TestValidate(t *testing.T) {
 						Namespace:      "AWS/EC2",
 						MetricName:     "CPUUtilizaition",
 						Period:         time.Second * 60,
-						AwsAggregation: "test",
+						AwsAggregation: "Last",
 					}},
 				},
 			},
@@ -150,7 +150,7 @@ func TestValidate(t *testing.T) {
 						Period:         time.Second * 60,
 						AwsAggregation: "TS99",
 					},
-					{
+						{
 							Namespace:      "AWS/EC2",
 							MetricName:     "CPUUtilizaition",
 							Period:         time.Second * 60,
@@ -170,7 +170,7 @@ func TestValidate(t *testing.T) {
 			name: "Invalid IMDS endpoint url",
 			config: Config{
 				Region:       "eu-west-1",
-				IMDSEndpoint: "testsijdasidj",
+				IMDSEndpoint: "xyz",
 			},
 			expectedErr: errors.New("unable to parse URI for imds_endpoint"),
 		},
@@ -215,7 +215,7 @@ func TestValidate(t *testing.T) {
 						AwsAggregation: "Sum",
 						Dimensions: []MetricDimensionsConfig{{
 							Name:  ":BucketName",
-							Value: "Test",
+							Value: "open-telemetry",
 						}},
 					}},
 				},
