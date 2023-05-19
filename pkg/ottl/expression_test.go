@@ -1011,7 +1011,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 			valid: true,
 		},
 		{
-			name: "float64 bool true",
+			name: "primitive bool true",
 			getter: StandardIntLikeGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return true, nil
