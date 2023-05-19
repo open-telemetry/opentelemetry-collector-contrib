@@ -59,6 +59,8 @@ type IntegrationTest struct {
 	expectedFile   string
 	compareOptions []pmetrictest.CompareMetricsOption
 	compareTimeout time.Duration
+
+	dumpActualOnFailure bool
 }
 
 func (it *IntegrationTest) Run(t *testing.T) {
@@ -110,6 +112,18 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	defer func() {
 		if t.Failed() {
 			t.Error(validateErr.Error())
+			numResults := len(sink.AllMetrics())
+			if numResults == 0 {
+				t.Error("no data emitted by scraper")
+				return
+			}
+			if it.dumpActualOnFailure {
+				unmarshaler := &pmetric.JSONMarshaler{}
+				fileBytes, err := unmarshaler.MarshalMetrics(sink.AllMetrics()[numResults-1])
+				if err == nil {
+					t.Errorf("latest result:\n%s", fileBytes)
+				}
+			}
 		}
 	}()
 
@@ -154,6 +168,12 @@ func WithCompareOptions(opts ...pmetrictest.CompareMetricsOption) TestOption {
 func WithCompareTimeout(t time.Duration) TestOption {
 	return func(it *IntegrationTest) {
 		it.compareTimeout = t
+	}
+}
+
+func WithDumpActualOnFailure() TestOption {
+	return func(it *IntegrationTest) {
+		it.dumpActualOnFailure = true
 	}
 }
 

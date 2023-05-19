@@ -71,5 +71,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16273
+		scraperinttest.WithDumpActualOnFailure(),
 	).Run
 }
