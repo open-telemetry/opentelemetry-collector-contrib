@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -41,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(CfgTypeStr, "minimal"),
+			id: component.NewIDWithName(metadata.Type, "minimal"),
 			expected: &Config{
 				DatasetURL:      "https://app.scalyr.com",
 				APIKey:          "key-minimal",
@@ -53,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(CfgTypeStr, "lib"),
+			id: component.NewIDWithName(metadata.Type, "lib"),
 			expected: &Config{
 				DatasetURL: "https://app.eu.scalyr.com",
 				APIKey:     "key-lib",
@@ -71,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(CfgTypeStr, "full"),
+			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				DatasetURL: "https://app.scalyr.com",
 				APIKey:     "key-full",
