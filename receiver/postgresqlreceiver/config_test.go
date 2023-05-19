@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -114,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	t.Run("postgresql", func(t *testing.T) {
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -127,7 +129,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("postgresql/all", func(t *testing.T) {
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "all").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "all").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
