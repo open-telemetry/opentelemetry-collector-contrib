@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
@@ -10,13 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "loadbalancing"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for the exporter.
@@ -24,10 +21,10 @@ func NewFactory() exporter.Factory {
 	_ = view.Register(MetricViews()...)
 
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
