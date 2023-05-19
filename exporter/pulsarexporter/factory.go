@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 
 import (
@@ -11,13 +13,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter/internal/metadata"
 )
 
 const (
-	typeStr = "pulsar"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
-
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
@@ -48,11 +48,11 @@ func NewFactory(options ...FactoryOption) exporter.Factory {
 		o(f)
 	}
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(f.createTracesExporter, stability),
-		exporter.WithMetrics(f.createMetricsExporter, stability),
-		exporter.WithLogs(f.createLogsExporter, stability),
+		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
 	)
 }
 
