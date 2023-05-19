@@ -89,6 +89,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxDropped:           MetricConfig{Enabled: true},
 					ContainerNetworkIoUsageTxErrors:            MetricConfig{Enabled: true},
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: true},
+					ContainerPidsCount:                         MetricConfig{Enabled: true},
+					ContainerPidsLimit:                         MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerHostname:  ResourceAttributeConfig{Enabled: true},
@@ -166,6 +168,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxDropped:           MetricConfig{Enabled: false},
 					ContainerNetworkIoUsageTxErrors:            MetricConfig{Enabled: false},
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: false},
+					ContainerPidsCount:                         MetricConfig{Enabled: false},
+					ContainerPidsLimit:                         MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerHostname:  ResourceAttributeConfig{Enabled: false},

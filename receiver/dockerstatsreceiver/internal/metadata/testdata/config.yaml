@@ -127,6 +127,10 @@ all_set:
       enabled: true
     container.network.io.usage.tx_packets:
       enabled: true
+    container.pids.count:
+      enabled: true
+    container.pids.limit:
+      enabled: true
   resource_attributes:
     container.hostname:
       enabled: true
@@ -265,6 +269,10 @@ none_set:
     container.network.io.usage.tx_errors:
       enabled: false
     container.network.io.usage.tx_packets:
+      enabled: false
+    container.pids.count:
+      enabled: false
+    container.pids.limit:
       enabled: false
   resource_attributes:
     container.hostname:
