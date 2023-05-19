@@ -20,7 +20,7 @@ func Test_loadMetadata(t *testing.T) {
 		{
 			name: "metadata.yaml",
 			want: metadata{
-				Type:           "testreceiver",
+				Type:           "test",
 				SemConvVersion: "1.9.0",
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
@@ -146,6 +146,12 @@ func Test_loadMetadata(t *testing.T) {
 					},
 				},
 				ScopeName: "otelcol",
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[string][]string{
+						"alpha": {"metrics"},
+					},
+				},
 			},
 		},
 		{

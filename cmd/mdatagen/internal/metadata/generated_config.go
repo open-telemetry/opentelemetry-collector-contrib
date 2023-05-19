@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for testreceiver metrics.
+// MetricsConfig provides config for test metrics.
 type MetricsConfig struct {
 	DefaultMetric            MetricConfig `mapstructure:"default.metric"`
 	DefaultMetricToBeRemoved MetricConfig `mapstructure:"default.metric.to_be_removed"`
@@ -49,7 +49,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for testreceiver resource attributes.
+// ResourceAttributesConfig provides config for test resource attributes.
 type ResourceAttributesConfig struct {
 	MapResourceAttr        ResourceAttributeConfig `mapstructure:"map.resource.attr"`
 	OptionalResourceAttr   ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
@@ -78,7 +78,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for testreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for test metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

@@ -211,7 +211,7 @@ type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
 	// Status information for the component.
-	Status Status `mapstructure:"status"`
+	Status *Status `mapstructure:"status"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
@@ -278,7 +278,14 @@ func (md *metadata) Validate() error {
 	if len(unusedAttrs) > 0 {
 		errs = multierr.Append(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
 	}
-
+	if md.Status != nil {
+		if md.Status.Class == "" {
+			errs = multierr.Append(errs, errors.New("missing status class metadata"))
+		}
+		if len(md.Status.Stability) == 0 {
+			errs = multierr.Append(errs, errors.New("missing status stability metadata"))
+		}
+	}
 	return errs
 }
 
