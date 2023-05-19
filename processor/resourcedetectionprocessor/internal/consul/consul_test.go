@@ -39,10 +39,11 @@ func TestDetect(t *testing.T) {
 		},
 		nil,
 	)
-
+	dcfg := CreateDefaultConfig()
 	detector := &Detector{
-		provider: md,
-		logger:   zap.NewNop(),
+		provider:           md,
+		logger:             zap.NewNop(),
+		resourceAttributes: dcfg.ResourceAttributes,
 	}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
