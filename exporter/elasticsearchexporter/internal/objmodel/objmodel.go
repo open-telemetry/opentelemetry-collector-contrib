@@ -42,6 +42,7 @@ import (
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
@@ -161,6 +162,15 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 		doc.AddAttributes(key, attribute.Map())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
+	}
+}
+
+// AddEvents converts and adds span events to the document.
+func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
+	for i := 0; i < events.Len(); i++ {
+		e := events.At(i)
+		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
+		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
 	}
 }
 

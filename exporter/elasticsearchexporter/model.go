@@ -73,6 +73,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	document.AddString("Link", spanLinksToString(span.Links()))
 	document.AddAttributes("Attributes", span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
+	document.AddEvents("Events", span.Events())
 
 	if m.dedup {
 		document.Dedup()
