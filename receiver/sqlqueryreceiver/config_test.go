@@ -135,7 +135,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.ScraperControllerSettings.CollectionInterval)
+	assert.Equal(t, time.Minute, cfg.ScraperControllerSettings.CollectionInterval)
 }
 
 func TestConfig_Validate_Multierr(t *testing.T) {

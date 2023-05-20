@@ -6,7 +6,6 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -35,9 +34,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 
 				var expectedCfg component.Config = &Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-						CollectionInterval: 10 * time.Second,
-					},
+					ScraperControllerSettings:     scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					Services:                      monitorServices,
 					CacheResources:                24 * 60 * 60,

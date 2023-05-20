@@ -16,7 +16,7 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.ScraperControllerSettings.CollectionInterval)
+	assert.Equal(t, time.Minute, cfg.ScraperControllerSettings.CollectionInterval)
 }
 
 func TestParseConfig(t *testing.T) {

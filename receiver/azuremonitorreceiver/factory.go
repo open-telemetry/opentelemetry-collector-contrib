@@ -6,7 +6,6 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,9 +27,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
+		ScraperControllerSettings:     scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 		CacheResources:                24 * 60 * 60,
 		CacheResourcesDefinitions:     24 * 60 * 60,

@@ -31,12 +31,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					CollectionInterval: 10 * time.Second,
-				},
-				APIVersion: defaultAPIVersion,
-				Endpoint:   "unix:///run/podman/podman.sock",
-				Timeout:    5 * time.Second,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				APIVersion:                defaultAPIVersion,
+				Endpoint:                  "unix:///run/podman/podman.sock",
+				Timeout:                   5 * time.Second,
 			},
 		},
 		{

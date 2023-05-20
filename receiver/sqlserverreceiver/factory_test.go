@@ -5,7 +5,6 @@ package sqlserverreceiver
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,10 +31,8 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 
 				var expectedCfg component.Config = &Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-						CollectionInterval: 10 * time.Second,
-					},
-					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+					MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

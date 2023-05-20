@@ -5,7 +5,6 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -25,11 +24,9 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		AllowNativePasswords: true,
-		Username:             "root",
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		AllowNativePasswords:      true,
+		Username:                  "root",
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:3306",
 			Transport: "tcp",
