@@ -12,11 +12,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "jaeger_thrift"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter/internal/metadata"
 )
 
 var once sync.Once
@@ -24,9 +21,9 @@ var once sync.Once
 // NewFactory creates a factory for Jaeger Thrift over HTTP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, component.StabilityLevelDeprecated))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {
