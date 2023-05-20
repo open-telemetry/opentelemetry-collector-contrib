@@ -19,20 +19,19 @@ import (
 )
 
 const (
-	typeStr         = "saphana"
 	defaultEndpoint = "localhost:33015"
 )
 
 // NewFactory creates a factory for SAP HANA receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
+	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
 		TCPAddr: confignet.TCPAddr{
