@@ -170,7 +170,6 @@ func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
 		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
-		doc.AddInt(flattenKey(key, e.Name()+".dropped_attributes_count"), int64(e.DroppedAttributesCount()))
 		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
 	}
 }
