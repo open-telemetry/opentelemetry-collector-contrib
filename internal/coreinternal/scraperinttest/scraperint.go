@@ -62,16 +62,20 @@ type IntegrationTest struct {
 
 func (it *IntegrationTest) Run(t *testing.T) {
 	ctx := context.Background()
-
 	require.NoError(t, it.containerRequest.Validate())
-	container, err := testcontainers.GenericContainer(ctx,
-		testcontainers.GenericContainerRequest{
-			ContainerRequest: it.containerRequest,
-			Started:          true,
-		})
-	require.NoError(t, err)
+
+	var container testcontainers.Container
+	var err error
+	require.Eventually(t, func() bool {
+		container, err = testcontainers.GenericContainer(ctx,
+			testcontainers.GenericContainerRequest{
+				ContainerRequest: it.containerRequest,
+				Started:          true,
+			})
+		return err == nil
+	}, 5*time.Minute, time.Second)
 	defer func() {
-		require.NoError(t, container.Terminate(context.Background()))
+		require.NoError(t, container.Terminate(ctx))
 	}()
 
 	cfg := it.factory.CreateDefaultConfig()
