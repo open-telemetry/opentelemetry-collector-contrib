@@ -139,13 +139,15 @@ func TestPostgresIntegration(t *testing.T) {
 	require.Eventuallyf(
 		t,
 		func() bool {
-			return consumer.DataPointCount() > 0
+			ms := consumer.AllMetrics()
+			return len(ms) > 0 && ms[len(ms)-1].ResourceMetrics().Len() >= 2
 		},
 		2*time.Minute,
 		1*time.Second,
 		"failed to receive more than 0 metrics",
 	)
-	metrics := consumer.AllMetrics()[0]
+	allMetrics := consumer.AllMetrics()
+	metrics := allMetrics[len(allMetrics)-1]
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
 	testPGTypeMetrics(t, rms.At(1))
@@ -225,7 +227,8 @@ func TestOracleDBIntegration(t *testing.T) {
 		1*time.Second,
 		"failed to receive more than 0 metrics",
 	)
-	metrics := consumer.AllMetrics()[0]
+	allMetrics := consumer.AllMetrics()
+	metrics := allMetrics[len(allMetrics)-1]
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
 }
@@ -340,13 +343,15 @@ func TestMysqlIntegration(t *testing.T) {
 	require.Eventuallyf(
 		t,
 		func() bool {
-			return consumer.DataPointCount() > 0
+			ms := consumer.AllMetrics()
+			return len(ms) > 0 && ms[len(ms)-1].ResourceMetrics().Len() >= 2
 		},
 		2*time.Minute,
 		1*time.Second,
 		"failed to receive more than 0 metrics",
 	)
-	metrics := consumer.AllMetrics()[0]
+	allMetrics := consumer.AllMetrics()
+	metrics := allMetrics[len(allMetrics)-1]
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
 	testMysqlTypeMetrics(t, rms.At(1))
