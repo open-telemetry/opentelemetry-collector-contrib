@@ -1,4 +1,4 @@
-type: saphanareceiver
+type: saphana
 
 status:
   class: receiver
