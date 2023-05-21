@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	defaultEndpoint = "localhost:11211"
-	defaultTimeout  = 10 * time.Second
+	defaultEndpoint           = "localhost:11211"
+	defaultTimeout            = 10 * time.Second
+	defaultCollectionInterval = 10 * time.Second
 )
 
 // NewFactory creates a factory for memcached receiver.
@@ -30,8 +31,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ScraperControllerSettings: cfg,
 		Timeout:                   defaultTimeout,
 		NetAddr: confignet.NetAddr{
 			Endpoint: defaultEndpoint,

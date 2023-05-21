@@ -36,7 +36,9 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 
 				var expectedCfg component.Config = &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+						CollectionInterval: 10 * time.Second,
+					},
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Endpoint: defaultEndpoint,
 						Timeout:  10 * time.Second,

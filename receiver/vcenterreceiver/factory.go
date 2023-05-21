@@ -6,6 +6,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -26,8 +27,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 2 * time.Minute
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ScraperControllerSettings: cfg,
 		TLSClientSetting:          configtls.TLSClientSetting{},
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}

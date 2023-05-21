@@ -6,7 +6,6 @@ package memcachedreceiver
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -19,7 +18,7 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	require.Equal(t, defaultEndpoint, cfg.Endpoint)
 	require.Equal(t, defaultTimeout, cfg.Timeout)
-	require.Equal(t, time.Minute, cfg.CollectionInterval)
+	require.Equal(t, defaultCollectionInterval, cfg.CollectionInterval)
 }
 
 func TestLoadConfig(t *testing.T) {

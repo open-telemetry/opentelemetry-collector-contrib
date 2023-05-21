@@ -6,6 +6,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -13,6 +14,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
+)
+
+const (
+	defaultCollectionInterval = 10 * time.Second
 )
 
 var errConfigNotAzureMonitor = errors.New("Config was not a Azure Monitor receiver config")
@@ -26,8 +31,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ScraperControllerSettings:     scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ScraperControllerSettings:     cfg,
 		MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 		CacheResources:                24 * 60 * 60,
 		CacheResourcesDefinitions:     24 * 60 * 60,

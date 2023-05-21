@@ -24,7 +24,7 @@ func TestFactory(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	// Assert defaults.
-	assert.Equal(t, time.Minute, rCfg.CollectionInterval)
+	assert.Equal(t, 10*time.Second, rCfg.CollectionInterval)
 	assert.Equal(t, 10*time.Second, rCfg.Timeout)
 	assert.Equal(t, ":2181", rCfg.Endpoint)
 
