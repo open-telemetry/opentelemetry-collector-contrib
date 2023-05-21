@@ -62,12 +62,14 @@ The following settings can be optionally configured:
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
-- `dimensions_cache_size`: the max items number of `metric_key_to_dimensions_cache`. If not provided, will
-  use default value size `1000`.
+- `dimensions_cache_size`: the size of cache for storing Dimensions to improve collectors memory usage.
+  - Default: `1000`.
 - `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
   - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
 - `namespace`: Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
+- `metrics_flush_interval`: Defines the flush interval of the generated metrics.
+  -  Default: `15s`.
 
 ## Examples
 
@@ -106,6 +108,7 @@ processors:
       - name: http.status_code
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"     
+    metrics_flush_interval: 15s
 
 exporters:
   jaeger:
