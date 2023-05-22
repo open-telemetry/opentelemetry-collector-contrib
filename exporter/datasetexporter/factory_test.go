@@ -141,8 +141,11 @@ func createExporterTests() []CreateTest {
 				DatasetURL: "https://app.eu.scalyr.com",
 				APIKey:     "key-lib",
 				BufferSettings: BufferSettings{
-					MaxLifetime: 12345,
-					GroupBy:     []string{"attributes.container_id"},
+					MaxLifetime:          12345,
+					GroupBy:              []string{"attributes.container_id"},
+					RetryInitialInterval: time.Second,
+					RetryMaxInterval:     time.Minute,
+					RetryMaxElapsedTime:  time.Hour,
 				},
 				TracesSettings: TracesSettings{
 					Aggregate: true,

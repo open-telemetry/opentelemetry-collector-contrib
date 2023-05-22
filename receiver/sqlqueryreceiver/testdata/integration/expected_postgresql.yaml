@@ -1,0 +1,84 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: Action
+                  timeUnixNano: "1684613308016320000"
+            name: genre.count
+          - gauge:
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: SciFi
+                  timeUnixNano: "1684613308016320000"
+            name: genre.count
+          - gauge:
+              dataPoints:
+                - asDouble: 7.6499999999999995
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: Action
+                  timeUnixNano: "1684613308016320000"
+            name: genre.imdb
+          - gauge:
+              dataPoints:
+                - asDouble: 8.200000000000001
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: SciFi
+                  timeUnixNano: "1684613308016320000"
+            name: genre.imdb
+        scope: {}
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1684613308030553000"
+            name: a
+          - gauge:
+              dataPoints:
+                - asInt: "2"
+                  timeUnixNano: "1684613308030553000"
+            name: b
+          - gauge:
+              dataPoints:
+                - asInt: "3"
+                  timeUnixNano: "1684613308030553000"
+            name: c
+          - gauge:
+              dataPoints:
+                - asDouble: 4.1
+                  timeUnixNano: "1684613308030553000"
+            name: d
+          - gauge:
+              dataPoints:
+                - asDouble: 4.2
+                  timeUnixNano: "1684613308030553000"
+            name: e
+          - gauge:
+              dataPoints:
+                - asDouble: 4.3000002
+                  timeUnixNano: "1684613308030553000"
+            name: f
+          - gauge:
+              dataPoints:
+                - asDouble: 4.4
+                  timeUnixNano: "1684613308030553000"
+            name: g
+          - gauge:
+              dataPoints:
+                - timeUnixNano: "1684613308030553000"
+            name: h
+        scope: {}

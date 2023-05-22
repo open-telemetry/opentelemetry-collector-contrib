@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/aerospike/aerospike-client-go/v6 v6.12.0
+	github.com/docker/go-connections v0.4.0
 	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.77.0
@@ -29,7 +30,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v23.0.6+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

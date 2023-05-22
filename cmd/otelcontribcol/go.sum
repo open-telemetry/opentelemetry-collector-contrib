@@ -1985,7 +1985,6 @@ github.com/jaegertracing/jaeger v1.22.0/go.mod h1:WnwW68MjJEViSLRQhe0nkIsBDaF3Cz
 github.com/jaegertracing/jaeger v1.38.0/go.mod h1:4MBTMxfCp3d4buDLxRlHnESQvTFCkN16OUIeE9BEdl4=
 github.com/jaegertracing/jaeger v1.41.0 h1:vVNky8dP46M2RjGaZ7qRENqylW+tBFay3h57N16Ip7M=
 github.com/jaegertracing/jaeger v1.41.0/go.mod h1:SIkAT75iVmA9U+mESGYuMH6UQv6V9Qy4qxo0lwfCQAc=
-github.com/jarcoal/httpmock v1.3.0 h1:2RJ8GP0IIaWwcC9Fp2BmVi8Kog3v2Hn7VXM3fTd+nuc=
 github.com/jawher/mow.cli v1.0.4/go.mod h1:5hQj2V8g+qYmLUVWqu4Wuja1pI57M83EChYLVZ0sMKk=
 github.com/jawher/mow.cli v1.2.0/go.mod h1:y+pcA3jBAdo/GIZx/0rFjw/K2bVEODP9rfZOfaiq8Ko=
 github.com/jcmturner/aescts/v2 v2.0.0 h1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=
@@ -2196,7 +2195,6 @@ github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182aff
 github.com/matttproud/golang_protobuf_extensions v1.0.2/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
 github.com/matttproud/golang_protobuf_extensions v1.0.4 h1:mmDVorXM7PCGKw94cs5zkfA9PSy5pEvNWRP0ET0TIVo=
 github.com/matttproud/golang_protobuf_extensions v1.0.4/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
-github.com/maxatome/go-testdeep v1.13.0 h1:EBmRelH7MhMfPvA+0kXAeOeJUXn3mzul5NmvjLDcQZI=
 github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2/go.mod h1:eD9eIE7cdwcMi9rYluz88Jz2VyhSmden33/aXg4oVIY=
 github.com/mbilski/exhaustivestruct v1.2.0/go.mod h1:OeTBVxQWoEmB2J2JCHmXWPJ0aksxSUOUy+nvtVEfzXc=
 github.com/mgechev/dots v0.0.0-20190921121421-c36f7dcfbb81/go.mod h1:KQ7+USdGKfpPjXk4Ga+5XxQM4Lm4e3gAogrreFAYpOg=
@@ -2667,8 +2665,8 @@ github.com/sanposhiho/wastedassign v0.1.3/go.mod h1:LGpq5Hsv74QaqM47WtIsRSF/ik9k
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/scaleway/scaleway-sdk-go v1.0.0-beta.14 h1:yFl3jyaSVLNYXlnNYM5z2pagEk1dYQhfr1p20T1NyKY=
 github.com/scaleway/scaleway-sdk-go v1.0.0-beta.14/go.mod h1:fCa7OJZ/9DRTnOKmxvT6pn+LPWUptQAmHF/SBJUGEcg=
-github.com/scalyr/dataset-go v0.0.7 h1:Uz+b2iMcIzp0C3ppK4OWs3mUWnB7WGN7SEJVvm0V/Jk=
-github.com/scalyr/dataset-go v0.0.7/go.mod h1:J8ioLMhd4bUoaPdXJOHQiQI/XVs0kG/kAuVsN8buLBQ=
+github.com/scalyr/dataset-go v0.0.8 h1:sHPmMjrv6HcZ9CfaJY/XAhg2JaucE+AUOb5U6EP5Mx8=
+github.com/scalyr/dataset-go v0.0.8/go.mod h1:yEieK44nks7tirqZSbne9c//p3E7bYbWEGOEnMfiT40=
 github.com/sclevine/agouti v3.0.0+incompatible/go.mod h1:b4WX9W9L1sfQKXeJf1mUTLZKJ48R1S7H23Ji7oFO5Bw=
 github.com/sclevine/spec v1.2.0/go.mod h1:W4J29eT/Kzv7/b9IWLB055Z+qvVC9vt0Arko24q7p+U=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUtVbo7ada43DJhG55ua/hjS5I=
