@@ -70,7 +70,7 @@ func (c *Config) Validate() error {
 		}
 
 		if len(item.Pipelines) == 0 {
-			return fmt.Errorf("invalid route %s: %w", item.Value, errNoPipelines)
+			return fmt.Errorf("invalid route: %w", errNoPipelines)
 		}
 	}
 
