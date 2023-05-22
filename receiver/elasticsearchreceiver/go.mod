@@ -11,9 +11,9 @@ require (
 	github.com/testcontainers/testcontainers-go v0.20.1
 	go.opentelemetry.io/collector v0.77.0
 	go.opentelemetry.io/collector/component v0.77.0
-	go.opentelemetry.io/collector/confmap v0.77.0
+	go.opentelemetry.io/collector/confmap v0.78.0
 	go.opentelemetry.io/collector/consumer v0.77.0
-	go.opentelemetry.io/collector/featuregate v0.77.0
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
 	go.opentelemetry.io/collector/receiver v0.77.0
 	go.uber.org/multierr v1.11.0
