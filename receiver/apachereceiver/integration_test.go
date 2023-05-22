@@ -29,20 +29,20 @@ const apachePort = "80"
 func TestApacheIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    path.Join("testdata", "integration"),
-				Dockerfile: "Dockerfile.apache",
-			},
-			ExposedPorts: []string{"80"},
-			WaitingFor:   waitStrategy{},
-		},
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
+					Context:    path.Join("testdata", "integration"),
+					Dockerfile: "Dockerfile.apache",
+				},
+				ExposedPorts: []string{"80"},
+				WaitingFor:   waitStrategy{},
+			}),
 		scraperinttest.WithCustomConfig(
-			func(cfg component.Config, host string, mappedPort scraperinttest.MappedPortFunc) {
-				port := mappedPort(apachePort)
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
-				rCfg.Endpoint = fmt.Sprintf("http://%s:%s/server-status?auto", host, port)
+				rCfg.Endpoint = fmt.Sprintf("http://%s:%s/server-status?auto", ci.Host(t), ci.MappedPort(t, apachePort))
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("apache.server.port"),

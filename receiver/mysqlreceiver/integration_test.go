@@ -25,26 +25,26 @@ const mysqlPort = "3306"
 func TestMySQLIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    filepath.Join("testdata", "integration"),
-				Dockerfile: "Dockerfile.mysql",
-			},
-			ExposedPorts: []string{mysqlPort},
-			WaitingFor: wait.ForListeningPort(mysqlPort).
-				WithStartupTimeout(2 * time.Minute),
-			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
-				PostStarts: []testcontainers.ContainerHook{
-					scraperinttest.RunScript([]string{"/setup.sh"}),
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
+					Context:    filepath.Join("testdata", "integration"),
+					Dockerfile: "Dockerfile.mysql",
 				},
-			}},
-		},
+				ExposedPorts: []string{mysqlPort},
+				WaitingFor: wait.ForListeningPort(mysqlPort).
+					WithStartupTimeout(2 * time.Minute),
+				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+					PostStarts: []testcontainers.ContainerHook{
+						scraperinttest.RunScript([]string{"/setup.sh"}),
+					},
+				}},
+			}),
 		scraperinttest.WithCustomConfig(
-			func(cfg component.Config, host string, mappedPort scraperinttest.MappedPortFunc) {
-				port := mappedPort(mysqlPort)
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
-				rCfg.Endpoint = net.JoinHostPort(host, port)
+				rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
 				rCfg.Username = "otel"
 				rCfg.Password = "otel"
 			}),
@@ -55,5 +55,7 @@ func TestMySQLIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18286
+		scraperinttest.WithDumpActualOnFailure(),
 	).Run(t)
 }

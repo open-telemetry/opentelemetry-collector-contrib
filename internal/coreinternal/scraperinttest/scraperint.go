@@ -28,6 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
+const errExposedPort = "exposed container port should not be hardcoded to host port. Use ContainerInfo.MappedPort() instead"
+
 func EqualsLatestMetrics(expected pmetric.Metrics, sink *consumertest.MetricsSink, compareOpts []pmetrictest.CompareMetricsOption) func() bool {
 	return func() bool {
 		allMetrics := sink.AllMetrics()
@@ -35,13 +37,12 @@ func EqualsLatestMetrics(expected pmetric.Metrics, sink *consumertest.MetricsSin
 	}
 }
 
-func NewIntegrationTest(f receiver.Factory, cr testcontainers.ContainerRequest, opts ...TestOption) *IntegrationTest {
+func NewIntegrationTest(f receiver.Factory, opts ...TestOption) *IntegrationTest {
 	it := &IntegrationTest{
-		factory:          f,
-		containerRequest: cr,
-		customConfig:     func(component.Config, string, MappedPortFunc) {},
-		expectedFile:     filepath.Join("testdata", "integration", "expected.yaml"),
-		compareTimeout:   time.Minute,
+		factory:        f,
+		customConfig:   func(*testing.T, component.Config, *ContainerInfo) {},
+		expectedFile:   filepath.Join("testdata", "integration", "expected.yaml"),
+		compareTimeout: time.Minute,
 	}
 	for _, opt := range opts {
 		opt(it)
@@ -50,7 +51,7 @@ func NewIntegrationTest(f receiver.Factory, cr testcontainers.ContainerRequest, 
 }
 
 type IntegrationTest struct {
-	containerRequest testcontainers.ContainerRequest
+	containerRequest *testcontainers.ContainerRequest
 
 	factory      receiver.Factory
 	customConfig customConfigFunc
@@ -58,30 +59,41 @@ type IntegrationTest struct {
 	expectedFile   string
 	compareOptions []pmetrictest.CompareMetricsOption
 	compareTimeout time.Duration
+
+	dumpActualOnFailure bool
 }
 
 func (it *IntegrationTest) Run(t *testing.T) {
 	ctx := context.Background()
-	require.NoError(t, it.containerRequest.Validate())
 
-	var container testcontainers.Container
-	var err error
-	require.Eventually(t, func() bool {
-		container, err = testcontainers.GenericContainer(ctx,
-			testcontainers.GenericContainerRequest{
-				ContainerRequest: it.containerRequest,
-				Started:          true,
-			})
-		return err == nil
-	}, 5*time.Minute, time.Second)
-	defer func() {
-		require.NoError(t, container.Terminate(ctx))
-	}()
+	var ci *ContainerInfo
+	if it.containerRequest != nil {
+		require.NoError(t, it.containerRequest.Validate())
+		for _, port := range it.containerRequest.ExposedPorts {
+			require.False(t, strings.ContainsRune(port, ':'), errExposedPort)
+		}
+
+		var container testcontainers.Container
+		var err error
+		require.Eventually(t, func() bool {
+			container, err = testcontainers.GenericContainer(ctx,
+				testcontainers.GenericContainerRequest{
+					ContainerRequest: *it.containerRequest,
+					Started:          true,
+				})
+			return err == nil
+		}, 5*time.Minute, time.Second)
+
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+
+		ci, err = containerInfo(ctx, container, it.containerRequest.ExposedPorts)
+		require.NoError(t, err)
+	}
 
 	cfg := it.factory.CreateDefaultConfig()
-	host, mappedPort := containerInfo(ctx, t, container)
-	it.customConfig(cfg, host, mappedPort)
-
+	it.customConfig(t, cfg, ci)
 	sink := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopCreateSettings()
 
@@ -100,6 +112,18 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	defer func() {
 		if t.Failed() {
 			t.Error(validateErr.Error())
+			numResults := len(sink.AllMetrics())
+			if numResults == 0 {
+				t.Error("no data emitted by scraper")
+				return
+			}
+			if it.dumpActualOnFailure {
+				unmarshaler := &pmetric.JSONMarshaler{}
+				fileBytes, err := unmarshaler.MarshalMetrics(sink.AllMetrics()[numResults-1])
+				if err == nil {
+					t.Errorf("latest result:\n%s", fileBytes)
+				}
+			}
 		}
 	}()
 
@@ -116,6 +140,12 @@ func (it *IntegrationTest) Run(t *testing.T) {
 }
 
 type TestOption func(*IntegrationTest)
+
+func WithContainerRequest(cr testcontainers.ContainerRequest) TestOption {
+	return func(it *IntegrationTest) {
+		it.containerRequest = &cr
+	}
+}
 
 func WithCustomConfig(c customConfigFunc) TestOption {
 	return func(it *IntegrationTest) {
@@ -141,19 +171,46 @@ func WithCompareTimeout(t time.Duration) TestOption {
 	}
 }
 
-type customConfigFunc func(cfg component.Config, host string, mappedPort MappedPortFunc)
-
-func containerInfo(ctx context.Context, t *testing.T, container testcontainers.Container) (string, MappedPortFunc) {
-	h, err := container.Host(ctx)
-	require.NoError(t, err)
-	return h, func(port string) string {
-		p, err := container.MappedPort(ctx, nat.Port(port))
-		require.NoError(t, err)
-		return p.Port()
+func WithDumpActualOnFailure() TestOption {
+	return func(it *IntegrationTest) {
+		it.dumpActualOnFailure = true
 	}
 }
 
-type MappedPortFunc func(port string) string
+type customConfigFunc func(*testing.T, component.Config, *ContainerInfo)
+
+type ContainerInfo struct {
+	host  string
+	ports map[string]string
+}
+
+func (c ContainerInfo) Host(t *testing.T) string {
+	require.NotEmpty(t, c.host, "container not in use")
+	return c.host
+}
+
+func (c ContainerInfo) MappedPort(t *testing.T, port string) string {
+	p, ok := c.ports[port]
+	require.True(t, ok, "port not exposed %q", port)
+	return p
+}
+
+func containerInfo(ctx context.Context, c testcontainers.Container, ports []string) (*ContainerInfo, error) {
+	h, err := c.Host(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get container host: %w", err)
+	}
+
+	portMap := make(map[string]string, len(ports))
+	for _, internalPort := range ports {
+		externalPort, err := c.MappedPort(ctx, nat.Port(internalPort))
+		if err != nil {
+			return nil, fmt.Errorf("get mapped port for %q: %w", internalPort, err)
+		}
+		portMap[internalPort] = externalPort.Port()
+	}
+	return &ContainerInfo{host: h, ports: portMap}, nil
+}
 
 func RunScript(script []string) testcontainers.ContainerHook {
 	return func(ctx context.Context, container testcontainers.Container) error {
