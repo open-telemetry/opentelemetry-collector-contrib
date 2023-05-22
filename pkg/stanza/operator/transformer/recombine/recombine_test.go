@@ -5,6 +5,8 @@ package recombine
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -416,15 +418,15 @@ func TestTransformer(t *testing.T) {
 func BenchmarkRecombine(b *testing.B) {
 	cfg := NewConfig()
 	cfg.CombineField = entry.NewBodyField()
-	cfg.IsFirstEntry = "false"
+	cfg.IsFirstEntry = "body startsWith 'log-0'"
 	cfg.OutputIDs = []string{"fake"}
+	cfg.SourceIdentifier = entry.NewAttributeField("file.path")
 	op, err := cfg.Build(testutil.Logger(b))
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
 	fake := testutil.NewFakeOutput(b)
 	require.NoError(b, recombine.SetOutputs([]operator.Operator{fake}))
-	require.NoError(b, recombine.Start(nil))
 
 	go func() {
 		for {
@@ -432,18 +434,26 @@ func BenchmarkRecombine(b *testing.B) {
 		}
 	}()
 
-	e := entry.New()
-	e.Timestamp = time.Now()
-	e.Body = "body"
+	sourcesNum := 10
+	logsNum := 10
+	entries := []*entry.Entry{}
+	for i := 0; i < logsNum; i++ {
+		for j := 0; j < sourcesNum; j++ {
+			start := entry.New()
+			start.Timestamp = time.Now()
+			start.Body = strings.Repeat(fmt.Sprintf("log-%d", i), 50)
+			start.Attributes = map[string]any{"file.path": fmt.Sprintf("file-%d", j)}
+			entries = append(entries, start)
+		}
+	}
 
 	ctx := context.Background()
 	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
+		for _, e := range entries {
+			require.NoError(b, recombine.Process(ctx, e))
+		}
 		recombine.flushUncombined(ctx)
 	}
 }
