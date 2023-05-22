@@ -139,7 +139,7 @@ func PrepareSystemMetrics(ms []datadogV2.MetricSeries) []datadogV2.MetricSeries 
 	return series
 }
 
-// PrepareContaierMetrics converts OTEL container.* metrics to Datadog container
+// PrepareContainerMetrics converts OTEL container.* metrics to Datadog container
 // metrics.
 func PrepareContainerMetrics(ms []datadogV2.MetricSeries) []datadogV2.MetricSeries {
 	series := ms
