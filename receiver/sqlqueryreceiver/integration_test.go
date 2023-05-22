@@ -147,9 +147,9 @@ func TestOracleDBIntegration(t *testing.T) {
 				// The Oracle DB container takes close to 10 minutes on a local machine
 				// to do the default setup, so the best way to account for startup time
 				// is to wait for the container to be healthy before continuing test.
-				WaitingFor: wait.NewHealthStrategy().WithStartupTimeout(15 * time.Minute),
+				WaitingFor: wait.NewHealthStrategy().WithStartupTimeout(30 * time.Minute),
 			}),
-		scraperinttest.WithCreateContainerTimeout(15*time.Minute),
+		scraperinttest.WithCreateContainerTimeout(30*time.Minute),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
