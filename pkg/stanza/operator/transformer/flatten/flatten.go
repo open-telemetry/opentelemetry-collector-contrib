@@ -1,23 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package flatten // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/flatten"
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -48,7 +36,7 @@ func NewConfigWithID(operatorID string) *Config {
 // Config is the configuration of a flatten operator
 type Config struct {
 	helper.TransformerConfig `mapstructure:",squash"`
-	Field                    entry.BodyField `mapstructure:"field"`
+	Field                    entry.Field `mapstructure:"field"`
 }
 
 // Build will build a Flatten operator from the supplied configuration
@@ -58,34 +46,53 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	if strings.Contains(c.Field.String(), "attributes") || strings.Contains(c.Field.String(), "resource") {
-		return nil, fmt.Errorf("flatten: field cannot be a resource or attribute")
+	if e, ok := c.Field.FieldInterface.(entry.BodyField); ok {
+		return &Transformer[entry.BodyField]{
+			TransformerOperator: transformerOperator,
+			Field:               e,
+		}, nil
 	}
 
-	return &Transformer{
-		TransformerOperator: transformerOperator,
-		Field:               c.Field,
-	}, nil
+	if e, ok := c.Field.FieldInterface.(entry.ResourceField); ok {
+		return &Transformer[entry.ResourceField]{
+			TransformerOperator: transformerOperator,
+			Field:               e,
+		}, nil
+	}
+
+	if e, ok := c.Field.FieldInterface.(entry.AttributeField); ok {
+		return &Transformer[entry.AttributeField]{
+			TransformerOperator: transformerOperator,
+			Field:               e,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("invalid field type: %T", c.Field.FieldInterface)
 }
 
-// Transformer flattens an object in the body field
-type Transformer struct {
+// Transformer flattens an object in the entry field
+type Transformer[T interface {
+	entry.BodyField | entry.ResourceField | entry.AttributeField
+	entry.FieldInterface
+	Parent() T
+	Child(string) T
+}] struct {
 	helper.TransformerOperator
-	Field entry.BodyField
+	Field T
 }
 
 // Process will process an entry with a flatten transformation.
-func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer[T]) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply the flatten operation to an entry
-func (p *Transformer) Transform(entry *entry.Entry) error {
+func (p *Transformer[T]) Transform(entry *entry.Entry) error {
 	parent := p.Field.Parent()
 	val, ok := entry.Delete(p.Field)
 	if !ok {
 		// The field doesn't exist, so ignore it
-		return fmt.Errorf("apply flatten: field %s does not exist on body", p.Field)
+		return fmt.Errorf("apply flatten: field %s does not exist on entry", p.Field)
 	}
 
 	valMap, ok := val.(map[string]interface{})

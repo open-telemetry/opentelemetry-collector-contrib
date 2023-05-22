@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
@@ -283,23 +272,22 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *mod
 	attrMap.PutInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
 	attrMap.PutInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
 
+	// The IPs are now optional meaning we will not incluude them if they are zero length
 	hostIPLen := len(spanData.HostIp)
 	if hostIPLen == 4 || hostIPLen == 16 {
 		attrMap.PutStr(hostIPAttrKey, net.IP(spanData.HostIp).String())
+		attrMap.PutInt(hostPortAttrKey, int64(spanData.HostPort))
 	} else {
-		u.logger.Warn("Host ip attribute has an illegal length", zap.Int("length", hostIPLen))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.logger.Debug("Host ip not included", zap.Int("length", hostIPLen))
 	}
-	attrMap.PutInt(hostPortAttrKey, int64(spanData.HostPort))
 
-	peerIPLen := len(spanData.HostIp)
+	peerIPLen := len(spanData.PeerIp)
 	if peerIPLen == 4 || peerIPLen == 16 {
 		attrMap.PutStr(peerIPAttrKey, net.IP(spanData.PeerIp).String())
+		attrMap.PutInt(peerPortAttrKey, int64(spanData.PeerPort))
 	} else {
-		u.logger.Warn("Peer ip attribute has an illegal length", zap.Int("length", peerIPLen))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.logger.Debug("Peer IP not included", zap.Int("length", peerIPLen))
 	}
-	attrMap.PutInt(peerPortAttrKey, int64(spanData.PeerPort))
 
 	if spanData.Baggage != nil {
 		err := u.unmarshalBaggage(attrMap, *spanData.Baggage)
@@ -337,6 +325,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v
 		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
 		statusMessageEventKey            = "messaging.solace.enqueue_error_message"
 		rejectsAllEnqueuesKey            = "messaging.solace.rejects_all_enqueues"
+		partitionNumberKey               = "messaging.solace.partition_number"
 		queueKind                        = "queue"
 		topicEndpointKind                = "topic-endpoint"
 	)
@@ -362,6 +351,9 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v
 	clientEvent.Attributes().PutBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
 		clientEvent.Attributes().PutStr(statusMessageEventKey, enqueueEvent.GetErrorDescription())
+	}
+	if enqueueEvent.PartitionNumber != nil {
+		clientEvent.Attributes().PutInt(partitionNumberKey, int64(*enqueueEvent.PartitionNumber))
 	}
 }
 

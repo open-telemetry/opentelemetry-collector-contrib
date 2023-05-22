@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -230,8 +219,7 @@ func Test_concat(t *testing.T) {
 				getters[i] = val
 			}
 
-			exprFunc, err := Concat(getters, tt.delimiter)
-			assert.NoError(t, err)
+			exprFunc := concat(getters, tt.delimiter)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -245,8 +233,7 @@ func Test_concat_error(t *testing.T) {
 			return make(chan int), nil
 		},
 	}
-	exprFunc, err := Concat[interface{}]([]ottl.StringLikeGetter[interface{}]{target}, "test")
-	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	exprFunc := concat[interface{}]([]ottl.StringLikeGetter[interface{}]{target}, "test")
+	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }

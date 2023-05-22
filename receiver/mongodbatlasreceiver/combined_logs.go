@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -26,11 +15,12 @@ import (
 
 // combinedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
 type combinedLogsReceiver struct {
-	alerts    *alertsReceiver
-	logs      *logsReceiver
-	events    *eventsReceiver
-	storageID *component.ID
-	id        component.ID
+	alerts     *alertsReceiver
+	logs       *logsReceiver
+	events     *eventsReceiver
+	accessLogs *accessLogsReceiver
+	storageID  *component.ID
+	id         component.ID
 }
 
 // Starts up the combined MongoDB Atlas Logs and Alert Receiver
@@ -60,6 +50,12 @@ func (c *combinedLogsReceiver) Start(ctx context.Context, host component.Host) e
 		}
 	}
 
+	if c.accessLogs != nil {
+		if err := c.accessLogs.Start(ctx, host, storageClient); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+
 	return errs
 }
 
@@ -81,6 +77,12 @@ func (c *combinedLogsReceiver) Shutdown(ctx context.Context) error {
 
 	if c.events != nil {
 		if err := c.events.Shutdown(ctx); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+
+	if c.accessLogs != nil {
+		if err := c.accessLogs.Shutdown(ctx); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}

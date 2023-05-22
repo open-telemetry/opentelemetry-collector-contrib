@@ -1,7 +1,7 @@
-name: otlpjsonfilereceiver
+type: otlpjsonfile
 
 status:
-  type: receiver
-  stability: alpha
-  pipelines: [logs, metrics, traces]
-  distributions: [contrib]
+  class: receiver
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib, sumo]

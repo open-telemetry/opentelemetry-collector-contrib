@@ -1,10 +1,10 @@
 # Service Graph Connector
 
 | Status                   |                                                           |
-|------------------------- |---------------------------------------------------------- |
-| Stability                | [in development]                                          |
+| ------------------------ | --------------------------------------------------------- |
+| Stability                | [alpha]                                                   |
 | Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
-| Distributions            | []                                                        |
+| Distributions            | [contrib], [sumo]                                         |
 
 ## Supported Pipeline Types
 
@@ -138,4 +138,6 @@ service:
       exporters: [prometheus/servicegraph]
 ```
 
-[in development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector

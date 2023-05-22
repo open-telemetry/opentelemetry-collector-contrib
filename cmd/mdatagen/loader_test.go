@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -31,7 +20,7 @@ func Test_loadMetadata(t *testing.T) {
 		{
 			name: "metadata.yaml",
 			want: metadata{
-				Name:           "testreceiver",
+				Type:           "test",
 				SemConvVersion: "1.9.0",
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
@@ -54,6 +43,20 @@ func Test_loadMetadata(t *testing.T) {
 						Enabled:     false,
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
+						},
+					},
+					"slice.resource.attr": {
+						Description: "Resource attribute with a slice value.",
+						Enabled:     true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeSlice,
+						},
+					},
+					"map.resource.attr": {
+						Description: "Resource attribute with a map value.",
+						Enabled:     true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeMap,
 						},
 					},
 				},
@@ -85,7 +88,20 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
-					}},
+					},
+					"slice_attr": {
+						Description: "Attribute with a slice value.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeSlice,
+						},
+					},
+					"map_attr": {
+						Description: "Attribute with a map value.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeMap,
+						},
+					},
+				},
 				Metrics: map[metricName]metric{
 					"default.metric": {
 						Enabled:               true,
@@ -100,7 +116,7 @@ func Test_loadMetadata(t *testing.T) {
 							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:            Mono{Monotonic: true},
 						},
-						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr"},
+						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 					"optional.metric": {
 						Enabled:     false,
@@ -127,6 +143,13 @@ func Test_loadMetadata(t *testing.T) {
 							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityDelta},
 							Mono:            Mono{Monotonic: false},
 						},
+					},
+				},
+				ScopeName: "otelcol",
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[string][]string{
+						"alpha": {"metrics"},
 					},
 				},
 			},

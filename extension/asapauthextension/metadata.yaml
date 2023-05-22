@@ -1,0 +1,7 @@
+type: asapclient
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, sumo]

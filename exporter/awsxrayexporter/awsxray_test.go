@@ -1,29 +1,20 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsxrayexporter
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,10 +23,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
 
 func TestTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t)
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -51,7 +44,7 @@ func TestXraySpanTraceResourceExtraction(t *testing.T) {
 }
 
 func TestXrayAndW3CSpanTraceExport(t *testing.T) {
-	traceExporter := initializeTracesExporter(t)
+	traceExporter := initializeTracesExporter(t, generateConfig(t), telemetrytest.NewNopRegistry())
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
@@ -73,8 +66,34 @@ func TestW3CSpanTraceResourceExtraction(t *testing.T) {
 	assert.Len(t, extractResourceSpans(generateConfig(t), logger, td), 0, "0 spans have xray trace id")
 }
 
+func TestTelemetryEnabled(t *testing.T) {
+	// replace global registry for test
+	registry := telemetry.NewRegistry()
+	sink := telemetrytest.NewSenderSink()
+	// preload the sender that the exporter will use
+	sender, loaded := registry.LoadOrStore(component.NewID(""), sink)
+	require.False(t, loaded)
+	require.NotNil(t, sender)
+	require.Equal(t, sink, sender)
+	cfg := generateConfig(t)
+	cfg.TelemetryConfig.Enabled = true
+	traceExporter := initializeTracesExporter(t, cfg, registry)
+	ctx := context.Background()
+	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
+	td := constructSpanData()
+	err := traceExporter.ConsumeTraces(ctx, td)
+	assert.NotNil(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, sink.StartCount.Load())
+	assert.EqualValues(t, 1, sink.StopCount.Load())
+	assert.True(t, sink.HasRecording())
+	got := sink.Rotate()
+	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
+}
+
 func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter(b)
+	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		ctx := context.Background()
@@ -85,25 +104,25 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB) exporter.Traces {
-	exporterConfig := generateConfig(t)
+func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
+	t.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn, registry)
 	if err != nil {
 		panic(err)
 	}
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) component.Config {
+func generateConfig(t testing.TB) *Config {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
 	t.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
-	exporterConfig := factory.CreateDefaultConfig()
-	exporterConfig.(*Config).Region = "us-east-1"
-	exporterConfig.(*Config).LocalMode = true
+	exporterConfig := factory.CreateDefaultConfig().(*Config)
+	exporterConfig.Region = "us-east-1"
+	exporterConfig.LocalMode = true
 	return exporterConfig
 }
 
@@ -246,8 +265,9 @@ func newTraceID() pcommon.TraceID {
 
 func constructW3CTraceID() pcommon.TraceID {
 	var r [16]byte
-	for i := range r {
-		r[i] = byte(rand.Intn(128))
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
 	}
 	return r
 }

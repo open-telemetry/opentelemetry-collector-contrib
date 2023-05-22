@@ -1,0 +1,7 @@
+type: snmp
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]

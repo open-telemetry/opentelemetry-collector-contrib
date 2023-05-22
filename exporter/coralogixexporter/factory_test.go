@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package coralogixexporter
 
@@ -55,11 +44,32 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
+func TestCreateMetricsExporterWithDomain(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "localhost"
+
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
+}
+
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
 
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, oexp)
+}
+
+func TestCreateLogsExporterWithDomain(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "localhost"
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
@@ -168,6 +178,17 @@ func TestCreateTracesExporter(t *testing.T) {
 			},
 			mustFailOnStart: true,
 		},
+		{
+			name: "UseDomain",
+			config: Config{
+				Domain: "localhost",
+				DomainSettings: configgrpc.GRPCClientSettings{
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: false,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -195,4 +216,28 @@ func TestCreateTracesExporter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateLogsExporterWithDomainAndEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "	bad domain"
+
+	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	set := exportertest.NewNopCreateSettings()
+	consumer, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.Nil(t, err)
+	require.NotNil(t, consumer)
+
+	err = consumer.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	err = consumer.Shutdown(context.Background())
+	if err != nil {
+		// Since the endpoint of OTLP exporter doesn't actually exist,
+		// exporter may already stop because it cannot connect.
+		assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+	}
+
 }

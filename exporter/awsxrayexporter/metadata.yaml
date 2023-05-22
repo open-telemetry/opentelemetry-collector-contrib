@@ -1,0 +1,7 @@
+type: awsxray
+
+status:
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [contrib, aws, observiq]

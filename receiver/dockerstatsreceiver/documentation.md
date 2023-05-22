@@ -88,7 +88,7 @@ Memory limit of the container.
 
 ### container.memory.usage.total
 
-Memory usage of the container. This excludes the total cache.
+Memory usage of the container. This excludes the cache.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -673,6 +673,26 @@ Packets sent.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | interface | Network interface. | Any Str |
+
+### container.pids.count
+
+Number of pids in the container's cgroup.
+
+It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {pids} | Sum | Int | Cumulative | false |
+
+### container.pids.limit
+
+Maximum number of pids in the container's cgroup.
+
+It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {pids} | Sum | Int | Cumulative | false |
 
 ## Resource Attributes
 

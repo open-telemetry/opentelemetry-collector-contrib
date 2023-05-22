@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
@@ -51,6 +40,7 @@ func (v *vcenterMetricScraper) recordHostSystemMemoryUsage(
 func (v *vcenterMetricScraper) recordVMUsages(
 	now pcommon.Timestamp,
 	vm mo.VirtualMachine,
+	hs mo.HostSystem,
 ) {
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
@@ -71,6 +61,33 @@ func (v *vcenterMetricScraper) recordVMUsages(
 		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
 		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
 	}
+
+	s := vm.Summary
+	z := s.QuickStats
+
+	cpuUsage := z.OverallCpuUsage
+	ncpu := vm.Config.Hardware.NumCPU
+
+	// if no cpu usage, we probably shouldn't return a value. Most likely the VM is unavailable
+	// or is unreachable.
+	if cpuUsage == 0 {
+		return
+	}
+
+	// https://communities.vmware.com/t5/VMware-code-Documents/Resource-Management/ta-p/2783456
+	// VirtualMachine.runtime.maxCpuUsage is a property of the virtual machine, indicating the limit value.
+	// This value is always equal to the limit value set for that virtual machine.
+	// If no limit, it has full host mhz * vm.Config.Hardware.NumCPU.
+	var cpuUtil float64
+	if vm.Runtime.MaxCpuUsage != 0 {
+		cpuUtil = 100 * float64(cpuUsage) / float64(vm.Runtime.MaxCpuUsage)
+	} else {
+		cpuUtil = 100 * float64(cpuUsage) / float64(ncpu*hs.Summary.Hardware.CpuMhz)
+	}
+
+	v.mb.RecordVcenterVMCPUUsageDataPoint(now, int64(cpuUsage))
+	v.mb.RecordVcenterVMCPUUtilizationDataPoint(now, cpuUtil)
+
 }
 
 func (v *vcenterMetricScraper) recordDatastoreProperties(

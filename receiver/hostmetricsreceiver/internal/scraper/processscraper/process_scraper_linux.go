@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
 // +build linux
@@ -37,19 +26,22 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.Iowait, metadata.AttributeStateWait)
 }
 
-func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
+func getProcessName(proc processHandle, _ string) (string, error) {
 	name, err := proc.Name()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
+	return name, err
+}
+
+func getProcessExecutable(proc processHandle) (string, error) {
 	exe, err := proc.Exe()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	executable := &executableMetadata{name: name, path: exe}
-	return executable, nil
+	return exe, nil
 }
 
 func getProcessCommand(proc processHandle) (*commandMetadata, error) {

@@ -1,0 +1,159 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: zk.version
+          value:
+            stringValue: 3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653
+        - key: server.state
+          value:
+            stringValue: leader
+    scopeMetrics:
+      - metrics:
+          - description: Number of active clients connected to a ZooKeeper server.
+            name: zookeeper.connection.active
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{connections}'
+          - description: Number of ephemeral nodes that a ZooKeeper server has in its data tree.
+            name: zookeeper.data_tree.ephemeral_node.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{nodes}'
+          - description: Size of data in bytes that a ZooKeeper server has in its data tree.
+            name: zookeeper.data_tree.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "107"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: By
+          - description: Maximum number of file descriptors that a ZooKeeper server can open.
+            gauge:
+              dataPoints:
+                - asInt: "1048576"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            name: zookeeper.file_descriptor.limit
+            unit: '{file_descriptors}'
+          - description: Number of file descriptors that a ZooKeeper server has open.
+            name: zookeeper.file_descriptor.open
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "54"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{file_descriptors}'
+          - description: The number of followers. Only exposed by the leader.
+            name: zookeeper.follower.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: synced
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+                - asInt: "1"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: unsynced
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{followers}'
+          - description: Average time in milliseconds for requests to be processed.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            name: zookeeper.latency.avg
+            unit: ms
+          - description: Maximum time in milliseconds for requests to be processed.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            name: zookeeper.latency.max
+            unit: ms
+          - description: Minimum time in milliseconds for requests to be processed.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            name: zookeeper.latency.min
+            unit: ms
+          - description: The number of ZooKeeper packets received or sent by a server.
+            name: zookeeper.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: sent
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: Number of currently executing requests.
+            name: zookeeper.request.active
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{requests}'
+          - description: The number of pending syncs from the followers. Only exposed by the leader.
+            name: zookeeper.sync.pending
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{syncs}'
+          - description: Number of watches placed on Z-Nodes on a ZooKeeper server.
+            name: zookeeper.watch.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{watches}'
+          - description: Number of z-nodes that a ZooKeeper server has in its data tree.
+            name: zookeeper.znode.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '{znodes}'
+        scope:
+          name: otelcol/zookeeperreceiver
+          version: latest

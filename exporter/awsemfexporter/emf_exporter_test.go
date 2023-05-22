@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
@@ -75,7 +64,7 @@ func TestConsumeMetrics(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -137,7 +126,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
 	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -198,7 +187,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -268,7 +257,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "/aws/ecs/containerinsights/{ClusterName}/performance"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -338,7 +327,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{TaskId}"
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -408,7 +397,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -478,7 +467,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
@@ -550,7 +539,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	settings := exportertest.NewNopCreateSettings()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
-	exp, err := newEmfPusher(expCfg, settings)
+	exp, err := newEmfExporter(expCfg, settings)
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.Equal(t, settings.Logger, expCfg.logger)
@@ -587,17 +576,16 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.New(obs)
 
-	exp, err := newEmfPusher(expCfg, params)
+	exp, err := newEmfExporter(expCfg, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 	err = expCfg.Validate()
 	assert.Nil(t, err)
 
-	config := exp.config.(*Config)
 	// Invalid metric declaration should be filtered out
-	assert.Equal(t, 3, len(config.MetricDeclarations))
+	assert.Equal(t, 3, len(exp.config.MetricDeclarations))
 	// Invalid dimensions (> 10 dims) should be filtered out
-	assert.Equal(t, 1, len(config.MetricDeclarations[2].Dimensions))
+	assert.Equal(t, 1, len(exp.config.MetricDeclarations[2].Dimensions))
 
 	// Test output warning logs
 	expectedLogs := []observer.LoggedEntry{
@@ -615,7 +603,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {
-	exp, err := newEmfPusher(nil, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(nil, exportertest.NewNopCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 }
@@ -629,7 +617,7 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 }
 
-// This test verifies that if func newEmfPusher() returns an error then newEmfExporter()
+// This test verifies that if func newEmfExporter() returns an error then newEmfExporter()
 // will do so.
 func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()

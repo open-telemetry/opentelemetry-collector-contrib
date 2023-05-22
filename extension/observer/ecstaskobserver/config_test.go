@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ecstaskobserver
 
@@ -24,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,11 +26,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "with-endpoint"),
+			id: component.NewIDWithName(metadata.Type, "with-endpoint"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://a.valid.url:1234/path",
@@ -49,14 +40,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "with-port-labels"),
+			id: component.NewIDWithName(metadata.Type, "with-port-labels"),
 			expected: &Config{
 				PortLabels:      []string{"A_PORT_LABEL", "ANOTHER_PORT_LABEL"},
 				RefreshInterval: 30 * time.Second,
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalid"),
+			id:          component.NewIDWithName(metadata.Type, "invalid"),
 			expectedErr: `failed to parse ecs task metadata endpoint "_:invalid": parse "_:invalid": first path segment in URL cannot contain colon`,
 		},
 	}

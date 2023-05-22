@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -100,11 +96,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1, AttributeDiskStatus(1))
+			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1, AttributeDiskStatus(1))
+			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -185,10 +181,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatus(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -310,7 +302,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryState(1))
 
-			metrics := mb.Emit(WithMongodbAtlasDbName("attr-val"), WithMongodbAtlasDiskPartition("attr-val"), WithMongodbAtlasHostName("attr-val"), WithMongodbAtlasOrgName("attr-val"), WithMongodbAtlasProcessID("attr-val"), WithMongodbAtlasProcessPort("attr-val"), WithMongodbAtlasProcessTypeName("attr-val"), WithMongodbAtlasProjectID("attr-val"), WithMongodbAtlasProjectName("attr-val"))
+			metrics := mb.Emit(WithMongodbAtlasClusterName("attr-val"), WithMongodbAtlasDbName("attr-val"), WithMongodbAtlasDiskPartition("attr-val"), WithMongodbAtlasHostName("attr-val"), WithMongodbAtlasOrgName("attr-val"), WithMongodbAtlasProcessID("attr-val"), WithMongodbAtlasProcessPort("attr-val"), WithMongodbAtlasProcessTypeName("attr-val"), WithMongodbAtlasProjectID("attr-val"), WithMongodbAtlasProjectName("attr-val"), WithMongodbAtlasUserAlias("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -321,71 +313,85 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.db.name")
+			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.cluster.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasClusterName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasClusterName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.db.name")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasDbName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasDbName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.disk.partition")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasDiskPartition.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasDiskPartition.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.host.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasHostName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasHostName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.org_name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasOrgName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasOrgName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProcessID.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProcessID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.port")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProcessPort.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProcessPort.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.type_name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProcessTypeName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProcessTypeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.id")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProjectID.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProjectID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled, ok)
-			if mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasProjectName.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasProjectName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.user.alias")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesConfig.MongodbAtlasUserAlias.Enabled, ok)
+			if mb.resourceAttributesConfig.MongodbAtlasUserAlias.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 9)
+			assert.Equal(t, attrCount, 11)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -553,31 +559,25 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mongodbatlas.disk.partition.utilization.average"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition utilization (%)", ms.At(i).Description())
+					assert.Equal(t, "The percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
 				case "mongodbatlas.disk.partition.utilization.max":
 					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.utilization.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.utilization.max")
 					validatedMetrics["mongodbatlas.disk.partition.utilization.max"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Disk partition utilization (%)", ms.At(i).Description())
+					assert.Equal(t, "The maximum percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("disk_status")
-					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
 				case "mongodbatlas.process.asserts":
 					assert.False(t, validatedMetrics["mongodbatlas.process.asserts"], "Found a duplicate in the metrics slice: mongodbatlas.process.asserts")
 					validatedMetrics["mongodbatlas.process.asserts"] = true
@@ -881,21 +881,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("storage_status")
 					assert.True(t, ok)
 					assert.Equal(t, "total", attrVal.Str())
-				case "mongodbatlas.process.fts.cpu.usage":
-					assert.False(t, validatedMetrics["mongodbatlas.process.fts.cpu.usage"], "Found a duplicate in the metrics slice: mongodbatlas.process.fts.cpu.usage")
-					validatedMetrics["mongodbatlas.process.fts.cpu.usage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Full text search CPU (%)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("cpu_state")
-					assert.True(t, ok)
-					assert.Equal(t, "kernel", attrVal.Str())
 				case "mongodbatlas.process.global_lock":
 					assert.False(t, validatedMetrics["mongodbatlas.process.global_lock"], "Found a duplicate in the metrics slice: mongodbatlas.process.global_lock")
 					validatedMetrics["mongodbatlas.process.global_lock"] = true
@@ -1330,14 +1315,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

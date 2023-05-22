@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
@@ -152,15 +141,15 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			APITLSConfig: apiTLSCfg,
 			LogUpdates:   se.config.LogDimensionUpdates,
 			Logger:       se.logger,
-			// Duration to wait between property updates. This might be worth
-			// being made configurable.
-			SendDelay: 10,
-			// In case of having issues sending dimension updates to SignalFx,
-			// buffer a fixed number of updates. Might also be a good candidate
-			// to make configurable.
-			PropertiesMaxBuffered: 10000,
-			MetricsConverter:      *se.converter,
-			ExcludeProperties:     se.config.ExcludeProperties,
+			// Duration to wait between property updates.
+			SendDelay:           se.config.DimensionClient.SendDelay,
+			MaxBuffered:         se.config.DimensionClient.MaxBuffered,
+			MetricsConverter:    *se.converter,
+			ExcludeProperties:   se.config.ExcludeProperties,
+			MaxConnsPerHost:     se.config.DimensionClient.MaxConnsPerHost,
+			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
+			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
+			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
 		})
 	dimClient.Start()
 

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -67,7 +56,7 @@ func Test_replaceMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
+			exprFunc, err := replaceMatch(tt.target, tt.pattern, tt.replacement)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, scenarioValue)
 			assert.NoError(t, err)
@@ -93,7 +82,7 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{replacement}")
+	exprFunc, err := replaceMatch[interface{}](target, "*", "{replacement}")
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -114,7 +103,7 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{anything}")
+	exprFunc, err := replaceMatch[interface{}](target, "*", "{anything}")
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)

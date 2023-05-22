@@ -1,23 +1,14 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/golang/groupcache/lru"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -43,7 +34,7 @@ var _ PolicyEvaluator = (*stringAttributeFilter)(nil)
 
 // NewStringAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) PolicyEvaluator {
+func NewStringAttributeFilter(settings component.TelemetrySettings, key string, values []string, regexMatchEnabled bool, evictSize int, invertMatch bool) PolicyEvaluator {
 	// initialize regex filter rules and LRU cache for matched results
 	if regexMatchEnabled {
 		if evictSize <= 0 {
@@ -57,7 +48,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 
 		return &stringAttributeFilter{
 			key:    key,
-			logger: logger,
+			logger: settings.Logger,
 			// matcher returns true if the given string matches the regex rules defined in string attribute filters
 			matcher: func(toMatch string) bool {
 				if v, ok := regexStrSetting.matchedAttrs.Get(toMatch); ok {
@@ -87,7 +78,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 	}
 	return &stringAttributeFilter{
 		key:    key,
-		logger: logger,
+		logger: settings.Logger,
 		// matcher returns true if the given string matches any of the string attribute filters
 		matcher: func(toMatch string) bool {
 			_, matched := valuesMap[toMatch]
@@ -100,7 +91,7 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 // The SamplingDecision is made by comparing the attribute values with the matching values,
 // which might be static strings or regular expressions.
-func (saf *stringAttributeFilter) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
 	batches := trace.ReceivedBatches

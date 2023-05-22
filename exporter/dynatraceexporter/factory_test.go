@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dynatraceexporter
 
@@ -29,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	dtconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -63,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "defaults"),
+			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &dtconfig.Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -79,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "valid"),
+			id: component.NewIDWithName(metadata.Type, "valid"),
 			expected: &dtconfig.Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -102,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "valid_tags"),
+			id: component.NewIDWithName(metadata.Type, "valid_tags"),
 			expected: &dtconfig.Config{
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -123,11 +113,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_endpoint"),
+			id:           component.NewIDWithName(metadata.Type, "bad_endpoint"),
 			errorMessage: "endpoint must start with https:// or http://",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_token"),
+			id:           component.NewIDWithName(metadata.Type, "missing_token"),
 			errorMessage: "api_token is required if Endpoint is provided",
 		},
 	}

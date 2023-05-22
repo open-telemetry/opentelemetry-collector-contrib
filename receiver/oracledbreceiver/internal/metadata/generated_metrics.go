@@ -8,161 +8,65 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
+type metricOracledbConsistentGets struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
 }
 
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
+// init fills oracledb.consistent_gets metric with initial data.
+func (m *metricOracledbConsistentGets) init() {
+	m.data.SetName("oracledb.consistent_gets")
+	m.data.SetDescription("Number of times a consistent read was requested for a block from the buffer cache.")
+	m.data.SetUnit("{gets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbConsistentGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
 }
 
-// MetricsSettings provides settings for oracledbreceiver metrics.
-type MetricsSettings struct {
-	OracledbCPUTime               MetricSettings `mapstructure:"oracledb.cpu_time"`
-	OracledbDmlLocksLimit         MetricSettings `mapstructure:"oracledb.dml_locks.limit"`
-	OracledbDmlLocksUsage         MetricSettings `mapstructure:"oracledb.dml_locks.usage"`
-	OracledbEnqueueDeadlocks      MetricSettings `mapstructure:"oracledb.enqueue_deadlocks"`
-	OracledbEnqueueLocksLimit     MetricSettings `mapstructure:"oracledb.enqueue_locks.limit"`
-	OracledbEnqueueLocksUsage     MetricSettings `mapstructure:"oracledb.enqueue_locks.usage"`
-	OracledbEnqueueResourcesLimit MetricSettings `mapstructure:"oracledb.enqueue_resources.limit"`
-	OracledbEnqueueResourcesUsage MetricSettings `mapstructure:"oracledb.enqueue_resources.usage"`
-	OracledbExchangeDeadlocks     MetricSettings `mapstructure:"oracledb.exchange_deadlocks"`
-	OracledbExecutions            MetricSettings `mapstructure:"oracledb.executions"`
-	OracledbHardParses            MetricSettings `mapstructure:"oracledb.hard_parses"`
-	OracledbLogicalReads          MetricSettings `mapstructure:"oracledb.logical_reads"`
-	OracledbParseCalls            MetricSettings `mapstructure:"oracledb.parse_calls"`
-	OracledbPgaMemory             MetricSettings `mapstructure:"oracledb.pga_memory"`
-	OracledbPhysicalReads         MetricSettings `mapstructure:"oracledb.physical_reads"`
-	OracledbProcessesLimit        MetricSettings `mapstructure:"oracledb.processes.limit"`
-	OracledbProcessesUsage        MetricSettings `mapstructure:"oracledb.processes.usage"`
-	OracledbSessionsLimit         MetricSettings `mapstructure:"oracledb.sessions.limit"`
-	OracledbSessionsUsage         MetricSettings `mapstructure:"oracledb.sessions.usage"`
-	OracledbTablespaceSizeLimit   MetricSettings `mapstructure:"oracledb.tablespace_size.limit"`
-	OracledbTablespaceSizeUsage   MetricSettings `mapstructure:"oracledb.tablespace_size.usage"`
-	OracledbTransactionsLimit     MetricSettings `mapstructure:"oracledb.transactions.limit"`
-	OracledbTransactionsUsage     MetricSettings `mapstructure:"oracledb.transactions.usage"`
-	OracledbUserCommits           MetricSettings `mapstructure:"oracledb.user_commits"`
-	OracledbUserRollbacks         MetricSettings `mapstructure:"oracledb.user_rollbacks"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		OracledbCPUTime: MetricSettings{
-			Enabled: true,
-		},
-		OracledbDmlLocksLimit: MetricSettings{
-			Enabled: true,
-		},
-		OracledbDmlLocksUsage: MetricSettings{
-			Enabled: true,
-		},
-		OracledbEnqueueDeadlocks: MetricSettings{
-			Enabled: true,
-		},
-		OracledbEnqueueLocksLimit: MetricSettings{
-			Enabled: true,
-		},
-		OracledbEnqueueLocksUsage: MetricSettings{
-			Enabled: true,
-		},
-		OracledbEnqueueResourcesLimit: MetricSettings{
-			Enabled: true,
-		},
-		OracledbEnqueueResourcesUsage: MetricSettings{
-			Enabled: true,
-		},
-		OracledbExchangeDeadlocks: MetricSettings{
-			Enabled: true,
-		},
-		OracledbExecutions: MetricSettings{
-			Enabled: true,
-		},
-		OracledbHardParses: MetricSettings{
-			Enabled: true,
-		},
-		OracledbLogicalReads: MetricSettings{
-			Enabled: true,
-		},
-		OracledbParseCalls: MetricSettings{
-			Enabled: true,
-		},
-		OracledbPgaMemory: MetricSettings{
-			Enabled: true,
-		},
-		OracledbPhysicalReads: MetricSettings{
-			Enabled: true,
-		},
-		OracledbProcessesLimit: MetricSettings{
-			Enabled: true,
-		},
-		OracledbProcessesUsage: MetricSettings{
-			Enabled: true,
-		},
-		OracledbSessionsLimit: MetricSettings{
-			Enabled: true,
-		},
-		OracledbSessionsUsage: MetricSettings{
-			Enabled: true,
-		},
-		OracledbTablespaceSizeLimit: MetricSettings{
-			Enabled: true,
-		},
-		OracledbTablespaceSizeUsage: MetricSettings{
-			Enabled: true,
-		},
-		OracledbTransactionsLimit: MetricSettings{
-			Enabled: true,
-		},
-		OracledbTransactionsUsage: MetricSettings{
-			Enabled: true,
-		},
-		OracledbUserCommits: MetricSettings{
-			Enabled: true,
-		},
-		OracledbUserRollbacks: MetricSettings{
-			Enabled: true,
-		},
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbConsistentGets) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for oracledbreceiver metrics.
-type ResourceAttributesSettings struct {
-	OracledbInstanceName ResourceAttributeSettings `mapstructure:"oracledb.instance.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		OracledbInstanceName: ResourceAttributeSettings{
-			Enabled: true,
-		},
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbConsistentGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
 	}
+}
+
+func newMetricOracledbConsistentGets(cfg MetricConfig) metricOracledbConsistentGets {
+	m := metricOracledbConsistentGets{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricOracledbCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -177,7 +81,7 @@ func (m *metricOracledbCPUTime) init() {
 }
 
 func (m *metricOracledbCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -195,16 +99,67 @@ func (m *metricOracledbCPUTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbCPUTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbCPUTime(settings MetricSettings) metricOracledbCPUTime {
-	m := metricOracledbCPUTime{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbCPUTime(cfg MetricConfig) metricOracledbCPUTime {
+	m := metricOracledbCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbDbBlockGets struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.db_block_gets metric with initial data.
+func (m *metricOracledbDbBlockGets) init() {
+	m.data.SetName("oracledb.db_block_gets")
+	m.data.SetDescription("Number of times a current block was requested from the buffer cache.")
+	m.data.SetUnit("{gets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbDbBlockGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbDbBlockGets) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbDbBlockGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbDbBlockGets(cfg MetricConfig) metricOracledbDbBlockGets {
+	m := metricOracledbDbBlockGets{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -213,7 +168,7 @@ func newMetricOracledbCPUTime(settings MetricSettings) metricOracledbCPUTime {
 
 type metricOracledbDmlLocksLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -226,7 +181,7 @@ func (m *metricOracledbDmlLocksLimit) init() {
 }
 
 func (m *metricOracledbDmlLocksLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -244,16 +199,16 @@ func (m *metricOracledbDmlLocksLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbDmlLocksLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbDmlLocksLimit(settings MetricSettings) metricOracledbDmlLocksLimit {
-	m := metricOracledbDmlLocksLimit{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbDmlLocksLimit(cfg MetricConfig) metricOracledbDmlLocksLimit {
+	m := metricOracledbDmlLocksLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -262,7 +217,7 @@ func newMetricOracledbDmlLocksLimit(settings MetricSettings) metricOracledbDmlLo
 
 type metricOracledbDmlLocksUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -275,7 +230,7 @@ func (m *metricOracledbDmlLocksUsage) init() {
 }
 
 func (m *metricOracledbDmlLocksUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -293,16 +248,16 @@ func (m *metricOracledbDmlLocksUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbDmlLocksUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbDmlLocksUsage(settings MetricSettings) metricOracledbDmlLocksUsage {
-	m := metricOracledbDmlLocksUsage{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbDmlLocksUsage(cfg MetricConfig) metricOracledbDmlLocksUsage {
+	m := metricOracledbDmlLocksUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -311,7 +266,7 @@ func newMetricOracledbDmlLocksUsage(settings MetricSettings) metricOracledbDmlLo
 
 type metricOracledbEnqueueDeadlocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -326,7 +281,7 @@ func (m *metricOracledbEnqueueDeadlocks) init() {
 }
 
 func (m *metricOracledbEnqueueDeadlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -344,16 +299,16 @@ func (m *metricOracledbEnqueueDeadlocks) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbEnqueueDeadlocks) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbEnqueueDeadlocks(settings MetricSettings) metricOracledbEnqueueDeadlocks {
-	m := metricOracledbEnqueueDeadlocks{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbEnqueueDeadlocks(cfg MetricConfig) metricOracledbEnqueueDeadlocks {
+	m := metricOracledbEnqueueDeadlocks{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -362,7 +317,7 @@ func newMetricOracledbEnqueueDeadlocks(settings MetricSettings) metricOracledbEn
 
 type metricOracledbEnqueueLocksLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -375,7 +330,7 @@ func (m *metricOracledbEnqueueLocksLimit) init() {
 }
 
 func (m *metricOracledbEnqueueLocksLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -393,16 +348,16 @@ func (m *metricOracledbEnqueueLocksLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbEnqueueLocksLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbEnqueueLocksLimit(settings MetricSettings) metricOracledbEnqueueLocksLimit {
-	m := metricOracledbEnqueueLocksLimit{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbEnqueueLocksLimit(cfg MetricConfig) metricOracledbEnqueueLocksLimit {
+	m := metricOracledbEnqueueLocksLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -411,7 +366,7 @@ func newMetricOracledbEnqueueLocksLimit(settings MetricSettings) metricOracledbE
 
 type metricOracledbEnqueueLocksUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -424,7 +379,7 @@ func (m *metricOracledbEnqueueLocksUsage) init() {
 }
 
 func (m *metricOracledbEnqueueLocksUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -442,16 +397,16 @@ func (m *metricOracledbEnqueueLocksUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbEnqueueLocksUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbEnqueueLocksUsage(settings MetricSettings) metricOracledbEnqueueLocksUsage {
-	m := metricOracledbEnqueueLocksUsage{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbEnqueueLocksUsage(cfg MetricConfig) metricOracledbEnqueueLocksUsage {
+	m := metricOracledbEnqueueLocksUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -460,7 +415,7 @@ func newMetricOracledbEnqueueLocksUsage(settings MetricSettings) metricOracledbE
 
 type metricOracledbEnqueueResourcesLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -473,7 +428,7 @@ func (m *metricOracledbEnqueueResourcesLimit) init() {
 }
 
 func (m *metricOracledbEnqueueResourcesLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -491,16 +446,16 @@ func (m *metricOracledbEnqueueResourcesLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbEnqueueResourcesLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbEnqueueResourcesLimit(settings MetricSettings) metricOracledbEnqueueResourcesLimit {
-	m := metricOracledbEnqueueResourcesLimit{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbEnqueueResourcesLimit(cfg MetricConfig) metricOracledbEnqueueResourcesLimit {
+	m := metricOracledbEnqueueResourcesLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -509,7 +464,7 @@ func newMetricOracledbEnqueueResourcesLimit(settings MetricSettings) metricOracl
 
 type metricOracledbEnqueueResourcesUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -522,7 +477,7 @@ func (m *metricOracledbEnqueueResourcesUsage) init() {
 }
 
 func (m *metricOracledbEnqueueResourcesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -540,16 +495,16 @@ func (m *metricOracledbEnqueueResourcesUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbEnqueueResourcesUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbEnqueueResourcesUsage(settings MetricSettings) metricOracledbEnqueueResourcesUsage {
-	m := metricOracledbEnqueueResourcesUsage{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbEnqueueResourcesUsage(cfg MetricConfig) metricOracledbEnqueueResourcesUsage {
+	m := metricOracledbEnqueueResourcesUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -558,7 +513,7 @@ func newMetricOracledbEnqueueResourcesUsage(settings MetricSettings) metricOracl
 
 type metricOracledbExchangeDeadlocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -573,7 +528,7 @@ func (m *metricOracledbExchangeDeadlocks) init() {
 }
 
 func (m *metricOracledbExchangeDeadlocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -591,16 +546,16 @@ func (m *metricOracledbExchangeDeadlocks) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbExchangeDeadlocks) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbExchangeDeadlocks(settings MetricSettings) metricOracledbExchangeDeadlocks {
-	m := metricOracledbExchangeDeadlocks{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbExchangeDeadlocks(cfg MetricConfig) metricOracledbExchangeDeadlocks {
+	m := metricOracledbExchangeDeadlocks{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -609,7 +564,7 @@ func newMetricOracledbExchangeDeadlocks(settings MetricSettings) metricOracledbE
 
 type metricOracledbExecutions struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -624,7 +579,7 @@ func (m *metricOracledbExecutions) init() {
 }
 
 func (m *metricOracledbExecutions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -642,16 +597,16 @@ func (m *metricOracledbExecutions) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbExecutions) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbExecutions(settings MetricSettings) metricOracledbExecutions {
-	m := metricOracledbExecutions{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbExecutions(cfg MetricConfig) metricOracledbExecutions {
+	m := metricOracledbExecutions{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -660,7 +615,7 @@ func newMetricOracledbExecutions(settings MetricSettings) metricOracledbExecutio
 
 type metricOracledbHardParses struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -675,7 +630,7 @@ func (m *metricOracledbHardParses) init() {
 }
 
 func (m *metricOracledbHardParses) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -693,16 +648,16 @@ func (m *metricOracledbHardParses) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbHardParses) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbHardParses(settings MetricSettings) metricOracledbHardParses {
-	m := metricOracledbHardParses{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbHardParses(cfg MetricConfig) metricOracledbHardParses {
+	m := metricOracledbHardParses{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -711,7 +666,7 @@ func newMetricOracledbHardParses(settings MetricSettings) metricOracledbHardPars
 
 type metricOracledbLogicalReads struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -726,7 +681,7 @@ func (m *metricOracledbLogicalReads) init() {
 }
 
 func (m *metricOracledbLogicalReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -744,16 +699,16 @@ func (m *metricOracledbLogicalReads) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbLogicalReads) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbLogicalReads(settings MetricSettings) metricOracledbLogicalReads {
-	m := metricOracledbLogicalReads{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbLogicalReads(cfg MetricConfig) metricOracledbLogicalReads {
+	m := metricOracledbLogicalReads{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -762,7 +717,7 @@ func newMetricOracledbLogicalReads(settings MetricSettings) metricOracledbLogica
 
 type metricOracledbParseCalls struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -777,7 +732,7 @@ func (m *metricOracledbParseCalls) init() {
 }
 
 func (m *metricOracledbParseCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -795,16 +750,16 @@ func (m *metricOracledbParseCalls) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbParseCalls) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbParseCalls(settings MetricSettings) metricOracledbParseCalls {
-	m := metricOracledbParseCalls{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbParseCalls(cfg MetricConfig) metricOracledbParseCalls {
+	m := metricOracledbParseCalls{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -813,7 +768,7 @@ func newMetricOracledbParseCalls(settings MetricSettings) metricOracledbParseCal
 
 type metricOracledbPgaMemory struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -828,7 +783,7 @@ func (m *metricOracledbPgaMemory) init() {
 }
 
 func (m *metricOracledbPgaMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -846,16 +801,16 @@ func (m *metricOracledbPgaMemory) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbPgaMemory) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbPgaMemory(settings MetricSettings) metricOracledbPgaMemory {
-	m := metricOracledbPgaMemory{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbPgaMemory(cfg MetricConfig) metricOracledbPgaMemory {
+	m := metricOracledbPgaMemory{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -864,7 +819,7 @@ func newMetricOracledbPgaMemory(settings MetricSettings) metricOracledbPgaMemory
 
 type metricOracledbPhysicalReads struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -879,7 +834,7 @@ func (m *metricOracledbPhysicalReads) init() {
 }
 
 func (m *metricOracledbPhysicalReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -897,16 +852,16 @@ func (m *metricOracledbPhysicalReads) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbPhysicalReads) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbPhysicalReads(settings MetricSettings) metricOracledbPhysicalReads {
-	m := metricOracledbPhysicalReads{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbPhysicalReads(cfg MetricConfig) metricOracledbPhysicalReads {
+	m := metricOracledbPhysicalReads{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -915,7 +870,7 @@ func newMetricOracledbPhysicalReads(settings MetricSettings) metricOracledbPhysi
 
 type metricOracledbProcessesLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -928,7 +883,7 @@ func (m *metricOracledbProcessesLimit) init() {
 }
 
 func (m *metricOracledbProcessesLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -946,16 +901,16 @@ func (m *metricOracledbProcessesLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbProcessesLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbProcessesLimit(settings MetricSettings) metricOracledbProcessesLimit {
-	m := metricOracledbProcessesLimit{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbProcessesLimit(cfg MetricConfig) metricOracledbProcessesLimit {
+	m := metricOracledbProcessesLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -964,7 +919,7 @@ func newMetricOracledbProcessesLimit(settings MetricSettings) metricOracledbProc
 
 type metricOracledbProcessesUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -977,7 +932,7 @@ func (m *metricOracledbProcessesUsage) init() {
 }
 
 func (m *metricOracledbProcessesUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -995,16 +950,16 @@ func (m *metricOracledbProcessesUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbProcessesUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbProcessesUsage(settings MetricSettings) metricOracledbProcessesUsage {
-	m := metricOracledbProcessesUsage{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbProcessesUsage(cfg MetricConfig) metricOracledbProcessesUsage {
+	m := metricOracledbProcessesUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1013,7 +968,7 @@ func newMetricOracledbProcessesUsage(settings MetricSettings) metricOracledbProc
 
 type metricOracledbSessionsLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1026,7 +981,7 @@ func (m *metricOracledbSessionsLimit) init() {
 }
 
 func (m *metricOracledbSessionsLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1044,16 +999,16 @@ func (m *metricOracledbSessionsLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbSessionsLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbSessionsLimit(settings MetricSettings) metricOracledbSessionsLimit {
-	m := metricOracledbSessionsLimit{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbSessionsLimit(cfg MetricConfig) metricOracledbSessionsLimit {
+	m := metricOracledbSessionsLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1062,7 +1017,7 @@ func newMetricOracledbSessionsLimit(settings MetricSettings) metricOracledbSessi
 
 type metricOracledbSessionsUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1076,7 +1031,7 @@ func (m *metricOracledbSessionsUsage) init() {
 }
 
 func (m *metricOracledbSessionsUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sessionTypeAttributeValue string, sessionStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1096,16 +1051,16 @@ func (m *metricOracledbSessionsUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbSessionsUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbSessionsUsage(settings MetricSettings) metricOracledbSessionsUsage {
-	m := metricOracledbSessionsUsage{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbSessionsUsage(cfg MetricConfig) metricOracledbSessionsUsage {
+	m := metricOracledbSessionsUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1114,7 +1069,7 @@ func newMetricOracledbSessionsUsage(settings MetricSettings) metricOracledbSessi
 
 type metricOracledbTablespaceSizeLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1128,7 +1083,7 @@ func (m *metricOracledbTablespaceSizeLimit) init() {
 }
 
 func (m *metricOracledbTablespaceSizeLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1147,16 +1102,16 @@ func (m *metricOracledbTablespaceSizeLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbTablespaceSizeLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbTablespaceSizeLimit(settings MetricSettings) metricOracledbTablespaceSizeLimit {
-	m := metricOracledbTablespaceSizeLimit{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbTablespaceSizeLimit(cfg MetricConfig) metricOracledbTablespaceSizeLimit {
+	m := metricOracledbTablespaceSizeLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1165,7 +1120,7 @@ func newMetricOracledbTablespaceSizeLimit(settings MetricSettings) metricOracled
 
 type metricOracledbTablespaceSizeUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1179,7 +1134,7 @@ func (m *metricOracledbTablespaceSizeUsage) init() {
 }
 
 func (m *metricOracledbTablespaceSizeUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1198,16 +1153,16 @@ func (m *metricOracledbTablespaceSizeUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbTablespaceSizeUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbTablespaceSizeUsage(settings MetricSettings) metricOracledbTablespaceSizeUsage {
-	m := metricOracledbTablespaceSizeUsage{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbTablespaceSizeUsage(cfg MetricConfig) metricOracledbTablespaceSizeUsage {
+	m := metricOracledbTablespaceSizeUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1216,7 +1171,7 @@ func newMetricOracledbTablespaceSizeUsage(settings MetricSettings) metricOracled
 
 type metricOracledbTransactionsLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1229,7 +1184,7 @@ func (m *metricOracledbTransactionsLimit) init() {
 }
 
 func (m *metricOracledbTransactionsLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1247,16 +1202,16 @@ func (m *metricOracledbTransactionsLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbTransactionsLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbTransactionsLimit(settings MetricSettings) metricOracledbTransactionsLimit {
-	m := metricOracledbTransactionsLimit{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbTransactionsLimit(cfg MetricConfig) metricOracledbTransactionsLimit {
+	m := metricOracledbTransactionsLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1265,7 +1220,7 @@ func newMetricOracledbTransactionsLimit(settings MetricSettings) metricOracledbT
 
 type metricOracledbTransactionsUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1278,7 +1233,7 @@ func (m *metricOracledbTransactionsUsage) init() {
 }
 
 func (m *metricOracledbTransactionsUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1296,16 +1251,16 @@ func (m *metricOracledbTransactionsUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbTransactionsUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbTransactionsUsage(settings MetricSettings) metricOracledbTransactionsUsage {
-	m := metricOracledbTransactionsUsage{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbTransactionsUsage(cfg MetricConfig) metricOracledbTransactionsUsage {
+	m := metricOracledbTransactionsUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1314,7 +1269,7 @@ func newMetricOracledbTransactionsUsage(settings MetricSettings) metricOracledbT
 
 type metricOracledbUserCommits struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1329,7 +1284,7 @@ func (m *metricOracledbUserCommits) init() {
 }
 
 func (m *metricOracledbUserCommits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1347,16 +1302,16 @@ func (m *metricOracledbUserCommits) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbUserCommits) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbUserCommits(settings MetricSettings) metricOracledbUserCommits {
-	m := metricOracledbUserCommits{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbUserCommits(cfg MetricConfig) metricOracledbUserCommits {
+	m := metricOracledbUserCommits{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1365,7 +1320,7 @@ func newMetricOracledbUserCommits(settings MetricSettings) metricOracledbUserCom
 
 type metricOracledbUserRollbacks struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1380,7 +1335,7 @@ func (m *metricOracledbUserRollbacks) init() {
 }
 
 func (m *metricOracledbUserRollbacks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1398,38 +1353,34 @@ func (m *metricOracledbUserRollbacks) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOracledbUserRollbacks) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricOracledbUserRollbacks(settings MetricSettings) metricOracledbUserRollbacks {
-	m := metricOracledbUserRollbacks{settings: settings}
-	if settings.Enabled {
+func newMetricOracledbUserRollbacks(cfg MetricConfig) metricOracledbUserRollbacks {
+	m := metricOracledbUserRollbacks{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                           pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                     int                 // maximum observed number of metrics per resource.
 	resourceCapacity                    int                 // maximum observed number of resource attributes.
 	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo // contains version information
-	resourceAttributesSettings          ResourceAttributesSettings
+	resourceAttributesConfig            ResourceAttributesConfig
+	metricOracledbConsistentGets        metricOracledbConsistentGets
 	metricOracledbCPUTime               metricOracledbCPUTime
+	metricOracledbDbBlockGets           metricOracledbDbBlockGets
 	metricOracledbDmlLocksLimit         metricOracledbDmlLocksLimit
 	metricOracledbDmlLocksUsage         metricOracledbDmlLocksUsage
 	metricOracledbEnqueueDeadlocks      metricOracledbEnqueueDeadlocks
@@ -1466,27 +1417,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
-		resourceAttributesSettings:          mbc.ResourceAttributes,
+		resourceAttributesConfig:            mbc.ResourceAttributes,
+		metricOracledbConsistentGets:        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
 		metricOracledbCPUTime:               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
+		metricOracledbDbBlockGets:           newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
 		metricOracledbDmlLocksLimit:         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
 		metricOracledbDmlLocksUsage:         newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
 		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
@@ -1529,12 +1468,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithOracledbInstanceName sets provided value as "oracledb.instance.name" attribute for current resource.
 func WithOracledbInstanceName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.OracledbInstanceName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.OracledbInstanceName.Enabled {
 			rm.Resource().Attributes().PutStr("oracledb.instance.name", val)
 		}
 	}
@@ -1543,7 +1482,7 @@ func WithOracledbInstanceName(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1572,7 +1511,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/oracledbreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricOracledbConsistentGets.emit(ils.Metrics())
 	mb.metricOracledbCPUTime.emit(ils.Metrics())
+	mb.metricOracledbDbBlockGets.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksLimit.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksUsage.emit(ils.Metrics())
 	mb.metricOracledbEnqueueDeadlocks.emit(ils.Metrics())
@@ -1599,7 +1540,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricOracledbUserRollbacks.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1609,7 +1550,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer
@@ -1617,9 +1558,29 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
+// RecordOracledbConsistentGetsDataPoint adds a data point to oracledb.consistent_gets metric.
+func (mb *MetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbConsistentGets, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbConsistentGets.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordOracledbCPUTimeDataPoint adds a data point to oracledb.cpu_time metric.
 func (mb *MetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
+func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbDbBlockGets, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbDbBlockGets.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbDmlLocksLimitDataPoint adds a data point to oracledb.dml_locks.limit metric.

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver
 
@@ -55,7 +44,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "happy_path",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -76,7 +65,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "double",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -99,7 +88,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "array",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -126,7 +115,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "complex_structure",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -158,7 +147,6 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "nil_timestamp",
 			events: []*splunk.Event{
 				{
-					Time:       new(float64),
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -179,7 +167,6 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "custom_config_mapping",
 			events: []*splunk.Event{
 				{
-					Time:       new(float64),
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -220,7 +207,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "group_events_by_resource_attributes",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "1",
 					SourceType: "1",
@@ -231,7 +218,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "2",
 					SourceType: "2",
@@ -242,7 +229,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "1",
 					SourceType: "1",
@@ -253,7 +240,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "2",
 					SourceType: "2",
@@ -264,7 +251,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "2",
 					SourceType: "1",
@@ -275,7 +262,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "1",
 					SourceType: "2",

@@ -1,20 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 package fileexporter
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -22,6 +12,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
@@ -112,6 +103,24 @@ func TestFileTracesExporter(t *testing.T) {
 				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
 		},
+		{
+			name: "Proto: compression configuration--rotation--flush_interval",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+					FlushInterval: time.Second,
+				},
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -126,6 +135,7 @@ func TestFileTracesExporter(t *testing.T) {
 				exporter:        buildExportFunc(conf),
 				compression:     conf.Compression,
 				compressor:      buildCompressor(conf.Compression),
+				flushInterval:   conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -260,6 +270,7 @@ func TestFileMetricsExporter(t *testing.T) {
 				exporter:         buildExportFunc(conf),
 				compression:      conf.Compression,
 				compressor:       buildCompressor(conf.Compression),
+				flushInterval:    conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -396,6 +407,7 @@ func TestFileLogsExporter(t *testing.T) {
 				exporter:      buildExportFunc(conf),
 				compression:   conf.Compression,
 				compressor:    buildCompressor(conf.Compression),
+				flushInterval: conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -468,7 +480,6 @@ func TestExportMessageAsBuffer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Error(t, exportMessageAsBuffer(fe, buf))
 	assert.NoError(t, fe.Shutdown(context.Background()))
-
 }
 
 // tempFileName provides a temporary file name for testing.
@@ -587,4 +598,71 @@ func TestConcurrentlyCompress(t *testing.T) {
 	gotLd, err := logsUnmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, ld, gotLd)
+}
+
+// tsBuffer is a thread safe buffer to prevent race conditions in the CI/CD.
+type tsBuffer struct {
+	b *bytes.Buffer
+	m sync.Mutex
+}
+
+func (b *tsBuffer) Write(d []byte) (int, error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Write(d)
+}
+
+func (b *tsBuffer) Len() int {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Len()
+}
+
+func (b *tsBuffer) Bytes() []byte {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Bytes()
+}
+
+func safeFileExporterWrite(e *fileExporter, d []byte) (int, error) {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	return e.file.Write(d)
+}
+
+func TestFlushing(t *testing.T) {
+	cfg := &Config{
+		Path:          "",
+		FlushInterval: time.Second,
+	}
+
+	// Create a buffer to capture the output.
+	bbuf := &tsBuffer{b: &bytes.Buffer{}}
+	buf := &NopWriteCloser{bbuf}
+	// Wrap the buffer with the buffered writer closer that implements flush() method.
+	bwc := newBufferedWriteCloser(buf)
+	// Create a file exporter with flushing enabled.
+	fe := newFileExporter(cfg, bwc)
+
+	// Start the flusher.
+	ctx := context.Background()
+	assert.NoError(t, fe.Start(ctx, nil))
+
+	// Write 10 bytes.
+	b := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	i, err := safeFileExporterWrite(fe, b)
+	assert.NoError(t, err)
+	assert.EqualValues(t, len(b), i, "bytes written")
+
+	// Assert buf contains 0 bytes before flush is called.
+	assert.EqualValues(t, 0, bbuf.Len(), "before flush")
+
+	// Wait 1.5 sec
+	time.Sleep(1500 * time.Millisecond)
+
+	// Assert buf contains 10 bytes after flush is called.
+	assert.EqualValues(t, 10, bbuf.Len(), "after flush")
+	// Compare the content.
+	assert.EqualValues(t, b, bbuf.Bytes())
+	assert.NoError(t, fe.Shutdown(ctx))
 }

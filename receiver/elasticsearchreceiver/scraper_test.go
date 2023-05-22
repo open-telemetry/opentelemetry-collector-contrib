@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, ClusterMetadata 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchreceiver
 
@@ -36,9 +25,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
-const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
-const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
-const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
+const fullExpectedMetricsPath = "./testdata/expected_metrics/full.yaml"
+const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.yaml"
+const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.yaml"
 
 func TestMain(m *testing.M) {
 	// Enable the feature gates before all tests to avoid flaky tests.

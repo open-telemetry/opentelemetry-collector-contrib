@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package windowsperfcountersreceiver
 
@@ -25,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/metadata"
 )
 
 const (
@@ -40,7 +31,6 @@ func TestLoadConfig(t *testing.T) {
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-
 	counterConfig := CounterConfig{
 		Name: "counter1",
 		MetricRep: MetricRep{
@@ -63,11 +53,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: singleObject,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 30 * time.Second,
@@ -105,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "nometrics"),
+			id: component.NewIDWithName(metadata.Type, "nometrics"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
@@ -119,7 +109,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "nometricspecified"),
+			id: component.NewIDWithName(metadata.Type, "nometricspecified"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
@@ -140,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "summetric"),
+			id: component.NewIDWithName(metadata.Type, "summetric"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
@@ -164,7 +154,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "unspecifiedmetrictype"),
+			id: component.NewIDWithName(metadata.Type, "unspecifiedmetrictype"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
@@ -185,23 +175,23 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "negative-collection-interval"),
+			id:          component.NewIDWithName(metadata.Type, "negative-collection-interval"),
 			expectedErr: negativeCollectionIntervalErr,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "noperfcounters"),
+			id:          component.NewIDWithName(metadata.Type, "noperfcounters"),
 			expectedErr: noPerfCountersErr,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "noobjectname"),
+			id:          component.NewIDWithName(metadata.Type, "noobjectname"),
 			expectedErr: noObjectNameErr,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "nocounters"),
+			id:          component.NewIDWithName(metadata.Type, "nocounters"),
 			expectedErr: fmt.Sprintf(noCountersErr, "object"),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allerrors"),
+			id: component.NewIDWithName(metadata.Type, "allerrors"),
 			expectedErr: fmt.Sprintf(
 				"%s; %s; %s; %s",
 				negativeCollectionIntervalErr,
@@ -211,7 +201,7 @@ func TestLoadConfig(t *testing.T) {
 			),
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "emptyinstance"),
+			id:          component.NewIDWithName(metadata.Type, "emptyinstance"),
 			expectedErr: fmt.Sprintf(emptyInstanceErr, "object"),
 		},
 	}

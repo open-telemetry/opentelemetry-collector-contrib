@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter
 
@@ -31,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -98,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
@@ -145,7 +135,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "api"),
+			id: component.NewIDWithName(metadata.Type, "api"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
@@ -198,7 +188,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "api2"),
+			id: component.NewIDWithName(metadata.Type, "api2"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
@@ -347,7 +337,7 @@ func TestOverrideEndpoints(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.componentID, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
-			sub, err := cm.Sub(component.NewIDWithName(typeStr, testInstance.componentID).String())
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, testInstance.componentID).String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -370,7 +360,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -403,7 +393,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -483,7 +473,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -558,7 +548,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 

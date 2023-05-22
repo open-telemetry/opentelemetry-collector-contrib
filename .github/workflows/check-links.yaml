@@ -4,8 +4,9 @@ on:
     branches: [ main ]
   pull_request:
 
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -16,8 +17,7 @@ jobs:
     outputs:
       md: ${{ steps.changes.outputs.md }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Get changed files
@@ -29,8 +29,7 @@ jobs:
     needs: changedfiles
     if: ${{needs.changedfiles.outputs.md}}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 

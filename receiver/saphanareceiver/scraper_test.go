@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
@@ -27,8 +16,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
-const partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.json"
+const fullExpectedMetricsPath = "./testdata/expected_metrics/full.yaml"
+const partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.yaml"
 const allQueryMetrics = "./testdata/mocked_queries/all_query_results.json"
 const mostlyDisabledQueryMetrics = "./testdata/mocked_queries/mostly_disabled_results.json"
 

@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 TESTS="$(make -s -C testbed list-tests | xargs echo|sed 's/ /|/g')"
 TESTS=(${TESTS//|/ })
 MATRIX="{\"include\":["

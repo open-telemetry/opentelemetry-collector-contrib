@@ -1,0 +1,7 @@
+type: awss3
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib, observiq]

@@ -1,10 +1,10 @@
-name: haproxyreceiver
+type: haproxy
 
 status:
-  type: receiver
-  stability: alpha
-  pipelines: [metrics]
-  distributions: [contrib]
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
 
 resource_attributes:
   haproxy.url:

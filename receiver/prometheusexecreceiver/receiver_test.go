@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexecreceiver
 
@@ -33,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
@@ -46,7 +36,7 @@ func TestEndToEnd(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "end_to_end_test/2").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "end_to_end_test/2").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -122,7 +112,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 	}{
 		{
 			name: "no command",
-			id:   component.NewID(typeStr),
+			id:   component.NewID(metadata.Type),
 			cfg: &Config{
 				ScrapeInterval: 60 * time.Second,
 				ScrapeTimeout:  10 * time.Second,
@@ -163,7 +153,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		},
 		{
 			name: "normal config",
-			id:   component.NewIDWithName(typeStr, "mysqld"),
+			id:   component.NewIDWithName(metadata.Type, "mysqld"),
 			cfg: &Config{
 				ScrapeInterval: 90 * time.Second,
 				ScrapeTimeout:  10 * time.Second,
@@ -215,7 +205,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		},
 		{
 			name: "lots of defaults",
-			id:   component.NewIDWithName(typeStr, "postgres/test"),
+			id:   component.NewIDWithName(metadata.Type, "postgres/test"),
 			cfg: &Config{
 				ScrapeInterval: 60 * time.Second,
 				ScrapeTimeout:  10 * time.Second,

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
@@ -37,12 +26,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
 const (
 	defaultServerTimeout = 20 * time.Second
 
 	responseOK                        = "OK"
+	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
@@ -203,6 +194,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 
 	mx := mux.NewRouter()
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
+	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods("GET")
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -253,7 +245,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	if req.ContentLength == 0 {
-		r.obsrecv.EndLogsOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, 0, nil)
 		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
 		return
 	}
@@ -284,7 +276,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
 		resp.WriteHeader(http.StatusOK)
-		r.obsrecv.EndLogsOp(ctx, typeStr, slLen, nil)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, slLen, nil)
 	}
 }
 
@@ -376,7 +368,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 	md, _ := splunkHecToMetricsData(r.settings.Logger, events, resourceCustomizer, r.config)
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(ctx, typeStr, len(events), decodeErr)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(events), decodeErr)
 
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
@@ -398,7 +390,7 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 	}
 
 	decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndLogsOp(ctx, typeStr, len(events), decodeErr)
+	r.obsrecv.EndLogsOp(ctx, metadata.Type, len(events), decodeErr)
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
@@ -441,9 +433,9 @@ func (r *splunkReceiver) failRequest(
 	}
 
 	if r.metricsConsumer == nil {
-		r.obsrecv.EndLogsOp(ctx, typeStr, numRecordsReceived, err)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type, numRecordsReceived, err)
 	} else {
-		r.obsrecv.EndMetricsOp(ctx, typeStr, numRecordsReceived, err)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type, numRecordsReceived, err)
 	}
 
 	if r.settings.Logger.Core().Enabled(zap.DebugLevel) {
@@ -458,7 +450,9 @@ func (r *splunkReceiver) failRequest(
 }
 
 func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
-	writer.WriteHeader(200)
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write([]byte(responseHecHealthy))
 }
 
 func initJSONResponse(s string) []byte {

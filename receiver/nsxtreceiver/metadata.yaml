@@ -1,5 +1,11 @@
-name: nsxtreceiver
+type: nsxt
 
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  
 resource_attributes:
   nsxt.node.name:
     description: The name of the NSX Node.

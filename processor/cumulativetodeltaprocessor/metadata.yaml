@@ -1,8 +1,8 @@
-name: cumulativetodelta
+type: cumulativetodelta
 
 status:
-  type: processor
-  stability: beta
-  pipelines: [metrics]
-  distributions: [contrib]
+  class: processor
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
   warnings: [Statefulness]

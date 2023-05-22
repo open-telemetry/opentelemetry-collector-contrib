@@ -4,7 +4,7 @@
 | ------------------------ |-----------------------|
 | Stability                | [beta]                |
 | Supported pipeline types | traces, logs, metrics |
-| Distributions            | [contrib]             |
+| Distributions            | [contrib], [observiq] |
 
 Exports data via HTTP to [F5 Cloud](https://portal.cloudservices.f5.com/).
 
@@ -45,3 +45,4 @@ This exporter also offers proxy support as documented
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[observiq]: https://github.com/observIQ/observiq-otel-collector

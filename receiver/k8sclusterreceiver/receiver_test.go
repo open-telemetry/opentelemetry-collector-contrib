@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclusterreceiver
 
@@ -36,10 +25,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestReceiver(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -89,7 +79,7 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -110,7 +100,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -148,7 +138,7 @@ var consumeMetadataInvocation = func() {
 }
 
 func TestReceiverWithMetadata(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -263,9 +253,15 @@ func newFakeClientWithAllResources() *fake.Clientset {
 			},
 		},
 		{
-			GroupVersion: "autoscaling/v2beta2",
+			GroupVersion: "autoscaling/v2",
 			APIResources: []v1.APIResource{
 				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+			},
+		},
+		{
+			GroupVersion: "autoscaling/v2beta2",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 			},
 		},
 	}

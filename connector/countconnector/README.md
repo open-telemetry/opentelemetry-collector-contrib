@@ -1,10 +1,10 @@
 # Count Connector
 
 | Status                   |                                                           |
-|------------------------- |---------------------------------------------------------- |
+| ------------------------ | --------------------------------------------------------- |
 | Stability                | [in development]                                          |
 | Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
-| Distributions            | []                                                        |
+| Distributions            | [contrib], [sumo]                                         |
 
 The `count` connector can be used to count spans, span events, metrics, data points, and log records.
 
@@ -26,7 +26,7 @@ The `count` connector may be used without any configuration settings. The follow
 default behavior of the connector.
 
 | [Exporter Pipeline Type] | Description                         | Default Metric Names                         |
-| ------------------------ | ------------------------------------| -------------------------------------------- |
+| ------------------------ | ----------------------------------- | -------------------------------------------- |
 | traces                   | Counts all spans and span events.   | `trace.span.count`, `trace.span.event.count` |
 | metrics                  | Counts all metrics and data points. | `metric.count`, `metric.data_point.count`    |
 | logs                     | Counts all log records.             | `log.record.count`                           |
@@ -268,8 +268,9 @@ service:
       exporters: [bar/counts_only]
 ```
 
-[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
-[Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
-[Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
-[Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
-[OTTL Syntax]:https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md
+[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
+[Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+[Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
+[Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type

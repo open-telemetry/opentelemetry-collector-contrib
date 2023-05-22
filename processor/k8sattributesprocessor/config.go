@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
@@ -75,8 +64,8 @@ type ExtractConfig struct {
 	//   k8s.daemonset.name, k8s.daemonset.uid,
 	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
 	//   k8s.statefulset.name, k8s.statefulset.uid,
-	//   container.image.name, container.image.tag,
-	//   container.id
+	//   k8s.container.name, container.image.name,
+	//   container.image.tag, container.id
 	//
 	// Specifying anything other than these values will result in an error.
 	// By default, the following fields are extracted and added to spans, metrics and logs as attributes:
@@ -86,8 +75,9 @@ type ExtractConfig struct {
 	//  - k8s.namespace.name
 	//  - k8s.node.name
 	//  - k8s.deployment.name (if the pod is controlled by a deployment)
-	//  - container.image.name (requires an additional attribute to be set: k8s.container.name)
-	//  - container.image.tag (requires an additional attribute to be set: k8s.container.name)
+	//  - k8s.container.name (requires an additional attribute to be set: container.id)
+	//  - container.image.name (requires one of the following additional attributes to be set: container.id or k8s.container.name)
+	//  - container.image.tag (requires one of the following additional attributes to be set: container.id or k8s.container.name)
 	Metadata []string `mapstructure:"metadata"`
 
 	// Annotations allows extracting data from pod annotations and record it
@@ -186,7 +176,7 @@ type FilterConfig struct {
 	// Then the NodeFromEnv field can be set to `K8S_NODE_NAME` to filter all pods by the node that
 	// the agent is running on.
 	//
-	// More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/
+	// More on downward API here: https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/
 	NodeFromEnvVar string `mapstructure:"node_from_env_var"`
 
 	// Namespace filters all pods by the provided namespace. All other pods are ignored.

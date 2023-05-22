@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
@@ -54,9 +43,12 @@ type Config struct {
 
 	// This setting is required when logging pipelines used.
 	LogsIndex string `mapstructure:"logs_index"`
-
+	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
+	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
 	// This setting is required when traces pipelines used.
 	TracesIndex string `mapstructure:"traces_index"`
+	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
+	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
@@ -69,6 +61,10 @@ type Config struct {
 	Retry              RetrySettings     `mapstructure:"retry"`
 	Flush              FlushSettings     `mapstructure:"flush"`
 	Mapping            MappingsSettings  `mapstructure:"mapping"`
+}
+
+type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type HTTPClientSettings struct {

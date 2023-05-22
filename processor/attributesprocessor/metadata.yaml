@@ -1,0 +1,8 @@
+type: attributes
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib, splunk, observiq, sumo]
+  warnings: [Identity Conflict]
