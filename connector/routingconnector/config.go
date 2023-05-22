@@ -79,10 +79,6 @@ func (c *Config) Validate() error {
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
 type RoutingTableItem struct {
-	// Value represents a possible value for the field specified under FromAttribute.
-	// Required when Statement isn't provided.
-	Value string `mapstructure:"value"`
-
 	// Statement is a OTTL statement used for making a routing decision.
 	// Required when 'Value' isn't provided.
 	Statement string `mapstructure:"statement"`

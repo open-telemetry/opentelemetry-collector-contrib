@@ -155,7 +155,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			error: "invalid route : no pipelines defined for the route",
+			error: "invalid route: no pipelines defined for the route",
 		},
 		{
 			name: "no routes provided",
