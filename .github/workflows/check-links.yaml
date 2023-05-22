@@ -1,7 +1,9 @@
 name: check-links
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - 'aws-cwa-*'
   pull_request:
 
 concurrency:

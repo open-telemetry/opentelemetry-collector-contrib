@@ -1,7 +1,9 @@
 name: 'Generate component labels'
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'aws-cwa-*'
     paths:
       - .github/CODEOWNERS
       - ./.github/workflows/generate-component-labels.yml
