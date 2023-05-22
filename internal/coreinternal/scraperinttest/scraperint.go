@@ -30,13 +30,6 @@ import (
 
 const errExposedPort = "exposed container port should not be hardcoded to host port. Use ContainerInfo.MappedPort() instead"
 
-func EqualsLatestMetrics(expected pmetric.Metrics, sink *consumertest.MetricsSink, compareOpts []pmetrictest.CompareMetricsOption) func() bool {
-	return func() bool {
-		allMetrics := sink.AllMetrics()
-		return len(allMetrics) > 0 && nil == pmetrictest.CompareMetrics(expected, allMetrics[len(allMetrics)-1], compareOpts...)
-	}
-}
-
 func NewIntegrationTest(f receiver.Factory, opts ...TestOption) *IntegrationTest {
 	it := &IntegrationTest{
 		factory:        f,
