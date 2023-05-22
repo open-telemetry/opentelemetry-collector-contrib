@@ -55,7 +55,7 @@ func NewAttributes[Key AttributeKey, Value AttributeKey](mappings map[Key]Value)
 }
 
 func (a *AttributeChangeSet) Apply(attrs pcommon.Map) {
-	a.do(StateSelctorApply, attrs)
+	a.do(StateSelectorApply, attrs)
 }
 
 func (a *AttributeChangeSet) Rollback(attrs pcommon.Map) {
@@ -66,7 +66,7 @@ func (a *AttributeChangeSet) do(ss StateSelctor, attrs pcommon.Map) {
 	attrs.RemoveIf(func(s string, v pcommon.Value) (matched bool) {
 		var key string
 		switch ss {
-		case StateSelctorApply:
+		case StateSelectorApply:
 			key, matched = a.updates[s]
 		case StateSelectorRollback:
 			key, matched = a.rollback[s]
@@ -89,7 +89,7 @@ func NewAttributeChangeSetSlice(changes ...*AttributeChangeSet) *AttributeChange
 }
 
 func (slice *AttributeChangeSetSlice) Apply(attrs pcommon.Map) {
-	slice.do(StateSelctorApply, attrs)
+	slice.do(StateSelectorApply, attrs)
 }
 
 func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) {
@@ -99,7 +99,7 @@ func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) {
 func (slice *AttributeChangeSetSlice) do(ss StateSelctor, attrs pcommon.Map) {
 	for i := 0; i < len(*slice); i++ {
 		switch ss {
-		case StateSelctorApply:
+		case StateSelectorApply:
 			(*slice)[i].Apply(attrs)
 		case StateSelectorRollback:
 			(*slice)[len(*slice)-1-i].Rollback(attrs)

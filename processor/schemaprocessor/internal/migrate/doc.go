@@ -20,6 +20,6 @@ type StateSelctor int
 
 const (
 	_ StateSelctor = iota
-	StateSelctorApply
+	StateSelectorApply
 	StateSelectorRollback
 )

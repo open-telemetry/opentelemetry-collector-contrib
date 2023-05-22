@@ -22,9 +22,9 @@ type Resource interface {
 	Resource() pcommon.Resource
 }
 
-// Signal represents a subset of incoming pdata
+// NamedSignal represents a subset of incoming pdata
 // that can be updated using the schema processor
-type Signal interface {
+type NamedSignal interface {
 	Name() string
 
 	SetName(name string)
@@ -35,9 +35,9 @@ var (
 	_ Resource = (*pmetric.ResourceMetrics)(nil)
 	_ Resource = (*ptrace.ResourceSpans)(nil)
 
-	_ Signal = (*pmetric.Metric)(nil)
-	_ Signal = (*ptrace.Span)(nil)
-	_ Signal = (*ptrace.SpanEvent)(nil)
+	_ NamedSignal = (*pmetric.Metric)(nil)
+	_ NamedSignal = (*ptrace.Span)(nil)
+	_ NamedSignal = (*ptrace.SpanEvent)(nil)
 )
 
 // AttributeKey is a type alias of string to help

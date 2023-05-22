@@ -73,7 +73,7 @@ func NewConditionalAttributeSetSlice(conditions ...*ConditionalAttributeSet) *Co
 }
 
 func (slice *ConditionalAttributeSetSlice) Apply(attrs pcommon.Map, values ...string) {
-	slice.do(StateSelctorApply, attrs, values)
+	slice.do(StateSelectorApply, attrs, values)
 }
 
 func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ...string) {
@@ -83,7 +83,7 @@ func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ..
 func (slice *ConditionalAttributeSetSlice) do(ss StateSelctor, attrs pcommon.Map, values []string) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
-		case StateSelctorApply:
+		case StateSelectorApply:
 			(*slice)[i].Apply(attrs, values...)
 		case StateSelectorRollback:
 			(*slice)[len((*slice))-i-1].Rollback(attrs, values...)

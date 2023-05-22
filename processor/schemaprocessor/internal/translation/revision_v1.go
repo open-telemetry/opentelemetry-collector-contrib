@@ -77,7 +77,7 @@ func newSpanConditionalAttributeSlice(spans ast.Spans) *migrate.ConditionalAttri
 }
 
 func newSpanEventSignalSlice(events ast.SpanEvents) *migrate.SignalSlice {
-	values := make([]*migrate.Signal, 0, 10)
+	values := make([]*migrate.SignalNameChange, 0, 10)
 	for _, ch := range events.Changes {
 		if renamed := ch.RenameEvents; renamed != nil {
 			values = append(values, migrate.NewSignal(renamed.EventNameMap))
@@ -117,7 +117,7 @@ func newMetricConditionalSlice(metrics ast.Metrics) *migrate.ConditionalAttribut
 }
 
 func newMetricNameSignalSlice(metrics ast.Metrics) *migrate.SignalSlice {
-	values := make([]*migrate.Signal, 0, 10)
+	values := make([]*migrate.SignalNameChange, 0, 10)
 	for _, ch := range metrics.Changes {
 		values = append(values, migrate.NewSignal(ch.RenameMetrics))
 	}

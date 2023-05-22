@@ -22,19 +22,19 @@ type SignalType interface {
 	~string
 }
 
-// Signal allows for migrating types that
+// SignalNameChange allows for migrating types that
 // implement the `alias.Signal` interface.
-type Signal struct {
+type SignalNameChange struct {
 	updates  map[string]string
 	rollback map[string]string
 }
 
-type SignalSlice []*Signal
+type SignalNameChageSlice []*SignalNameChange
 
-// NewSignal will create a `Signal` that will check the provided mappings if it can update a `alias.Signal`
+// NewSignalNameChange will create a `Signal` that will check the provided mappings if it can update a `alias.Signal`
 // and if no values are provided for `matches`, then all values will be updated.
-func NewSignal[Key SignalType, Value SignalType](mappings map[Key]Value) *Signal {
-	sig := &Signal{
+func NewSignalNameChange[Key SignalType, Value SignalType](mappings map[Key]Value) *SignalNameChange {
+	sig := &SignalNameChange{
 		updates:  make(map[string]string, len(mappings)),
 		rollback: make(map[string]string, len(mappings)),
 	}
@@ -45,21 +45,21 @@ func NewSignal[Key SignalType, Value SignalType](mappings map[Key]Value) *Signal
 	return sig
 }
 
-func (s *Signal) Apply(signal alias.Signal) {
-	s.do(StateSelctorApply, signal)
+func (s *SignalNameChange) Apply(signal alias.NamedSignal) {
+	s.do(StateSelectorApply, signal)
 }
 
-func (s *Signal) Rollback(signal alias.Signal) {
+func (s *SignalNameChange) Rollback(signal alias.NamedSignal) {
 	s.do(StateSelectorRollback, signal)
 }
 
-func (s *Signal) do(ss StateSelctor, signal alias.Signal) {
+func (s *SignalNameChange) do(ss StateSelctor, signal alias.NamedSignal) {
 	var (
 		name    string
 		matched bool
 	)
 	switch ss {
-	case StateSelctorApply:
+	case StateSelectorApply:
 		name, matched = s.updates[signal.Name()]
 	case StateSelectorRollback:
 		name, matched = s.rollback[signal.Name()]
@@ -69,26 +69,26 @@ func (s *Signal) do(ss StateSelctor, signal alias.Signal) {
 	}
 }
 
-func NewSignalSlice(changes ...*Signal) *SignalSlice {
-	values := new(SignalSlice)
+func NewSignalNameChageSlice(changes ...*SignalNameChange) *SignalNameChageSlice {
+	values := new(SignalNameChageSlice)
 	for _, c := range changes {
 		(*values) = append((*values), c)
 	}
 	return values
 }
 
-func (slice *SignalSlice) Apply(signal alias.Signal) {
-	slice.do(StateSelctorApply, signal)
+func (slice *SignalNameChageSlice) Apply(signal alias.NamedSignal) {
+	slice.do(StateSelectorApply, signal)
 }
 
-func (slice *SignalSlice) Rollback(signal alias.Signal) {
+func (slice *SignalNameChageSlice) Rollback(signal alias.NamedSignal) {
 	slice.do(StateSelectorRollback, signal)
 }
 
-func (slice *SignalSlice) do(ss StateSelctor, signal alias.Signal) {
+func (slice *SignalNameChageSlice) do(ss StateSelctor, signal alias.NamedSignal) {
 	for i := 0; i < len((*slice)); i++ {
 		switch ss {
-		case StateSelctorApply:
+		case StateSelectorApply:
 			(*slice)[i].Apply(signal)
 		case StateSelectorRollback:
 			(*slice)[len((*slice))-i-1].Rollback(signal)
