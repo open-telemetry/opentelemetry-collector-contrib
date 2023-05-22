@@ -73,6 +73,7 @@ func TestURIs(t *testing.T) {
 		{"Invalid region", "s3://bucket.s3.region.aws.amazonaws.com/key", false, "", "", ""},
 		{"Invalid bucket", "s3://b.s3.region.amazonaws.com/key", false, "", "", ""},
 		{"No key", "s3://bucket.s3.region.amazonaws.com/", false, "", "", ""},
+		{"Merged region domain", "s3://bucket.name-here.s3.us-west-2aamazonaws.com/key", false, "", "", ""},
 		{"No bucket", "s3://s3.region.amazonaws.com/key", false, "", "", ""},
 		{"No region", "s3://some-bucket.s3..amazonaws.com/key", false, "", "", ""},
 		{"Test malformed uri", "s3://some-bucket.s3.us-west-2.amazonaws.com/key%", false, "", "", ""},
