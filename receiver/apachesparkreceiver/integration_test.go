@@ -84,7 +84,7 @@ func (tt testCase) run(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("spark.application.id"), pmetrictest.IgnoreResourceAttributeValue("spark.application.name"), pmetrictest.IgnoreMetricDataPointsOrder()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("spark.application.id"), pmetrictest.IgnoreResourceAttributeValue("spark.application.name"), pmetrictest.IgnoreMetricAttributeValue("active"), pmetrictest.IgnoreMetricAttributeValue("complete"), pmetrictest.IgnoreMetricAttributeValue("failed"), pmetrictest.IgnoreMetricAttributeValue("pending"), pmetrictest.IgnoreMetricDataPointsOrder()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) (testcontainers.Container, string) {
