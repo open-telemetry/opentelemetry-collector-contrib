@@ -20,7 +20,7 @@ import (
 const (
 	schemeName = "s3"
 	// Pattern for a s3 uri
-	s3Pattern = `^s3:\/\/([a-z0-9\.\-]{3,63})\.s3\.([a-z0-9\-]+).amazonaws\.com\/.`
+	s3Pattern = `^s3:\/\/([a-z0-9\.\-]{3,63})\.s3\.([a-z0-9\-]+)\.amazonaws\.com\/.`
 )
 
 var s3Regexp = regexp.MustCompile(s3Pattern)
