@@ -138,7 +138,7 @@ metrics:
       value_type: int
     unit: "{ task }"
     attributes: []
-  spark.stage.task.results:
+  spark.stage.task.result:
     description: Number of tasks with a specific result in this stage.
     enabled: true
     sum:
@@ -259,8 +259,8 @@ metrics:
       value_type: int
     unit: bytes
     attributes: []
-  spark.stage.shuffle.io.size:
-    description: Amount of data written or read in shuffle operations in this stage.
+  spark.stage.shuffle.io.read.size:
+    description: Amount of data read in shuffle operations in this stage.
     enabled: true
     sum:
       aggregation: cumulative
@@ -268,7 +268,17 @@ metrics:
       value_type: int
     unit: bytes
     attributes:
-      [source, direction]
+      [source]
+  spark.stage.shuffle.io.write.size:
+    description: Amount of data written in shuffle operations in this stage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: bytes
+    attributes:
+      []
   spark.stage.shuffle.io.records:
     description: Number of records written or read in shuffle operations in this stage.
     enabled: true
@@ -389,7 +399,7 @@ metrics:
       value_type: int
     unit: "{ task }"
     attributes: []
-  spark.job.task.results:
+  spark.job.task.result:
     description: Number of tasks with a specific result in this job.
     enabled: true
     sum:
@@ -407,7 +417,7 @@ metrics:
       value_type: int
     unit: "{ task }"
     attributes: []
-  spark.job.stage.results:
+  spark.job.stage.result:
     description: Number of stages with a specific result in this job.
     enabled: true
     sum:

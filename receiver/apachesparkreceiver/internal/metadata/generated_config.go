@@ -66,9 +66,9 @@ type MetricsConfig struct {
 	SparkExecutorTaskResult                            MetricConfig `mapstructure:"spark.executor.task.result"`
 	SparkExecutorTime                                  MetricConfig `mapstructure:"spark.executor.time"`
 	SparkJobStageActive                                MetricConfig `mapstructure:"spark.job.stage.active"`
-	SparkJobStageResults                               MetricConfig `mapstructure:"spark.job.stage.results"`
+	SparkJobStageResult                                MetricConfig `mapstructure:"spark.job.stage.result"`
 	SparkJobTaskActive                                 MetricConfig `mapstructure:"spark.job.task.active"`
-	SparkJobTaskResults                                MetricConfig `mapstructure:"spark.job.task.results"`
+	SparkJobTaskResult                                 MetricConfig `mapstructure:"spark.job.task.result"`
 	SparkStageDiskSpilled                              MetricConfig `mapstructure:"spark.stage.disk.spilled"`
 	SparkStageExecutorCPUTime                          MetricConfig `mapstructure:"spark.stage.executor.cpu_time"`
 	SparkStageExecutorRunTime                          MetricConfig `mapstructure:"spark.stage.executor.run_time"`
@@ -80,13 +80,14 @@ type MetricsConfig struct {
 	SparkStageShuffleBlocksFetched                     MetricConfig `mapstructure:"spark.stage.shuffle.blocks_fetched"`
 	SparkStageShuffleFetchWaitTime                     MetricConfig `mapstructure:"spark.stage.shuffle.fetch_wait_time"`
 	SparkStageShuffleIoDisk                            MetricConfig `mapstructure:"spark.stage.shuffle.io.disk"`
+	SparkStageShuffleIoReadSize                        MetricConfig `mapstructure:"spark.stage.shuffle.io.read.size"`
 	SparkStageShuffleIoRecords                         MetricConfig `mapstructure:"spark.stage.shuffle.io.records"`
-	SparkStageShuffleIoSize                            MetricConfig `mapstructure:"spark.stage.shuffle.io.size"`
+	SparkStageShuffleIoWriteSize                       MetricConfig `mapstructure:"spark.stage.shuffle.io.write.size"`
 	SparkStageShuffleWriteTime                         MetricConfig `mapstructure:"spark.stage.shuffle.write_time"`
 	SparkStageStatus                                   MetricConfig `mapstructure:"spark.stage.status"`
 	SparkStageTaskActive                               MetricConfig `mapstructure:"spark.stage.task.active"`
+	SparkStageTaskResult                               MetricConfig `mapstructure:"spark.stage.task.result"`
 	SparkStageTaskResultSize                           MetricConfig `mapstructure:"spark.stage.task.result_size"`
-	SparkStageTaskResults                              MetricConfig `mapstructure:"spark.stage.task.results"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -214,13 +215,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkJobStageActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobStageResults: MetricConfig{
+		SparkJobStageResult: MetricConfig{
 			Enabled: true,
 		},
 		SparkJobTaskActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkJobTaskResults: MetricConfig{
+		SparkJobTaskResult: MetricConfig{
 			Enabled: true,
 		},
 		SparkStageDiskSpilled: MetricConfig{
@@ -256,10 +257,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkStageShuffleIoDisk: MetricConfig{
 			Enabled: true,
 		},
+		SparkStageShuffleIoReadSize: MetricConfig{
+			Enabled: true,
+		},
 		SparkStageShuffleIoRecords: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageShuffleIoSize: MetricConfig{
+		SparkStageShuffleIoWriteSize: MetricConfig{
 			Enabled: true,
 		},
 		SparkStageShuffleWriteTime: MetricConfig{
@@ -271,10 +275,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		SparkStageTaskActive: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageTaskResultSize: MetricConfig{
+		SparkStageTaskResult: MetricConfig{
 			Enabled: true,
 		},
-		SparkStageTaskResults: MetricConfig{
+		SparkStageTaskResultSize: MetricConfig{
 			Enabled: true,
 		},
 	}

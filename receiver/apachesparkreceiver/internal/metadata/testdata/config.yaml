@@ -83,11 +83,11 @@ all_set:
       enabled: true
     spark.job.stage.active:
       enabled: true
-    spark.job.stage.results:
+    spark.job.stage.result:
       enabled: true
     spark.job.task.active:
       enabled: true
-    spark.job.task.results:
+    spark.job.task.result:
       enabled: true
     spark.stage.disk.spilled:
       enabled: true
@@ -111,9 +111,11 @@ all_set:
       enabled: true
     spark.stage.shuffle.io.disk:
       enabled: true
+    spark.stage.shuffle.io.read.size:
+      enabled: true
     spark.stage.shuffle.io.records:
       enabled: true
-    spark.stage.shuffle.io.size:
+    spark.stage.shuffle.io.write.size:
       enabled: true
     spark.stage.shuffle.write_time:
       enabled: true
@@ -121,9 +123,9 @@ all_set:
       enabled: true
     spark.stage.task.active:
       enabled: true
-    spark.stage.task.result_size:
+    spark.stage.task.result:
       enabled: true
-    spark.stage.task.results:
+    spark.stage.task.result_size:
       enabled: true
   resource_attributes:
     spark.application.id:
@@ -222,11 +224,11 @@ none_set:
       enabled: false
     spark.job.stage.active:
       enabled: false
-    spark.job.stage.results:
+    spark.job.stage.result:
       enabled: false
     spark.job.task.active:
       enabled: false
-    spark.job.task.results:
+    spark.job.task.result:
       enabled: false
     spark.stage.disk.spilled:
       enabled: false
@@ -250,9 +252,11 @@ none_set:
       enabled: false
     spark.stage.shuffle.io.disk:
       enabled: false
+    spark.stage.shuffle.io.read.size:
+      enabled: false
     spark.stage.shuffle.io.records:
       enabled: false
-    spark.stage.shuffle.io.size:
+    spark.stage.shuffle.io.write.size:
       enabled: false
     spark.stage.shuffle.write_time:
       enabled: false
@@ -260,9 +264,9 @@ none_set:
       enabled: false
     spark.stage.task.active:
       enabled: false
-    spark.stage.task.result_size:
+    spark.stage.task.result:
       enabled: false
-    spark.stage.task.results:
+    spark.stage.task.result_size:
       enabled: false
   resource_attributes:
     spark.application.id:

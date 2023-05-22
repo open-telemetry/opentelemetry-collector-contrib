@@ -2359,15 +2359,15 @@ func newMetricSparkJobStageActive(cfg MetricConfig) metricSparkJobStageActive {
 	return m
 }
 
-type metricSparkJobStageResults struct {
+type metricSparkJobStageResult struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills spark.job.stage.results metric with initial data.
-func (m *metricSparkJobStageResults) init() {
-	m.data.SetName("spark.job.stage.results")
+// init fills spark.job.stage.result metric with initial data.
+func (m *metricSparkJobStageResult) init() {
+	m.data.SetName("spark.job.stage.result")
 	m.data.SetDescription("Number of stages with a specific result in this job.")
 	m.data.SetUnit("{ task }")
 	m.data.SetEmptySum()
@@ -2376,7 +2376,7 @@ func (m *metricSparkJobStageResults) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobStageResults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, jobResultAttributeValue string) {
+func (m *metricSparkJobStageResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, jobResultAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2388,14 +2388,14 @@ func (m *metricSparkJobStageResults) recordDataPoint(start pcommon.Timestamp, ts
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkJobStageResults) updateCapacity() {
+func (m *metricSparkJobStageResult) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkJobStageResults) emit(metrics pmetric.MetricSlice) {
+func (m *metricSparkJobStageResult) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -2403,8 +2403,8 @@ func (m *metricSparkJobStageResults) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkJobStageResults(cfg MetricConfig) metricSparkJobStageResults {
-	m := metricSparkJobStageResults{config: cfg}
+func newMetricSparkJobStageResult(cfg MetricConfig) metricSparkJobStageResult {
+	m := metricSparkJobStageResult{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2463,15 +2463,15 @@ func newMetricSparkJobTaskActive(cfg MetricConfig) metricSparkJobTaskActive {
 	return m
 }
 
-type metricSparkJobTaskResults struct {
+type metricSparkJobTaskResult struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills spark.job.task.results metric with initial data.
-func (m *metricSparkJobTaskResults) init() {
-	m.data.SetName("spark.job.task.results")
+// init fills spark.job.task.result metric with initial data.
+func (m *metricSparkJobTaskResult) init() {
+	m.data.SetName("spark.job.task.result")
 	m.data.SetDescription("Number of tasks with a specific result in this job.")
 	m.data.SetUnit("{ task }")
 	m.data.SetEmptySum()
@@ -2480,7 +2480,7 @@ func (m *metricSparkJobTaskResults) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkJobTaskResults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, jobResultAttributeValue string) {
+func (m *metricSparkJobTaskResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, jobResultAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2492,14 +2492,14 @@ func (m *metricSparkJobTaskResults) recordDataPoint(start pcommon.Timestamp, ts 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkJobTaskResults) updateCapacity() {
+func (m *metricSparkJobTaskResult) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkJobTaskResults) emit(metrics pmetric.MetricSlice) {
+func (m *metricSparkJobTaskResult) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -2507,8 +2507,8 @@ func (m *metricSparkJobTaskResults) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkJobTaskResults(cfg MetricConfig) metricSparkJobTaskResults {
-	m := metricSparkJobTaskResults{config: cfg}
+func newMetricSparkJobTaskResult(cfg MetricConfig) metricSparkJobTaskResult {
+	m := metricSparkJobTaskResult{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3083,6 +3083,59 @@ func newMetricSparkStageShuffleIoDisk(cfg MetricConfig) metricSparkStageShuffleI
 	return m
 }
 
+type metricSparkStageShuffleIoReadSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.stage.shuffle.io.read.size metric with initial data.
+func (m *metricSparkStageShuffleIoReadSize) init() {
+	m.data.SetName("spark.stage.shuffle.io.read.size")
+	m.data.SetDescription("Amount of data read in shuffle operations in this stage.")
+	m.data.SetUnit("bytes")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkStageShuffleIoReadSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("source", sourceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkStageShuffleIoReadSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkStageShuffleIoReadSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkStageShuffleIoReadSize(cfg MetricConfig) metricSparkStageShuffleIoReadSize {
+	m := metricSparkStageShuffleIoReadSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSparkStageShuffleIoRecords struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3136,24 +3189,23 @@ func newMetricSparkStageShuffleIoRecords(cfg MetricConfig) metricSparkStageShuff
 	return m
 }
 
-type metricSparkStageShuffleIoSize struct {
+type metricSparkStageShuffleIoWriteSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills spark.stage.shuffle.io.size metric with initial data.
-func (m *metricSparkStageShuffleIoSize) init() {
-	m.data.SetName("spark.stage.shuffle.io.size")
-	m.data.SetDescription("Amount of data written or read in shuffle operations in this stage.")
+// init fills spark.stage.shuffle.io.write.size metric with initial data.
+func (m *metricSparkStageShuffleIoWriteSize) init() {
+	m.data.SetName("spark.stage.shuffle.io.write.size")
+	m.data.SetDescription("Amount of data written in shuffle operations in this stage.")
 	m.data.SetUnit("bytes")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkStageShuffleIoSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string, directionAttributeValue string) {
+func (m *metricSparkStageShuffleIoWriteSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3161,19 +3213,17 @@ func (m *metricSparkStageShuffleIoSize) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("source", sourceAttributeValue)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkStageShuffleIoSize) updateCapacity() {
+func (m *metricSparkStageShuffleIoWriteSize) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkStageShuffleIoSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricSparkStageShuffleIoWriteSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -3181,8 +3231,8 @@ func (m *metricSparkStageShuffleIoSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSparkStageShuffleIoSize(cfg MetricConfig) metricSparkStageShuffleIoSize {
-	m := metricSparkStageShuffleIoSize{config: cfg}
+func newMetricSparkStageShuffleIoWriteSize(cfg MetricConfig) metricSparkStageShuffleIoWriteSize {
+	m := metricSparkStageShuffleIoWriteSize{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3348,6 +3398,59 @@ func newMetricSparkStageTaskActive(cfg MetricConfig) metricSparkStageTaskActive 
 	return m
 }
 
+type metricSparkStageTaskResult struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills spark.stage.task.result metric with initial data.
+func (m *metricSparkStageTaskResult) init() {
+	m.data.SetName("spark.stage.task.result")
+	m.data.SetDescription("Number of tasks with a specific result in this stage.")
+	m.data.SetUnit("{ task }")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSparkStageTaskResult) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stageTaskResultAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("result", stageTaskResultAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSparkStageTaskResult) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSparkStageTaskResult) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSparkStageTaskResult(cfg MetricConfig) metricSparkStageTaskResult {
+	m := metricSparkStageTaskResult{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSparkStageTaskResultSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3392,59 +3495,6 @@ func (m *metricSparkStageTaskResultSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSparkStageTaskResultSize(cfg MetricConfig) metricSparkStageTaskResultSize {
 	m := metricSparkStageTaskResultSize{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSparkStageTaskResults struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills spark.stage.task.results metric with initial data.
-func (m *metricSparkStageTaskResults) init() {
-	m.data.SetName("spark.stage.task.results")
-	m.data.SetDescription("Number of tasks with a specific result in this stage.")
-	m.data.SetUnit("{ task }")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSparkStageTaskResults) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stageTaskResultAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("result", stageTaskResultAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSparkStageTaskResults) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSparkStageTaskResults) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSparkStageTaskResults(cfg MetricConfig) metricSparkStageTaskResults {
-	m := metricSparkStageTaskResults{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3502,9 +3552,9 @@ type MetricsBuilder struct {
 	metricSparkExecutorTaskResult                            metricSparkExecutorTaskResult
 	metricSparkExecutorTime                                  metricSparkExecutorTime
 	metricSparkJobStageActive                                metricSparkJobStageActive
-	metricSparkJobStageResults                               metricSparkJobStageResults
+	metricSparkJobStageResult                                metricSparkJobStageResult
 	metricSparkJobTaskActive                                 metricSparkJobTaskActive
-	metricSparkJobTaskResults                                metricSparkJobTaskResults
+	metricSparkJobTaskResult                                 metricSparkJobTaskResult
 	metricSparkStageDiskSpilled                              metricSparkStageDiskSpilled
 	metricSparkStageExecutorCPUTime                          metricSparkStageExecutorCPUTime
 	metricSparkStageExecutorRunTime                          metricSparkStageExecutorRunTime
@@ -3516,13 +3566,14 @@ type MetricsBuilder struct {
 	metricSparkStageShuffleBlocksFetched                     metricSparkStageShuffleBlocksFetched
 	metricSparkStageShuffleFetchWaitTime                     metricSparkStageShuffleFetchWaitTime
 	metricSparkStageShuffleIoDisk                            metricSparkStageShuffleIoDisk
+	metricSparkStageShuffleIoReadSize                        metricSparkStageShuffleIoReadSize
 	metricSparkStageShuffleIoRecords                         metricSparkStageShuffleIoRecords
-	metricSparkStageShuffleIoSize                            metricSparkStageShuffleIoSize
+	metricSparkStageShuffleIoWriteSize                       metricSparkStageShuffleIoWriteSize
 	metricSparkStageShuffleWriteTime                         metricSparkStageShuffleWriteTime
 	metricSparkStageStatus                                   metricSparkStageStatus
 	metricSparkStageTaskActive                               metricSparkStageTaskActive
+	metricSparkStageTaskResult                               metricSparkStageTaskResult
 	metricSparkStageTaskResultSize                           metricSparkStageTaskResultSize
-	metricSparkStageTaskResults                              metricSparkStageTaskResults
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3582,9 +3633,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSparkExecutorTaskResult:                            newMetricSparkExecutorTaskResult(mbc.Metrics.SparkExecutorTaskResult),
 		metricSparkExecutorTime:                                  newMetricSparkExecutorTime(mbc.Metrics.SparkExecutorTime),
 		metricSparkJobStageActive:                                newMetricSparkJobStageActive(mbc.Metrics.SparkJobStageActive),
-		metricSparkJobStageResults:                               newMetricSparkJobStageResults(mbc.Metrics.SparkJobStageResults),
+		metricSparkJobStageResult:                                newMetricSparkJobStageResult(mbc.Metrics.SparkJobStageResult),
 		metricSparkJobTaskActive:                                 newMetricSparkJobTaskActive(mbc.Metrics.SparkJobTaskActive),
-		metricSparkJobTaskResults:                                newMetricSparkJobTaskResults(mbc.Metrics.SparkJobTaskResults),
+		metricSparkJobTaskResult:                                 newMetricSparkJobTaskResult(mbc.Metrics.SparkJobTaskResult),
 		metricSparkStageDiskSpilled:                              newMetricSparkStageDiskSpilled(mbc.Metrics.SparkStageDiskSpilled),
 		metricSparkStageExecutorCPUTime:                          newMetricSparkStageExecutorCPUTime(mbc.Metrics.SparkStageExecutorCPUTime),
 		metricSparkStageExecutorRunTime:                          newMetricSparkStageExecutorRunTime(mbc.Metrics.SparkStageExecutorRunTime),
@@ -3596,13 +3647,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSparkStageShuffleBlocksFetched:                     newMetricSparkStageShuffleBlocksFetched(mbc.Metrics.SparkStageShuffleBlocksFetched),
 		metricSparkStageShuffleFetchWaitTime:                     newMetricSparkStageShuffleFetchWaitTime(mbc.Metrics.SparkStageShuffleFetchWaitTime),
 		metricSparkStageShuffleIoDisk:                            newMetricSparkStageShuffleIoDisk(mbc.Metrics.SparkStageShuffleIoDisk),
+		metricSparkStageShuffleIoReadSize:                        newMetricSparkStageShuffleIoReadSize(mbc.Metrics.SparkStageShuffleIoReadSize),
 		metricSparkStageShuffleIoRecords:                         newMetricSparkStageShuffleIoRecords(mbc.Metrics.SparkStageShuffleIoRecords),
-		metricSparkStageShuffleIoSize:                            newMetricSparkStageShuffleIoSize(mbc.Metrics.SparkStageShuffleIoSize),
+		metricSparkStageShuffleIoWriteSize:                       newMetricSparkStageShuffleIoWriteSize(mbc.Metrics.SparkStageShuffleIoWriteSize),
 		metricSparkStageShuffleWriteTime:                         newMetricSparkStageShuffleWriteTime(mbc.Metrics.SparkStageShuffleWriteTime),
 		metricSparkStageStatus:                                   newMetricSparkStageStatus(mbc.Metrics.SparkStageStatus),
 		metricSparkStageTaskActive:                               newMetricSparkStageTaskActive(mbc.Metrics.SparkStageTaskActive),
+		metricSparkStageTaskResult:                               newMetricSparkStageTaskResult(mbc.Metrics.SparkStageTaskResult),
 		metricSparkStageTaskResultSize:                           newMetricSparkStageTaskResultSize(mbc.Metrics.SparkStageTaskResultSize),
-		metricSparkStageTaskResults:                              newMetricSparkStageTaskResults(mbc.Metrics.SparkStageTaskResults),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3750,9 +3802,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkExecutorTaskResult.emit(ils.Metrics())
 	mb.metricSparkExecutorTime.emit(ils.Metrics())
 	mb.metricSparkJobStageActive.emit(ils.Metrics())
-	mb.metricSparkJobStageResults.emit(ils.Metrics())
+	mb.metricSparkJobStageResult.emit(ils.Metrics())
 	mb.metricSparkJobTaskActive.emit(ils.Metrics())
-	mb.metricSparkJobTaskResults.emit(ils.Metrics())
+	mb.metricSparkJobTaskResult.emit(ils.Metrics())
 	mb.metricSparkStageDiskSpilled.emit(ils.Metrics())
 	mb.metricSparkStageExecutorCPUTime.emit(ils.Metrics())
 	mb.metricSparkStageExecutorRunTime.emit(ils.Metrics())
@@ -3764,13 +3816,14 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkStageShuffleBlocksFetched.emit(ils.Metrics())
 	mb.metricSparkStageShuffleFetchWaitTime.emit(ils.Metrics())
 	mb.metricSparkStageShuffleIoDisk.emit(ils.Metrics())
+	mb.metricSparkStageShuffleIoReadSize.emit(ils.Metrics())
 	mb.metricSparkStageShuffleIoRecords.emit(ils.Metrics())
-	mb.metricSparkStageShuffleIoSize.emit(ils.Metrics())
+	mb.metricSparkStageShuffleIoWriteSize.emit(ils.Metrics())
 	mb.metricSparkStageShuffleWriteTime.emit(ils.Metrics())
 	mb.metricSparkStageStatus.emit(ils.Metrics())
 	mb.metricSparkStageTaskActive.emit(ils.Metrics())
+	mb.metricSparkStageTaskResult.emit(ils.Metrics())
 	mb.metricSparkStageTaskResultSize.emit(ils.Metrics())
-	mb.metricSparkStageTaskResults.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(mb.resourceAttributesConfig, rm)
@@ -3996,9 +4049,9 @@ func (mb *MetricsBuilder) RecordSparkJobStageActiveDataPoint(ts pcommon.Timestam
 	mb.metricSparkJobStageActive.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSparkJobStageResultsDataPoint adds a data point to spark.job.stage.results metric.
-func (mb *MetricsBuilder) RecordSparkJobStageResultsDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
-	mb.metricSparkJobStageResults.recordDataPoint(mb.startTime, ts, val, jobResultAttributeValue.String())
+// RecordSparkJobStageResultDataPoint adds a data point to spark.job.stage.result metric.
+func (mb *MetricsBuilder) RecordSparkJobStageResultDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
+	mb.metricSparkJobStageResult.recordDataPoint(mb.startTime, ts, val, jobResultAttributeValue.String())
 }
 
 // RecordSparkJobTaskActiveDataPoint adds a data point to spark.job.task.active metric.
@@ -4006,9 +4059,9 @@ func (mb *MetricsBuilder) RecordSparkJobTaskActiveDataPoint(ts pcommon.Timestamp
 	mb.metricSparkJobTaskActive.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSparkJobTaskResultsDataPoint adds a data point to spark.job.task.results metric.
-func (mb *MetricsBuilder) RecordSparkJobTaskResultsDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
-	mb.metricSparkJobTaskResults.recordDataPoint(mb.startTime, ts, val, jobResultAttributeValue.String())
+// RecordSparkJobTaskResultDataPoint adds a data point to spark.job.task.result metric.
+func (mb *MetricsBuilder) RecordSparkJobTaskResultDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
+	mb.metricSparkJobTaskResult.recordDataPoint(mb.startTime, ts, val, jobResultAttributeValue.String())
 }
 
 // RecordSparkStageDiskSpilledDataPoint adds a data point to spark.stage.disk.spilled metric.
@@ -4066,14 +4119,19 @@ func (mb *MetricsBuilder) RecordSparkStageShuffleIoDiskDataPoint(ts pcommon.Time
 	mb.metricSparkStageShuffleIoDisk.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSparkStageShuffleIoReadSizeDataPoint adds a data point to spark.stage.shuffle.io.read.size metric.
+func (mb *MetricsBuilder) RecordSparkStageShuffleIoReadSizeDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource) {
+	mb.metricSparkStageShuffleIoReadSize.recordDataPoint(mb.startTime, ts, val, sourceAttributeValue.String())
+}
+
 // RecordSparkStageShuffleIoRecordsDataPoint adds a data point to spark.stage.shuffle.io.records metric.
 func (mb *MetricsBuilder) RecordSparkStageShuffleIoRecordsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
 	mb.metricSparkStageShuffleIoRecords.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
-// RecordSparkStageShuffleIoSizeDataPoint adds a data point to spark.stage.shuffle.io.size metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleIoSizeDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource, directionAttributeValue AttributeDirection) {
-	mb.metricSparkStageShuffleIoSize.recordDataPoint(mb.startTime, ts, val, sourceAttributeValue.String(), directionAttributeValue.String())
+// RecordSparkStageShuffleIoWriteSizeDataPoint adds a data point to spark.stage.shuffle.io.write.size metric.
+func (mb *MetricsBuilder) RecordSparkStageShuffleIoWriteSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSparkStageShuffleIoWriteSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSparkStageShuffleWriteTimeDataPoint adds a data point to spark.stage.shuffle.write_time metric.
@@ -4091,14 +4149,14 @@ func (mb *MetricsBuilder) RecordSparkStageTaskActiveDataPoint(ts pcommon.Timesta
 	mb.metricSparkStageTaskActive.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordSparkStageTaskResultDataPoint adds a data point to spark.stage.task.result metric.
+func (mb *MetricsBuilder) RecordSparkStageTaskResultDataPoint(ts pcommon.Timestamp, val int64, stageTaskResultAttributeValue AttributeStageTaskResult) {
+	mb.metricSparkStageTaskResult.recordDataPoint(mb.startTime, ts, val, stageTaskResultAttributeValue.String())
+}
+
 // RecordSparkStageTaskResultSizeDataPoint adds a data point to spark.stage.task.result_size metric.
 func (mb *MetricsBuilder) RecordSparkStageTaskResultSizeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSparkStageTaskResultSize.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordSparkStageTaskResultsDataPoint adds a data point to spark.stage.task.results metric.
-func (mb *MetricsBuilder) RecordSparkStageTaskResultsDataPoint(ts pcommon.Timestamp, val int64, stageTaskResultAttributeValue AttributeStageTaskResult) {
-	mb.metricSparkStageTaskResults.recordDataPoint(mb.startTime, ts, val, stageTaskResultAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
