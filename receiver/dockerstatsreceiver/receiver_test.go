@@ -156,6 +156,7 @@ func TestScrapeV2(t *testing.T) {
 		desc                string
 		expectedMetricsFile string
 		mockDockerEngine    func(t *testing.T) *httptest.Server
+		cfgBuilder          *testConfigBuilder
 	}{
 		{
 			desc:                "scrapeV2_single_container",
@@ -171,6 +172,9 @@ func TestScrapeV2(t *testing.T) {
 				require.NoError(t, err)
 				return mockServer
 			},
+			cfgBuilder: newTestConfigBuilder().
+				withDefaultLabels().
+				withMetrics(allMetricsEnabled),
 		},
 		{
 			desc:                "scrapeV2_two_containers",
@@ -191,6 +195,9 @@ func TestScrapeV2(t *testing.T) {
 				require.NoError(t, err)
 				return mockServer
 			},
+			cfgBuilder: newTestConfigBuilder().
+				withDefaultLabels().
+				withMetrics(allMetricsEnabled),
 		},
 		{
 			desc:                "scrapeV2_no_pids_stats",
@@ -206,6 +213,9 @@ func TestScrapeV2(t *testing.T) {
 				require.NoError(t, err)
 				return mockServer
 			},
+			cfgBuilder: newTestConfigBuilder().
+				withDefaultLabels().
+				withMetrics(allMetricsEnabled),
 		},
 		{
 			desc:                "scrapeV2_pid_stats_max",
@@ -221,6 +231,9 @@ func TestScrapeV2(t *testing.T) {
 				require.NoError(t, err)
 				return mockServer
 			},
+			cfgBuilder: newTestConfigBuilder().
+				withDefaultLabels().
+				withMetrics(allMetricsEnabled),
 		},
 		{
 			desc:                "cgroups_v2_container",
@@ -235,6 +248,27 @@ func TestScrapeV2(t *testing.T) {
 				require.NoError(t, err)
 				return mockServer
 			},
+			cfgBuilder: newTestConfigBuilder().
+				withDefaultLabels().
+				withMetrics(allMetricsEnabled),
+		},
+		{
+			desc:                "scrapeV2_single_container_with_optional_resource_attributes",
+			expectedMetricsFile: filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "expected_metrics.yaml"),
+			mockDockerEngine: func(t *testing.T) *httptest.Server {
+				containerID := "73364842ef014441cac89fed05df19463b1230db25a31252cdf82e754f1ec581"
+				mockServer, err := dockerMockServer(&map[string]string{
+					"/v1.23/containers/json":                      filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "containers.json"),
+					"/v1.23/containers/" + containerID + "/json":  filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "container.json"),
+					"/v1.23/containers/" + containerID + "/stats": filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "stats.json"),
+				})
+				require.NoError(t, err)
+				return mockServer
+			},
+			cfgBuilder: newTestConfigBuilder().
+				withDefaultLabels().
+				withMetrics(allMetricsEnabled).
+				withResourceAttributes(allResourceAttributesEnabled),
 		},
 	}
 
@@ -243,19 +277,8 @@ func TestScrapeV2(t *testing.T) {
 			mockDockerEngine := tc.mockDockerEngine(t)
 			defer mockDockerEngine.Close()
 
-			cfg := createDefaultConfig().(*Config)
-			cfg.Endpoint = mockDockerEngine.URL
-			cfg.EnvVarsToMetricLabels = map[string]string{
-				"ENV_VAR":   "env-var-metric-label",
-				"ENV_VAR_2": "env-var-metric-label-2",
-			}
-			cfg.ContainerLabelsToMetricLabels = map[string]string{
-				"container.label":   "container-metric-label",
-				"container.label.2": "container-metric-label-2",
-			}
-			cfg.MetricsBuilderConfig.Metrics = allMetricsEnabled
-
-			receiver := newReceiver(receivertest.NewNopCreateSettings(), cfg)
+			receiver := newReceiver(
+				receivertest.NewNopCreateSettings(), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
@@ -372,7 +395,10 @@ func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttribu
 
 func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
 	cb.config.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
-	cb.config.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
+	cb.config.ContainerLabelsToMetricLabels = map[string]string{
+		"container.label":   "container-metric-label",
+		"container.label.2": "container-metric-label-2",
+	}
 	return cb
 }
 
