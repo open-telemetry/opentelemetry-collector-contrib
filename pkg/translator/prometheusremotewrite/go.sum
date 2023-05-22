@@ -43,8 +43,8 @@ go.opentelemetry.io/collector/featuregate v0.77.0 h1:m1/IzaXoQh6SgF6CM80vrBOCf5z
 go.opentelemetry.io/collector/featuregate v0.77.0/go.mod h1:/kVAsGUCyJXIDSgHftCN63QiwAEVHRLX2Kh/S+dqgHY=
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0011 h1:7lT0vseP89mHtUpvgmWYRvQZ0eY+SHbVsnXY20xkoMg=
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0011/go.mod h1:9vrXSQBeMRrdfGt9oMgYweqERJ8adaiQjN6LSbqRMMA=
-go.opentelemetry.io/collector/semconv v0.77.0 h1:dPG7wjN5x6CNH9ojRgHX6ONvx6DIgXO3st+WXR6KAnw=
-go.opentelemetry.io/collector/semconv v0.77.0/go.mod h1:lazBA42nqZPNPWDMiqWfr5eIVeNgRmoLDbQmjXKcm70=
+go.opentelemetry.io/collector/semconv v0.78.0 h1:kiufXJhRiBkjGXPQPLklknbov9xr8N/HV4P/yoICnHI=
+go.opentelemetry.io/collector/semconv v0.78.0/go.mod h1:lazBA42nqZPNPWDMiqWfr5eIVeNgRmoLDbQmjXKcm70=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
 go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
