@@ -40,7 +40,7 @@ func (_m *MockClient) Get(path string) ([]byte, error) {
 }
 
 // GetApplications provides a mock function with given fields:
-func (_m *MockClient) GetApplications() (*models.Applications, error) {
+func (_m *MockClient) Applications() (*models.Applications, error) {
 	ret := _m.Called()
 
 	var r0 *models.Applications
@@ -65,8 +65,8 @@ func (_m *MockClient) GetApplications() (*models.Applications, error) {
 	return r0, r1
 }
 
-// GetClusterStats provides a mock function with given fields:
-func (_m *MockClient) GetClusterStats() (*models.ClusterProperties, error) {
+// ClusterStats provides a mock function with given fields:
+func (_m *MockClient) ClusterStats() (*models.ClusterProperties, error) {
 	ret := _m.Called()
 
 	var r0 *models.ClusterProperties
@@ -92,7 +92,7 @@ func (_m *MockClient) GetClusterStats() (*models.ClusterProperties, error) {
 }
 
 // GetExecutorStats provides a mock function with given fields: appID
-func (_m *MockClient) GetExecutorStats(appID string) (*models.Executors, error) {
+func (_m *MockClient) ExecutorStats(appID string) (*models.Executors, error) {
 	ret := _m.Called(appID)
 
 	var r0 *models.Executors
@@ -118,7 +118,7 @@ func (_m *MockClient) GetExecutorStats(appID string) (*models.Executors, error) 
 }
 
 // GetJobStats provides a mock function with given fields: appID
-func (_m *MockClient) GetJobStats(appID string) (*models.Jobs, error) {
+func (_m *MockClient) JobStats(appID string) (*models.Jobs, error) {
 	ret := _m.Called(appID)
 
 	var r0 *models.Jobs
@@ -144,7 +144,7 @@ func (_m *MockClient) GetJobStats(appID string) (*models.Jobs, error) {
 }
 
 // GetStageStats provides a mock function with given fields: appID
-func (_m *MockClient) GetStageStats(appID string) (*models.Stages, error) {
+func (_m *MockClient) StageStats(appID string) (*models.Stages, error) {
 	ret := _m.Called(appID)
 
 	var r0 *models.Stages

@@ -44,21 +44,10 @@ func TestScraper(t *testing.T) {
 		expectedErr       error
 	}{
 		{
-			desc: "Nil client",
-			setupMockClient: func(t *testing.T) client {
-				return nil
-			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				return pmetric.NewMetrics()
-			},
-			config:      createDefaultConfig().(*Config),
-			expectedErr: errClientNotInit,
-		},
-		{
 			desc: "Exits on failure to get app ids",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				mockClient.On("GetApplications").Return(nil, errors.New("could not retrieve app ids"))
+				mockClient.On("Applications").Return(nil, errors.New("could not retrieve app ids"))
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -68,10 +57,10 @@ func TestScraper(t *testing.T) {
 			expectedErr: errFailedAppIDCollection,
 		},
 		{
-			desc: "No Matching Whitelisted Apps",
+			desc: "No Matching Allowed Apps",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				mockClient.On("GetApplications").Return(&models.Applications{}, nil)
+				mockClient.On("Applications").Return(&models.Applications{}, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -80,23 +69,23 @@ func TestScraper(t *testing.T) {
 			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 15 * time.Second,
 			},
-				WhitelistedApplicationNames: []string{"local-123", "local-987"},
+				ApplicationNames: []string{"local-123", "local-987"},
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:4040",
 				},
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			expectedErr: errNoMatchingWhitelistedApps,
+			expectedErr: errNoMatchingAllowedApps,
 		},
 		{
 			desc: "Successful Full Empty Collection",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				mockClient.On("GetClusterStats").Return(&models.ClusterProperties{}, nil)
-				mockClient.On("GetApplications").Return(&models.Applications{}, nil)
-				mockClient.On("GetStageStats", mock.Anything).Return(&models.Stages{}, nil)
-				mockClient.On("GetExecutorStats", mock.Anything).Return(&models.Executors{}, nil)
-				mockClient.On("GetJobStats", mock.Anything).Return(&models.Jobs{}, nil)
+				mockClient.On("ClusterStats").Return(&models.ClusterProperties{}, nil)
+				mockClient.On("Applications").Return(&models.Applications{}, nil)
+				mockClient.On("StageStats", mock.Anything).Return(&models.Stages{}, nil)
+				mockClient.On("ExecutorStats", mock.Anything).Return(&models.Executors{}, nil)
+				mockClient.On("JobStats", mock.Anything).Return(&models.Jobs{}, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -116,17 +105,17 @@ func TestScraper(t *testing.T) {
 				var clusterStats *models.ClusterProperties
 				err := json.Unmarshal(data, &clusterStats)
 				require.NoError(t, err)
-				mockClient.On("GetClusterStats").Return(clusterStats, nil)
+				mockClient.On("ClusterStats").Return(clusterStats, nil)
 
 				data = loadAPIResponseData(t, appsStatsResponseFile)
 				var apps *models.Applications
 				err = json.Unmarshal(data, &apps)
 				require.NoError(t, err)
-				mockClient.On("GetApplications").Return(apps, nil)
+				mockClient.On("Applications").Return(apps, nil)
 
-				mockClient.On("GetStageStats", mock.Anything).Return(nil, errors.New("stage api error"))
-				mockClient.On("GetExecutorStats", mock.Anything).Return(nil, errors.New("executor api error"))
-				mockClient.On("GetJobStats", mock.Anything).Return(nil, errors.New("jobs api error"))
+				mockClient.On("StageStats", mock.Anything).Return(nil, errors.New("stage api error"))
+				mockClient.On("ExecutorStats", mock.Anything).Return(nil, errors.New("executor api error"))
+				mockClient.On("JobStats", mock.Anything).Return(nil, errors.New("jobs api error"))
 
 				return &mockClient
 			},
@@ -147,31 +136,31 @@ func TestScraper(t *testing.T) {
 				var clusterStats *models.ClusterProperties
 				err := json.Unmarshal(data, &clusterStats)
 				require.NoError(t, err)
-				mockClient.On("GetClusterStats").Return(clusterStats, nil)
+				mockClient.On("ClusterStats").Return(clusterStats, nil)
 
 				data = loadAPIResponseData(t, appsStatsResponseFile)
 				var apps *models.Applications
 				err = json.Unmarshal(data, &apps)
 				require.NoError(t, err)
-				mockClient.On("GetApplications").Return(apps, nil)
+				mockClient.On("Applications").Return(apps, nil)
 
 				data = loadAPIResponseData(t, stagesStatsResponseFile)
 				var stages *models.Stages
 				err = json.Unmarshal(data, &stages)
 				require.NoError(t, err)
-				mockClient.On("GetStageStats", mock.Anything).Return(stages, nil)
+				mockClient.On("StageStats", mock.Anything).Return(stages, nil)
 
 				data = loadAPIResponseData(t, executorsStatsResponseFile)
 				var executors *models.Executors
 				err = json.Unmarshal(data, &executors)
 				require.NoError(t, err)
-				mockClient.On("GetExecutorStats", mock.Anything).Return(executors, nil)
+				mockClient.On("ExecutorStats", mock.Anything).Return(executors, nil)
 
 				data = loadAPIResponseData(t, jobsStatsResponseFile)
 				var jobs *models.Jobs
 				err = json.Unmarshal(data, &jobs)
 				require.NoError(t, err)
-				mockClient.On("GetJobStats", mock.Anything).Return(jobs, nil)
+				mockClient.On("JobStats", mock.Anything).Return(jobs, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {

@@ -171,6 +171,32 @@ var MapAttributePoolMemoryType = map[string]AttributePoolMemoryType{
 	"mapped": AttributePoolMemoryTypeMapped,
 }
 
+// AttributeSchedulerStatus specifies the a value scheduler_status attribute.
+type AttributeSchedulerStatus int
+
+const (
+	_ AttributeSchedulerStatus = iota
+	AttributeSchedulerStatusWaiting
+	AttributeSchedulerStatusRunning
+)
+
+// String returns the string representation of the AttributeSchedulerStatus.
+func (av AttributeSchedulerStatus) String() string {
+	switch av {
+	case AttributeSchedulerStatusWaiting:
+		return "waiting"
+	case AttributeSchedulerStatusRunning:
+		return "running"
+	}
+	return ""
+}
+
+// MapAttributeSchedulerStatus is a helper map of string to AttributeSchedulerStatus attribute value.
+var MapAttributeSchedulerStatus = map[string]AttributeSchedulerStatus{
+	"waiting": AttributeSchedulerStatusWaiting,
+	"running": AttributeSchedulerStatusRunning,
+}
+
 // AttributeSource specifies the a value source attribute.
 type AttributeSource int
 
@@ -877,7 +903,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schedulerWaitingAttributeValue bool, schedulerRunningAttributeValue bool) {
+func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schedulerStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -885,8 +911,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutBool("waiting", schedulerWaitingAttributeValue)
-	dp.Attributes().PutBool("running", schedulerRunningAttributeValue)
+	dp.Attributes().PutStr("status", schedulerStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3905,8 +3930,8 @@ func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobCountDataPoint(ts pcom
 }
 
 // RecordSparkDriverDagSchedulerStageCountDataPoint adds a data point to spark.driver.dag_scheduler.stage.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageCountDataPoint(ts pcommon.Timestamp, val int64, schedulerWaitingAttributeValue bool, schedulerRunningAttributeValue bool) {
-	mb.metricSparkDriverDagSchedulerStageCount.recordDataPoint(mb.startTime, ts, val, schedulerWaitingAttributeValue, schedulerRunningAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageCountDataPoint(ts pcommon.Timestamp, val int64, schedulerStatusAttributeValue AttributeSchedulerStatus) {
+	mb.metricSparkDriverDagSchedulerStageCount.recordDataPoint(mb.startTime, ts, val, schedulerStatusAttributeValue.String())
 }
 
 // RecordSparkDriverDagSchedulerStageFailedDataPoint adds a data point to spark.driver.dag_scheduler.stage.failed metric.

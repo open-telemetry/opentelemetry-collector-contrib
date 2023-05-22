@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+#
+# This file is almost completely copied from https://github.com/apache/spark/blob/master/examples/src/main/python/status_api_demo.py - all credit goes to the original source.
 
 import time
 import threading

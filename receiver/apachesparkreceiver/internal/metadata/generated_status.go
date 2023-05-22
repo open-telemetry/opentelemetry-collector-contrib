@@ -8,5 +8,5 @@ import (
 
 const (
 	Type             = "apachespark"
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

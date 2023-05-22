@@ -23,11 +23,11 @@ const (
 
 type client interface {
 	Get(path string) ([]byte, error)
-	GetClusterStats() (*models.ClusterProperties, error)
-	GetApplications() (*models.Applications, error)
-	GetStageStats(appID string) (*models.Stages, error)
-	GetExecutorStats(appID string) (*models.Executors, error)
-	GetJobStats(appID string) (*models.Jobs, error)
+	ClusterStats() (*models.ClusterProperties, error)
+	Applications() (*models.Applications, error)
+	StageStats(appID string) (*models.Stages, error)
+	ExecutorStats(appID string) (*models.Executors, error)
+	JobStats(appID string) (*models.Jobs, error)
 }
 
 var _ client = (*apacheSparkClient)(nil)
@@ -85,7 +85,7 @@ func (c *apacheSparkClient) Get(path string) ([]byte, error) {
 	return body, nil
 }
 
-func (c *apacheSparkClient) GetClusterStats() (*models.ClusterProperties, error) {
+func (c *apacheSparkClient) ClusterStats() (*models.ClusterProperties, error) {
 	body, err := c.Get(metricsPath)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (c *apacheSparkClient) GetClusterStats() (*models.ClusterProperties, error)
 	return clusterStats, nil
 }
 
-func (c *apacheSparkClient) GetApplications() (*models.Applications, error) {
+func (c *apacheSparkClient) Applications() (*models.Applications, error) {
 	body, err := c.Get(applicationsPath)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (c *apacheSparkClient) GetApplications() (*models.Applications, error) {
 	return apps, nil
 }
 
-func (c *apacheSparkClient) GetStageStats(appID string) (*models.Stages, error) {
+func (c *apacheSparkClient) StageStats(appID string) (*models.Stages, error) {
 	stagePath := fmt.Sprintf("%s/%s/stages", applicationsPath, appID)
 	body, err := c.Get(stagePath)
 	if err != nil {
@@ -131,7 +131,7 @@ func (c *apacheSparkClient) GetStageStats(appID string) (*models.Stages, error) 
 	return &stageStats, nil
 }
 
-func (c *apacheSparkClient) GetExecutorStats(appID string) (*models.Executors, error) {
+func (c *apacheSparkClient) ExecutorStats(appID string) (*models.Executors, error) {
 	executorPath := fmt.Sprintf("%s/%s/executors", applicationsPath, appID)
 	body, err := c.Get(executorPath)
 	if err != nil {
@@ -147,7 +147,7 @@ func (c *apacheSparkClient) GetExecutorStats(appID string) (*models.Executors, e
 	return &executorStats, nil
 }
 
-func (c *apacheSparkClient) GetJobStats(appID string) (*models.Jobs, error) {
+func (c *apacheSparkClient) JobStats(appID string) (*models.Jobs, error) {
 	jobPath := fmt.Sprintf("%s/%s/jobs", applicationsPath, appID)
 	body, err := c.Get(jobPath)
 	if err != nil {

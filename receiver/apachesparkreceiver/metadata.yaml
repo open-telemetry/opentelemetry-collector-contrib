@@ -95,14 +95,13 @@ attributes:
     enum:
       - used
       - free
-  scheduler_waiting:
-    name_override: waiting
-    description: Whether the stages for which the metric was recorded are waiting to be run by the DAGScheduler.
-    type: bool
-  scheduler_running:
-    name_override: running
-    description: Whether the stages for which the metric was recorded are currently being run by the DAGScheduler.
-    type: bool
+  scheduler_status:
+    name_override: status
+    description: The status of the DAGScheduler stages for which the metric was recorded.
+    type: string
+    enum:
+      - waiting
+      - running
   pool_memory_type:
     name_override: type
     description: The type of pool memory for which the metric was recorded.
@@ -589,7 +588,7 @@ metrics:
       monotonic: false
       value_type: int
     unit: "{ stage }"
-    attributes: [scheduler_waiting, scheduler_running]
+    attributes: [scheduler_status]
   spark.driver.live_listener_bus.posted:
     description: Number of events that have been posted on the LiveListenerBus.
     enabled: true

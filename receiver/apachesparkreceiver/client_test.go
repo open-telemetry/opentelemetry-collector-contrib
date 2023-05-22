@@ -67,7 +67,7 @@ func TestNewApacheSparkClient(t *testing.T) {
 	}
 }
 
-func TestGetClusterStats(t *testing.T) {
+func TestClusterStats(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -88,7 +88,7 @@ func TestGetClusterStats(t *testing.T) {
 
 				tc := createTestClient(t, URL)
 
-				clusterStats, err := tc.GetClusterStats()
+				clusterStats, err := tc.ClusterStats()
 				require.NotNil(t, err)
 				require.Nil(t, clusterStats)
 			},
@@ -111,7 +111,7 @@ func TestGetClusterStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				clusterStats, err := tc.GetClusterStats()
+				clusterStats, err := tc.ClusterStats()
 				require.Nil(t, clusterStats)
 				require.NotNil(t, err)
 			},
@@ -137,7 +137,7 @@ func TestGetClusterStats(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				clusterStats, err := tc.GetClusterStats()
+				clusterStats, err := tc.ClusterStats()
 				require.NoError(t, err)
 				require.NotNil(t, clusterStats)
 				require.Equal(t, expected, clusterStats)
@@ -150,7 +150,7 @@ func TestGetClusterStats(t *testing.T) {
 	}
 }
 
-func TestGetApplications(t *testing.T) {
+func TestApplications(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -171,7 +171,7 @@ func TestGetApplications(t *testing.T) {
 
 				tc := createTestClient(t, URL)
 
-				apps, err := tc.GetApplications()
+				apps, err := tc.Applications()
 				require.NotNil(t, err)
 				require.Nil(t, apps)
 			},
@@ -194,7 +194,7 @@ func TestGetApplications(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				apps, err := tc.GetApplications()
+				apps, err := tc.Applications()
 				require.Nil(t, apps)
 				require.NotNil(t, err)
 			},
@@ -220,7 +220,7 @@ func TestGetApplications(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				apps, err := tc.GetApplications()
+				apps, err := tc.Applications()
 				require.NoError(t, err)
 				require.NotNil(t, apps)
 				require.Equal(t, expected, apps)
@@ -254,7 +254,7 @@ func TestGetStageStats(t *testing.T) {
 
 				tc := createTestClient(t, URL)
 
-				stageStats, err := tc.GetStageStats("some_app_id")
+				stageStats, err := tc.StageStats("some_app_id")
 				require.NotNil(t, err)
 				require.Nil(t, stageStats)
 			},
@@ -277,7 +277,7 @@ func TestGetStageStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				stageStats, err := tc.GetStageStats("some_app_id")
+				stageStats, err := tc.StageStats("some_app_id")
 				require.Nil(t, stageStats)
 				require.NotNil(t, err)
 			},
@@ -303,7 +303,7 @@ func TestGetStageStats(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				stageStats, err := tc.GetStageStats("some_app_id")
+				stageStats, err := tc.StageStats("some_app_id")
 				require.NoError(t, err)
 				require.NotNil(t, stageStats)
 				require.Equal(t, expected, stageStats)
@@ -337,7 +337,7 @@ func TestGetExecutorStats(t *testing.T) {
 
 				tc := createTestClient(t, URL)
 
-				executorStats, err := tc.GetExecutorStats("some_app_id")
+				executorStats, err := tc.ExecutorStats("some_app_id")
 				require.NotNil(t, err)
 				require.Nil(t, executorStats)
 			},
@@ -360,7 +360,7 @@ func TestGetExecutorStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				executorStats, err := tc.GetExecutorStats("some_app_id")
+				executorStats, err := tc.ExecutorStats("some_app_id")
 				require.Nil(t, executorStats)
 				require.NotNil(t, err)
 			},
@@ -386,7 +386,7 @@ func TestGetExecutorStats(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				executorStats, err := tc.GetExecutorStats("some_app_id")
+				executorStats, err := tc.ExecutorStats("some_app_id")
 				require.NoError(t, err)
 				require.NotNil(t, executorStats)
 				require.Equal(t, expected, executorStats)
@@ -420,7 +420,7 @@ func TestGetJobStats(t *testing.T) {
 
 				tc := createTestClient(t, URL)
 
-				jobStats, err := tc.GetJobStats("some_app_id")
+				jobStats, err := tc.JobStats("some_app_id")
 				require.NotNil(t, err)
 				require.Nil(t, jobStats)
 			},
@@ -443,7 +443,7 @@ func TestGetJobStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				jobStats, err := tc.GetJobStats("some_app_id")
+				jobStats, err := tc.JobStats("some_app_id")
 				require.Nil(t, jobStats)
 				require.NotNil(t, err)
 			},
@@ -469,7 +469,7 @@ func TestGetJobStats(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				jobStats, err := tc.GetJobStats("some_app_id")
+				jobStats, err := tc.JobStats("some_app_id")
 				require.NoError(t, err)
 				require.NotNil(t, jobStats)
 				require.Equal(t, expected, jobStats)
