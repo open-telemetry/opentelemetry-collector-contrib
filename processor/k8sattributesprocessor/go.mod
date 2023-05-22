@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sat
 go 1.19
 
 require (
-	github.com/docker/docker v23.0.6+incompatible
+	github.com/docker/docker v24.0.1+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.77.0
 	github.com/stretchr/testify v1.8.2
