@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.77.0
-	github.com/prometheus/common v0.43.0
+	github.com/prometheus/common v0.44.0
 	github.com/prometheus/prometheus v0.43.1
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.77.0
