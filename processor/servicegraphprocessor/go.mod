@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.77.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.77.0
 	go.opentelemetry.io/collector/featuregate v0.77.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
 	go.opentelemetry.io/collector/semconv v0.77.0
 	go.uber.org/zap v1.24.0
 )
