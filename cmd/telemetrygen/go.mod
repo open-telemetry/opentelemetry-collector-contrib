@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
-	go.opentelemetry.io/collector/semconv v0.77.0
+	go.opentelemetry.io/collector/semconv v0.78.0
 	go.opentelemetry.io/otel v1.15.1
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.38.1
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.38.1
