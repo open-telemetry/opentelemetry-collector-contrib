@@ -17,4 +17,4 @@ issues: [https://github.com/open-telemetry/opentelemetry-collector-contrib/issue
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: metric name replacement is under a feature-gate. Use --feature-gates=+receiver.dockerstats.changeCpuUtilization to enable.
