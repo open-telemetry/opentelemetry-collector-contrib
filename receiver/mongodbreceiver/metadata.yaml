@@ -4,8 +4,8 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+
 resource_attributes:
   database:
     description: The name of a database.
@@ -108,7 +108,7 @@ metrics:
       monotonic: false
     attributes: [database]
   mongodb.connection.count:
-    description: The number of connections. 
+    description: The number of connections.
     unit: "{connections}"
     enabled: true
     sum:
@@ -197,7 +197,7 @@ metrics:
     attributes: [ operation ]
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
-    extended_documentation: If collection data is compressed it reflects the compressed size. 
+    extended_documentation: If collection data is compressed it reflects the compressed size.
     unit: By
     enabled: true
     sum:
@@ -215,7 +215,7 @@ metrics:
       monotonic: false
     attributes: []
   mongodb.index.access.count:
-    description: The number of times an index has been accessed. 
+    description: The number of times an index has been accessed.
     unit: "{accesses}"
     enabled: true
     sum:

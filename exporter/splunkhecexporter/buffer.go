@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -20,6 +9,8 @@ import (
 	"errors"
 	"io"
 	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -36,6 +27,7 @@ type bufferState struct {
 	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
+	jsonStream           *jsoniter.Stream
 	rawLength            int
 }
 
@@ -195,15 +187,18 @@ func (p bufferStatePool) put(bf *bufferState) {
 	p.pool.Put(bf)
 }
 
+const initBufferCap = 512
+
 func newBufferStatePool(bufCap uint, compressionAvailable bool, maxEventLength uint) bufferStatePool {
 	return bufferStatePool{
 		&sync.Pool{
 			New: func() interface{} {
-				buf := new(bytes.Buffer)
+				buf := bytes.NewBuffer(make([]byte, 0, initBufferCap))
 				return &bufferState{
 					compressionAvailable: compressionAvailable,
 					writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
 					buf:                  buf,
+					jsonStream:           jsoniter.NewStream(jsoniter.ConfigDefault, nil, initBufferCap),
 					bufferMaxLen:         bufCap,
 					maxEventLength:       maxEventLength,
 				}

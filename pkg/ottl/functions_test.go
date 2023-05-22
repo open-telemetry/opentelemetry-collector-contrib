@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl
 
@@ -110,18 +99,18 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  invocation
+		inv  editor
 	}{
 		{
 			name: "unknown function",
-			inv: invocation{
+			inv: editor{
 				Function:  "unknownfunc",
 				Arguments: []value{},
 			},
 		},
 		{
 			name: "not accessor",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getsetter",
 				Arguments: []value{
 					{
@@ -132,7 +121,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not reader (invalid function)",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -147,7 +136,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
@@ -169,7 +158,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
@@ -194,7 +183,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args with telemetrySettings",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_telemetry_settings_first",
 				Arguments: []value{
 					{
@@ -214,7 +203,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args with telemetrySettings",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_telemetry_settings_first",
 				Arguments: []value{
 					{
@@ -244,7 +233,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string",
 				Arguments: []value{
 					{
@@ -257,7 +246,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type when byte slice",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_byte_slice",
 				Arguments: []value{
 					{
@@ -274,7 +263,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "mismatching slice element type",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -296,7 +285,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "mismatching slice argument type",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -307,13 +296,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "function call returns error",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_error",
 			},
 		},
 		{
 			name: "Enum not found",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_enum",
 				Arguments: []value{
 					{
@@ -324,13 +313,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "factory definition uses a non-pointer Arguments value",
-			inv: invocation{
+			inv: editor{
 				Function: "non_pointer",
 			},
 		},
 		{
 			name: "no struct tags",
-			inv: invocation{
+			inv: editor{
 				Function: "no_struct_tag",
 				Arguments: []value{
 					{
@@ -341,7 +330,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "using the wrong struct tag",
-			inv: invocation{
+			inv: editor{
 				Function: "wrong_struct_tag",
 				Arguments: []value{
 					{
@@ -352,7 +341,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "non-integer struct tags",
-			inv: invocation{
+			inv: editor{
 				Function: "bad_struct_tag",
 				Arguments: []value{
 					{
@@ -363,7 +352,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "struct tag index too low",
-			inv: invocation{
+			inv: editor{
 				Function: "negative_struct_tag",
 				Arguments: []value{
 					{
@@ -374,7 +363,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "struct tag index too high",
-			inv: invocation{
+			inv: editor{
 				Function: "out_of_bounds_struct_tag",
 				Arguments: []value{
 					{
@@ -404,12 +393,12 @@ func Test_NewFunctionCall(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  invocation
+		inv  editor
 		want any
 	}{
 		{
 			name: "no arguments",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_noop",
 				Arguments: []value{
 					{
@@ -423,7 +412,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "empty slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -437,7 +426,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "string slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -461,7 +450,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "float slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_float_slice",
 				Arguments: []value{
 					{
@@ -491,7 +480,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "int slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_int_slice",
 				Arguments: []value{
 					{
@@ -521,7 +510,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter_slice",
 				Arguments: []value{
 					{
@@ -628,7 +617,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringgetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringgetter_slice",
 				Arguments: []value{
 					{
@@ -649,7 +638,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "floatgetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_floatgetter_slice",
 				Arguments: []value{
 					{
@@ -672,7 +661,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "pmapgetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_pmapgetter_slice",
 				Arguments: []value{
 					{
@@ -709,7 +698,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringlikegetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringlikegetter_slice",
 				Arguments: []value{
 					{
@@ -732,7 +721,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "floatlikegetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_floatlikegetter_slice",
 				Arguments: []value{
 					{
@@ -755,7 +744,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "setter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_setter",
 				Arguments: []value{
 					{
@@ -775,7 +764,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getsetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getsetter",
 				Arguments: []value{
 					{
@@ -795,7 +784,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -815,7 +804,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg with nil literal",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -827,7 +816,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg with list",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -892,7 +881,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringgetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringgetter",
 				Arguments: []value{
 					{
@@ -904,7 +893,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringlikegetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringlikegetter",
 				Arguments: []value{
 					{
@@ -916,7 +905,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "floatgetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_floatgetter",
 				Arguments: []value{
 					{
@@ -928,7 +917,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "floatlikegetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_floatlikegetter",
 				Arguments: []value{
 					{
@@ -940,7 +929,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "intgetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_intgetter",
 				Arguments: []value{
 					{
@@ -954,7 +943,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "pmapgetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_pmapgetter",
 				Arguments: []value{
 					{
@@ -974,7 +963,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "string arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string",
 				Arguments: []value{
 					{
@@ -986,7 +975,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "float arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_float",
 				Arguments: []value{
 					{
@@ -1000,7 +989,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "int arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_int",
 				Arguments: []value{
 					{
@@ -1014,7 +1003,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "bool arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_bool",
 				Arguments: []value{
 					{
@@ -1026,7 +1015,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "byteSlice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_byte_slice",
 				Arguments: []value{
 					{
@@ -1038,7 +1027,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "multiple args",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
@@ -1071,7 +1060,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "Enum arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_enum",
 				Arguments: []value{
 					{

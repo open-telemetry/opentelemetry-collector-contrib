@@ -1,0 +1,7 @@
+type: sentry
+
+status:
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [contrib]

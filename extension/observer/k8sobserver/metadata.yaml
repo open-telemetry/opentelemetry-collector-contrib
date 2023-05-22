@@ -4,4 +4,4 @@ status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: [contrib]
+  distributions: [contrib, splunk, sumo]

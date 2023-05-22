@@ -139,6 +139,7 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
+      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
@@ -212,6 +213,7 @@ body:
       - receiver/snmp
       - receiver/snowflake
       - receiver/solace
+      - receiver/splunkenterprise
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver

@@ -88,6 +88,8 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxDropped           MetricConfig `mapstructure:"container.network.io.usage.tx_dropped"`
 	ContainerNetworkIoUsageTxErrors            MetricConfig `mapstructure:"container.network.io.usage.tx_errors"`
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
+	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
+	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -279,6 +281,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerNetworkIoUsageTxPackets: MetricConfig{
+			Enabled: false,
+		},
+		ContainerPidsCount: MetricConfig{
+			Enabled: false,
+		},
+		ContainerPidsLimit: MetricConfig{
 			Enabled: false,
 		},
 	}

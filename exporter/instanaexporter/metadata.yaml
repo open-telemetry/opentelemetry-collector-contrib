@@ -1,0 +1,7 @@
+type: instana
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces]
+  distributions: [contrib]

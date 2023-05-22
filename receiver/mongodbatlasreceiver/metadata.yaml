@@ -4,8 +4,8 @@ status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib]
-  
+  distributions: [contrib, splunk, observiq, sumo]
+
 resource_attributes:
   mongodb_atlas.org_name:
     description: Organization Name

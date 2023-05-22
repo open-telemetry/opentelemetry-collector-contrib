@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
@@ -18,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"runtime"
 	"sync"
@@ -160,6 +150,50 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSend(t, exporter, `{"message": "test2"}`)
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with dynamic index", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]interface{}{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]interface{})
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsIndex = index
+			cfg.LogsDynamicIndex.Enabled = true
+		})
+
+		mustSendLogsWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
+
+		rec.WaitItems(1)
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -349,5 +383,15 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 
 func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string) {
 	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	require.NoError(t, err)
+}
+
+// send trace with span & resource attributes
+func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporter, attrMp map[string]string, resMp map[string]string) {
+	logs := newLogsWithAttributeAndResourceMap(attrMp, resMp)
+	resSpans := logs.ResourceLogs().At(0)
+	logRecords := resSpans.ScopeLogs().At(0).LogRecords().At(0)
+
+	err := exporter.pushLogRecord(context.TODO(), resSpans.Resource(), logRecords)
 	require.NoError(t, err)
 }

@@ -41,3 +41,12 @@ cumulativetodelta/regexp:
     metrics:
       - b*
   max_staleness: 10s
+
+cumulativetodelta/auto:
+  initial_value: auto
+
+cumulativetodelta/keep:
+  initial_value: keep
+
+cumulativetodelta/drop:
+  initial_value: drop

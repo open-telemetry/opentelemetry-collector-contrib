@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   bigip.virtual_server.name:

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileexporter
 
@@ -23,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				Path: "./filename.json",
 				Rotation: &Rotation{
@@ -51,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "3"),
+			id: component.NewIDWithName(metadata.Type, "3"),
 			expected: &Config{
 				Path: "./filename",
 				Rotation: &Rotation{
@@ -66,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "rotation_with_default_settings"),
+			id: component.NewIDWithName(metadata.Type, "rotation_with_default_settings"),
 			expected: &Config{
 				Path:       "./foo",
 				FormatType: formatTypeJSON,
@@ -77,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "rotation_with_custom_settings"),
+			id: component.NewIDWithName(metadata.Type, "rotation_with_custom_settings"),
 			expected: &Config{
 				Path: "./foo",
 				Rotation: &Rotation{
@@ -89,15 +80,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "compression_error"),
+			id:           component.NewIDWithName(metadata.Type, "compression_error"),
 			errorMessage: "compression is not supported",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "format_error"),
+			id:           component.NewIDWithName(metadata.Type, "format_error"),
 			errorMessage: "format type is not supported",
 		},
 		{
-			id: component.NewIDWithName(typeStr, "flush_interval_5"),
+			id: component.NewIDWithName(metadata.Type, "flush_interval_5"),
 			expected: &Config{
 				Path:          "./flushed",
 				FlushInterval: 5,
@@ -105,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "flush_interval_5s"),
+			id: component.NewIDWithName(metadata.Type, "flush_interval_5s"),
 			expected: &Config{
 				Path:          "./flushed",
 				FlushInterval: 5 * time.Second,
@@ -113,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "flush_interval_500ms"),
+			id: component.NewIDWithName(metadata.Type, "flush_interval_500ms"),
 			expected: &Config{
 				Path:          "./flushed",
 				FlushInterval: 500 * time.Millisecond,
@@ -121,11 +112,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "flush_interval_negative_value"),
+			id:           component.NewIDWithName(metadata.Type, "flush_interval_negative_value"),
 			errorMessage: "flush_interval must be larger than zero",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, ""),
+			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "path must be non-empty",
 		},
 	}
