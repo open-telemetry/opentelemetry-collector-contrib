@@ -471,8 +471,8 @@ go.opentelemetry.io/collector/pdata v1.0.0-rcv0011 h1:7lT0vseP89mHtUpvgmWYRvQZ0e
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0011/go.mod h1:9vrXSQBeMRrdfGt9oMgYweqERJ8adaiQjN6LSbqRMMA=
 go.opentelemetry.io/collector/receiver v0.77.0 h1:Bvq5i3asAYREd2HyZnGobAX4KWPp8UzWBxLi5cKBEPI=
 go.opentelemetry.io/collector/receiver v0.77.0/go.mod h1:6+/X2Mix4n5sxSfJr9FEzsvFoo1ESPTuq0VRY3bk+UE=
-go.opentelemetry.io/collector/semconv v0.77.0 h1:dPG7wjN5x6CNH9ojRgHX6ONvx6DIgXO3st+WXR6KAnw=
-go.opentelemetry.io/collector/semconv v0.77.0/go.mod h1:lazBA42nqZPNPWDMiqWfr5eIVeNgRmoLDbQmjXKcm70=
+go.opentelemetry.io/collector/semconv v0.78.0 h1:kiufXJhRiBkjGXPQPLklknbov9xr8N/HV4P/yoICnHI=
+go.opentelemetry.io/collector/semconv v0.78.0/go.mod h1:lazBA42nqZPNPWDMiqWfr5eIVeNgRmoLDbQmjXKcm70=
 go.opentelemetry.io/contrib/propagators/b3 v1.15.0 h1:bMaonPyFcAvZ4EVzkUNkfnUHP5Zi63CIDlA3dRsEg8Q=
 go.opentelemetry.io/contrib/propagators/b3 v1.15.0/go.mod h1:VjU0g2v6HSQ+NwfifambSLAeBgevjIcqmceaKWEzl0c=
 go.opentelemetry.io/contrib/zpages v0.41.1 h1:FReY8OWFNtYm4mWleTRxTUyD3r02uGcwS6ZeElahs00=
