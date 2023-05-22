@@ -131,7 +131,7 @@ func PrepareZorkianSystemMetrics(ms []zorkian.Metric) []zorkian.Metric {
 	return series
 }
 
-// PrepareZorkianContaierMetrics converts OTEL container.* metrics to Datadog container
+// PrepareZorkianContainerMetrics converts OTEL container.* metrics to Datadog container
 // metrics.
 func PrepareZorkianContainerMetrics(ms []zorkian.Metric) []zorkian.Metric {
 	series := ms
