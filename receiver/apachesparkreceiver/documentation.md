@@ -409,7 +409,7 @@ Number of active stages in this job.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { task } | Sum | Int | Cumulative | false |
 
-### spark.job.stage.results
+### spark.job.stage.result
 
 Number of stages with a specific result in this job.
 
@@ -431,7 +431,7 @@ Number of active tasks in this job.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { task } | Sum | Int | Cumulative | false |
 
-### spark.job.task.results
+### spark.job.task.result
 
 Number of tasks with a specific result in this job.
 
@@ -551,6 +551,20 @@ Amount of data read to disk in shuffle operations (sometimes required for large 
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | bytes | Sum | Int | Cumulative | true |
 
+### spark.stage.shuffle.io.read.size
+
+Amount of data read in shuffle operations in this stage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| bytes | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| source | The source from which data was fetched for the metric. | Str: ``local``, ``remote`` |
+
 ### spark.stage.shuffle.io.records
 
 Number of records written or read in shuffle operations in this stage.
@@ -565,20 +579,13 @@ Number of records written or read in shuffle operations in this stage.
 | ---- | ----------- | ------ |
 | direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` |
 
-### spark.stage.shuffle.io.size
+### spark.stage.shuffle.io.write.size
 
-Amount of data written or read in shuffle operations in this stage.
+Amount of data written in shuffle operations in this stage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | bytes | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| source | The source from which data was fetched for the metric. | Str: ``local``, ``remote`` |
-| direction | Whether the metric is in regards to input or output operations. | Str: ``in``, ``out`` |
 
 ### spark.stage.shuffle.write_time
 
@@ -613,15 +620,7 @@ Number of active tasks in this stage.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | { task } | Sum | Int | Cumulative | false |
 
-### spark.stage.task.result_size
-
-The amount of data transmitted back to the driver by all the tasks in this stage.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| bytes | Sum | Int | Cumulative | true |
-
-### spark.stage.task.results
+### spark.stage.task.result
 
 Number of tasks with a specific result in this stage.
 
@@ -634,6 +633,14 @@ Number of tasks with a specific result in this stage.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | result | The result of the stage tasks for which the metric was recorded. | Str: ``completed``, ``failed``, ``killed`` |
+
+### spark.stage.task.result_size
+
+The amount of data transmitted back to the driver by all the tasks in this stage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| bytes | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 
