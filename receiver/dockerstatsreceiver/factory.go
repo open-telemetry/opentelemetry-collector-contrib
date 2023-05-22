@@ -17,9 +17,22 @@ import (
 )
 
 const (
-	typeStr   = "docker_stats"
-	stability = component.StabilityLevelAlpha
+	typeStr                = "docker_stats"
+	stability              = component.StabilityLevelAlpha
+	changeCpuUtilizationID = "receiver.dockerstats.changeCpuUtilization"
 )
+
+var changeCpuUtilization *featuregate.Gate
+
+func init() {
+	changeCpuUtilization = featuregate.GlobalRegistry().MustRegister(
+		changeCpuUtilizationID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the metric container.cpu.percent will be renamed to container.cpu.utilization to adhere to semantic rules."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21807"),
+		featuregate.WithRegisterToVersion("0.81.0"),
+	)
+}
 
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.dockerstats.useScraperV2",
