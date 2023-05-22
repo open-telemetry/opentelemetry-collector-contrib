@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
 	go.opentelemetry.io/collector/receiver v0.77.0
 	go.uber.org/zap v1.24.0
-	google.golang.org/api v0.122.0
+	google.golang.org/api v0.123.0
 	google.golang.org/grpc v1.55.0
 )
 
