@@ -9,6 +9,7 @@ import (
 	"time"
 	"net/http"
 	"net/http/httptest"
+	"log"
 
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
@@ -44,7 +45,12 @@ func TestToPrometheusConfig(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Serve mock response for the test
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Mock response"))
+		_, err := w.Write([]byte("Mock response"))
+		if err != nil {
+			log.Println("Error on the response:", err)
+
+			return
+		}
 	}))
 	defer mockServer.Close()
 
