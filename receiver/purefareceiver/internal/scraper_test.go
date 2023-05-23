@@ -5,11 +5,11 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"testing"
-	"time"
+	"log"
 	"net/http"
 	"net/http/httptest"
-	"log"
+	"testing"
+	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
