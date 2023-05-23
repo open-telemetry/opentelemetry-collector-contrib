@@ -131,7 +131,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 		},
 		{
-			name:        "expand capturing groups",
+			name:        "expand capturing groups in values",
 			target:      target,
 			mode:        modeValue,
 			pattern:     `world(\d)`,
@@ -144,6 +144,21 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+			},
+		},
+		{
+			name:        "expand capturing groups in keys",
+			target:      target,
+			mode:        modeKey,
+			pattern:     `test(\d)`,
+			replacement: "test-$1",
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test-2", "hello")
+				expectedMap.PutStr("test-3", "goodbye world1 and world2")
+				expectedMap.PutInt("test-4", 1234)
+				expectedMap.PutDouble("test-5", 1234)
+				expectedMap.PutBool("test-6", true)
 			},
 		},
 		{
