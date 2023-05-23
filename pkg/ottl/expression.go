@@ -283,6 +283,70 @@ func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, 
 	return &result, nil
 }
 
+// IntLikeGetter is a Getter that returns an int by converting the underlying value to an int if necessary.
+type IntLikeGetter[K any] interface {
+	// Get retrieves an int value.
+	// Unlike `IntGetter`, the expectation is that the underlying value is converted to an int if possible.
+	// If the value cannot be converted to an int, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) (*int64, error)
+}
+
+type StandardIntLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result int64
+	switch v := val.(type) {
+	case int64:
+		result = v
+	case string:
+		result, err = strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, nil
+		}
+	case float64:
+		result = int64(v)
+	case bool:
+		if v {
+			result = int64(1)
+		} else {
+			result = int64(0)
+		}
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeInt:
+			result = v.Int()
+		case pcommon.ValueTypeDouble:
+			result = int64(v.Double())
+		case pcommon.ValueTypeStr:
+			result, err = strconv.ParseInt(v.Str(), 10, 64)
+			if err != nil {
+				return nil, nil
+			}
+		case pcommon.ValueTypeBool:
+			if v.Bool() {
+				result = int64(1)
+			} else {
+				result = int64(0)
+			}
+		default:
+			return nil, fmt.Errorf("unsupported value type: %v", v.Type())
+		}
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", v)
+	}
+	return &result, nil
+}
+
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	if val.IsNil != nil && *val.IsNil {
 		return &literal[K]{value: nil}, nil
