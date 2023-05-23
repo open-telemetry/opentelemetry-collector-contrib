@@ -147,6 +147,8 @@ func TestScraper(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "expected_metrics", tc.filename)
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			pmetrictest.SortAllAttributes(expectedMetrics)
+			// golden.WriteMetrics(t, tc.filename, expectedMetrics)
 			require.NoError(t, err)
 
 			f := NewFactory()

@@ -58,6 +58,8 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.yaml"))
+	pmetrictest.SortAllAttributes(expectedMetrics)
+	// golden.WriteMetrics(t, filepath.Join("testdata", "metrics", "expected_metrics.yaml"), expectedMetrics)
 	require.NoError(t, err)
 
 	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())

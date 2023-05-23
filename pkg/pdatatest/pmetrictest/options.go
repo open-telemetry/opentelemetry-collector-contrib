@@ -6,6 +6,7 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -280,6 +281,80 @@ func maskSubsequentDataPoints(metrics pmetric.Metrics, metricNames []string) {
 			}
 		}
 	}
+}
+
+// sorts all Resource Metrics attributes and Datapoint Slice metric attributes
+func SortAllAttributes(ms pmetric.Metrics) {
+	rms := ms.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		sortAttributeMap(rms.At(i).Resource().Attributes())
+		for j := 0; j < ilms.Len(); j++ {
+			metricsList := ilms.At(j).Metrics()
+			for k := 0; k < metricsList.Len(); k++ {
+				metric := metricsList.At(k)
+				switch metricsList.At(k).Type() {
+				case pmetric.MetricTypeGauge, pmetric.MetricTypeSum:
+					ds := getDataPointSlice(metric)
+					for l := 0; l < ds.Len(); l++ {
+						sortAttributeMap(ds.At(l).Attributes())
+					}
+				case pmetric.MetricTypeHistogram:
+					ds := metric.Histogram().DataPoints()
+					for l := 0; l < ds.Len(); l++ {
+						sortAttributeMap(ds.At(l).Attributes())
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					ds := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < ds.Len(); l++ {
+						sortAttributeMap(ds.At(l).Attributes())
+					}
+				case pmetric.MetricTypeSummary:
+					ds := metric.Summary().DataPoints()
+					for l := 0; l < ds.Len(); l++ {
+						sortAttributeMap(ds.At(l).Attributes())
+					}
+				}
+			}
+		}
+	}
+}
+
+// sortAttributeMap is dependent on the underlying implementation of pcommon.Map
+// where the map is internally stored as a slice
+func sortAttributeMap(mp pcommon.Map) {
+	tempMap := pcommon.NewMap()
+	keys := []string{}
+	mp.Range(func(key string, _ pcommon.Value) bool {
+		keys = append(keys, key)
+		return true
+	})
+	// sort keys
+	sort.Strings(keys)
+	// insert keys back into temporary map
+	for _, k := range keys {
+		value, exists := mp.Get(k)
+		if exists {
+			switch value.Type() {
+			case pcommon.ValueTypeStr:
+				tempMap.PutStr(k, value.Str())
+			case pcommon.ValueTypeBool:
+				tempMap.PutBool(k, value.Bool())
+			case pcommon.ValueTypeInt:
+				tempMap.PutInt(k, value.Int())
+			case pcommon.ValueTypeDouble:
+				tempMap.PutDouble(k, value.Double())
+			case pcommon.ValueTypeMap:
+				value.Map().CopyTo(tempMap.PutEmptyMap(k))
+			case pcommon.ValueTypeSlice:
+				value.Slice().CopyTo(tempMap.PutEmptySlice(k))
+			case pcommon.ValueTypeBytes:
+				value.Bytes().CopyTo(tempMap.PutEmptyBytes(k))
+			}
+		}
+	}
+	// set temp map as new attributes map
+	tempMap.CopyTo(mp)
 }
 
 // IgnoreResourceMetricsOrder is a CompareMetricsOption that ignores the order of resource traces/metrics/logs.
