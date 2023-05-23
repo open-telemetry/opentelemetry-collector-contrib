@@ -58,7 +58,6 @@ type MetricsConfig struct {
 	ContainerMemoryPgpgout                     MetricConfig `mapstructure:"container.memory.pgpgout"`
 	ContainerMemoryRss                         MetricConfig `mapstructure:"container.memory.rss"`
 	ContainerMemoryRssHuge                     MetricConfig `mapstructure:"container.memory.rss_huge"`
-	ContainerMemorySwap                        MetricConfig `mapstructure:"container.memory.swap"`
 	ContainerMemoryTotalActiveAnon             MetricConfig `mapstructure:"container.memory.total_active_anon"`
 	ContainerMemoryTotalActiveFile             MetricConfig `mapstructure:"container.memory.total_active_file"`
 	ContainerMemoryTotalCache                  MetricConfig `mapstructure:"container.memory.total_cache"`
@@ -72,7 +71,6 @@ type MetricsConfig struct {
 	ContainerMemoryTotalPgpgout                MetricConfig `mapstructure:"container.memory.total_pgpgout"`
 	ContainerMemoryTotalRss                    MetricConfig `mapstructure:"container.memory.total_rss"`
 	ContainerMemoryTotalRssHuge                MetricConfig `mapstructure:"container.memory.total_rss_huge"`
-	ContainerMemoryTotalSwap                   MetricConfig `mapstructure:"container.memory.total_swap"`
 	ContainerMemoryTotalUnevictable            MetricConfig `mapstructure:"container.memory.total_unevictable"`
 	ContainerMemoryTotalWriteback              MetricConfig `mapstructure:"container.memory.total_writeback"`
 	ContainerMemoryUnevictable                 MetricConfig `mapstructure:"container.memory.unevictable"`
@@ -193,9 +191,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryRssHuge: MetricConfig{
 			Enabled: false,
 		},
-		ContainerMemorySwap: MetricConfig{
-			Enabled: false,
-		},
 		ContainerMemoryTotalActiveAnon: MetricConfig{
 			Enabled: false,
 		},
@@ -233,9 +228,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryTotalRssHuge: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalSwap: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryTotalUnevictable: MetricConfig{

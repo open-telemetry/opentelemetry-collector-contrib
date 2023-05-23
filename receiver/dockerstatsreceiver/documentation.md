@@ -462,14 +462,6 @@ Number of bytes of anonymous transparent hugepages in this cgroup.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### container.memory.swap
-
-The amount of swap currently used by the processes in this cgroup.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### container.memory.total_active_anon
 
 The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.
@@ -565,14 +557,6 @@ The amount of memory that doesn’t correspond to anything on disk: stacks, heap
 ### container.memory.total_rss_huge
 
 Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### container.memory.total_swap
-
-The amount of swap currently used by the processes in this cgroup and descendant groups.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

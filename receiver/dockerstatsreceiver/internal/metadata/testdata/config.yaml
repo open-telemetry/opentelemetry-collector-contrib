@@ -67,8 +67,6 @@ all_set:
       enabled: true
     container.memory.rss_huge:
       enabled: true
-    container.memory.swap:
-      enabled: true
     container.memory.total_active_anon:
       enabled: true
     container.memory.total_active_file:
@@ -94,8 +92,6 @@ all_set:
     container.memory.total_rss:
       enabled: true
     container.memory.total_rss_huge:
-      enabled: true
-    container.memory.total_swap:
       enabled: true
     container.memory.total_unevictable:
       enabled: true
@@ -210,8 +206,6 @@ none_set:
       enabled: false
     container.memory.rss_huge:
       enabled: false
-    container.memory.swap:
-      enabled: false
     container.memory.total_active_anon:
       enabled: false
     container.memory.total_active_file:
@@ -237,8 +231,6 @@ none_set:
     container.memory.total_rss:
       enabled: false
     container.memory.total_rss_huge:
-      enabled: false
-    container.memory.total_swap:
       enabled: false
     container.memory.total_unevictable:
       enabled: false
