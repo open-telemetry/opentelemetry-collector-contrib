@@ -39,5 +39,5 @@ func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
 		currentValue = m.PutEmpty(*keys[0].String)
 	}
 
-	return setIndexableValue(currentValue, val, keys)
+	return setIndexableValue(currentValue, val, keys[1:])
 }

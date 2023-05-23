@@ -4,6 +4,7 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -109,11 +110,11 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.Key) err
 		return err
 	}
 
-	for i := 1; i < len(keys); i++ {
+	for i := 0; i < len(keys); i++ {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
 			if keys[i].String == nil {
-				return fmt.Errorf("map must be indexed by a string")
+				return errors.New("map must be indexed by a string")
 			}
 			potentialValue, ok := currentValue.Map().Get(*keys[i].String)
 			if !ok {
@@ -123,7 +124,7 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.Key) err
 			}
 		case pcommon.ValueTypeSlice:
 			if keys[i].Int == nil {
-				return fmt.Errorf("slice must be indexed by an int")
+				return errors.New("slice must be indexed by an int")
 			}
 			if int(*keys[i].Int) >= currentValue.Slice().Len() || int(*keys[i].Int) < 0 {
 				return fmt.Errorf("index %v out of bounds", *keys[i].Int)
@@ -138,6 +139,8 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.Key) err
 					currentValue.Slice().AppendEmpty()
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
+			} else {
+				return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
 			}
 		default:
 			return fmt.Errorf("type %v does not support string indexing", currentValue.Type())

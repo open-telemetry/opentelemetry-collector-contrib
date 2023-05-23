@@ -40,5 +40,5 @@ func SetSliceValue(s pcommon.Slice, keys []ottl.Key, val interface{}) error {
 		return fmt.Errorf("index %d out of bounds", idx)
 	}
 
-	return setIndexableValue(s.At(int(*keys[0].Int)), val, keys)
+	return setIndexableValue(s.At(int(*keys[0].Int)), val, keys[1:])
 }
