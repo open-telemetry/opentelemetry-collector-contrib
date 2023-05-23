@@ -59,7 +59,7 @@ type Config struct {
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
-	// ReportExtraMetrics enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
+	// ReportExtraMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
 	ReportExtraMetrics bool `mapstructure:"report_extra_metrics"`
 
 	TargetAllocator *targetAllocator `mapstructure:"target_allocator"`
