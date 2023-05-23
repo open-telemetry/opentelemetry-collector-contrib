@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/component v0.78.1
+	go.opentelemetry.io/collector/component v0.78.2
 )
 
 require (
@@ -16,8 +16,8 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector v0.78.1 // indirect
-	go.opentelemetry.io/collector/confmap v0.78.1 // indirect
+	go.opentelemetry.io/collector v0.78.2 // indirect
+	go.opentelemetry.io/collector/confmap v0.78.2 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect

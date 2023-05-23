@@ -6,9 +6,9 @@ require (
 	github.com/aws/aws-sdk-go v1.44.263
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.78.1
-	go.opentelemetry.io/collector/component v0.78.1
-	go.opentelemetry.io/collector/confmap v0.78.1
+	go.opentelemetry.io/collector v0.78.2
+	go.opentelemetry.io/collector/component v0.78.2
+	go.opentelemetry.io/collector/confmap v0.78.2
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	gopkg.in/yaml.v2 v2.4.0

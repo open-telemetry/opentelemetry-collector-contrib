@@ -4,10 +4,10 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.78.1
-	go.opentelemetry.io/collector/component v0.78.1
-	go.opentelemetry.io/collector/consumer v0.78.1
-	go.opentelemetry.io/collector/exporter v0.78.1
+	go.opentelemetry.io/collector v0.78.2
+	go.opentelemetry.io/collector/component v0.78.2
+	go.opentelemetry.io/collector/consumer v0.78.2
+	go.opentelemetry.io/collector/exporter v0.78.2
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
 	go.uber.org/multierr v1.11.0
 )
@@ -33,9 +33,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.78.1 // indirect
+	go.opentelemetry.io/collector/confmap v0.78.2 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
-	go.opentelemetry.io/collector/receiver v0.78.1 // indirect
+	go.opentelemetry.io/collector/receiver v0.78.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
