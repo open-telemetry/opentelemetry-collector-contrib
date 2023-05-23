@@ -19,45 +19,38 @@ By default, this exporter requires TLS and offers queued retry capabilities.
 
 The following settings are required:
 
-- `endpoint` (no default): URL to which the exporter is going to send Zipkin trace data.
-- `format` (default = `JSON`): The format to sent events in. Can be set to `JSON` or `proto`.
-
-By default, TLS is enabled and must be configured under `tls:`:
-
-- `insecure` (default = `false`): whether to enable client transport security for
-  the exporter's connection.
-
-As a result, the following parameters are also required under `tls:`:
-
-- `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
-  only be used if `insecure` is set to false.
-- `key_file` (no default): path to the TLS key to use for TLS required connections. Should
-  only be used if `insecure` is set to false.
+- `endpoint` (no default): URL to which the exporter is going to send Zipkin trace data. For example: `http://localhost:9411/api/v2/spans`.
 
 The following settings are optional:
 
-- `defaultservicename` (default = `<missing service name>`): What to name
+- `format` (default = `json`): The format to sent events in. Can be set to `json` or `proto`.
+- `default_service_name` (default = `<missing service name>`): What to name
   services missing this information.
+
+To use TLS, specify `https://` as the protocol scheme in the URL passed to the `endpoint` property.
 
 Example:
 
 ```yaml
 exporters:
-  zipkin:
+  zipkin/nontls:
     endpoint: "http://some.url:9411/api/v2/spans"
+    format: proto
+    default_service_name: unkown-service
+
+  zipkin/withtls:
+    endpoint: "https://some.url:9411/api/v2/spans"
+
+  zipkin/tlsnoverify:
+    endpoint: "https://some.url:9411/api/v2/spans"
     tls:
-      cert_file: file.cert
-      key_file: file.key
-  zipkin/2:
-    endpoint: "http://some.url:9411/api/v2/spans"
-    tls:
-      insecure: true
+      insecure_skip_verify: true
 ```
 
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
+- [HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#client-configuration)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
