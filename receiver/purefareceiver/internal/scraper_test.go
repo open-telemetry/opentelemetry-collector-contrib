@@ -37,7 +37,7 @@ func (m *MockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func (m *MockHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
-    return nil 
+	return nil
 }
 func TestToPrometheusConfig(t *testing.T) {
 
@@ -64,7 +64,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	baExt, err := baFactory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), baCfg)
 	require.NoError(t, err)
 
-	host := &MockHost{	
+	host := &MockHost{
 		Extensions: map[component.ID]component.Component{
 			component.NewIDWithName("bearertokenauth", "array01"): baExt,
 		},
@@ -82,7 +82,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	}
 
 	scraper := NewScraper(context.Background(), "hosts", endpoint, cfgs, interval, model.LabelSet{})
-	
+
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
 
