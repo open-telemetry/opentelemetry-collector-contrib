@@ -4,9 +4,7 @@
 package scraperinttest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -58,36 +55,41 @@ type IntegrationTest struct {
 	compareOptions []pmetrictest.CompareMetricsOption
 	compareTimeout time.Duration
 
-	writeExpected       bool
-	dumpActualOnFailure bool
+	writeExpected bool
 }
 
 func (it *IntegrationTest) Run(t *testing.T) {
 	ctx := context.Background()
 
 	var ci *ContainerInfo
+	var ciErr error
 	if it.containerRequest != nil {
 		require.NoError(t, it.containerRequest.Validate())
 		for _, port := range it.containerRequest.ExposedPorts {
 			require.False(t, strings.ContainsRune(port, ':'), errExposedPort)
 		}
+
 		var container testcontainers.Container
-		var err error
+		var containerErr error
+		defer func() {
+			if t.Failed() && containerErr != nil {
+				t.Error(containerErr.Error())
+			}
+		}()
 		require.Eventually(t, func() bool {
-			container, err = testcontainers.GenericContainer(ctx,
+			container, containerErr = testcontainers.GenericContainer(ctx,
 				testcontainers.GenericContainerRequest{
 					ContainerRequest: *it.containerRequest,
 					Started:          true,
 				})
-			return err == nil
+			return containerErr == nil
 		}, it.createContainerTimeout, time.Second)
-
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
 
-		ci, err = containerInfo(ctx, container, it.containerRequest.ExposedPorts)
-		require.NoError(t, err)
+		ci, ciErr = containerInfo(ctx, container, it.containerRequest.ExposedPorts)
+		require.NoError(t, ciErr)
 	}
 
 	cfg := it.factory.CreateDefaultConfig()
@@ -111,36 +113,15 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	// Defined outside of Eventually so it can be printed if the test fails
 	var validateErr error
 	defer func() {
-		if t.Failed() {
+		if t.Failed() && validateErr != nil {
 			t.Error(validateErr.Error())
-			numResults := len(sink.AllMetrics())
-			if numResults == 0 {
+			if len(sink.AllMetrics()) == 0 {
 				t.Error("no data emitted by scraper")
 				return
 			}
-			if it.dumpActualOnFailure {
-				// TODO copied from golden package - expose elsewhere
-				unmarshaler := &pmetric.JSONMarshaler{}
-				fileBytes, err := unmarshaler.MarshalMetrics(sink.AllMetrics()[numResults-1])
-				if err != nil {
-					t.Errorf("failed to marshal actual metrics to JSON: %v", err)
-					return
-				}
-
-				var jsonVal map[string]interface{}
-				if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
-					t.Errorf("failed to unmarshal actual metrics JSON: %v", err)
-					return
-				}
-				b := &bytes.Buffer{}
-				enc := yaml.NewEncoder(b)
-				enc.SetIndent(2)
-				if err := enc.Encode(jsonVal); err != nil {
-					t.Errorf("failed to encode actual metrics to YAML: %v", err)
-					return
-				}
-				t.Errorf("latest result:\n%s", b.Bytes())
-			}
+			metricBytes, err := golden.MarshalMetricsYAML(sink.AllMetrics()[len(sink.AllMetrics())-1])
+			require.NoError(t, err)
+			t.Errorf("latest result:\n%s", metricBytes)
 		}
 	}()
 
@@ -201,12 +182,6 @@ func WithCompareTimeout(t time.Duration) TestOption {
 func WriteExpected() TestOption {
 	return func(it *IntegrationTest) {
 		it.writeExpected = true
-	}
-}
-
-func WithDumpActualOnFailure() TestOption {
-	return func(it *IntegrationTest) {
-		it.dumpActualOnFailure = true
 	}
 }
 

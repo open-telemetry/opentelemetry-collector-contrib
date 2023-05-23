@@ -57,7 +57,5 @@ func integrationTest(name string) func(*testing.T) {
 			pmetrictest.IgnoreScopeMetricsOrder(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19755
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run
 }

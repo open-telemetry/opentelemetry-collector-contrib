@@ -55,7 +55,5 @@ func TestMySQLIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18286
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run(t)
 }
