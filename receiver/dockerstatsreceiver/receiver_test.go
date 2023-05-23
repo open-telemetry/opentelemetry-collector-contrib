@@ -99,6 +99,7 @@ var (
 		ContainerPidsCount:                         metricEnabled,
 		ContainerPidsLimit:                         metricEnabled,
 		ContainerUptime:                            metricEnabled,
+		ContainerMemoryAnon:                        metricEnabled,
 	}
 )
 
