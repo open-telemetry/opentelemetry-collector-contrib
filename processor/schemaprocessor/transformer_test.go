@@ -6,7 +6,6 @@ package schemaprocessor
 import (
 	"context"
 	_ "embed"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,17 +17,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap/zaptest"
 )
-
-//go:embed testdata/schema.yml
-var schemaContent []byte
-
-func SchemaHandler(t *testing.T) func(wr http.ResponseWriter, r *http.Request) {
-	assert.NotEmpty(t, schemaContent, "SchemaContent MUST not be empty")
-	return func(wr http.ResponseWriter, r *http.Request) {
-		_, err := wr.Write(schemaContent)
-		assert.NoError(t, err, "Must not have issues writing schema content")
-	}
-}
 
 func newTestTransformer(t *testing.T) *transformer {
 	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.CreateSettings{
