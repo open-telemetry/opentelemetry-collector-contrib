@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.78.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/collector v0.78.2
 	go.opentelemetry.io/collector/component v0.78.2
 	go.opentelemetry.io/collector/confmap v0.78.2
@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.44.263 // indirect
+	github.com/aws/aws-sdk-go v1.44.267 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

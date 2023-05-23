@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/google/go-cmp v0.5.9
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/collector/component v0.78.2
 	go.opentelemetry.io/collector/confmap v0.78.2
 	go.opentelemetry.io/collector/consumer v0.78.2
