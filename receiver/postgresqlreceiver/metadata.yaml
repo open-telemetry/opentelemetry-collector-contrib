@@ -1,6 +1,5 @@
 type: postgresql
 
-
 status:
   class: receiver
   stability:

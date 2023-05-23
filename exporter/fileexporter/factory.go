@@ -14,15 +14,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "file"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
-
 	// the number of old log files to retain
 	defaultMaxBackups = 100
 
@@ -37,11 +33,11 @@ const (
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {

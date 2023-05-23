@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
@@ -87,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "all"),
+			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
@@ -166,7 +168,7 @@ func TestTraceExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -183,7 +185,7 @@ func TestMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "metrics").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "metrics").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
@@ -202,7 +204,7 @@ func TestLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "logs").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "logs").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
@@ -221,7 +223,7 @@ func TestDomainWithAllExporters(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "domain").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -248,7 +250,7 @@ func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "domain_endoints").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain_endoints").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 

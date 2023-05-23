@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/metadata"
 )
 
 // Test that the factory creates the default configuration
@@ -43,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("valid config", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -64,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("valid config with ca_file", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid_with_ca_file").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid_with_ca_file").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -90,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("valid config without ca_file", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid_no_ca_file").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid_no_ca_file").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -111,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("bad endpoint", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "bad_endpoint").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "bad_endpoint").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -121,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("non https endpoint", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "non_https_endpoint").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "non_https_endpoint").String())
 
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
@@ -132,7 +134,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("missing agent key", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
-		sub, err := cm.Sub(component.NewIDWithName(typeStr, "missing_agent_key").String())
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "missing_agent_key").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 

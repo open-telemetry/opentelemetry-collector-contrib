@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -21,14 +23,14 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, cfg, defaultConfig)
 
-	sub, err = cm.Sub(component.NewIDWithName(typeStr, "customname").String())
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "customname").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 

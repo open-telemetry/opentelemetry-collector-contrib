@@ -5,7 +5,6 @@ package file
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"testing"
 	"time"
@@ -44,13 +43,6 @@ func newTestFileOperator(t *testing.T, cfgMod func(*Config)) (*Input, chan *entr
 	return op.(*Input), fakeOutput.Received, tempDir
 }
 
-func openFile(tb testing.TB, path string) *os.File {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
-	require.NoError(tb, err)
-	tb.Cleanup(func() { _ = file.Close() })
-	return file
-}
-
 func openTemp(t testing.TB, tempDir string) *os.File {
 	return openTempWithPattern(t, tempDir, "")
 }
@@ -65,15 +57,6 @@ func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
 func writeString(t testing.TB, file *os.File, s string) {
 	_, err := file.WriteString(s)
 	require.NoError(t, err)
-}
-
-func stringWithLength(length int) string {
-	charset := "abcdefghijklmnopqrstuvwxyz"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(b)
 }
 
 func waitForOne(t *testing.T, c chan *entry.Entry) *entry.Entry {
@@ -102,21 +85,6 @@ func waitForByteMessage(t *testing.T, c chan *entry.Entry, expected []byte) {
 	case <-time.After(3 * time.Second):
 		require.FailNow(t, "Timed out waiting for message", expected)
 	}
-}
-
-func waitForMessages(t *testing.T, c chan *entry.Entry, expected []string) {
-	receivedMessages := make([]string, 0, len(expected))
-LOOP:
-	for {
-		select {
-		case e := <-c:
-			receivedMessages = append(receivedMessages, e.Body.(string))
-		case <-time.After(3 * time.Second):
-			break LOOP
-		}
-	}
-
-	require.ElementsMatch(t, expected, receivedMessages)
 }
 
 func expectNoMessages(t *testing.T, c chan *entry.Entry) {

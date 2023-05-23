@@ -11,22 +11,17 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "skywalking"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Skywalking exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

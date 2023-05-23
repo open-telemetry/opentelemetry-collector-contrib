@@ -6,14 +6,13 @@ package datasetexporter
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -21,33 +20,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-type SuiteTracesExporter struct {
-	suite.Suite
-}
-
-func (s *SuiteTracesExporter) SetupTest() {
-	os.Clearenv()
-}
-
-func TestSuiteTracesExporter(t *testing.T) {
-	suite.Run(t, new(SuiteTracesExporter))
-}
-
-func (s *SuiteTracesExporter) TestCreateTracesExporter() {
+func TestCreateTracesExporter(t *testing.T) {
 	ctx := context.Background()
 	createSettings := exportertest.NewNopCreateSettings()
 	tests := createExporterTests()
 
 	for _, tt := range tests {
-		s.T().Run(tt.name, func(*testing.T) {
+		t.Run(tt.name, func(*testing.T) {
 			logs, err := createTracesExporter(ctx, createSettings, tt.config)
 
 			if err == nil {
-				s.Nil(tt.expectedError)
-				s.NotNil(logs)
+				assert.Nil(t, tt.expectedError)
+				assert.NotNil(t, logs)
 			} else {
-				s.Equal(tt.expectedError.Error(), err.Error())
-				s.Nil(logs)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+				assert.Nil(t, logs)
 			}
 		})
 	}
@@ -148,7 +135,7 @@ var testTLog = &add_events.Log{
 	Attrs: map[string]interface{}{},
 }
 
-func (s *SuiteTracesExporter) TestBuildEventFromSpanOne() {
+func TestBuildEventFromSpanOne(t *testing.T) {
 	traces := testdata.GenerateTracesOneSpan()
 	span := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	expected := &add_events.EventBundle{
@@ -165,10 +152,10 @@ func (s *SuiteTracesExporter) TestBuildEventFromSpanOne() {
 		newSpanTracker(time.Hour),
 	)
 
-	s.Equal(expected, was)
+	assert.Equal(t, expected, was)
 }
 
-func (s *SuiteTracesExporter) TestBuildEventsFromSpanAttributesCollision() {
+func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rss := rs.ScopeSpans().AppendEmpty()
@@ -215,10 +202,10 @@ func (s *SuiteTracesExporter) TestBuildEventsFromSpanAttributesCollision() {
 		newSpanTracker(time.Hour),
 	)
 
-	s.Equal(expected, was)
+	assert.Equal(t, expected, was)
 }
 
-func (s *SuiteTracesExporter) TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent() {
+func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T) {
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
 	was := buildEventsFromTraces(traces, newSpanTracker(time.Hour))
 
@@ -240,7 +227,7 @@ func (s *SuiteTracesExporter) TestBuildEventsFromTracesFromTwoSpansSameResourceO
 		},
 	}
 
-	s.Equal(expected, was)
+	assert.Equal(t, expected, was)
 }
 
 var span0Id = [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
@@ -439,7 +426,7 @@ func generateSimpleEvent(
 	}
 }
 
-func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphansWithTracker() {
+func TestBuildEventsFromTracesTreesAndOrphansWithTracker(t *testing.T) {
 	tracker := newSpanTracker(time.Second)
 	traces := GenerateTracesTreesAndOrphans()
 	was := buildEventsFromTraces(traces, tracker)
@@ -533,7 +520,7 @@ func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphansWithTracke
 	expected[11].Event.Attrs["error_count"] = 0
 	expected[11].Event.Attrs["span_count"] = 1
 
-	s.Equal(expected, was)
+	assert.Equal(t, expected, was)
 
 	expectedKeys := []string{
 		newTraceAndSpan(trace2Id, span22PId).String(),
@@ -551,14 +538,14 @@ func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphansWithTracke
 		return wasKeys[i] < wasKeys[j]
 	})
 
-	s.Equal(expectedKeys, wasKeys)
-	s.Equal(2, len(tracker.spans))
+	assert.Equal(t, expectedKeys, wasKeys)
+	assert.Equal(t, 2, len(tracker.spans))
 	time.Sleep(time.Second)
-	s.Equal(2, tracker.purge())
-	s.Equal(0, len(tracker.spans))
+	assert.Equal(t, 2, tracker.purge())
+	assert.Equal(t, 0, len(tracker.spans))
 }
 
-func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphansWithoutTracker() {
+func TestBuildEventsFromTracesTreesAndOrphansWithoutTracker(t *testing.T) {
 	traces := GenerateTracesTreesAndOrphans()
 	was := buildEventsFromTraces(traces, nil)
 
@@ -629,10 +616,10 @@ func (s *SuiteTracesExporter) TestBuildEventsFromTracesTreesAndOrphansWithoutTra
 		},
 	}
 
-	s.Equal(expected, was)
+	assert.Equal(t, expected, was)
 }
 
-func (s *SuiteTracesExporter) TestUpdateResource() {
+func TestUpdateResource(t *testing.T) {
 	tests := []struct {
 		name     string
 		resource map[string]any
@@ -666,11 +653,11 @@ func (s *SuiteTracesExporter) TestUpdateResource() {
 	}
 
 	for _, tt := range tests {
-		s.T().Run(tt.name, func(*testing.T) {
+		t.Run(tt.name, func(*testing.T) {
 			attrs := make(map[string]interface{})
 			updateResource(attrs, tt.resource)
 
-			s.Equal(tt.expected, attrs, tt.name)
+			assert.Equal(t, tt.expected, attrs, tt.name)
 		})
 	}
 }

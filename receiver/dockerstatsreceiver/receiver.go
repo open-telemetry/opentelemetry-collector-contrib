@@ -26,7 +26,7 @@ import (
 const defaultResourcesLen = 5
 
 const (
-	defaultDockerAPIVersion         = 1.22
+	defaultDockerAPIVersion         = 1.23
 	minimalRequiredDockerAPIVersion = 1.22
 )
 
@@ -115,6 +115,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
+	r.recordPidsMetrics(now, &containerStats.PidsStats)
 
 	// Always-present resource attrs + the user-configured resource attrs
 	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
@@ -173,8 +174,6 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 		"total_pgpgin":              r.mb.RecordContainerMemoryTotalPgpginDataPoint,
 		"pgpgout":                   r.mb.RecordContainerMemoryPgpgoutDataPoint,
 		"total_pgpgout":             r.mb.RecordContainerMemoryTotalPgpgoutDataPoint,
-		"swap":                      r.mb.RecordContainerMemorySwapDataPoint,
-		"total_swap":                r.mb.RecordContainerMemoryTotalSwapDataPoint,
 		"pgfault":                   r.mb.RecordContainerMemoryPgfaultDataPoint,
 		"total_pgfault":             r.mb.RecordContainerMemoryTotalPgfaultDataPoint,
 		"pgmajfault":                r.mb.RecordContainerMemoryPgmajfaultDataPoint,
@@ -253,5 +252,15 @@ func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUS
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
+	}
+}
+
+func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.PidsStats) {
+	// pidsStats are available when kernel version is >= 4.3 and pids_cgroup is supported, it is empty otherwise.
+	if pidsStats.Current != 0 {
+		r.mb.RecordContainerPidsCountDataPoint(now, int64(pidsStats.Current))
+		if pidsStats.Limit != 0 {
+			r.mb.RecordContainerPidsLimitDataPoint(now, int64(pidsStats.Limit))
+		}
 	}
 }

@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -28,11 +30,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,

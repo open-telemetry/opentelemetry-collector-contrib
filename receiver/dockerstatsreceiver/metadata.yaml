@@ -220,14 +220,6 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
-  container.memory.swap:
-    enabled: false
-    description: "The amount of swap currently used by the processes in this cgroup."
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
   container.memory.pgfault:
     enabled: false
     description: "Indicate the number of times that a process of the cgroup triggered a page fault."
@@ -366,14 +358,6 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
-  container.memory.total_swap:
-    enabled: false
-    description: "The amount of swap currently used by the processes in this cgroup and descendant groups."
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
   container.memory.total_pgfault:
     enabled: false
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault."
@@ -628,3 +612,24 @@ metrics:
       aggregation: cumulative
     attributes:
       - interface
+
+  # Pids
+  container.pids.count:
+    enabled: false
+    description: "Number of pids in the container's cgroup."
+    extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
+    unit: "{pids}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  container.pids.limit:
+    enabled: false
+    description: "Maximum number of pids in the container's cgroup."
+    extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
+    unit: "{pids}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false

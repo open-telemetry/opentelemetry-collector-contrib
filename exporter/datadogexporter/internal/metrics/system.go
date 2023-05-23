@@ -24,6 +24,11 @@ const (
 // Warning: this is not a deep copy. Only some fields are fully copied, others remain shared. This is intentional.
 // Do not alter the returned metric (or the source one) after copying.
 func copySystemMetric(src datadogV2.MetricSeries, name string, div float64) datadogV2.MetricSeries {
+	return copySystemMetricWithUnit(src, name, div, "")
+}
+
+// copySystemMetricWithUnit is equivalent to copySystemMetric, but allows changing the unit.
+func copySystemMetricWithUnit(src datadogV2.MetricSeries, name string, div float64, unit string) datadogV2.MetricSeries {
 	cp := src
 	cp.Metric = name
 	// No need to set cp.Interval if cp.Type is gauge.
@@ -31,6 +36,9 @@ func copySystemMetric(src datadogV2.MetricSeries, name string, div float64) data
 	if div == 0 || div == 1 || len(src.Points) == 0 {
 		// division by 0 or 1 should not have an impact
 		return cp
+	}
+	if unit != "" {
+		cp.Unit = &unit
 	}
 	cp.Points = make([]datadogV2.MetricPoint, len(src.Points))
 	for i, dp := range src.Points {
@@ -116,6 +124,69 @@ func PrepareSystemMetrics(ms []datadogV2.MetricSeries) []datadogV2.MetricSeries 
 		// all existing system metrics need to be prepended
 		newname := otelNamespacePrefix + m.Metric
 		series[i].Metric = newname
+	}
+	return series
+}
+
+// PrepareContainerMetrics converts OTEL container.* metrics to Datadog container
+// metrics.
+func PrepareContainerMetrics(ms []datadogV2.MetricSeries) []datadogV2.MetricSeries {
+	series := ms
+	for _, m := range ms {
+		if !strings.HasPrefix(m.Metric, "container.") {
+			// not what we're looking for
+			continue
+		}
+		switch m.Metric {
+		case "container.cpu.usage.total":
+			series = append(series, copySystemMetricWithUnit(m, "container.cpu.usage", 1, "nanocore"))
+		case "container.cpu.usage.usermode":
+			series = append(series, copySystemMetricWithUnit(m, "container.cpu.user", 1, "nanocore"))
+		case "container.cpu.usage.system":
+			series = append(series, copySystemMetricWithUnit(m, "container.cpu.system", 1, "nanocore"))
+		case "container.cpu.throttling_data.throttled_time":
+			series = append(series, copySystemMetric(m, "container.cpu.throttled", 1))
+		case "container.cpu.throttling_data.throttled_periods":
+			series = append(series, copySystemMetric(m, "container.cpu.throttled.periods", 1))
+		case "container.memory.usage.total":
+			series = append(series, copySystemMetric(m, "container.memory.usage", 1))
+		case "container.memory.active_anon":
+			series = append(series, copySystemMetric(m, "container.memory.kernel", 1))
+		case "container.memory.hierarchical_memory_limit":
+			series = append(series, copySystemMetric(m, "container.memory.limit", 1))
+		case "container.memory.usage.limit":
+			series = append(series, copySystemMetric(m, "container.memory.soft_limit", 1))
+		case "container.memory.total_cache":
+			series = append(series, copySystemMetric(m, "container.memory.cache", 1))
+		case "container.memory.total_swap":
+			series = append(series, copySystemMetric(m, "container.memory.swap", 1))
+		case "container.blockio.io_service_bytes_recursive":
+			for _, tag := range m.Tags {
+				switch tag {
+				case "operation:write":
+					series = append(series, copySystemMetric(m, "container.io.write", 1))
+				case "operation:read":
+					series = append(series, copySystemMetric(m, "container.io.read", 1))
+				}
+			}
+		case "container.blockio.io_serviced_recursive":
+			for _, tag := range m.Tags {
+				switch tag {
+				case "operation:write":
+					series = append(series, copySystemMetric(m, "container.io.write.operations", 1))
+				case "operation:read":
+					series = append(series, copySystemMetric(m, "container.io.read.operations", 1))
+				}
+			}
+		case "container.network.io.usage.tx_bytes":
+			series = append(series, copySystemMetric(m, "container.net.sent", 1))
+		case "container.network.io.usage.tx_packets":
+			series = append(series, copySystemMetric(m, "container.net.sent.packets", 1))
+		case "container.network.io.usage.rx_bytes":
+			series = append(series, copySystemMetric(m, "container.net.rcvd", 1))
+		case "container.network.io.usage.rx_packets":
+			series = append(series, copySystemMetric(m, "container.net.rcvd.packets", 1))
+		}
 	}
 	return series
 }

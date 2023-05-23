@@ -58,7 +58,6 @@ type MetricsConfig struct {
 	ContainerMemoryPgpgout                     MetricConfig `mapstructure:"container.memory.pgpgout"`
 	ContainerMemoryRss                         MetricConfig `mapstructure:"container.memory.rss"`
 	ContainerMemoryRssHuge                     MetricConfig `mapstructure:"container.memory.rss_huge"`
-	ContainerMemorySwap                        MetricConfig `mapstructure:"container.memory.swap"`
 	ContainerMemoryTotalActiveAnon             MetricConfig `mapstructure:"container.memory.total_active_anon"`
 	ContainerMemoryTotalActiveFile             MetricConfig `mapstructure:"container.memory.total_active_file"`
 	ContainerMemoryTotalCache                  MetricConfig `mapstructure:"container.memory.total_cache"`
@@ -72,7 +71,6 @@ type MetricsConfig struct {
 	ContainerMemoryTotalPgpgout                MetricConfig `mapstructure:"container.memory.total_pgpgout"`
 	ContainerMemoryTotalRss                    MetricConfig `mapstructure:"container.memory.total_rss"`
 	ContainerMemoryTotalRssHuge                MetricConfig `mapstructure:"container.memory.total_rss_huge"`
-	ContainerMemoryTotalSwap                   MetricConfig `mapstructure:"container.memory.total_swap"`
 	ContainerMemoryTotalUnevictable            MetricConfig `mapstructure:"container.memory.total_unevictable"`
 	ContainerMemoryTotalWriteback              MetricConfig `mapstructure:"container.memory.total_writeback"`
 	ContainerMemoryUnevictable                 MetricConfig `mapstructure:"container.memory.unevictable"`
@@ -88,6 +86,8 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxDropped           MetricConfig `mapstructure:"container.network.io.usage.tx_dropped"`
 	ContainerNetworkIoUsageTxErrors            MetricConfig `mapstructure:"container.network.io.usage.tx_errors"`
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
+	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
+	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -191,9 +191,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryRssHuge: MetricConfig{
 			Enabled: false,
 		},
-		ContainerMemorySwap: MetricConfig{
-			Enabled: false,
-		},
 		ContainerMemoryTotalActiveAnon: MetricConfig{
 			Enabled: false,
 		},
@@ -231,9 +228,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryTotalRssHuge: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalSwap: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryTotalUnevictable: MetricConfig{
@@ -279,6 +273,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerNetworkIoUsageTxPackets: MetricConfig{
+			Enabled: false,
+		},
+		ContainerPidsCount: MetricConfig{
+			Enabled: false,
+		},
+		ContainerPidsLimit: MetricConfig{
 			Enabled: false,
 		},
 	}

@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
@@ -317,6 +318,7 @@ func Components() (otelcol.Factories, error) {
 		clickhouseexporter.NewFactory(),
 		coralogixexporter.NewFactory(),
 		datadogexporter.NewFactory(),
+		datasetexporter.NewFactory(),
 		dynatraceexporter.NewFactory(),
 		elasticsearchexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),

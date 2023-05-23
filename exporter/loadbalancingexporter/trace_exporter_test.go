@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -293,13 +295,13 @@ func TestBuildExporterConfig(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
-	factories.Exporters[typeStr] = NewFactory()
+	factories.Exporters[metadata.Type] = NewFactory()
 
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	c := cfg.Exporters[component.NewID(typeStr)]
+	c := cfg.Exporters[component.NewID(metadata.Type)]
 	require.NotNil(t, c)
 
 	// test

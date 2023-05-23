@@ -17,22 +17,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "postgresql"
-)
-
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
+		ScraperControllerSettings: cfg,
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:5432",
 			Transport: "tcp",
@@ -54,7 +51,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newPostgreSQLScraper(params, cfg, &defaultClientFactory{})
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape)
 	if err != nil {
 		return nil, err
 	}

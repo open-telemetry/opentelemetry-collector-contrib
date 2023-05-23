@@ -11,11 +11,12 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "azuredataexplorer"
 	managedIngestType  = "managed"
 	queuedIngestTest   = "queued"
 	otelDb             = "oteldb"
@@ -25,18 +26,16 @@ const (
 	metricsType        = 1
 	logsType           = 2
 	tracesType         = 3
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
 // Creates a factory for the ADX Exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 

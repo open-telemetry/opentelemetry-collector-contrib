@@ -7,6 +7,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/obsreport"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 )
 
 var (
@@ -17,19 +19,19 @@ var (
 
 func serviceGraphProcessorViews() []*view.View {
 	droppedSpansView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statDroppedSpans.Name()),
+		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statDroppedSpans.Name()),
 		Description: statDroppedSpans.Description(),
 		Measure:     statDroppedSpans,
 		Aggregation: view.Count(),
 	}
 	totalEdgesView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statTotalEdges.Name()),
+		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statTotalEdges.Name()),
 		Description: statTotalEdges.Description(),
 		Measure:     statTotalEdges,
 		Aggregation: view.Count(),
 	}
 	expiredEdgesView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statExpiredEdges.Name()),
+		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statExpiredEdges.Name()),
 		Description: statExpiredEdges.Description(),
 		Measure:     statExpiredEdges,
 		Aggregation: view.Count(),

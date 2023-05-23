@@ -13,13 +13,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "servicegraph"
 	// The stability level of the processor.
-	stability                = component.StabilityLevelAlpha
 	connectorStability       = component.StabilityLevelDevelopment
 	virtualNodeFeatureGateID = "processor.servicegraph.virtualNode"
 )
@@ -41,9 +41,9 @@ func NewFactory() processor.Factory {
 	_ = view.Register(serviceGraphProcessorViews()...)
 
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 	)
 }
 
@@ -53,7 +53,7 @@ func NewConnectorFactory() connector.Factory {
 	_ = view.Register(serviceGraphProcessorViews()...)
 
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		connector.WithTracesToMetrics(createTracesToMetricsConnector, connectorStability),
 	)

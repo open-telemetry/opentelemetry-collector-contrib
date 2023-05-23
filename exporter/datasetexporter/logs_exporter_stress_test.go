@@ -13,14 +13,13 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -28,19 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type SuiteLogsE2EExporter struct {
-	suite.Suite
-}
-
-func (s *SuiteLogsE2EExporter) SetupTest() {
-	os.Clearenv()
-}
-
-func TestSuiteLogsE2EExporterIntegration(t *testing.T) {
-	suite.Run(t, new(SuiteLogsE2EExporter))
-}
-
-func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
+func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 	const maxDelay = 200 * time.Millisecond
 	createSettings := exportertest.NewNopCreateSettings()
 
@@ -59,12 +46,12 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 		attempt.Add(1)
 		cer, err := extract(req)
 
-		s.NoError(err, "Error reading request: %v", err)
+		assert.NoError(t, err, "Error reading request: %v", err)
 
 		for _, ev := range cer.Events {
 			processedEvents.Add(1)
 			key, found := ev.Attrs["body.str"]
-			s.True(found)
+			assert.True(t, found)
 			mutex.Lock()
 			sKey := key.(string)
 			_, f := seenKeys[sKey]
@@ -80,10 +67,10 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 			"status":       "success",
 			"bytesCharged": 42,
 		})
-		s.NoError(err)
+		assert.NoError(t, err)
 		l, err := w.Write(payload)
-		s.Greater(l, 1)
-		s.NoError(err)
+		assert.Greater(t, l, 1)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -101,9 +88,9 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
 	waitingTime := time.Duration(0)
-	if s.NoError(err) {
+	if assert.NoError(t, err) {
 		err = logs.Start(context.Background(), componenttest.NewNopHost())
-		s.NoError(err)
+		assert.NoError(t, err)
 
 		for bI := 0; bI < maxBatchCount; bI++ {
 			batch := plog.NewLogs()
@@ -119,19 +106,19 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 				expectedKeys[key] = 1
 			}
 			err = logs.ConsumeLogs(context.Background(), batch)
-			s.Nil(err)
+			assert.Nil(t, err)
 			time.Sleep(time.Duration(float64(maxDelay.Nanoseconds()) * 0.7))
 		}
 
-		s.NotNil(logs)
+		assert.NotNil(t, logs)
 
 		time.Sleep(time.Second)
 		err = logs.Shutdown(context.Background())
-		s.Nil(err)
+		assert.Nil(t, err)
 		lastProcessed := uint64(0)
 		sameNumber := 0
 		for {
-			s.T().Logf("Processed events: %d / %d", processedEvents.Load(), expectedLogs)
+			t.Logf("Processed events: %d / %d", processedEvents.Load(), expectedLogs)
 			if lastProcessed == processedEvents.Load() {
 				sameNumber++
 			}
@@ -146,9 +133,9 @@ func (s *SuiteLogsE2EExporter) TestConsumeLogsManyLogsShouldSucceed() {
 
 	time.Sleep(2 * time.Second)
 
-	s.True(wasSuccessful.Load())
+	assert.True(t, wasSuccessful.Load())
 
-	s.Equal(seenKeys, expectedKeys)
-	s.Equal(expectedLogs, processedEvents.Load(), "processed items")
-	s.Equal(expectedLogs, uint64(len(seenKeys)), "unique items")
+	assert.Equal(t, seenKeys, expectedKeys)
+	assert.Equal(t, expectedLogs, processedEvents.Load(), "processed items")
+	assert.Equal(t, expectedLogs, uint64(len(seenKeys)), "unique items")
 }

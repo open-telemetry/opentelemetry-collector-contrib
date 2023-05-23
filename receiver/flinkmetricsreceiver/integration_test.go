@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -56,6 +57,11 @@ func TestFlinkIntegration(t *testing.T) {
 		Networks:     []string{networkName},
 		ExposedPorts: []string{"8080:8080", "8081:8081"},
 		WaitingFor:   waitStrategy{endpoint: "http://localhost:8081/jobmanager/metrics"},
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+			PostStarts: []testcontainers.ContainerHook{
+				scraperinttest.RunScript([]string{"/setup.sh"}),
+			},
+		}},
 	})
 
 	workerContainer := getContainer(t, testcontainers.ContainerRequest{
@@ -80,11 +86,6 @@ func TestFlinkIntegration(t *testing.T) {
 	ws := waitStrategy{"http://localhost:8081/taskmanagers/metrics"}
 	err = ws.waitFor(context.Background(), "")
 	require.NoError(t, err)
-
-	// required to start the StateMachineExample job
-	code, _, err := masterContainer.Exec(context.Background(), []string{"/setup.sh"})
-	require.NoError(t, err)
-	require.Equal(t, 0, code)
 
 	// Required to prevent empty value jobs call
 	ws = waitStrategy{endpoint: "http://localhost:8081/jobs"}

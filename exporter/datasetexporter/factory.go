@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
@@ -11,12 +13,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 )
 
-const CfgTypeStr = "dataset"
-
 // NewFactory created new factory with DataSet exporters.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		CfgTypeStr,
+		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),

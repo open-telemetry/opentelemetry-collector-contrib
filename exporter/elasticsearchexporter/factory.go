@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
@@ -11,24 +13,23 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "elasticsearch"
 	defaultLogsIndex   = "logs-generic-default"
 	defaultTracesIndex = "traces-generic-default"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 

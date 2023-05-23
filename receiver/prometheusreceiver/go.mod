@@ -7,22 +7,22 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/mitchellh/hashstructure/v2 v2.0.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.78.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.78.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.78.0
 	github.com/prometheus/common v0.43.0
 	github.com/prometheus/prometheus v0.43.1
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.77.0
-	go.opentelemetry.io/collector/component v0.77.0
-	go.opentelemetry.io/collector/confmap v0.77.0
-	go.opentelemetry.io/collector/consumer v0.77.0
-	go.opentelemetry.io/collector/exporter v0.77.0
-	go.opentelemetry.io/collector/featuregate v0.77.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
-	go.opentelemetry.io/collector/processor/batchprocessor v0.77.0
-	go.opentelemetry.io/collector/receiver v0.77.0
-	go.opentelemetry.io/collector/semconv v0.77.0
+	go.opentelemetry.io/collector v0.78.2
+	go.opentelemetry.io/collector/component v0.78.2
+	go.opentelemetry.io/collector/confmap v0.78.2
+	go.opentelemetry.io/collector/consumer v0.78.2
+	go.opentelemetry.io/collector/exporter v0.78.2
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
+	go.opentelemetry.io/collector/processor/batchprocessor v0.78.2
+	go.opentelemetry.io/collector/receiver v0.78.2
+	go.opentelemetry.io/collector/semconv v0.78.2
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -124,8 +124,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.77.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.77.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.78.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.78.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/ovh/go-ovh v1.3.0 // indirect
@@ -154,9 +154,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.15.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.16.1 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v0.38.0 // indirect
+	go.opentelemetry.io/otel/bridge/opencensus v0.38.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.15.1 // indirect

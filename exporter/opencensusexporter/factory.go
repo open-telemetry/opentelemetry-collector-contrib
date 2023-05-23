@@ -11,22 +11,17 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "opencensus"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

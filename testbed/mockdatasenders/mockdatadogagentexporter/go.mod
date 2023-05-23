@@ -5,11 +5,11 @@ go 1.19
 require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/tinylib/msgp v1.1.8
-	go.opentelemetry.io/collector v0.77.0
-	go.opentelemetry.io/collector/component v0.77.0
-	go.opentelemetry.io/collector/consumer v0.77.0
-	go.opentelemetry.io/collector/exporter v0.77.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/collector v0.78.2
+	go.opentelemetry.io/collector/component v0.78.2
+	go.opentelemetry.io/collector/consumer v0.78.2
+	go.opentelemetry.io/collector/exporter v0.78.2
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
 )
 
 require (
@@ -32,9 +32,9 @@ require (
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.77.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.77.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.78.2 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/receiver v0.78.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
@@ -46,7 +46,7 @@ require (
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )

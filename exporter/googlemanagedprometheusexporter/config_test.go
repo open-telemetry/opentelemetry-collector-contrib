@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -21,7 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
+	factories.Exporters[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -29,10 +31,10 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 3)
 
-	r0 := cfg.Exporters[component.NewID(typeStr)].(*Config)
+	r0 := cfg.Exporters[component.NewID(metadata.Type)].(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig().(*Config))
 
-	r1 := cfg.Exporters[component.NewIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Exporters[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
 			TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -57,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r2 := cfg.Exporters[component.NewIDWithName(typeStr, "customprefix")].(*Config)
+	r2 := cfg.Exporters[component.NewIDWithName(metadata.Type, "customprefix")].(*Config)
 	r2Expected := factory.CreateDefaultConfig().(*Config)
 	r2Expected.GMPConfig.MetricConfig.Prefix = "my-metric-domain.com"
 	assert.Equal(t, r2, r2Expected)

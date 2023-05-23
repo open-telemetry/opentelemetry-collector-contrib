@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -25,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				ClusterURI:     "https://CLUSTER.kusto.windows.net",
 				ApplicationID:  "f80da32c-108c-415c-a19e-643f461a677a",
@@ -39,11 +41,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "2"),
+			id:           component.NewIDWithName(metadata.Type, "2"),
 			errorMessage: `mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `,
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "3"),
+			id:           component.NewIDWithName(metadata.Type, "3"),
 			errorMessage: `unsupported configuration for ingestion_type. Accepted types [managed, queued] Provided [streaming]`,
 		},
 	}

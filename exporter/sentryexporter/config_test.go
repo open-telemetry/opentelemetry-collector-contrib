@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -24,11 +26,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				DSN:         "https://key@host/path/42",
 				Environment: "prod",

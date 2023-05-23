@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package instanaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 
 import (
@@ -13,21 +15,16 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "instana"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/metadata"
 )
 
 // NewFactory creates an Instana exporter factory
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 

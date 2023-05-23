@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 
 import (
@@ -16,21 +18,17 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	typeStr = "logzio"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Logz.io exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithLogs(createLogsExporter, component.StabilityLevelBeta))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 
 }
 

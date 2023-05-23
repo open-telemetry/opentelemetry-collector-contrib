@@ -4,17 +4,9 @@
 package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "influxdb"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
 // V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.

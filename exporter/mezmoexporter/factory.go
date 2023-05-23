@@ -10,20 +10,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	typeStr = "mezmo"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Mezmo exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 

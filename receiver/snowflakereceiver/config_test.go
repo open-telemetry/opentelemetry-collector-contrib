@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	// LoadConf includes the TypeStr which NewFactory does not set
-	id := component.NewIDWithName(typeStr, "")
+	id := component.NewIDWithName(metadata.Type, "")
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 

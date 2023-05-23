@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -29,11 +31,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "withsettings"),
+			id: component.NewIDWithName(metadata.Type, "withsettings"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",

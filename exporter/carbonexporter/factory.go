@@ -8,21 +8,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "carbon"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Carbon exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

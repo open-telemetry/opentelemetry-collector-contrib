@@ -5,35 +5,25 @@ package datasetexporter
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 )
 
-type SuiteFactory struct {
-	suite.Suite
-}
-
-func (s *SuiteFactory) SetupTest() {
-	os.Clearenv()
-}
-
-func TestSuiteFactory(t *testing.T) {
-	suite.Run(t, new(SuiteFactory))
-}
-
-func (s *SuiteFactory) TestCreateDefaultConfig() {
+func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	s.Equal(&Config{
+	assert.Equal(t, &Config{
 		BufferSettings:  newDefaultBufferSettings(),
 		TracesSettings:  newDefaultTracesSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
@@ -41,19 +31,19 @@ func (s *SuiteFactory) TestCreateDefaultConfig() {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}, cfg, "failed to create default config")
 
-	s.Nil(componenttest.CheckConfigStruct(cfg))
+	assert.Nil(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func (s *SuiteFactory) TestLoadConfig() {
+func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	s.Nil(err)
+	assert.Nil(t, err)
 
 	tests := []struct {
 		id       component.ID
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(CfgTypeStr, "minimal"),
+			id: component.NewIDWithName(metadata.Type, "minimal"),
 			expected: &Config{
 				DatasetURL:      "https://app.scalyr.com",
 				APIKey:          "key-minimal",
@@ -65,7 +55,7 @@ func (s *SuiteFactory) TestLoadConfig() {
 			},
 		},
 		{
-			id: component.NewIDWithName(CfgTypeStr, "lib"),
+			id: component.NewIDWithName(metadata.Type, "lib"),
 			expected: &Config{
 				DatasetURL: "https://app.eu.scalyr.com",
 				APIKey:     "key-lib",
@@ -83,7 +73,7 @@ func (s *SuiteFactory) TestLoadConfig() {
 			},
 		},
 		{
-			id: component.NewIDWithName(CfgTypeStr, "full"),
+			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				DatasetURL: "https://app.scalyr.com",
 				APIKey:     "key-full",
@@ -118,15 +108,15 @@ func (s *SuiteFactory) TestLoadConfig() {
 	}
 
 	for _, tt := range tests {
-		s.T().Run(tt.id.Name(), func(*testing.T) {
+		t.Run(tt.id.Name(), func(*testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(tt.id.String())
-			s.Require().Nil(err)
-			s.Require().Nil(component.UnmarshalConfig(sub, cfg))
-			if s.Nil(component.ValidateConfig(cfg)) {
-				s.Equal(tt.expected, cfg)
+			require.Nil(t, err)
+			require.Nil(t, component.UnmarshalConfig(sub, cfg))
+			if assert.Nil(t, component.ValidateConfig(cfg)) {
+				assert.Equal(t, tt.expected, cfg)
 			}
 		})
 	}
@@ -151,8 +141,11 @@ func createExporterTests() []CreateTest {
 				DatasetURL: "https://app.eu.scalyr.com",
 				APIKey:     "key-lib",
 				BufferSettings: BufferSettings{
-					MaxLifetime: 12345,
-					GroupBy:     []string{"attributes.container_id"},
+					MaxLifetime:          12345,
+					GroupBy:              []string{"attributes.container_id"},
+					RetryInitialInterval: time.Second,
+					RetryMaxInterval:     time.Minute,
+					RetryMaxElapsedTime:  time.Hour,
 				},
 				TracesSettings: TracesSettings{
 					Aggregate: true,

@@ -17,8 +17,10 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
 
@@ -45,8 +47,9 @@ func TestCreateReceiver(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
+	traceSink := new(consumertest.TracesSink)
 	set := receivertest.NewNopCreateSettings()
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
@@ -66,7 +69,8 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	set := receivertest.NewNopCreateSettings()
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
+	traceSink := new(consumertest.TracesSink)
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
@@ -85,11 +89,12 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 			Transport: "tcp",
 		},
 	}
+	traceSink := new(consumertest.TracesSink)
 	set := receivertest.NewNopCreateSettings()
-	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, 11800, r.(*swReceiver).config.CollectorGRPCPort, "grpc port should be default")
+	assert.Equal(t, 11800, r.(*sharedcomponent.SharedComponent).
+		Unwrap().(*swReceiver).config.CollectorGRPCPort, "grpc port should be default")
 }
 
 func TestCreateTLSGPRCEndpoint(t *testing.T) {
@@ -109,8 +114,8 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
-
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
+	traceSink := new(consumertest.TracesSink)
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
 }
 
@@ -129,8 +134,8 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	}
 
 	set := receivertest.NewNopCreateSettings()
-
-	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
+	traceSink := new(consumertest.TracesSink)
+	_, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
 }
 
@@ -142,8 +147,9 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 		Endpoint: defaultHTTPBindEndpoint,
 	}
 	set := receivertest.NewNopCreateSettings()
-	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-
+	traceSink := new(consumertest.TracesSink)
+	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, 12800, r.(*swReceiver).config.CollectorHTTPPort, "http port should be default")
+	assert.Equal(t, 12800, r.(*sharedcomponent.SharedComponent).
+		Unwrap().(*swReceiver).config.CollectorHTTPPort, "http port should be default")
 }
