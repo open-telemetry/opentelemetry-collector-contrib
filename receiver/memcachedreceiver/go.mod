@@ -7,7 +7,7 @@ require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.78.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go v0.20.1
 	go.opentelemetry.io/collector v0.78.2
 	go.opentelemetry.io/collector/component v0.78.2
@@ -27,7 +27,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v23.0.6+incompatible // indirect
+	github.com/docker/docker v24.0.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
