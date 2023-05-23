@@ -7,6 +7,8 @@ import (
 	"context"
 	"testing"
 	"time"
+	"net/http"
+	"net/http/httptest"
 
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +21,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
+type MockHost struct {
+	Extensions map[component.ID]component.Component
+}
+
+func (m *MockHost) ReportFatalError(err error) {}
+
+func (m *MockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return nil
+}
+
+func (m *MockHost) GetExtensions() map[component.ID]component.Component {
+	return m.Extensions
+}
+
+func (m *MockHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+    return nil 
+}
 func TestToPrometheusConfig(t *testing.T) {
+
+	// Creates a mock HTTP server
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Serve mock response for the test
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Mock response"))
+	}))
+	defer mockServer.Close()
+
 	// prepare
 	prFactory := prometheusreceiver.NewFactory()
 	baFactory := bearertokenauthextension.NewFactory()
@@ -30,13 +58,13 @@ func TestToPrometheusConfig(t *testing.T) {
 	baExt, err := baFactory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), baCfg)
 	require.NoError(t, err)
 
-	host := &mockHost{
-		extensions: map[component.ID]component.Component{
+	host := &MockHost{	
+		Extensions: map[component.ID]component.Component{
 			component.NewIDWithName("bearertokenauth", "array01"): baExt,
 		},
 	}
 
-	endpoint := "http://example.com"
+	endpoint := mockServer.URL
 	interval := 15 * time.Second
 	cfgs := []ScraperConfig{
 		{
@@ -48,7 +76,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	}
 
 	scraper := NewScraper(context.Background(), "hosts", endpoint, cfgs, interval, model.LabelSet{})
-
+	
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
 
