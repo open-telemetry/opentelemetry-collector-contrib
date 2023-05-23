@@ -304,6 +304,18 @@ func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 	assert.Equal(t, tableName, *awsData.TableName)
 }
 
+func TestAwsWithDynamoDbSemConvAttributesString(t *testing.T) {
+	tableName := "MyTable"
+	attributes := make(map[string]pcommon.Value)
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueStr(tableName)
+
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, tableName, *awsData.TableName)
+}
+
 func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 	requestid := "12345-request"
 	attributes := make(map[string]pcommon.Value)
