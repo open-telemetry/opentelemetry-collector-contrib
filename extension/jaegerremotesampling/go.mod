@@ -5,9 +5,9 @@ go 1.19
 require (
 	github.com/jaegertracing/jaeger v1.41.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.78.1
-	go.opentelemetry.io/collector/component v0.78.1
-	go.opentelemetry.io/collector/confmap v0.78.1
+	go.opentelemetry.io/collector v0.78.2
+	go.opentelemetry.io/collector/component v0.78.2
+	go.opentelemetry.io/collector/confmap v0.78.2
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.55.0
 )

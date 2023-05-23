@@ -5,16 +5,16 @@ go 1.19
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/leoluk/perflib_exporter v0.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.78.0
 	github.com/shirou/gopsutil/v3 v3.23.4
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.78.1
-	go.opentelemetry.io/collector/component v0.78.1
-	go.opentelemetry.io/collector/confmap v0.78.1
-	go.opentelemetry.io/collector/consumer v0.78.1
+	go.opentelemetry.io/collector v0.78.2
+	go.opentelemetry.io/collector/component v0.78.2
+	go.opentelemetry.io/collector/confmap v0.78.2
+	go.opentelemetry.io/collector/consumer v0.78.2
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
-	go.opentelemetry.io/collector/receiver v0.78.1
-	go.opentelemetry.io/collector/semconv v0.78.1
+	go.opentelemetry.io/collector/receiver v0.78.2
+	go.opentelemetry.io/collector/semconv v0.78.2
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sys v0.8.0
@@ -59,7 +59,7 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.78.1 // indirect
+	go.opentelemetry.io/collector/exporter v0.78.2 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.16.1 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
