@@ -8,9 +8,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.77.0
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.77.0
-	go.opentelemetry.io/collector/component v0.77.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.77.0
+	go.opentelemetry.io/collector v0.78.1
+	go.opentelemetry.io/collector/component v0.78.1
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.1
 	golang.org/x/mod v0.10.0
 	golang.org/x/text v0.9.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -37,6 +37,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.77.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.77.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.77.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.77.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.77.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.77.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.77.0 // indirect
@@ -202,8 +203,8 @@ require (
 	github.com/samber/lo v1.37.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.5 // indirect
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1 // indirect
-	go.opentelemetry.io/collector/exporter v0.77.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.77.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.78.1 // indirect
+	go.opentelemetry.io/collector/receiver v0.78.1 // indirect
 )
 
 require (
@@ -326,6 +327,7 @@ require (
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/cskr/pubsub v1.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -481,7 +483,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mongodb-forks/digest v1.0.4 // indirect
 	github.com/montanaflynn/stats v0.6.6 // indirect
-	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
+	github.com/mostynb/go-grpc-compression v1.1.18 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -542,6 +544,7 @@ require (
 	github.com/relvacode/iso8601 v1.3.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.14 // indirect
+	github.com/scalyr/dataset-go v0.0.8 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
@@ -591,24 +594,24 @@ require (
 	go.mongodb.org/atlas v0.26.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.77.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.77.0 // indirect
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.77.0 // indirect
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.77.0 // indirect
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.77.0 // indirect
-	go.opentelemetry.io/collector/extension/ballastextension v0.77.0 // indirect
-	go.opentelemetry.io/collector/extension/zpagesextension v0.77.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.77.0 // indirect
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.77.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.77.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.78.1 // indirect
+	go.opentelemetry.io/collector/consumer v0.78.1 // indirect
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.78.1 // indirect
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.78.1 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.78.1 // indirect
+	go.opentelemetry.io/collector/extension/ballastextension v0.78.1 // indirect
+	go.opentelemetry.io/collector/extension/zpagesextension v0.78.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.78.1 // indirect
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.78.1 // indirect
+	go.opentelemetry.io/collector/semconv v0.78.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.41.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.15.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.16.1 // indirect
 	go.opentelemetry.io/contrib/zpages v0.41.1 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v0.38.0 // indirect
+	go.opentelemetry.io/otel/bridge/opencensus v0.38.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.38.1 // indirect
 	go.opentelemetry.io/otel/metric v0.38.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.15.1 // indirect
@@ -714,6 +717,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ../../exporter/coralogixexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../../exporter/datadogexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter => ../../exporter/datasetexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ../../exporter/dynatraceexporter
 

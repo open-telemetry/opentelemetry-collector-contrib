@@ -174,8 +174,6 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 		"total_pgpgin":              r.mb.RecordContainerMemoryTotalPgpginDataPoint,
 		"pgpgout":                   r.mb.RecordContainerMemoryPgpgoutDataPoint,
 		"total_pgpgout":             r.mb.RecordContainerMemoryTotalPgpgoutDataPoint,
-		"swap":                      r.mb.RecordContainerMemorySwapDataPoint,
-		"total_swap":                r.mb.RecordContainerMemoryTotalSwapDataPoint,
 		"pgfault":                   r.mb.RecordContainerMemoryPgfaultDataPoint,
 		"total_pgfault":             r.mb.RecordContainerMemoryTotalPgfaultDataPoint,
 		"pgmajfault":                r.mb.RecordContainerMemoryPgmajfaultDataPoint,

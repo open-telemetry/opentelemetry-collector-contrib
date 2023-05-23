@@ -61,12 +61,10 @@ func createMetricsReceiver(
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: time.Minute,
-		},
-		Endpoint:              defaultEndpoint,
-		Timeout:               defaultTimeout,
-		CollectClusterMetrics: defaultCollectClusterMetrics,
-		MetricsBuilderConfig:  metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		Endpoint:                  defaultEndpoint,
+		Timeout:                   defaultTimeout,
+		CollectClusterMetrics:     defaultCollectClusterMetrics,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }

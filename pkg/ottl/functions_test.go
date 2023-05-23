@@ -660,6 +660,31 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "intgetter slice arg",
+			inv: editor{
+				Function: "testing_intgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(1),
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(2),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "pmapgetter slice arg",
 			inv: editor{
 				Function: "testing_pmapgetter_slice",
@@ -729,6 +754,29 @@ func Test_NewFunctionCall(t *testing.T) {
 							Values: []value{
 								{
 									String: ottltest.Strp("1.1"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1.1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "intlikegetter slice arg",
+			inv: editor{
+				Function: "testing_intlikegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("1"),
 								},
 								{
 									Literal: &mathExprLiteral{
@@ -935,6 +983,20 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "intlikegetter arg",
+			inv: editor{
+				Function: "testing_intgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Float: ottltest.Floatp(1.1),
 						},
 					},
 				},
@@ -1160,6 +1222,16 @@ func functionWithFloatGetterSlice(getters []FloatGetter[interface{}]) (ExprFunc[
 	}, nil
 }
 
+type intGetterSliceArguments struct {
+	IntGetters []IntGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntGetterSlice(getters []IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 type pMapGetterSliceArguments struct {
 	PMapGetters []PMapGetter[any] `ottlarg:"0"`
 }
@@ -1185,6 +1257,16 @@ type floatLikeGetterSliceArguments struct {
 }
 
 func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
+type intLikeGetterSliceArguments struct {
+	IntLikeGetters []IntLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntLikeGetterSlice(getters []IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return len(getters), nil
 	}, nil
@@ -1265,6 +1347,16 @@ type intGetterArguments struct {
 }
 
 func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type intLikeGetterArguments struct {
+	IntLikeGetterArg IntLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntLikeGetter(IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -1460,6 +1552,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithFloatLikeGetterSlice,
 		),
 		createFactory[any](
+			"testing_intgetter_slice",
+			&intGetterSliceArguments{},
+			functionWithIntGetterSlice,
+		),
+		createFactory[any](
+			"testing_intlikegetter_slice",
+			&intLikeGetterSliceArguments{},
+			functionWithIntLikeGetterSlice,
+		),
+		createFactory[any](
 			"testing_pmapgetter_slice",
 			&pMapGetterSliceArguments{},
 			functionWithPMapGetterSlice,
@@ -1503,6 +1605,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_intgetter",
 			&intGetterArguments{},
 			functionWithIntGetter,
+		),
+		createFactory[any](
+			"testing_intlikegetter",
+			&intLikeGetterArguments{},
+			functionWithIntLikeGetter,
 		),
 		createFactory[any](
 			"testing_pmapgetter",
