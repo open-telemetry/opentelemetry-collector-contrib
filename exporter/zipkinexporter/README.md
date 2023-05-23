@@ -28,6 +28,7 @@ The following settings are optional:
   services missing this information.
 
 To use TLS, specify `https://` as the protocol scheme in the URL passed to the `endpoint` property.
+See [Advanced Configuration](#advanced-configuration) for more TLS options.
 
 Example:
 
