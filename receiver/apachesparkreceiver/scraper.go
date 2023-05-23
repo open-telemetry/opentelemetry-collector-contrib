@@ -62,25 +62,22 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	}
 
 	// Check apps against allowed app names from config
-	var allowedApps []models.Application
+	var allowedApps models.Applications
 
 	// If no app names specified, allow all apps
 	switch {
-	case s.config.ApplicationNames == nil:
-		allowedApps = *apps
 	case len(s.config.ApplicationNames) == 0:
 		allowedApps = *apps
-		s.logger.Warn("Empty array of allowed application names specified - all applications will be monitored.")
 	default:
 		// Some allowed app names specified, compare to app names from applications endpoint
-		appMap := make(map[string]models.Application)
+		appMap := make(map[string]models.Applications)
 		for _, app := range *apps {
-			appMap[app.Name] = app
+			appMap[app.Name] = append(appMap[app.Name], app)
 		}
 
 		for _, name := range s.config.ApplicationNames {
-			if app, ok := appMap[name]; ok {
-				allowedApps = append(allowedApps, app)
+			if apps, ok := appMap[name]; ok {
+				allowedApps = append(allowedApps, apps...)
 			}
 		}
 		if len(allowedApps) == 0 {

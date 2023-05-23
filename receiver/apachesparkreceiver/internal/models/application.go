@@ -3,11 +3,8 @@
 
 package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 
-// Application represents the json returned by the api/v1/applications endpoint for each application
-
-type Applications []Application
-
-type Application struct {
+// Applications represents the json returned by the api/v1/applications endpoint
+type Applications []struct {
 	ApplicationID string `json:"id"`
 	Name          string `json:"name"`
 }

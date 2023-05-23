@@ -1,3 +1,4 @@
+# Keep the original spark license.
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -14,8 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Original source: https://github.com/apache/spark/blob/master/examples/src/main/python/status_api_demo.py
 #
-# This file is almost completely copied from https://github.com/apache/spark/blob/master/examples/src/main/python/status_api_demo.py - all credit goes to the original source.
+# NOTICE:
+# Apache Spark
+# Copyright 2014 and onwards The Apache Software Foundation.
+#
+# This product includes software developed at
+# The Apache Software Foundation (http://www.apache.org/).
+#
 
 import time
 import threading

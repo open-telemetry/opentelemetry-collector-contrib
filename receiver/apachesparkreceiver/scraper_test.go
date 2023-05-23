@@ -9,7 +9,6 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -67,11 +66,11 @@ func TestScraper(t *testing.T) {
 				return pmetric.NewMetrics()
 			},
 			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				CollectionInterval: 15 * time.Second,
+				CollectionInterval: defaultCollectionInterval,
 			},
 				ApplicationNames: []string{"local-123", "local-987"},
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://localhost:4040",
+					Endpoint: defaultEndpoint,
 				},
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
@@ -170,6 +169,58 @@ func TestScraper(t *testing.T) {
 				return expectedMetrics
 			},
 			config:      createDefaultConfig().(*Config),
+			expectedErr: nil,
+		},
+		{
+			desc: "Successfully allowing apps",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+				data := loadAPIResponseData(t, clusterStatsResponseFile)
+				var clusterStats *models.ClusterProperties
+				err := json.Unmarshal(data, &clusterStats)
+				require.NoError(t, err)
+				mockClient.On("ClusterStats").Return(clusterStats, nil)
+
+				data = loadAPIResponseData(t, appsStatsResponseFile)
+				var apps *models.Applications
+				err = json.Unmarshal(data, &apps)
+				require.NoError(t, err)
+				mockClient.On("Applications").Return(apps, nil)
+
+				data = loadAPIResponseData(t, stagesStatsResponseFile)
+				var stages *models.Stages
+				err = json.Unmarshal(data, &stages)
+				require.NoError(t, err)
+				mockClient.On("StageStats", mock.Anything).Return(stages, nil)
+
+				data = loadAPIResponseData(t, executorsStatsResponseFile)
+				var executors *models.Executors
+				err = json.Unmarshal(data, &executors)
+				require.NoError(t, err)
+				mockClient.On("ExecutorStats", mock.Anything).Return(executors, nil)
+
+				data = loadAPIResponseData(t, jobsStatsResponseFile)
+				var jobs *models.Jobs
+				err = json.Unmarshal(data, &jobs)
+				require.NoError(t, err)
+				mockClient.On("JobStats", mock.Anything).Return(jobs, nil)
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: defaultCollectionInterval,
+			},
+				ApplicationNames: []string{"streaming-example"},
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: defaultEndpoint,
+				},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
 			expectedErr: nil,
 		},
 	}
