@@ -18,7 +18,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -81,34 +80,6 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				return cfg
 			},
 			expectedFile: filepath.Join("testdata", "integration", "expected_all_db.yaml"),
-		},
-		{
-			name: "without_resource_attributes",
-			cfg: func(hostname string) *Config {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					emitMetricsWithResourceAttributesFeatureGate.ID(), false,
-				))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					emitMetricsWithoutResourceAttributesFeatureGate.ID(), true,
-				))
-				f := NewFactory()
-				cfg := f.CreateDefaultConfig().(*Config)
-				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
-				cfg.Databases = []string{}
-				cfg.Username = "otelu"
-				cfg.Password = "otelp"
-				cfg.Insecure = true
-				return cfg
-			},
-			cleanup: func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					emitMetricsWithResourceAttributesFeatureGate.ID(), true,
-				))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					emitMetricsWithoutResourceAttributesFeatureGate.ID(), false,
-				))
-			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_all_without_resource_attributes.yaml"),
 		},
 	}
 
