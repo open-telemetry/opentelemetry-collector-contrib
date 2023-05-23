@@ -29,22 +29,22 @@ require (
 	github.com/prometheus/prometheus v0.43.1
 	github.com/shirou/gopsutil/v3 v3.23.4
 	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.78.1
-	go.opentelemetry.io/collector/component v0.78.1
-	go.opentelemetry.io/collector/confmap v0.78.1
-	go.opentelemetry.io/collector/consumer v0.78.1
-	go.opentelemetry.io/collector/exporter v0.78.1
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.78.1
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.78.1
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.78.1
-	go.opentelemetry.io/collector/extension/ballastextension v0.78.1
-	go.opentelemetry.io/collector/extension/zpagesextension v0.78.1
+	go.opentelemetry.io/collector v0.78.2
+	go.opentelemetry.io/collector/component v0.78.2
+	go.opentelemetry.io/collector/confmap v0.78.2
+	go.opentelemetry.io/collector/consumer v0.78.2
+	go.opentelemetry.io/collector/exporter v0.78.2
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.78.2
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.78.2
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.78.2
+	go.opentelemetry.io/collector/extension/ballastextension v0.78.2
+	go.opentelemetry.io/collector/extension/zpagesextension v0.78.2
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
-	go.opentelemetry.io/collector/processor/batchprocessor v0.78.1
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.78.1
-	go.opentelemetry.io/collector/receiver v0.78.1
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.1
-	go.opentelemetry.io/collector/semconv v0.78.1
+	go.opentelemetry.io/collector/processor/batchprocessor v0.78.2
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.78.2
+	go.opentelemetry.io/collector/receiver v0.78.2
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.2
+	go.opentelemetry.io/collector/semconv v0.78.2
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/text v0.9.0
