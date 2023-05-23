@@ -4,6 +4,95 @@
 
 <!-- next version -->
 
+## v0.78.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/chrony`: Update emitted Scope name to "otelcol/chronyreceiver" (#21382)
+- `elasticsearchreceiver`: Enable 'elasticsearch.node.version' resource attribute on node metrics, by default (#16847)
+- `receiver/filestats`: Update emitted Scope name to "otelcol/filestatsreceiver" (#21382)
+- `receiver/mongodbatlas`: Update emitted Scope name to "otelcol/mongodbatlasreceiver" (#21382)
+- `receivers`: Updating receivers that run intervals to use standard interval by default (#22138)
+- `datadog receiver`: Updating datadog translations to align more closely to semantic convention (#21210, #21525)
+  - `service.name` is moved from assigned from span attributes to resource attributes
+  - Moved from using datadog's `span.Resouce` to `span.Name` to set span name
+  - Exported traces are now grouped by `service.name` by default
+  
+- `nginxreceiver`: Add featuregate to emit 'nginx.connections_current' as a non-monotonic sum (#4326)
+- `pkg/ottl`: Updates the `Int` converter to use a new `IntLikeGetter` which will error if the value cannot be converted to an int. (#22059)
+  Affected components: transformprocessor, filterprocessor, routingprocessor, tailsamplingprocessor, countconnector. It is HIGHLY recommended to use each component's error_mode configuration option to handle errors returned by `Int`.
+  
+- `dockerstatsreceiver`: Remove container.memory.total_swap and container.memory.swap metrics as they are not reported by the docker API (#21190)
+
+### 🚀 New components 🚀
+
+- `apachesparkreceiver`: adds the apachesparkreceiver metric receiver (#21046)
+- `awscloudwatchmetricsreceiver`: Added [AWS CloudWatch metrics](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/working_with_metrics.html) receiver using GetMetricData API call (#15667)
+- `syslogexporter`: Add syslogexporter for sending logs to syslog server (#17982)
+- `filereceiver`: This change enables the file receiver. (#14638)
+- `datasetexporter`: Enable Datasetexporter in `internal/components` (#20660)
+- `splunkenterprisereceiver`: Wireframe for the splunk enterprise monitoring receiver (#12667)
+- `WebSocket processor`: Add WebSocket processor skeleton (#19633)
+
+### 💡 Enhancements 💡
+
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.26.0-alpha to the supported jars hash list (#22042)
+- `receivercreator`: add logs and traces support to receivercreator (#19205, #19206)
+- `pkg/ottl`: Add Log function (#18076)
+- `awsemfexporter`: Added a `tags` field to the config of the exporter to set tags for a Cloudwatch Log Group (#19406)
+- `tailsamplingprocessor`: Add OTTL Condition policy for tailsampling processor. (#20294)
+- `pkg/ottl`: Add a uuid function to ottl (#20301)
+- `oracledbreceiver`: Adds support for `consistent gets` and `db block gets` metrics. Disabled by default. (#21215)
+- `pkg/batchperresourceattr`: Mark as not mutating as it does defensive copying. (#21885)
+- `cumulativetodelta`: Makes handling of the first observed point configurable. Defaults to auto based on start time. (#20770)
+- `elasticsearchexporter`: Add dynamic indexing option to elasticsearchexporter (#5854)
+- `receiver/kafkareceiver`: Support configuration of initial offset strategy to allow consuming form latest or earliest offset (#14976)
+- `fileexporter`: provide additional documentation for the working setup of the file exporter. (#20279)
+- `internal/filter`: Add `Log`, `UUID`, and `ParseJSON` converters to filterottl standard functions (#21970)
+- `pkg/stanza`: aggregate the latter part of the split-log due to triggering the size limit (#21241)
+- `exporter/datadog`: Map Docker stats receiver metrics to Datadog container metrics. (#22149)
+  This change enables the use of the Containers (Overview) dashboard.
+- `dockerstatsreceiver`: docker container's `pids_stats` metrics are reported when available (#21041)
+- `datasetexporter`: Add support for exporting logs and traces. (#20660)
+- `datasetexporter`: Mark component as alpha and upgrade to the latest `dataset-go` v0.0.8. (#20660)
+- `k8sattributesprocessor`: Support adding attribute `k8s.deployment.uid`. (#14003)
+- `kafkareceiver`: Add `text` unmarshaler, which will decode the kafka message as text and insert it as the body of a log record. (#20734)
+- `cmd/mdatagen`: Allow setting resource_attributes without introducing the metrics builder. (#21516)
+- `receiver/mongodbatlasreceiver`: Allow collection of MongoDB Atlas Access Logs as a new feature of the MongoDBAtlas receiver. (#21182)
+- `sshcheckreceiver`: Promote sshcheckreceiver to alpha (#21488)
+- `pkg/ottl`: Add `FloatLikeGetter` and `FloatGetter` to facilitate float retrival for functions. (#21896)
+- `pkg/ottl`: Add access to get and set span kind using a string (#21773)
+- `processor/routingprocessor`: Instrument the routing processor with non-routed spans/metricpoints/logrecords counters (OTel SDK). (#21476)
+- `skywalkingreceiver`: Refactoring the code structure/directory for the following metrics receiver implementation (#20315)
+- `exporter/splunkhec`: Improve performance and reduce memory consumption. (#22018)
+- `processor/transform`: Add access to the Log function (#22014)
+
+### 🧰 Bug fixes 🧰
+
+- `statsdreceiver`: Handles StatsD server not running when shutting down to avoid NPE (#22004)
+- `exporter/elasticsearch`: Fix elasticsearch exporter not exporting span events (#18479)
+- `tests`: switch math/rand to crypto/rand (#20341)
+- `dockerstats`: Only one label/envVar was added even if multiple ones were specified by ContainerLabelsToMetricLabels or EnvVarsToMetricLabels (#21113)
+- `pkg/ottl`: Fix the factory name for the limit function (#21920)
+- `awsxrayexporter`: Fix a panic that can occur with string-valued DynamoDB attributes. (#22707)
+- `processor/filter`: Fix issue where the OTTL function `HasAttributeKeyOnDatapoint` was not usable. (#22057)
+- `pkg/ottl`: Allow using capture groups in `replace_all_patterns` when replacing map keys (#22094)
+- `confmap/provider/s3provider`: Fix typo in s3 confmap provider regex pattern (#22146)
+  Fix regex pattern for s3 confmap provider. This typo allows for using different domains
+  from what is expected.
+  
+- `confmap/provider/s3provider`: Properly handle bucket names containing dot characters (#22054)
+  Properly handle bucket names containing dot characters, according to
+  https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
+  
+- `receiver/dockerstats`: Fix `container.memory.usage.total` and `container.memory.percent` calculation. (#21097)
+  The fix updates the way to calculate the metrics to be consistent with `MEM USAGE`` and `MEM %`
+  showed by the `stats` docker CLI command. It also support v1 and v2 of cgroups.
+  Expect to see an increase of these metrics if currently running the receiver in a cgroups v1 environment.
+  As well as see a decrease in these values if running on cgroups v2 environment. 
+  
+- `exporter/splunkhec`: Fix a bug causing incorrect data in the partial error returned by the exporter (#21720)
+
 ## v0.77.0
 
 ### 🛑 Breaking changes 🛑

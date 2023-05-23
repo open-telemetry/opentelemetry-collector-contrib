@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/docker/docker v23.0.6+incompatible
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.78.0
 	github.com/stretchr/testify v1.8.2
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.78.2
