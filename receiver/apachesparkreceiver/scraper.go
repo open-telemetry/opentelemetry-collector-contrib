@@ -62,16 +62,16 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	}
 
 	// Check apps against allowed app names from config
-	var allowedApps models.Applications
+	var allowedApps []models.Application
 
 	// If no app names specified, allow all apps
 	switch {
 	case len(s.config.ApplicationNames) == 0:
-		allowedApps = *apps
+		allowedApps = apps
 	default:
 		// Some allowed app names specified, compare to app names from applications endpoint
-		appMap := make(map[string]models.Applications)
-		for _, app := range *apps {
+		appMap := make(map[string][]models.Application)
+		for _, app := range apps {
 			appMap[app.Name] = append(appMap[app.Name], app)
 		}
 
@@ -103,7 +103,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			scrapeErrors.AddPartial(24, err)
 			s.logger.Warn("Failed to scrape stage stats", zap.Error(err))
 		} else {
-			s.recordStages(*stageStats, now, app.ApplicationID, app.Name)
+			s.recordStages(stageStats, now, app.ApplicationID, app.Name)
 		}
 
 		executorStats, err := s.client.ExecutorStats(app.ApplicationID)
@@ -111,7 +111,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			scrapeErrors.AddPartial(13, err)
 			s.logger.Warn("Failed to scrape executor stats", zap.Error(err))
 		} else {
-			s.recordExecutors(*executorStats, now, app.ApplicationID, app.Name)
+			s.recordExecutors(executorStats, now, app.ApplicationID, app.Name)
 		}
 
 		jobStats, err := s.client.JobStats(app.ApplicationID)
@@ -119,7 +119,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			scrapeErrors.AddPartial(8, err)
 			s.logger.Warn("Failed to scrape job stats", zap.Error(err))
 		} else {
-			s.recordJobs(*jobStats, now, app.ApplicationID, app.Name)
+			s.recordJobs(jobStats, now, app.ApplicationID, app.Name)
 		}
 	}
 	return s.mb.Emit(), scrapeErrors.Combine()
@@ -248,7 +248,7 @@ func (s *sparkScraper) recordCluster(clusterStats *models.ClusterProperties, now
 	s.mb.EmitForResource(metadata.WithSparkApplicationID(appID), metadata.WithSparkApplicationName(appName))
 }
 
-func (s *sparkScraper) recordStages(stageStats models.Stages, now pcommon.Timestamp, appID string, appName string) {
+func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Timestamp, appID string, appName string) {
 	for _, stage := range stageStats {
 		switch stage.Status {
 		case "ACTIVE":
@@ -294,7 +294,7 @@ func (s *sparkScraper) recordStages(stageStats models.Stages, now pcommon.Timest
 	}
 }
 
-func (s *sparkScraper) recordExecutors(executorStats models.Executors, now pcommon.Timestamp, appID string, appName string) {
+func (s *sparkScraper) recordExecutors(executorStats []models.Executor, now pcommon.Timestamp, appID string, appName string) {
 	for _, executor := range executorStats {
 		s.mb.RecordSparkExecutorMemoryUsageDataPoint(now, executor.MemoryUsed)
 		s.mb.RecordSparkExecutorDiskUsageDataPoint(now, executor.DiskUsed)
@@ -318,7 +318,7 @@ func (s *sparkScraper) recordExecutors(executorStats models.Executors, now pcomm
 	}
 }
 
-func (s *sparkScraper) recordJobs(jobStats models.Jobs, now pcommon.Timestamp, appID string, appName string) {
+func (s *sparkScraper) recordJobs(jobStats []models.Job, now pcommon.Timestamp, appID string, appName string) {
 	for _, job := range jobStats {
 		s.mb.RecordSparkJobTaskActiveDataPoint(now, job.NumActiveTasks)
 		s.mb.RecordSparkJobTaskResultDataPoint(now, job.NumCompletedTasks, metadata.AttributeJobResultCompleted)

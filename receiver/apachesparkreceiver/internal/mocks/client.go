@@ -40,19 +40,19 @@ func (_m *MockClient) Get(path string) ([]byte, error) {
 }
 
 // GetApplications provides a mock function with given fields:
-func (_m *MockClient) Applications() (*models.Applications, error) {
+func (_m *MockClient) Applications() ([]models.Application, error) {
 	ret := _m.Called()
 
-	var r0 *models.Applications
+	var r0 []models.Application
 	var r1 error
-	if rf, ok := ret.Get(0).(func() (*models.Applications, error)); ok {
+	if rf, ok := ret.Get(0).(func() ([]models.Application, error)); ok {
 		return rf()
 	}
-	if rf, ok := ret.Get(0).(func() *models.Applications); ok {
+	if rf, ok := ret.Get(0).(func() []models.Application); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.Applications)
+			r0 = ret.Get(0).([]models.Application)
 		}
 	}
 
@@ -92,19 +92,19 @@ func (_m *MockClient) ClusterStats() (*models.ClusterProperties, error) {
 }
 
 // GetExecutorStats provides a mock function with given fields: appID
-func (_m *MockClient) ExecutorStats(appID string) (*models.Executors, error) {
+func (_m *MockClient) ExecutorStats(appID string) ([]models.Executor, error) {
 	ret := _m.Called(appID)
 
-	var r0 *models.Executors
+	var r0 []models.Executor
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*models.Executors, error)); ok {
+	if rf, ok := ret.Get(0).(func(string) ([]models.Executor, error)); ok {
 		return rf(appID)
 	}
-	if rf, ok := ret.Get(0).(func(string) *models.Executors); ok {
+	if rf, ok := ret.Get(0).(func(string) []models.Executor); ok {
 		r0 = rf(appID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.Executors)
+			r0 = ret.Get(0).([]models.Executor)
 		}
 	}
 
@@ -118,19 +118,19 @@ func (_m *MockClient) ExecutorStats(appID string) (*models.Executors, error) {
 }
 
 // GetJobStats provides a mock function with given fields: appID
-func (_m *MockClient) JobStats(appID string) (*models.Jobs, error) {
+func (_m *MockClient) JobStats(appID string) ([]models.Job, error) {
 	ret := _m.Called(appID)
 
-	var r0 *models.Jobs
+	var r0 []models.Job
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*models.Jobs, error)); ok {
+	if rf, ok := ret.Get(0).(func(string) ([]models.Job, error)); ok {
 		return rf(appID)
 	}
-	if rf, ok := ret.Get(0).(func(string) *models.Jobs); ok {
+	if rf, ok := ret.Get(0).(func(string) []models.Job); ok {
 		r0 = rf(appID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.Jobs)
+			r0 = ret.Get(0).([]models.Job)
 		}
 	}
 
@@ -144,19 +144,19 @@ func (_m *MockClient) JobStats(appID string) (*models.Jobs, error) {
 }
 
 // GetStageStats provides a mock function with given fields: appID
-func (_m *MockClient) StageStats(appID string) (*models.Stages, error) {
+func (_m *MockClient) StageStats(appID string) ([]models.Stage, error) {
 	ret := _m.Called(appID)
 
-	var r0 *models.Stages
+	var r0 []models.Stage
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string) (*models.Stages, error)); ok {
+	if rf, ok := ret.Get(0).(func(string) ([]models.Stage, error)); ok {
 		return rf(appID)
 	}
-	if rf, ok := ret.Get(0).(func(string) *models.Stages); ok {
+	if rf, ok := ret.Get(0).(func(string) []models.Stage); ok {
 		r0 = rf(appID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.Stages)
+			r0 = ret.Get(0).([]models.Stage)
 		}
 	}
 

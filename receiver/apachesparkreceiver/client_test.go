@@ -215,7 +215,7 @@ func TestApplications(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				var expected *models.Applications
+				var expected []models.Application
 				data = loadAPIResponseData(t, appsStatsResponseFile)
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
@@ -233,7 +233,7 @@ func TestApplications(t *testing.T) {
 	}
 }
 
-func TestGetStageStats(t *testing.T) {
+func TestStageStats(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -298,7 +298,7 @@ func TestGetStageStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				var expected *models.Stages
+				var expected []models.Stage
 				data = loadAPIResponseData(t, stagesStatsResponseFile)
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
@@ -316,7 +316,7 @@ func TestGetStageStats(t *testing.T) {
 	}
 }
 
-func TestGetExecutorStats(t *testing.T) {
+func TestExecutorStats(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -381,7 +381,7 @@ func TestGetExecutorStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				var expected *models.Executors
+				var expected []models.Executor
 				data = loadAPIResponseData(t, executorsStatsResponseFile)
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
@@ -399,7 +399,7 @@ func TestGetExecutorStats(t *testing.T) {
 	}
 }
 
-func TestGetJobStats(t *testing.T) {
+func TestJobStats(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -464,7 +464,7 @@ func TestGetJobStats(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				var expected *models.Jobs
+				var expected []models.Job
 				data = loadAPIResponseData(t, jobsStatsResponseFile)
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)

@@ -59,7 +59,7 @@ func TestScraper(t *testing.T) {
 			desc: "No Matching Allowed Apps",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				mockClient.On("Applications").Return(&models.Applications{}, nil)
+				mockClient.On("Applications").Return([]models.Application{}, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -81,10 +81,10 @@ func TestScraper(t *testing.T) {
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("ClusterStats").Return(&models.ClusterProperties{}, nil)
-				mockClient.On("Applications").Return(&models.Applications{}, nil)
-				mockClient.On("StageStats", mock.Anything).Return(&models.Stages{}, nil)
-				mockClient.On("ExecutorStats", mock.Anything).Return(&models.Executors{}, nil)
-				mockClient.On("JobStats", mock.Anything).Return(&models.Jobs{}, nil)
+				mockClient.On("Applications").Return([]models.Application{}, nil)
+				mockClient.On("StageStats", mock.Anything).Return([]models.Stage{}, nil)
+				mockClient.On("ExecutorStats", mock.Anything).Return([]models.Executor{}, nil)
+				mockClient.On("JobStats", mock.Anything).Return([]models.Job{}, nil)
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -107,7 +107,7 @@ func TestScraper(t *testing.T) {
 				mockClient.On("ClusterStats").Return(clusterStats, nil)
 
 				data = loadAPIResponseData(t, appsStatsResponseFile)
-				var apps *models.Applications
+				var apps []models.Application
 				err = json.Unmarshal(data, &apps)
 				require.NoError(t, err)
 				mockClient.On("Applications").Return(apps, nil)
@@ -138,25 +138,25 @@ func TestScraper(t *testing.T) {
 				mockClient.On("ClusterStats").Return(clusterStats, nil)
 
 				data = loadAPIResponseData(t, appsStatsResponseFile)
-				var apps *models.Applications
+				var apps []models.Application
 				err = json.Unmarshal(data, &apps)
 				require.NoError(t, err)
 				mockClient.On("Applications").Return(apps, nil)
 
 				data = loadAPIResponseData(t, stagesStatsResponseFile)
-				var stages *models.Stages
+				var stages []models.Stage
 				err = json.Unmarshal(data, &stages)
 				require.NoError(t, err)
 				mockClient.On("StageStats", mock.Anything).Return(stages, nil)
 
 				data = loadAPIResponseData(t, executorsStatsResponseFile)
-				var executors *models.Executors
+				var executors []models.Executor
 				err = json.Unmarshal(data, &executors)
 				require.NoError(t, err)
 				mockClient.On("ExecutorStats", mock.Anything).Return(executors, nil)
 
 				data = loadAPIResponseData(t, jobsStatsResponseFile)
-				var jobs *models.Jobs
+				var jobs []models.Job
 				err = json.Unmarshal(data, &jobs)
 				require.NoError(t, err)
 				mockClient.On("JobStats", mock.Anything).Return(jobs, nil)
@@ -182,25 +182,25 @@ func TestScraper(t *testing.T) {
 				mockClient.On("ClusterStats").Return(clusterStats, nil)
 
 				data = loadAPIResponseData(t, appsStatsResponseFile)
-				var apps *models.Applications
+				var apps []models.Application
 				err = json.Unmarshal(data, &apps)
 				require.NoError(t, err)
 				mockClient.On("Applications").Return(apps, nil)
 
 				data = loadAPIResponseData(t, stagesStatsResponseFile)
-				var stages *models.Stages
+				var stages []models.Stage
 				err = json.Unmarshal(data, &stages)
 				require.NoError(t, err)
 				mockClient.On("StageStats", mock.Anything).Return(stages, nil)
 
 				data = loadAPIResponseData(t, executorsStatsResponseFile)
-				var executors *models.Executors
+				var executors []models.Executor
 				err = json.Unmarshal(data, &executors)
 				require.NoError(t, err)
 				mockClient.On("ExecutorStats", mock.Anything).Return(executors, nil)
 
 				data = loadAPIResponseData(t, jobsStatsResponseFile)
-				var jobs *models.Jobs
+				var jobs []models.Job
 				err = json.Unmarshal(data, &jobs)
 				require.NoError(t, err)
 				mockClient.On("JobStats", mock.Anything).Return(jobs, nil)

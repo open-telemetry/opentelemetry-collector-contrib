@@ -4,7 +4,7 @@
 package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 
 // Executors represents the top level json returned by the api/v1/applications/[app-id]/executors endpoint
-type Executors []struct {
+type Executor struct {
 	ExecutorID                string `json:"id"`
 	MemoryUsed                int64  `json:"memoryUsed"`
 	DiskUsed                  int64  `json:"diskUsed"`

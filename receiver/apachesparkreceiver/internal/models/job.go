@@ -4,7 +4,7 @@
 package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 
 // Jobs represents the top level json returned by the api/v1/applications/[app-id]/jobs endpoint
-type Jobs []struct {
+type Job struct {
 	JobID              int64 `json:"jobId"`
 	NumActiveTasks     int64 `json:"numActiveTasks"`
 	NumCompletedTasks  int64 `json:"numCompletedTasks"`

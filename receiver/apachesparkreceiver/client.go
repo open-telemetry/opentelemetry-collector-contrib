@@ -24,10 +24,10 @@ const (
 type client interface {
 	Get(path string) ([]byte, error)
 	ClusterStats() (*models.ClusterProperties, error)
-	Applications() (*models.Applications, error)
-	StageStats(appID string) (*models.Stages, error)
-	ExecutorStats(appID string) (*models.Executors, error)
-	JobStats(appID string) (*models.Jobs, error)
+	Applications() ([]models.Application, error)
+	StageStats(appID string) ([]models.Stage, error)
+	ExecutorStats(appID string) ([]models.Executor, error)
+	JobStats(appID string) ([]models.Job, error)
 }
 
 var _ client = (*apacheSparkClient)(nil)
@@ -100,13 +100,13 @@ func (c *apacheSparkClient) ClusterStats() (*models.ClusterProperties, error) {
 	return clusterStats, nil
 }
 
-func (c *apacheSparkClient) Applications() (*models.Applications, error) {
+func (c *apacheSparkClient) Applications() ([]models.Application, error) {
 	body, err := c.Get(applicationsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	var apps *models.Applications
+	var apps []models.Application
 	err = json.Unmarshal(body, &apps)
 	if err != nil {
 		return nil, err
@@ -115,52 +115,52 @@ func (c *apacheSparkClient) Applications() (*models.Applications, error) {
 	return apps, nil
 }
 
-func (c *apacheSparkClient) StageStats(appID string) (*models.Stages, error) {
+func (c *apacheSparkClient) StageStats(appID string) ([]models.Stage, error) {
 	stagePath := fmt.Sprintf("%s/%s/stages", applicationsPath, appID)
 	body, err := c.Get(stagePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var stageStats models.Stages
+	var stageStats []models.Stage
 	err = json.Unmarshal(body, &stageStats)
 	if err != nil {
 		return nil, err
 	}
 
-	return &stageStats, nil
+	return stageStats, nil
 }
 
-func (c *apacheSparkClient) ExecutorStats(appID string) (*models.Executors, error) {
+func (c *apacheSparkClient) ExecutorStats(appID string) ([]models.Executor, error) {
 	executorPath := fmt.Sprintf("%s/%s/executors", applicationsPath, appID)
 	body, err := c.Get(executorPath)
 	if err != nil {
 		return nil, err
 	}
 
-	var executorStats models.Executors
+	var executorStats []models.Executor
 	err = json.Unmarshal(body, &executorStats)
 	if err != nil {
 		return nil, err
 	}
 
-	return &executorStats, nil
+	return executorStats, nil
 }
 
-func (c *apacheSparkClient) JobStats(appID string) (*models.Jobs, error) {
+func (c *apacheSparkClient) JobStats(appID string) ([]models.Job, error) {
 	jobPath := fmt.Sprintf("%s/%s/jobs", applicationsPath, appID)
 	body, err := c.Get(jobPath)
 	if err != nil {
 		return nil, err
 	}
 
-	var jobStats models.Jobs
+	var jobStats []models.Job
 	err = json.Unmarshal(body, &jobStats)
 	if err != nil {
 		return nil, err
 	}
 
-	return &jobStats, nil
+	return jobStats, nil
 }
 
 func (c *apacheSparkClient) buildReq(path string) (*http.Request, error) {

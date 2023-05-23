@@ -4,7 +4,7 @@
 package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/models"
 
 // Stages represents the top level json returned by the api/v1/applications/[app-id]/stages endpoint
-type Stages []struct {
+type Stage struct {
 	Status                       string `json:"status"`
 	StageID                      int64  `json:"stageId"`
 	AttemptID                    int64  `json:"attemptId"`
