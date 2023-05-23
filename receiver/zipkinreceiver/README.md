@@ -28,7 +28,7 @@ receivers:
 
 The following settings are configurable:
 
-- `endpoint` (default = 0.0.0.0:9411): host:port to which the receiver is going to receive data.
+- `endpoint` (default = 0.0.0.0:9411): host:port on which the receiver is going to receive data.
 
 ## Advanced Configuration
 
