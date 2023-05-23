@@ -36,7 +36,7 @@ exporters:
   zipkin/nontls:
     endpoint: "http://some.url:9411/api/v2/spans"
     format: proto
-    default_service_name: unkown-service
+    default_service_name: unknown-service
 
   zipkin/withtls:
     endpoint: "https://some.url:9411/api/v2/spans"
