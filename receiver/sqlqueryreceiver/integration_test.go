@@ -7,6 +7,7 @@
 package sqlqueryreceiver
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -15,6 +16,8 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
