@@ -37,7 +37,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.TracesStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Skywalking receiver.
@@ -79,6 +80,34 @@ func createTracesReceiver(
 	})
 
 	if err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// createMetricsReceiver creates a metrics receiver based on provided config.
+func createMetricsReceiver(
+	_ context.Context,
+	set receiver.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
+
+	// Convert settings in the source c to configuration struct
+	// that Skywalking receiver understands.
+	rCfg := cfg.(*Config)
+
+	c, err := createConfiguration(rCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newSkywalkingReceiver(c, set)
+	})
+
+	if err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer); err != nil {
 		return nil, err
 	}
 

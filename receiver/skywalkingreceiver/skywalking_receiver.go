@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metrics"
 	"net"
 	"net/http"
 	"sync"
@@ -51,6 +52,8 @@ type swReceiver struct {
 
 	traceReceiver *trace.Receiver
 
+	metricsReceiver *metrics.Receiver
+
 	dummyReportService *dummyReportService
 }
 
@@ -72,6 +75,19 @@ func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	}
 	var err error
 	sr.traceReceiver, err = trace.NewReceiver(tc, sr.settings)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// registerTraceConsumer register a TracesReceiver that receives trace
+func (sr *swReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
+	if mc == nil {
+		return component.ErrNilNextConsumer
+	}
+	var err error
+	sr.metricsReceiver, err = metrics.NewReceiver(mc, sr.settings)
 	if err != nil {
 		return err
 	}
@@ -156,6 +172,9 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		if sr.traceReceiver != nil {
 			v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.traceReceiver)
 		}
+		if sr.metricsReceiver != nil {
+			v3.RegisterJVMMetricReportServiceServer(sr.grpc, sr.metricsReceiver)
+		}
 		sr.dummyReportService = &dummyReportService{}
 		management.RegisterManagementServiceServer(sr.grpc, sr.dummyReportService)
 		cds.RegisterConfigurationDiscoveryServiceServer(sr.grpc, sr.dummyReportService)
@@ -164,8 +183,6 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		v3.RegisterMeterReportServiceServer(sr.grpc, &meterService{})
 		v3.RegisterCLRMetricReportServiceServer(sr.grpc, &clrService{})
 		v3.RegisterBrowserPerfServiceServer(sr.grpc, sr.dummyReportService)
-		//TODO: add jvm metrics service
-		v3.RegisterJVMMetricReportServiceServer(sr.grpc, sr.dummyReportService)
 
 		sr.goroutines.Add(1)
 		go func() {
