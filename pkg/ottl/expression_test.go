@@ -612,7 +612,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 	}
 }
 
-func Test_StandardTypeGetter(t *testing.T) {
+func Test_StandardTypeGetter_String(t *testing.T) {
 	tests := []struct {
 		name             string
 		getter           StandardTypeGetter[interface{}, string]
@@ -650,6 +650,36 @@ func Test_StandardTypeGetter(t *testing.T) {
 			valid:            false,
 			expectedErrorMsg: "expected string but got nil",
 		},
+		{
+			name: "ValueTypeStr",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueStr("test"), nil
+				},
+			},
+			want:  "test",
+			valid: true,
+		},
+		{
+			name: "ValueTypeInt",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueInt(1), nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected string but got pcommon.Value",
+		},
+		{
+			name: "ValueTypeEmpty",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueEmpty(), nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected string but got pcommon.Value",
+		},
 	}
 
 	for _, tt := range tests {
@@ -661,6 +691,93 @@ func Test_StandardTypeGetter(t *testing.T) {
 			} else {
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
+		})
+	}
+}
+
+func Test_StandardTypeGetter_Int(t *testing.T) {
+	tests := []struct {
+		name   string
+		getter StandardTypeGetter[interface{}, int64]
+		want   int64
+	}{
+		{
+			name: "ValueTypeInt",
+			getter: StandardTypeGetter[interface{}, int64]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueInt(1), nil
+				},
+			},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, val)
+		})
+	}
+}
+
+func Test_StandardTypeGetter_Double(t *testing.T) {
+	tests := []struct {
+		name   string
+		getter StandardTypeGetter[interface{}, float64]
+		want   float64
+	}{
+		{
+			name: "ValueTypeDouble",
+			getter: StandardTypeGetter[interface{}, float64]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueDouble(1.1), nil
+				},
+			},
+			want: 1.1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, val)
+		})
+	}
+}
+
+func Test_StandardTypeGetter_PMap(t *testing.T) {
+	tests := []struct {
+		name   string
+		getter StandardTypeGetter[interface{}, pcommon.Map]
+		want   pcommon.Map
+	}{
+		{
+			name: "ValueTypeMap",
+			getter: StandardTypeGetter[interface{}, pcommon.Map]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueMap(), nil
+				},
+			},
+			want: pcommon.NewMap(),
+		},
+		{
+			name: "map",
+			getter: StandardTypeGetter[interface{}, pcommon.Map]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return make(map[string]any), nil
+				},
+			},
+			want: pcommon.NewMap(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, val)
 		})
 	}
 }

@@ -151,7 +151,7 @@ type PMapGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 }
 
-type StandardTypeGetter[K any, T any] struct {
+type StandardTypeGetter[K any, T string | int64 | float64 | pcommon.Map] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
@@ -164,11 +164,47 @@ func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
 	if val == nil {
 		return v, fmt.Errorf("expected %T but got nil", v)
 	}
+
 	v, ok := val.(T)
-	if !ok {
-		return v, fmt.Errorf("expected %T but got %T", v, val)
+	if ok {
+		return v, nil
 	}
-	return v, nil
+
+	// Try to convert pcommon.Value type to expected type.
+	pval, ok := val.(pcommon.Value)
+	if ok {
+		var pv any
+		switch pval.Type() {
+		case pcommon.ValueTypeStr:
+			pv = pval.Str()
+		case pcommon.ValueTypeInt:
+			pv = pval.Int()
+		case pcommon.ValueTypeDouble:
+			pv = pval.Double()
+		case pcommon.ValueTypeMap:
+			pv = pval.Map()
+		}
+		v, ok = pv.(T)
+		if ok {
+			return v, nil
+		}
+	}
+
+	// Try to convert map[string]any to expected type.
+	mval, ok := val.(map[string]any)
+	if ok {
+		mv := pcommon.NewMap()
+		err := mv.FromRaw(mval)
+		if err != nil {
+			return v, err
+		}
+		v, ok = any(mv).(T)
+		if ok {
+			return v, nil
+		}
+	}
+
+	return v, fmt.Errorf("expected %T but got %T", v, val)
 }
 
 // StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
