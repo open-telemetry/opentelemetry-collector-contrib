@@ -5,7 +5,7 @@ go 1.19
 require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/collector v0.78.2
 	go.opentelemetry.io/collector/component v0.78.2
 	go.opentelemetry.io/collector/confmap v0.78.2
