@@ -5,12 +5,15 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.uber.org/zap"
@@ -169,6 +172,42 @@ func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTrippe
 		baseTransport:   base,
 		bearerTokenFunc: b.bearerToken,
 	}, nil
+}
+
+// Authenticate checks whether the given context contains valid auth data.
+func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	metadata := client.NewMetadata(headers)
+	authHeaders := metadata.Get("authorization")
+	if len(authHeaders) == 0 {
+		return ctx, errors.New("authentication didn't succeed")
+	}
+
+	// we only use the first header, if multiple values exist
+	parts := strings.Split(authHeaders[0], " ")
+
+	// Read the token from the authHeader parts. If a scheme exists, the second entry is used.
+	// If no scheme exists, we assume the token is in the first entry.
+	// Example:
+	// If the authorization header is "Bearer randomtoken", the parts list will be
+	// ["Bearer", "randomtoken"].
+	// The scheme "Bearer" will be ignored, and the second entry "randomtoken" will be validated.
+	// If the authorization header is "randomtoken", the parts list will be ["randomtoken"].
+	// In this case, the first entry "randomtoken" will be validated.
+	var token string
+	switch {
+	case len(b.scheme) != 0 && len(parts) == 2:
+		token = parts[1]
+	case len(b.scheme) == 0 && len(parts) == 1:
+		token = parts[0]
+	default:
+		return ctx, errors.New("invalid authorization header format")
+	}
+
+	if b.tokenString != token {
+		return ctx, fmt.Errorf("token does not match: %s", token)
+	}
+
+	return ctx, nil
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
