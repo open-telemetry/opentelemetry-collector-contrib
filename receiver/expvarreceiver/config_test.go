@@ -34,11 +34,11 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, "default"),
+			id:       component.NewIDWithName(metadata.Type, "default"),
 			expected: factory.CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "custom"),
+			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 30 * time.Second,
@@ -51,15 +51,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_schemeless_endpoint"),
+			id:           component.NewIDWithName(metadata.Type, "bad_schemeless_endpoint"),
 			errorMessage: "scheme must be 'http' or 'https', but was 'localhost'",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_hostless_endpoint"),
+			id:           component.NewIDWithName(metadata.Type, "bad_hostless_endpoint"),
 			errorMessage: "host not found in HTTP endpoint",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_invalid_url"),
+			id:           component.NewIDWithName(metadata.Type, "bad_invalid_url"),
 			errorMessage: "endpoint is not a valid URL: parse \"#$%^&*()_\": invalid URL escape \"%^&\"",
 		},
 	}
