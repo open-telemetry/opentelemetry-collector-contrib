@@ -154,8 +154,3 @@ service:
 A simple way to send a metric to `localhost:8125`:
 
 `echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u localhost 8125`
-
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-[splunk]: https://github.com/signalfx/splunk-otel-collector
-[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
