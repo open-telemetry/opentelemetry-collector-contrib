@@ -139,36 +139,123 @@ type StringGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (string, error)
 }
 
+type StandardStringGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return "", err
+	}
+	if val == nil {
+		return "", fmt.Errorf("expected string but got nil")
+	}
+	switch v := val.(type) {
+	case string:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeStr {
+			return v.Str(), nil
+		}
+		return "", fmt.Errorf("expected string but got %v", v.Type())
+	default:
+		return "", fmt.Errorf("expected string but got %T", val)
+	}
+}
+
 type IntGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (int64, error)
+}
+
+type StandardIntGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return 0, err
+	}
+	if val == nil {
+		return 0, fmt.Errorf("expected int64 but got nil")
+	}
+	switch v := val.(type) {
+	case int64:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeInt {
+			return v.Int(), nil
+		}
+		return 0, fmt.Errorf("expected int64 but got %v", v.Type())
+	default:
+		return 0, fmt.Errorf("expected int64 but got %T", val)
+	}
 }
 
 type FloatGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (float64, error)
 }
 
+type StandardFloatGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return 0, err
+	}
+	if val == nil {
+		return 0, fmt.Errorf("expected float64 but got nil")
+	}
+	switch v := val.(type) {
+	case float64:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeDouble {
+			return v.Double(), nil
+		}
+		return 0, fmt.Errorf("expected float64 but got %v", v.Type())
+	default:
+		return 0, fmt.Errorf("expected float64 but got %T", val)
+	}
+}
+
 type PMapGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 }
 
-type StandardTypeGetter[K any, T any] struct {
+type StandardPMapGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
-func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
-	var v T
+func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return v, err
+		return pcommon.Map{}, err
 	}
 	if val == nil {
-		return v, fmt.Errorf("expected %T but got nil", v)
+		return pcommon.Map{}, fmt.Errorf("expected pcommon.Map but got nil")
 	}
-	v, ok := val.(T)
-	if !ok {
-		return v, fmt.Errorf("expected %T but got %T", v, val)
+	switch v := val.(type) {
+	case pcommon.Map:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeMap {
+			return v.Map(), nil
+		}
+		return pcommon.Map{}, fmt.Errorf("expected pcommon.Map but got %v", v.Type())
+	case map[string]any:
+		m := pcommon.NewMap()
+		err = m.FromRaw(v)
+		if err != nil {
+			return pcommon.Map{}, err
+		}
+		return m, nil
+	default:
+		return pcommon.Map{}, fmt.Errorf("expected pcommon.Map but got %T", val)
 	}
-	return v, nil
 }
 
 // StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
