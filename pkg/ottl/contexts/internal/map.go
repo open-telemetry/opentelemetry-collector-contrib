@@ -23,7 +23,7 @@ func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
 	if !ok {
 		return nil, nil
 	}
-	return getIndexableValue(val, keys)
+	return getIndexableValue(val, keys[1:])
 }
 
 func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
