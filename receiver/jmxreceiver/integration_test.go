@@ -148,7 +148,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 			params.Logger = logger
 
 			cfg := &Config{
-				CollectionInterval: 1000 * time.Millisecond,
+				CollectionInterval: 3 * time.Second,
 				Endpoint:           fmt.Sprintf("%v:7199", hostname),
 				JARPath:            jar,
 				TargetSystem:       "cassandra",
