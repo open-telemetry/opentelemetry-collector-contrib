@@ -41,12 +41,13 @@ type metricsProvider interface {
 
 // awsContainerInsightReceiver implements the receiver.Metrics
 type awsContainerInsightReceiver struct {
-	settings     component.TelemetrySettings
-	nextConsumer consumer.Metrics
-	config       *Config
-	cancel       context.CancelFunc
-	cadvisor     metricsProvider
-	k8sapiserver metricsProvider
+	settings          component.TelemetrySettings
+	nextConsumer      consumer.Metrics
+	config            *Config
+	cancel            context.CancelFunc
+	cadvisor          metricsProvider
+	k8sapiserver      metricsProvider
+	prometheusScraper *k8sapiserver.PrometheusScraper
 }
 
 // newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
@@ -91,6 +92,14 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		if err != nil {
 			return err
 		}
+
+		/* TODO: enable this via config
+		acir.prometheusScraper, err = k8sapiserver.NewPrometheusScraper(ctx, acir.settings, acir.nextConsumer, host, hostinfo)
+		if err != nil {
+			acir.settings.Logger.Error("Unable to start the prometheus scraper", zap.Error(err))
+		}
+		acir.prometheusScraper.Start()
+		*/
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
 
@@ -133,6 +142,10 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 
 // Shutdown stops the awsContainerInsightReceiver receiver.
 func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
+	if acir.prometheusScraper != nil {
+		acir.prometheusScraper.Shutdown()
+	}
+
 	if acir.cancel == nil {
 		return nil
 	}
