@@ -7,7 +7,7 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.78.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector v0.78.2
 	go.opentelemetry.io/collector/component v0.78.2

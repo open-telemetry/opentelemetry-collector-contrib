@@ -7,12 +7,12 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.45.0-rc.4
 	github.com/DataDog/datadog-api-client-go/v2 v2.12.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.2.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.2.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.2.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.2.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.1
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
-	github.com/aws/aws-sdk-go v1.44.263
+	github.com/aws/aws-sdk-go v1.44.267
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.78.0
@@ -23,7 +23,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.78.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/collector v0.78.2
 	go.opentelemetry.io/collector/component v0.78.2
 	go.opentelemetry.io/collector/confmap v0.78.2
@@ -69,7 +69,7 @@ require (
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v23.0.6+incompatible // indirect
+	github.com/docker/docker v24.0.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

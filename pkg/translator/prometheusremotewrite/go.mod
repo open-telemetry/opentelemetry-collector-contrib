@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.78.0
 	github.com/prometheus/common v0.43.0
 	github.com/prometheus/prometheus v0.43.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
 	go.opentelemetry.io/collector/semconv v0.78.2
 	go.uber.org/multierr v1.11.0
