@@ -124,10 +124,22 @@ func TestLogRecord_Matching_False(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log_body_doesnt_match",
+			properties: &filterconfig.MatchProperties{
+				Config:    *createConfig(filterset.Regexp),
+				LogBodies: []string{".*TEST.*"},
+			},
+		},
 	}
 
 	lr := plog.NewLogRecord()
 	lr.SetSeverityNumber(plog.SeverityNumberTrace)
+	lr.Body().SetStr("AUTHENTICATION FAILED")
+
+	lrm := plog.NewLogRecord()
+	lrm.Body().SetEmptyMap()
+	lrm.Body().Map().PutStr("message", "AUTHENTICATION FAILED")
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -136,6 +148,10 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			require.NotNil(t, expr)
 
 			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			require.NoError(t, err)
+			assert.False(t, val)
+
+			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -194,6 +210,13 @@ func TestLogRecord_Matching_True(t *testing.T) {
 	lr.SetSeverityText("debug")
 	lr.SetSeverityNumber(plog.SeverityNumberDebug)
 
+	lrm := plog.NewLogRecord()
+	lrm.Attributes().PutStr("abc", "def")
+	lrm.Body().SetEmptyMap()
+	lrm.Body().Map().PutStr("message", "AUTHENTICATION FAILED")
+	lrm.SetSeverityText("debug")
+	lrm.SetSeverityNumber(plog.SeverityNumberDebug)
+
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			expr, err := newExpr(tc.properties)
@@ -202,6 +225,11 @@ func TestLogRecord_Matching_True(t *testing.T) {
 
 			assert.NotNil(t, lr)
 			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			require.NoError(t, err)
+			assert.True(t, val)
+
+			assert.NotNil(t, lrm)
+			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
