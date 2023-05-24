@@ -41,6 +41,7 @@ func TestNewFactory(t *testing.T) {
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Endpoint: defaultEndpoint,
 					},
+					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

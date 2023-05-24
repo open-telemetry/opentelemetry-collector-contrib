@@ -26,7 +26,7 @@ The following settings are optional:
 
 - `collection_interval`: (default = `60s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `endpoint`: (default = `http://localhost:4040`): Apache Spark endpoint to connect to in the form of `[http][://]{host}[:{port}]`
-- `whitelisted_application_names`: An array of Spark application names for which metrics should be collected. If no application names are specified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
+- `application_names`: An array of Spark application names for which metrics should be collected. If no application names are specified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
 
 ### Example Configuration
 
@@ -35,7 +35,7 @@ receivers:
   apachespark:
     collection_interval: 60s
     endpoint: http://localhost:4040
-    whitelisted_application_names:
+    application_names:
     - PythonStatusAPIDemo
     - PythonLR
 ```
