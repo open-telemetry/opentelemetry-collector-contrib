@@ -38,6 +38,7 @@ var (
 		"apiserver_request_duration_seconds":                        controlPlaneResourceType,
 		"apiserver_admission_controller_admission_duration_seconds": controlPlaneResourceType,
 		"rest_client_request_duration_seconds":                      controlPlaneResourceType,
+		"rest_client_requests_total":                                controlPlaneResourceType,
 		"etcd_request_duration_seconds":                             controlPlaneResourceType,
 		"etcd_db_total_size_in_bytes":                               controlPlaneResourceType,
 	}
@@ -53,8 +54,8 @@ type prometheusConsumer struct {
 	metricsToResource map[string]string
 }
 
-func newPrometheusConsumer(logger *zap.Logger, nextConsumer consumer.Metrics, clusterName string, nodeName string) prometheusConsumer {
-	return prometheusConsumer{
+func newPrometheusConsumer(logger *zap.Logger, nextConsumer consumer.Metrics, clusterName string, nodeName string) *prometheusConsumer {
+	return &prometheusConsumer{
 		logger:            logger,
 		nextConsumer:      nextConsumer,
 		clusterName:       clusterName,
