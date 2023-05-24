@@ -56,6 +56,15 @@ type cWMetricStats struct {
 	Sum   float64
 }
 
+type cWMetricHistogram struct {
+	Values []float64
+	Counts []float64
+	Max    float64
+	Min    float64
+	Count  uint64
+	Sum    float64
+}
+
 type groupedMetricMetadata struct {
 	namespace                  string
 	timestampMs                int64

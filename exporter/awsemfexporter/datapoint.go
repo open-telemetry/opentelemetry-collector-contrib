@@ -5,6 +5,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -86,6 +87,13 @@ type histogramDataPointSlice struct {
 	pmetric.HistogramDataPointSlice
 }
 
+type exponentialHistogramDataPointSlice struct {
+	// TODO: Calculate delta value for count and sum value with exponential histogram
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18245
+	deltaMetricMetadata
+	pmetric.ExponentialHistogramDataPointSlice
+}
+
 // summaryDataPointSlice is a wrapper for pmetric.SummaryDataPointSlice
 type summaryDataPointSlice struct {
 	deltaMetricMetadata
@@ -154,6 +162,79 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 		labels:      labels,
 		timestampMs: timestamp,
 	}}, true
+}
+
+// CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
+func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
+	metric := dps.ExponentialHistogramDataPointSlice.At(i)
+	labels := createLabels(metric.Attributes(), instrumentationScopeName)
+	timestamp := unixNanoToMilliseconds(metric.Timestamp())
+
+	scale := metric.Scale()
+	base := math.Pow(2, math.Pow(2, float64(-scale)))
+	datapoints := []dataPoint{}
+	arrayValues := []float64{}
+	arrayCountes := []float64{}
+
+	// Set mid-point of positive buckets in values/counts array.
+	positiveBuckets := metric.Positive()
+	positiveOffset := positiveBuckets.Offset()
+	positiveBucketCounts := positiveBuckets.BucketCounts()
+	for i := 0; i < positiveBucketCounts.Len(); i++ {
+		index := i + int(positiveOffset)
+		bucketBegin := math.Pow(base, float64(index))
+		bucketEnd := math.Pow(base, float64(index+1))
+		metricVal := (bucketBegin + bucketEnd) / 2
+		count := positiveBucketCounts.At(i)
+		if count > 0 {
+			arrayValues = append(arrayValues, metricVal)
+			arrayCountes = append(arrayCountes, float64(count))
+		}
+	}
+
+	// Set count of zero bucket in values/counts array.
+	if metric.ZeroCount() > 0 {
+		arrayValues = append(arrayValues, 0)
+		arrayCountes = append(arrayCountes, float64(metric.ZeroCount()))
+	}
+
+	// Set mid-point of negative buckets in values/counts array.
+	// According to metrics spec, the value in histogram is expected to be non-negative.
+	// https://opentelemetry.io/docs/specs/otel/metrics/api/#histogram
+	// However, the negative support is defined in metrics data model.
+	// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram
+	// The negative is also supported but only verified with unit test.
+	negativeBuckets := metric.Negative()
+	negativeOffset := negativeBuckets.Offset()
+	negativeBucketCounts := negativeBuckets.BucketCounts()
+	for i := 0; i < negativeBucketCounts.Len(); i++ {
+		index := i + int(negativeOffset)
+		bucketBegin := -math.Pow(base, float64(index+1))
+		bucketEnd := -math.Pow(base, float64(index))
+		metricVal := (bucketBegin + bucketEnd) / 2
+		count := negativeBucketCounts.At(i)
+		if count > 0 {
+			arrayValues = append(arrayValues, metricVal)
+			arrayCountes = append(arrayCountes, float64(count))
+		}
+	}
+
+	MetricName := dps.metricName
+	datapoints = append(datapoints, dataPoint{
+		name: MetricName,
+		value: &cWMetricHistogram{
+			Values: arrayValues,
+			Counts: arrayCountes,
+			Count:  metric.Count(),
+			Sum:    metric.Sum(),
+			Max:    metric.Max(),
+			Min:    metric.Min(),
+		},
+		labels:      labels,
+		timestampMs: timestamp,
+	})
+
+	return datapoints, true
 }
 
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
@@ -260,6 +341,12 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 	case pmetric.MetricTypeHistogram:
 		metric := pmd.Histogram()
 		dps = histogramDataPointSlice{
+			metricMetadata,
+			metric.DataPoints(),
+		}
+	case pmetric.MetricTypeExponentialHistogram:
+		metric := pmd.ExponentialHistogram()
+		dps = exponentialHistogramDataPointSlice{
 			metricMetadata,
 			metric.DataPoints(),
 		}
