@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -49,7 +48,6 @@ type prometheusConsumer struct {
 	logger            *zap.Logger
 	clusterName       string
 	nodeName          string
-	resource          pcommon.Resource
 	resourcesToType   map[string]string
 	metricsToResource map[string]string
 }

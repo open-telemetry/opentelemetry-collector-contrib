@@ -143,7 +143,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 // Shutdown stops the awsContainerInsightReceiver receiver.
 func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	if acir.prometheusScraper != nil {
-		acir.prometheusScraper.Shutdown()
+		acir.prometheusScraper.Shutdown() //nolint:errcheck
 	}
 
 	if acir.cancel == nil {

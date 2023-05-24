@@ -55,10 +55,6 @@ func NewPrometheusScraper(ctx context.Context, telemetrySettings component.Telem
 	// get endpoint
 	endpoint := k8sClient.GetClientSet().CoreV1().RESTClient().Get().AbsPath("/").URL().Hostname()
 
-	// TODO: test RBAC permissions?
-
-	spFactory := simpleprometheusreceiver.NewFactory() // TODO: pass this in?
-
 	spConfig := simpleprometheusreceiver.Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: endpoint,
@@ -81,6 +77,7 @@ func NewPrometheusScraper(ctx context.Context, telemetrySettings component.Telem
 		TelemetrySettings: telemetrySettings,
 	}
 
+	spFactory := simpleprometheusreceiver.NewFactory()
 	spr, err := spFactory.CreateMetricsReceiver(ctx, params, &spConfig, consumer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create simple prometheus receiver: %w", err)
@@ -95,16 +92,10 @@ func NewPrometheusScraper(ctx context.Context, telemetrySettings component.Telem
 	}, nil
 }
 
-func (ps *PrometheusScraper) Start() {
-	err := ps.simplePrometheusReceiver.Start(ps.ctx, ps.host)
-	if err != nil {
-		panic("fix me when productionalizing code")
-	}
+func (ps *PrometheusScraper) Start() error {
+	return ps.simplePrometheusReceiver.Start(ps.ctx, ps.host)
 }
 
-func (ps *PrometheusScraper) Shutdown() {
-	err := ps.simplePrometheusReceiver.Shutdown(ps.ctx)
-	if err != nil {
-		panic("fix me when productionalizing code")
-	}
+func (ps *PrometheusScraper) Shutdown() error {
+	return ps.simplePrometheusReceiver.Shutdown(ps.ctx)
 }

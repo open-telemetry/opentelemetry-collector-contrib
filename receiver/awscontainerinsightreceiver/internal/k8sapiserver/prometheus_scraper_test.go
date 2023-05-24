@@ -135,10 +135,10 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	assert.NotNil(t, mp)
 	defer mp.Close()
 
-	scraper.Start()
+	assert.NoError(t, scraper.Start())
 
 	t.Cleanup(func() {
-		scraper.Shutdown()
+		assert.NoError(t, scraper.Shutdown())
 	})
 
 	// wait for scrape
