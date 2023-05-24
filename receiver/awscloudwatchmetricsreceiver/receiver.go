@@ -25,6 +25,10 @@ type metricReceiver struct {
 	doneChan      chan bool
 }
 
+type client interface {
+	GetMetricData(ctx context.Context, params *cloudwatch.GetMetricDataInput, optFns ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error)
+}
+
 func newMetricReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Metrics) *metricReceiver {
 	return &metricReceiver{
 		region:        cfg.Region,
@@ -64,4 +68,15 @@ func (m *metricReceiver) startPolling(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (m *metricReceiver) configureAWSClient() error {
+	if m.client != nil {
+		return nil
+	}
+	// if "", helper functions (withXXX) ignores parameter
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(m.region), config.WithEC2IMDSEndpoint(m.imdsEndpoint), config.WithSharedConfigProfile(m.profile))
+	m.client = cloudwatch.NewFromConfig(cfg)
+	return err
 }
