@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "tls"),
+			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
@@ -83,7 +83,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "sa"),
+			id: component.NewIDWithName(metadata.Type, "sa"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metadata"),
+			id: component.NewIDWithName(metadata.Type, "metadata"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
@@ -126,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metric_groups"),
+			id: component.NewIDWithName(metadata.Type, "metric_groups"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 20 * time.Second,
@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metadata_with_k8s_api"),
+			id: component.NewIDWithName(metadata.Type, "metadata_with_k8s_api"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
