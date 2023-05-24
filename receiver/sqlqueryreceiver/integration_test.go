@@ -136,7 +136,6 @@ func TestPostgresIntegration(t *testing.T) {
 func TestOracleDBIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithDumpActualOnFailure(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
