@@ -13,21 +13,16 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "logstransform"
-	// The stability level of the processor.
-	stability = component.StabilityLevelDevelopment
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor/internal/metadata"
 )
 
 // NewFactory returns a new factory for the Logs Transform processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithLogs(createLogsProcessor, stability))
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
