@@ -58,6 +58,7 @@ type IntegrationTest struct {
 	compareOptions []pmetrictest.CompareMetricsOption
 	compareTimeout time.Duration
 
+	writeExpected       bool
 	dumpActualOnFailure bool
 }
 
@@ -101,8 +102,11 @@ func (it *IntegrationTest) Run(t *testing.T) {
 		require.NoError(t, rcvr.Shutdown(ctx))
 	}()
 
-	expected, err := golden.ReadMetrics(it.expectedFile)
-	require.NoError(t, err)
+	var expected pmetric.Metrics
+	if !it.writeExpected {
+		expected, err = golden.ReadMetrics(it.expectedFile)
+		require.NoError(t, err)
+	}
 
 	// Defined outside of Eventually so it can be printed if the test fails
 	var validateErr error
@@ -146,6 +150,10 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			if len(allMetrics) == 0 {
 				return false
 			}
+			if it.writeExpected {
+				require.NoError(t, golden.WriteMetrics(t, it.expectedFile, allMetrics[0]))
+				return true
+			}
 			validateErr = pmetrictest.CompareMetrics(expected, allMetrics[len(allMetrics)-1], it.compareOptions...)
 			return validateErr == nil
 		},
@@ -187,6 +195,12 @@ func WithCompareOptions(opts ...pmetrictest.CompareMetricsOption) TestOption {
 func WithCompareTimeout(t time.Duration) TestOption {
 	return func(it *IntegrationTest) {
 		it.compareTimeout = t
+	}
+}
+
+func WriteExpected() TestOption {
+	return func(it *IntegrationTest) {
+		it.writeExpected = true
 	}
 }
 
