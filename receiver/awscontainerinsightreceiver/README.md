@@ -400,42 +400,49 @@ kubectl apply -f config.yaml
 <br/><br/> 
 
 ### Node
-| Metric                              | Unit          |
-|-------------------------------------|---------------|
-| node_cpu_limit                      | Millicore     |
-| node_cpu_request                    | Millicore     |
-| node_cpu_reserved_capacity          | Percent       |
-| node_cpu_usage_system               | Millicore     |
-| node_cpu_usage_total                | Millicore     |
-| node_cpu_usage_user                 | Millicore     |
-| node_cpu_utilization                | Percent       |
-| node_memory_cache                   | Bytes         |
-| node_memory_failcnt                 | Count         |
-| node_memory_hierarchical_pgfault    | Count/Second  |
-| node_memory_hierarchical_pgmajfault | Count/Second  |
-| node_memory_limit                   | Bytes         |
-| node_memory_mapped_file             | Bytes         |
-| node_memory_max_usage               | Bytes         |
-| node_memory_pgfault                 | Count/Second  |
-| node_memory_pgmajfault              | Count/Second  |
-| node_memory_request                 | Bytes         |
-| node_memory_reserved_capacity       | Percent       |
-| node_memory_rss                     | Bytes         |
-| node_memory_swap                    | Bytes         |
-| node_memory_usage                   | Bytes         |
-| node_memory_utilization             | Percent       |
-| node_memory_working_set             | Bytes         |
-| node_network_rx_bytes               | Bytes/Second  |
-| node_network_rx_dropped             | Count/Second  |
-| node_network_rx_errors              | Count/Second  |
-| node_network_rx_packets             | Count/Second  |
-| node_network_total_bytes            | Bytes/Second  |
-| node_network_tx_bytes               | Bytes/Second  |
-| node_network_tx_dropped             | Count/Second  |
-| node_network_tx_errors              | Count/Second  |
-| node_network_tx_packets             | Count/Second  |
-| node_number_of_running_containers   | Count         |
-| node_number_of_running_pods         | Count         |
+| Metric                                    | Unit         |
+|-------------------------------------------|--------------|
+| node_cpu_limit                            | Millicore    |
+| node_cpu_request                          | Millicore    |
+| node_cpu_reserved_capacity                | Percent      |
+| node_cpu_usage_system                     | Millicore    |
+| node_cpu_usage_total                      | Millicore    |
+| node_cpu_usage_user                       | Millicore    |
+| node_cpu_utilization                      | Percent      |
+| node_memory_cache                         | Bytes        |
+| node_memory_failcnt                       | Count        |
+| node_memory_hierarchical_pgfault          | Count/Second |
+| node_memory_hierarchical_pgmajfault       | Count/Second |
+| node_memory_limit                         | Bytes        |
+| node_memory_mapped_file                   | Bytes        |
+| node_memory_max_usage                     | Bytes        |
+| node_memory_pgfault                       | Count/Second |
+| node_memory_pgmajfault                    | Count/Second |
+| node_memory_request                       | Bytes        |
+| node_memory_reserved_capacity             | Percent      |
+| node_memory_rss                           | Bytes        |
+| node_memory_swap                          | Bytes        |
+| node_memory_usage                         | Bytes        |
+| node_memory_utilization                   | Percent      |
+| node_memory_working_set                   | Bytes        |
+| node_network_rx_bytes                     | Bytes/Second |
+| node_network_rx_dropped                   | Count/Second |
+| node_network_rx_errors                    | Count/Second |
+| node_network_rx_packets                   | Count/Second |
+| node_network_total_bytes                  | Bytes/Second |
+| node_network_tx_bytes                     | Bytes/Second |
+| node_network_tx_dropped                   | Count/Second |
+| node_network_tx_errors                    | Count/Second |
+| node_network_tx_packets                   | Count/Second |
+| node_number_of_running_containers         | Count        |
+| node_number_of_running_pods               | Count        |
+| node_status_condition_ready               | Count        |
+| node_status_condition_pid_pressure        | Count        |
+| node_status_condition_memory_pressure     | Count        |
+| node_status_condition_disk_pressure       | Count        |
+| node_status_condition_network_unavailable | Count        |
+| node_status_capacity_pods                 | Count        |
+| node_status_allocatable_pods              | Count        |
 
 <br/><br/> 
 | Resource Attribute   |

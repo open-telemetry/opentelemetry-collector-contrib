@@ -19,10 +19,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 )
 
 func TestSetGetCPUCapacity(t *testing.T) {
-	nodeInfo := newNodeInfo(zap.NewNop())
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
 	nodeInfo.setCPUCapacity(int(4))
 	assert.Equal(t, uint64(4), nodeInfo.getCPUCapacity())
 
@@ -55,7 +56,7 @@ func TestSetGetCPUCapacity(t *testing.T) {
 }
 
 func TestSetGetMemCapacity(t *testing.T) {
-	nodeInfo := newNodeInfo(zap.NewNop())
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
 	nodeInfo.setMemCapacity(int(2048))
 	assert.Equal(t, uint64(2048), nodeInfo.getMemCapacity())
 
@@ -81,4 +82,57 @@ func TestSetGetMemCapacity(t *testing.T) {
 	// with negative value
 	nodeInfo.setMemCapacity(int64(-2))
 	assert.Equal(t, uint64(0), nodeInfo.getMemCapacity())
+}
+
+func TestGetNodeStatusCapacityPods(t *testing.T) {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCapacityPods, valid := nodeInfo.getNodeStatusCapacityPods()
+	assert.True(t, valid)
+	assert.Equal(t, uint64(5), nodeStatusCapacityPods)
+
+	nodeInfo = newNodeInfo("testNodeNonExistent", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCapacityPods, valid = nodeInfo.getNodeStatusCapacityPods()
+	assert.False(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCapacityPods)
+}
+
+func TestGetNodeStatusAllocatablePods(t *testing.T) {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusAllocatablePods, valid := nodeInfo.getNodeStatusAllocatablePods()
+	assert.True(t, valid)
+	assert.Equal(t, uint64(15), nodeStatusAllocatablePods)
+
+	nodeInfo = newNodeInfo("testNodeNonExistent", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusAllocatablePods, valid = nodeInfo.getNodeStatusAllocatablePods()
+	assert.False(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusAllocatablePods)
+}
+
+func TestGetNodeStatusCondition(t *testing.T) {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCondition, valid := nodeInfo.getNodeStatusCondition(v1.NodeReady)
+	assert.True(t, valid)
+	assert.Equal(t, uint64(1), nodeStatusCondition)
+	nodeStatusCondition, valid = nodeInfo.getNodeStatusCondition(v1.NodeDiskPressure)
+	assert.True(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
+	nodeStatusCondition, valid = nodeInfo.getNodeStatusCondition(v1.NodeMemoryPressure)
+	assert.True(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
+	nodeStatusCondition, valid = nodeInfo.getNodeStatusCondition(v1.NodePIDPressure)
+	assert.True(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
+	nodeStatusCondition, valid = nodeInfo.getNodeStatusCondition(v1.NodeNetworkUnavailable)
+	assert.True(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
+
+	nodeInfo = newNodeInfo("testNode2", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCondition, valid = nodeInfo.getNodeStatusCondition(v1.NodeNetworkUnavailable)
+	assert.False(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
+
+	nodeInfo = newNodeInfo("testNodeNonExistent", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCondition, valid = nodeInfo.getNodeStatusCondition(v1.NodeReady)
+	assert.False(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
 }

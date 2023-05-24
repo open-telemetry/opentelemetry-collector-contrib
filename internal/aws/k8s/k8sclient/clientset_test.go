@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/fields"
 )
 
 func TestGetShutdown(t *testing.T) {
@@ -29,6 +30,8 @@ func TestGetShutdown(t *testing.T) {
 		KubeConfigPath(tmpConfigPath),
 		InitSyncPollInterval(10*time.Nanosecond),
 		InitSyncPollTimeout(20*time.Nanosecond),
+		NodeSelector(fields.OneTermEqualSelector("testField", "testVal")),
+		CaptureNodeLevelInfo(true),
 	)
 	assert.Equal(t, 1, len(optionsToK8sClient))
 	assert.NotNil(t, k8sClient.GetClientSet())
@@ -37,6 +40,8 @@ func TestGetShutdown(t *testing.T) {
 	assert.NotNil(t, k8sClient.GetNodeClient())
 	assert.NotNil(t, k8sClient.GetPodClient())
 	assert.NotNil(t, k8sClient.GetReplicaSetClient())
+	assert.True(t, k8sClient.captureNodeLevelInfo)
+	assert.Equal(t, "testField=testVal", k8sClient.nodeSelector.String())
 	k8sClient.Shutdown()
 	assert.Nil(t, k8sClient.ep)
 	assert.Nil(t, k8sClient.job)

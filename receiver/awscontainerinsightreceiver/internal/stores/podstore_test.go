@@ -197,7 +197,7 @@ func getBaseTestPodInfo() *corev1.Pod {
 }
 
 func getPodStore() *PodStore {
-	nodeInfo := newNodeInfo(zap.NewNop())
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
 	nodeInfo.setCPUCapacity(4000)
 	nodeInfo.setMemCapacity(400 * 1024 * 1024)
 	return &PodStore{
@@ -600,6 +600,7 @@ func TestPodStore_RefreshTick(t *testing.T) {
 }
 
 func TestPodStore_decorateNode(t *testing.T) {
+	t.Setenv("HOST_NAME", "testNode1")
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
 
@@ -629,6 +630,15 @@ func TestPodStore_decorateNode(t *testing.T) {
 
 	assert.Equal(t, int(1), metric.GetField("node_number_of_running_containers").(int))
 	assert.Equal(t, int(1), metric.GetField("node_number_of_running_pods").(int))
+
+	assert.Equal(t, uint64(1), metric.GetField("node_status_condition_ready").(uint64))
+	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_disk_pressure").(uint64))
+	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_memory_pressure").(uint64))
+	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_pid_pressure").(uint64))
+	assert.Equal(t, uint64(0), metric.GetField("node_status_condition_network_unavailable").(uint64))
+
+	assert.Equal(t, uint64(5), metric.GetField("node_status_capacity_pods").(uint64))
+	assert.Equal(t, uint64(15), metric.GetField("node_status_allocatable_pods").(uint64))
 }
 
 func TestPodStore_Decorate(t *testing.T) {

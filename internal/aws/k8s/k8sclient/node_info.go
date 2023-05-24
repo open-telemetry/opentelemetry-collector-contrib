@@ -19,10 +19,13 @@ import (
 )
 
 type nodeInfo struct {
-	conditions []*nodeCondition
+	name        string
+	conditions  []*NodeCondition
+	capacity    v1.ResourceList
+	allocatable v1.ResourceList
 }
 
-type nodeCondition struct {
+type NodeCondition struct {
 	Type   v1.NodeConditionType
 	Status v1.ConditionStatus
 }

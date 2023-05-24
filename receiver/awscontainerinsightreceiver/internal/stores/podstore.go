@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -26,6 +27,7 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
@@ -123,7 +125,15 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 		return nil, fmt.Errorf("cannot get pod from kubelet, err: %w", err)
 	}
 
-	k8sClient := k8sclient.Get(logger)
+	nodeName := os.Getenv("HOST_NAME")
+	if nodeName == "" {
+		return nil, errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
+	}
+
+	k8sClient := k8sclient.Get(logger,
+		k8sclient.NodeSelector(fields.OneTermEqualSelector("metadata.name", nodeName)),
+		k8sclient.CaptureNodeLevelInfo(true),
+	)
 	if k8sClient == nil {
 		return nil, errors.New("failed to start pod store because k8sclient is nil")
 	}
@@ -132,7 +142,7 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 		cache:                     newMapWithExpiry(podsExpiry),
 		prevMeasurements:          make(map[string]*mapWithExpiry),
 		podClient:                 podClient,
-		nodeInfo:                  newNodeInfo(logger),
+		nodeInfo:                  newNodeInfo(nodeName, k8sClient.GetNodeClient(), logger),
 		prefFullPodName:           prefFullPodName,
 		k8sClient:                 k8sClient,
 		logger:                    logger,
@@ -324,6 +334,28 @@ func (p *PodStore) decorateNode(metric CIMetric) {
 
 	metric.AddField(ci.MetricName(ci.TypeNode, ci.RunningPodCount), nodeStats.podCnt)
 	metric.AddField(ci.MetricName(ci.TypeNode, ci.RunningContainerCount), nodeStats.containerCnt)
+
+	if nodeStatusCapacityPods, ok := p.nodeInfo.getNodeStatusCapacityPods(); ok {
+		metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusCapacityPods), nodeStatusCapacityPods)
+	}
+	if nodeStatusAllocatablePods, ok := p.nodeInfo.getNodeStatusAllocatablePods(); ok {
+		metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusAllocatablePods), nodeStatusAllocatablePods)
+	}
+	if nodeStatusConditionReady, ok := p.nodeInfo.getNodeStatusCondition(corev1.NodeReady); ok {
+		metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionReady), nodeStatusConditionReady)
+	}
+	if nodeStatusConditionDiskPressure, ok := p.nodeInfo.getNodeStatusCondition(corev1.NodeDiskPressure); ok {
+		metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionDiskPressure), nodeStatusConditionDiskPressure)
+	}
+	if nodeStatusConditionMemoryPressure, ok := p.nodeInfo.getNodeStatusCondition(corev1.NodeMemoryPressure); ok {
+		metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionMemoryPressure), nodeStatusConditionMemoryPressure)
+	}
+	if nodeStatusConditionPIDPressure, ok := p.nodeInfo.getNodeStatusCondition(corev1.NodePIDPressure); ok {
+		metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionPIDPressure), nodeStatusConditionPIDPressure)
+	}
+	if nodeStatusConditionNetworkUnavailable, ok := p.nodeInfo.getNodeStatusCondition(corev1.NodeNetworkUnavailable); ok {
+		metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionNetworkUnavailable), nodeStatusConditionNetworkUnavailable)
+	}
 }
 
 func (p *PodStore) decorateCPU(metric CIMetric, pod *corev1.Pod) {

@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
@@ -55,6 +57,50 @@ func (m *mockCIMetric) GetTag(key string) string {
 
 func (m *mockCIMetric) RemoveTag(key string) {
 	delete(m.tags, key)
+}
+
+type mockNodeInfoProvider struct {
+}
+
+func (m *mockNodeInfoProvider) NodeToCapacityMap() map[string]v1.ResourceList {
+	return map[string]v1.ResourceList{
+		"testNode1": {
+			"pods": *resource.NewQuantity(5, resource.DecimalSI),
+		},
+		"testNode2": {
+			"pods": *resource.NewQuantity(10, resource.DecimalSI),
+		},
+	}
+}
+
+func (m *mockNodeInfoProvider) NodeToAllocatableMap() map[string]v1.ResourceList {
+	return map[string]v1.ResourceList{
+		"testNode1": {
+			"pods": *resource.NewQuantity(15, resource.DecimalSI),
+		},
+		"testNode2": {
+			"pods": *resource.NewQuantity(20, resource.DecimalSI),
+		},
+	}
+}
+
+func (m *mockNodeInfoProvider) NodeToConditionsMap() map[string]map[v1.NodeConditionType]v1.ConditionStatus {
+	return map[string]map[v1.NodeConditionType]v1.ConditionStatus{
+		"testNode1": {
+			v1.NodeReady:              v1.ConditionTrue,
+			v1.NodeDiskPressure:       v1.ConditionFalse,
+			v1.NodeMemoryPressure:     v1.ConditionFalse,
+			v1.NodePIDPressure:        v1.ConditionFalse,
+			v1.NodeNetworkUnavailable: v1.ConditionUnknown,
+		},
+		"testNode2": {
+			v1.NodeReady:          v1.ConditionFalse,
+			v1.NodeDiskPressure:   v1.ConditionTrue,
+			v1.NodeMemoryPressure: v1.ConditionFalse,
+			v1.NodePIDPressure:    v1.ConditionFalse,
+			// v1.NodeNetworkUnavailable: v1.ConditionFalse, Commented out intentionally to test missing scenario
+		},
+	}
 }
 
 func TestUtils_parseDeploymentFromReplicaSet(t *testing.T) {

@@ -19,11 +19,13 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -116,6 +118,28 @@ func InitSyncPollTimeout(pollTimeout time.Duration) Option {
 	}
 }
 
+// NodeSelector provides the option to provide a field selector
+// when retrieving information using the node client
+func NodeSelector(nodeSelector fields.Selector) Option {
+	return Option{
+		name: "nodeSelector:" + nodeSelector.String(),
+		set: func(kc *K8sClient) {
+			kc.nodeSelector = nodeSelector
+		},
+	}
+}
+
+// CaptureNodeLevelInfo allows one to specify whether node level info
+// should be captured and retained in memory
+func CaptureNodeLevelInfo(captureNodeLevelInfo bool) Option {
+	return Option{
+		name: "captureNodeLevelInfo:" + strconv.FormatBool(captureNodeLevelInfo),
+		set: func(kc *K8sClient) {
+			kc.captureNodeLevelInfo = captureNodeLevelInfo
+		},
+	}
+}
+
 func getStringifiedOptions(options ...Option) string {
 	var opts []string
 	for _, option := range options {
@@ -187,6 +211,9 @@ type K8sClient struct {
 
 	nodeMu sync.Mutex
 	node   nodeClientWithStopper
+
+	nodeSelector         fields.Selector
+	captureNodeLevelInfo bool
 
 	jobMu sync.Mutex
 	job   jobClientWithStopper
@@ -274,7 +301,11 @@ func (c *K8sClient) ShutdownPodClient() {
 func (c *K8sClient) GetNodeClient() NodeClient {
 	c.nodeMu.Lock()
 	if c.node == nil {
-		c.node = newNodeClient(c.clientSet, c.logger, nodeSyncCheckerOption(c.syncChecker))
+		opts := []nodeClientOption{nodeSyncCheckerOption(c.syncChecker), captureNodeLevelInfoOption(c.captureNodeLevelInfo)}
+		if c.nodeSelector != nil {
+			opts = append(opts, nodeSelectorOption(c.nodeSelector))
+		}
+		c.node = newNodeClient(c.clientSet, c.logger, opts...)
 	}
 	c.nodeMu.Unlock()
 	return c.node

@@ -86,6 +86,14 @@ const (
 	FSInodesfree  = "filesystem_inodes_free"
 	FSUtilization = "filesystem_utilization"
 
+	StatusConditionReady              = "status_condition_ready"
+	StatusConditionDiskPressure       = "status_condition_disk_pressure"
+	StatusConditionMemoryPressure     = "status_condition_memory_pressure"
+	StatusConditionPIDPressure        = "status_condition_pid_pressure"
+	StatusConditionNetworkUnavailable = "status_condition_network_unavailable"
+	StatusCapacityPods                = "status_capacity_pods"
+	StatusAllocatablePods             = "status_allocatable_pods"
+
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
 	ContainerCount        = "number_of_containers"
@@ -200,6 +208,15 @@ func init() {
 		FSInodes:      UnitCount,
 		FSInodesfree:  UnitCount,
 		FSUtilization: UnitPercent,
+
+		// status metrics
+		StatusConditionReady:              UnitCount,
+		StatusConditionDiskPressure:       UnitCount,
+		StatusConditionMemoryPressure:     UnitCount,
+		StatusConditionPIDPressure:        UnitCount,
+		StatusConditionNetworkUnavailable: UnitCount,
+		StatusCapacityPods:                UnitCount,
+		StatusAllocatablePods:             UnitCount,
 
 		// cluster metrics
 		NodeCount:       UnitCount,
