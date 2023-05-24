@@ -281,12 +281,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.NoError(t, err)
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
@@ -300,10 +295,19 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
+	require.NoError(t, err)
+}
 
-	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`
+func TestFileSDConfigYamlWithoutSDFile(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "non-existent-prometheus-sd-file-config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
 }
