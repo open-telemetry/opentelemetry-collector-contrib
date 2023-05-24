@@ -131,15 +131,16 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.Key) err
 			}
 			currentValue = currentValue.Slice().At(int(*keys[i].Int))
 		case pcommon.ValueTypeEmpty:
-			if keys[i].String != nil {
+			switch {
+			case keys[i].String != nil:
 				currentValue = currentValue.SetEmptyMap().PutEmpty(*keys[i].String)
-			} else if keys[i].Int != nil {
+			case keys[i].Int != nil:
 				currentValue.SetEmptySlice()
 				for k := 0; k < int(*keys[i].Int); k++ {
 					currentValue.Slice().AppendEmpty()
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
-			} else {
+			default:
 				return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
 			}
 		default:
