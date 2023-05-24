@@ -298,7 +298,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestFileSDConfigYamlWithoutSDFile(t *testing.T) {
+func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "non-existent-prometheus-sd-file-config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
