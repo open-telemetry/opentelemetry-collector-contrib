@@ -97,7 +97,7 @@ func TestScaperScrape(t *testing.T) {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				// pmetrictest.SortAllAttributes(expectedMetrics)
-				//golden.WriteMetrics(t, goldenPath, expectedMetrics)
+				// golden.WriteMetrics(t, goldenPath, expectedMetrics)
 				require.NoError(t, err)
 				return expectedMetrics
 			},
@@ -117,7 +117,7 @@ func TestScaperScrape(t *testing.T) {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "endpoint_404.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				// pmetrictest.SortAllAttributes(expectedMetrics)
-				//golden.WriteMetrics(t, goldenPath, expectedMetrics)
+				// golden.WriteMetrics(t, goldenPath, expectedMetrics)
 				require.NoError(t, err)
 				return expectedMetrics
 			},
