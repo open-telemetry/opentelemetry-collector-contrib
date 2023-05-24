@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
@@ -13,13 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
-)
 
-const (
-	// The value of "type" Tail Sampling in configuration.
-	typeStr = "tail_sampling"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
 var onceMetrics sync.Once
@@ -32,9 +29,9 @@ func NewFactory() processor.Factory {
 	})
 
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {
