@@ -45,6 +45,7 @@ func NewIntegrationTest(f receiver.Factory, opts ...TestOption) *IntegrationTest
 }
 
 type IntegrationTest struct {
+	networkRequest         *testcontainers.NetworkRequest
 	containerRequests      []testcontainers.ContainerRequest
 	createContainerTimeout time.Duration
 
@@ -60,6 +61,13 @@ type IntegrationTest struct {
 
 func (it *IntegrationTest) Run(t *testing.T) {
 	it.validate(t)
+
+	if it.networkRequest != nil {
+		network := it.createNetwork(t)
+		defer func() {
+			require.NoError(t, network.Remove(context.Background()))
+		}()
+	}
 
 	ci := it.createContainers(t)
 	defer ci.terminate(t)
@@ -113,6 +121,31 @@ func (it *IntegrationTest) Run(t *testing.T) {
 		it.compareTimeout, it.compareTimeout/20)
 }
 
+func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
+	var errs error
+	defer func() {
+		if t.Failed() && errs != nil {
+			t.Errorf("create network: %v", errs)
+		}
+	}()
+
+	var network testcontainers.Network
+	var err error
+	require.Eventually(t, func() bool {
+		network, err = testcontainers.GenericNetwork(
+			context.Background(),
+			testcontainers.GenericNetworkRequest{
+				NetworkRequest: *it.networkRequest,
+			})
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			return false
+		}
+		return true
+	}, it.createContainerTimeout, time.Second)
+	return network
+}
+
 func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 	var wg sync.WaitGroup
 	ci := &ContainerInfo{
@@ -164,6 +197,12 @@ func (it *IntegrationTest) validate(t *testing.T) {
 }
 
 type TestOption func(*IntegrationTest)
+
+func WithNetworkRequest(nr testcontainers.NetworkRequest) TestOption {
+	return func(it *IntegrationTest) {
+		it.networkRequest = &nr
+	}
+}
 
 func WithContainerRequest(cr testcontainers.ContainerRequest) TestOption {
 	return func(it *IntegrationTest) {
@@ -221,7 +260,7 @@ func (ci *ContainerInfo) Host(t *testing.T) string {
 func (ci *ContainerInfo) HostForNamedContainer(t *testing.T, containerName string) string {
 	c := ci.container(t, containerName)
 	h, err := c.Host(context.Background())
-	require.NoErrorf(t, err, "get host for container %q: %v", containerName, err)
+	require.NoErrorf(t, err, "get host for container %q: %w", containerName, err)
 	return h
 }
 
@@ -232,7 +271,7 @@ func (ci *ContainerInfo) MappedPort(t *testing.T, port string) string {
 func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName string, port string) string {
 	c := ci.container(t, containerName)
 	p, err := c.MappedPort(context.Background(), nat.Port(port))
-	require.NoErrorf(t, err, "get port %q for container %q: %v", port, containerName, err)
+	require.NoErrorf(t, err, "get port %q for container %q: %w", port, containerName, err)
 	return p.Port()
 }
 
