@@ -52,10 +52,5 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	conf := cfg.(*Config)
-	rec, err := newLogsReceiver(params, *conf, consumer)
-	if err != nil {
-		return nil, err
-	}
-
-	return rec, nil
+	return newLogsReceiver(params, *conf, consumer)
 }
