@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 var _ processor.Logs = (*logProcessor)(nil)
@@ -44,7 +45,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "logs")
 	nonRoutedLogRecordsCounter, err := meter.Int64Counter(
-		typeStr+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
+		metadata.Type+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
 		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
 	)
 	if err != nil {
