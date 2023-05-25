@@ -116,7 +116,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 	}, nil
 }
 
-func initHistogramMetrics(cfg *Config) metrics.HistogramMetrics {
+func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	if cfg.Histogram.Exponential != nil {
 		maxSize := structure.DefaultMaxSize
 		if cfg.Histogram.Exponential.MaxSize != 0 {
@@ -325,7 +325,7 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	v, ok := p.resourceMetrics[key]
 	if !ok {
 		v = &resourceMetrics{
-			histograms: initHistogramMetrics(&p.config),
+			histograms: initHistogramMetrics(p.config),
 			sums:       metrics.NewSumMetrics(),
 			attributes: attr,
 		}

@@ -992,17 +992,17 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		config *Config
+		config Config
 		want   metrics.HistogramMetrics
 	}{
 		{
 			name:   "initialize histogram with no config provided",
-			config: &Config{},
+			config: Config{},
 			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
 		},
 		{
 			name: "initialize explicit histogram with default bounds (ms)",
-			config: &Config{
+			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
 				},
@@ -1011,7 +1011,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		},
 		{
 			name: "initialize explicit histogram with default bounds (seconds)",
-			config: &Config{
+			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Seconds,
 				},
@@ -1020,7 +1020,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		},
 		{
 			name: "initialize explicit histogram with bounds (seconds)",
-			config: &Config{
+			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Seconds,
 					Explicit: &ExplicitHistogramConfig{
@@ -1035,7 +1035,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		},
 		{
 			name: "initialize explicit histogram with bounds (ms)",
-			config: &Config{
+			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
 					Explicit: &ExplicitHistogramConfig{
@@ -1050,7 +1050,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		},
 		{
 			name: "initialize exponential histogram",
-			config: &Config{
+			config: Config{
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
 					Exponential: &ExponentialHistogramConfig{
@@ -1062,7 +1062,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		},
 		{
 			name: "initialize exponential histogram with default max buckets count",
-			config: &Config{
+			config: Config{
 				Histogram: HistogramConfig{
 					Unit:        metrics.Milliseconds,
 					Exponential: &ExponentialHistogramConfig{},
@@ -1072,7 +1072,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run("", func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			got := initHistogramMetrics(tt.config)
 			assert.Equal(t, tt.want, got)
 		})
