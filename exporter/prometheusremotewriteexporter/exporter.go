@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
@@ -72,7 +73,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			Namespace:             cfg.Namespace,
 			ExternalLabels:        sanitizedLabels,
 			DisableTargetInfo:     !cfg.TargetInfo.Enabled,
-			DisableNormalizeNames: !prometheustranslator.IsNormalizeNameGateEnabled(),
+			DisableNormalizeNames: !isNormalizeNameGateEnabled(featuregate.GlobalRegistry()),
 			ExportCreatedMetric:   cfg.CreatedMetric.Enabled,
 		},
 	}
@@ -85,6 +86,22 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		return nil, err
 	}
 	return prwe, nil
+}
+
+func isNormalizeNameGateEnabled(registry *featuregate.Registry) bool {
+	var normalizeGate *featuregate.Gate
+	registry.VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "pkg.translator.prometheus.NormalizeName" {
+			normalizeGate = gate
+		}
+	})
+
+	// enabled by default
+	if normalizeGate == nil {
+		return true
+	}
+
+	return normalizeGate.IsEnabled()
 }
 
 // Start creates the prometheus client
