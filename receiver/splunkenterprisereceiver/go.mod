@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunk
 
 go 1.19
 
-require go.opentelemetry.io/collector/component v0.78.2
+require go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -11,13 +11,13 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.78.2 // indirect
-	go.opentelemetry.io/collector/confmap v0.78.2 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012 // indirect
-	go.opentelemetry.io/otel v1.15.1 // indirect
-	go.opentelemetry.io/otel/metric v0.38.1 // indirect
-	go.opentelemetry.io/otel/trace v1.15.1 // indirect
+	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034 // indirect
+	go.opentelemetry.io/collector/confmap v0.78.3-0.20230525165144-87dd85a6c034 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230525165144-87dd85a6c034 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230525165144-87dd85a6c034 // indirect
+	go.opentelemetry.io/otel v1.16.0 // indirect
+	go.opentelemetry.io/otel/metric v1.16.0 // indirect
+	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
