@@ -6,7 +6,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: receivers/awscloudwatch
+component: awscloudwatchreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Fixes a bug where the AWS CloudWatch receiver does the log stream filtering (using prefix) incorrectly."
