@@ -210,7 +210,9 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (receiver *logsReceiver) stopCollecting() {
-	receiver.collectionIntervalTicker.Stop()
+	if receiver.collectionIntervalTicker != nil {
+		receiver.collectionIntervalTicker.Stop()
+	}
 	close(receiver.shutdownRequested)
 }
 

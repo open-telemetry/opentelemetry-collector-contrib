@@ -81,5 +81,8 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) Shutdown(ctx context.Context) error {
-	return s.db.Close()
+	if s.db != nil {
+		return s.db.Close()
+	}
+	return nil
 }
