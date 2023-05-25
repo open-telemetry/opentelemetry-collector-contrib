@@ -37,7 +37,7 @@ type testCase struct {
 	expectedFile string
 }
 
-func TestPostgreSQLIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "single_db",

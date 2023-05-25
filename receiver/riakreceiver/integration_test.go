@@ -23,7 +23,7 @@ import (
 
 const riakPort = "8098"
 
-func TestRiakIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(

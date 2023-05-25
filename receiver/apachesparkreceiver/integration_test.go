@@ -22,7 +22,7 @@ import (
 
 const sparkPort = "4040"
 
-func TestApacheSparkIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(

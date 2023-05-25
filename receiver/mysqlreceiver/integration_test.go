@@ -22,7 +22,7 @@ import (
 
 const mysqlPort = "3306"
 
-func TestMySQLIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
