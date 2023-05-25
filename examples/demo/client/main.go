@@ -114,7 +114,7 @@ func main() {
 	defer shutdown()
 
 	tracer := otel.Tracer("demo-client-tracer")
-	meter := global.Meter("demo-client-meter")
+	meter := otel.Meter("demo-client-meter")
 
 	method, _ := baggage.NewMember("method", "repl")
 	client, _ := baggage.NewMember("client", "cli")
