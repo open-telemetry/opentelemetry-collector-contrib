@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func TestVCenterIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		pw, set := simulator.DefaultLogin.Password()
 		require.True(t, set)

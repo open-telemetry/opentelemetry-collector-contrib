@@ -26,7 +26,7 @@ import (
 
 const apachePort = "80"
 
-func TestApacheIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(

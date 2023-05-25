@@ -22,7 +22,7 @@ import (
 
 const rabbitmqPort = "15672"
 
-func TestRabbitmqIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
