@@ -57,6 +57,7 @@ type Config struct {
 	Units     []string      `mapstructure:"units,omitempty"`
 	Priority  string        `mapstructure:"priority,omitempty"`
 	Matches   []MatchConfig `mapstructure:"matches,omitempty"`
+	Grep      string        `mapstructure:"grep,omitempty"`
 }
 
 type MatchConfig map[string]string
@@ -111,6 +112,10 @@ func (c Config) buildArgs() ([]string, error) {
 	}
 
 	args = append(args, "--priority", c.Priority)
+
+	if len(c.Grep) > 0 {
+		args = append(args, "--grep", c.Grep)
+	}
 
 	switch {
 	case c.Directory != nil:

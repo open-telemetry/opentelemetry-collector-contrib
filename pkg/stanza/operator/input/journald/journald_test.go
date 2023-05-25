@@ -166,6 +166,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "ssh", "--priority", "info", "_SYSTEMD_UNIT=dbus.service"},
 		},
+		{
+			Name: "grep",
+			Config: func(cfg *Config) {
+				cfg.Grep = "test_grep"
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--grep", "test_grep"},
+		},
 	}
 
 	for _, tt := range testCases {
