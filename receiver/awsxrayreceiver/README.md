@@ -83,9 +83,3 @@ The X-Ray service endpoint which the local TCP server forwards requests to.
 Determines whether the ECS/EC2 instance metadata endpoint will be called to fetch the AWS region to send requests to. Set to `true` to skip metadata check.
 
 Default: `false`
-
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-[AWS]: https://aws-otel.github.io/docs/components/x-ray-receiver
-[observiq]: https://github.com/observIQ/observiq-otel-collector
-[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
