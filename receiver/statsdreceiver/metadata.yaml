@@ -1,0 +1,7 @@
+type: statsdreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, sumo]

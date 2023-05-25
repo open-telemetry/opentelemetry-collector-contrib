@@ -19,9 +19,15 @@ resourceMetrics:
         - key: env-var-metric-label
           value:
             stringValue: env-var
+        - key: env-var-metric-label-2
+          value:
+            stringValue: env-var-2
         - key: container-metric-label
           value:
             stringValue: container-label
+        - key: container-metric-label-2
+          value:
+            stringValue: container-label-2
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:
@@ -395,7 +401,7 @@ resourceMetrics:
           - description: Percentage of memory used.
             gauge:
               dataPoints:
-                - asDouble: 0.004350958504399172
+                - asDouble: 0.006938014912420301
                   timeUnixNano: "1657771705535206000"
             name: container.memory.percent
             unit: "1"
@@ -599,12 +605,12 @@ resourceMetrics:
                 - asInt: "3932160"
                   timeUnixNano: "1657771705535206000"
             unit: By
-          - description: Memory usage of the container. This excludes the total cache.
+          - description: Memory usage of the container. This excludes the cache.
             name: container.memory.usage.total
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "454656"
+                - asInt: "724992"
                   timeUnixNano: "1657771705535206000"
             unit: By
           - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
@@ -719,6 +725,14 @@ resourceMetrics:
                   timeUnixNano: "1657771705535206000"
               isMonotonic: true
             unit: '{packets}'
+          - description: Number of pids in the container's cgroup.
+            name: container.pids.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1657771705535206000"
+            unit: '{pids}'
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
@@ -29,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 type mockHubWrapper struct {
@@ -88,7 +79,7 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) e
 	}
 
 	err = m.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	m.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
+	m.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
 
 	return err
 }
@@ -119,7 +110,7 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 
 	sink := new(consumertest.LogsSink)
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             component.NewID(typeStr),
+		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              "",
 		LongLivedCtx:           false,
 		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),

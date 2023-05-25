@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -326,6 +315,23 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				`{"traceid":"03000000000000000000000000000000"}`,
 			},
 		},
+		{
+			desc: "with severity, already existing level and hint attribute",
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+			},
+			hints: map[string]interface{}{
+				hintAttributes: "host.name",
+			},
+			severity:       plog.SeverityNumberDebug4,
+			levelAttribute: "dummy",
+			expectedLabel:  `{exporter="OTLP", host_name="guarana", level="dummy"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -337,9 +343,6 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().AppendEmpty()
 				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetTraceID([16]byte{byte(i + 1)})
 				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetSeverityNumber(tt.severity)
-				if len(tt.levelAttribute) > 0 {
-					ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).Attributes().PutStr(levelAttributeName, tt.levelAttribute)
-				}
 			}
 
 			if len(tt.res) > 0 {
@@ -355,6 +358,9 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 						log := logs.At(k)
 						if len(tt.attrs) > 0 {
 							assert.NoError(t, log.Attributes().FromRaw(tt.attrs))
+						}
+						if len(tt.levelAttribute) > 0 {
+							log.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
 						}
 						for k, v := range tt.hints {
 							log.Attributes().PutStr(k, fmt.Sprintf("%v", v))

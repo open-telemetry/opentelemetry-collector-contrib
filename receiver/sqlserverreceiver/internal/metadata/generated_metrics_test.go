@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -151,22 +147,22 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("sqlserver.computer.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SqlserverComputerName.Enabled, ok)
-			if mb.resourceAttributesSettings.SqlserverComputerName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SqlserverComputerName.Enabled, ok)
+			if mb.resourceAttributesConfig.SqlserverComputerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("sqlserver.database.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SqlserverDatabaseName.Enabled, ok)
-			if mb.resourceAttributesSettings.SqlserverDatabaseName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SqlserverDatabaseName.Enabled, ok)
+			if mb.resourceAttributesConfig.SqlserverDatabaseName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("sqlserver.instance.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.SqlserverInstanceName.Enabled, ok)
-			if mb.resourceAttributesSettings.SqlserverInstanceName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.SqlserverInstanceName.Enabled, ok)
+			if mb.resourceAttributesConfig.SqlserverInstanceName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
@@ -435,14 +431,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

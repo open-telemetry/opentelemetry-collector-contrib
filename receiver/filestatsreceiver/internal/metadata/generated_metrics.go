@@ -6,81 +6,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for filestatsreceiver metrics.
-type MetricsSettings struct {
-	FileAtime MetricSettings `mapstructure:"file.atime"`
-	FileCtime MetricSettings `mapstructure:"file.ctime"`
-	FileMtime MetricSettings `mapstructure:"file.mtime"`
-	FileSize  MetricSettings `mapstructure:"file.size"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		FileAtime: MetricSettings{
-			Enabled: false,
-		},
-		FileCtime: MetricSettings{
-			Enabled: false,
-		},
-		FileMtime: MetricSettings{
-			Enabled: true,
-		},
-		FileSize: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for filestatsreceiver metrics.
-type ResourceAttributesSettings struct {
-	FileName ResourceAttributeSettings `mapstructure:"file.name"`
-	FilePath ResourceAttributeSettings `mapstructure:"file.path"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		FileName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		FilePath: ResourceAttributeSettings{
-			Enabled: false,
-		},
-	}
-}
-
 type metricFileAtime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -95,7 +28,7 @@ func (m *metricFileAtime) init() {
 }
 
 func (m *metricFileAtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -113,16 +46,16 @@ func (m *metricFileAtime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileAtime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFileAtime(settings MetricSettings) metricFileAtime {
-	m := metricFileAtime{settings: settings}
-	if settings.Enabled {
+func newMetricFileAtime(cfg MetricConfig) metricFileAtime {
+	m := metricFileAtime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -131,7 +64,7 @@ func newMetricFileAtime(settings MetricSettings) metricFileAtime {
 
 type metricFileCtime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -147,7 +80,7 @@ func (m *metricFileCtime) init() {
 }
 
 func (m *metricFileCtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, filePermissionsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -166,16 +99,16 @@ func (m *metricFileCtime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileCtime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFileCtime(settings MetricSettings) metricFileCtime {
-	m := metricFileCtime{settings: settings}
-	if settings.Enabled {
+func newMetricFileCtime(cfg MetricConfig) metricFileCtime {
+	m := metricFileCtime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -184,7 +117,7 @@ func newMetricFileCtime(settings MetricSettings) metricFileCtime {
 
 type metricFileMtime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -199,7 +132,7 @@ func (m *metricFileMtime) init() {
 }
 
 func (m *metricFileMtime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -217,16 +150,16 @@ func (m *metricFileMtime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileMtime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFileMtime(settings MetricSettings) metricFileMtime {
-	m := metricFileMtime{settings: settings}
-	if settings.Enabled {
+func newMetricFileMtime(cfg MetricConfig) metricFileMtime {
+	m := metricFileMtime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -235,7 +168,7 @@ func newMetricFileMtime(settings MetricSettings) metricFileMtime {
 
 type metricFileSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -248,7 +181,7 @@ func (m *metricFileSize) init() {
 }
 
 func (m *metricFileSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -266,41 +199,35 @@ func (m *metricFileSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricFileSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricFileSize(settings MetricSettings) metricFileSize {
-	m := metricFileSize{settings: settings}
-	if settings.Enabled {
+func newMetricFileSize(cfg MetricConfig) metricFileSize {
+	m := metricFileSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity            int                 // maximum observed number of metrics per resource.
-	resourceCapacity           int                 // maximum observed number of resource attributes.
-	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                  component.BuildInfo // contains version information
-	resourceAttributesSettings ResourceAttributesSettings
-	metricFileAtime            metricFileAtime
-	metricFileCtime            metricFileCtime
-	metricFileMtime            metricFileMtime
-	metricFileSize             metricFileSize
+	startTime                pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity          int                 // maximum observed number of metrics per resource.
+	resourceCapacity         int                 // maximum observed number of resource attributes.
+	metricsBuffer            pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                component.BuildInfo // contains version information
+	resourceAttributesConfig ResourceAttributesConfig
+	metricFileAtime          metricFileAtime
+	metricFileCtime          metricFileCtime
+	metricFileMtime          metricFileMtime
+	metricFileSize           metricFileSize
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -313,30 +240,16 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  settings.BuildInfo,
-		resourceAttributesSettings: mbc.ResourceAttributes,
-		metricFileAtime:            newMetricFileAtime(mbc.Metrics.FileAtime),
-		metricFileCtime:            newMetricFileCtime(mbc.Metrics.FileCtime),
-		metricFileMtime:            newMetricFileMtime(mbc.Metrics.FileMtime),
-		metricFileSize:             newMetricFileSize(mbc.Metrics.FileSize),
+		startTime:                pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:            pmetric.NewMetrics(),
+		buildInfo:                settings.BuildInfo,
+		resourceAttributesConfig: mbc.ResourceAttributes,
+		metricFileAtime:          newMetricFileAtime(mbc.Metrics.FileAtime),
+		metricFileCtime:          newMetricFileCtime(mbc.Metrics.FileCtime),
+		metricFileMtime:          newMetricFileMtime(mbc.Metrics.FileMtime),
+		metricFileSize:           newMetricFileSize(mbc.Metrics.FileSize),
 	}
 	for _, op := range options {
 		op(mb)
@@ -355,12 +268,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithFileName sets provided value as "file.name" attribute for current resource.
 func WithFileName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.FileName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.FileName.Enabled {
 			rm.Resource().Attributes().PutStr("file.name", val)
 		}
 	}
@@ -368,8 +281,8 @@ func WithFileName(val string) ResourceMetricsOption {
 
 // WithFilePath sets provided value as "file.path" attribute for current resource.
 func WithFilePath(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.FilePath.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.FilePath.Enabled {
 			rm.Resource().Attributes().PutStr("file.path", val)
 		}
 	}
@@ -378,7 +291,7 @@ func WithFilePath(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -413,7 +326,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricFileSize.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -423,7 +336,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottllog // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 
@@ -66,7 +55,7 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
 	p, err := ottl.NewParser[TransformContext](
 		functions,
 		parsePath,
@@ -146,7 +135,7 @@ func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
 	case "cache":
-		mapKey := path[0].MapKey
+		mapKey := path[0].Keys
 		if mapKey == nil {
 			return accessCache(), nil
 		}
@@ -164,9 +153,13 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	case "severity_text":
 		return accessSeverityText(), nil
 	case "body":
-		return accessBody(), nil
+		keys := path[0].Keys
+		if keys == nil {
+			return accessBody(), nil
+		}
+		return accessBodyKey(keys), nil
 	case "attributes":
-		mapKey := path[0].MapKey
+		mapKey := path[0].Keys
 		if mapKey == nil {
 			return accessAttributes(), nil
 		}
@@ -208,14 +201,13 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.getCache(), *mapKey), nil
+			return internal.GetMapValue(tCtx.getCache(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.getCache(), *mapKey, val)
-			return nil
+			return internal.SetMapValue(tCtx.getCache(), keys, val)
 		},
 	}
 }
@@ -282,8 +274,34 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 			return ottlcommon.GetValue(tCtx.GetLogRecord().Body()), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			ottlcommon.SetValue(tCtx.GetLogRecord().Body(), val)
-			return nil
+			return internal.SetValue(tCtx.GetLogRecord().Body(), val)
+		},
+	}
+}
+
+func accessBodyKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			body := tCtx.GetLogRecord().Body()
+			switch body.Type() {
+			case pcommon.ValueTypeMap:
+				return internal.GetMapValue(tCtx.GetLogRecord().Body().Map(), keys)
+			case pcommon.ValueTypeSlice:
+				return internal.GetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys)
+			default:
+				return nil, fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
+			}
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			body := tCtx.GetLogRecord().Body()
+			switch body.Type() {
+			case pcommon.ValueTypeMap:
+				return internal.SetMapValue(tCtx.GetLogRecord().Body().Map(), keys, val)
+			case pcommon.ValueTypeSlice:
+				return internal.SetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys, val)
+			default:
+				return fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
+			}
 		},
 	}
 }
@@ -302,14 +320,13 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessAttributesKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+func accessAttributesKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.GetLogRecord().Attributes(), *mapKey), nil
+			return internal.GetMapValue(tCtx.GetLogRecord().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.GetLogRecord().Attributes(), *mapKey, val)
-			return nil
+			return internal.SetMapValue(tCtx.GetLogRecord().Attributes(), keys, val)
 		},
 	}
 }

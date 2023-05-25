@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 # A script which will record new login, virtual server, pool, node, and pool member responses from a specified Big-IP environment
 
 ENDPOINT='https://localhost'

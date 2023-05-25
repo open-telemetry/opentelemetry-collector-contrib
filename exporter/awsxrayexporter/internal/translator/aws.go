@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
@@ -168,14 +157,19 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		queueURL = value.Str()
 	}
 	if value, ok := attributes[conventions.AttributeAWSDynamoDBTableNames]; ok {
-		if value.Slice().Len() == 1 {
-			tableName = value.Slice().At(0).Str()
-		} else if value.Slice().Len() > 1 {
-			tableName = ""
-			tableNames = []string{}
-			for i := 0; i < value.Slice().Len(); i++ {
-				tableNames = append(tableNames, value.Slice().At(i).Str())
+		switch value.Type() {
+		case pcommon.ValueTypeSlice:
+			if value.Slice().Len() == 1 {
+				tableName = value.Slice().At(0).Str()
+			} else if value.Slice().Len() > 1 {
+				tableName = ""
+				tableNames = []string{}
+				for i := 0; i < value.Slice().Len(); i++ {
+					tableNames = append(tableNames, value.Slice().At(i).Str())
+				}
 			}
+		case pcommon.ValueTypeStr:
+			tableName = value.Str()
 		}
 	}
 

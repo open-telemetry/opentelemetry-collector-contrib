@@ -67,8 +67,6 @@ all_set:
       enabled: true
     container.memory.rss_huge:
       enabled: true
-    container.memory.swap:
-      enabled: true
     container.memory.total_active_anon:
       enabled: true
     container.memory.total_active_file:
@@ -94,8 +92,6 @@ all_set:
     container.memory.total_rss:
       enabled: true
     container.memory.total_rss_huge:
-      enabled: true
-    container.memory.total_swap:
       enabled: true
     container.memory.total_unevictable:
       enabled: true
@@ -126,6 +122,10 @@ all_set:
     container.network.io.usage.tx_errors:
       enabled: true
     container.network.io.usage.tx_packets:
+      enabled: true
+    container.pids.count:
+      enabled: true
+    container.pids.limit:
       enabled: true
   resource_attributes:
     container.hostname:
@@ -206,8 +206,6 @@ none_set:
       enabled: false
     container.memory.rss_huge:
       enabled: false
-    container.memory.swap:
-      enabled: false
     container.memory.total_active_anon:
       enabled: false
     container.memory.total_active_file:
@@ -233,8 +231,6 @@ none_set:
     container.memory.total_rss:
       enabled: false
     container.memory.total_rss_huge:
-      enabled: false
-    container.memory.total_swap:
       enabled: false
     container.memory.total_unevictable:
       enabled: false
@@ -265,6 +261,10 @@ none_set:
     container.network.io.usage.tx_errors:
       enabled: false
     container.network.io.usage.tx_packets:
+      enabled: false
+    container.pids.count:
+      enabled: false
+    container.pids.limit:
       enabled: false
   resource_attributes:
     container.hostname:

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
 //go:build !windows
@@ -60,8 +49,8 @@ func TestDefaultExtensions(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		extension     component.Type
 		getConfigFn   getExtensionConfigFn
+		extension     component.Type
 		skipLifecycle bool
 	}{
 		{
@@ -144,6 +133,10 @@ func TestDefaultExtensions(t *testing.T) {
 			},
 		},
 		{
+			extension:     "ecs_observer",
+			skipLifecycle: true,
+		},
+		{
 			extension: "ecs_task_observer",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["ecs_task_observer"].CreateDefaultConfig().(*ecstaskobserver.Config)
@@ -205,6 +198,10 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "k8s_observer",
 			skipLifecycle: true, // Requires a K8s api to interfact with and validate
+		},
+		{
+			extension:     "docker_observer",
+			skipLifecycle: true, // Requires a docker api to interface and validate.
 		},
 		{
 			extension: "headers_setter",

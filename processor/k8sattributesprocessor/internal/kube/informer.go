@@ -1,22 +1,12 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
 	"context"
 
+	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -40,6 +30,13 @@ type InformerProvider func(
 // allow passing custom shared informers to the watch client for fetching namespace objects.
 type InformerProviderNamespace func(
 	client kubernetes.Interface,
+) cache.SharedInformer
+
+// InformerProviderReplicaSet defines a function type that returns a new SharedInformer. It is used to
+// allow passing custom shared informers to the watch client.
+type InformerProviderReplicaSet func(
+	client kubernetes.Interface,
+	namespace string,
 ) cache.SharedInformer
 
 func newSharedInformer(
@@ -100,5 +97,32 @@ func namespaceInformerListFunc(client kubernetes.Interface) cache.ListFunc {
 func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.CoreV1().Namespaces().Watch(context.Background(), opts)
+	}
+}
+
+func newReplicaSetSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  replicasetListFuncWithSelectors(client, namespace),
+			WatchFunc: replicasetWatchFuncWithSelectors(client, namespace),
+		},
+		&apps_v1.ReplicaSet{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.AppsV1().ReplicaSets(namespace).List(context.Background(), opts)
+	}
+}
+
+func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.AppsV1().ReplicaSets(namespace).Watch(context.Background(), opts)
 	}
 }

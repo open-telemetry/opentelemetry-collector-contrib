@@ -1,10 +1,10 @@
-name: apachereceiver
+type: apache
 
 status:
-  type: receiver
-  stability: beta
-  pipelines: [metrics]
-  distributions: [contrib]
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
     apache.server.name:

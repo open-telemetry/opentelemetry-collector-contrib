@@ -1,9 +1,9 @@
-name: filestatsreceiver
+type: filestats
 
 status:
-  type: receiver
-  stability: development
-  pipelines: [metrics]
+  class: receiver
+  stability:
+    alpha: [metrics]
   distributions: [contrib]
 
 

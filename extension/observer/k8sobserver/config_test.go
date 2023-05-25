@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobserver
 
@@ -23,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -35,11 +25,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "own-node-only"),
+			id: component.NewIDWithName(metadata.Type, "own-node-only"),
 			expected: &Config{
 				Node:        "node-1",
 				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
@@ -47,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "observe-all"),
+			id: component.NewIDWithName(metadata.Type, "observe-all"),
 			expected: &Config{
 				Node:         "",
 				APIConfig:    k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
@@ -56,11 +46,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalid_auth"),
+			id:          component.NewIDWithName(metadata.Type, "invalid_auth"),
 			expectedErr: "invalid authType for kubernetes: not a real auth type",
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalid_no_observing"),
+			id:          component.NewIDWithName(metadata.Type, "invalid_no_observing"),
 			expectedErr: "one of observe_pods and observe_nodes must be true",
 		},
 	}

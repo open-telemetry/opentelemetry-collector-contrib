@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunk
 
@@ -76,7 +65,7 @@ func TestDecodeJsonWithNoTime(t *testing.T) {
 	var msg Event
 	err := dec.Decode(&msg)
 	assert.NoError(t, err)
-	assert.Nil(t, msg.Time)
+	assert.Zero(t, msg.Time)
 }
 
 func TestDecodeJsonWithNumberTime(t *testing.T) {
@@ -86,7 +75,7 @@ func TestDecodeJsonWithNumberTime(t *testing.T) {
 	var msg Event
 	err := dec.Decode(&msg)
 	assert.NoError(t, err)
-	assert.Equal(t, 1610760752.606, *msg.Time)
+	assert.Equal(t, 1610760752.606, msg.Time)
 }
 
 func TestDecodeJsonWithStringTime(t *testing.T) {
@@ -96,7 +85,7 @@ func TestDecodeJsonWithStringTime(t *testing.T) {
 	var msg Event
 	err := dec.Decode(&msg)
 	assert.NoError(t, err)
-	assert.Equal(t, 1610760752.606, *msg.Time)
+	assert.Equal(t, 1610760752.606, msg.Time)
 }
 
 func TestDecodeJsonWithInvalidStringTime(t *testing.T) {

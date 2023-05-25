@@ -1,16 +1,5 @@
-// Copyright 2022 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
@@ -20,22 +9,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "awss3"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 )
 
 // NewFactory creates a factory for S3 exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+	)
 }
 
 func createDefaultConfig() component.Config {
@@ -44,39 +30,48 @@ func createDefaultConfig() component.Config {
 			Region:      "us-east-1",
 			S3Partition: "minute",
 		},
-
 		MarshalerName: "otlp_json",
-		logger:        nil,
 	}
 }
 
 func createLogsExporter(ctx context.Context,
 	params exporter.CreateSettings,
-	config component.Config) (exp exporter.Logs, err error) {
+	config component.Config) (exporter.Logs, error) {
 
-	s3Exporter, err := NewS3Exporter(config.(*Config), params)
+	s3Exporter, err := newS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
-		context.TODO(),
-		params,
+	return exporterhelper.NewLogsExporter(ctx, params,
 		config,
 		s3Exporter.ConsumeLogs)
 }
 
-func createTracesExporter(ctx context.Context,
+func createMetricsExporter(ctx context.Context,
 	params exporter.CreateSettings,
-	config component.Config) (exp exporter.Traces, err error) {
+	config component.Config) (exporter.Metrics, error) {
 
-	s3Exporter, err := NewS3Exporter(config.(*Config), params)
+	s3Exporter, err := newS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
-		context.TODO(),
+	return exporterhelper.NewMetricsExporter(ctx, params,
+		config,
+		s3Exporter.ConsumeMetrics)
+}
+
+func createTracesExporter(ctx context.Context,
+	params exporter.CreateSettings,
+	config component.Config) (exporter.Traces, error) {
+
+	s3Exporter, err := newS3Exporter(config.(*Config), params)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTracesExporter(ctx,
 		params,
 		config,
 		s3Exporter.ConsumeTraces)

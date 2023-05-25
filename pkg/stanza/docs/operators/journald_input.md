@@ -14,13 +14,16 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 | `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `directory`       |                  | A directory containing journal files to read entries from. |
 | `files`           |                  | A list of journal files to read entries from. |
-| `units`           |                  | A list of units to read entries from. |
-| `priority`        | `info`           | Filter output by message priorities or priority ranges. |
+| `units`           |                  | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples. |
+| `matches`         |                  | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples. |
+| `priority`        | `info`           | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples. |
+| `grep`            |                  | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples. |
 | `start_at`        | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource. |
 
 ### Example Configurations
+
 ```yaml
 - type: journald_input
   units:
@@ -33,7 +36,68 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 - type: journald_input
   priority: emerg..err
 ```
-#### Simple journald input
+
+#### Matches
+
+The following configuration:
+
+```yaml
+- type: journald_input
+  matches:
+    - _SYSTEMD_UNIT: ssh
+    - _SYSTEMD_UNIT: kubelet
+      _UID: "1000"
+```
+
+will be passed to `journalctl` as the following arguments: `journalctl ... _SYSTEMD_UNIT=ssh + _SYSTEMD_UNIT=kubelet _UID=1000`,
+which is going to retrieve all entries which match at least one of the following rules:
+
+- `_SYSTEMD_UNIT` is `ssh`
+- `_SYSTEMD_UNIT` is `kubelet` and `_UID` is `1000`
+
+#### Multiple filtering options
+
+In case of using multiple following options, conditions between them are logically `AND`ed and within them are logically `OR`ed:
+
+```text
+( priority )
+AND
+( units[0] OR units[1] OR units[2] OR ... units[U] )
+AND
+( matches[0] OR matches[1] OR matches[2] OR ... matches[M] )
+AND
+( grep )
+```
+
+Consider the following example:
+
+```yaml
+- type: journald_input
+  matches:
+    - _SYSTEMD_UNIT: ssh
+    - _SYSTEMD_UNIT: kubelet
+      _UID: "1000"
+  units:
+    - kubelet
+    - systemd
+  priority: info
+```
+
+The above configuration will be passed to `journalctl` as the following arguments
+`journalctl ... --priority=info --unit=kubelet --unit=systemd _SYSTEMD_UNIT=ssh + _SYSTEMD_UNIT=kubelet _UID=1000`,
+which is going to effectively retrieve all entries which matches the following set of rules:
+
+- `_PRIORITY` is `6`, and
+- `_SYSTEMD_UNIT` is `kubelet` or `systemd`, and
+- entry matches at least one of the following rules:
+
+  - `_SYSTEMD_UNIT` is `ssh`
+  - `_SYSTEMD_UNIT` is `kubelet` and `_UID` is `1000`
+
+Note, that if you use some fields which aren't associated with an entry, the entry will always be filtered out.
+Also be careful about using unit name in `matches` configuration, as for the above example, none of the entry for `ssh` and `systemd` is going to be retrieved.
+
+### Simple journald input
 
 Configuration:
 ```yaml

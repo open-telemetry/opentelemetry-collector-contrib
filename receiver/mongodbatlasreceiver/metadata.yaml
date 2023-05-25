@@ -1,4 +1,10 @@
-name: mongoatlasreceiver
+type: mongodbatlas
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo]
 
 resource_attributes:
   mongodb_atlas.org_name:
@@ -19,6 +25,10 @@ resource_attributes:
     type: string
   mongodb_atlas.user.alias:
     description: User-friendly hostname of the cluster node
+    enabled: false
+    type: string
+  mongodb_atlas.cluster.name:
+    description: Cluster Name
     enabled: false
     type: string
   mongodb_atlas.process.port:
@@ -344,14 +354,6 @@ metrics:
     attributes: [document_status]
     gauge:
       value_type: double
-  mongodbatlas.process.fts.cpu.usage:
-    enabled: true
-    description: Full text search CPU (%)
-    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
-    unit: 1
-    attributes: [cpu_state]
-    gauge:
-      value_type: double
   mongodbatlas.process.global_lock:
     enabled: true
     description: Number and status of locks
@@ -623,18 +625,16 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.utilization.max:
     enabled: true
-    description: Disk partition utilization (%)
+    description: The maximum percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
     unit: 1
-    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.utilization.average:
     enabled: true
-    description: Disk partition utilization (%)
+    description: The percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
     unit: 1
-    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.latency.max:
@@ -705,6 +705,7 @@ metrics:
   mongodbatlas.system.fts.cpu.usage:
     enabled: true
     description: Full-text search (%)
+    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
     unit: 1
     attributes: [cpu_state]
     gauge:
