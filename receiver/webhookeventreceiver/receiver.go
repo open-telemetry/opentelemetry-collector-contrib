@@ -80,7 +80,7 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 	return er, nil
 }
 
-// start function manages receiver startup tasks. part of the receiver.Logs interface.
+// Start function manages receiver startup tasks. part of the receiver.Logs interface.
 func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	// noop if not nil. if start has not been called before these values should be nil.
 	if er.server != nil && er.server.Handler != nil {
@@ -131,14 +131,14 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// stop function manages receiver shutdown tasks. part of the receiver.Logs interface.
+// Shutdown function manages receiver shutdown tasks. part of the receiver.Logs interface.
 func (er *eventReceiver) Shutdown(ctx context.Context) error {
 	err := er.server.Close()
 	er.shutdownWG.Wait()
 	return err
 }
 
-// handle incoming request from webhook. On success returns a 200 response code to the webhook
+// handleReq handles incoming request from webhook. On success returns a 200 response code to the webhook
 func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 	ctx = er.obsrecv.StartLogsOp(ctx)

@@ -44,7 +44,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errReadTimeoutExceedsMaxValue,
 			conf: Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:0",
+					Endpoint: "localhost:0",
 				},
 				ReadTimeout: "14s",
 			},
@@ -54,7 +54,7 @@ func TestValidateConfig(t *testing.T) {
 			expect: errWriteTimeoutExceedsMaxValue,
 			conf: Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:0",
+					Endpoint: "localhost:0",
 				},
 				WriteTimeout: "14s",
 			},
@@ -93,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expect := &Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "0.0.0.0:8080",
+			Endpoint: "localhost:8080",
 		},
 		ReadTimeout:  "500ms",
 		WriteTimeout: "500ms",

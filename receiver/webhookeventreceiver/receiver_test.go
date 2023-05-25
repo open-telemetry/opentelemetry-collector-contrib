@@ -42,7 +42,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc: "User defined config success",
 			cfg: Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: "0.0.0.0:8080",
+					Endpoint: "localhost:8080",
 				},
 				ReadTimeout:  "543",
 				WriteTimeout: "210",
@@ -74,7 +74,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 // these requests should all succeed
 func TestHandleReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "0.0.0.0:0"
+	cfg.Endpoint = "localhost:0"
 
 	tests := []struct {
 		desc string
@@ -84,7 +84,7 @@ func TestHandleReq(t *testing.T) {
 		{
 			desc: "Good request",
 			cfg:  *cfg,
-			req:  httptest.NewRequest("POST", "http://0.0.0.0/events", strings.NewReader("test")),
+			req:  httptest.NewRequest("POST", "http://localhost/events", strings.NewReader("test")),
 		},
 		{
 			desc: "Good request with gzip",
@@ -108,14 +108,14 @@ func TestHandleReq(t *testing.T) {
 				_, err = gzipWriter.Write(msgJSON)
 				require.NoError(t, err, "Gzip writer failed")
 
-				req := httptest.NewRequest("POST", "http://0.0.0.0/events", &msg)
+				req := httptest.NewRequest("POST", "http://localhost/events", &msg)
 				return req
 			}(),
 		},
 		{
 			desc: "Multiple logs",
 			cfg:  *cfg,
-			req:  httptest.NewRequest("POST", "http://0.0.0.0/events", strings.NewReader("log1\nlog2")),
+			req:  httptest.NewRequest("POST", "http://localhost/events", strings.NewReader("log1\nlog2")),
 		},
 	}
 
@@ -146,7 +146,7 @@ func TestHandleReq(t *testing.T) {
 // failure in its many forms
 func TestFailedReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "0.0.0.0:0"
+	cfg.Endpoint = "localhost:0"
 
 	tests := []struct {
 		desc   string
@@ -157,20 +157,20 @@ func TestFailedReq(t *testing.T) {
 		{
 			desc:   "Invalid method",
 			cfg:    *cfg,
-			req:    httptest.NewRequest("GET", "http://0.0.0.0/events", nil),
+			req:    httptest.NewRequest("GET", "http://localhost/events", nil),
 			status: http.StatusBadRequest,
 		},
 		{
 			desc:   "Empty body",
 			cfg:    *cfg,
-			req:    httptest.NewRequest("POST", "http://0.0.0.0/events", strings.NewReader("")),
+			req:    httptest.NewRequest("POST", "http://localhost/events", strings.NewReader("")),
 			status: http.StatusBadRequest,
 		},
 		{
 			desc: "Invalid encoding",
 			cfg:  *cfg,
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://0.0.0.0/events", strings.NewReader("test"))
+				req := httptest.NewRequest("POST", "http://localhost/events", strings.NewReader("test"))
 				req.Header.Set("Content-Encoding", "glizzy")
 				return req
 			}(),
@@ -180,7 +180,7 @@ func TestFailedReq(t *testing.T) {
 			desc: "Valid content encoding header invalid data",
 			cfg:  *cfg,
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://0.0.0.0/events", strings.NewReader("notzipped"))
+				req := httptest.NewRequest("POST", "http://localhost/events", strings.NewReader("notzipped"))
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -210,7 +210,7 @@ func TestFailedReq(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
-	defaultConfig.Endpoint = "0.0.0.0:0"
+	defaultConfig.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
@@ -222,7 +222,7 @@ func TestHealthCheck(t *testing.T) {
 	}()
 
 	w := httptest.NewRecorder()
-	r.handleHealthCheck(w, httptest.NewRequest("GET", "http://0.0.0.0/health", nil), httprouter.ParamsFromContext(context.Background()))
+	r.handleHealthCheck(w, httptest.NewRequest("GET", "http://localhost/health", nil), httprouter.ParamsFromContext(context.Background()))
 
 	response := w.Result()
 	require.Equal(t, http.StatusOK, response.StatusCode)
