@@ -39,7 +39,7 @@ func TestGetInstanceName(t *testing.T) {
 	assert.Equal(t, "example.com:1521/mydb", instanceName)
 
 	// Should fail on non-encoded special characters
-	instanceName, err = getInstanceName("oracle://username1:p@ssw%rd@example1.com:1521/mydb")
+	_, err = getInstanceName("oracle://username1:p@ssw%rd@example1.com:1521/mydb")
 	assert.ErrorContains(t, err, "invalid URL escape")
 
 	// Should succeed when special characters are encoded
