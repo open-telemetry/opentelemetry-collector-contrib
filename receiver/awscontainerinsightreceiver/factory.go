@@ -10,16 +10,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/metadata"
 )
 
 // Factory for awscontainerinsightreceiver
 const (
-	// Key to invoke this receiver
-	typeStr = "awscontainerinsightreceiver"
-
-	// The stability of this receiver
-	stability = component.StabilityLevelBeta
-
 	// Default collection interval. Every 60s the receiver will collect metrics
 	defaultCollectionInterval = 60 * time.Second
 
@@ -39,9 +35,9 @@ const (
 // NewFactory creates a factory for AWS container insight receiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig returns a default config for the receiver.
