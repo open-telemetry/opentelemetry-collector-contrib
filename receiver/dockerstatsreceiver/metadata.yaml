@@ -121,9 +121,15 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
+  container.cpu.utilization:
+    enabled: false
+    description: "Percent of CPU used by the container."
+    unit: "1"
+    gauge:
+      value_type: double
   container.cpu.percent:
     enabled: true
-    description: "Percent of CPU used by the container."
+    description: "Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container."
     unit: "1"
     gauge:
       value_type: double

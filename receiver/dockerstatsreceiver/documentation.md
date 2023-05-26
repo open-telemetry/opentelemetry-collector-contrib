@@ -32,7 +32,9 @@ Number of bytes transferred to/from the disk by the group and descendant groups.
 
 ### container.cpu.percent
 
-Percent of CPU used by the container.
+Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.
+
+Note this metric is being deprecated in v0.79.0 in favor of container.cpu.utilization.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -61,6 +63,14 @@ Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all conta
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
+
+### container.cpu.utilization
+
+Percent of CPU used by the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### container.memory.percent
 
@@ -333,6 +343,14 @@ Note this is the usage for the system, not the container.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
+
+### container.cpu.utilization
+
+Percent of CPU used by the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### container.memory.active_anon
 

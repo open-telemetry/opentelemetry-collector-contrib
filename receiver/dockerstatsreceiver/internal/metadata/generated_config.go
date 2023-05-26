@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for docker_stats metrics.
+// MetricsConfig provides config for dockerstatsreceiver metrics.
 type MetricsConfig struct {
 	ContainerBlockioIoMergedRecursive          MetricConfig `mapstructure:"container.blockio.io_merged_recursive"`
 	ContainerBlockioIoQueuedRecursive          MetricConfig `mapstructure:"container.blockio.io_queued_recursive"`
@@ -42,6 +42,7 @@ type MetricsConfig struct {
 	ContainerCPUUsageSystem                    MetricConfig `mapstructure:"container.cpu.usage.system"`
 	ContainerCPUUsageTotal                     MetricConfig `mapstructure:"container.cpu.usage.total"`
 	ContainerCPUUsageUsermode                  MetricConfig `mapstructure:"container.cpu.usage.usermode"`
+	ContainerCPUUtilization                    MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerMemoryActiveAnon                  MetricConfig `mapstructure:"container.memory.active_anon"`
 	ContainerMemoryActiveFile                  MetricConfig `mapstructure:"container.memory.active_file"`
 	ContainerMemoryCache                       MetricConfig `mapstructure:"container.memory.cache"`
@@ -142,6 +143,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ContainerCPUUsageUsermode: MetricConfig{
 			Enabled: true,
+		},
+		ContainerCPUUtilization: MetricConfig{
+			Enabled: false,
 		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,
@@ -289,7 +293,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for docker_stats resource attributes.
+// ResourceAttributesConfig provides config for dockerstatsreceiver resource attributes.
 type ResourceAttributesConfig struct {
 	ContainerHostname  ResourceAttributeConfig `mapstructure:"container.hostname"`
 	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
@@ -318,7 +322,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for docker_stats metrics builder.
+// MetricsBuilderConfig is a configuration for dockerstatsreceiver metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

@@ -195,7 +195,7 @@ resourceMetrics:
                   timeUnixNano: "1661128790158163000"
               isMonotonic: true
             unit: '{operations}'
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -885,7 +885,7 @@ resourceMetrics:
                   timeUnixNano: "1661128790158163000"
               isMonotonic: true
             unit: '{operations}'
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0

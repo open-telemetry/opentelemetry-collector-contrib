@@ -461,7 +461,7 @@ type metricContainerCPUPercent struct {
 // init fills container.cpu.percent metric with initial data.
 func (m *metricContainerCPUPercent) init() {
 	m.data.SetName("container.cpu.percent")
-	m.data.SetDescription("Percent of CPU used by the container.")
+	m.data.SetDescription("Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -904,6 +904,55 @@ func (m *metricContainerCPUUsageUsermode) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUsageUsermode(cfg MetricConfig) metricContainerCPUUsageUsermode {
 	m := metricContainerCPUUsageUsermode{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerCPUUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.cpu.utilization metric with initial data.
+func (m *metricContainerCPUUtilization) init() {
+	m.data.SetName("container.cpu.utilization")
+	m.data.SetDescription("Percent of CPU used by the container.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricContainerCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPUUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPUUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPUUtilization(cfg MetricConfig) metricContainerCPUUtilization {
+	m := metricContainerCPUUtilization{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3297,6 +3346,7 @@ type MetricsBuilder struct {
 	metricContainerCPUUsageSystem                    metricContainerCPUUsageSystem
 	metricContainerCPUUsageTotal                     metricContainerCPUUsageTotal
 	metricContainerCPUUsageUsermode                  metricContainerCPUUsageUsermode
+	metricContainerCPUUtilization                    metricContainerCPUUtilization
 	metricContainerMemoryActiveAnon                  metricContainerMemoryActiveAnon
 	metricContainerMemoryActiveFile                  metricContainerMemoryActiveFile
 	metricContainerMemoryCache                       metricContainerMemoryCache
@@ -3378,6 +3428,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(mbc.Metrics.ContainerCPUUsageSystem),
 		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(mbc.Metrics.ContainerCPUUsageTotal),
 		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(mbc.Metrics.ContainerCPUUsageUsermode),
+		metricContainerCPUUtilization:                    newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
 		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mbc.Metrics.ContainerMemoryActiveAnon),
 		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mbc.Metrics.ContainerMemoryActiveFile),
 		metricContainerMemoryCache:                       newMetricContainerMemoryCache(mbc.Metrics.ContainerMemoryCache),
@@ -3539,6 +3590,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerCPUUsageSystem.emit(ils.Metrics())
 	mb.metricContainerCPUUsageTotal.emit(ils.Metrics())
 	mb.metricContainerCPUUsageUsermode.emit(ils.Metrics())
+	mb.metricContainerCPUUtilization.emit(ils.Metrics())
 	mb.metricContainerMemoryActiveAnon.emit(ils.Metrics())
 	mb.metricContainerMemoryActiveFile.emit(ils.Metrics())
 	mb.metricContainerMemoryCache.emit(ils.Metrics())
@@ -3688,6 +3740,11 @@ func (mb *MetricsBuilder) RecordContainerCPUUsageTotalDataPoint(ts pcommon.Times
 // RecordContainerCPUUsageUsermodeDataPoint adds a data point to container.cpu.usage.usermode metric.
 func (mb *MetricsBuilder) RecordContainerCPUUsageUsermodeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerCPUUsageUsermode.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerCPUUtilizationDataPoint adds a data point to container.cpu.utilization metric.
+func (mb *MetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricContainerCPUUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerMemoryActiveAnonDataPoint adds a data point to container.memory.active_anon metric.
