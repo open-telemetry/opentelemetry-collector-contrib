@@ -198,6 +198,23 @@ func Test_newPathGetSetter(t *testing.T) {
 			bodyType: "slice",
 		},
 		{
+			name: "body string",
+			path: []ottl.Field{
+				{
+					Name: "body",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   "1",
+			newVal: "2",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				log.Body().SetStr("2")
+			},
+			bodyType: "int",
+		},
+		{
 			name: "flags",
 			path: []ottl.Field{
 				{
@@ -724,6 +741,8 @@ func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationSc
 		log.Body().SetEmptyMap().PutStr("key", "val")
 	case "slice":
 		log.Body().SetEmptySlice().AppendEmpty().SetStr("body")
+	case "int":
+		log.Body().SetInt(1)
 	case "string":
 		fallthrough
 	default:
