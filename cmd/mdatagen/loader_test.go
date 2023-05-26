@@ -149,7 +149,7 @@ func Test_loadMetadata(t *testing.T) {
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[string][]string{
-						"alpha": {"metrics"},
+						"development": {"metrics"},
 					},
 				},
 			},
