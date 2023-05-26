@@ -8,6 +8,8 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
+      - name: Check rate_limit before
+        run: curl https://api.github.com/rate_limit
       - uses: actions/stale@v8
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -22,4 +24,6 @@ jobs:
           exempt-issue-labels: 'never stale'
           ascending: true
           operations-per-run: 400
+      - name: Check rate_limit after
+        run: curl https://api.github.com/rate_limit
 
