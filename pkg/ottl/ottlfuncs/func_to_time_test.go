@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_time(t *testing.T) {
+func Test_toTsime(t *testing.T) {
 	tests := []struct {
 		name     string
 		time     ottl.StringGetter[interface{}]
@@ -215,7 +215,7 @@ func Test_time(t *testing.T) {
 	}
 }
 
-func Test_timeError(t *testing.T) {
+func Test_toTimeError(t *testing.T) {
 	tests := []struct {
 		name          string
 		time          ottl.StringGetter[interface{}]
