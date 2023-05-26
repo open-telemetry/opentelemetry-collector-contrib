@@ -110,6 +110,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
+
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 

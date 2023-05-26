@@ -19,7 +19,7 @@ issues: [21807]
 # Use pipe (|) for multiline entries.
 subtext: |
   This starts the process of phasing out incorrect metric name:
-  - `process.memory.physical_usage`
+  - `container.cpu.utilization`
   and replacing it with the names adhering to the semantic conventions:
   - `container.cpu.percent`
   At this stage, the new metric is added, but is disabled by default.
