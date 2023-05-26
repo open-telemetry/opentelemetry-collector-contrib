@@ -61,7 +61,7 @@ func (b *bufferState) Close() error {
 
 // accept returns true if data is accepted by the buffer
 func (b *bufferState) accept(data []byte) (bool, error) {
-	if len(data)+b.rawLength > int(b.maxEventLength) {
+	if len(data) > int(b.maxEventLength) {
 		return false, nil
 	}
 	_, err := b.writer.Write(data)

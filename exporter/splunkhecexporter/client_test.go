@@ -728,17 +728,18 @@ func TestReceiveLogs(t *testing.T) {
 			},
 		},
 		{
-			name: "two events with 2000 bytes, one with 2000 bytes, then one with 20000 bytes",
+			name: "dropping one event longer than max event size",
 			logs: func() plog.Logs {
 				firstLog := createLogData(1, 1, 3)
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(2000))
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(repeatableString(2000))
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Body().SetStr(repeatableString(20000))
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(100))
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(repeatableString(100))
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Body().SetStr(repeatableString(500))
 				return firstLog
 			}(),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxEventSize = 20000 // small so we can reproduce without allocating big logs.
+				cfg.MaxEventSize = 300
+				cfg.MaxContentLengthLogs = 50000
 				cfg.DisableCompression = true
 				return cfg
 			}(),
@@ -748,32 +749,6 @@ func TestReceiveLogs(t *testing.T) {
 				},
 				numBatches: 1,
 				wantDrops:  1,
-			},
-		},
-		{
-			name: "two events with 2000 bytes, one with 1000 bytes, then one with 4200 bytes",
-			logs: func() plog.Logs {
-				firstLog := createLogData(1, 1, 5)
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(2000))
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(repeatableString(2000))
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Body().SetStr(repeatableString(1000))
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(3).Body().SetStr(repeatableString(4200))
-				return firstLog
-			}(),
-			conf: func() *Config {
-				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxEventSize = 10000 // small so we can reproduce without allocating big logs.
-				cfg.MaxContentLengthLogs = 5000
-				cfg.DisableCompression = true
-				return cfg
-			}(),
-			want: wantType{
-				batches: [][]string{
-					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`},
-					{`"otel.log.name":"0_0_2"`},
-					{`"otel.log.name":"0_0_3"`, `"otel.log.name":"0_0_4"`},
-				},
-				numBatches: 3,
 			},
 		},
 		{
