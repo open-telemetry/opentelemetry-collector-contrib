@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -24,6 +25,9 @@ import (
 const riakPort = "8098"
 
 func TestIntegration(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("Incompatible with arm64")
+	}
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
