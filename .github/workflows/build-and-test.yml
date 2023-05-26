@@ -315,7 +315,7 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
-        run: make integration-tests-with-cover
+        run: make integration-test
 
   correctness-traces:
     runs-on: ubuntu-latest
