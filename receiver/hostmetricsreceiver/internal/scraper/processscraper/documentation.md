@@ -112,6 +112,16 @@ Number of disk operations performed by the process.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
+### process.handles
+
+Number of handles held by the process.
+
+This metric is only available on Windows.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {count} | Gauge | Int |
+
 ### process.memory.utilization
 
 Percentage of total physical memory that is used by the process.

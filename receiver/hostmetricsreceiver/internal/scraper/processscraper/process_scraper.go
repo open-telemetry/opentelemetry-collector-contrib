@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
@@ -31,6 +32,7 @@ const (
 	threadMetricsLen            = 1
 	contextSwitchMetricsLen     = 1
 	fileDescriptorMetricsLen    = 1
+	handleMetricsLen            = 1
 	signalMetricsLen            = 1
 
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
@@ -48,6 +50,8 @@ type scraper struct {
 	// for mocking
 	getProcessCreateTime func(p processHandle) (int64, error)
 	getProcessHandles    func() (processHandles, error)
+
+	handleCountManager handles.Manager
 }
 
 // newProcessScraper creates a Process Scraper
@@ -59,6 +63,7 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 		getProcessHandles:    getProcessHandlesInternal,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
+		handleCountManager:   handles.NewManager(),
 	}
 
 	var err error
@@ -135,6 +140,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendOpenFileDescriptorsMetric(now, md.handle); err != nil {
 			errs.AddPartial(fileDescriptorMetricsLen, fmt.Errorf("error reading open file descriptor count for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendHandlesMetric(now, int64(md.pid)); err != nil {
+			errs.AddPartial(handleMetricsLen, fmt.Errorf("error reading handle count for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = s.scrapeAndAppendSignalsPendingMetric(now, md.handle); err != nil {
@@ -231,6 +240,10 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		}
 
 		data = append(data, md)
+	}
+
+  if err := s.refreshHandleCounts(); err != nil {
+		errs.Add(err)
 	}
 
 	return data, errs.Combine()
@@ -371,6 +384,29 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(now pcommon.Timestamp
 	}
 
 	s.mb.RecordProcessOpenFileDescriptorsDataPoint(now, int64(fds))
+
+	return nil
+}
+
+func (s *scraper) refreshHandleCounts() error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
+		return nil
+	}
+
+	return s.handleCountManager.Refresh()
+}
+
+func (s *scraper) scrapeAndAppendHandlesMetric(now pcommon.Timestamp, pid int64) error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
+		return nil
+	}
+
+	count, err := s.handleCountManager.GetProcessHandleCount(pid)
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessHandlesDataPoint(now, int64(count))
 
 	return nil
 }

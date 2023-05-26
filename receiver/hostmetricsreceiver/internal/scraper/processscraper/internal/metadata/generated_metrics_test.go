@@ -71,6 +71,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 
+			allMetricsCount++
+			mb.RecordProcessHandlesDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryUsageDataPoint(ts, 1)
@@ -251,6 +254,18 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.Equal(t, "read", attrVal.Str())
+				case "process.handles":
+					assert.False(t, validatedMetrics["process.handles"], "Found a duplicate in the metrics slice: process.handles")
+					validatedMetrics["process.handles"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of handles held by the process.", ms.At(i).Description())
+					assert.Equal(t, "{count}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "process.memory.usage":
 					assert.False(t, validatedMetrics["process.memory.usage"], "Found a duplicate in the metrics slice: process.memory.usage")
 					validatedMetrics["process.memory.usage"] = true
