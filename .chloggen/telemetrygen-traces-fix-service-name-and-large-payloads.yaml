@@ -5,7 +5,7 @@ change_type: bug_fix
 component: telemetrygen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixes issue where service name option didn't properly set on the trace, and fixes issue where large trace payloads (>2000) wouldn't generate the correct number of traces.
+note: `telemetrygen traces` now correctly sets the `service.name` resource attribute on generated traces
 
 # One or more tracking issues related to the change
 issues: [9597]
