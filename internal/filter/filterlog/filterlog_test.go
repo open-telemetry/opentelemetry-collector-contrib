@@ -1341,8 +1341,8 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 			name: "body_match_static",
 			mc: &filterconfig.MatchConfig{
 				Include: &filterconfig.MatchProperties{
-					Config:   *createConfig(filterset.Strict),
-					Services: []string{"body"},
+					Config:    *createConfig(filterset.Strict),
+					LogBodies: []string{"body"},
 				},
 			},
 			skip: false,
