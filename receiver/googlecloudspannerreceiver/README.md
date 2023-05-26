@@ -37,6 +37,7 @@ receivers:
     backfill_enabled: true
     cardinality_total_limit: 200000
     hide_topn_lockstats_rowrangestartkey: false
+    truncate_text: false
     projects:
       - project_id: "spanner project 1"
         service_account_key: "path to spanner project 1 service account json key"
@@ -69,6 +70,7 @@ Brief description of configuration properties:
 - **backfill_enabled** - turn on/off 1-hour data backfill(by default it is turned off)
 - **cardinality_total_limit** - limit of active series per 24 hours period. If specified, turns on cardinality filtering and handling. If zero or not specified, cardinality is not handled. You can read [this document](cardinality.md) for more information about cardinality handling and filtering.
 - **hide_topn_lockstats_rowrangestartkey** - if true, masks PII (key values) in row_range_start_key label for the "top minute lock stats" metric
+- **truncate_text** - if true, the query text is truncated to 1024 characters.
 - **projects** - list of GCP projects
     - **project_id** - identifier of GCP project
     - **service_account_key** - path to service account JSON key It is highly recommended to set this property to the correct value. In case it is empty, the [Application Default Credentials](https://google.aip.dev/auth/4110) will be used for the database connection.

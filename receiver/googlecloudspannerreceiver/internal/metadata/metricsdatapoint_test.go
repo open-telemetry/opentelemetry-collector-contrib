@@ -152,6 +152,26 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 	assert.Equal(t, len(metricsDataPoint.labelValues), 4)
 }
 
+func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
+	strLabelValueMetadata, _ := NewLabelValueMetadata("query_text", "stringLabelColumnName", StringValueType)
+	labelValue1 := stringLabelValue{metadata: strLabelValueMetadata, value: "SELECT 1"}
+	metricValues := allPossibleMetricValues(metricDataType)
+	labelValues := []LabelValue{labelValue1}
+	timestamp := time.Now().UTC()
+	metricsDataPoint := &MetricsDataPoint{
+		metricName:  metricName,
+		timestamp:   timestamp,
+		databaseID:  databaseID(),
+		labelValues: labelValues,
+		metricValue: metricValues[0],
+	}
+
+	metricsDataPoint.TruncateQueryText(6)
+
+	assert.Equal(t, len(metricsDataPoint.labelValues), 1)
+	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "SELECT")
+}
+
 func allPossibleLabelValues() []LabelValue {
 	strLabelValueMetadata, _ := NewLabelValueMetadata("stringLabelName", "stringLabelColumnName", StringValueType)
 	strLabelValue := stringLabelValue{
