@@ -6,6 +6,7 @@ package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bufio"
 	"errors"
+	"io"
 	"net/url"
 	"sort"
 
@@ -75,22 +76,31 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 }
 
 // splunkHecRawToLogData transforms raw splunk event into log
-func splunkHecRawToLogData(sc *bufio.Scanner, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, int) {
+func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, int, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	appendSplunkMetadata(rl, config.HecToOtelAttrs, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
 	}
-
 	sl := rl.ScopeLogs().AppendEmpty()
-	for sc.Scan() {
+	if config.Splitting == None {
+		b, err := io.ReadAll(bodyReader)
+		if err != nil {
+			return ld, 0, err
+		}
 		logRecord := sl.LogRecords().AppendEmpty()
-		logLine := sc.Text()
-		logRecord.Body().SetStr(logLine)
+		logRecord.Body().SetStr(string(b))
+	} else {
+		sc := bufio.NewScanner(bodyReader)
+		for sc.Scan() {
+			logRecord := sl.LogRecords().AppendEmpty()
+			logLine := sc.Text()
+			logRecord.Body().SetStr(logLine)
+		}
 	}
 
-	return ld, sl.LogRecords().Len()
+	return ld, sl.LogRecords().Len(), nil
 }
 
 func appendSplunkMetadata(rl plog.ResourceLogs, attrs splunk.HecToOtelAttrs, host, source, sourceType, index string) {
