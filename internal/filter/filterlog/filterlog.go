@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
@@ -105,7 +103,7 @@ func newExpr(mp *filterconfig.MatchProperties) (expr.BoolExpr[ottllog.TransformC
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) Eval(_ context.Context, tCtx ottllog.TransformContext) (bool, error) {
 	lr := tCtx.GetLogRecord()
-	if lr.Body().Type() == pcommon.ValueTypeStr && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().Str()) {
+	if mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().AsString()) {
 		return false, nil
 	}
 	if mp.severityTextFilters != nil && !mp.severityTextFilters.Matches(lr.SeverityText()) {
