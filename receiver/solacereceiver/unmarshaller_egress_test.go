@@ -95,170 +95,180 @@ var (
 )
 
 // validEgressSpans is valid data used as test data
-var validEgressSpans = map[*egress_v1.SpanData_EgressSpan]ptrace.Span{
+var validEgressSpans = []struct {
+	in  *egress_v1.SpanData_EgressSpan
+	out ptrace.Span
+}{
 	{
-		TraceId:           []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-		SpanId:            []byte{7, 6, 5, 4, 3, 2, 1, 0},
-		StartTimeUnixNano: 234567890,
-		EndTimeUnixNano:   234567890,
-		TypeData: &egress_v1.SpanData_EgressSpan_SendSpan{
-			SendSpan: &egress_v1.SpanData_SendSpan{
-				Protocol:               "SMF",
-				ProtocolVersion:        &protocolVersion3,
-				ConsumerClientUsername: "clientUsername",
-				ConsumerClientName:     "clientName",
-				Source: &egress_v1.SpanData_SendSpan_QueueName{
-					QueueName: "someQueue",
+		&egress_v1.SpanData_EgressSpan{
+			TraceId:           []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+			SpanId:            []byte{7, 6, 5, 4, 3, 2, 1, 0},
+			StartTimeUnixNano: 234567890,
+			EndTimeUnixNano:   234567890,
+			TypeData: &egress_v1.SpanData_EgressSpan_SendSpan{
+				SendSpan: &egress_v1.SpanData_SendSpan{
+					Protocol:               "SMF",
+					ProtocolVersion:        &protocolVersion3,
+					ConsumerClientUsername: "clientUsername",
+					ConsumerClientName:     "clientName",
+					Source: &egress_v1.SpanData_SendSpan_QueueName{
+						QueueName: "someQueue",
+					},
+					Outcome:     egress_v1.SpanData_SendSpan_FLOW_UNBOUND,
+					ReplayedMsg: false,
 				},
-				Outcome:     egress_v1.SpanData_SendSpan_FLOW_UNBOUND,
-				ReplayedMsg: false,
 			},
 		},
-	}: func() ptrace.Span {
-		span := ptrace.NewSpan()
-		span.SetName("someQueue send")
-		span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-		span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
-		span.SetStartTimestamp(234567890)
-		span.SetEndTimestamp(234567890)
-		span.SetKind(4)
-		spanAttrs := span.Attributes()
-		spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-		spanAttrs.PutStr("messaging.operation", "send")
-		spanAttrs.PutStr("messaging.protocol", "SMF")
-		spanAttrs.PutStr("messaging.protocol_version", "3.0")
-		spanAttrs.PutStr("messaging.source.name", "someQueue")
-		spanAttrs.PutStr("messaging.source.kind", "queue")
-		spanAttrs.PutStr("messaging.solace.client_username", "clientUsername")
-		spanAttrs.PutStr("messaging.solace.client_name", "clientName")
-		spanAttrs.PutBool("messaging.solace.message_replayed", false)
-		spanAttrs.PutStr("messaging.solace.send.outcome", "flow unbound")
-		return span
-	}(),
+		func() ptrace.Span {
+			span := ptrace.NewSpan()
+			span.SetName("someQueue send")
+			span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+			span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
+			span.SetStartTimestamp(234567890)
+			span.SetEndTimestamp(234567890)
+			span.SetKind(4)
+			spanAttrs := span.Attributes()
+			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
+			spanAttrs.PutStr("messaging.operation", "send")
+			spanAttrs.PutStr("messaging.protocol", "SMF")
+			spanAttrs.PutStr("messaging.protocol_version", "3.0")
+			spanAttrs.PutStr("messaging.source.name", "someQueue")
+			spanAttrs.PutStr("messaging.source.kind", "queue")
+			spanAttrs.PutStr("messaging.solace.client_username", "clientUsername")
+			spanAttrs.PutStr("messaging.solace.client_name", "clientName")
+			spanAttrs.PutBool("messaging.solace.message_replayed", false)
+			spanAttrs.PutStr("messaging.solace.send.outcome", "flow unbound")
+			return span
+		}(),
+	},
 	{
-		TraceId:           []byte{1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-		SpanId:            []byte{7, 6, 5, 4, 3, 2, 1, 1},
-		StartTimeUnixNano: 1234567890,
-		EndTimeUnixNano:   2234567890,
-		ErrorDescription:  &someError,
-		TypeData: &egress_v1.SpanData_EgressSpan_SendSpan{
-			SendSpan: &egress_v1.SpanData_SendSpan{
-				Protocol:               "MQTT",
-				ProtocolVersion:        &protocolVersion,
-				ConsumerClientUsername: "someClientUsername",
-				ConsumerClientName:     "someClient1234",
-				Source: &egress_v1.SpanData_SendSpan_QueueName{
-					QueueName: "queueName",
-				},
-				Outcome:     egress_v1.SpanData_SendSpan_ACCEPTED,
-				ReplayedMsg: false,
-			},
-		},
-		TransactionEvent: &egress_v1.SpanData_TransactionEvent{
-			TimeUnixNano: 123456789,
-			Type:         egress_v1.SpanData_TransactionEvent_SESSION_TIMEOUT,
-			Initiator:    egress_v1.SpanData_TransactionEvent_BROKER,
-			TransactionId: &egress_v1.SpanData_TransactionEvent_LocalId{
-				LocalId: &egress_v1.SpanData_TransactionEvent_LocalTransactionId{
-					TransactionId: 12345,
-					SessionId:     67890,
-					SessionName:   "my-session-name",
+		&egress_v1.SpanData_EgressSpan{
+			TraceId:           []byte{1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+			SpanId:            []byte{7, 6, 5, 4, 3, 2, 1, 1},
+			StartTimeUnixNano: 1234567890,
+			EndTimeUnixNano:   2234567890,
+			ErrorDescription:  &someError,
+			TypeData: &egress_v1.SpanData_EgressSpan_SendSpan{
+				SendSpan: &egress_v1.SpanData_SendSpan{
+					Protocol:               "MQTT",
+					ProtocolVersion:        &protocolVersion,
+					ConsumerClientUsername: "someClientUsername",
+					ConsumerClientName:     "someClient1234",
+					Source: &egress_v1.SpanData_SendSpan_QueueName{
+						QueueName: "queueName",
+					},
+					Outcome:     egress_v1.SpanData_SendSpan_ACCEPTED,
+					ReplayedMsg: false,
 				},
 			},
-			ErrorDescription: &someOtherError,
-		},
-	}: func() ptrace.Span {
-		span := ptrace.NewSpan()
-		span.SetName("queueName send")
-		span.SetTraceID([16]byte{1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-		span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 1})
-		span.SetStartTimestamp(1234567890)
-		span.SetEndTimestamp(2234567890)
-		span.SetKind(4)
-		span.Status().SetCode(ptrace.StatusCodeError)
-		span.Status().SetMessage("someErrorOccurred")
-		spanAttrs := span.Attributes()
-		spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-		spanAttrs.PutStr("messaging.operation", "send")
-		spanAttrs.PutStr("messaging.protocol", "MQTT")
-		spanAttrs.PutStr("messaging.protocol_version", "5.0")
-		spanAttrs.PutStr("messaging.source.name", "queueName")
-		spanAttrs.PutStr("messaging.source.kind", "queue")
-		spanAttrs.PutStr("messaging.solace.client_username", "someClientUsername")
-		spanAttrs.PutStr("messaging.solace.client_name", "someClient1234")
-		spanAttrs.PutBool("messaging.solace.message_replayed", false)
-		spanAttrs.PutStr("messaging.solace.send.outcome", "accepted")
-		txnEvent := span.Events().AppendEmpty()
-		txnEvent.SetName("session_timeout")
-		txnEvent.SetTimestamp(123456789)
-		txnEventAttrs := txnEvent.Attributes()
-		txnEventAttrs.PutStr("messaging.solace.transaction_initiator", "broker")
-		txnEventAttrs.PutInt("messaging.solace.transaction_id", 12345)
-		txnEventAttrs.PutStr("messaging.solace.transacted_session_name", "my-session-name")
-		txnEventAttrs.PutInt("messaging.solace.transacted_session_id", 67890)
-		txnEventAttrs.PutStr("messaging.solace.transaction_error_message", "someOtherErrorOccurred")
-		return span
-	}(),
+			TransactionEvent: &egress_v1.SpanData_TransactionEvent{
+				TimeUnixNano: 123456789,
+				Type:         egress_v1.SpanData_TransactionEvent_SESSION_TIMEOUT,
+				Initiator:    egress_v1.SpanData_TransactionEvent_BROKER,
+				TransactionId: &egress_v1.SpanData_TransactionEvent_LocalId{
+					LocalId: &egress_v1.SpanData_TransactionEvent_LocalTransactionId{
+						TransactionId: 12345,
+						SessionId:     67890,
+						SessionName:   "my-session-name",
+					},
+				},
+				ErrorDescription: &someOtherError,
+			},
+		}, func() ptrace.Span {
+			span := ptrace.NewSpan()
+			span.SetName("queueName send")
+			span.SetTraceID([16]byte{1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+			span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 1})
+			span.SetStartTimestamp(1234567890)
+			span.SetEndTimestamp(2234567890)
+			span.SetKind(4)
+			span.Status().SetCode(ptrace.StatusCodeError)
+			span.Status().SetMessage("someErrorOccurred")
+			spanAttrs := span.Attributes()
+			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
+			spanAttrs.PutStr("messaging.operation", "send")
+			spanAttrs.PutStr("messaging.protocol", "MQTT")
+			spanAttrs.PutStr("messaging.protocol_version", "5.0")
+			spanAttrs.PutStr("messaging.source.name", "queueName")
+			spanAttrs.PutStr("messaging.source.kind", "queue")
+			spanAttrs.PutStr("messaging.solace.client_username", "someClientUsername")
+			spanAttrs.PutStr("messaging.solace.client_name", "someClient1234")
+			spanAttrs.PutBool("messaging.solace.message_replayed", false)
+			spanAttrs.PutStr("messaging.solace.send.outcome", "accepted")
+			txnEvent := span.Events().AppendEmpty()
+			txnEvent.SetName("session_timeout")
+			txnEvent.SetTimestamp(123456789)
+			txnEventAttrs := txnEvent.Attributes()
+			txnEventAttrs.PutStr("messaging.solace.transaction_initiator", "broker")
+			txnEventAttrs.PutInt("messaging.solace.transaction_id", 12345)
+			txnEventAttrs.PutStr("messaging.solace.transacted_session_name", "my-session-name")
+			txnEventAttrs.PutInt("messaging.solace.transacted_session_id", 67890)
+			txnEventAttrs.PutStr("messaging.solace.transaction_error_message", "someOtherErrorOccurred")
+			return span
+		}(),
+	},
 	{
-		TraceId:           []byte{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31},
-		SpanId:            []byte{0, 1, 2, 3, 4, 5, 6, 7},
-		ParentSpanId:      []byte{7, 6, 5, 4, 3, 2, 1, 0},
-		StartTimeUnixNano: 4234567890,
-		EndTimeUnixNano:   5234567890,
-		TypeData: &egress_v1.SpanData_EgressSpan_SendSpan{
-			SendSpan: &egress_v1.SpanData_SendSpan{
-				Protocol:               "AMQP",
-				ProtocolVersion:        &protocolVersion2,
-				ConsumerClientUsername: "someOtherClientUsername",
-				ConsumerClientName:     "someOtherClient1234",
-				Source: &egress_v1.SpanData_SendSpan_TopicEndpointName{
-					TopicEndpointName: "topicEndpointName",
-				},
-				Outcome:     egress_v1.SpanData_SendSpan_REJECTED,
-				ReplayedMsg: true,
-			},
-		},
-		TransactionEvent: &egress_v1.SpanData_TransactionEvent{
-			TimeUnixNano: 223456789,
-			Type:         egress_v1.SpanData_TransactionEvent_END,
-			Initiator:    egress_v1.SpanData_TransactionEvent_CLIENT,
-			TransactionId: &egress_v1.SpanData_TransactionEvent_Xid_{
-				Xid: &egress_v1.SpanData_TransactionEvent_Xid{
-					FormatId:        123,
-					BranchQualifier: []byte{0, 8, 20, 254},
-					GlobalId:        []byte{128, 64, 32, 16, 8, 4, 2, 1, 0},
+		&egress_v1.SpanData_EgressSpan{
+			TraceId:           []byte{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31},
+			SpanId:            []byte{0, 1, 2, 3, 4, 5, 6, 7},
+			ParentSpanId:      []byte{7, 6, 5, 4, 3, 2, 1, 0},
+			StartTimeUnixNano: 4234567890,
+			EndTimeUnixNano:   5234567890,
+			TypeData: &egress_v1.SpanData_EgressSpan_SendSpan{
+				SendSpan: &egress_v1.SpanData_SendSpan{
+					Protocol:               "AMQP",
+					ProtocolVersion:        &protocolVersion2,
+					ConsumerClientUsername: "someOtherClientUsername",
+					ConsumerClientName:     "someOtherClient1234",
+					Source: &egress_v1.SpanData_SendSpan_TopicEndpointName{
+						TopicEndpointName: "topicEndpointName",
+					},
+					Outcome:     egress_v1.SpanData_SendSpan_REJECTED,
+					ReplayedMsg: true,
 				},
 			},
-		},
-	}: func() ptrace.Span {
-		// second send span
-		span := ptrace.NewSpan()
-		span.SetName("topicEndpointName send")
-		span.SetTraceID([16]byte{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31})
-		span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
-		span.SetParentSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
-		span.SetStartTimestamp(4234567890)
-		span.SetEndTimestamp(5234567890)
-		span.SetKind(4)
-		spanAttrs := span.Attributes()
-		spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-		spanAttrs.PutStr("messaging.operation", "send")
-		spanAttrs.PutStr("messaging.protocol", "AMQP")
-		spanAttrs.PutStr("messaging.protocol_version", "1.0")
-		spanAttrs.PutStr("messaging.source.name", "topicEndpointName")
-		spanAttrs.PutStr("messaging.source.kind", "topic-endpoint")
-		spanAttrs.PutStr("messaging.solace.client_username", "someOtherClientUsername")
-		spanAttrs.PutStr("messaging.solace.client_name", "someOtherClient1234")
-		spanAttrs.PutBool("messaging.solace.message_replayed", true)
-		spanAttrs.PutStr("messaging.solace.send.outcome", "rejected")
-		txnEvent := span.Events().AppendEmpty()
-		txnEvent.SetName("end")
-		txnEvent.SetTimestamp(223456789)
-		txnAttrs := txnEvent.Attributes()
-		txnAttrs.PutStr("messaging.solace.transaction_initiator", "client")
-		txnAttrs.PutStr("messaging.solace.transaction_xid", "0000007b-000814fe-804020100804020100")
-		return span
-	}(),
+			TransactionEvent: &egress_v1.SpanData_TransactionEvent{
+				TimeUnixNano: 223456789,
+				Type:         egress_v1.SpanData_TransactionEvent_END,
+				Initiator:    egress_v1.SpanData_TransactionEvent_CLIENT,
+				TransactionId: &egress_v1.SpanData_TransactionEvent_Xid_{
+					Xid: &egress_v1.SpanData_TransactionEvent_Xid{
+						FormatId:        123,
+						BranchQualifier: []byte{0, 8, 20, 254},
+						GlobalId:        []byte{128, 64, 32, 16, 8, 4, 2, 1, 0},
+					},
+				},
+			},
+		}, func() ptrace.Span {
+			// second send span
+			span := ptrace.NewSpan()
+			span.SetName("topicEndpointName send")
+			span.SetTraceID([16]byte{1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31})
+			span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+			span.SetParentSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
+			span.SetStartTimestamp(4234567890)
+			span.SetEndTimestamp(5234567890)
+			span.SetKind(4)
+			spanAttrs := span.Attributes()
+			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
+			spanAttrs.PutStr("messaging.operation", "send")
+			spanAttrs.PutStr("messaging.protocol", "AMQP")
+			spanAttrs.PutStr("messaging.protocol_version", "1.0")
+			spanAttrs.PutStr("messaging.source.name", "topicEndpointName")
+			spanAttrs.PutStr("messaging.source.kind", "topic-endpoint")
+			spanAttrs.PutStr("messaging.solace.client_username", "someOtherClientUsername")
+			spanAttrs.PutStr("messaging.solace.client_name", "someOtherClient1234")
+			spanAttrs.PutBool("messaging.solace.message_replayed", true)
+			spanAttrs.PutStr("messaging.solace.send.outcome", "rejected")
+			txnEvent := span.Events().AppendEmpty()
+			txnEvent.SetName("end")
+			txnEvent.SetTimestamp(223456789)
+			txnAttrs := txnEvent.Attributes()
+			txnAttrs.PutStr("messaging.solace.transaction_initiator", "client")
+			txnAttrs.PutStr("messaging.solace.transaction_xid", "0000007b-000814fe-804020100804020100")
+			return span
+		}(),
+	},
 }
 
 func TestEgressUnmarshallerEgressSpan(t *testing.T) {
@@ -282,11 +292,11 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 		},
 	}
 	var i = 1
-	for spanDataRef, wantRef := range validEgressSpans {
+	for _, dataRef := range validEgressSpans {
 		name := "valid span " + fmt.Sprint(i)
 		i++
-		want := wantRef
-		spanData := spanDataRef
+		want := dataRef.out
+		spanData := dataRef.in
 		tests = append(tests, testCase{
 			name:     name,
 			spanData: spanData,

@@ -280,8 +280,8 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						EgressSpans: func() []*egress_v1.SpanData_EgressSpan {
 							spans := make([]*egress_v1.SpanData_EgressSpan, len(validEgressSpans))
 							i := 0
-							for spanRef := range validEgressSpans {
-								span := spanRef
+							for _, spanRef := range validEgressSpans {
+								span := spanRef.in
 								spans[i] = span
 								i++
 							}
@@ -306,7 +306,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				instrumentation := resource.ScopeSpans().AppendEmpty()
 				// first send span
 				for _, spanRef := range validEgressSpans {
-					span := spanRef
+					span := spanRef.out
 					newSpan := instrumentation.Spans().AppendEmpty()
 					span.CopyTo(newSpan)
 				}
