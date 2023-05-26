@@ -145,7 +145,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,
