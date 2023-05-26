@@ -26,7 +26,7 @@ const (
 	scopeVersionStaticStatement       = `instrumentation_scope.version == "%v"`
 	attributesStaticStatement         = `attributes["%v"] == %v`
 	resourceAttributesStaticStatement = `resource.attributes["%v"] == %v`
-	bodyStaticStatement               = `body == "%v"`
+	bodyStaticStatement               = `body.string == "%v"`
 	severityTextStaticStatement       = `severity_text == "%v"`
 
 	serviceNameRegexStatement        = `IsMatch(resource.attributes["service.name"], "%v")`
@@ -36,7 +36,7 @@ const (
 	scopeVersionRegexStatement       = `IsMatch(instrumentation_scope.version, "%v")`
 	attributesRegexStatement         = `IsMatch(attributes["%v"], "%v")`
 	resourceAttributesRegexStatement = `IsMatch(resource.attributes["%v"], "%v")`
-	bodyRegexStatement               = `IsMatch(body, "%v")`
+	bodyRegexStatement               = `IsMatch(body.string, "%v")`
 	severityTextRegexStatement       = `IsMatch(severity_text, "%v")`
 
 	// Boolean expression for existing severity number matching
