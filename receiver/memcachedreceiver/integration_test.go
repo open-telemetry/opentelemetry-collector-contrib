@@ -26,8 +26,8 @@ func TestIntegration(t *testing.T) {
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				Image:        "docker.io/library/memcached:1.6-alpine",
-				ExposedPorts: []string{"11211"},
-				WaitingFor:   wait.ForListeningPort("11211"),
+				ExposedPorts: []string{memcachedPort},
+				WaitingFor:   wait.ForListeningPort(memcachedPort),
 			}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
