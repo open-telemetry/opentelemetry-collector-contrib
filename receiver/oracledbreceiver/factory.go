@@ -6,8 +6,9 @@ package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"net"
 	"net/url"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
+	"github.com/sijms/go-ora/v2"
 )
 
 // NewFactory creates a new Oracle receiver factory.
@@ -51,9 +53,14 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		sqlCfg.DataSource = getDataSource(*sqlCfg)
 		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsBuilderConfig, settings)
 
+		instanceName, err := getInstanceName(sqlCfg.DataSource)
+		if err != nil {
+			return nil, err
+		}
+
 		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(sqlCfg.DataSource)
-		}, clientProviderFunc, getInstanceName(sqlCfg.DataSource))
+		}, clientProviderFunc, instanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -73,13 +80,19 @@ func getDataSource(cfg Config) string {
 		return cfg.DataSource
 	}
 
-	// Data source string is format of:
-	// oracle://username:password@endpoint/OracleDBService
-	return fmt.Sprintf("oracle://%s:%s@%s/%s", cfg.Username, cfg.Password, cfg.Endpoint, cfg.Service)
+	// Don't need to worry about errors here as config validation already checked.
+	host, portStr, _ := net.SplitHostPort(cfg.Endpoint)
+	port, _ := strconv.ParseInt(portStr, 10, 32)
+
+	return go_ora.BuildUrl(host, int(port), cfg.Service, cfg.Username, cfg.Password, nil)
 }
 
-func getInstanceName(datasource string) string {
-	datasourceURL, _ := url.Parse(datasource)
+func getInstanceName(datasource string) (string, error) {
+	datasourceURL, err := url.Parse(datasource)
+	if err != nil {
+		return "", err
+	}
+
 	instanceName := datasourceURL.Host + datasourceURL.Path
-	return instanceName
+	return instanceName, nil
 }

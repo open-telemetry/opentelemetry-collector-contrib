@@ -25,7 +25,7 @@ option will be used.
 ### Primary Configuration Option
 
 Required options:
-- `datasource`: Oracle database connection string. Refer to Oracle Go Driver go_ora documentation for full connection string options.
+- `datasource`: Oracle database connection string. Special characters must be encoded. Refer to Oracle Go Driver go_ora documentation for full connection string options.
 
 Example:
 
@@ -39,16 +39,16 @@ receivers:
 
 Required options:
 - `endpoint`: Endpoint used to connect to the OracleDB server. Must be in the format of `host:port`
-- `password`: Password for the OracleDB connection
+- `password`: Password for the OracleDB connection. Special characters are allowed.
 - `service`: OracleDB Service that the receiver should connect to.
-- `username`: Username for the OracleDB connection
+- `username`: Username for the OracleDB connection.
 
 Example:
 ```yaml
 receivers:
   oracledb:
     endpoint: localhost:51521
-    password: password
+    password: p@sswo%d
     service: XE
     username: otel
 ```

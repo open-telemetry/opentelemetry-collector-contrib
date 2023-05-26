@@ -5,7 +5,7 @@ package oracledbreceiver
 
 import (
 	"context"
-	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,16 +34,26 @@ func TestNewFactory(t *testing.T) {
 }
 
 func TestGetInstanceName(t *testing.T) {
-	instanceName := getInstanceName("oracle://example.com:1521/mydb")
+	instanceName, err := getInstanceName("oracle://example.com:1521/mydb")
+	assert.NoError(t, err)
 	assert.Equal(t, "example.com:1521/mydb", instanceName)
+
+	// Should fail on non-encoded special characters
+	instanceName, err = getInstanceName("oracle://username1:p@ssw%rd@example1.com:1521/mydb")
+	assert.ErrorContains(t, err, "invalid URL escape")
+
+	// Should succeed when special characters are encoded
+	instanceName, err = getInstanceName("oracle://username1:p@ssword%25-_1@example1.com:1521/mydb")
+	assert.NoError(t, err)
+	assert.Equal(t, "example1.com:1521/mydb", instanceName)
 }
 
 func TestGetDataSource(t *testing.T) {
 	endpoint := "example1.com:1521"
-	password := "password1"
+	password := "p@ssword%-_1"
 	service := "mydb1"
 	username := "username1"
-	nonDefaultDataSource := fmt.Sprintf("oracle://%s:%s@%s/%s", username, password, endpoint, service)
+	nonDefaultDataSource := "oracle://username1:p@ssword%25-_1@example1.com:1521/mydb1"
 	defaultDataSource := "oracle://username:password@example.com:1521/mydb"
 
 	testCases := []struct {
@@ -85,6 +95,8 @@ func TestGetDataSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dataSource := getDataSource(*tc.config)
 			require.Equal(t, dataSource, tc.expected)
+			_, err := url.PathUnescape(dataSource)
+			require.NoError(t, err)
 		})
 	}
 }
