@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	strptime "github.com/observiq/ctimefmt"
 	"go.opentelemetry.io/collector/confmap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
@@ -79,7 +79,7 @@ func (t *TimeParser) Validate() error {
 	case NativeKey, GotimeKey: // ok
 	case StrptimeKey:
 		var err error
-		t.Layout, err = strptime.ToNative(t.Layout)
+		t.Layout, err = timeutils.StrptimeToGo(t.Layout)
 		if err != nil {
 			return errors.Wrap(err, "parse strptime layout")
 		}
@@ -147,61 +147,24 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		if !ok {
 			return fmt.Errorf("native time.Time field required, but found %v of type %T", value, value)
 		}
-		entry.Timestamp = setTimestampYear(timeValue)
+		entry.Timestamp = timeutils.SetTimestampYear(timeValue)
 	case GotimeKey:
-		timeValue, err := t.parseGotime(value)
+		timeValue, err := timeutils.ParseGoTime(t.Layout, value, t.location)
 		if err != nil {
 			return err
 		}
-		entry.Timestamp = setTimestampYear(timeValue)
+		entry.Timestamp = timeValue
 	case EpochKey:
 		timeValue, err := t.parseEpochTime(value)
 		if err != nil {
 			return err
 		}
-		entry.Timestamp = setTimestampYear(timeValue)
+		entry.Timestamp = timeutils.SetTimestampYear(timeValue)
 	default:
 		return fmt.Errorf("unsupported layout type: %s", t.LayoutType)
 	}
 
 	return nil
-}
-
-func (t *TimeParser) parseGotime(value interface{}) (time.Time, error) {
-	var str string
-	switch v := value.(type) {
-	case string:
-		str = v
-	case []byte:
-		str = string(v)
-	default:
-		return time.Time{}, fmt.Errorf("type %T cannot be parsed as a time", value)
-	}
-
-	result, err := time.ParseInLocation(t.Layout, str, t.location)
-
-	// Depending on the timezone database, we may get a pseudo-matching timezone
-	// This is apparent when the zone is not "UTC", but the offset is still 0
-	zone, offset := result.Zone()
-	if offset != 0 || zone == "UTC" {
-		return result, err
-	}
-
-	// Manually look up the location based on the zone
-	loc, locErr := time.LoadLocation(zone)
-	if locErr != nil {
-		// can't correct offset, just return what we have
-		return result, fmt.Errorf("failed to load location %s: %w", zone, locErr)
-	}
-
-	// Reparse the timestamp, with the location
-	resultLoc, locErr := time.ParseInLocation(t.Layout, str, loc)
-	if locErr != nil {
-		// can't correct offset, just return original result
-		return result, err
-	}
-
-	return resultLoc, locErr
 }
 
 func (t *TimeParser) parseEpochTime(value interface{}) (time.Time, error) {
@@ -275,22 +238,3 @@ var toTime = map[string]toTimeFunc{
 	"ns": func(ns int64) time.Time { return time.Unix(0, ns) },
 }
 var subsecToNs = map[string]int64{"s.ms": 1e6, "s.us": 1e3, "s.ns": 1}
-
-// setTimestampYear sets the year of a timestamp to the current year.
-// This is needed because year is missing from some time formats, such as rfc3164.
-func setTimestampYear(t time.Time) time.Time {
-	if t.Year() > 0 {
-		return t
-	}
-	n := now()
-	d := time.Date(n.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
-	// If the timestamp would be more than 7 days in the future using this year,
-	// assume it's from last year.
-	if d.After(n.AddDate(0, 0, 7)) {
-		d = d.AddDate(-1, 0, 0)
-	}
-	return d
-}
-
-// Allows tests to override with deterministic value
-var now = time.Now
