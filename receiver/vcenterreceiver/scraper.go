@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
@@ -287,13 +276,24 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
+		var hwSum mo.HostSystem
+		err = host.Properties(ctx, host.Reference(),
+			[]string{
+				"summary.hardware",
+			}, &hwSum)
+
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+
 		if moVM.Config == nil {
 			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
 			continue
 		}
 		vmUUID := moVM.Config.InstanceUuid
 
-		v.collectVM(ctx, colTime, moVM, errs)
+		v.collectVM(ctx, colTime, moVM, hwSum, errs)
 		v.mb.EmitForResource(
 			metadata.WithVcenterVMName(vm.Name()),
 			metadata.WithVcenterVMID(vmUUID),
@@ -308,8 +308,9 @@ func (v *vcenterMetricScraper) collectVM(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
 	vm mo.VirtualMachine,
+	hs mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	v.recordVMUsages(colTime, vm)
+	v.recordVMUsages(colTime, vm, hs)
 	v.recordVMPerformance(ctx, vm, errs)
 }

@@ -65,8 +65,6 @@ all_set:
       enabled: true
     mongodbatlas.process.db.storage:
       enabled: true
-    mongodbatlas.process.fts.cpu.usage:
-      enabled: true
     mongodbatlas.process.global_lock:
       enabled: true
     mongodbatlas.process.index.btree_miss_ratio:
@@ -128,6 +126,8 @@ all_set:
     mongodbatlas.system.paging.usage.max:
       enabled: true
   resource_attributes:
+    mongodb_atlas.cluster.name:
+      enabled: true
     mongodb_atlas.db.name:
       enabled: true
     mongodb_atlas.disk.partition:
@@ -214,8 +214,6 @@ none_set:
       enabled: false
     mongodbatlas.process.db.storage:
       enabled: false
-    mongodbatlas.process.fts.cpu.usage:
-      enabled: false
     mongodbatlas.process.global_lock:
       enabled: false
     mongodbatlas.process.index.btree_miss_ratio:
@@ -277,6 +275,8 @@ none_set:
     mongodbatlas.system.paging.usage.max:
       enabled: false
   resource_attributes:
+    mongodb_atlas.cluster.name:
+      enabled: false
     mongodb_atlas.db.name:
       enabled: false
     mongodb_atlas.disk.partition:

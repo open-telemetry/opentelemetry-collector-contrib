@@ -1,4 +1,10 @@
-type: rabbitmqreceiver
+type: rabbitmq
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   rabbitmq.queue.name:

@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "filter"
-	Stability = component.StabilityLevelAlpha
+	Type             = "filter"
+	TracesStability  = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

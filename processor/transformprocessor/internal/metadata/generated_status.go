@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "transform"
-	Stability = component.StabilityLevelAlpha
+	Type             = "transform"
+	TracesStability  = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

@@ -1,4 +1,10 @@
-type: mysqlreceiver
+type: mysql
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   mysql.instance.endpoint:

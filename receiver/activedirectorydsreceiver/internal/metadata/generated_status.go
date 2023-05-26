@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "activedirectorydsreceiver"
-	Stability = component.StabilityLevelBeta
+	Type             = "active_directory_ds"
+	MetricsStability = component.StabilityLevelBeta
 )

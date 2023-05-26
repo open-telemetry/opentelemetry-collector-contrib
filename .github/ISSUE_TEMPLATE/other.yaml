@@ -31,9 +31,11 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/carbon
+      - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
       - exporter/datadog
+      - exporter/dataset
       - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/f5cloud
@@ -62,6 +64,7 @@ body:
       - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
+      - exporter/syslog
       - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
@@ -136,16 +139,20 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
+      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
+      - receiver/apachespark
       - receiver/awscloudwatch
+      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
+      - receiver/azuremonitor
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
@@ -207,6 +214,7 @@ body:
       - receiver/snmp
       - receiver/snowflake
       - receiver/solace
+      - receiver/splunkenterprise
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver

@@ -270,7 +270,7 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
 | `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
 | `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
-| `needs discussion`   | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
+| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
 | `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work.                                            |
 | `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                            |
 | `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
@@ -292,7 +292,7 @@ The following general labels are supported:
 |----------------------|----------------------|
 | `good first issue`   | `good-first-issue`   |
 | `help wanted`        | `help-wanted`        |
-| `needs discussion`   | `needs-discussion`   |
+| `discussion needed`  | `discussion-needed`  |
 | `needs triage`       | `needs-triage`       |
 | `waiting for author` | `waiting-for-author` |
 

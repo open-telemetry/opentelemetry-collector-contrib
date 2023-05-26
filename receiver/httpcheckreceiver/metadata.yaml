@@ -2,9 +2,9 @@ type: httpcheckreceiver
 
 status:
   class: receiver
-  stability: development
-  pipelines: [metrics]
-  distributions: [contrib]
+  stability:
+    development: [metrics]
+  distributions: [contrib, sumo]
   warnings: []
 
 resource_attributes:

@@ -1,4 +1,10 @@
-type: couchdbreceiver
+type: couchdb
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib,observiq, sumo]
 
 resource_attributes:
   couchdb.node.name:

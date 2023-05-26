@@ -1,6 +1,7 @@
-type: k8sobserver
+type: k8s_observer
 
 status:
   class: extension
-  stability: alpha
-  distributions: [contrib]
+  stability:
+    alpha: [extension]
+  distributions: [contrib, splunk, sumo]

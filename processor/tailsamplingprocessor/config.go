@@ -1,21 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
 import (
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 // PolicyType indicates the type of sampling policy.
@@ -49,6 +40,9 @@ const (
 	// BooleanAttribute sample traces having an attribute, of type bool, that matches
 	// the specified boolean value [true|false].
 	BooleanAttribute PolicyType = "boolean_attribute"
+	// OTTLCondition sample traces which match user provided OpenTelemetry Transformation Language
+	// conditions.
+	OTTLCondition PolicyType = "ottl_condition"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -76,6 +70,8 @@ type sharedPolicyCfg struct {
 	TraceStateCfg TraceStateCfg `mapstructure:"trace_state"`
 	// Configs for boolean attribute filter sampling policy evaluator.
 	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
+	// Configs for OTTL condition filter sampling policy evaluator
+	OTTLConditionCfg OTTLConditionCfg `mapstructure:"ottl_condition"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -190,8 +186,8 @@ type RateLimitingCfg struct {
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
 }
 
-// SpanCountCfg holds the configurable settings to create a Span Count filter sampling policy
-// sampling policy evaluator
+// SpanCountCfg holds the configurable settings to create a Span Count filter sampling
+// policy evaluator
 type SpanCountCfg struct {
 	// Minimum number of spans in a Trace
 	MinSpans int32 `mapstructure:"min_spans"`
@@ -206,6 +202,14 @@ type BooleanAttributeCfg struct {
 	// Value indicate the bool value, either true or false to use when matching against attribute values.
 	// BooleanAttribute Policy will apply exact value match on Value
 	Value bool `mapstructure:"value"`
+}
+
+// OTTLConditionCfg holds the configurable setting to create a OTTL condition filter
+// sampling policy evaluator.
+type OTTLConditionCfg struct {
+	ErrorMode           ottl.ErrorMode `mapstructure:"error_mode"`
+	SpanConditions      []string       `mapstructure:"span"`
+	SpanEventConditions []string       `mapstructure:"spanevent"`
 }
 
 // Config holds the configuration for tail-based sampling.

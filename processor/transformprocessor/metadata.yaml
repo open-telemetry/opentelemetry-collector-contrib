@@ -2,7 +2,7 @@ type: transform
 
 status:
   class: processor
-  stability: alpha
-  pipelines: [traces, metrics, logs]
-  distributions: [contrib]
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]

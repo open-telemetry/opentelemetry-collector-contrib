@@ -2,6 +2,6 @@ type: deltatorate
 
 status:
   class: processor
-  stability: development
-  pipelines: [metrics]
-  distributions: [contrib]
+  stability:
+    development: [metrics]
+  distributions: [contrib, observiq, sumo]

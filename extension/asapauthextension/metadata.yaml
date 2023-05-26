@@ -1,6 +1,7 @@
-type: asapauthextension
+type: asapclient
 
 status:
   class: extension
-  stability: beta
-  distributions: [contrib]
+  stability:
+    beta: [extension]
+  distributions: [contrib, sumo]

@@ -1,0 +1,7 @@
+type: signalfx
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq]

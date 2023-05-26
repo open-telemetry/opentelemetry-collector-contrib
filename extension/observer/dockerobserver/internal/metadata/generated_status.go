@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "dockerobserver"
-	Stability = component.StabilityLevelBeta
+	Type               = "docker_observer"
+	ExtensionStability = component.StabilityLevelBeta
 )

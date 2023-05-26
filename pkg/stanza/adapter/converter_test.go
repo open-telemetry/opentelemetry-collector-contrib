@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter
 
@@ -833,12 +822,11 @@ func BenchmarkConverter(b *testing.B) {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 
-				converter := NewConverter(zap.NewNop())
+				converter := NewConverter(zap.NewNop(), withWorkerCount(wc))
 				converter.Start()
 				defer converter.Stop()
 
 				b.ReportAllocs()
-				b.ResetTimer()
 
 				go func() {
 					for from := 0; from < entryCount; from += int(batchSize) {
@@ -889,6 +877,7 @@ func BenchmarkConverter(b *testing.B) {
 func BenchmarkGetResourceID(b *testing.B) {
 	b.StopTimer()
 	res := getResource()
+	b.ReportAllocs()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -897,6 +886,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]interface{}{}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -907,6 +897,7 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	res := map[string]interface{}{
 		"resource": "value",
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -921,6 +912,7 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 			"three": 4,
 		},
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)

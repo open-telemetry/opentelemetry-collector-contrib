@@ -1,6 +1,7 @@
-type: pprofextension
+type: pprof
 
 status:
   class: extension
-  stability: beta
-  distributions: [core, contrib]
+  stability:
+    beta: [extension]
+  distributions: [core, contrib, splunk, observiq, sumo]

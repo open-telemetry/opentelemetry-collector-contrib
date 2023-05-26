@@ -36,3 +36,12 @@ splunk_hec/allsettings:
   otel_to_hec_fields:
     severity_text: "myseverityfield"
     severity_number: "myseveritynumfield"
+  heartbeat:
+    interval: 30s
+  telemetry:
+    enabled: true
+    override_metrics_names:
+      otelcol_exporter_splunkhec_heartbeats_sent: app_heartbeats_success_total
+      otelcol_exporter_splunkhec_heartbeats_failed: app_heartbeats_failed_total
+    extra_attributes:
+      customKey: customVal

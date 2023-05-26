@@ -1,4 +1,10 @@
-type: sqlserverreceiver
+type: sqlserver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   sqlserver.database.name:

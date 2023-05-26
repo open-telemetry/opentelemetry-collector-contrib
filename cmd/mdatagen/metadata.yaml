@@ -1,8 +1,13 @@
 # Sample metric metadata file with all available configurations.
 
-type: testreceiver
+type: test
 
 sem_conv_version: 1.9.0
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
 
 resource_attributes:
   string.resource.attr:
@@ -20,6 +25,16 @@ resource_attributes:
     description: Explicitly disabled ResourceAttribute.
     type: string
     enabled: false
+
+  slice.resource.attr:
+    description: Resource attribute with a slice value.
+    type: slice
+    enabled: true
+
+  map.resource.attr:
+    description: Resource attribute with a map value.
+    type: map 
+    enabled: true
 
 attributes:
   string_attr:
@@ -40,6 +55,14 @@ attributes:
     description: Attribute with a boolean value.
     type: bool
 
+  slice_attr:
+    description: Attribute with a slice value.
+    type: slice
+
+  map_attr:
+    description: Attribute with a map value.
+    type: map
+
 metrics:
   default.metric:
     enabled: true
@@ -50,7 +73,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
-    attributes: [string_attr, overridden_int_attr, enum_attr]
+    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 
