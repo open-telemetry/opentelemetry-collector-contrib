@@ -30,6 +30,8 @@ const (
 	sumStr        = "_sum"
 	countStr      = "_count"
 	bucketStr     = "_bucket"
+	minStr        = "_min"
+	maxStr        = "_max"
 	leStr         = "le"
 	quantileStr   = "quantile"
 	pInfStr       = "+Inf"
@@ -271,6 +273,36 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	}
 
+	// If the max is unset, it indicates the _max metric point should be omitted
+	if pt.HasMax() {
+		// treat max as a sample in an individual TimeSeries
+		max := &prompb.Sample{
+			Value:     pt.Max(),
+			Timestamp: timestamp,
+		}
+		if pt.Flags().NoRecordedValue() {
+			max.Value = math.Float64frombits(value.StaleNaN)
+		}
+
+		maxlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+maxStr)
+		addSample(tsMap, max, maxlabels, metric.Type().String())
+	}
+
+	// If the min is unset, it indicates the _min metric point should be omitted
+	if pt.HasMin() {
+		// treat min as a sample in an individual TimeSeries
+		min := &prompb.Sample{
+			Value:     pt.Min(),
+			Timestamp: timestamp,
+		}
+		if pt.Flags().NoRecordedValue() {
+			min.Value = math.Float64frombits(value.StaleNaN)
+		}
+
+		minlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+minStr)
+		addSample(tsMap, min, minlabels, metric.Type().String())
+	}
+
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
 		Value:     float64(pt.Count()),
@@ -448,6 +480,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     pt.Sum(),
 		Timestamp: timestamp,
 	}
+
 	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
