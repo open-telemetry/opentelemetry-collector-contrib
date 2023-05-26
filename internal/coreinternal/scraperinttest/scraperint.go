@@ -123,15 +123,10 @@ func (it *IntegrationTest) Run(t *testing.T) {
 
 func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
 	var errs error
-	defer func() {
-		if t.Failed() && errs != nil {
-			t.Errorf("create network: %v", errs)
-		}
-	}()
 
 	var network testcontainers.Network
 	var err error
-	require.Eventually(t, func() bool {
+	require.Eventuallyf(t, func() bool {
 		network, err = testcontainers.GenericNetwork(
 			context.Background(),
 			testcontainers.GenericNetworkRequest{
@@ -142,7 +137,7 @@ func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
 			return false
 		}
 		return true
-	}, it.createContainerTimeout, time.Second)
+	}, it.createContainerTimeout, time.Second, "create network timeout: %v", errs)
 	return network
 }
 
@@ -155,12 +150,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 	for _, cr := range it.containerRequests {
 		go func(req testcontainers.ContainerRequest) {
 			var errs error
-			defer func() {
-				if t.Failed() && errs != nil {
-					t.Errorf("create container: %v", errs)
-				}
-			}()
-			require.Eventually(t, func() bool {
+			require.Eventuallyf(t, func() bool {
 				c, err := testcontainers.GenericContainer(
 					context.Background(),
 					testcontainers.GenericContainerRequest{
@@ -173,7 +163,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 				}
 				ci.add(req.Name, c)
 				return true
-			}, it.createContainerTimeout, time.Second)
+			}, it.createContainerTimeout, time.Second, "create container timeout: %v", errs)
 			wg.Done()
 		}(cr)
 	}
