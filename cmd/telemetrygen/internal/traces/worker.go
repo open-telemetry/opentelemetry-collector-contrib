@@ -17,7 +17,6 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -48,7 +47,7 @@ const (
 
 	fakeSpanDuration = 123 * time.Microsecond
 
-	charactersPerMB = 1048577
+	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
 )
 
 func (w worker) simulateTraces() {
@@ -86,7 +85,6 @@ func (w worker) simulateTraces() {
 		}
 
 		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
-		time.Sleep(time.Duration(rand.Intn(40)) * time.Millisecond)
 		child.End(opt)
 		sp.End(opt)
 

@@ -37,5 +37,5 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.PropagateContext, "marshal", false, "Whether to marshal trace context via HTTP headers")
 	fs.StringVar(&c.ServiceName, "service", "telemetrygen", "Service name to use")
 	fs.BoolVar(&c.Batch, "batch", true, "Whether to batch traces")
-	fs.IntVar(&c.LoadSize, "size", 0, "Desired size in MB for each trace generated")
+	fs.IntVar(&c.LoadSize, "size", 0, "Desired minimum size in MB of string data for each trace generated. This can be used to test traces with large payloads, i.e. when testing the OTLP receiver endpoint max receive size.")
 }
