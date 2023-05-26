@@ -16,9 +16,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	go_ora "github.com/sijms/go-ora/v2"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
+	"github.com/sijms/go-ora/v2"
 )
 
 // NewFactory creates a new Oracle receiver factory.
