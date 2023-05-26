@@ -1,4 +1,4 @@
-type: statsdreceiver
+type: statsd
 
 status:
   class: receiver
