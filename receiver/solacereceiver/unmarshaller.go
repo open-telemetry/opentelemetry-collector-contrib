@@ -76,12 +76,14 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 			}
 			// otherwise we are an unknown version
 			u.logger.Error("Received message with unsupported receive span version, an upgrade is required", zap.String("topic", *message.Properties.To))
-		} else if strings.HasPrefix(topic[len(topicPrefix):], egressSpanPrefix) {
-			if strings.HasSuffix(topic, v1Suffix) {
-				return u.egressUnmarshallerV1.unmarshal(message)
+		} else { // make lint happy, wants two boolean expressions to be written as a switch?!
+			if strings.HasPrefix(topic[len(topicPrefix):], egressSpanPrefix) {
+				if strings.HasSuffix(topic, v1Suffix) {
+					return u.egressUnmarshallerV1.unmarshal(message)
+				}
+			} else {
+				u.logger.Error("Received message with unsupported topic, an upgrade is required", zap.String("topic", *message.Properties.To))
 			}
-		} else {
-			u.logger.Error("Received message with unsupported topic, an upgrade is required", zap.String("topic", *message.Properties.To))
 		}
 		// if we don't know the type, we must upgrade
 		return ptrace.Traces{}, errUpgradeRequired
@@ -137,9 +139,9 @@ const (
 
 // constant attributes
 const (
-	systemAttrKey      = "messaging.system"
-	systemAttrValue    = "SolacePubSub+"
-	operationAttrKey   = "messaging.operation"
+	systemAttrKey    = "messaging.system"
+	systemAttrValue  = "SolacePubSub+"
+	operationAttrKey = "messaging.operation"
 )
 
 func setResourceSpanAttributes(attrMap pcommon.Map, routerName, version string, messageVpnName *string) {
