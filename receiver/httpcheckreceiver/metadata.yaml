@@ -1,4 +1,4 @@
-type: httpcheckreceiver
+type: httpcheck
 
 status:
   class: receiver
