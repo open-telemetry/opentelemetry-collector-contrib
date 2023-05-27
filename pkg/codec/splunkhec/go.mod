@@ -4,11 +4,11 @@ go 1.19
 
 require (
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.77.0
-	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
-	go.opentelemetry.io/collector/semconv v0.77.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.78.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.78.0
+	github.com/stretchr/testify v1.8.3
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector/semconv v0.78.3-0.20230525165144-87dd85a6c034
 	go.uber.org/zap v1.24.0
 )
 
