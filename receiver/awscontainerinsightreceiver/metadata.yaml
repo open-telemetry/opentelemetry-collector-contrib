@@ -1,0 +1,7 @@
+type: awscontainerinsightreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
