@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.78.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.78.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec/splunkhec v0.78.0
 	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
@@ -41,7 +41,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.78.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.78.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.78.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
