@@ -1,0 +1,134 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmnic0
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4161088074"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "2222222222222222222"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "3333333333333333333"
+                  timeUnixNano: "4444444444444444444"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "5555555555555555555"
+                  timeUnixNano: "7777777777777777777"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "8888888888888888888"
+                  timeUnixNano: "9999999999999999999"
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmk10
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4161088074"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1010101010101010101"
+                  timeUnixNano: "1212121212121212121"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1313131313131313131"
+                  timeUnixNano: "1414141414141414141"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1515151515151515151"
+                  timeUnixNano: "1616161616161616161"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1717171717171717171"
+                  timeUnixNano: "1818181818181818181"
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
