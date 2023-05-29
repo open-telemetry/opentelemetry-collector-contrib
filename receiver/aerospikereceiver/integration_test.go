@@ -142,8 +142,7 @@ func recordsWaitAndCheck(f aeroRecordsFunc) error {
 	}
 
 	// consume all records
-	for range chk.Results() {
-	}
+	chk.Results()
 	return nil
 }
 
@@ -382,10 +381,7 @@ func populateMetrics(host *as.Host) error {
 	if sferr := geoStm1.SetFilter(geoFilt1); sferr != nil {
 		return errSetFilter
 	}
-	if err := recordsWaitAndCheck(func() (recordsCheckable, as.Error) {
+	return recordsWaitAndCheck(func() (recordsCheckable, as.Error) {
 		return c.Query(queryPolicy, geoStm1)
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }
