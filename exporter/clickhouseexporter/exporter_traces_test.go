@@ -45,6 +45,18 @@ func TestExporter_pushTracesData(t *testing.T) {
 
 		require.Equal(t, 3, items)
 	})
+	t.Run("check insert scopeName and ScopeVersion", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[9])
+				require.Equal(t, "1.0.0", values[10])
+			}
+			return nil
+		})
+
+		exporter := newTestTracesExporter(t, defaultEndpoint)
+		mustPushTracesData(t, exporter, simpleTraces(1))
+	})
 }
 
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
