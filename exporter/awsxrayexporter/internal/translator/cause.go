@@ -239,11 +239,10 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 				if strings.HasPrefix(line, "\tat ") && strings.IndexByte(line, '(') >= 0 && line[len(line)-1] == ')' {
 					// Stack frame (hopefully, user can masquerade since we only have a string), process above.
 					break
-				} else {
-					// String append overhead in this case, but multiline messages should be far less common than single
-					// line ones.
-					causeMessage += line
 				}
+				// String append overhead in this case, but multiline messages should be far less common than single
+				// line ones.
+				causeMessage += line
 			}
 			segmentID := newSegmentID()
 			exceptions = append(exceptions, awsxray.Exception{

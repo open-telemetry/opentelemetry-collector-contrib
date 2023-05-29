@@ -97,12 +97,11 @@ func formatMetricName(name string) string {
 			b == '_' ||
 			b == ':' {
 			continue
-		} else {
-			if newName == nil {
-				newName = []byte(name)
-			}
-			newName[i] = '_'
 		}
+		if newName == nil {
+			newName = []byte(name)
+		}
+		newName[i] = '_'
 	}
 	if newName == nil {
 		return name
