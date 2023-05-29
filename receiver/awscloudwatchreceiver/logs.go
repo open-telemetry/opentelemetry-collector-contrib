@@ -130,14 +130,14 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 	}
 }
 
-func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
+func (l *logsReceiver) Start(ctx context.Context, _ component.Host) error {
 	l.logger.Debug("starting to poll for Cloudwatch logs")
 	l.wg.Add(1)
 	go l.startPolling(ctx)
 	return nil
 }
 
-func (l *logsReceiver) Shutdown(ctx context.Context) error {
+func (l *logsReceiver) Shutdown(_ context.Context) error {
 	l.logger.Debug("shutting down logs receiver")
 	close(l.doneChan)
 	l.wg.Wait()
