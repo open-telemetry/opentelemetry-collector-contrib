@@ -41,9 +41,9 @@ func createDefaultConfig() component.Config {
 
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
-	cfg component.Config,
-	consumer consumer.Logs,
+	_ receiver.CreateSettings,
+	_ component.Config,
+	_ consumer.Logs,
 ) (receiver.Logs, error) {
 	return nil, fmt.Errorf("journald is only supported on linux")
 }

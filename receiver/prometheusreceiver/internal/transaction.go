@@ -75,7 +75,7 @@ func newTransaction(
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
+func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -149,7 +149,7 @@ func (t *transaction) getOrCreateMetricFamily(mn string) *metricFamily {
 	return curMf
 }
 
-func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
+func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -179,7 +179,7 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 	return 0, nil
 }
 
-func (t *transaction) AppendHistogram(ref storage.SeriesRef, l labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) AppendHistogram(_ storage.SeriesRef, _ labels.Labels, _ int64, h *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	//TODO: implement this func
 	return 0, nil
 }

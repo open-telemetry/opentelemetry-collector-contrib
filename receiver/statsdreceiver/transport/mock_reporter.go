@@ -27,8 +27,7 @@ func (m *MockReporter) OnDataReceived(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (m *MockReporter) OnTranslationError(ctx context.Context, err error) {
-}
+func (m *MockReporter) OnTranslationError(_ context.Context, _ error) {}
 
 func (m *MockReporter) OnMetricsProcessed(ctx context.Context, numReceivedMessages int, err error) {
 	m.wgMetricsProcessed.Done()

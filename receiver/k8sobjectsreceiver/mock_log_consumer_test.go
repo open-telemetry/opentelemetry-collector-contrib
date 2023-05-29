@@ -30,7 +30,7 @@ func (m *mockLogConsumer) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (m *mockLogConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (m *mockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.logs = append(m.logs, ld)
