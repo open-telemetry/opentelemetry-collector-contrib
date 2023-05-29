@@ -275,19 +275,35 @@ func TestRecordBaseMetrics(t *testing.T) {
 	r := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 	now := time.Now()
 	started := now.Add(-2 * time.Second).Format(time.RFC3339)
-	r.recordBaseMetrics(
-		pcommon.NewTimestampFromTime(now),
-		&types.ContainerJSONBase{
-			State: &types.ContainerState{
-				StartedAt: started,
+
+	t.Run("ok", func(t *testing.T) {
+		err := r.recordBaseMetrics(
+			pcommon.NewTimestampFromTime(now),
+			&types.ContainerJSONBase{
+				State: &types.ContainerState{
+					StartedAt: started,
+				},
 			},
-		},
-	)
-	m := r.mb.Emit().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	assert.Equal(t, "container.uptime", m.Name())
-	dp := m.Gauge().DataPoints()
-	assert.Equal(t, 1, dp.Len())
-	assert.Equal(t, 2, int(dp.At(0).DoubleValue()))
+		)
+		require.NoError(t, err)
+		m := r.mb.Emit().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+		assert.Equal(t, "container.uptime", m.Name())
+		dp := m.Gauge().DataPoints()
+		assert.Equal(t, 1, dp.Len())
+		assert.Equal(t, 2, int(dp.At(0).DoubleValue()))
+	})
+
+	t.Run("error", func(t *testing.T) {
+		err := r.recordBaseMetrics(
+			pcommon.NewTimestampFromTime(now),
+			&types.ContainerJSONBase{
+				State: &types.ContainerState{
+					StartedAt: "bad date",
+				},
+			},
+		)
+		require.Error(t, err)
+	})
 }
 
 func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {
