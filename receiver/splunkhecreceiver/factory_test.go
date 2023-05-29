@@ -5,6 +5,7 @@ package splunkhecreceiver
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,4 +74,15 @@ func TestMultipleMetricsReceivers(t *testing.T) {
 	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockMetricsConsumer)
 	mReceiver2, _ := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockMetricsConsumer)
 	assert.Equal(t, mReceiver, mReceiver2)
+}
+
+func TestReuseLogsAndMetricsReceivers(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:1"
+	mockMetricsConsumer := consumertest.NewNop()
+	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockMetricsConsumer)
+	mReceiver2, _ := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockMetricsConsumer)
+	assert.Equal(t, mReceiver, mReceiver2)
+	assert.NotNil(t, mReceiver.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver).metricsConsumer)
+	assert.NotNil(t, mReceiver.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver).logsConsumer)
 }
