@@ -1,4 +1,10 @@
-type: vcenterreceiver
+type: vcenter
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   vcenter.cluster.name:

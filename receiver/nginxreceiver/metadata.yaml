@@ -1,10 +1,10 @@
-type: nginxreceiver
+type: nginx
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo]
 
 attributes:
   state:
@@ -44,10 +44,23 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: []
+
+# Old version of metric, to be enabled when featuregate is stable
   nginx.connections_current:
     enabled: true
     description: The current number of nginx connections by state
     unit: connections
     gauge:
       value_type: int
+    attributes: [state]
+
+# New version of metric, to be enabled when featuregate is stable
+  temp.connections_current:
+    enabled: true # must be enabled by default in order to apply necessary MetricBuilder option
+    description: Temporary placeholder for new version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.
+    unit: connections
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
     attributes: [state]

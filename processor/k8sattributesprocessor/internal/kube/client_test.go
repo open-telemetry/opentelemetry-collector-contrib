@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kube
 
@@ -25,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -125,12 +115,12 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj in
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil)
+	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 	assert.Nil(t, c)
 
-	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil)
+	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -146,6 +136,7 @@ func TestBadFilters(t *testing.T) {
 		newFakeAPIClientset,
 		NewFakeInformer,
 		NewFakeNamespaceInformer,
+		NewFakeReplicaSetInformer,
 	)
 	assert.Error(t, err)
 	assert.Nil(t, c)
@@ -182,7 +173,7 @@ func TestConstructorErrors(t *testing.T) {
 			gotAPIConfig = c
 			return nil, fmt.Errorf("error creating k8s client")
 		}
-		c, err := New(zap.NewNop(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer)
+		c, err := New(zap.NewNop(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil)
 		assert.Nil(t, c)
 		assert.Error(t, err)
 		assert.Equal(t, "error creating k8s client", err.Error())
@@ -198,6 +189,66 @@ func TestPodAdd(t *testing.T) {
 func TestNamespaceAdd(t *testing.T) {
 	c, _ := newTestClient(t)
 	namespaceAddAndUpdateTest(t, c, c.handleNamespaceAdd)
+}
+
+func TestReplicaSetHandler(t *testing.T) {
+	c, _ := newTestClient(t)
+	assert.Equal(t, len(c.ReplicaSets), 0)
+
+	replicaset := &apps_v1.ReplicaSet{}
+	c.handleReplicaSetAdd(replicaset)
+	assert.Equal(t, len(c.ReplicaSets), 0)
+
+	// test add replicaset
+	replicaset = &apps_v1.ReplicaSet{}
+	replicaset.Name = "deployment-aaa"
+	replicaset.Namespace = "namespaceA"
+	replicaset.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	replicaset.ResourceVersion = "333333"
+	isController := true
+	isNotController := false
+	replicaset.OwnerReferences = []meta_v1.OwnerReference{
+		{
+			Kind:       "Deployment",
+			Name:       "deployment",
+			UID:        "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjj",
+			Controller: &isController,
+		},
+		{
+			Kind:       "Deployment",
+			Name:       "deploymentNotController",
+			UID:        "kkkkkkkk-gggg-hhhh-iiii-jjjjjjjjjjj",
+			Controller: &isNotController,
+		},
+	}
+	c.handleReplicaSetAdd(replicaset)
+	assert.Equal(t, len(c.ReplicaSets), 1)
+	got := c.ReplicaSets[string(replicaset.UID)]
+	assert.Equal(t, got.Name, "deployment-aaa")
+	assert.Equal(t, got.Namespace, "namespaceA")
+	assert.Equal(t, got.UID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	assert.Equal(t, got.Deployment, Deployment{
+		Name: "deployment",
+		UID:  "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjj",
+	})
+
+	// test update replicaset
+	updatedReplicaset := replicaset
+	updatedReplicaset.ResourceVersion = "444444"
+	c.handleReplicaSetUpdate(replicaset, updatedReplicaset)
+	assert.Equal(t, len(c.ReplicaSets), 1)
+	got = c.ReplicaSets[string(replicaset.UID)]
+	assert.Equal(t, got.Name, "deployment-aaa")
+	assert.Equal(t, got.Namespace, "namespaceA")
+	assert.Equal(t, got.UID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	assert.Equal(t, got.Deployment, Deployment{
+		Name: "deployment",
+		UID:  "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjj",
+	})
+
+	// test delete replicaset
+	c.handleReplicaSetDelete(updatedReplicaset)
+	assert.Equal(t, len(c.ReplicaSets), 0)
 }
 
 func TestPodHostNetwork(t *testing.T) {
@@ -478,7 +529,7 @@ func TestGetIgnoredPod(t *testing.T) {
 }
 
 func TestHandlerWrongType(t *testing.T) {
-	c, logs := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, logs := newTestClientWithRulesAndFilters(t, Filters{})
 	assert.Equal(t, 0, logs.Len())
 	c.handlePodAdd(1)
 	c.handlePodDelete(1)
@@ -490,7 +541,7 @@ func TestHandlerWrongType(t *testing.T) {
 }
 
 func TestExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
 
@@ -543,6 +594,23 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
+	isController := true
+	replicaset := &apps_v1.ReplicaSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "auth-service-66f5996c7c",
+			Namespace: "ns1",
+			UID:       "207ea729-c779-401d-8347-008ecbc137e3",
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					Name:       "auth-service",
+					Kind:       "Deployment",
+					UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isController,
+				},
+			},
+		},
+	}
+
 	testCases := []struct {
 		name       string
 		rules      ExtractionRules
@@ -554,10 +622,12 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "deployment",
 		rules: ExtractionRules{
-			Deployment: true,
+			DeploymentName: true,
+			DeploymentUID:  true,
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
+			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
 		},
 	}, {
 		name: "replicasetId",
@@ -634,16 +704,18 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			Deployment:  true,
-			Namespace:   true,
-			PodName:     true,
-			PodUID:      true,
-			PodHostName: true,
-			Node:        true,
-			StartTime:   true,
+			DeploymentName: true,
+			DeploymentUID:  true,
+			Namespace:      true,
+			PodName:        true,
+			PodUID:         true,
+			PodHostName:    true,
+			Node:           true,
+			StartTime:      true,
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
+			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
 			"k8s.namespace.name":  "ns1",
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
@@ -774,6 +846,157 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
+			c.handleReplicaSetAdd(replicaset)
+			c.handlePodAdd(pod)
+			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			require.True(t, ok)
+
+			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := p.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
+func TestReplicaSetExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	// Disable saving ip into k8s.pod.ip
+	c.Associations[0].Sources[0].Name = ""
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "auth-service-abc12-xyz3",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			Namespace:         "ns1",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+				"label2": "k1=v1 k5=v5 extra!",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "auth-service-66f5996c7c",
+					UID:        "207ea729-c779-401d-8347-008ecbc137e3",
+				},
+			},
+		},
+		Spec: api_v1.PodSpec{
+			NodeName: "node1",
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
+	replicaset := &apps_v1.ReplicaSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "auth-service-66f5996c7c",
+			Namespace: "ns1",
+			UID:       "207ea729-c779-401d-8347-008ecbc137e3",
+		},
+	}
+
+	isController := true
+	isNotController := false
+	testCases := []struct {
+		name            string
+		rules           ExtractionRules
+		ownerReferences []meta_v1.OwnerReference
+		attributes      map[string]string
+	}{{
+		name:       "no-rules",
+		rules:      ExtractionRules{},
+		attributes: nil,
+	}, {
+		name: "one_deployment_is_controller",
+		ownerReferences: []meta_v1.OwnerReference{
+			{
+				Name:       "auth-service",
+				Kind:       "Deployment",
+				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+				Controller: &isController,
+			},
+		},
+		rules: ExtractionRules{
+			DeploymentName: true,
+			DeploymentUID:  true,
+			ReplicaSetID:   true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+			"k8s.deployment.name": "auth-service",
+			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+		},
+	}, {
+		name: "one_deployment_is_controller_another_deployment_is_not_controller",
+		ownerReferences: []meta_v1.OwnerReference{
+			{
+				Name:       "auth-service",
+				Kind:       "Deployment",
+				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+				Controller: &isController,
+			},
+			{
+				Name:       "auth-service-not-controller",
+				Kind:       "Deployment",
+				UID:        "kkkk-gggg-hhhh-iiii-eeeeeeeeeeee",
+				Controller: &isNotController,
+			},
+		},
+		rules: ExtractionRules{
+			ReplicaSetID:   true,
+			DeploymentName: true,
+			DeploymentUID:  true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+			"k8s.deployment.name": "auth-service",
+			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+		},
+	}, {
+		name: "one_deployment_is_not_controller",
+		ownerReferences: []meta_v1.OwnerReference{
+			{
+				Name:       "auth-service",
+				Kind:       "Deployment",
+				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+				Controller: &isNotController,
+			},
+		},
+		rules: ExtractionRules{
+			ReplicaSetID:   true,
+			DeploymentName: true,
+			DeploymentUID:  true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
+		},
+	}, {
+		name:            "no_deployment",
+		ownerReferences: []meta_v1.OwnerReference{},
+		rules: ExtractionRules{
+			ReplicaSetID:   true,
+			DeploymentName: true,
+			DeploymentUID:  true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
+		},
+	},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			replicaset.OwnerReferences = tc.ownerReferences
+			c.handleReplicaSetAdd(replicaset)
 			c.handlePodAdd(pod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
@@ -789,7 +1012,7 @@ func TestExtractionRules(t *testing.T) {
 }
 
 func TestNamespaceExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 
 	namespace := &api_v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -933,7 +1156,7 @@ func TestFilters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, tc.filters)
+			c, _ := newTestClientWithRulesAndFilters(t, tc.filters)
 			inf := c.informer.(*FakeInformer)
 			assert.Equal(t, tc.filters.Namespace, inf.namespace)
 			assert.Equal(t, tc.labels, inf.labelSelector.String())
@@ -1315,7 +1538,7 @@ func TestErrorSelectorsFromFilters(t *testing.T) {
 }
 
 func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	testCases := []struct {
 		name                   string
 		shouldExtractNamespace bool
@@ -1373,7 +1596,7 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 	}
 }
 
-func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters) (*WatchClient, *observer.ObservedLogs) {
+func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
 	exclude := Excludes{
@@ -1399,11 +1622,11 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 			},
 		},
 	}
-	c, err := New(logger, k8sconfig.APIConfig{}, e, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer)
+	c, err := New(logger, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
-	return newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	return newTestClientWithRulesAndFilters(t, Filters{})
 }

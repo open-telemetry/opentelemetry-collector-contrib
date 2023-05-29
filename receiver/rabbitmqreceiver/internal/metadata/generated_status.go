@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "rabbitmqreceiver"
+	Type             = "rabbitmq"
 	MetricsStability = component.StabilityLevelBeta
 )

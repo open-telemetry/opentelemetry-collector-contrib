@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
@@ -42,23 +31,25 @@ const (
 type Client struct {
 	svc          cloudwatchlogsiface.CloudWatchLogsAPI
 	logRetention int64
+	tags         map[string]*string
 	logger       *zap.Logger
 }
 
 // Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, logger *zap.Logger) *Client {
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, logger *zap.Logger) *Client {
 	logClient := &Client{svc: svc,
 		logRetention: logRetention,
+		tags:         tags,
 		logger:       logger}
 	return logClient
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, sess *session.Session) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
-	return newCloudWatchLogClient(client, logRetention, logger)
+	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -154,8 +145,10 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 		client.logger.Debug("cwlog_client: creating stream fail", zap.Error(err))
 		var awsErr awserr.Error
 		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+			// Create Log Group with tags if they exist and were specified in the config
 			_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 				LogGroupName: logGroup,
+				Tags:         client.tags,
 			})
 			if err == nil {
 				// For newly created log groups, set the log retention polic if specified or non-zero.  Otheriwse, set to Never Expire

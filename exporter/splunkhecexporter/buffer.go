@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -19,6 +8,9 @@ import (
 	"compress/gzip"
 	"errors"
 	"io"
+	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 var (
@@ -28,36 +20,31 @@ var (
 // Minimum number of bytes to compress. 1500 is the MTU of an ethernet frame.
 const minCompressionLen = 1500
 
-// Composite index of a record.
-type index struct {
-	// Index in orig list (i.e. root parent index).
-	resource int
-	// Index in ScopeLogs/ScopeMetrics list (i.e. immediate parent index).
-	library int
-	// Index in Logs list (i.e. the log record index).
-	record int
-}
-
 // bufferState encapsulates intermediate buffer state when pushing data
 type bufferState struct {
 	compressionAvailable bool
-	compressionEnabled   bool
 	bufferMaxLen         uint
 	maxEventLength       uint
 	writer               io.Writer
 	buf                  *bytes.Buffer
-	bufFront             *index
-	resource             int
-	library              int
-	containsData         bool
+	jsonStream           *jsoniter.Stream
 	rawLength            int
+}
+
+func (b *bufferState) compressionEnabled() bool {
+	_, ok := b.writer.(*cancellableGzipWriter)
+	return ok
+}
+
+func (b *bufferState) containsData() bool {
+	return b.rawLength > 0
 }
 
 func (b *bufferState) reset() {
 	b.buf.Reset()
-	b.compressionEnabled = false
-	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
-	b.containsData = false
+	if _, ok := b.writer.(*cancellableBytesWriter); !ok {
+		b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
+	}
 	b.rawLength = 0
 }
 
@@ -83,7 +70,7 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 	if overCapacity {
 		bufLen += len(data)
 	}
-	if b.compressionAvailable && !b.compressionEnabled && bufLen > minCompressionLen {
+	if b.compressionAvailable && !b.compressionEnabled() && bufLen > minCompressionLen {
 		// switch over to a zip buffer.
 		tmpBuf := bytes.NewBuffer(make([]byte, 0, b.bufferMaxLen+bufCapPadding))
 		writer := gzip.NewWriter(tmpBuf)
@@ -105,7 +92,6 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 		}
 		b.writer = zipWriter
 		b.buf = tmpBuf
-		b.compressionEnabled = true
 		// if the byte writer was over capacity, try to write the new entry in the zip writer:
 		if overCapacity {
 			if _, err2 := zipWriter.Write(data); err2 != nil {
@@ -118,13 +104,11 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 
 		}
 		b.rawLength += len(data)
-		b.containsData = true
 		return true, nil
 	}
 	if overCapacity {
 		return false, nil
 	}
-	b.containsData = true
 	b.rawLength += len(data)
 	return true, err
 }
@@ -188,19 +172,37 @@ func (c *cancellableGzipWriter) close() error {
 	return c.innerWriter.Close()
 }
 
-func makeBlankBufferState(bufCap uint, compressionAvailable bool, maxEventLength uint) *bufferState {
-	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
-	buf := bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
+// bufferStatePool is a pool of bufferState objects.
+type bufferStatePool struct {
+	pool *sync.Pool
+}
 
-	return &bufferState{
-		compressionAvailable: compressionAvailable,
-		compressionEnabled:   false,
-		writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
-		buf:                  buf,
-		bufferMaxLen:         bufCap,
-		maxEventLength:       maxEventLength,
-		bufFront:             nil, // Index of the log record of the first unsent event in buffer.
-		resource:             0,   // Index of currently processed Resource
-		library:              0,   // Index of currently processed Library
+// get returns a bufferState from the pool.
+func (p bufferStatePool) get() *bufferState {
+	return p.pool.Get().(*bufferState)
+}
+
+// put returns a bufferState to the pool.
+func (p bufferStatePool) put(bf *bufferState) {
+	p.pool.Put(bf)
+}
+
+const initBufferCap = 512
+
+func newBufferStatePool(bufCap uint, compressionAvailable bool, maxEventLength uint) bufferStatePool {
+	return bufferStatePool{
+		&sync.Pool{
+			New: func() interface{} {
+				buf := bytes.NewBuffer(make([]byte, 0, initBufferCap))
+				return &bufferState{
+					compressionAvailable: compressionAvailable,
+					writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
+					buf:                  buf,
+					jsonStream:           jsoniter.NewStream(jsoniter.ConfigDefault, nil, initBufferCap),
+					bufferMaxLen:         bufCap,
+					maxEventLength:       maxEventLength,
+				}
+			},
+		},
 	}
 }

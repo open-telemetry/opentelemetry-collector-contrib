@@ -6,326 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for dockerstatsreceiver metrics.
-type MetricsConfig struct {
-	ContainerBlockioIoMergedRecursive          MetricConfig `mapstructure:"container.blockio.io_merged_recursive"`
-	ContainerBlockioIoQueuedRecursive          MetricConfig `mapstructure:"container.blockio.io_queued_recursive"`
-	ContainerBlockioIoServiceBytesRecursive    MetricConfig `mapstructure:"container.blockio.io_service_bytes_recursive"`
-	ContainerBlockioIoServiceTimeRecursive     MetricConfig `mapstructure:"container.blockio.io_service_time_recursive"`
-	ContainerBlockioIoServicedRecursive        MetricConfig `mapstructure:"container.blockio.io_serviced_recursive"`
-	ContainerBlockioIoTimeRecursive            MetricConfig `mapstructure:"container.blockio.io_time_recursive"`
-	ContainerBlockioIoWaitTimeRecursive        MetricConfig `mapstructure:"container.blockio.io_wait_time_recursive"`
-	ContainerBlockioSectorsRecursive           MetricConfig `mapstructure:"container.blockio.sectors_recursive"`
-	ContainerCPUPercent                        MetricConfig `mapstructure:"container.cpu.percent"`
-	ContainerCPUThrottlingDataPeriods          MetricConfig `mapstructure:"container.cpu.throttling_data.periods"`
-	ContainerCPUThrottlingDataThrottledPeriods MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_periods"`
-	ContainerCPUThrottlingDataThrottledTime    MetricConfig `mapstructure:"container.cpu.throttling_data.throttled_time"`
-	ContainerCPUUsageKernelmode                MetricConfig `mapstructure:"container.cpu.usage.kernelmode"`
-	ContainerCPUUsagePercpu                    MetricConfig `mapstructure:"container.cpu.usage.percpu"`
-	ContainerCPUUsageSystem                    MetricConfig `mapstructure:"container.cpu.usage.system"`
-	ContainerCPUUsageTotal                     MetricConfig `mapstructure:"container.cpu.usage.total"`
-	ContainerCPUUsageUsermode                  MetricConfig `mapstructure:"container.cpu.usage.usermode"`
-	ContainerMemoryActiveAnon                  MetricConfig `mapstructure:"container.memory.active_anon"`
-	ContainerMemoryActiveFile                  MetricConfig `mapstructure:"container.memory.active_file"`
-	ContainerMemoryCache                       MetricConfig `mapstructure:"container.memory.cache"`
-	ContainerMemoryDirty                       MetricConfig `mapstructure:"container.memory.dirty"`
-	ContainerMemoryHierarchicalMemoryLimit     MetricConfig `mapstructure:"container.memory.hierarchical_memory_limit"`
-	ContainerMemoryHierarchicalMemswLimit      MetricConfig `mapstructure:"container.memory.hierarchical_memsw_limit"`
-	ContainerMemoryInactiveAnon                MetricConfig `mapstructure:"container.memory.inactive_anon"`
-	ContainerMemoryInactiveFile                MetricConfig `mapstructure:"container.memory.inactive_file"`
-	ContainerMemoryMappedFile                  MetricConfig `mapstructure:"container.memory.mapped_file"`
-	ContainerMemoryPercent                     MetricConfig `mapstructure:"container.memory.percent"`
-	ContainerMemoryPgfault                     MetricConfig `mapstructure:"container.memory.pgfault"`
-	ContainerMemoryPgmajfault                  MetricConfig `mapstructure:"container.memory.pgmajfault"`
-	ContainerMemoryPgpgin                      MetricConfig `mapstructure:"container.memory.pgpgin"`
-	ContainerMemoryPgpgout                     MetricConfig `mapstructure:"container.memory.pgpgout"`
-	ContainerMemoryRss                         MetricConfig `mapstructure:"container.memory.rss"`
-	ContainerMemoryRssHuge                     MetricConfig `mapstructure:"container.memory.rss_huge"`
-	ContainerMemorySwap                        MetricConfig `mapstructure:"container.memory.swap"`
-	ContainerMemoryTotalActiveAnon             MetricConfig `mapstructure:"container.memory.total_active_anon"`
-	ContainerMemoryTotalActiveFile             MetricConfig `mapstructure:"container.memory.total_active_file"`
-	ContainerMemoryTotalCache                  MetricConfig `mapstructure:"container.memory.total_cache"`
-	ContainerMemoryTotalDirty                  MetricConfig `mapstructure:"container.memory.total_dirty"`
-	ContainerMemoryTotalInactiveAnon           MetricConfig `mapstructure:"container.memory.total_inactive_anon"`
-	ContainerMemoryTotalInactiveFile           MetricConfig `mapstructure:"container.memory.total_inactive_file"`
-	ContainerMemoryTotalMappedFile             MetricConfig `mapstructure:"container.memory.total_mapped_file"`
-	ContainerMemoryTotalPgfault                MetricConfig `mapstructure:"container.memory.total_pgfault"`
-	ContainerMemoryTotalPgmajfault             MetricConfig `mapstructure:"container.memory.total_pgmajfault"`
-	ContainerMemoryTotalPgpgin                 MetricConfig `mapstructure:"container.memory.total_pgpgin"`
-	ContainerMemoryTotalPgpgout                MetricConfig `mapstructure:"container.memory.total_pgpgout"`
-	ContainerMemoryTotalRss                    MetricConfig `mapstructure:"container.memory.total_rss"`
-	ContainerMemoryTotalRssHuge                MetricConfig `mapstructure:"container.memory.total_rss_huge"`
-	ContainerMemoryTotalSwap                   MetricConfig `mapstructure:"container.memory.total_swap"`
-	ContainerMemoryTotalUnevictable            MetricConfig `mapstructure:"container.memory.total_unevictable"`
-	ContainerMemoryTotalWriteback              MetricConfig `mapstructure:"container.memory.total_writeback"`
-	ContainerMemoryUnevictable                 MetricConfig `mapstructure:"container.memory.unevictable"`
-	ContainerMemoryUsageLimit                  MetricConfig `mapstructure:"container.memory.usage.limit"`
-	ContainerMemoryUsageMax                    MetricConfig `mapstructure:"container.memory.usage.max"`
-	ContainerMemoryUsageTotal                  MetricConfig `mapstructure:"container.memory.usage.total"`
-	ContainerMemoryWriteback                   MetricConfig `mapstructure:"container.memory.writeback"`
-	ContainerNetworkIoUsageRxBytes             MetricConfig `mapstructure:"container.network.io.usage.rx_bytes"`
-	ContainerNetworkIoUsageRxDropped           MetricConfig `mapstructure:"container.network.io.usage.rx_dropped"`
-	ContainerNetworkIoUsageRxErrors            MetricConfig `mapstructure:"container.network.io.usage.rx_errors"`
-	ContainerNetworkIoUsageRxPackets           MetricConfig `mapstructure:"container.network.io.usage.rx_packets"`
-	ContainerNetworkIoUsageTxBytes             MetricConfig `mapstructure:"container.network.io.usage.tx_bytes"`
-	ContainerNetworkIoUsageTxDropped           MetricConfig `mapstructure:"container.network.io.usage.tx_dropped"`
-	ContainerNetworkIoUsageTxErrors            MetricConfig `mapstructure:"container.network.io.usage.tx_errors"`
-	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		ContainerBlockioIoMergedRecursive: MetricConfig{
-			Enabled: false,
-		},
-		ContainerBlockioIoQueuedRecursive: MetricConfig{
-			Enabled: false,
-		},
-		ContainerBlockioIoServiceBytesRecursive: MetricConfig{
-			Enabled: true,
-		},
-		ContainerBlockioIoServiceTimeRecursive: MetricConfig{
-			Enabled: false,
-		},
-		ContainerBlockioIoServicedRecursive: MetricConfig{
-			Enabled: false,
-		},
-		ContainerBlockioIoTimeRecursive: MetricConfig{
-			Enabled: false,
-		},
-		ContainerBlockioIoWaitTimeRecursive: MetricConfig{
-			Enabled: false,
-		},
-		ContainerBlockioSectorsRecursive: MetricConfig{
-			Enabled: false,
-		},
-		ContainerCPUPercent: MetricConfig{
-			Enabled: true,
-		},
-		ContainerCPUThrottlingDataPeriods: MetricConfig{
-			Enabled: false,
-		},
-		ContainerCPUThrottlingDataThrottledPeriods: MetricConfig{
-			Enabled: false,
-		},
-		ContainerCPUThrottlingDataThrottledTime: MetricConfig{
-			Enabled: false,
-		},
-		ContainerCPUUsageKernelmode: MetricConfig{
-			Enabled: true,
-		},
-		ContainerCPUUsagePercpu: MetricConfig{
-			Enabled: false,
-		},
-		ContainerCPUUsageSystem: MetricConfig{
-			Enabled: false,
-		},
-		ContainerCPUUsageTotal: MetricConfig{
-			Enabled: true,
-		},
-		ContainerCPUUsageUsermode: MetricConfig{
-			Enabled: true,
-		},
-		ContainerMemoryActiveAnon: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryActiveFile: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryCache: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryDirty: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryHierarchicalMemoryLimit: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryHierarchicalMemswLimit: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryInactiveAnon: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryInactiveFile: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryMappedFile: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryPercent: MetricConfig{
-			Enabled: true,
-		},
-		ContainerMemoryPgfault: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryPgmajfault: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryPgpgin: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryPgpgout: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryRss: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryRssHuge: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemorySwap: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalActiveAnon: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalActiveFile: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalCache: MetricConfig{
-			Enabled: true,
-		},
-		ContainerMemoryTotalDirty: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalInactiveAnon: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalInactiveFile: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalMappedFile: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalPgfault: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalPgmajfault: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalPgpgin: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalPgpgout: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalRss: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalRssHuge: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalSwap: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalUnevictable: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalWriteback: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryUnevictable: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryUsageLimit: MetricConfig{
-			Enabled: true,
-		},
-		ContainerMemoryUsageMax: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryUsageTotal: MetricConfig{
-			Enabled: true,
-		},
-		ContainerMemoryWriteback: MetricConfig{
-			Enabled: false,
-		},
-		ContainerNetworkIoUsageRxBytes: MetricConfig{
-			Enabled: true,
-		},
-		ContainerNetworkIoUsageRxDropped: MetricConfig{
-			Enabled: true,
-		},
-		ContainerNetworkIoUsageRxErrors: MetricConfig{
-			Enabled: false,
-		},
-		ContainerNetworkIoUsageRxPackets: MetricConfig{
-			Enabled: false,
-		},
-		ContainerNetworkIoUsageTxBytes: MetricConfig{
-			Enabled: true,
-		},
-		ContainerNetworkIoUsageTxDropped: MetricConfig{
-			Enabled: true,
-		},
-		ContainerNetworkIoUsageTxErrors: MetricConfig{
-			Enabled: false,
-		},
-		ContainerNetworkIoUsageTxPackets: MetricConfig{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for dockerstatsreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	ContainerHostname  ResourceAttributeConfig `mapstructure:"container.hostname"`
-	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
-	ContainerImageName ResourceAttributeConfig `mapstructure:"container.image.name"`
-	ContainerName      ResourceAttributeConfig `mapstructure:"container.name"`
-	ContainerRuntime   ResourceAttributeConfig `mapstructure:"container.runtime"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		ContainerHostname: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ContainerID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ContainerImageName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ContainerName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ContainerRuntime: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 type metricContainerBlockioIoMergedRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -2040,57 +1725,6 @@ func newMetricContainerMemoryRssHuge(cfg MetricConfig) metricContainerMemoryRssH
 	return m
 }
 
-type metricContainerMemorySwap struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills container.memory.swap metric with initial data.
-func (m *metricContainerMemorySwap) init() {
-	m.data.SetName("container.memory.swap")
-	m.data.SetDescription("The amount of swap currently used by the processes in this cgroup.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricContainerMemorySwap) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerMemorySwap) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerMemorySwap) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricContainerMemorySwap(cfg MetricConfig) metricContainerMemorySwap {
-	m := metricContainerMemorySwap{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricContainerMemoryTotalActiveAnon struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2754,57 +2388,6 @@ func newMetricContainerMemoryTotalRssHuge(cfg MetricConfig) metricContainerMemor
 	return m
 }
 
-type metricContainerMemoryTotalSwap struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills container.memory.total_swap metric with initial data.
-func (m *metricContainerMemoryTotalSwap) init() {
-	m.data.SetName("container.memory.total_swap")
-	m.data.SetDescription("The amount of swap currently used by the processes in this cgroup and descendant groups.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricContainerMemoryTotalSwap) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerMemoryTotalSwap) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerMemoryTotalSwap) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricContainerMemoryTotalSwap(cfg MetricConfig) metricContainerMemoryTotalSwap {
-	m := metricContainerMemoryTotalSwap{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricContainerMemoryTotalUnevictable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3069,7 +2652,7 @@ type metricContainerMemoryUsageTotal struct {
 // init fills container.memory.usage.total metric with initial data.
 func (m *metricContainerMemoryUsageTotal) init() {
 	m.data.SetName("container.memory.usage.total")
-	m.data.SetDescription("Memory usage of the container. This excludes the total cache.")
+	m.data.SetDescription("Memory usage of the container. This excludes the cache.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -3586,10 +3169,106 @@ func newMetricContainerNetworkIoUsageTxPackets(cfg MetricConfig) metricContainer
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+type metricContainerPidsCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.pids.count metric with initial data.
+func (m *metricContainerPidsCount) init() {
+	m.data.SetName("container.pids.count")
+	m.data.SetDescription("Number of pids in the container's cgroup.")
+	m.data.SetUnit("{pids}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerPidsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerPidsCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerPidsCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerPidsCount(cfg MetricConfig) metricContainerPidsCount {
+	m := metricContainerPidsCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerPidsLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.pids.limit metric with initial data.
+func (m *metricContainerPidsLimit) init() {
+	m.data.SetName("container.pids.limit")
+	m.data.SetDescription("Maximum number of pids in the container's cgroup.")
+	m.data.SetUnit("{pids}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerPidsLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerPidsLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerPidsLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerPidsLimit(cfg MetricConfig) metricContainerPidsLimit {
+	m := metricContainerPidsLimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -3634,7 +3313,6 @@ type MetricsBuilder struct {
 	metricContainerMemoryPgpgout                     metricContainerMemoryPgpgout
 	metricContainerMemoryRss                         metricContainerMemoryRss
 	metricContainerMemoryRssHuge                     metricContainerMemoryRssHuge
-	metricContainerMemorySwap                        metricContainerMemorySwap
 	metricContainerMemoryTotalActiveAnon             metricContainerMemoryTotalActiveAnon
 	metricContainerMemoryTotalActiveFile             metricContainerMemoryTotalActiveFile
 	metricContainerMemoryTotalCache                  metricContainerMemoryTotalCache
@@ -3648,7 +3326,6 @@ type MetricsBuilder struct {
 	metricContainerMemoryTotalPgpgout                metricContainerMemoryTotalPgpgout
 	metricContainerMemoryTotalRss                    metricContainerMemoryTotalRss
 	metricContainerMemoryTotalRssHuge                metricContainerMemoryTotalRssHuge
-	metricContainerMemoryTotalSwap                   metricContainerMemoryTotalSwap
 	metricContainerMemoryTotalUnevictable            metricContainerMemoryTotalUnevictable
 	metricContainerMemoryTotalWriteback              metricContainerMemoryTotalWriteback
 	metricContainerMemoryUnevictable                 metricContainerMemoryUnevictable
@@ -3664,6 +3341,8 @@ type MetricsBuilder struct {
 	metricContainerNetworkIoUsageTxDropped           metricContainerNetworkIoUsageTxDropped
 	metricContainerNetworkIoUsageTxErrors            metricContainerNetworkIoUsageTxErrors
 	metricContainerNetworkIoUsageTxPackets           metricContainerNetworkIoUsageTxPackets
+	metricContainerPidsCount                         metricContainerPidsCount
+	metricContainerPidsLimit                         metricContainerPidsLimit
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3673,13 +3352,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -3722,7 +3394,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(mbc.Metrics.ContainerMemoryPgpgout),
 		metricContainerMemoryRss:                         newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
 		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(mbc.Metrics.ContainerMemoryRssHuge),
-		metricContainerMemorySwap:                        newMetricContainerMemorySwap(mbc.Metrics.ContainerMemorySwap),
 		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(mbc.Metrics.ContainerMemoryTotalActiveAnon),
 		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(mbc.Metrics.ContainerMemoryTotalActiveFile),
 		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(mbc.Metrics.ContainerMemoryTotalCache),
@@ -3736,7 +3407,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(mbc.Metrics.ContainerMemoryTotalPgpgout),
 		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(mbc.Metrics.ContainerMemoryTotalRss),
 		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(mbc.Metrics.ContainerMemoryTotalRssHuge),
-		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(mbc.Metrics.ContainerMemoryTotalSwap),
 		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(mbc.Metrics.ContainerMemoryTotalUnevictable),
 		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(mbc.Metrics.ContainerMemoryTotalWriteback),
 		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(mbc.Metrics.ContainerMemoryUnevictable),
@@ -3752,6 +3422,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(mbc.Metrics.ContainerNetworkIoUsageTxDropped),
 		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(mbc.Metrics.ContainerNetworkIoUsageTxErrors),
 		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mbc.Metrics.ContainerNetworkIoUsageTxPackets),
+		metricContainerPidsCount:                         newMetricContainerPidsCount(mbc.Metrics.ContainerPidsCount),
+		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mbc.Metrics.ContainerPidsLimit),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3883,7 +3555,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerMemoryPgpgout.emit(ils.Metrics())
 	mb.metricContainerMemoryRss.emit(ils.Metrics())
 	mb.metricContainerMemoryRssHuge.emit(ils.Metrics())
-	mb.metricContainerMemorySwap.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalActiveAnon.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalActiveFile.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalCache.emit(ils.Metrics())
@@ -3897,7 +3568,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerMemoryTotalPgpgout.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalRss.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalRssHuge.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalSwap.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalUnevictable.emit(ils.Metrics())
 	mb.metricContainerMemoryTotalWriteback.emit(ils.Metrics())
 	mb.metricContainerMemoryUnevictable.emit(ils.Metrics())
@@ -3913,6 +3583,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerNetworkIoUsageTxDropped.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxErrors.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxPackets.emit(ils.Metrics())
+	mb.metricContainerPidsCount.emit(ils.Metrics())
+	mb.metricContainerPidsLimit.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(mb.resourceAttributesConfig, rm)
@@ -4098,11 +3770,6 @@ func (mb *MetricsBuilder) RecordContainerMemoryRssHugeDataPoint(ts pcommon.Times
 	mb.metricContainerMemoryRssHuge.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordContainerMemorySwapDataPoint adds a data point to container.memory.swap metric.
-func (mb *MetricsBuilder) RecordContainerMemorySwapDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemorySwap.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordContainerMemoryTotalActiveAnonDataPoint adds a data point to container.memory.total_active_anon metric.
 func (mb *MetricsBuilder) RecordContainerMemoryTotalActiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerMemoryTotalActiveAnon.recordDataPoint(mb.startTime, ts, val)
@@ -4166,11 +3833,6 @@ func (mb *MetricsBuilder) RecordContainerMemoryTotalRssDataPoint(ts pcommon.Time
 // RecordContainerMemoryTotalRssHugeDataPoint adds a data point to container.memory.total_rss_huge metric.
 func (mb *MetricsBuilder) RecordContainerMemoryTotalRssHugeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerMemoryTotalRssHuge.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordContainerMemoryTotalSwapDataPoint adds a data point to container.memory.total_swap metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalSwapDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalSwap.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalUnevictableDataPoint adds a data point to container.memory.total_unevictable metric.
@@ -4246,6 +3908,16 @@ func (mb *MetricsBuilder) RecordContainerNetworkIoUsageTxErrorsDataPoint(ts pcom
 // RecordContainerNetworkIoUsageTxPacketsDataPoint adds a data point to container.network.io.usage.tx_packets metric.
 func (mb *MetricsBuilder) RecordContainerNetworkIoUsageTxPacketsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
 	mb.metricContainerNetworkIoUsageTxPackets.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+}
+
+// RecordContainerPidsCountDataPoint adds a data point to container.pids.count metric.
+func (mb *MetricsBuilder) RecordContainerPidsCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerPidsCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerPidsLimitDataPoint adds a data point to container.pids.limit metric.
+func (mb *MetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerPidsLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

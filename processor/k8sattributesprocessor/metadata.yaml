@@ -1,0 +1,7 @@
+type: k8sattributes
+
+status:
+  class: processor
+  stability:
+    beta: [logs, metrics, traces]
+  distributions: [contrib, splunk, observiq, sumo]

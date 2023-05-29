@@ -6,86 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for testreceiver metrics.
-type MetricsConfig struct {
-	DefaultMetric            MetricConfig `mapstructure:"default.metric"`
-	DefaultMetricToBeRemoved MetricConfig `mapstructure:"default.metric.to_be_removed"`
-	OptionalMetric           MetricConfig `mapstructure:"optional.metric"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		DefaultMetric: MetricConfig{
-			Enabled: true,
-		},
-		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled: true,
-		},
-		OptionalMetric: MetricConfig{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for testreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	MapResourceAttr        ResourceAttributeConfig `mapstructure:"map.resource.attr"`
-	OptionalResourceAttr   ResourceAttributeConfig `mapstructure:"optional.resource.attr"`
-	SliceResourceAttr      ResourceAttributeConfig `mapstructure:"slice.resource.attr"`
-	StringEnumResourceAttr ResourceAttributeConfig `mapstructure:"string.enum.resource.attr"`
-	StringResourceAttr     ResourceAttributeConfig `mapstructure:"string.resource.attr"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		MapResourceAttr: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		OptionalResourceAttr: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		SliceResourceAttr: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		StringEnumResourceAttr: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		StringResourceAttr: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeEnumAttr specifies the a value enum_attr attribute.
 type AttributeEnumAttr int
@@ -277,12 +202,6 @@ func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -304,13 +223,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -432,7 +344,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/testreceiver")
+	ils.Scope().SetName("otelcol")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricDefaultMetric.emit(ils.Metrics())

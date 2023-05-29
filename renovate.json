@@ -6,7 +6,7 @@
     "extends": [
       "config:base"
     ],
-    "schedule": ["every wednesday"],
+    "schedule": ["every tuesday"],
     "ignorePaths": [
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_0_0",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
@@ -31,7 +31,10 @@
       },
       {
         "matchManagers": ["gomod"],
-        "enabled": false
+        "matchUpdateTypes": ["minor", "major"]
       }
+    ],
+    "ignoreDeps": [
+      "github.com/mattn/go-ieproxy"
     ]
   }

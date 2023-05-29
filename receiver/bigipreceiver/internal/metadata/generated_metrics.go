@@ -6,189 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for bigipreceiver metrics.
-type MetricsConfig struct {
-	BigipNodeAvailability             MetricConfig `mapstructure:"bigip.node.availability"`
-	BigipNodeConnectionCount          MetricConfig `mapstructure:"bigip.node.connection.count"`
-	BigipNodeDataTransmitted          MetricConfig `mapstructure:"bigip.node.data.transmitted"`
-	BigipNodeEnabled                  MetricConfig `mapstructure:"bigip.node.enabled"`
-	BigipNodePacketCount              MetricConfig `mapstructure:"bigip.node.packet.count"`
-	BigipNodeRequestCount             MetricConfig `mapstructure:"bigip.node.request.count"`
-	BigipNodeSessionCount             MetricConfig `mapstructure:"bigip.node.session.count"`
-	BigipPoolAvailability             MetricConfig `mapstructure:"bigip.pool.availability"`
-	BigipPoolConnectionCount          MetricConfig `mapstructure:"bigip.pool.connection.count"`
-	BigipPoolDataTransmitted          MetricConfig `mapstructure:"bigip.pool.data.transmitted"`
-	BigipPoolEnabled                  MetricConfig `mapstructure:"bigip.pool.enabled"`
-	BigipPoolMemberCount              MetricConfig `mapstructure:"bigip.pool.member.count"`
-	BigipPoolPacketCount              MetricConfig `mapstructure:"bigip.pool.packet.count"`
-	BigipPoolRequestCount             MetricConfig `mapstructure:"bigip.pool.request.count"`
-	BigipPoolMemberAvailability       MetricConfig `mapstructure:"bigip.pool_member.availability"`
-	BigipPoolMemberConnectionCount    MetricConfig `mapstructure:"bigip.pool_member.connection.count"`
-	BigipPoolMemberDataTransmitted    MetricConfig `mapstructure:"bigip.pool_member.data.transmitted"`
-	BigipPoolMemberEnabled            MetricConfig `mapstructure:"bigip.pool_member.enabled"`
-	BigipPoolMemberPacketCount        MetricConfig `mapstructure:"bigip.pool_member.packet.count"`
-	BigipPoolMemberRequestCount       MetricConfig `mapstructure:"bigip.pool_member.request.count"`
-	BigipPoolMemberSessionCount       MetricConfig `mapstructure:"bigip.pool_member.session.count"`
-	BigipVirtualServerAvailability    MetricConfig `mapstructure:"bigip.virtual_server.availability"`
-	BigipVirtualServerConnectionCount MetricConfig `mapstructure:"bigip.virtual_server.connection.count"`
-	BigipVirtualServerDataTransmitted MetricConfig `mapstructure:"bigip.virtual_server.data.transmitted"`
-	BigipVirtualServerEnabled         MetricConfig `mapstructure:"bigip.virtual_server.enabled"`
-	BigipVirtualServerPacketCount     MetricConfig `mapstructure:"bigip.virtual_server.packet.count"`
-	BigipVirtualServerRequestCount    MetricConfig `mapstructure:"bigip.virtual_server.request.count"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		BigipNodeAvailability: MetricConfig{
-			Enabled: true,
-		},
-		BigipNodeConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipNodeDataTransmitted: MetricConfig{
-			Enabled: true,
-		},
-		BigipNodeEnabled: MetricConfig{
-			Enabled: true,
-		},
-		BigipNodePacketCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipNodeRequestCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipNodeSessionCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolAvailability: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolDataTransmitted: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolEnabled: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolPacketCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolRequestCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberAvailability: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberDataTransmitted: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberEnabled: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberPacketCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberRequestCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberSessionCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerAvailability: MetricConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerConnectionCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerDataTransmitted: MetricConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerEnabled: MetricConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerPacketCount: MetricConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerRequestCount: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for bigipreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	BigipNodeIPAddress            ResourceAttributeConfig `mapstructure:"bigip.node.ip_address"`
-	BigipNodeName                 ResourceAttributeConfig `mapstructure:"bigip.node.name"`
-	BigipPoolName                 ResourceAttributeConfig `mapstructure:"bigip.pool.name"`
-	BigipPoolMemberIPAddress      ResourceAttributeConfig `mapstructure:"bigip.pool_member.ip_address"`
-	BigipPoolMemberName           ResourceAttributeConfig `mapstructure:"bigip.pool_member.name"`
-	BigipVirtualServerDestination ResourceAttributeConfig `mapstructure:"bigip.virtual_server.destination"`
-	BigipVirtualServerName        ResourceAttributeConfig `mapstructure:"bigip.virtual_server.name"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		BigipNodeIPAddress: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		BigipNodeName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		BigipPoolName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberIPAddress: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		BigipPoolMemberName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerDestination: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		BigipVirtualServerName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeActiveStatus specifies the a value active.status attribute.
 type AttributeActiveStatus int
@@ -1693,12 +1514,6 @@ func newMetricBigipVirtualServerRequestCount(cfg MetricConfig) metricBigipVirtua
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1744,13 +1559,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 

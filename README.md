@@ -94,6 +94,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
+- [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:

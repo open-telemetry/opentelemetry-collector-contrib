@@ -26,6 +26,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -78,6 +79,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -137,6 +139,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: ~1.19.9
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -158,6 +161,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -229,6 +233,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -278,6 +283,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -297,6 +303,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -321,6 +328,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -379,6 +387,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -509,6 +518,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.19
+          cache: false
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
@@ -30,10 +19,10 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
-	f, ok := p.functions[inv.Function]
+func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
+	f, ok := p.functions[ed.Function]
 	if !ok {
-		return Expr[K]{}, fmt.Errorf("undefined function %v", inv.Function)
+		return Expr[K]{}, fmt.Errorf("undefined function %v", ed.Function)
 	}
 	args := f.CreateDefaultArguments()
 
@@ -43,12 +32,12 @@ func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
 		if reflect.TypeOf(args).Kind() != reflect.Pointer {
-			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", inv.Function)
+			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
 
-		err := p.buildArgs(inv, reflect.ValueOf(args).Elem())
+		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
-			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", inv.Function, err)
+			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", ed.Function, err)
 		}
 	}
 
@@ -60,9 +49,9 @@ func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
-func (p *Parser[K]) buildArgs(inv invocation, argsVal reflect.Value) error {
-	if len(inv.Arguments) != argsVal.NumField() {
-		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(inv.Arguments))
+func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
+	if len(ed.Arguments) != argsVal.NumField() {
+		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
 	}
 
 	argsType := argsVal.Type()
@@ -83,11 +72,11 @@ func (p *Parser[K]) buildArgs(inv invocation, argsVal reflect.Value) error {
 			return fmt.Errorf("ottlarg struct tag on field '%s' is not a valid integer: %w", argsType.Field(i).Name, err)
 		}
 
-		if argNum < 0 || argNum >= len(inv.Arguments) {
-			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(inv.Arguments))
+		if argNum < 0 || argNum >= len(ed.Arguments) {
+			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(ed.Arguments))
 		}
 
-		argVal := inv.Arguments[argNum]
+		argVal := ed.Arguments[argNum]
 
 		var val any
 		if fieldType.Kind() == reflect.Slice {
@@ -155,12 +144,36 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "FloatGetter"):
+		arg, err := buildSlice[FloatGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "FloatLikeGetter"):
+		arg, err := buildSlice[FloatLikeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "IntGetter"):
+		arg, err := buildSlice[IntGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "IntLikeGetter"):
+		arg, err := buildSlice[IntLikeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
 		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
 	}
 }
 
-// Handle interfaces that can be passed as arguments to OTTL function invocations.
+// Handle interfaces that can be passed as arguments to OTTL functions.
 func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
@@ -193,12 +206,30 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardStringLikeGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "FloatGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardTypeGetter[K, float64]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "FloatLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardFloatLikeGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "IntGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
 		return StandardTypeGetter[K, int64]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "IntLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardIntLikeGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "PMapGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {

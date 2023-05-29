@@ -1,0 +1,5 @@
+resource_attributes:
+  res.attr1:
+    description: Resource attribute 1.
+    type: string
+    enabled: true

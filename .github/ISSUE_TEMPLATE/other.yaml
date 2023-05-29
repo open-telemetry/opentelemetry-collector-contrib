@@ -64,6 +64,7 @@ body:
       - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
+      - exporter/syslog
       - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
@@ -138,10 +139,13 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
+      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
+      - receiver/apachespark
       - receiver/awscloudwatch
+      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
@@ -210,6 +214,7 @@ body:
       - receiver/snmp
       - receiver/snowflake
       - receiver/solace
+      - receiver/splunkenterprise
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver

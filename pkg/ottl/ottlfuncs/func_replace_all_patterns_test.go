@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -142,7 +131,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			},
 		},
 		{
-			name:        "expand capturing groups",
+			name:        "expand capturing groups in values",
 			target:      target,
 			mode:        modeValue,
 			pattern:     `world(\d)`,
@@ -155,6 +144,21 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+			},
+		},
+		{
+			name:        "expand capturing groups in keys",
+			target:      target,
+			mode:        modeKey,
+			pattern:     `test(\d)`,
+			replacement: "test-$1",
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test-2", "hello")
+				expectedMap.PutStr("test-3", "goodbye world1 and world2")
+				expectedMap.PutInt("test-4", 1234)
+				expectedMap.PutDouble("test-5", 1234)
+				expectedMap.PutBool("test-6", true)
 			},
 		},
 		{

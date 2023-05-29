@@ -6,77 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for filestats metrics.
-type MetricsConfig struct {
-	FileAtime MetricConfig `mapstructure:"file.atime"`
-	FileCtime MetricConfig `mapstructure:"file.ctime"`
-	FileMtime MetricConfig `mapstructure:"file.mtime"`
-	FileSize  MetricConfig `mapstructure:"file.size"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		FileAtime: MetricConfig{
-			Enabled: false,
-		},
-		FileCtime: MetricConfig{
-			Enabled: false,
-		},
-		FileMtime: MetricConfig{
-			Enabled: true,
-		},
-		FileSize: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for filestats resource attributes.
-type ResourceAttributesConfig struct {
-	FileName ResourceAttributeConfig `mapstructure:"file.name"`
-	FilePath ResourceAttributeConfig `mapstructure:"file.path"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		FileName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		FilePath: ResourceAttributeConfig{
-			Enabled: false,
-		},
-	}
-}
 
 type metricFileAtime struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -282,12 +215,6 @@ func newMetricFileSize(cfg MetricConfig) metricFileSize {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -310,13 +237,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -397,7 +317,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/filestats")
+	ils.Scope().SetName("otelcol/filestatsreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFileAtime.emit(ils.Metrics())

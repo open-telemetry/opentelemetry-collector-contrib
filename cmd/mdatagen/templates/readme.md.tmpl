@@ -9,7 +9,7 @@
 {{- $idx = inc $idx }}
 {{- end }}
 {{- if ne $class "cmd" }}
-| Distributions | [{{ stringsJoin .Status.Distributions "], [" }}] |
+| Distributions | [{{ stringsJoin .Status.SortedDistributions "], [" }}] |
 {{- end }}
 {{- if .Status.Warnings }}
 | Warnings      | [{{ stringsJoin .Status.Warnings ", " }}](#warnings) |
@@ -17,7 +17,7 @@
 {{range $stability, $val := .Status.Stability}}
 [{{ $stability }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ $stability }}
 {{- end }}
-{{- range .Status.Distributions }}
+{{- range .Status.SortedDistributions }}
 [{{.}}]: {{ distroURL . }}
 {{- end }}
 {{- end }}

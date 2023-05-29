@@ -4,5 +4,5 @@ status:
   class: processor
   stability:
     beta: [traces]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo]
   warnings: [Statefulness]
