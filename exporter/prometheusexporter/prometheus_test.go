@@ -71,9 +71,8 @@ func TestPrometheusExporter(t *testing.T) {
 				require.Error(t, err)
 				assert.Equal(t, tt.wantErr, err.Error())
 				continue
-			} else {
-				require.NoError(t, err)
 			}
+			require.NoError(t, err)
 
 			assert.NotNil(t, exp)
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
