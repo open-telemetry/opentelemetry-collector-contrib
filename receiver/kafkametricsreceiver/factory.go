@@ -15,8 +15,6 @@ import (
 )
 
 const (
-	typeStr           = "kafkametrics"
-	stability         = component.StabilityLevelBeta
 	defaultBroker     = "localhost:9092"
 	defaultGroupMatch = ".*"
 	defaultTopicMatch = "^[^_].*$"
@@ -26,14 +24,14 @@ const (
 // NewFactory creates kafkametrics receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Brokers:                   []string{defaultBroker},
 		GroupMatch:                defaultGroupMatch,
 		TopicMatch:                defaultTopicMatch,

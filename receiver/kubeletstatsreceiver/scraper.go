@@ -59,7 +59,7 @@ func newKubletScraper(
 			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
 	}
-	return scraperhelper.NewScraper(typeStr, ks.scrape)
+	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
 }
 
 func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {

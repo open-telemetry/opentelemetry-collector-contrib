@@ -26,14 +26,25 @@ Journald receiver requires that:
 | `directory`                         | `/run/log/journal` or `/run/journal` | A directory containing journal files to read entries from                                                                                                                                                                                |
 | `files`                             |                                      | A list of journal files to read entries from                                                                                                                                                                                             |
 | `start_at`                          | `end`                                | At startup, where to start reading logs from the file. Options are beginning or end                                                                                                                                                      |
-| `units`                             |                                      | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples, if you want to use it together with `matches` and/or `priority`.                                                           |
+| `units`                             |                                      | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                                            |
 | `matches`                           |                                      | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                  |
-| `priority`                          | `info`                               | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples, if you want to use it together with `units` and/or `matches`.                                            |
+| `priority`                          | `info`                               | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                          |
+| `grep`                              |                                      | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                      |
 | `storage`                           | none                                 | The ID of a storage extension to be used to store cursors. Cursors allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage cursors in memory only. |
 | `retry_on_failure.enabled`          | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                  |
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
 | `retry_on_failure.max_interval`     | `30 seconds`                         | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                     |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`                          | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                            |
+| `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details                                                                                                              |
+
+### Operators
+
+Each operator performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
+
+- Every operator has a `type`.
+- Every operator can be given a unique `id`. If you use the same type of operator more than once in a pipeline, you must specify an `id`. Otherwise, the `id` defaults to the value of `type`.
+- Operators will output to the next operator in the pipeline. The last operator in the pipeline will emit from the receiver. Optionally, the `output` parameter can be used to specify the `id` of another operator to which logs will be passed directly.
+- Only parsers and general purpose operators should be used.
 
 ### Example Configurations
 
@@ -77,6 +88,8 @@ AND
 ( units[0] OR units[1] OR units[2] OR ... units[U] )
 AND
 ( matches[0] OR matches[1] OR matches[2] OR ... matches[M] )
+AND
+( grep )
 ```
 
 Consider the following example:

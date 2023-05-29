@@ -20,6 +20,7 @@ const (
 	defaultTopMetricsQueryMaxRows            = 100
 	defaultBackfillEnabled                   = false
 	defaultHideTopnLockstatsRowrangestartkey = false
+	defaultTruncateText                      = false
 )
 
 func NewFactory() receiver.Factory {
@@ -35,6 +36,7 @@ func createDefaultConfig() component.Config {
 		TopMetricsQueryMaxRows:            defaultTopMetricsQueryMaxRows,
 		BackfillEnabled:                   defaultBackfillEnabled,
 		HideTopnLockstatsRowrangestartkey: defaultHideTopnLockstatsRowrangestartkey,
+		TruncateText:                      defaultTruncateText,
 	}
 }
 

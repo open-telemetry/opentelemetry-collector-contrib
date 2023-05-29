@@ -17,16 +17,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "httpcheck"
-)
-
 var errConfigNotHTTPCheck = errors.New("config was not a HTTP check receiver config")
 
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
@@ -53,7 +49,7 @@ func createMetricsReceiver(ctx context.Context, params receiver.CreateSettings, 
 	}
 
 	httpcheckScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(typeStr, httpcheckScraper.scrape, scraperhelper.WithStart(httpcheckScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, httpcheckScraper.scrape, scraperhelper.WithStart(httpcheckScraper.start))
 	if err != nil {
 		return nil, err
 	}

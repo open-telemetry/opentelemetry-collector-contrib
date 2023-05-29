@@ -22,7 +22,7 @@ import (
 
 const rabbitmqPort = "15672"
 
-func TestRabbitmqIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -52,7 +52,5 @@ func TestRabbitmqIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run(t)
 }

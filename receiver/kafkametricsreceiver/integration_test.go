@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -40,7 +40,7 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func TestIntegrationSingleNode(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	t.Skip("Skip failing test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17065")
 	ctx := context.Background()
 

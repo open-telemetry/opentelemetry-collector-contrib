@@ -23,6 +23,7 @@ type Config struct {
 	CardinalityTotalLimit             int       `mapstructure:"cardinality_total_limit"`
 	Projects                          []Project `mapstructure:"projects"`
 	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
+	TruncateText                      bool      `mapstructure:"truncate_text"`
 }
 
 type Project struct {

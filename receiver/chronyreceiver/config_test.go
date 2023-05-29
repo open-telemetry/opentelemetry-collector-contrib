@@ -29,12 +29,12 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "custom").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "custom").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		Endpoint:                  "udp://localhost:3030",
 		Timeout:                   10 * time.Second,

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -23,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			configPath: "config_traces.yaml",
-			id:         component.NewIDWithName(typeStr, ""),
+			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultExporters: []string{"otlp"},
 				AttributeSource:  "context",
@@ -43,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_metrics.yaml",
-			id:         component.NewIDWithName(typeStr, ""),
+			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultExporters: []string{"logging/default"},
 				AttributeSource:  "context",
@@ -63,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_logs.yaml",
-			id:         component.NewIDWithName(typeStr, ""),
+			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultExporters: []string{"logging/default"},
 				AttributeSource:  "context",
@@ -83,7 +84,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config.yaml",
-			id:         component.NewIDWithName(typeStr, ""),
+			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultExporters: []string{"jaeger"},
 				AttributeSource:  resourceAttributeSource,
@@ -99,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config.yaml",
-			id:         component.NewIDWithName(typeStr, "ottl"),
+			id:         component.NewIDWithName(metadata.Type, "ottl"),
 			expected: &Config{
 				DefaultExporters: []string{"jaeger"},
 				ErrorMode:        ottl.PropagateError,

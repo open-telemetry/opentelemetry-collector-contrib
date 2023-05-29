@@ -322,7 +322,7 @@ func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, 
 	}
 }
 
-func TestPostgresIntegrationMetrics(t *testing.T) {
+func TestPostgresqlIntegrationMetrics(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -429,7 +429,6 @@ func TestPostgresIntegrationMetrics(t *testing.T) {
 func TestOracleDBIntegrationMetrics(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithDumpActualOnFailure(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{

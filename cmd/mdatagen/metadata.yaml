@@ -7,7 +7,7 @@ sem_conv_version: 1.9.0
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    development: [metrics]
 
 resource_attributes:
   string.resource.attr:

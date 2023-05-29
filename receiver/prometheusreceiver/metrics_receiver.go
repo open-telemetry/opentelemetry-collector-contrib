@@ -17,6 +17,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
+	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
@@ -270,7 +271,12 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 	if err != nil {
 		return err
 	}
-	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
+	r.scrapeManager = scrape.NewManager(&scrape.Options{
+		PassMetadataInContext: true,
+		HTTPClientOptions: []commonconfig.HTTPClientOption{
+			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
+		},
+	}, logger, store)
 
 	go func() {
 		// The scrape manager needs to wait for the configuration to be loaded before beginning

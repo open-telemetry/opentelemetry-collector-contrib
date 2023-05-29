@@ -127,8 +127,7 @@ Number of stages the DAGScheduler is either running or needs to run.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| waiting | Whether the stages for which the metric was recorded are waiting to be run by the DAGScheduler. | Any Bool |
-| running | Whether the stages for which the metric was recorded are currently being run by the DAGScheduler. | Any Bool |
+| status | The status of the DAGScheduler stages for which the metric was recorded. | Str: ``waiting``, ``running`` |
 
 ### spark.driver.dag_scheduler.stage.failed
 

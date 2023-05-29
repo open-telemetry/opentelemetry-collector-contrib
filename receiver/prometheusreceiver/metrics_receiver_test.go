@@ -4,14 +4,24 @@
 package prometheusreceiver
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	gokitlog "github.com/go-kit/log"
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -1417,7 +1427,6 @@ func TestUntypedMetrics(t *testing.T) {
 	}
 
 	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
-
 }
 
 func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -1511,4 +1520,41 @@ func TestGCInterval(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUserAgent(t *testing.T) {
+	uaCh := make(chan string, 1)
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case uaCh <- r.UserAgent():
+		default:
+		}
+	}))
+	defer svr.Close()
+
+	cfg, err := promConfig.Load(fmt.Sprintf(`
+scrape_configs:
+- job_name: foo
+  scrape_interval: 100ms
+  static_configs:
+    - targets:
+      - %s
+        `, strings.TrimPrefix(svr.URL, "http://")), false, gokitlog.NewNopLogger())
+	require.NoError(t, err)
+	set := receivertest.NewNopCreateSettings()
+	receiver := newPrometheusReceiver(set, &Config{
+		PrometheusConfig: cfg,
+	}, new(consumertest.MetricsSink), featuregate.GlobalRegistry())
+
+	ctx := context.Background()
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	})
+
+	gotUA := <-uaCh
+
+	require.Contains(t, gotUA, set.BuildInfo.Command)
+	require.Contains(t, gotUA, set.BuildInfo.Version)
 }

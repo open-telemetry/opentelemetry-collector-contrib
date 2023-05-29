@@ -23,7 +23,7 @@ import (
 
 const riakPort = "8098"
 
-func TestRiakIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -46,7 +46,5 @@ func TestRiakIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17556
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run(t)
 }

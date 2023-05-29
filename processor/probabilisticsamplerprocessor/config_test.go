@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -21,7 +23,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				SamplingPercentage: 15.3,
 				HashSeed:           22,
@@ -29,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "logs"),
+			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				SamplingPercentage: 15.3,
 				HashSeed:           22,
@@ -65,7 +67,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	factories.Processors[metadata.Type] = factory
 
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
 	require.ErrorContains(t, err, "negative sampling rate: -15.30")

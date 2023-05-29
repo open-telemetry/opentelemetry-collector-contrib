@@ -22,7 +22,7 @@ import (
 
 const nginxPort = "80"
 
-func TestNginxIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
