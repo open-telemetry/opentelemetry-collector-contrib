@@ -86,6 +86,7 @@ type processHandle interface {
 	NumThreads() (int32, error)
 	CreateTime() (int64, error)
 	Parent() (*process.Process, error)
+	Ppid() (int32, error)
 	PageFaults() (*process.PageFaultsStat, error)
 	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
 	NumFDs() (int32, error)
@@ -123,17 +124,12 @@ func parentPid(handle processHandle, pid int32) (int32, error) {
 	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
 		return 0, nil
 	}
-	parent, err := handle.Parent()
+	pPid, err := handle.Ppid()
 
 	if err != nil {
 		// return pid of -1 along with error for all other problems retrieving parent pid
-		return -1, err
+		return pPid, err
 	}
 
-	// if a process does not have a parent return 0
-	if parent == nil {
-		return 0, nil
-	}
-
-	return parent.Pid, nil
+	return pPid, nil
 }
