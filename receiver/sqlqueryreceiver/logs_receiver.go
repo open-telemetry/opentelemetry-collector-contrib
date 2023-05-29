@@ -20,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/observability"
 )
 
 type logsReceiver struct {
@@ -94,14 +93,7 @@ func (receiver *logsReceiver) Start(ctx context.Context, host component.Host) er
 	for _, queryReceiver := range receiver.queryReceivers {
 		err := queryReceiver.start(ctx)
 		if err != nil {
-			if err = observability.RecordErrors(observability.StartError, receiver.id.String(), queryReceiver.ID()); err != nil {
-				receiver.settings.Logger.Debug("error recording metric for errors count", zap.Error(err))
-			}
 			return err
-		}
-
-		if err := observability.RecordNoErrors(observability.StartError, receiver.id.String(), queryReceiver.ID()); err != nil {
-			receiver.settings.Logger.Debug("error recording metric for errors count", zap.Error(err))
 		}
 	}
 	receiver.startCollecting()
@@ -148,23 +140,10 @@ func (receiver *logsReceiver) collect() {
 	logsChannel := make(chan plog.Logs)
 	for _, queryReceiver := range receiver.queryReceivers {
 		go func(queryReceiver *logsQueryReceiver) {
-
 			logs, err := queryReceiver.collect(context.Background())
 			if err != nil {
 				receiver.settings.Logger.Error("error collecting logs", zap.Error(err), zap.String("query", queryReceiver.ID()))
-				if err := observability.RecordErrors(observability.CollectError, receiver.id.String(), queryReceiver.ID()); err != nil {
-					receiver.settings.Logger.Debug("error for recording metric for errors count", zap.Error(err))
-				}
 			}
-
-			if err := observability.RecordNoErrors(observability.CollectError, receiver.id.String(), queryReceiver.ID()); err != nil {
-				receiver.settings.Logger.Debug("error for recording metric for errors count", zap.Error(err))
-			}
-
-			if err := observability.RecordAcceptedLogs(int64(logs.LogRecordCount()), receiver.id.String(), queryReceiver.id); err != nil {
-				receiver.settings.Logger.Debug("error recording metric for number of collected logs", zap.Error(err))
-			}
-
 			logsChannel <- logs
 		}(queryReceiver)
 	}
