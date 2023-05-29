@@ -5,7 +5,7 @@ change_type: enhancement
 component: exporter/awss3exporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support Configure the exporter to export spans to a custom endpoint
+note: Allow custom endpoints to be configured for exporting spans
 
 # One or more tracking issues related to the change
 issues: [21833]
