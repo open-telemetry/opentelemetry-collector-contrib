@@ -47,7 +47,7 @@ func newMySQLScraper(
 }
 
 // start starts the scraper by initializing the db client connection.
-func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
+func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 	sqlclient := newMySQLClient(m.config)
 
 	err := sqlclient.Connect()
