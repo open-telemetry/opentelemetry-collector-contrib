@@ -5,7 +5,6 @@ package splunkhecreceiver
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
