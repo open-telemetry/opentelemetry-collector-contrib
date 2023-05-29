@@ -21,8 +21,7 @@ type SpanConverter struct {
 	logger *zap.Logger
 }
 
-func (c *SpanConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
-
+func (c *SpanConverter) AcceptsSpans(_ pcommon.Map, _ ptrace.SpanSlice) bool {
 	return true
 }
 
