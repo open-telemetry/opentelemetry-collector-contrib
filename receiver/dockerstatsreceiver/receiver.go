@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	dtypes "github.com/docker/docker/api/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -116,6 +117,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
+	r.recordBaseMetrics(now, container.ContainerJSONBase)
 
 	// Always-present resource attrs + the user-configured resource attrs
 	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
@@ -263,5 +265,16 @@ func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.Pi
 		if pidsStats.Limit != 0 {
 			r.mb.RecordContainerPidsLimitDataPoint(now, int64(pidsStats.Limit))
 		}
+	}
+}
+
+func (r *receiver) recordBaseMetrics(now pcommon.Timestamp, base *types.ContainerJSONBase) {
+	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
+	if err != nil {
+		// value not available or invalid
+		return
+	}
+	if v := now.AsTime().Sub(t); v > 0 {
+		r.mb.RecordContainerUptimeDataPoint(now, v.Seconds())
 	}
 }
