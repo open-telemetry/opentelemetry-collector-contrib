@@ -51,7 +51,7 @@ func newLogsExporter(config *Config, settings component.TelemetrySettings, build
 	return e
 }
 
-func (m *mezmoExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
+func (m *mezmoExporter) pushLogData(_ context.Context, ld plog.Logs) error {
 	m.wg.Add(1)
 	defer m.wg.Done()
 
@@ -158,12 +158,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 		}
 	}
 
-	str := b.String() + "]}"
-	if errs = m.sendLinesToMezmo(str); errs != nil {
-		return errs
-	}
-
-	return nil
+	return m.sendLinesToMezmo(b.String() + "]}")
 }
 
 func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {

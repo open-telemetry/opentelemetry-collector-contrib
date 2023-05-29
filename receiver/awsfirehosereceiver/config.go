@@ -32,8 +32,5 @@ func (c *Config) Validate() error {
 	if c.RecordType == "" {
 		return errors.New("must specify record type")
 	}
-	if err := validateRecordType(c.RecordType); err != nil {
-		return err
-	}
-	return nil
+	return validateRecordType(c.RecordType)
 }
