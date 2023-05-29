@@ -589,8 +589,8 @@ github.com/prometheus/common v0.4.1/go.mod h1:TNfzLD0ON7rHzMJeJkieUDPYmFC7Snx/y8
 github.com/prometheus/common v0.10.0/go.mod h1:Tlit/dnDKsSWFlCLTWaA1cyBgKHSMdTB80sz/V91rCo=
 github.com/prometheus/common v0.26.0/go.mod h1:M7rCNAaPfAosfx8veZJCuw84e35h3Cfd9VFqTh1DIvc=
 github.com/prometheus/common v0.32.1/go.mod h1:vu+V0TpY+O6vW9J44gczi3Ap/oXXR10b+M/gUGO4Hls=
-github.com/prometheus/common v0.43.0 h1:iq+BVjvYLei5f27wiuNiB1DN6DYQkp1c8Bx0Vykh5us=
-github.com/prometheus/common v0.43.0/go.mod h1:NCvr5cQIh3Y/gy73/RdVtC9r8xxrxwJnB+2lB3BxrFc=
+github.com/prometheus/common v0.44.0 h1:+5BrQJwiBB9xsMygAB3TNvpQKOwlkc25LbISbrdOOfY=
+github.com/prometheus/common v0.44.0/go.mod h1:ofAIvZbQ1e/nugmZGz4/qCb9Ap1VoSTIO7x0VV9VvuY=
 github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
 github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsTZCD3I8kEA=
 github.com/prometheus/procfs v0.1.3/go.mod h1:lV6e/gmhEcM9IjHGsFOCxxuZ+z1YqCvr4OA4YeYWdaU=
@@ -751,8 +751,8 @@ go.opentelemetry.io/build-tools/issuegenerator v0.7.0 h1:p4V6PhTQmp5kWBRqYf+bd6k
 go.opentelemetry.io/build-tools/issuegenerator v0.7.0/go.mod h1:dBqO2CqMnVm35etsxOYZqNtA+4ds5wGoELSAsau7itY=
 go.opentelemetry.io/build-tools/multimod v0.7.0 h1:Af1wVNaJRMVqRkiiRjeMrAfKJDejvpsLoBF9H5UrjSo=
 go.opentelemetry.io/build-tools/multimod v0.7.0/go.mod h1:WAwBtJC42JbRDzfi3erCYQ9M1RnyoIcqI/H8eqBBPQo=
-go.opentelemetry.io/collector/cmd/builder v0.77.0 h1:D4J7PeA/P2OpkfEMx+iud5ZvPTcu969uWDWzuqv/JwE=
-go.opentelemetry.io/collector/cmd/builder v0.77.0/go.mod h1:11CF/8SAbJ/K2oQZvXI8bHOjD5okIAJRcggIhV170Po=
+go.opentelemetry.io/collector/cmd/builder v0.78.2 h1:IxXxT8005O1lup7yGx1Z01nESVxgggaK7XWCh6IeMeI=
+go.opentelemetry.io/collector/cmd/builder v0.78.2/go.mod h1:jk3nRQZUXd61y9qWmbf42S7M6+Q4SdGuF3nsuRxCigA=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
