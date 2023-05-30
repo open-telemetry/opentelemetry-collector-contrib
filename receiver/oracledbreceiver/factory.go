@@ -50,16 +50,15 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
-		sqlCfg.DataSource = getDataSource(*sqlCfg)
 		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsBuilderConfig, settings)
 
-		instanceName, err := getInstanceName(sqlCfg.DataSource)
+		instanceName, err := getInstanceName(getDataSource(*sqlCfg))
 		if err != nil {
 			return nil, err
 		}
 
 		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
-			return sqlOpenerFunc(sqlCfg.DataSource)
+			return sqlOpenerFunc(getDataSource(*sqlCfg))
 		}, clientProviderFunc, instanceName)
 		if err != nil {
 			return nil, err
