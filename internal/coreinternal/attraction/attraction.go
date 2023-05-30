@@ -17,7 +17,7 @@ import (
 
 var enableSha256Gate = featuregate.GlobalRegistry().MustRegister(
 	"coreinternal.attraction.hash.sha256",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, switches hashing algorithm from SHA-1 to SHA-2 256"),
 )
 
