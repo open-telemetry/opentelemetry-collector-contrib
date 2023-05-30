@@ -5,7 +5,7 @@ change_type: "enhancement"
 component: "redisreceiver"
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds service.instance.id as a resource parameter to redis receiver.
+note: Adds service.instance.id as an additional resource attribute (disabled by default) to redis receiver.
 
 # One or more tracking issues related to the change
 issues: [22044]
