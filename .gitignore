@@ -28,9 +28,10 @@ dist/
 
 # Coverage
 coverage.txt
-integration-coverage.txt
 coverage.html
 integration-coverage.html
+coverage.out
+*-coverage.txt
 
 # Wix
 *.wixobj

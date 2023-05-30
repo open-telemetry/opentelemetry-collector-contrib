@@ -18,6 +18,8 @@ import (
 	_ "github.com/google/addlicense"
 	_ "github.com/jcchavezs/porto/cmd/porto"
 	_ "github.com/jstemmer/go-junit-report"
+	_ "github.com/ory/go-acc"
+	_ "github.com/wadey/gocovmerge"
 	_ "go.opentelemetry.io/build-tools/checkdoc"
 	_ "go.opentelemetry.io/build-tools/chloggen"
 	_ "go.opentelemetry.io/build-tools/crosslink"

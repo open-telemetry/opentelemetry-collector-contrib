@@ -255,6 +255,14 @@ jobs:
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest GROUP=${{ matrix.group }}
+      - name: Run Unit Tests With Coverage
+        run: make gotest-with-cover
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./${{ matrix.group }}-coverage.txt
+          fail_ci_if_error: true
+          verbose: true
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     strategy:

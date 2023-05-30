@@ -50,7 +50,9 @@ MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
 LINT                := $(TOOLS_BIN_DIR)/golangci-lint
 MULITMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
+GO_ACC              := $(TOOLS_BIN_DIR)/go-acc
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
+GOCOVMERGE          := $(TOOLS_BIN_DIR)/gocovmerge
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
@@ -96,7 +98,11 @@ common: lint
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) ./...
-	
+
+.PHONY: test-with-cover
+test-with-cover: $(GO_ACC)
+	$(GO_ACC) --output=coverage.out ./...
+
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
