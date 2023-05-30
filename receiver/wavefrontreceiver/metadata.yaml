@@ -4,6 +4,6 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, sumo]
   
 
