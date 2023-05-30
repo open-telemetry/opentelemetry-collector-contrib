@@ -92,6 +92,11 @@ type Supervisor struct {
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
+
+	shuttingDown bool
+
+	agentHasStarted               bool
+	agentStartHealthCheckAttempts int
 }
 
 func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
@@ -486,6 +491,9 @@ func (s *Supervisor) startAgent() {
 
 		return
 	}
+
+	s.agentHasStarted = false
+	s.agentStartHealthCheckAttempts = 0
 	s.startedAt = time.Now()
 	s.startHealthCheckTicker()
 
@@ -525,9 +533,15 @@ func (s *Supervisor) healthCheck() {
 
 	if err != nil {
 		health.Healthy = false
-		health.LastError = err.Error()
-		s.logger.Error("Agent is not healthy", zap.Error(err))
+		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
+			health.LastError = "Agent is starting"
+			s.agentStartHealthCheckAttempts += 1
+		} else {
+			health.LastError = err.Error()
+			s.logger.Error("Agent is not healthy", zap.Error(err))
+		}
 	} else {
+		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
 	}
@@ -558,6 +572,10 @@ func (s *Supervisor) runAgentProcess() {
 			s.startAgent()
 
 		case <-s.commander.Done():
+			if s.shuttingDown {
+				break
+			}
+
 			s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
 			errMsg := fmt.Sprintf(
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
@@ -613,6 +631,7 @@ func (s *Supervisor) writeEffectiveConfigToFile(cfg string, filePath string) {
 
 func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
+	s.shuttingDown = true
 	if s.commander != nil {
 		err := s.commander.Stop(context.Background())
 
@@ -620,6 +639,7 @@ func (s *Supervisor) Shutdown() {
 			s.logger.Error("Could not stop agent process", zap.Error(err))
 		}
 	}
+
 	if s.opampClient != nil {
 		err := s.opampClient.SetHealth(
 			&protobufs.AgentHealth{
