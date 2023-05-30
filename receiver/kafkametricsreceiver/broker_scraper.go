@@ -29,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
-type saramaMetrics map[string]map[string]interface{}
+type saramaMetrics map[string]map[string]interface{} // saramaMetrics is a map of metric name to tags
 
 type brokerScraper struct {
 	client       sarama.Client
@@ -37,6 +37,18 @@ type brokerScraper struct {
 	config       Config
 	saramaConfig *sarama.Config
 	mb           *metadata.MetricsBuilder
+}
+
+var nrMetricsPrefix = [...]string{
+	"consumer-fetch-rate-for-broker-",
+	"incoming-byte-rate-for-broker-",
+	"outgoing-byte-rate-for-broker-",
+	"request-rate-for-broker-",
+	"response-rate-for-broker-",
+	"response-size-for-broker-",
+	"request-size-for-broker-",
+	"requests-in-flight-for-broker-",
+	"request-latency-in-ms-for-broker-",
 }
 
 func (s *brokerScraper) Name() string {
@@ -55,91 +67,49 @@ func (s *brokerScraper) shutdown(context.Context) error {
 	return nil
 }
 
-func (s *brokerScraper) scrapeConsumerFetch(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("consumer-fetch-rate-for-broker-", brokerID)
+func (s *brokerScraper) scrapeMetric(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64, prefix string) {
+	key := fmt.Sprint(prefix, brokerID)
 
 	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean.rate"].(float64); ok {
-			s.mb.RecordKafkaBrokersConsumerFetchRateDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeIncomingByteRate(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("incoming-byte-rate-for-broker-", brokerID)
-
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean.rate"].(float64); ok {
-			s.mb.RecordKafkaBrokersIncomingByteRateDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeOutgoingByteRate(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("outgoing-byte-rate-for-broker-", brokerID)
-
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean.rate"].(float64); ok {
-			s.mb.RecordKafkaBrokersOutgoingByteRateDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeRequestRate(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("request-rate-for-broker-", brokerID)
-
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean.rate"].(float64); ok {
-			s.mb.RecordKafkaBrokersRequestRateDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeResponseRate(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("response-rate-for-broker-", brokerID)
-
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean.rate"].(float64); ok {
-			s.mb.RecordKafkaBrokersResponseRateDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeResponseSize(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("response-size-for-broker-", brokerID)
-
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean"].(float64); ok {
-			s.mb.RecordKafkaBrokersResponseSizeDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeRequestSize(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("request-size-for-broker-", brokerID)
-
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean"].(float64); ok {
-			s.mb.RecordKafkaBrokersRequestSizeDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeRequestsInFlight(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("requests-in-flight-for-broker-", brokerID)
-
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["count"].(int64); ok {
-			s.mb.RecordKafkaBrokersRequestsInFlightDataPoint(now, v, brokerID)
-		}
-	}
-}
-
-func (s *brokerScraper) scrapeRequestLatency(now pcommon.Timestamp, allMetrics saramaMetrics, brokerID int64) {
-	key := fmt.Sprint("request-latency-in-ms-for-broker-", brokerID)
-	if metric, ok := allMetrics[key]; ok {
-		if v, ok := metric["mean"].(float64); ok {
-			s.mb.RecordKafkaBrokersRequestLatencyDataPoint(now, v, brokerID)
+		switch prefix {
+		case "consumer-fetch-rate-for-broker-":
+			if v, ok := metric["mean.rate"].(float64); ok {
+				s.mb.RecordKafkaBrokersConsumerFetchRateDataPoint(now, v, brokerID)
+			}
+		case "incoming-byte-rate-for-broker-":
+			if v, ok := metric["mean.rate"].(float64); ok {
+				s.mb.RecordKafkaBrokersIncomingByteRateDataPoint(now, v, brokerID)
+			}
+		case "outgoing-byte-rate-for-broker-":
+			if v, ok := metric["mean.rate"].(float64); ok {
+				s.mb.RecordKafkaBrokersOutgoingByteRateDataPoint(now, v, brokerID)
+			}
+		case "request-rate-for-broker-":
+			if v, ok := metric["mean.rate"].(float64); ok {
+				s.mb.RecordKafkaBrokersRequestRateDataPoint(now, v, brokerID)
+			}
+		case "response-rate-for-broker-":
+			if v, ok := metric["mean.rate"].(float64); ok {
+				s.mb.RecordKafkaBrokersResponseRateDataPoint(now, v, brokerID)
+			}
+		case "response-size-for-broker-":
+			if v, ok := metric["mean"].(float64); ok {
+				s.mb.RecordKafkaBrokersResponseSizeDataPoint(now, v, brokerID)
+			}
+		case "request-size-for-broker-":
+			if v, ok := metric["mean"].(float64); ok {
+				s.mb.RecordKafkaBrokersRequestSizeDataPoint(now, v, brokerID)
+			}
+		case "requests-in-flight-for-broker-":
+			if v, ok := metric["count"].(int64); ok {
+				s.mb.RecordKafkaBrokersRequestsInFlightDataPoint(now, v, brokerID)
+			}
+		case "request-latency-in-ms-for-broker-":
+			if v, ok := metric["mean"].(float64); ok {
+				s.mb.RecordKafkaBrokersRequestLatencyDataPoint(now, v, brokerID)
+			}
+		default:
+			fmt.Printf("undefined for prefix %s\n", prefix)
 		}
 	}
 }
@@ -162,18 +132,11 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-
 	for _, broker := range brokers {
 		brokerID := int64(broker.ID())
-		s.scrapeConsumerFetch(now, allMetrics, brokerID)
-		s.scrapeIncomingByteRate(now, allMetrics, brokerID)
-		s.scrapeOutgoingByteRate(now, allMetrics, brokerID)
-		s.scrapeRequestLatency(now, allMetrics, brokerID)
-		s.scrapeRequestRate(now, allMetrics, brokerID)
-		s.scrapeRequestSize(now, allMetrics, brokerID)
-		s.scrapeRequestsInFlight(now, allMetrics, brokerID)
-		s.scrapeResponseRate(now, allMetrics, brokerID)
-		s.scrapeResponseSize(now, allMetrics, brokerID)
+		for _, prefix := range nrMetricsPrefix {
+			s.scrapeMetric(now, allMetrics, brokerID, prefix)
+		}
 	}
 
 	brokerCount := int64(len(brokers))
