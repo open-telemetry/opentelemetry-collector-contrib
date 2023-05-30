@@ -37,7 +37,6 @@ type Commander struct {
 	args    []string
 	cmd     *exec.Cmd
 	doneCh  chan struct{}
-	waitCh  chan struct{}
 	running *atomic.Int64
 }
 
@@ -72,8 +71,7 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd.Stdout = logFile
 	c.cmd.Stderr = logFile
 
-	c.doneCh = make(chan struct{}, 1)
-	c.waitCh = make(chan struct{})
+	c.doneCh = make(chan struct{})
 
 	if err := c.cmd.Start(); err != nil {
 		return err
@@ -108,9 +106,8 @@ func (c *Commander) watch() {
 		c.logger.Error("An error occurred while watching the agent process", zap.Error(err))
 	}
 
-	c.doneCh <- struct{}{}
 	c.running.Store(0)
-	close(c.waitCh)
+	close(c.doneCh)
 }
 
 // Done returns a channel that will send a signal when the Agent process is finished.
@@ -177,7 +174,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	}()
 
 	// Wait for process to terminate
-	<-c.waitCh
+	<-c.doneCh
 
 	c.running.Store(0)
 
