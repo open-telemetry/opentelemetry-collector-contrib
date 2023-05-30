@@ -1,4 +1,10 @@
-name: activedirectorydsreceiver
+type: active_directory_ds
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 attributes:
   direction:

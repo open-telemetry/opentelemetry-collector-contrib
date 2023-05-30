@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -19,8 +8,11 @@ import (
 	"strings"
 
 	"github.com/grafana/loki/pkg/push"
+	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type PushRequest struct {
@@ -62,25 +54,14 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
+		resource := rls.At(i).Resource()
 
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
 			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
-
-				// similarly, we may remove attributes, so change only our version
-				log := plog.NewLogRecord()
-				logs.At(k).CopyTo(log)
-
-				// we may remove attributes, so we make a copy and change our version
-				resource := pcommon.NewResource()
-				rls.At(i).Resource().CopyTo(resource)
-
-				// adds level attribute from log.severityNumber
-				addLogLevelAttributeAndHint(log)
-
-				// resolve tenant and get/create a push request group
-				tenant := getTenantFromTenantHint(log.Attributes(), resource.Attributes())
+				log := logs.At(k)
+				tenant := GetTenantFromTenantHint(log.Attributes(), resource.Attributes())
 				group, ok := groups[tenant]
 				if !ok {
 					group = pushRequestGroup{
@@ -90,16 +71,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 					groups[tenant] = group
 				}
 
-				format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
-
-				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
-				// remove the attributes that were promoted to labels
-				removeAttributes(log.Attributes(), mergedLabels)
-				removeAttributes(resource.Attributes(), mergedLabels)
-
-				// create the stream name based on the labels
-				labels := mergedLabels.String()
-				entry, err := convertLogToLokiEntry(log, resource, format, scope)
+				entry, err := LogToLokiEntry(log, resource, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -109,14 +81,24 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				group.report.NumSubmitted++
 
+				processed := model.LabelSet{}
+				for label := range entry.Labels {
+					// Loki doesn't support dots in label names
+					// labelName is normalized label name to follow Prometheus label names standard
+					labelName := prometheustranslator.NormalizeLabel(string(label))
+					processed[model.LabelName(labelName)] = entry.Labels[label]
+				}
+
+				// create the stream name based on the labels
+				labels := processed.String()
 				if stream, ok := group.streams[labels]; ok {
-					stream.Entries = append(stream.Entries, *entry)
+					stream.Entries = append(stream.Entries, *entry.Entry)
 					continue
 				}
 
 				group.streams[labels] = &push.Stream{
 					Labels:  labels,
-					Entries: []push.Entry{*entry},
+					Entries: []push.Entry{*entry.Entry},
 				}
 			}
 		}
@@ -141,6 +123,43 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 	return requests
 }
 
+// PushEntry is Loki log entry enriched with labels
+type PushEntry struct {
+	Entry  *push.Entry
+	Labels model.LabelSet
+}
+
+// LogToLokiEntry converts LogRecord into Loki log entry enriched with labels and tenant
+func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope) (*PushEntry, error) {
+	// we may remove attributes, so change only our version
+	log := plog.NewLogRecord()
+	lr.CopyTo(log)
+
+	// similarly, we may remove attributes, so we make a copy and change our version
+	resource := pcommon.NewResource()
+	rl.CopyTo(resource)
+
+	// adds level attribute from log.severityNumber
+	addLogLevelAttributeAndHint(log)
+
+	format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
+
+	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
+	// remove the attributes that were promoted to labels
+	removeAttributes(log.Attributes(), mergedLabels)
+	removeAttributes(resource.Attributes(), mergedLabels)
+
+	entry, err := convertLogToLokiEntry(log, resource, format, scope)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PushEntry{
+		Entry:  entry,
+		Labels: mergedLabels,
+	}, nil
+}
+
 func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
 	format := formatJSON
 	formatVal, found := resourceAttr.Get(hintFormat)
@@ -154,10 +173,10 @@ func getFormatFromFormatHint(logAttr pcommon.Map, resourceAttr pcommon.Map) stri
 	return format
 }
 
-// getTenantFromTenantHint extract an attribute based on the tenant hint.
+// GetTenantFromTenantHint extract an attribute based on the tenant hint.
 // it looks up for the attribute first in resource attributes and fallbacks to
 // record attributes if it is not found.
-func getTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
+func GetTenantFromTenantHint(logAttr pcommon.Map, resourceAttr pcommon.Map) string {
 	var tenant string
 	hintAttr, found := resourceAttr.Get(hintTenant)
 	if !found {

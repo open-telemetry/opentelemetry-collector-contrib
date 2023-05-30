@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
@@ -50,7 +39,7 @@ const (
 var (
 	emitNodeVersionAttr = featuregate.GlobalRegistry().MustRegister(
 		"receiver.elasticsearch.emitNodeVersionAttr",
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
 	)
@@ -77,7 +66,7 @@ func newElasticSearchScraper(
 	e := &elasticsearchScraper{
 		settings:            settings.TelemetrySettings,
 		cfg:                 cfg,
-		mb:                  metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:                  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		emitNodeVersionAttr: emitNodeVersionAttr.IsEnabled(),
 	}
 

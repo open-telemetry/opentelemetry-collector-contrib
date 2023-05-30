@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsconnector
 
@@ -29,24 +18,22 @@ func TestNewConnector(t *testing.T) {
 	defaultMethod := "GET"
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
-		name                        string
-		latencyHistogramBuckets     []time.Duration
-		dimensions                  []Dimension
-		wantLatencyHistogramBuckets []float64
-		wantDimensions              []dimension
+		name                         string
+		durationHistogramBuckets     []time.Duration
+		dimensions                   []Dimension
+		wantDurationHistogramBuckets []float64
+		wantDimensions               []dimension
 	}{
 		{
-			name:                        "simplest config (use defaults)",
-			wantLatencyHistogramBuckets: defaultLatencyHistogramBucketsMs,
+			name: "simplest config (use defaults)",
 		},
 		{
-			name:                    "1 configured latency histogram bucket should result in 1 explicit latency bucket (+1 implicit +Inf bucket)",
-			latencyHistogramBuckets: []time.Duration{2 * time.Millisecond},
+			name:                     "1 configured duration histogram bucket should result in 1 explicit duration bucket (+1 implicit +Inf bucket)",
+			durationHistogramBuckets: []time.Duration{2 * time.Millisecond},
 			dimensions: []Dimension{
 				{Name: "http.method", Default: &defaultMethod},
 				{Name: "http.status_code"},
 			},
-			wantLatencyHistogramBuckets: []float64{2},
 			wantDimensions: []dimension{
 				{name: "http.method", value: &defaultMethodValue},
 				{"http.status_code", nil},
@@ -59,7 +46,9 @@ func TestNewConnector(t *testing.T) {
 
 			creationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
+			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
+				Buckets: tc.durationHistogramBuckets,
+			}
 			cfg.Dimensions = tc.dimensions
 
 			// Test
@@ -70,7 +59,6 @@ func TestNewConnector(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, smc)
 
-			assert.Equal(t, tc.wantLatencyHistogramBuckets, smc.latencyBounds)
 			assert.Equal(t, tc.wantDimensions, smc.dimensions)
 		})
 	}

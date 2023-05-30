@@ -1,9 +1,23 @@
-name: sqlserverreceiver
+type: sqlserver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   sqlserver.database.name:
     description: The name of the SQL Server database.
     enabled: true
+    type: string
+  sqlserver.instance.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
+    type: string
+  sqlserver.computer.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
     type: string
 
 attributes:

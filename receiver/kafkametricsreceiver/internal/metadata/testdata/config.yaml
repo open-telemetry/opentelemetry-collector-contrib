@@ -1,5 +1,6 @@
 default:
-all_metrics:
+all_set:
+  metrics:
   kafka.brokers:
     enabled: true
   kafka.brokers.consumer_fetch_rate:
@@ -42,7 +43,8 @@ all_metrics:
     enabled: true
   kafka.topic.partitions:
     enabled: true
-no_metrics:
+none_set:
+  metrics:
   kafka.brokers:
     enabled: false
   kafka.brokers.consumer_fetch_rate:

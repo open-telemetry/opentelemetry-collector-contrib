@@ -12,10 +12,12 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
-    - dashpole
+    - atoulme
+    # - dashpole is out on leave
     - evan-bradley
+    - fatsheep9146
+    - kovrus
     - MovieStoreGuy
-    - TylerHelmuth
     # Maintainers
     - bogdandrutu
     - codeboten
@@ -23,6 +25,7 @@ assigneeGroups:
     - dmitryax
     - jpkrohling
     - mx-psi
+    - TylerHelmuth
 
 # A number of assignees added to the pull request
 # Set 0 to add all the assignees (default: 0)

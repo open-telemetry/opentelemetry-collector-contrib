@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 package flatten
 
 import (
@@ -46,6 +35,18 @@ func TestBuildAndProcess(t *testing.T) {
 				"nestedkey": "nestedval",
 			},
 		}
+		e.Resource = map[string]interface{}{
+			"key": "val",
+			"nested": map[string]interface{}{
+				"nestedkey": "nestedval",
+			},
+		}
+		e.Attributes = map[string]interface{}{
+			"key": "val",
+			"nested": map[string]interface{}{
+				"nestedkey": "nestedval",
+			},
+		}
 		return e
 	}
 	cases := []testCase{
@@ -54,9 +55,7 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"nested"},
-				}
+				cfg.Field = entry.NewBodyField("nested")
 				return cfg
 			}(),
 			newTestEntry,
@@ -74,9 +73,7 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"nested"},
-				}
+				cfg.Field = entry.NewBodyField("nested")
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -109,9 +106,7 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"nested", "secondlevel"},
-				}
+				cfg.Field = entry.NewBodyField("nested", "secondlevel")
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -142,9 +137,7 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"nested", "secondlevel"},
-				}
+				cfg.Field = entry.NewBodyField("nested", "secondlevel")
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -181,9 +174,7 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"nested"},
-				}
+				cfg.Field = entry.NewBodyField("nested")
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -214,9 +205,7 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"nested"},
-				}
+				cfg.Field = entry.NewBodyField("nested")
 				return cfg
 			}(),
 			func() *entry.Entry {
@@ -242,9 +231,7 @@ func TestBuildAndProcess(t *testing.T) {
 			true,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"invalid"},
-				}
+				cfg.Field = entry.NewBodyField("invalid")
 				return cfg
 			}(),
 			newTestEntry,
@@ -252,16 +239,77 @@ func TestBuildAndProcess(t *testing.T) {
 		},
 		{
 			"flatten_resource",
-			true,
+			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Field = entry.BodyField{
-					Keys: []string{"resource", "invalid"},
-				}
+				cfg.Field = entry.NewResourceField("nested", "secondlevel")
 				return cfg
 			}(),
-			newTestEntry,
-			nil,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]interface{}{
+					"key": "val",
+					"nested": map[string]interface{}{
+						"secondlevel": map[string]interface{}{
+							"nestedkey1": "nestedval",
+							"nestedkey2": "nestedval",
+							"nestedkey3": "nestedval",
+							"nestedkey4": "nestedval",
+						},
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]interface{}{
+					"key": "val",
+					"nested": map[string]interface{}{
+						"nestedkey1": "nestedval",
+						"nestedkey2": "nestedval",
+						"nestedkey3": "nestedval",
+						"nestedkey4": "nestedval",
+					},
+				}
+				return e
+			},
+		},
+		{
+			"flatten_attributes",
+			false,
+			func() *Config {
+				cfg := NewConfig()
+				cfg.Field = entry.NewAttributeField("nested", "secondlevel")
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"key": "val",
+					"nested": map[string]interface{}{
+						"secondlevel": map[string]interface{}{
+							"nestedkey1": "nestedval",
+							"nestedkey2": "nestedval",
+							"nestedkey3": "nestedval",
+							"nestedkey4": "nestedval",
+						},
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"key": "val",
+					"nested": map[string]interface{}{
+						"nestedkey1": "nestedval",
+						"nestedkey2": "nestedval",
+						"nestedkey3": "nestedval",
+						"nestedkey4": "nestedval",
+					},
+				}
+				return e
+			},
 		},
 	}
 
@@ -278,9 +326,11 @@ func TestBuildAndProcess(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			flatten := op.(*Transformer)
+			flatten := op.(interface {
+				Process(ctx context.Context, entry *entry.Entry) error
+			})
 			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, flatten.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = flatten.Process(context.Background(), val)
 

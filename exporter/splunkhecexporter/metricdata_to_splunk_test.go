@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -22,7 +11,9 @@ import (
 	"testing"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -566,9 +557,106 @@ func Test_metricDataToSplunk(t *testing.T) {
 	}
 }
 
+func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
+	unixSecs := int64(1574092046)
+	unixNSecs := int64(11 * time.Millisecond)
+	tsUnix := time.Unix(unixSecs, unixNSecs)
+	ts := pcommon.NewTimestampFromTime(tsUnix)
+	tests := []struct {
+		name   string
+		events []*splunk.Event
+		merged []*splunk.Event
+	}{
+		{
+			name:   "no events",
+			events: []*splunk.Event{},
+			merged: []*splunk.Event{},
+		},
+		{
+			name: "two events that can merge",
+			events: []*splunk.Event{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":             "bar",
+					"metric_name:mem": 123,
+				}),
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":                  "bar",
+					"metric_name:othermem": 1233.4,
+				}),
+			},
+			merged: []*splunk.Event{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":                  "bar",
+					"metric_name:mem":      123,
+					"metric_name:othermem": 1233.4,
+				}),
+			},
+		},
+		{
+			name: "two events that cannot merge",
+			events: []*splunk.Event{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":             "bar",
+					"metric_name:mem": 123,
+				}),
+				createEvent(ts, "host2", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":                  "bar",
+					"metric_name:othermem": 1233.4,
+				}),
+			},
+			merged: []*splunk.Event{
+				createEvent(ts, "host2", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":                  "bar",
+					"metric_name:othermem": 1233.4,
+				}),
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":             "bar",
+					"metric_name:mem": 123,
+				}),
+			},
+		},
+		{
+			name: "two events with the same fields, but different metric value, last value wins",
+			events: []*splunk.Event{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":             "bar",
+					"metric_name:mem": 123,
+				}),
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":             "bar",
+					"metric_name:mem": 1233.4,
+				}),
+			},
+			merged: []*splunk.Event{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+					"foo":             "bar",
+					"metric_name:mem": 1233.4,
+				}),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			merged, err := mergeEventsToMultiMetricFormat(tt.events)
+			assert.NoError(t, err)
+			assert.Len(t, merged, len(tt.merged))
+			for _, want := range tt.merged {
+				found := false
+				for _, m := range merged {
+					if assert.ObjectsAreEqual(want, m) {
+						found = true
+						break
+					}
+				}
+				assert.Truef(t, found, "Event not found: %v", want)
+			}
+		})
+	}
+}
+
 func commonSplunkMetric(
 	metricName string,
-	ts *float64,
+	ts float64,
 	keys []string,
 	values []interface{},
 	val interface{},
@@ -596,22 +684,40 @@ func commonSplunkMetric(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := pcommon.Timestamp(32001000345)
-	assert.Equal(t, 32.001, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.001, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := pcommon.Timestamp(32001999345)
-	assert.Equal(t, 32.002, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.002, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRoundingWithNanos(t *testing.T) {
 	ts := pcommon.Timestamp(9999999999991500001)
-	assert.Equal(t, 9999999999.992, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 9999999999.992, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pcommon.Timestamp(0)
-	assert.Nil(t, timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Zero(t, timestampToSecondsWithMillisecondPrecision(ts))
+}
+
+func TestMergeEvents(t *testing.T) {
+	json1 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test":3411}}`
+	json2 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test2":26059}}`
+	ev1 := &splunk.Event{}
+	err := jsoniter.Unmarshal([]byte(json1), ev1)
+	require.NoError(t, err)
+	ev2 := &splunk.Event{}
+	err = jsoniter.Unmarshal([]byte(json2), ev2)
+	require.NoError(t, err)
+	events := []*splunk.Event{ev1, ev2}
+	merged, err := mergeEventsToMultiMetricFormat(events)
+	require.NoError(t, err)
+	require.Len(t, merged, 1)
+	b, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(merged[0])
+	require.NoError(t, err)
+	require.Equal(t, `{"host":"","event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_name:otel.collector.test":3411,"metric_name:otel.collector.test2":26059,"metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42"}}`, string(b))
 }
 
 func newMetricsWithResources() pcommon.Resource {

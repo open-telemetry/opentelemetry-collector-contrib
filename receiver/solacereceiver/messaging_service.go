@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
@@ -92,7 +81,7 @@ type amqpConnectConfig struct {
 
 type amqpReceiverConfig struct {
 	queue       string
-	maxUnacked  uint32
+	maxUnacked  int32
 	batchMaxAge time.Duration
 }
 
@@ -122,7 +111,7 @@ func (m *amqpMessagingService) dial(ctx context.Context) (err error) {
 		opts.TLSConfig = m.connectConfig.tlsConfig
 	}
 	m.logger.Debug("Dialing AMQP", zap.String("addr", m.connectConfig.addr))
-	m.client, err = dialFunc(m.connectConfig.addr, opts)
+	m.client, err = dialFunc(ctx, m.connectConfig.addr, opts)
 	if err != nil {
 		m.logger.Debug("Dial AMQP failure", zap.Error(err))
 		return err
@@ -135,10 +124,8 @@ func (m *amqpMessagingService) dial(ctx context.Context) (err error) {
 	}
 	m.logger.Debug("Creating new AMQP Receive Link", zap.String("source", m.receiverConfig.queue))
 	m.receiver, err = m.session.NewReceiver(ctx, m.receiverConfig.queue, &amqp.ReceiverOptions{
-		Credit:      m.receiverConfig.maxUnacked,
-		Name:        telemetryLinkName,
-		Batching:    true,
-		BatchMaxAge: m.receiverConfig.batchMaxAge,
+		Credit: m.receiverConfig.maxUnacked,
+		Name:   telemetryLinkName,
 	})
 	if err != nil {
 		m.logger.Debug("Create AMQP Receiver Link failure", zap.Error(err))
@@ -172,7 +159,7 @@ func (m *amqpMessagingService) close(ctx context.Context) {
 }
 
 func (m *amqpMessagingService) receiveMessage(ctx context.Context) (*inboundMessage, error) {
-	return m.receiver.Receive(ctx)
+	return m.receiver.Receive(ctx, &amqp.ReceiveOptions{})
 }
 
 func (m *amqpMessagingService) accept(ctx context.Context, msg *inboundMessage) error {

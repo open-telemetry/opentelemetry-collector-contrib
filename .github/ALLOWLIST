@@ -22,6 +22,4 @@ internal/common
 
 ## DEPRECATED components
 
-## UNMANTAINED components
-extension/httpforwarder
-receiver/dotnetdiagnosticsreceiver
+## UNMAINTAINED components

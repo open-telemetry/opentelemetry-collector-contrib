@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
 // +build integration
@@ -38,10 +27,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func TestFlinkIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	t.Parallel()
 	networkName := "new-network"
 	ctx := context.Background()
@@ -67,6 +57,11 @@ func TestFlinkIntegration(t *testing.T) {
 		Networks:     []string{networkName},
 		ExposedPorts: []string{"8080:8080", "8081:8081"},
 		WaitingFor:   waitStrategy{endpoint: "http://localhost:8081/jobmanager/metrics"},
+		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+			PostStarts: []testcontainers.ContainerHook{
+				scraperinttest.RunScript([]string{"/setup.sh"}),
+			},
+		}},
 	})
 
 	workerContainer := getContainer(t, testcontainers.ContainerRequest{
@@ -91,11 +86,6 @@ func TestFlinkIntegration(t *testing.T) {
 	ws := waitStrategy{"http://localhost:8081/taskmanagers/metrics"}
 	err = ws.waitFor(context.Background(), "")
 	require.NoError(t, err)
-
-	// required to start the StateMachineExample job
-	code, _, err := masterContainer.Exec(context.Background(), []string{"/setup.sh"})
-	require.NoError(t, err)
-	require.Equal(t, 0, code)
 
 	// Required to prevent empty value jobs call
 	ws = waitStrategy{endpoint: "http://localhost:8081/jobs"}
@@ -135,7 +125,7 @@ func TestFlinkIntegration(t *testing.T) {
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 
 	actualMetrics := consumer.AllMetrics()[0]
-	expectedFile := filepath.Join("testdata", "integration", "expected.json")
+	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),

@@ -1,4 +1,10 @@
-name: postgresqlreceiver
+type: postgresql
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, observiq, sumo]
 
 resource_attributes:
   postgresql.database.name:

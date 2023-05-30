@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -19,9 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -154,10 +146,51 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
+	require.True(t, r.eof)
 
 	for _, expected := range expected {
 		require.Equal(t, expected, readToken(t, emitChan))
 	}
+}
+
+func TestHeaderFingerprintIncluded(t *testing.T) {
+	fileContent := []byte("#header-line\naaa\n")
+
+	f, _ := testReaderFactory(t)
+	f.readerConfig.maxLogSize = 10
+
+	regexConf := regex.NewConfig()
+	regexConf.Regex = "^#(?P<header>.*)"
+
+	headerConf := &HeaderConfig{
+		Pattern: "^#",
+		MetadataOperators: []operator.Config{
+			{
+				Builder: regexConf,
+			},
+		},
+	}
+
+	enc, err := helper.EncodingConfig{
+		Encoding: "utf-8",
+	}.Build()
+	require.NoError(t, err)
+
+	h, err := headerConf.buildHeaderSettings(enc.Encoding)
+	require.NoError(t, err)
+	f.headerSettings = h
+
+	temp := openTemp(t, t.TempDir())
+
+	r, err := f.newReaderBuilder().withFile(temp).build()
+	require.NoError(t, err)
+
+	_, err = temp.Write(fileContent)
+	require.NoError(t, err)
+
+	r.ReadToEnd(context.Background())
+
+	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
 }
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
@@ -184,4 +217,25 @@ func readToken(t *testing.T, c chan *emitParams) []byte {
 		require.FailNow(t, "Timed out waiting for token")
 	}
 	return nil
+}
+
+func TestMapCopy(t *testing.T) {
+	initMap := map[string]any{
+		"mapVal": map[string]any{
+			"nestedVal": "value1",
+		},
+		"intVal": 1,
+		"strVal": "OrigStr",
+	}
+
+	copyMap := mapCopy(initMap)
+	// Mutate values on the copied map
+	copyMap["mapVal"].(map[string]any)["nestedVal"] = "overwrittenValue"
+	copyMap["intVal"] = 2
+	copyMap["strVal"] = "CopyString"
+
+	// Assert that the original map should have the same values
+	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
+	assert.Equal(t, 1, initMap["intVal"])
+	assert.Equal(t, "OrigStr", initMap["strVal"])
 }

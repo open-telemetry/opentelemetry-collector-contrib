@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
@@ -54,6 +43,40 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		sendTimestamps: config.SendTimestamps,
 		constLabels:    config.ConstLabels,
 	}
+}
+
+func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
+	length := exemplars.Len()
+	result := make([]prometheus.Exemplar, length)
+
+	for i := 0; i < length; i++ {
+		e := exemplars.At(i)
+		exemplarLabels := make(prometheus.Labels, 0)
+
+		if traceID := e.TraceID(); !traceID.IsEmpty() {
+			exemplarLabels["trace_id"] = hex.EncodeToString(traceID[:])
+		}
+
+		if spanID := e.SpanID(); !spanID.IsEmpty() {
+			exemplarLabels["span_id"] = hex.EncodeToString(spanID[:])
+		}
+
+		var value float64
+		switch e.ValueType() {
+		case pmetric.ExemplarValueTypeDouble:
+			value = e.DoubleValue()
+		case pmetric.ExemplarValueTypeInt:
+			value = float64(e.IntValue())
+		}
+
+		result[i] = prometheus.Exemplar{
+			Value:     value,
+			Labels:    exemplarLabels,
+			Timestamp: e.Timestamp().AsTime(),
+		}
+
+	}
+	return result
 }
 
 // Describe is a no-op, because the collector dynamically allocates metrics.
@@ -149,9 +172,23 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 	case pmetric.NumberDataPointValueTypeDouble:
 		value = ip.DoubleValue()
 	}
+
+	var exemplars []prometheus.Exemplar
+	// Prometheus currently only supports exporting counters
+	if metricType == prometheus.CounterValue {
+		exemplars = convertExemplars(ip.Exemplars())
+	}
+
 	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(exemplars) > 0 {
+		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.sendTimestamps {
@@ -212,34 +249,14 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		points[bucket] = cumCount
 	}
 
-	arrLen := ip.Exemplars().Len()
-	exemplars := make([]prometheus.Exemplar, arrLen)
-
-	for i := 0; i < arrLen; i++ {
-		e := ip.Exemplars().At(i)
-		exemplarLabels := make(prometheus.Labels, 0)
-
-		if traceID := e.TraceID(); !traceID.IsEmpty() {
-			exemplarLabels["trace_id"] = hex.EncodeToString(traceID[:])
-		}
-
-		if spanID := e.SpanID(); !spanID.IsEmpty() {
-			exemplarLabels["span_id"] = hex.EncodeToString(spanID[:])
-		}
-
-		exemplars[i] = prometheus.Exemplar{
-			Value:     e.DoubleValue(),
-			Labels:    exemplarLabels,
-			Timestamp: e.Timestamp().AsTime(),
-		}
-	}
+	exemplars := convertExemplars(ip.Exemplars())
 
 	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	if err != nil {
 		return nil, err
 	}
 
-	if arrLen > 0 {
+	if len(exemplars) > 0 {
 		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
 		if err != nil {
 			return nil, err

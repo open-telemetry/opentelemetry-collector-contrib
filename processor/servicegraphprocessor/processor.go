@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 
@@ -47,9 +36,9 @@ var (
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 	}
-	// PeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
-	// TODO: Consider making this configurable.
-	PeerAttributes = []string{semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
+	defaultPeerAttributes = []string{
+		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
+	}
 )
 
 type metricSeries struct {
@@ -91,6 +80,18 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
 	}
 
+	if pConfig.CacheLoop <= 0 {
+		pConfig.CacheLoop = time.Minute
+	}
+
+	if pConfig.StoreExpirationLoop <= 0 {
+		pConfig.StoreExpirationLoop = 2 * time.Second
+	}
+
+	if pConfig.VirtualNodePeerAttributes == nil {
+		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
+	}
+
 	return &serviceGraphProcessor{
 		config:                         pConfig,
 		logger:                         logger,
@@ -127,11 +128,9 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 		}
 	}
 
-	// TODO: Consider making this configurable.
-	go p.cacheLoop(time.Minute)
+	go p.cacheLoop(p.config.CacheLoop)
 
-	// TODO: Consider making this configurable.
-	go p.storeExpirationLoop(2 * time.Second)
+	go p.storeExpirationLoop(p.config.StoreExpirationLoop)
 
 	if p.tracesConsumer == nil {
 		p.logger.Info("Started servicegraphconnector")
@@ -226,7 +225,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
 						if virtualNodeFeatureGate.IsEnabled() {
-							p.upsertPeerAttributes(PeerAttributes, e.Peer, span.Attributes())
+							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
 						}
 
 						// A database request will only have one span, we don't wait for the server
@@ -317,20 +316,16 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 	stats.Record(context.Background(), statExpiredEdges.M(1))
 
 	if virtualNodeFeatureGate.IsEnabled() {
-		// speculate virtual node before edge get expired.
-		// TODO: We could add some logic to check if the server span is an orphan.
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17350#discussion_r1099949579
-		if len(e.ClientService) == 0 {
+		e.ConnectionType = store.VirtualNode
+		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
+			p.onComplete(e)
 		}
 
 		if len(e.ServerService) == 0 {
-			e.ServerService = p.getPeerHost(PeerAttributes, e.Peer)
+			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
+			p.onComplete(e)
 		}
-
-		e.ConnectionType = store.VirtualNode
-
-		p.onComplete(e)
 	}
 }
 
@@ -400,7 +395,7 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 func (p *serviceGraphProcessor) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName("traces_service_graph_servicegraphprocessor")
+	ilm.Scope().SetName("traces_service_graph")
 
 	// Obtain write lock to reset data
 	p.seriesMutex.Lock()

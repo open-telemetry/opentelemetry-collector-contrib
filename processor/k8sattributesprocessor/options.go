@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
@@ -31,18 +20,8 @@ const (
 	filterOPNotEquals    = "not-equals"
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
-	// Used for maintaining backward compatibility
-	metdataNamespace   = "namespace"
-	metadataPodName    = "podName"
-	metadataPodUID     = "podUID"
-	metadataStartTime  = "startTime"
-	metadataDeployment = "deployment"
-	metadataNode       = "node"
-	// Will be removed when new fields get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
-	// This one was deprecated, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9886
-	deprecatedMetadataCluster = "cluster"
 )
 
 // option represents a configuration option that can be passes.
@@ -79,28 +58,26 @@ func withExtractMetadata(fields ...string) option {
 				metadataPodStartTime,
 				conventions.AttributeK8SDeploymentName,
 				conventions.AttributeK8SNodeName,
-				conventions.AttributeContainerID,
 				conventions.AttributeContainerImageName,
 				conventions.AttributeContainerImageTag,
 			}
 		}
 		for _, field := range fields {
 			switch field {
-			// Old conventions handled by the cases metdataNamespace, metadataPodName, metadataPodUID,
-			// metadataStartTime, metadataDeployment, deprecatedMetadataCluster, metadataNode are being supported for backward compatibility.
-			// These will be removed when new conventions get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
-			case metdataNamespace, conventions.AttributeK8SNamespaceName:
+			case conventions.AttributeK8SNamespaceName:
 				p.rules.Namespace = true
-			case metadataPodName, conventions.AttributeK8SPodName:
+			case conventions.AttributeK8SPodName:
 				p.rules.PodName = true
-			case metadataPodUID, conventions.AttributeK8SPodUID:
+			case conventions.AttributeK8SPodUID:
 				p.rules.PodUID = true
 			case specPodHostName:
 				p.rules.PodHostName = true
-			case metadataStartTime, metadataPodStartTime:
+			case metadataPodStartTime:
 				p.rules.StartTime = true
-			case metadataDeployment, conventions.AttributeK8SDeploymentName:
-				p.rules.Deployment = true
+			case conventions.AttributeK8SDeploymentName:
+				p.rules.DeploymentName = true
+			case conventions.AttributeK8SDeploymentUID:
+				p.rules.DeploymentUID = true
 			case conventions.AttributeK8SReplicaSetName:
 				p.rules.ReplicaSetName = true
 			case conventions.AttributeK8SReplicaSetUID:
@@ -113,13 +90,15 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.StatefulSetName = true
 			case conventions.AttributeK8SStatefulSetUID:
 				p.rules.StatefulSetUID = true
+			case conventions.AttributeK8SContainerName:
+				p.rules.ContainerName = true
 			case conventions.AttributeK8SJobName:
 				p.rules.JobName = true
 			case conventions.AttributeK8SJobUID:
 				p.rules.JobUID = true
 			case conventions.AttributeK8SCronJobName:
 				p.rules.CronJobName = true
-			case metadataNode, conventions.AttributeK8SNodeName:
+			case conventions.AttributeK8SNodeName:
 				p.rules.Node = true
 			case conventions.AttributeContainerID:
 				p.rules.ContainerID = true
@@ -127,8 +106,6 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageName = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
-			case deprecatedMetadataCluster, conventions.AttributeK8SClusterName:
-				// This one is deprecated, ignore it
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
@@ -313,28 +290,16 @@ func withExtractPodAssociations(podAssociations ...PodAssociationConfig) option 
 
 			var name string
 
-			if association.From != "" {
-				if association.From == kube.ConnectionSource {
+			for _, associationSource := range association.Sources {
+				if associationSource.From == kube.ConnectionSource {
 					name = ""
 				} else {
-					name = association.Name
+					name = associationSource.Name
 				}
 				assoc.Sources = append(assoc.Sources, kube.AssociationSource{
-					From: association.From,
+					From: associationSource.From,
 					Name: name,
 				})
-			} else {
-				for _, associationSource := range association.Sources {
-					if associationSource.From == kube.ConnectionSource {
-						name = ""
-					} else {
-						name = associationSource.Name
-					}
-					assoc.Sources = append(assoc.Sources, kube.AssociationSource{
-						From: associationSource.From,
-						Name: name,
-					})
-				}
 			}
 			associations = append(associations, assoc)
 		}

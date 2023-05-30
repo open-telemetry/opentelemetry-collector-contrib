@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -23,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -39,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -64,7 +53,7 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
 	for k := range endpoints {
-		accessIndex[k] = atomic.NewInt32(0)
+		accessIndex[k] = &atomic.Int32{}
 	}
 	mp := &mockPrometheus{
 		wg:          wg,
@@ -119,7 +108,6 @@ type testData struct {
 	pages           []mockPrometheusResponse
 	attributes      pcommon.Map
 	validateScrapes bool
-	normalizedName  bool
 	validateFunc    func(t *testing.T, td *testData, result []pmetric.ResourceMetrics)
 }
 
@@ -234,13 +222,13 @@ func metricsCount(resourceMetric pmetric.ResourceMetrics) int {
 	return metricsCount
 }
 
-func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedNames bool) []pmetric.ResourceMetrics {
+func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.ResourceMetrics {
 	var out []pmetric.ResourceMetrics
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount {
-			if isFirstFailedScrape(allMetrics, normalizedNames) {
+		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics) == expectedScrapeMetricCount {
+			if isFirstFailedScrape(allMetrics) {
 				continue
 			}
 			assertUp(t, 1, allMetrics)
@@ -252,7 +240,7 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedName
 	return out
 }
 
-func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
+func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 	for _, m := range metrics {
 		if m.Name() == "up" {
 			if m.Gauge().DataPoints().At(0).DoubleValue() == 1 { // assumed up will not have multiple datapoints
@@ -262,7 +250,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 	}
 
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m) {
 			continue
 		}
 
@@ -306,13 +294,13 @@ func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 	t.Error("No 'up' metric found")
 }
 
-func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int {
+func countScrapeMetricsRM(got pmetric.ResourceMetrics) int {
 	n := 0
 	ilms := got.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		for i := 0; i < ilm.Metrics().Len(); i++ {
-			if isDefaultMetrics(ilm.Metrics().At(i), normalizedNames) {
+			if isDefaultMetrics(ilm.Metrics().At(i)) {
 				n++
 			}
 		}
@@ -320,29 +308,23 @@ func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int
 	return n
 }
 
-func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
+func countScrapeMetrics(metrics []pmetric.Metric) int {
 	n := 0
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m) {
 			n++
 		}
 	}
 	return n
 }
 
-func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
+func isDefaultMetrics(m pmetric.Metric) bool {
 	switch m.Name() {
-	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added", "scrape_duration":
 		return true
-
-	// if normalizedNames is true, we expect unit `_seconds` to be trimmed.
-	case "scrape_duration_seconds":
-		return !normalizedNames
-	case "scrape_duration":
-		return normalizedNames
 	default:
+		return false
 	}
-	return false
 }
 
 type metricTypeComparator func(*testing.T, pmetric.Metric)
@@ -359,12 +341,8 @@ type dataPointExpectation struct {
 type testExpectation func(*testing.T, pmetric.ResourceMetrics)
 
 func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation) {
-	doCompareNormalized(t, name, want, got, expectations, false)
-}
-
-func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation, normalizedNames bool) {
 	t.Run(name, func(t *testing.T) {
-		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got, normalizedNames))
+		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
 		for k, v := range want.AsRaw() {
 			val, ok := got.Resource().Attributes().Get(k)
@@ -639,7 +617,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			}
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
+				scrapes = getValidScrapes(t, pResults[name])
 			}
 			target.validateFunc(t, target, scrapes)
 		})

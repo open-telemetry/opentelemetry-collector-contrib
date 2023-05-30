@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsconnector
 
@@ -22,62 +11,97 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
 	defaultMethod := "GET"
-	// Need to set this gate to load connector configs
-	require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", false))
-	}()
-
-	// Prepare
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
-
-	factories.Receivers["nop"] = receivertest.NewNopFactory()
-	factories.Connectors[typeStr] = NewFactory()
-	factories.Exporters["nop"] = exportertest.NewNopFactory()
-
-	// Test
-	simpleCfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-simplest-connector.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, simpleCfg)
-	assert.Equal(t,
-		&Config{
-			AggregationTemporality: cumulative,
-			DimensionsCacheSize:    defaultDimensionsCacheSize,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
-			MetricsFlushInterval:   15 * time.Second,
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		errorMessage string
+	}{
+		{
+			id:       component.NewIDWithName(typeStr, "default"),
+			expected: createDefaultConfig(),
 		},
-		simpleCfg.Connectors[component.NewID(typeStr)],
-	)
-
-	fullCfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-full-connector.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, fullCfg)
-	assert.Equal(t,
-		&Config{
-			LatencyHistogramBuckets: []time.Duration{100000, 1000000, 2000000, 6000000, 10000000, 100000000, 250000000},
-			Dimensions: []Dimension{
-				{Name: "http.method", Default: &defaultMethod},
-				{Name: "http.status_code", Default: (*string)(nil)},
+		{
+			id:       component.NewIDWithName(typeStr, "default_explicit_histogram"),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(typeStr, "full"),
+			expected: &Config{
+				AggregationTemporality: delta,
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+					{Name: "http.status_code", Default: (*string)(nil)},
+				},
+				DimensionsCacheSize:  1500,
+				MetricsFlushInterval: 30 * time.Second,
+				Histogram: HistogramConfig{
+					Unit: metrics.Seconds,
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{
+							10 * time.Millisecond,
+							100 * time.Millisecond,
+							250 * time.Millisecond,
+						},
+					},
+				},
 			},
-			AggregationTemporality: delta,
-			DimensionsCacheSize:    1500,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
-			MetricsFlushInterval:   30 * time.Second,
 		},
-		fullCfg.Connectors[component.NewID(typeStr)],
-	)
+		{
+			id: component.NewIDWithName(typeStr, "exponential_histogram"),
+			expected: &Config{
+				AggregationTemporality: cumulative,
+				DimensionsCacheSize:    1000,
+				MetricsFlushInterval:   15 * time.Second,
+				Histogram: HistogramConfig{
+					Unit: metrics.Milliseconds,
+					Exponential: &ExponentialHistogramConfig{
+						MaxSize: 10,
+					},
+				},
+			},
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "exponential_and_explicit_histogram"),
+			errorMessage: "use either `explicit` or `exponential` buckets histogram",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "invalid_histogram_unit"),
+			errorMessage: "unknown Unit \"h\"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			err = component.UnmarshalConfig(sub, cfg)
+
+			if tt.expected == nil {
+				err = multierr.Append(err, component.ValidateConfig(cfg))
+				assert.ErrorContains(t, err, tt.errorMessage)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestGetAggregationTemporality(t *testing.T) {
@@ -93,10 +117,9 @@ func TestGetAggregationTemporality(t *testing.T) {
 
 func TestValidateDimensions(t *testing.T) {
 	for _, tc := range []struct {
-		name              string
-		dimensions        []Dimension
-		expectedErr       string
-		skipSanitizeLabel bool
+		name        string
+		dimensions  []Dimension
+		expectedErr string
 	}{
 		{
 			name:       "no additional dimensions",
@@ -117,13 +140,6 @@ func TestValidateDimensions(t *testing.T) {
 			expectedErr: "duplicate dimension name service.name",
 		},
 		{
-			name: "duplicate dimension with reserved labels after sanitization",
-			dimensions: []Dimension{
-				{Name: "service_name"},
-			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
 			name: "duplicate additional dimensions",
 			dimensions: []Dimension{
 				{Name: "service_name"},
@@ -131,31 +147,9 @@ func TestValidateDimensions(t *testing.T) {
 			},
 			expectedErr: "duplicate dimension name service_name",
 		},
-		{
-			name: "duplicate additional dimensions after sanitization",
-			dimensions: []Dimension{
-				{Name: "http.status_code"},
-				{Name: "http!status_code"},
-			},
-			expectedErr: "duplicate dimension name http_status_code after sanitization",
-		},
-		{
-			name: "we skip the case if the dimension name is the same after sanitization",
-			dimensions: []Dimension{
-				{Name: "http_status_code"},
-			},
-		},
-		{
-			name: "duplicate dimension",
-			dimensions: []Dimension{
-				{Name: "status_code"},
-			},
-			expectedErr: "duplicate dimension name status_code",
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.skipSanitizeLabel = false
-			err := validateDimensions(tc.dimensions, tc.skipSanitizeLabel)
+			err := validateDimensions(tc.dimensions)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {

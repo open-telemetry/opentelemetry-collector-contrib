@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package bearertokenauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 
@@ -74,7 +63,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+func (b *BearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	if b.filename == "" {
 		return nil
 	}
@@ -146,7 +135,7 @@ func (b *BearerTokenAuth) refreshToken() {
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
-func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
+func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 	if b.filename == "" {
 		return nil
 	}
@@ -177,15 +166,15 @@ func (b *BearerTokenAuth) bearerToken() string {
 // RoundTripper is not implemented by BearerTokenAuth
 func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &BearerAuthRoundTripper{
-		baseTransport: base,
-		bearerToken:   b.bearerToken(),
+		baseTransport:   base,
+		bearerTokenFunc: b.bearerToken,
 	}, nil
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
 type BearerAuthRoundTripper struct {
-	baseTransport http.RoundTripper
-	bearerToken   string
+	baseTransport   http.RoundTripper
+	bearerTokenFunc func() string
 }
 
 // RoundTrip modifies the original request and adds Bearer token Authorization headers.
@@ -194,6 +183,6 @@ func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.R
 	if req2.Header == nil {
 		req2.Header = make(http.Header)
 	}
-	req2.Header.Set("Authorization", interceptor.bearerToken)
+	req2.Header.Set("Authorization", interceptor.bearerTokenFunc())
 	return interceptor.baseTransport.RoundTrip(req2)
 }

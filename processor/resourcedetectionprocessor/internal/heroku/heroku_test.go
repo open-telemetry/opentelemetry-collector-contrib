@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package heroku
 
@@ -47,12 +36,12 @@ func TestDetectTrue(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"heroku.app.id":                     "appid",
-		"heroku.app.name":                   "appname",
-		"heroku.dyno.id":                    "foo",
+		"service.name":                      "appname",
+		"service.instance.id":               "foo",
 		"heroku.release.commit":             "23456",
 		"heroku.release.creation_timestamp": "createdat",
-		"heroku.release.version":            "v1",
-		"host.name":                         "foo",
+		"service.version":                   "v1",
+		"cloud.provider":                    "heroku",
 	},
 		res.Attributes().AsRaw())
 }
@@ -68,11 +57,11 @@ func TestDetectTruePartial(t *testing.T) {
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
-		"heroku.app.id":          "appid",
-		"heroku.app.name":        "appname",
-		"heroku.dyno.id":         "foo",
-		"heroku.release.version": "v1",
-		"host.name":              "foo",
+		"heroku.app.id":       "appid",
+		"service.name":        "appname",
+		"service.instance.id": "foo",
+		"service.version":     "v1",
+		"cloud.provider":      "heroku",
 	},
 		res.Attributes().AsRaw())
 }

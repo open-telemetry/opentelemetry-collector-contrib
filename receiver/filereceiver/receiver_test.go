@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filereceiver
 
@@ -37,17 +26,17 @@ func TestReceiver(t *testing.T) {
 	}
 	err := r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	const numExpectedMetrics = 10
 	assert.Eventually(t, func() bool {
-		return assert.Equal(t, numExpectedMetrics, tc.numConsumed())
-	}, time.Second, 10*time.Millisecond)
+		const numExpectedMetrics = 10
+		return numExpectedMetrics == tc.numConsumed()
+	}, 2*time.Second, 100*time.Millisecond)
 	err = r.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
 
 type testConsumer struct {
-	mu       sync.Mutex
 	consumed []pmetric.Metrics
+	mu       sync.Mutex
 }
 
 func (c *testConsumer) Capabilities() consumer.Capabilities {

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
 // +build linux
@@ -24,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -113,5 +103,91 @@ func TestInputJournald(t *testing.T) {
 		require.Equal(t, expected, e.Body)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be read")
+	}
+}
+
+func TestBuildConfig(t *testing.T) {
+	testCases := []struct {
+		Name          string
+		Config        func(cfg *Config)
+		Expected      []string
+		ExpectedError string
+	}{
+		{
+			Name:     "empty config",
+			Config:   func(cfg *Config) {},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info"},
+		},
+		{
+			Name: "units",
+			Config: func(cfg *Config) {
+				cfg.Units = []string{
+					"dbus.service",
+					"user@1000.service",
+				}
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "dbus.service", "--unit", "user@1000.service", "--priority", "info"},
+		},
+		{
+			Name: "matches",
+			Config: func(cfg *Config) {
+				cfg.Matches = []MatchConfig{
+					{
+						"_SYSTEMD_UNIT": "dbus.service",
+					},
+					{
+						"_UID":          "1000",
+						"_SYSTEMD_UNIT": "user@1000.service",
+					},
+				}
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "_SYSTEMD_UNIT=dbus.service", "+", "_SYSTEMD_UNIT=user@1000.service", "_UID=1000"},
+		},
+		{
+			Name: "invalid match",
+			Config: func(cfg *Config) {
+				cfg.Matches = []MatchConfig{
+					{
+						"-SYSTEMD_UNIT": "dbus.service",
+					},
+				}
+			},
+			ExpectedError: "'-SYSTEMD_UNIT' is not a valid Systemd field name",
+		},
+		{
+			Name: "units and matches",
+			Config: func(cfg *Config) {
+				cfg.Units = []string{"ssh"}
+				cfg.Matches = []MatchConfig{
+					{
+						"_SYSTEMD_UNIT": "dbus.service",
+					},
+				}
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "ssh", "--priority", "info", "_SYSTEMD_UNIT=dbus.service"},
+		},
+		{
+			Name: "grep",
+			Config: func(cfg *Config) {
+				cfg.Grep = "test_grep"
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--grep", "test_grep"},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			cfg := NewConfigWithID("my_journald_input")
+			tt.Config(cfg)
+			args, err := cfg.buildArgs()
+
+			if tt.ExpectedError != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.ExpectedError)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.Expected, args)
+		})
 	}
 }

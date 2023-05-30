@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
@@ -141,13 +130,14 @@ func generateOtelTestMetrics(generatedOtelMetrics ...pmetric.Metrics) pmetric.Me
 	}
 	return finalOtelMetrics
 }
-func generateDeltaMetricMetadata(adjustToDelta bool, metricName string) deltaMetricMetadata {
+func generateDeltaMetricMetadata(adjustToDelta bool, metricName string, retainInitialValueForDelta bool) deltaMetricMetadata {
 	return deltaMetricMetadata{
-		adjustToDelta: adjustToDelta,
-		metricName:    metricName,
-		logGroup:      "log-group",
-		logStream:     "log-stream",
-		namespace:     "namespace",
+		adjustToDelta:              adjustToDelta,
+		metricName:                 metricName,
+		logGroup:                   "log-group",
+		logStream:                  "log-stream",
+		namespace:                  "namespace",
+		retainInitialValueForDelta: retainInitialValueForDelta,
 	}
 }
 
@@ -157,118 +147,128 @@ func setupDataPointCache() {
 }
 
 func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
-	setupDataPointCache()
+	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
+		setupDataPointCache()
 
-	testCases := []struct {
-		name              string
-		adjustToDelta     bool
-		metricName        string
-		metricValue       interface{}
-		expectedDatapoint dataPoint
-	}{
-		{
-			name:          "Float data type with 1st delta calculation",
-			adjustToDelta: true,
-			metricValue:   0.4,
-			metricName:    "double",
-			expectedDatapoint: dataPoint{
-				name:   "double",
-				value:  0.4,
-				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+		testCases := []struct {
+			name              string
+			adjustToDelta     bool
+			metricName        string
+			metricValue       interface{}
+			expectedDatapoint dataPoint
+			expectedRetained  bool
+		}{
+			{
+				name:          fmt.Sprintf("Float data type with 1st delta calculation retainInitialValueOfDeltaMetric=%t", retainInitialValueOfDeltaMetric),
+				adjustToDelta: true,
+				metricValue:   0.4,
+				metricName:    "double",
+				expectedDatapoint: dataPoint{
+					name:   "double",
+					value:  0.4,
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+				},
+				expectedRetained: retainInitialValueOfDeltaMetric,
 			},
-		},
-		{
-			name:          "Float data type with 2nd delta calculation",
-			adjustToDelta: true,
-			metricName:    "double",
-			metricValue:   0.8,
-			expectedDatapoint: dataPoint{
-				name:   "double",
-				value:  0.4,
-				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			{
+				name:          "Float data type with 2nd delta calculation",
+				adjustToDelta: true,
+				metricName:    "double",
+				metricValue:   0.8,
+				expectedDatapoint: dataPoint{
+					name:   "double",
+					value:  0.4,
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+				},
+				expectedRetained: true,
 			},
-		},
-		{
-			name:          "Double data type without delta calculation",
-			adjustToDelta: false,
-			metricName:    "double",
-			metricValue:   0.5,
-			expectedDatapoint: dataPoint{
-				name:   "double",
-				value:  0.5,
-				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			{
+				name:          "Double data type without delta calculation",
+				adjustToDelta: false,
+				metricName:    "double",
+				metricValue:   0.5,
+				expectedDatapoint: dataPoint{
+					name:   "double",
+					value:  0.5,
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+				},
+				expectedRetained: true,
 			},
-		},
 
-		{
-			name:          "Int data type with 1st delta calculation",
-			adjustToDelta: true,
-			metricName:    "int",
-			metricValue:   int64(-17),
-			expectedDatapoint: dataPoint{
-				name:   "int",
-				value:  float64(0),
-				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			{
+				name:          "Int data type with 1st delta calculation",
+				adjustToDelta: true,
+				metricName:    "int",
+				metricValue:   int64(-17),
+				expectedDatapoint: dataPoint{
+					name:   "int",
+					value:  float64(-17),
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+				},
+				expectedRetained: retainInitialValueOfDeltaMetric,
 			},
-		},
-		{
-			name:          "Int data type with 2nd delta calculation",
-			adjustToDelta: true,
-			metricName:    "int",
-			metricValue:   int64(1),
-			expectedDatapoint: dataPoint{
-				name:   "int",
-				value:  float64(18),
-				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			{
+				name:          "Int data type with 2nd delta calculation",
+				adjustToDelta: true,
+				metricName:    "int",
+				metricValue:   int64(1),
+				expectedDatapoint: dataPoint{
+					name:   "int",
+					value:  float64(18),
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+				},
+				expectedRetained: true,
 			},
-		},
-		{
-			name:          "Int data type without delta calculation",
-			adjustToDelta: false,
-			metricName:    "int",
-			metricValue:   int64(10),
-			expectedDatapoint: dataPoint{
-				name:   "int",
-				value:  float64(10),
-				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			{
+				name:          "Int data type without delta calculation",
+				adjustToDelta: false,
+				metricName:    "int",
+				metricValue:   int64(10),
+				expectedDatapoint: dataPoint{
+					name:   "int",
+					value:  float64(10),
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+				},
+				expectedRetained: true,
 			},
-		},
-	}
+		}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Given the number datapoint (including Sum and Gauge OTEL metric type) with data type as int or double
-			numberDPS := pmetric.NewNumberDataPointSlice()
-			numberDP := numberDPS.AppendEmpty()
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Given the number datapoint (including Sum and Gauge OTEL metric type) with data type as int or double
+				numberDPS := pmetric.NewNumberDataPointSlice()
+				numberDP := numberDPS.AppendEmpty()
 
-			numberDP.Attributes().PutStr("label1", "value1")
+				numberDP.Attributes().PutStr("label1", "value1")
 
-			switch v := tc.metricValue.(type) {
-			case int64:
-				numberDP.SetIntValue(v)
-			case float64:
-				numberDP.SetDoubleValue(v)
-			}
+				switch v := tc.metricValue.(type) {
+				case int64:
+					numberDP.SetIntValue(v)
+				case float64:
+					numberDP.SetDoubleValue(v)
+				}
 
-			deltaMetricMetadata := generateDeltaMetricMetadata(tc.adjustToDelta, tc.metricName)
-			numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata, numberDPS}
+				deltaMetricMetadata := generateDeltaMetricMetadata(tc.adjustToDelta, tc.metricName, retainInitialValueOfDeltaMetric)
+				numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata, numberDPS}
 
-			// When calculate the delta datapoints for number datapoint
-			dps, retained := numberDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false)
+				// When calculate the delta datapoints for number datapoint
+				dps, retained := numberDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false)
 
-			// Then asserting the delta is within 0.002 with the following datapoint
-			assert.Equal(t, 1, numberDatapointSlice.Len())
-			if retained {
-				assert.Equal(t, tc.expectedDatapoint.name, dps[0].name)
-				assert.Equal(t, tc.expectedDatapoint.labels, dps[0].labels)
-				assert.InDelta(t, tc.expectedDatapoint.value, dps[0].value, 0.002)
-			}
-		})
+				assert.Equal(t, 1, numberDatapointSlice.Len())
+				assert.Equal(t, tc.expectedRetained, retained)
+				if retained {
+					assert.Equal(t, tc.expectedDatapoint.name, dps[0].name)
+					assert.Equal(t, tc.expectedDatapoint.labels, dps[0].labels)
+					// Asserting the delta is within 0.002 with the following datapoint
+					assert.InDelta(t, tc.expectedDatapoint.value, dps[0].value, 0.002)
+				}
+			})
+		}
 	}
 }
 
 func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
-	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo")
+	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
 
 	testCases := []struct {
 		name              string
@@ -348,79 +348,85 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 }
 
 func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
-	deltaMetricMetadata := generateDeltaMetricMetadata(true, "foo")
+	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
+		deltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", retainInitialValueOfDeltaMetric)
 
-	testCases := []struct {
-		name               string
-		summaryMetricValue map[string]interface{}
-		expectedDatapoint  []dataPoint
-	}{
-		{
-			name:               "Detailed summary with 1st delta sum count calculation",
-			summaryMetricValue: map[string]interface{}{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
-			expectedDatapoint: []dataPoint{
-				{name: fmt.Sprint("foo", summarySumSuffix), value: float64(17.3), labels: map[string]string{"label1": "value1"}},
-				{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(17), labels: map[string]string{"label1": "value1"}},
-				{name: "foo", value: float64(1), labels: map[string]string{"label1": "value1", "quantile": "0"}},
-				{name: "foo", value: float64(5), labels: map[string]string{"label1": "value1", "quantile": "100"}},
+		testCases := []struct {
+			name               string
+			summaryMetricValue map[string]interface{}
+			expectedDatapoint  []dataPoint
+			expectedRetained   bool
+		}{
+			{
+				name:               fmt.Sprintf("Detailed summary with 1st delta sum count calculation retainInitialValueOfDeltaMetric=%t", retainInitialValueOfDeltaMetric),
+				summaryMetricValue: map[string]interface{}{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				expectedDatapoint: []dataPoint{
+					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(17.3), labels: map[string]string{"label1": "value1"}},
+					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(17), labels: map[string]string{"label1": "value1"}},
+					{name: "foo", value: float64(1), labels: map[string]string{"label1": "value1", "quantile": "0"}},
+					{name: "foo", value: float64(5), labels: map[string]string{"label1": "value1", "quantile": "100"}},
+				},
+				expectedRetained: retainInitialValueOfDeltaMetric,
 			},
-		},
-		{
-			name:               "Detailed summary with 2nd delta sum count calculation",
-			summaryMetricValue: map[string]interface{}{"sum": float64(100), "count": uint64(25), "firstQuantile": float64(1), "secondQuantile": float64(5)},
-			expectedDatapoint: []dataPoint{
-				{name: fmt.Sprint("foo", summarySumSuffix), value: float64(82.7), labels: map[string]string{"label1": "value1"}},
-				{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(8), labels: map[string]string{"label1": "value1"}},
-				{name: "foo", value: float64(1), labels: map[string]string{"label1": "value1", "quantile": "0"}},
-				{name: "foo", value: float64(5), labels: map[string]string{"label1": "value1", "quantile": "100"}},
+			{
+				name:               "Detailed summary with 2nd delta sum count calculation",
+				summaryMetricValue: map[string]interface{}{"sum": float64(100), "count": uint64(25), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				expectedDatapoint: []dataPoint{
+					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(82.7), labels: map[string]string{"label1": "value1"}},
+					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(8), labels: map[string]string{"label1": "value1"}},
+					{name: "foo", value: float64(1), labels: map[string]string{"label1": "value1", "quantile": "0"}},
+					{name: "foo", value: float64(5), labels: map[string]string{"label1": "value1", "quantile": "100"}},
+				},
+				expectedRetained: true,
 			},
-		},
-		{
-			name:               "Detailed summary with 3rd delta sum count calculation",
-			summaryMetricValue: map[string]interface{}{"sum": float64(120), "count": uint64(26), "firstQuantile": float64(1), "secondQuantile": float64(5)},
-			expectedDatapoint: []dataPoint{
-				{name: fmt.Sprint("foo", summarySumSuffix), value: float64(20), labels: map[string]string{"label1": "value1"}},
-				{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(1), labels: map[string]string{"label1": "value1"}},
-				{name: "foo", value: float64(1), labels: map[string]string{"label1": "value1", "quantile": "0"}},
-				{name: "foo", value: float64(5), labels: map[string]string{"label1": "value1", "quantile": "100"}},
+			{
+				name:               "Detailed summary with 3rd delta sum count calculation",
+				summaryMetricValue: map[string]interface{}{"sum": float64(120), "count": uint64(26), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+				expectedDatapoint: []dataPoint{
+					{name: fmt.Sprint("foo", summarySumSuffix), value: float64(20), labels: map[string]string{"label1": "value1"}},
+					{name: fmt.Sprint("foo", summaryCountSuffix), value: uint64(1), labels: map[string]string{"label1": "value1"}},
+					{name: "foo", value: float64(1), labels: map[string]string{"label1": "value1", "quantile": "0"}},
+					{name: "foo", value: float64(5), labels: map[string]string{"label1": "value1", "quantile": "100"}},
+				},
+				expectedRetained: true,
 			},
-		},
-	}
+		}
 
-	for i, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Given the summary datapoints with quantile 0, quantile 100, sum and count
-			summaryDPS := pmetric.NewSummaryDataPointSlice()
-			summaryDP := summaryDPS.AppendEmpty()
-			summaryDP.SetSum(tc.summaryMetricValue["sum"].(float64))
-			summaryDP.SetCount(tc.summaryMetricValue["count"].(uint64))
-			summaryDP.Attributes().PutStr("label1", "value1")
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Given the summary datapoints with quantile 0, quantile 100, sum and count
+				summaryDPS := pmetric.NewSummaryDataPointSlice()
+				summaryDP := summaryDPS.AppendEmpty()
+				summaryDP.SetSum(tc.summaryMetricValue["sum"].(float64))
+				summaryDP.SetCount(tc.summaryMetricValue["count"].(uint64))
+				summaryDP.Attributes().PutStr("label1", "value1")
 
-			summaryDP.QuantileValues().EnsureCapacity(2)
-			firstQuantileValue := summaryDP.QuantileValues().AppendEmpty()
-			firstQuantileValue.SetQuantile(0)
-			firstQuantileValue.SetValue(tc.summaryMetricValue["firstQuantile"].(float64))
-			secondQuantileValue := summaryDP.QuantileValues().AppendEmpty()
-			secondQuantileValue.SetQuantile(100)
-			secondQuantileValue.SetValue(tc.summaryMetricValue["secondQuantile"].(float64))
+				summaryDP.QuantileValues().EnsureCapacity(2)
+				firstQuantileValue := summaryDP.QuantileValues().AppendEmpty()
+				firstQuantileValue.SetQuantile(0)
+				firstQuantileValue.SetValue(tc.summaryMetricValue["firstQuantile"].(float64))
+				secondQuantileValue := summaryDP.QuantileValues().AppendEmpty()
+				secondQuantileValue.SetQuantile(100)
+				secondQuantileValue.SetValue(tc.summaryMetricValue["secondQuantile"].(float64))
 
-			summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata, summaryDPS}
+				summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata, summaryDPS}
 
-			// When calculate the delta datapoints for sum and count in summary
-			dps, retained := summaryDatapointSlice.CalculateDeltaDatapoints(0, "", true)
+				// When calculate the delta datapoints for sum and count in summary
+				dps, retained := summaryDatapointSlice.CalculateDeltaDatapoints(0, "", true)
 
-			// Then receiving the following datapoint with an expected length
-			assert.Equal(t, i > 0, retained)
-			assert.Equal(t, 1, summaryDatapointSlice.Len())
-			if retained {
-				assert.Len(t, dps, 4)
-				for i, dp := range dps {
-					assert.Equal(t, tc.expectedDatapoint[i].labels, dp.labels)
-					assert.InDelta(t, tc.expectedDatapoint[i].value, dp.value, 0.002)
+				// Then receiving the following datapoint with an expected length
+				assert.Equal(t, tc.expectedRetained, retained)
+				assert.Equal(t, 1, summaryDatapointSlice.Len())
+				if retained {
+					assert.Len(t, dps, 4)
+					for i, dp := range dps {
+						assert.Equal(t, tc.expectedDatapoint[i].labels, dp.labels)
+						assert.InDelta(t, tc.expectedDatapoint[i].value, dp.value, 0.002)
+					}
+
 				}
-
-			}
-		})
+			})
+		}
 	}
 }
 
@@ -449,8 +455,8 @@ func TestCreateLabels(t *testing.T) {
 func TestGetDataPoints(t *testing.T) {
 	logger := zap.NewNop()
 
-	normalDeltraMetricMetadata := generateDeltaMetricMetadata(false, "foo")
-	cumulativeDeltaMetricMetadata := generateDeltaMetricMetadata(true, "foo")
+	normalDeltraMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
+	cumulativeDeltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", false)
 
 	testCases := []struct {
 		name                   string

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package countconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 
@@ -22,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -59,42 +50,38 @@ func createTracesToMetrics(
 ) (connector.Traces, error) {
 	c := cfg.(*Config)
 
-	spanMatchExprs := make(map[string]expr.BoolExpr[ottlspan.TransformContext], len(c.Spans))
-	spanParser, err := newSpanParser(set.TelemetrySettings.Logger)
-	if err != nil {
-		return nil, err
-	}
+	spanMetricDefs := make(map[string]metricDef[ottlspan.TransformContext], len(c.Spans))
 	for name, info := range c.Spans {
-		if len(info.Conditions) == 0 {
-			continue
+		md := metricDef[ottlspan.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
 		}
-		// Error checked in Config.Validate()
-		spanMatchExprs[name], _ = parseConditions(spanParser, info.Conditions)
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := filterottl.NewBoolExprForSpan(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			md.condition = condition
+		}
+		spanMetricDefs[name] = md
 	}
 
-	spanEventMatchExprs := make(map[string]expr.BoolExpr[ottlspanevent.TransformContext], len(c.SpanEvents))
-	spanEventParser, err := newSpanEventParser(set.TelemetrySettings.Logger)
-	if err != nil {
-		return nil, err
-	}
+	spanEventMetricDefs := make(map[string]metricDef[ottlspanevent.TransformContext], len(c.SpanEvents))
 	for name, info := range c.SpanEvents {
-		if len(info.Conditions) == 0 {
-			continue
+		md := metricDef[ottlspanevent.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
 		}
-		// Error checked in Config.Validate()
-		spanEventMatchExprs[name], _ = parseConditions(spanEventParser, info.Conditions)
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := filterottl.NewBoolExprForSpanEvent(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			md.condition = condition
+		}
+		spanEventMetricDefs[name] = md
 	}
 
 	return &count{
-		metricsConsumer: nextConsumer,
-		spansCounterFactory: &counterFactory[ottlspan.TransformContext]{
-			matchExprs:  spanMatchExprs,
-			metricInfos: c.Spans,
-		},
-		spanEventsCounterFactory: &counterFactory[ottlspanevent.TransformContext]{
-			matchExprs:  spanEventMatchExprs,
-			metricInfos: c.SpanEvents,
-		},
+		metricsConsumer:      nextConsumer,
+		spansMetricDefs:      spanMetricDefs,
+		spanEventsMetricDefs: spanEventMetricDefs,
 	}, nil
 }
 
@@ -107,42 +94,37 @@ func createMetricsToMetrics(
 ) (connector.Metrics, error) {
 	c := cfg.(*Config)
 
-	metricMatchExprs := make(map[string]expr.BoolExpr[ottlmetric.TransformContext], len(c.Metrics))
-	metricParser, err := newMetricParser(set.TelemetrySettings.Logger)
-	if err != nil {
-		return nil, err
-	}
+	metricMetricDefs := make(map[string]metricDef[ottlmetric.TransformContext], len(c.Metrics))
 	for name, info := range c.Metrics {
-		if len(info.Conditions) == 0 {
-			continue
+		md := metricDef[ottlmetric.TransformContext]{
+			desc: info.Description,
 		}
-		// Error checked in Config.Validate()
-		metricMatchExprs[name], _ = parseConditions(metricParser, info.Conditions)
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := filterottl.NewBoolExprForMetric(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			md.condition = condition
+		}
+		metricMetricDefs[name] = md
 	}
 
-	dataPointMatchExprs := make(map[string]expr.BoolExpr[ottldatapoint.TransformContext], len(c.DataPoints))
-	dataPointParser, err := newDataPointParser(set.TelemetrySettings.Logger)
-	if err != nil {
-		return nil, err
-	}
+	dataPointMetricDefs := make(map[string]metricDef[ottldatapoint.TransformContext], len(c.DataPoints))
 	for name, info := range c.DataPoints {
-		if len(info.Conditions) == 0 {
-			continue
+		md := metricDef[ottldatapoint.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
 		}
-		// Error checked in Config.Validate()
-		dataPointMatchExprs[name], _ = parseConditions(dataPointParser, info.Conditions)
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := filterottl.NewBoolExprForDataPoint(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			md.condition = condition
+		}
+		dataPointMetricDefs[name] = md
 	}
 
 	return &count{
-		metricsConsumer: nextConsumer,
-		metricsCounterFactory: &counterFactory[ottlmetric.TransformContext]{
-			matchExprs:  metricMatchExprs,
-			metricInfos: c.Metrics,
-		},
-		dataPointsCounterFactory: &counterFactory[ottldatapoint.TransformContext]{
-			matchExprs:  dataPointMatchExprs,
-			metricInfos: c.DataPoints,
-		},
+		metricsConsumer:      nextConsumer,
+		metricsMetricDefs:    metricMetricDefs,
+		dataPointsMetricDefs: dataPointMetricDefs,
 	}, nil
 }
 
@@ -155,24 +137,28 @@ func createLogsToMetrics(
 ) (connector.Logs, error) {
 	c := cfg.(*Config)
 
-	matchExprs := make(map[string]expr.BoolExpr[ottllog.TransformContext], len(c.Logs))
-	logParser, err := newLogParser(set.TelemetrySettings.Logger)
-	if err != nil {
-		return nil, err
-	}
+	metricDefs := make(map[string]metricDef[ottllog.TransformContext], len(c.Logs))
 	for name, info := range c.Logs {
-		if len(info.Conditions) == 0 {
-			continue
+		md := metricDef[ottllog.TransformContext]{
+			desc:  info.Description,
+			attrs: info.Attributes,
 		}
-		// Error checked in Config.Validate()
-		matchExprs[name], _ = parseConditions(logParser, info.Conditions)
+		if len(info.Conditions) > 0 {
+			// Error checked in Config.Validate()
+			condition, _ := filterottl.NewBoolExprForLog(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, set.TelemetrySettings)
+			md.condition = condition
+		}
+		metricDefs[name] = md
 	}
 
 	return &count{
 		metricsConsumer: nextConsumer,
-		logsCounterFactory: &counterFactory[ottllog.TransformContext]{
-			matchExprs:  matchExprs,
-			metricInfos: c.Logs,
-		},
+		logsMetricDefs:  metricDefs,
 	}, nil
+}
+
+type metricDef[K any] struct {
+	condition expr.BoolExpr[K]
+	desc      string
+	attrs     []AttributeConfig
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -21,9 +10,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -360,6 +352,22 @@ func TestUnmarshal(t *testing.T) {
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
+			{
+				Name: "header_config",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					regexCfg := regex.NewConfig()
+					cfg.Header = &HeaderConfig{
+						Pattern: "^#",
+						MetadataOperators: []operator.Config{
+							{
+								Builder: regexCfg,
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
 		},
 	}.Run(t)
 }
@@ -518,6 +526,14 @@ func TestBuild(t *testing.T) {
 				require.Equal(t, 6, m.maxBatches)
 			},
 		},
+		{
+			"HeaderConfigNoFlag",
+			func(f *Config) {
+				f.Header = &HeaderConfig{}
+			},
+			require.Error,
+			nil,
+		},
 	}
 
 	for _, tc := range cases {
@@ -611,6 +627,98 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			}
 
 			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmit, splitNone)
+			tc.errorRequirement(t, err)
+			if err != nil {
+				return
+			}
+
+			tc.validate(t, input)
+		})
+	}
+}
+
+func TestBuildWithHeader(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
+	})
+
+	basicConfig := func() *Config {
+		cfg := NewConfig()
+		cfg.Include = []string{"/var/log/testpath.*"}
+		cfg.Exclude = []string{"/var/log/testpath.ex*"}
+		cfg.PollInterval = 10 * time.Millisecond
+		return cfg
+	}
+
+	cases := []struct {
+		name             string
+		modifyBaseConfig func(*Config)
+		errorRequirement require.ErrorAssertionFunc
+		validate         func(*testing.T, *Manager)
+	}{
+		{
+			"InvalidHeaderConfig",
+			func(f *Config) {
+				f.Header = &HeaderConfig{}
+				f.StartAt = "beginning"
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"HeaderConfigWithStartAtEnd",
+			func(f *Config) {
+				regexCfg := regex.NewConfig()
+				regexCfg.Regex = "^(?P<field>.*)"
+				f.Header = &HeaderConfig{
+					Pattern: "^#",
+					MetadataOperators: []operator.Config{
+						{
+							Builder: regexCfg,
+						},
+					},
+				}
+				f.StartAt = "end"
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"ValidHeaderConfig",
+			func(f *Config) {
+				regexCfg := regex.NewConfig()
+				regexCfg.Regex = "^(?P<field>.*)"
+				f.Header = &HeaderConfig{
+					Pattern: "^#",
+					MetadataOperators: []operator.Config{
+						{
+							Builder: regexCfg,
+						},
+					},
+				}
+				f.StartAt = "beginning"
+			},
+			require.NoError,
+			func(t *testing.T, f *Manager) {
+				require.NotNil(t, f.readerFactory.headerSettings)
+				require.NotNil(t, f.readerFactory.headerSettings.matchRegex)
+				require.NotNil(t, f.readerFactory.headerSettings.splitFunc)
+				require.NotNil(t, f.readerFactory.headerSettings.config)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc := tc
+			t.Parallel()
+			cfg := basicConfig()
+			tc.modifyBaseConfig(cfg)
+
+			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
+
+			input, err := cfg.Build(testutil.Logger(t), nopEmit)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return

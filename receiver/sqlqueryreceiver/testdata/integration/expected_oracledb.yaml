@@ -1,0 +1,41 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: GENRE
+                      value:
+                        stringValue: SciFi
+                  timeUnixNano: "1684632870521947236"
+            name: genre.count
+          - gauge:
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: GENRE
+                      value:
+                        stringValue: Action
+                  timeUnixNano: "1684632870521947236"
+            name: genre.count
+          - gauge:
+              dataPoints:
+                - asDouble: 8.2
+                  attributes:
+                    - key: GENRE
+                      value:
+                        stringValue: SciFi
+                  timeUnixNano: "1684632870521947236"
+            name: genre.imdb
+          - gauge:
+              dataPoints:
+                - asDouble: 7.65
+                  attributes:
+                    - key: GENRE
+                      value:
+                        stringValue: Action
+                  timeUnixNano: "1684632870521947236"
+            name: genre.imdb
+        scope: {}

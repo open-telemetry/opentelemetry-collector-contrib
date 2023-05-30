@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
@@ -44,12 +33,12 @@ type MultilineConfig struct {
 }
 
 // Build will build a Multiline operator.
-func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
-	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize)
+func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF, preserveLeadingWhitespaces, preserveTrailingWhitespaces bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize, preserveLeadingWhitespaces, preserveTrailingWhitespaces)
 }
 
 // getSplitFunc returns split function for bufio.Scanner basing on configured pattern
-func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int, preserveLeadingWhitespaces, preserveTrailingWhitespaces bool) (bufio.SplitFunc, error) {
 	endPattern := c.LineEndPattern
 	startPattern := c.LineStartPattern
 
@@ -66,7 +55,7 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 	case enc == encoding.Nop:
 		return SplitNone(maxLogSize), nil
 	case endPattern == "" && startPattern == "":
-		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF)
+		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 
 		if err != nil {
 			return nil, err
@@ -76,13 +65,13 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 		if err != nil {
 			return nil, fmt.Errorf("compile line end regex: %w", err)
 		}
-		splitFunc = NewLineEndSplitFunc(re, flushAtEOF)
+		splitFunc = NewLineEndSplitFunc(re, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 	case startPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line start regex: %w", err)
 		}
-		splitFunc = NewLineStartSplitFunc(re, flushAtEOF)
+		splitFunc = NewLineStartSplitFunc(re, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
 	default:
 		return nil, fmt.Errorf("unreachable")
 	}
@@ -96,13 +85,13 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 
 // NewLineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that start with a match to the regex pattern provided
-func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
+func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				token = trimWhitespaces(data)
+				token = trimFunc(data)
 				advance = len(data)
 				return
 			}
@@ -114,7 +103,7 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if firstMatchStart != 0 {
 			// the beginning of the file does not match the start pattern, so return a token up to the first match so we don't lose data
 			advance = firstMatchStart
-			token = trimWhitespaces(data[0:firstMatchStart])
+			token = trimFunc(data[0:firstMatchStart])
 
 			// return if non-matching pattern is not only whitespaces
 			if token != nil {
@@ -129,7 +118,7 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			token = trimWhitespaces(data)
+			token = trimFunc(data)
 			advance = len(data)
 			return
 		}
@@ -141,8 +130,8 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		}
 		secondMatchStart := secondLoc[0] + secondLocOfset
 
-		advance = secondMatchStart                                      // start scanning at the beginning of the second match
-		token = trimWhitespaces(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
+		advance = secondMatchStart                               // start scanning at the beginning of the second match
+		token = trimFunc(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
 		err = nil
 		return
 	}
@@ -150,13 +139,13 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 // NewLineEndSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that end with a match to the regex pattern provided
-func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
+func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		loc := re.FindIndex(data)
 		if loc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				token = trimWhitespaces(data)
+				token = trimFunc(data)
 				advance = len(data)
 				return
 			}
@@ -170,7 +159,7 @@ func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		}
 
 		advance = loc[1]
-		token = trimWhitespaces(data[:loc[1]])
+		token = trimFunc(data[:loc[1]])
 		err = nil
 		return
 	}
@@ -178,7 +167,7 @@ func NewLineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 // NewNewlineSplitFunc splits log lines by newline, just as bufio.ScanLines, but
 // never returning an token using EOF as a terminator
-func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool) (bufio.SplitFunc, error) {
+func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool, trimFunc trimFunc) (bufio.SplitFunc, error) {
 	newline, err := encodedNewline(enc)
 	if err != nil {
 		return nil, err
@@ -198,12 +187,12 @@ func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool) (bufio.SplitFun
 			// We have a full newline-terminated line.
 			token = bytes.TrimSuffix(data[:i], carriageReturn)
 
-			return i + len(newline), trimWhitespaces(token), nil
+			return i + len(newline), trimFunc(token), nil
 		}
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			token = trimWhitespaces(data)
+			token = trimFunc(data)
 			advance = len(data)
 			return
 		}
@@ -225,13 +214,44 @@ func encodedCarriageReturn(enc encoding.Encoding) ([]byte, error) {
 	return out[:nDst], err
 }
 
-func trimWhitespaces(data []byte) []byte {
+type trimFunc func([]byte) []byte
+
+func noTrim(token []byte) []byte {
+	return token
+}
+
+func trimLeadingWhitespacesFunc(data []byte) []byte {
 	// TrimLeft to strip EOF whitespaces in case of using $ in regex
 	// For some reason newline and carriage return are being moved to beginning of next log
-	// TrimRight to strip all whitespaces from the end of log
-	token := bytes.TrimLeft(bytes.TrimRight(data, "\r\n\t "), "\r\n")
+	token := bytes.TrimLeft(data, "\r\n\t ")
 	if token == nil {
 		return []byte{}
 	}
 	return token
+}
+
+func trimTrailingWhitespacesFunc(data []byte) []byte {
+	// TrimRight to strip all whitespaces from the end of log
+	token := bytes.TrimRight(data, "\r\n\t ")
+	if token == nil {
+		return []byte{}
+	}
+	return token
+}
+
+func trimWhitespacesFunc(data []byte) []byte {
+	return trimLeadingWhitespacesFunc(trimTrailingWhitespacesFunc(data))
+}
+
+func getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces bool) trimFunc {
+	if preserveLeadingWhitespaces && preserveTrailingWhitespaces {
+		return noTrim
+	}
+	if preserveLeadingWhitespaces {
+		return trimTrailingWhitespacesFunc
+	}
+	if preserveTrailingWhitespaces {
+		return trimLeadingWhitespacesFunc
+	}
+	return trimWhitespacesFunc
 }

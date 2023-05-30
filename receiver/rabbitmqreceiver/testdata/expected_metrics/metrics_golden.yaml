@@ -1,0 +1,131 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: rabbitmq.queue.name
+          value:
+            stringValue: test2
+        - key: rabbitmq.node.name
+          value:
+            stringValue: rabbit@66a063ecff83
+        - key: rabbitmq.vhost.name
+          value:
+            stringValue: dev
+    scopeMetrics:
+      - metrics:
+          - description: The number of consumers currently reading from the queue.
+            name: rabbitmq.consumer.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+            unit: '{consumers}'
+          - description: The total number of messages currently in the queue.
+            name: rabbitmq.message.current
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: unacknowledged
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: ready
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+            unit: '{messages}'
+        scope:
+          name: otelcol/rabbitmqreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: rabbitmq.queue.name
+          value:
+            stringValue: webq1
+        - key: rabbitmq.node.name
+          value:
+            stringValue: rabbit@66a063ecff83
+        - key: rabbitmq.vhost.name
+          value:
+            stringValue: dev
+    scopeMetrics:
+      - metrics:
+          - description: The number of consumers currently reading from the queue.
+            name: rabbitmq.consumer.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+            unit: '{consumers}'
+          - description: The number of messages acknowledged by consumers.
+            name: rabbitmq.message.acknowledged
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7827"
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+              isMonotonic: true
+            unit: '{messages}'
+          - description: The total number of messages currently in the queue.
+            name: rabbitmq.message.current
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: unacknowledged
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+                - asInt: "1"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: ready
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+            unit: '{messages}'
+          - description: The number of messages delivered to consumers.
+            name: rabbitmq.message.delivered
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7828"
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+              isMonotonic: true
+            unit: '{messages}'
+          - description: The number of messages dropped as unroutable.
+            name: rabbitmq.message.dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+              isMonotonic: true
+            unit: '{messages}'
+          - description: The number of messages published to a queue.
+            name: rabbitmq.message.published
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "7830"
+                  startTimeUnixNano: "1656512143898318000"
+                  timeUnixNano: "1656512143899572000"
+              isMonotonic: true
+            unit: '{messages}'
+        scope:
+          name: otelcol/rabbitmqreceiver
+          version: latest

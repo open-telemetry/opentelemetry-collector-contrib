@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor
 
@@ -21,10 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -39,7 +26,9 @@ func TestMetricProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newMetricProcessor(component.TelemetrySettings{}, config)
+	p, err := newMetricProcessor(noopTelemetrySettings, config)
+	require.NoError(t, err)
+
 	require.NotNil(t, p)
 
 	// verify
@@ -57,7 +46,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	exp := newMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{
+	exp, err := newMetricProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -68,6 +57,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	m := pmetric.NewMetrics()
 
@@ -115,7 +105,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		},
 	})
 
-	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newMetricProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -126,6 +116,8 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	m := pmetric.NewMetrics()
@@ -174,7 +166,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	})
 
-	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newMetricProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -185,6 +177,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -227,7 +221,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 		},
 	})
 
-	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newMetricProcessor(noopTelemetrySettings, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -239,6 +233,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	m := pmetric.NewMetrics()
@@ -287,7 +283,9 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 			},
 		})
 
-		exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
+		exp, err := newMetricProcessor(noopTelemetrySettings, cfg)
+		require.NoError(b, err)
+
 		assert.NoError(b, exp.Start(context.Background(), host))
 
 		for i := 0; i < b.N; i++ {
@@ -319,7 +317,7 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		},
 	})
 
-	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newMetricProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -332,6 +330,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("metric matched by no expressions", func(t *testing.T) {

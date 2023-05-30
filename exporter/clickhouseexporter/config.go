@@ -1,23 +1,15 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"net/url"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 )
@@ -30,9 +22,7 @@ type Config struct {
 	// because only QueueSize is user-settable.
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
 
-	// Endpoint is the clickhouse server endpoint.
-	// TCP endpoint: tcp://ip1:port,ip2:port
-	// HTTP endpoint: http://ip:port,ip2:port
+	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
@@ -70,10 +60,17 @@ func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = multierr.Append(err, errConfigNoEndpoint)
 	}
-	_, e := cfg.buildDSN(cfg.Database)
+	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
 		err = multierr.Append(err, e)
 	}
+
+	// Validate DSN with clickhouse driver.
+	// Last chance to catch invalid config.
+	if _, e := clickhouse.ParseDSN(dsn); e != nil {
+		err = multierr.Append(err, e)
+	}
+
 	return err
 }
 
@@ -86,18 +83,55 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 }
 
 func (cfg *Config) buildDSN(database string) (string, error) {
-	dsn, err := url.Parse(cfg.Endpoint)
+	dsnURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return "", errConfigInvalidEndpoint
+		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err)
 	}
-	if cfg.Username != "" {
-		dsn.User = url.UserPassword(cfg.Username, cfg.Password)
-	}
-	dsn.Path = "/" + database
-	params := url.Values{}
+
+	queryParams := dsnURL.Query()
+
+	// Add connection params to query params.
 	for k, v := range cfg.ConnectionParams {
-		params.Set(k, v)
+		queryParams.Set(k, v)
 	}
-	dsn.RawQuery = params.Encode()
-	return dsn.String(), nil
+
+	// Enable TLS if scheme is https. This flag is necessary to support https connections.
+	if dsnURL.Scheme == "https" {
+		queryParams.Set("secure", "true")
+	}
+
+	// Override database if specified in config.
+	if cfg.Database != "" {
+		dsnURL.Path = cfg.Database
+	} else if database == "" && cfg.Database == "" && dsnURL.Path == "" {
+		// Use default database if not specified in any other place.
+		dsnURL.Path = defaultDatabase
+	}
+
+	// Override username and password if specified in config.
+	if cfg.Username != "" {
+		dsnURL.User = url.UserPassword(cfg.Username, cfg.Password)
+	}
+
+	dsnURL.RawQuery = queryParams.Encode()
+
+	return dsnURL.String(), nil
+}
+
+func (cfg *Config) buildDB(database string) (*sql.DB, error) {
+	dsn, err := cfg.buildDSN(database)
+	if err != nil {
+		return nil, err
+	}
+
+	// ClickHouse sql driver will read clickhouse settings from the DSN string.
+	// It also ensures defaults.
+	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
+	conn, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+
 }

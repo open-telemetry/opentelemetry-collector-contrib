@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor
 
@@ -32,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type metricNameTest struct {
@@ -526,6 +516,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 		conditions       MetricFilters
 		filterEverything bool
 		want             func(md pmetric.Metrics)
+		errorMode        ottl.ErrorMode
 	}{
 		{
 			name: "drop metrics",
@@ -539,15 +530,17 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Name() == "operationA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop everything by dropping all metrics",
 			conditions: MetricFilters{
 				MetricConditions: []string{
-					`IsMatch(name, "operation.*") == true`,
+					`IsMatch(name, "operation.*")`,
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "drop sum data point",
@@ -561,6 +554,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.DoubleValue() == 1.0
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all sum data points",
@@ -574,6 +568,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeSum
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop gauge data point",
@@ -587,6 +582,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.DoubleValue() == 1.0
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all gauge data points",
@@ -600,6 +596,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeGauge
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop histogram data point",
@@ -613,6 +610,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.Count() == 1
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all histogram data points",
@@ -626,6 +624,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeHistogram
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop exponential histogram data point",
@@ -639,6 +638,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.Count() == 1
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all exponential histogram data points",
@@ -652,6 +652,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeExponentialHistogram
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop summary data point",
@@ -665,6 +666,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return point.Sum() == 43.21
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop all summary data points",
@@ -678,6 +680,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					return metric.Type() == pmetric.MetricTypeSummary
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
@@ -688,11 +691,42 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "with error conditions",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
+			},
+			want:      func(md pmetric.Metrics) {},
+			errorMode: ottl.IgnoreError,
+		},
+		{
+			name: "HasAttrOnDatapoint",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`HasAttrOnDatapoint("attr1", "test1")`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "HasAttrKeyOnDatapoint",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`HasAttrKeyOnDatapoint("attr1")`,
+				},
+			},
+			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{Metrics: tt.conditions})
+			processor, err := newFilterMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processMetrics(context.Background(), constructMetrics())

@@ -1,16 +1,5 @@
-// Copyright 2022 The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 
@@ -36,7 +25,7 @@ type ScraperType string
 
 const (
 	ScraperTypeArray       ScraperType = "array"
-	ScraperTypeHost        ScraperType = "host"
+	ScraperTypeHosts       ScraperType = "hosts"
 	ScraperTypeDirectories ScraperType = "directories"
 	ScraperTypePods        ScraperType = "pods"
 	ScraperTypeVolumes     ScraperType = "volumes"
@@ -83,6 +72,9 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
 
+		labels := h.labels
+		labels["fa_array_name"] = model.LabelValue(arr.Address)
+
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
@@ -101,7 +93,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.
 						Targets: []model.LabelSet{
 							{model.AddressLabel: model.LabelValue(u.Host)},
 						},
-						Labels: h.labels,
+						Labels: labels,
 					},
 				},
 			},

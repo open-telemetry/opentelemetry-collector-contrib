@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 
@@ -689,11 +678,12 @@ func getRecordFunc(metricName string) metricRecordFunc {
 		}
 
 	// Disk space, in bytes, that Atlas Search indexes use.
-	case "FTS_DISK_USAGE":
+	// FTS_DISK_UTILIZATION is the documented field name, but FTS_DISK_USAGE is what is returned from the API.
+	// Including both so if the API changes to match the documentation this metric is still collected.
+	case "FTS_DISK_USAGE", "FTS_DISK_UTILIZATION":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
 			mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, float64(*dp.Value))
 		}
-
 	// Percentage of CPU that Atlas Search processes use.
 	case "FTS_PROCESS_CPU_USER":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
@@ -745,8 +735,7 @@ func getRecordFunc(metricName string) metricRecordFunc {
 			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionTotal)
 		}
 
-	// The percentage of time during which requests are being issued to and serviced by the partition.
-	// This includes requests from any process, not just MongoDB processes.
+	// Measures latency per operation type of the disk partition used by MongoDB.
 	case "DISK_PARTITION_LATENCY_READ":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
 			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionRead)
@@ -767,7 +756,19 @@ func getRecordFunc(metricName string) metricRecordFunc {
 			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, float64(*dp.Value), AttributeDiskDirectionWrite)
 		}
 
-	// Measures latency per operation type of the disk partition used by MongoDB.
+	// The percentage of time during which requests are being issued to and serviced by the partition.
+	// This includes requests from any process, not just MongoDB processes.
+	case "DISK_PARTITION_UTILIZATION":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, float64(*dp.Value))
+		}
+
+	case "MAX_DISK_PARTITION_UTILIZATION":
+		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
+			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, float64(*dp.Value))
+		}
+
+	// Measures the free disk space and used disk space on the disk partition used by MongoDB.
 	case "DISK_PARTITION_SPACE_FREE":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
 			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
@@ -790,19 +791,19 @@ func getRecordFunc(metricName string) metricRecordFunc {
 
 	case "DISK_PARTITION_SPACE_PERCENT_FREE":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
+			mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
 		}
 	case "MAX_DISK_PARTITION_SPACE_PERCENT_FREE":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
+			mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusFree)
 		}
 	case "DISK_PARTITION_SPACE_PERCENT_USED":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
+			mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
 		}
 	case "MAX_DISK_PARTITION_SPACE_PERCENT_USED":
 		return func(mb *MetricsBuilder, dp *mongodbatlas.DataPoints, ts pcommon.Timestamp) {
-			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
+			mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, float64(*dp.Value), AttributeDiskStatusUsed)
 		}
 
 	// Process Database Measurements (https://docs.atlas.mongodb.com/reference/api/process-disks-measurements/)
@@ -848,7 +849,7 @@ func getRecordFunc(metricName string) metricRecordFunc {
 	}
 }
 
-func MeasurementsToMetric(mb *MetricsBuilder, meas *mongodbatlas.Measurements, buildUnrecognized bool) error {
+func MeasurementsToMetric(mb *MetricsBuilder, meas *mongodbatlas.Measurements, _ bool) error {
 	recordFunc := getRecordFunc(meas.Name)
 	if recordFunc == nil {
 		return nil

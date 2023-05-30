@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver
 
@@ -26,6 +15,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
+
+var referencableTrue = true
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
@@ -121,9 +112,11 @@ func TestValidate(t *testing.T) {
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*ProjectConfig{
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
+							ProjectConfig: ProjectConfig{
+								Name: "Project1",
+							},
 							EnableAuditLogs: false,
 						},
 					},
@@ -144,12 +137,14 @@ func TestValidate(t *testing.T) {
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*ProjectConfig{
+					Projects: []*LogsProjectConfig{
 						{
-							Name:            "Project1",
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								ExcludeClusters: []string{"cluster1"},
+								IncludeClusters: []string{"cluster2"},
+							},
 							EnableAuditLogs: false,
-							ExcludeClusters: []string{"cluster1"},
-							IncludeClusters: []string{"cluster2"},
 						},
 					},
 				},
@@ -165,7 +160,6 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{
 						{
 							Name:            "Project1",
-							EnableAuditLogs: false,
 							ExcludeClusters: []string{"cluster1"},
 							IncludeClusters: []string{"cluster2"},
 						},
@@ -236,7 +230,48 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{},
 				},
 			},
-			expectedErr: errNoProjects.Error(),
+			expectedErr: errNoEvents.Error(),
+		},
+		{
+			name: "Valid Access Logs Config",
+			input: Config{
+				Logs: LogConfig{
+					Projects: []*LogsProjectConfig{
+						{
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								IncludeClusters: []string{"Cluster1"},
+							},
+							AccessLogs: &AccessLogsConfig{
+								Enabled:    &referencableTrue,
+								AuthResult: &referencableTrue,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Invalid Access Logs Config - bad project config",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
+					Projects: []*LogsProjectConfig{
+						{
+							ProjectConfig: ProjectConfig{
+								Name:            "Project1",
+								IncludeClusters: []string{"Cluster1"},
+								ExcludeClusters: []string{"Cluster3"},
+							},
+							AccessLogs: &AccessLogsConfig{
+								Enabled:    &referencableTrue,
+								AuthResult: &referencableTrue,
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errClusterConfig.Error(),
 		},
 	}
 
@@ -260,19 +295,27 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Metrics = metadata.DefaultMetricsSettings()
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
 	expected.PrivateKey = "my-private-key"
 	expected.PublicKey = "my-public-key"
 	expected.Logs = LogConfig{
 		Enabled: true,
-		Projects: []*ProjectConfig{
+		Projects: []*LogsProjectConfig{
 			{
-				Name: "Project 0",
+				ProjectConfig: ProjectConfig{
+					Name: "Project 0",
+				},
+				AccessLogs: &AccessLogsConfig{
+					Enabled:      &referencableTrue,
+					AuthResult:   &referencableTrue,
+					PollInterval: time.Minute,
+				},
+				EnableAuditLogs: true,
 			},
 		},
 	}
@@ -294,6 +337,11 @@ func TestLoadConfig(t *testing.T) {
 		Projects: []*ProjectConfig{
 			{
 				Name: "Project 0",
+			},
+		},
+		Organizations: []*OrgConfig{
+			{
+				ID: "5b478b3afc4625789ce616a3",
 			},
 		},
 		PollInterval: time.Minute,

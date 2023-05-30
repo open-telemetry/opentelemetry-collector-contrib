@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package lokiexporter
 
@@ -29,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/metadata"
 )
 
 func TestLoadConfigNewExporter(t *testing.T) {
@@ -42,7 +33,7 @@ func TestLoadConfigNewExporter(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Headers: map[string]configopaque.String{
@@ -91,82 +82,6 @@ func TestLoadConfigNewExporter(t *testing.T) {
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
-}
-
-func TestIsLegacy(t *testing.T) {
-	testCases := []struct {
-		desc    string
-		cfg     *Config
-		outcome bool
-	}{
-		{
-			// the default mode for an empty config is the new logic
-			desc: "not legacy",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-			},
-			outcome: false,
-		},
-		{
-			desc: "format is set to body",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Format: stringp("body"),
-			},
-			outcome: true,
-		},
-		{
-			desc: "a label is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Labels: &LabelsConfig{
-					Attributes: map[string]string{"some_attribute": "some_value"},
-				},
-			},
-			outcome: true,
-		},
-		{
-			desc: "a tenant is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				Tenant: &Tenant{
-					Source: "static",
-					Value:  "acme",
-				},
-			},
-			outcome: true,
-		},
-		{
-			desc: "a tenant ID is specified",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://loki.example.com",
-				},
-				TenantID: stringp("acme"),
-			},
-			outcome: true,
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			assert.Equal(t, tC.outcome, tC.cfg.isLegacy())
-
-			// all configs from this table test are valid:
-			assert.NoError(t, tC.cfg.Validate())
-		})
-	}
-}
-
-func stringp(str string) *string {
-	return &str
 }
 
 func TestConfigValidate(t *testing.T) {

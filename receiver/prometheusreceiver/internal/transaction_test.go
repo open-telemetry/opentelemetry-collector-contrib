@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -128,6 +117,28 @@ func TestTransactionAppendResource(t *testing.T) {
 	require.Len(t, mds, 1)
 	gotResource := mds[0].ResourceMetrics().At(0).Resource()
 	require.Equal(t, expectedResource, gotResource)
+}
+
+func TestReceiverVersionAndNameAreAttached(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+	assert.NoError(t, tr.Commit())
+
+	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+
+	gotScope := mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope()
+	require.Equal(t, receiverName, gotScope.Name())
+	require.Equal(t, component.NewDefaultBuildInfo().Version, gotScope.Version())
 }
 
 func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
@@ -1129,19 +1140,6 @@ func TestMetricBuilderHistogram(t *testing.T) {
 			},
 			wants: func() []pmetric.Metrics {
 				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(3)
-				pt0.SetSum(100)
-				pt0.BucketCounts().FromRaw([]uint64{3})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
 				return []pmetric.Metrics{md0}
 			},
 		},

@@ -1,147 +1,183 @@
 default:
-all_metrics:
-  vcenter.cluster.cpu.effective:
-    enabled: true
-  vcenter.cluster.cpu.limit:
-    enabled: true
-  vcenter.cluster.host.count:
-    enabled: true
-  vcenter.cluster.memory.effective:
-    enabled: true
-  vcenter.cluster.memory.limit:
-    enabled: true
-  vcenter.cluster.memory.used:
-    enabled: true
-  vcenter.cluster.vm.count:
-    enabled: true
-  vcenter.datastore.disk.usage:
-    enabled: true
-  vcenter.datastore.disk.utilization:
-    enabled: true
-  vcenter.host.cpu.usage:
-    enabled: true
-  vcenter.host.cpu.utilization:
-    enabled: true
-  vcenter.host.disk.latency.avg:
-    enabled: true
-  vcenter.host.disk.latency.max:
-    enabled: true
-  vcenter.host.disk.throughput:
-    enabled: true
-  vcenter.host.memory.usage:
-    enabled: true
-  vcenter.host.memory.utilization:
-    enabled: true
-  vcenter.host.network.packet.count:
-    enabled: true
-  vcenter.host.network.packet.errors:
-    enabled: true
-  vcenter.host.network.throughput:
-    enabled: true
-  vcenter.host.network.usage:
-    enabled: true
-  vcenter.resource_pool.cpu.shares:
-    enabled: true
-  vcenter.resource_pool.cpu.usage:
-    enabled: true
-  vcenter.resource_pool.memory.shares:
-    enabled: true
-  vcenter.resource_pool.memory.usage:
-    enabled: true
-  vcenter.vm.disk.latency.avg:
-    enabled: true
-  vcenter.vm.disk.latency.max:
-    enabled: true
-  vcenter.vm.disk.throughput:
-    enabled: true
-  vcenter.vm.disk.usage:
-    enabled: true
-  vcenter.vm.disk.utilization:
-    enabled: true
-  vcenter.vm.memory.ballooned:
-    enabled: true
-  vcenter.vm.memory.swapped:
-    enabled: true
-  vcenter.vm.memory.swapped_ssd:
-    enabled: true
-  vcenter.vm.memory.usage:
-    enabled: true
-  vcenter.vm.network.packet.count:
-    enabled: true
-  vcenter.vm.network.throughput:
-    enabled: true
-  vcenter.vm.network.usage:
-    enabled: true
-no_metrics:
-  vcenter.cluster.cpu.effective:
-    enabled: false
-  vcenter.cluster.cpu.limit:
-    enabled: false
-  vcenter.cluster.host.count:
-    enabled: false
-  vcenter.cluster.memory.effective:
-    enabled: false
-  vcenter.cluster.memory.limit:
-    enabled: false
-  vcenter.cluster.memory.used:
-    enabled: false
-  vcenter.cluster.vm.count:
-    enabled: false
-  vcenter.datastore.disk.usage:
-    enabled: false
-  vcenter.datastore.disk.utilization:
-    enabled: false
-  vcenter.host.cpu.usage:
-    enabled: false
-  vcenter.host.cpu.utilization:
-    enabled: false
-  vcenter.host.disk.latency.avg:
-    enabled: false
-  vcenter.host.disk.latency.max:
-    enabled: false
-  vcenter.host.disk.throughput:
-    enabled: false
-  vcenter.host.memory.usage:
-    enabled: false
-  vcenter.host.memory.utilization:
-    enabled: false
-  vcenter.host.network.packet.count:
-    enabled: false
-  vcenter.host.network.packet.errors:
-    enabled: false
-  vcenter.host.network.throughput:
-    enabled: false
-  vcenter.host.network.usage:
-    enabled: false
-  vcenter.resource_pool.cpu.shares:
-    enabled: false
-  vcenter.resource_pool.cpu.usage:
-    enabled: false
-  vcenter.resource_pool.memory.shares:
-    enabled: false
-  vcenter.resource_pool.memory.usage:
-    enabled: false
-  vcenter.vm.disk.latency.avg:
-    enabled: false
-  vcenter.vm.disk.latency.max:
-    enabled: false
-  vcenter.vm.disk.throughput:
-    enabled: false
-  vcenter.vm.disk.usage:
-    enabled: false
-  vcenter.vm.disk.utilization:
-    enabled: false
-  vcenter.vm.memory.ballooned:
-    enabled: false
-  vcenter.vm.memory.swapped:
-    enabled: false
-  vcenter.vm.memory.swapped_ssd:
-    enabled: false
-  vcenter.vm.memory.usage:
-    enabled: false
-  vcenter.vm.network.packet.count:
-    enabled: false
-  vcenter.vm.network.throughput:
-    enabled: false
-  vcenter.vm.network.usage:
-    enabled: false
+all_set:
+  metrics:
+    vcenter.cluster.cpu.effective:
+      enabled: true
+    vcenter.cluster.cpu.limit:
+      enabled: true
+    vcenter.cluster.host.count:
+      enabled: true
+    vcenter.cluster.memory.effective:
+      enabled: true
+    vcenter.cluster.memory.limit:
+      enabled: true
+    vcenter.cluster.memory.used:
+      enabled: true
+    vcenter.cluster.vm.count:
+      enabled: true
+    vcenter.datastore.disk.usage:
+      enabled: true
+    vcenter.datastore.disk.utilization:
+      enabled: true
+    vcenter.host.cpu.usage:
+      enabled: true
+    vcenter.host.cpu.utilization:
+      enabled: true
+    vcenter.host.disk.latency.avg:
+      enabled: true
+    vcenter.host.disk.latency.max:
+      enabled: true
+    vcenter.host.disk.throughput:
+      enabled: true
+    vcenter.host.memory.usage:
+      enabled: true
+    vcenter.host.memory.utilization:
+      enabled: true
+    vcenter.host.network.packet.count:
+      enabled: true
+    vcenter.host.network.packet.errors:
+      enabled: true
+    vcenter.host.network.throughput:
+      enabled: true
+    vcenter.host.network.usage:
+      enabled: true
+    vcenter.resource_pool.cpu.shares:
+      enabled: true
+    vcenter.resource_pool.cpu.usage:
+      enabled: true
+    vcenter.resource_pool.memory.shares:
+      enabled: true
+    vcenter.resource_pool.memory.usage:
+      enabled: true
+    vcenter.vm.cpu.usage:
+      enabled: true
+    vcenter.vm.cpu.utilization:
+      enabled: true
+    vcenter.vm.disk.latency.avg:
+      enabled: true
+    vcenter.vm.disk.latency.max:
+      enabled: true
+    vcenter.vm.disk.throughput:
+      enabled: true
+    vcenter.vm.disk.usage:
+      enabled: true
+    vcenter.vm.disk.utilization:
+      enabled: true
+    vcenter.vm.memory.ballooned:
+      enabled: true
+    vcenter.vm.memory.swapped:
+      enabled: true
+    vcenter.vm.memory.swapped_ssd:
+      enabled: true
+    vcenter.vm.memory.usage:
+      enabled: true
+    vcenter.vm.network.packet.count:
+      enabled: true
+    vcenter.vm.network.throughput:
+      enabled: true
+    vcenter.vm.network.usage:
+      enabled: true
+  resource_attributes:
+    vcenter.cluster.name:
+      enabled: true
+    vcenter.datastore.name:
+      enabled: true
+    vcenter.host.name:
+      enabled: true
+    vcenter.resource_pool.name:
+      enabled: true
+    vcenter.vm.id:
+      enabled: true
+    vcenter.vm.name:
+      enabled: true
+none_set:
+  metrics:
+    vcenter.cluster.cpu.effective:
+      enabled: false
+    vcenter.cluster.cpu.limit:
+      enabled: false
+    vcenter.cluster.host.count:
+      enabled: false
+    vcenter.cluster.memory.effective:
+      enabled: false
+    vcenter.cluster.memory.limit:
+      enabled: false
+    vcenter.cluster.memory.used:
+      enabled: false
+    vcenter.cluster.vm.count:
+      enabled: false
+    vcenter.datastore.disk.usage:
+      enabled: false
+    vcenter.datastore.disk.utilization:
+      enabled: false
+    vcenter.host.cpu.usage:
+      enabled: false
+    vcenter.host.cpu.utilization:
+      enabled: false
+    vcenter.host.disk.latency.avg:
+      enabled: false
+    vcenter.host.disk.latency.max:
+      enabled: false
+    vcenter.host.disk.throughput:
+      enabled: false
+    vcenter.host.memory.usage:
+      enabled: false
+    vcenter.host.memory.utilization:
+      enabled: false
+    vcenter.host.network.packet.count:
+      enabled: false
+    vcenter.host.network.packet.errors:
+      enabled: false
+    vcenter.host.network.throughput:
+      enabled: false
+    vcenter.host.network.usage:
+      enabled: false
+    vcenter.resource_pool.cpu.shares:
+      enabled: false
+    vcenter.resource_pool.cpu.usage:
+      enabled: false
+    vcenter.resource_pool.memory.shares:
+      enabled: false
+    vcenter.resource_pool.memory.usage:
+      enabled: false
+    vcenter.vm.cpu.usage:
+      enabled: false
+    vcenter.vm.cpu.utilization:
+      enabled: false
+    vcenter.vm.disk.latency.avg:
+      enabled: false
+    vcenter.vm.disk.latency.max:
+      enabled: false
+    vcenter.vm.disk.throughput:
+      enabled: false
+    vcenter.vm.disk.usage:
+      enabled: false
+    vcenter.vm.disk.utilization:
+      enabled: false
+    vcenter.vm.memory.ballooned:
+      enabled: false
+    vcenter.vm.memory.swapped:
+      enabled: false
+    vcenter.vm.memory.swapped_ssd:
+      enabled: false
+    vcenter.vm.memory.usage:
+      enabled: false
+    vcenter.vm.network.packet.count:
+      enabled: false
+    vcenter.vm.network.throughput:
+      enabled: false
+    vcenter.vm.network.usage:
+      enabled: false
+  resource_attributes:
+    vcenter.cluster.name:
+      enabled: false
+    vcenter.datastore.name:
+      enabled: false
+    vcenter.host.name:
+      enabled: false
+    vcenter.resource_pool.name:
+      enabled: false
+    vcenter.vm.id:
+      enabled: false
+    vcenter.vm.name:
+      enabled: false

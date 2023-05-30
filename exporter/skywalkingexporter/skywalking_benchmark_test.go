@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package skywalkingexporter
 
@@ -21,6 +10,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -31,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
@@ -40,7 +29,7 @@ import (
 )
 
 var (
-	consumerNum = atomic.NewInt32(0)
+	consumerNum = &atomic.Int32{}
 	sumNum      = 10000
 )
 
@@ -200,7 +189,7 @@ func (h *mockLogHandler2) Collect(stream logpb.LogReportService_CollectServer) e
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {
-			consumerNum.Inc()
+			consumerNum.Add(1)
 			if consumerNum.Load() >= int32(sumNum) {
 				end := time.Now().UnixMilli()
 				h.stopChan <- end

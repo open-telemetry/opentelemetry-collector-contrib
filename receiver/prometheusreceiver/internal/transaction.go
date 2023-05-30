@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
@@ -28,6 +17,7 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
@@ -41,6 +31,7 @@ import (
 
 const (
 	targetMetricName = "target_info"
+	receiverName     = "otelcol/prometheusreceiver"
 )
 
 type transaction struct {
@@ -52,6 +43,7 @@ type transaction struct {
 	externalLabels labels.Labels
 	nodeResource   pcommon.Resource
 	logger         *zap.Logger
+	buildInfo      component.BuildInfo
 	metricAdjuster MetricsAdjuster
 	obsrecv        *obsreport.Receiver
 	// Used as buffer to calculate series ref hash.
@@ -75,6 +67,7 @@ func newTransaction(
 		metricAdjuster: metricAdjuster,
 		externalLabels: externalLabels,
 		logger:         settings.Logger,
+		buildInfo:      settings.BuildInfo,
 		obsrecv:        obsrecv,
 		bufBytes:       make([]byte, 0, 1024),
 		normalizer:     prometheustranslator.NewNormalizer(registry),
@@ -82,7 +75,7 @@ func newTransaction(
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
+func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -156,7 +149,7 @@ func (t *transaction) getOrCreateMetricFamily(mn string) *metricFamily {
 	return curMf
 }
 
-func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
+func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -186,7 +179,7 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 	return 0, nil
 }
 
-func (t *transaction) AppendHistogram(ref storage.SeriesRef, l labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) AppendHistogram(_ storage.SeriesRef, _ labels.Labels, _ int64, h *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	//TODO: implement this func
 	return 0, nil
 }
@@ -207,7 +200,10 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics().AppendEmpty()
 	resource.CopyTo(rms.Resource())
-	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
+	ils := rms.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName(receiverName)
+	ils.Scope().SetVersion(t.buildInfo.Version)
+	metrics := ils.Metrics()
 
 	for _, mf := range t.families {
 		mf.appendMetric(metrics, t.normalizer)

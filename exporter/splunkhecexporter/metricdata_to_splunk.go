@@ -1,23 +1,15 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"hash/fnv"
 	"math"
 	"strconv"
+	"strings"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -232,7 +224,20 @@ func createEvent(timestamp pcommon.Timestamp, host string, source string, source
 		Event:      splunk.HecEventMetricType,
 		Fields:     fields,
 	}
+}
 
+func copyEventWithoutValues(event *splunk.Event) *splunk.Event {
+	return &splunk.Event{
+		Time:       event.Time,
+		Host:       event.Host,
+		Source:     event.Source,
+		SourceType: event.SourceType,
+		Index:      event.Index,
+		Event:      event.Event,
+		Fields: cloneMapWithSelector(event.Fields, func(key string) bool {
+			return !strings.HasPrefix(key, splunkMetricValue)
+		}),
+	}
 }
 
 func populateAttributes(fields map[string]interface{}, attributeMap pcommon.Map) {
@@ -250,20 +255,54 @@ func cloneMap(fields map[string]interface{}) map[string]interface{} {
 	return newFields
 }
 
-func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) *float64 {
-	if ts == 0 {
-		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
-		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
-		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
-		// at indexing time, which will be much more useful than a 0-epoch-time value.
-		return nil
+func cloneMapWithSelector(fields map[string]interface{}, selector func(string) bool) map[string]interface{} {
+	newFields := make(map[string]interface{}, len(fields))
+	for k, v := range fields {
+		if selector(k) {
+			newFields[k] = v
+		}
 	}
+	return newFields
+}
 
-	val := math.Round(float64(ts)/1e6) / 1e3
-
-	return &val
+func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) float64 {
+	return math.Round(float64(ts)/1e6) / 1e3
 }
 
 func float64ToDimValue(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
+}
+
+// merge metric events to adhere to the multimetric format event.
+func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, error) {
+	hashes := map[uint32]*splunk.Event{}
+	hasher := fnv.New32a()
+	var merged []*splunk.Event
+
+	for _, e := range events {
+		cloned := copyEventWithoutValues(e)
+		marshaler := jsoniter.ConfigCompatibleWithStandardLibrary
+		data, err := marshaler.Marshal(cloned)
+		if err != nil {
+			return nil, err
+		}
+		_, err = hasher.Write(data)
+		if err != nil {
+			return nil, err
+		}
+		hashed := hasher.Sum32()
+		hasher.Reset()
+		src, ok := hashes[hashed]
+		if !ok {
+			hashes[hashed] = e
+			merged = append(merged, e)
+		} else {
+			for field, value := range e.Fields {
+				if strings.HasPrefix(field, splunkMetricValue) {
+					src.Fields[field] = value
+				}
+			}
+		}
+	}
+	return merged, nil
 }

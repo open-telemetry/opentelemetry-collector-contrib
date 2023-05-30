@@ -1,0 +1,11 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: type
+          value:
+            stringValue: one
+  - resource:
+      attributes:
+        - key: type
+          value:
+            stringValue: three

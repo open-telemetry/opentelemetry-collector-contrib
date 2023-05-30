@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
@@ -75,11 +64,12 @@ type dataPoints interface {
 
 // deltaMetricMetadata contains the metadata required to perform rate/delta calculation
 type deltaMetricMetadata struct {
-	adjustToDelta bool
-	metricName    string
-	namespace     string
-	logGroup      string
-	logStream     string
+	adjustToDelta              bool
+	retainInitialValueForDelta bool
+	metricName                 string
+	namespace                  string
+	logGroup                   string
+	logStream                  string
 }
 
 // numberDataPointSlice is a wrapper for pmetric.NumberDataPointSlice
@@ -127,6 +117,13 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 		var deltaVal interface{}
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
 		deltaVal, retained = deltaMetricCalculator.Calculate(mKey, metricVal, metric.Timestamp().AsTime())
+
+		// If a delta to the previous data point could not be computed use the current metric value instead
+		if !retained && dps.retainInitialValueForDelta {
+			retained = true
+			deltaVal = metricVal
+		}
+
 		if !retained {
 			return nil, retained
 		}
@@ -175,6 +172,13 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 		var delta interface{}
 		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
 		delta, retained = summaryMetricCalculator.Calculate(mKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
+
+		// If a delta to the previous data point could not be computed use the current metric value instead
+		if !retained && dps.retainInitialValueForDelta {
+			retained = true
+			delta = summaryMetricEntry{sum, count}
+		}
+
 		if !retained {
 			return datapoints, retained
 		}
@@ -229,11 +233,12 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 // getDataPoints retrieves data points from OT Metric.
 func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) dataPoints {
 	metricMetadata := deltaMetricMetadata{
-		adjustToDelta: false,
-		metricName:    pmd.Name(),
-		namespace:     metadata.namespace,
-		logGroup:      metadata.logGroup,
-		logStream:     metadata.logStream,
+		adjustToDelta:              false,
+		retainInitialValueForDelta: metadata.retainInitialValueForDelta,
+		metricName:                 pmd.Name(),
+		namespace:                  metadata.namespace,
+		logGroup:                   metadata.logGroup,
+		logStream:                  metadata.logStream,
 	}
 
 	var dps dataPoints

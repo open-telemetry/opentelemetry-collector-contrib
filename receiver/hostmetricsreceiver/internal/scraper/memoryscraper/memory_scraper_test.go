@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package memoryscraper
 
@@ -48,19 +37,21 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
 		{
 			name: "All metrics enabled",
 			config: &Config{
-				Metrics: metadata.MetricsSettings{
-					SystemMemoryUtilization: metadata.MetricSettings{
-						Enabled: true,
-					},
-					SystemMemoryUsage: metadata.MetricSettings{
-						Enabled: true,
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						SystemMemoryUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+						SystemMemoryUsage: metadata.MetricConfig{
+							Enabled: true,
+						},
 					},
 				},
 			},
@@ -71,7 +62,7 @@ func TestScrape(t *testing.T) {
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedErr:       "err1",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -80,7 +71,7 @@ func TestScrape(t *testing.T) {
 			bootTimeFunc:      func() (uint64, error) { return 100, errors.New("err1") },
 			initializationErr: "err1",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -153,12 +144,11 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			mbc := metadata.DefaultMetricsBuilderConfig()
+			mbc.Metrics.SystemMemoryUtilization.Enabled = true
+			mbc.Metrics.SystemMemoryUsage.Enabled = false
 			scraperConfig := Config{
-				Metrics: metadata.MetricsSettings{
-					SystemMemoryUtilization: metadata.MetricSettings{
-						Enabled: true,
-					},
-				},
+				MetricsBuilderConfig: mbc,
 			}
 			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), &scraperConfig)
 			if test.virtualMemoryFunc != nil {

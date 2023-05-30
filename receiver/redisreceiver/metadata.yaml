@@ -1,11 +1,17 @@
-name: redisreceiver
+type: redis
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, observiq, sumo]
 
 resource_attributes:
   redis.version:
     description: Redis server's version.
     enabled: true
     type: string
-    
+
 attributes:
   state:
     description: Redis CPU usage state
@@ -24,7 +30,7 @@ attributes:
       - sys_main_thread
       - user
       - user_children
-      - user_main_thread 
+      - user_main_thread
   db:
     description: Redis database identifier
     type: string

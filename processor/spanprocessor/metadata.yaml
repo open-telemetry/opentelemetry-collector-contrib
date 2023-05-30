@@ -1,0 +1,7 @@
+type: span
+
+status:
+  class: processor
+  stability:
+    alpha: [traces]
+  distributions: [core, contrib, observiq, splunk, sumo]

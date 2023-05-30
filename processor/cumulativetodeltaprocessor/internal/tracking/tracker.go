@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tracking // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -28,6 +18,40 @@ import (
 
 // Allocate a minimum of 64 bytes to the builder initially
 const initialBytes = 64
+
+type InitialValue int
+
+const (
+	InitialValueAuto InitialValue = iota
+	InitialValueKeep
+	InitialValueDrop
+)
+
+func (i *InitialValue) String() string {
+	switch *i {
+	case InitialValueAuto:
+		return "auto"
+	case InitialValueKeep:
+		return "keep"
+	case InitialValueDrop:
+		return "drop"
+	}
+	return "unknown"
+}
+
+func (i *InitialValue) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "auto":
+		*i = InitialValueAuto
+	case "keep":
+		*i = InitialValueKeep
+	case "drop":
+		*i = InitialValueDrop
+	default:
+		return fmt.Errorf("unknown initial_value: %s", text)
+	}
+	return nil
+}
 
 var identityBufferPool = sync.Pool{
 	New: func() interface{} {
@@ -47,8 +71,13 @@ type DeltaValue struct {
 	HistogramValue *HistogramPoint
 }
 
-func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration) *MetricTracker {
-	t := &MetricTracker{logger: logger, maxStaleness: maxStaleness}
+func NewMetricTracker(ctx context.Context, logger *zap.Logger, maxStaleness time.Duration, initalValue InitialValue) *MetricTracker {
+	t := &MetricTracker{
+		logger:       logger,
+		maxStaleness: maxStaleness,
+		initialValue: initalValue,
+		startTime:    pcommon.NewTimestampFromTime(time.Now()),
+	}
 	if maxStaleness > 0 {
 		go t.sweeper(ctx, t.removeStale)
 	}
@@ -59,6 +88,8 @@ type MetricTracker struct {
 	logger       *zap.Logger
 	maxStaleness time.Duration
 	states       sync.Map
+	initialValue InitialValue
+	startTime    pcommon.Timestamp
 }
 
 func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
@@ -85,8 +116,27 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		PrevPoint: metricPoint,
 	})
 	if !ok {
+		switch metricID.MetricType {
+		case pmetric.MetricTypeHistogram:
+			val := metricPoint.HistogramValue.Clone()
+			out.HistogramValue = &val
+		case pmetric.MetricTypeSum:
+			out.IntValue = metricPoint.IntValue
+			out.FloatValue = metricPoint.FloatValue
+		}
+		switch t.initialValue {
+		case InitialValueAuto:
+			if metricID.StartTimestamp < t.startTime || metricPoint.ObservedTimestamp == metricID.StartTimestamp {
+				return
+			}
+			out.StartTimestamp = metricID.StartTimestamp
+			valid = true
+		case InitialValueKeep:
+			valid = true
+		}
 		return
 	}
+
 	valid = true
 
 	state := s.(*State)
@@ -127,7 +177,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
-				delta = value
+				valid = false
 			}
 
 			out.FloatValue = delta
@@ -138,7 +188,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			// Detect reset (non-monotonic sums are not converted)
 			if value < prevValue {
-				delta = value
+				valid = false
 			}
 
 			out.IntValue = delta

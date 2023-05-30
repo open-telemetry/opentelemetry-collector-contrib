@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
@@ -37,6 +26,13 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+)
+
+var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
+	"filelog.allowHeaderMetadataParsing",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
 
 // NewConfig creates a new input config with default values
@@ -71,6 +67,7 @@ type Config struct {
 	MaxBatches              int                   `mapstructure:"max_batches,omitempty"`
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
+	Header                  *HeaderConfig         `mapstructure:"header,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -78,6 +75,11 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
 		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
 	}
+
+	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
+		return nil, fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
+	}
+
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -124,6 +126,20 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 	default:
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
+
+	var hs *headerSettings
+	if c.Header != nil {
+		enc, err := c.Splitter.EncodingConfig.Build()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create encoding: %w", err)
+		}
+
+		hs, err = c.Header.buildHeaderSettings(enc.Encoding)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build header config: %w", err)
+		}
+	}
+
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
@@ -137,6 +153,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
 			encodingConfig:  c.Splitter.EncodingConfig,
+			headerSettings:  hs,
 		},
 		finder:          c.Finder,
 		roller:          newRoller(),
@@ -186,6 +203,10 @@ func (c Config) validate() error {
 		return fmt.Errorf("`delete_after_read` cannot be used with `start_at: end`")
 	}
 
+	if c.Header != nil && c.StartAt == "end" {
+		return fmt.Errorf("`header` cannot be specified with `start_at: end`")
+	}
+
 	if c.MaxBatches < 0 {
 		return errors.New("`max_batches` must not be negative")
 	}
@@ -194,5 +215,12 @@ func (c Config) validate() error {
 	if err != nil {
 		return err
 	}
+
+	if c.Header != nil {
+		if err := c.Header.validate(); err != nil {
+			return fmt.Errorf("invalid config for `header`: %w", err)
+		}
+	}
+
 	return nil
 }

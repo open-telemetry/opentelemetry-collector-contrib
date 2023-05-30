@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper
 
@@ -95,14 +84,16 @@ func (r *reader) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 }
 
 type tokenizerTestCase struct {
-	Name                 string
-	Pattern              string
-	Raw                  []byte
-	ExpectedTokenized    []string
-	ExpectedError        error
-	Flusher              *Flusher
-	Sleep                time.Duration
-	AdditionalIterations int
+	Name                        string
+	Pattern                     string
+	Raw                         []byte
+	ExpectedTokenized           []string
+	ExpectedError               error
+	Flusher                     *Flusher
+	Sleep                       time.Duration
+	AdditionalIterations        int
+	PreserveLeadingWhitespaces  bool
+	PreserveTrailingWhitespaces bool
 }
 
 func (tc tokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) {
@@ -286,13 +277,13 @@ func TestLineStartSplitFunc(t *testing.T) {
 			LineStartPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false)
+		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, noTrim)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -461,7 +452,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			LineEndPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -567,10 +558,38 @@ func TestNewlineSplitFunc(t *testing.T) {
 				"LOGEND 333",
 			},
 		},
+		{
+			Name: "PreserveLeadingWhitespaces",
+			Raw:  []byte("\n LOGEND 333 \nAnother one "),
+			ExpectedTokenized: []string{
+				"",
+				" LOGEND 333",
+			},
+			PreserveLeadingWhitespaces: true,
+		},
+		{
+			Name: "PreserveTrailingWhitespaces",
+			Raw:  []byte("\n LOGEND 333 \nAnother one "),
+			ExpectedTokenized: []string{
+				"",
+				"LOGEND 333 ",
+			},
+			PreserveTrailingWhitespaces: true,
+		},
+		{
+			Name: "PreserveBothLeadingAndTrailingWhitespaces",
+			Raw:  []byte("\n LOGEND 333 \nAnother one "),
+			ExpectedTokenized: []string{
+				"",
+				" LOGEND 333 ",
+			},
+			PreserveLeadingWhitespaces:  true,
+			PreserveTrailingWhitespaces: true,
+		},
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false)
+		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, getTrimFunc(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces))
 		require.NoError(t, err)
 		if tc.Flusher != nil {
 			splitFunc = tc.Flusher.SplitFunc(splitFunc)
@@ -676,14 +695,14 @@ func TestNoopEncodingError(t *testing.T) {
 		LineEndPattern: "\n",
 	}
 
-	_, err := cfg.getSplitFunc(encoding.Nop, false, nil, 0)
+	_, err := cfg.getSplitFunc(encoding.Nop, false, nil, 0, false, false)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	cfg = &MultilineConfig{
 		LineStartPattern: "\n",
 	}
 
-	_, err = cfg.getSplitFunc(encoding.Nop, false, nil, 0)
+	_, err = cfg.getSplitFunc(encoding.Nop, false, nil, 0, false, false)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 
@@ -744,7 +763,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false)
+			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false, noTrim)
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)
