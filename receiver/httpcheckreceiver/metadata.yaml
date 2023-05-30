@@ -1,10 +1,10 @@
-type: httpcheckreceiver
+type: httpcheck
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, sumo]
   warnings: []
 
 resource_attributes:

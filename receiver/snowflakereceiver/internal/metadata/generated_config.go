@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for snowflakereceiver metrics.
+// MetricsConfig provides config for snowflake metrics.
 type MetricsConfig struct {
 	SnowflakeBillingCloudServiceTotal              MetricConfig `mapstructure:"snowflake.billing.cloud_service.total"`
 	SnowflakeBillingTotalCreditTotal               MetricConfig `mapstructure:"snowflake.billing.total_credit.total"`
@@ -177,7 +177,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for snowflakereceiver resource attributes.
+// ResourceAttributesConfig provides config for snowflake resource attributes.
 type ResourceAttributesConfig struct {
 	SnowflakeAccountName ResourceAttributeConfig `mapstructure:"snowflake.account.name"`
 }
@@ -190,7 +190,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for snowflakereceiver metrics builder.
+// MetricsBuilderConfig is a configuration for snowflake metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

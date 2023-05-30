@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for vcenterreceiver metrics.
+// MetricsConfig provides config for vcenter metrics.
 type MetricsConfig struct {
 	VcenterClusterCPUEffective      MetricConfig `mapstructure:"vcenter.cluster.cpu.effective"`
 	VcenterClusterCPULimit          MetricConfig `mapstructure:"vcenter.cluster.cpu.limit"`
@@ -189,7 +189,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for vcenterreceiver resource attributes.
+// ResourceAttributesConfig provides config for vcenter resource attributes.
 type ResourceAttributesConfig struct {
 	VcenterClusterName      ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
 	VcenterDatastoreName    ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
@@ -222,7 +222,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for vcenterreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for vcenter metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

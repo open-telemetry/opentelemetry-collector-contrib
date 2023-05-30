@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector/featuregate v0.77.0
+	github.com/stretchr/testify v1.8.3
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230525165144-87dd85a6c034
 	go.uber.org/zap v1.24.0
 )
 

@@ -4,4 +4,4 @@ status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [contrib, aws]
+  distributions: [contrib, aws, observiq]

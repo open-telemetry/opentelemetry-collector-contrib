@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for mongodbreceiver metrics.
+// MetricsConfig provides config for mongodb metrics.
 type MetricsConfig struct {
 	MongodbCacheOperations        MetricConfig `mapstructure:"mongodb.cache.operations"`
 	MongodbCollectionCount        MetricConfig `mapstructure:"mongodb.collection.count"`
@@ -157,7 +157,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for mongodbreceiver resource attributes.
+// ResourceAttributesConfig provides config for mongodb resource attributes.
 type ResourceAttributesConfig struct {
 	Database ResourceAttributeConfig `mapstructure:"database"`
 }
@@ -170,7 +170,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for mongodbreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for mongodb metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

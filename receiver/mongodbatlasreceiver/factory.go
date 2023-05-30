@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -30,7 +19,6 @@ import (
 )
 
 const (
-	typeStr              = "mongodbatlas"
 	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
 	defaultLogsEnabled   = false
@@ -39,7 +27,7 @@ const (
 // NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		rcvr.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
@@ -107,7 +95,7 @@ func createCombinedLogReceiver(
 
 func createDefaultConfig() component.Config {
 	c := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),

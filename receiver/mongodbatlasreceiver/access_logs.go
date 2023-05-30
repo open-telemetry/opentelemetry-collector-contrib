@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -167,7 +156,7 @@ func (alr *accessLogsReceiver) pollAccessLogs(ctx context.Context, pc *LogsProje
 				ClusterName:       cluster.Name,
 				NextPollStartTime: st,
 			}
-			alr.record[project.ID] = append(alr.record[project.ID], clusterCheckpoint)
+			alr.setClusterCheckpoint(project.ID, clusterCheckpoint)
 		}
 		clusterCheckpoint.NextPollStartTime = alr.pollCluster(ctx, pc, project, cluster, clusterCheckpoint.NextPollStartTime, et)
 		if err = alr.checkpoint(ctx, project.ID); err != nil {
@@ -227,7 +216,7 @@ func (alr *accessLogsReceiver) pollCluster(ctx context.Context, pc *LogsProjectC
 				// data and don't want to risk duplicated data by re-polling the same data again.
 				nextPollStartTime = now
 			} else {
-				nextPollStartTime = mostRecentLogTimestamp.Add(1 * time.Millisecond)
+				nextPollStartTime = mostRecentLogTimestamp.Add(100 * time.Millisecond)
 			}
 		}
 
@@ -417,4 +406,22 @@ func (alr *accessLogsReceiver) getClusterCheckpoint(groupID, clusterName string)
 		}
 	}
 	return nil
+}
+
+func (alr *accessLogsReceiver) setClusterCheckpoint(groupID string, clusterCheckpoint *accessLogStorageRecord) {
+	groupCheckpoints, ok := alr.record[groupID]
+	if !ok {
+		alr.record[groupID] = []*accessLogStorageRecord{clusterCheckpoint}
+	}
+
+	var found bool
+	for idx, v := range groupCheckpoints {
+		if v.ClusterName == clusterCheckpoint.ClusterName {
+			found = true
+			alr.record[groupID][idx] = clusterCheckpoint
+		}
+	}
+	if !found {
+		alr.record[groupID] = append(alr.record[groupID], clusterCheckpoint)
+	}
 }

@@ -1,7 +1,7 @@
-type: datasetexporter
+type: dataset
 
 status:
   class: exporter
   stability:
-    development: [ traces, logs ]
+    alpha: [logs, traces]
   distributions: []

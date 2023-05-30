@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for haproxyreceiver metrics.
+// MetricsConfig provides config for haproxy metrics.
 type MetricsConfig struct {
 	HaproxyBytesInput           MetricConfig `mapstructure:"haproxy.bytes.input"`
 	HaproxyBytesOutput          MetricConfig `mapstructure:"haproxy.bytes.output"`
@@ -141,7 +141,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for haproxyreceiver resource attributes.
+// ResourceAttributesConfig provides config for haproxy resource attributes.
 type ResourceAttributesConfig struct {
 	HaproxyAddr ResourceAttributeConfig `mapstructure:"haproxy.addr"`
 	HaproxyAlgo ResourceAttributeConfig `mapstructure:"haproxy.algo"`
@@ -186,7 +186,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for haproxyreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for haproxy metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
