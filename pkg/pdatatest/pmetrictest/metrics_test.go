@@ -6,12 +6,10 @@ package pmetrictest
 import (
 	"errors"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -443,53 +441,4 @@ func TestCompareMetrics(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestCopyTimestamps(t *testing.T) {
-	// Create sample expected and actual pmetric.Metrics
-	dir := filepath.Join("testdata", "time-stamp-difference")
-	expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.yaml"))
-	require.NoError(t, err)
-
-	actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.yaml"))
-	require.NoError(t, err)
-
-	// Call the CopyTimestamps function
-	CopyTimeStamps(expected, actual)
-
-	// Assert that the timestamps have been copied correctly
-	expectedRms := expected.ResourceMetrics()
-	actualRms := actual.ResourceMetrics()
-	for i := 0; i < expectedRms.Len(); i++ {
-		expectedIms := expectedRms.At(i).ScopeMetrics()
-		actualIms := actualRms.At(i).ScopeMetrics()
-		for j := 0; j < expectedIms.Len(); j++ {
-			expectedMetricsList := expectedIms.At(j).Metrics()
-			actualMetricsList := actualIms.At(j).Metrics()
-			for k := 0; k < expectedMetricsList.Len(); k++ {
-				expectedDps := getDataPointSlice(expectedMetricsList.At(k))
-				actualDps := getDataPointSlice(actualMetricsList.At(k))
-				if !compareTimestamps(expectedDps, actualDps) {
-					t.Errorf("Timestamps not copied correctly")
-				}
-			}
-		}
-	}
-}
-
-// Helper function to compare timestamps in two pmetric.NumberDataPointSlices
-func compareTimestamps(expected, actual pmetric.NumberDataPointSlice) bool {
-	if expected.Len() != actual.Len() {
-		return false
-	}
-
-	for i := 0; i < expected.Len(); i++ {
-		expectedTs := expected.At(i).Timestamp()
-		actualTs := actual.At(i).Timestamp()
-		if !reflect.DeepEqual(expectedTs, actualTs) {
-			return false
-		}
-	}
-
-	return true
 }

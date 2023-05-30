@@ -61,6 +61,31 @@ resourceMetrics:
                         stringValue: errored
                   startTimeUnixNano: "8888888888888888888"
                   timeUnixNano: "9999999999999999999"
+          - description: Test Metric Added
+            name: nsxt.test.metric
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "3949201928374650987"
+                  timeUnixNano: "1234329876789098765"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "9303982789877787654"
+                  timeUnixNano: "5838293847532345678"
         scope:
           name: otelcol/nsxtreceiver
           version: latest
@@ -126,9 +151,6 @@ resourceMetrics:
                         stringValue: errored
                   startTimeUnixNano: "1717171717171717171"
                   timeUnixNano: "1818181818181818181"
-        scope:
-          name: otelcol/nsxtreceiver
-          version: latest
         scope:
           name: otelcol/nsxtreceiver
           version: latest

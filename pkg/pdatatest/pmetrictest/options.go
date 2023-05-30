@@ -6,7 +6,6 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -211,67 +210,6 @@ func maskMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName s
 			})
 		}
 	}
-}
-
-type HashArray [16]byte
-
-func CopyTimeStamps(expected, actual pmetric.Metrics) {
-	expectedRms := expected.ResourceMetrics()
-	actualRms := actual.ResourceMetrics()
-	// map [hashvalue] -> [nameofmetric: datapointslice]
-	pathHash := make(map[[16]byte]pmetric.MetricSlice)
-	for i := 0; i < expectedRms.Len(); i++ {
-		pathHashKey := pdatautil.MapHash(expectedRms.At(i).Resource().Attributes())
-		expectedIms := expectedRms.At(i).ScopeMetrics()
-		for j := 0; j < expectedIms.Len(); j++ {
-			tempMetrics := expectedIms.At(j).Metrics()
-			pathHash[pathHashKey] = tempMetrics
-		}
-	}
-
-	// iterate through the metrics you want to transfer timestamps into
-	for key, value := range pathHash {
-		for i := 0; i < actualRms.Len(); i++ {
-			// check to see if we are operating on the same resource metric resource
-			if key == pdatautil.MapHash(actualRms.At(i).Resource().Attributes()) {
-				actualIms := actualRms.At(i).ScopeMetrics() // add indexing forloop here
-				for j := 0; j < actualIms.Len(); j++ {
-					actualMetricsList := actualIms.At(j).Metrics()
-					for k := 0; k < actualMetricsList.Len(); k++ {
-						for l := 0; l < value.Len(); l++ {
-							valueMetric := value.At(l)
-							actualMetric := actualMetricsList.At(k)
-							if valueMetric.Name() == actualMetric.Name() {
-								actualDps := getDataPointSlice(actualMetric)
-								valueDps := getDataPointSlice(valueMetric)
-								matchedIndex := CheckSliceAttributeEquivalence(valueDps, actualDps)
-								for valIndex, dpsIndex := range matchedIndex {
-									actualDps.At(dpsIndex).SetTimestamp(valueDps.At(valIndex).Timestamp())
-									actualDps.At(dpsIndex).SetStartTimestamp(valueDps.At(valIndex).StartTimestamp())
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-// compares two pmetric.NumberDataPointSlices and checks if the attribute values are the same for each corresponding index
-// returns a map where the key represents the index of the match for the first paramter slice
-// and the val represents the index of the match of the second paramter slice
-func CheckSliceAttributeEquivalence(value, dps pmetric.NumberDataPointSlice) map[int]int {
-	matchedIndex := make(map[int]int)
-	for i := 0; i < value.Len(); i++ {
-		for j := 0; j < dps.Len(); j++ {
-			if !reflect.DeepEqual(value.At(i).Attributes().AsRaw(), dps.At(j).Attributes().AsRaw()) {
-				continue
-			}
-			matchedIndex[i] = j
-		}
-	}
-	return matchedIndex
 }
 
 // maskDataPointSliceAttributeValues sets the value of the specified attribute to

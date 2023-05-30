@@ -1,0 +1,110 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmnic0
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+    scopeMetrics:
+      - metrics:
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1652365826688352000"
+                  timeUnixNano: "1652365826697632000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1652365826688352000"
+                  timeUnixNano: "1652365826697632000"
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: device.id
+          value:
+            stringValue: vmk10
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
+        - key: nsxt.node.type
+          value:
+            stringValue: TransportNode
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4161088074"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1652365826688352000"
+                  timeUnixNano: "1652365826697632000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                  startTimeUnixNano: "1652365826688352000"
+                  timeUnixNano: "1652365826697632000"
+              isMonotonic: true
+            unit: By
+          - description: The number of packets which have flowed through the network interface on the node.
+            name: nsxt.node.network.packet.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: dropped
+                  startTimeUnixNano: "1652365826688352000"
+                  timeUnixNano: "1652365826697632000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: type
+                      value:
+                        stringValue: errored
+                  startTimeUnixNano: "1652365826688352000"
+                  timeUnixNano: "1652365826697632000"
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest

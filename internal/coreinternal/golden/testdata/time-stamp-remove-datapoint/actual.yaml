@@ -27,13 +27,6 @@ resourceMetrics:
                         stringValue: received
                   startTimeUnixNano: "1652365826688352000"
                   timeUnixNano: "1652365826697632000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
               isMonotonic: true
             unit: By
           - description: The number of packets which have flowed through the network interface on the node.
@@ -126,9 +119,6 @@ resourceMetrics:
                         stringValue: errored
                   startTimeUnixNano: "1652365826688352000"
                   timeUnixNano: "1652365826697632000"
-        scope:
-          name: otelcol/nsxtreceiver
-          version: latest
         scope:
           name: otelcol/nsxtreceiver
           version: latest
