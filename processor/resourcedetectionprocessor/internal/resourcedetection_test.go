@@ -25,14 +25,14 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (p *MockDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
 
 type mockDetectorConfig struct{}
 
-func (d *mockDetectorConfig) GetConfigFromType(detectorType DetectorType) DetectorConfig {
+func (d *mockDetectorConfig) GetConfigFromType(_ DetectorType) DetectorConfig {
 	return nil
 }
 
@@ -186,7 +186,7 @@ func NewMockParallelDetector() *MockParallelDetector {
 	return &MockParallelDetector{ch: make(chan struct{})}
 }
 
-func (p *MockParallelDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (p *MockParallelDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)

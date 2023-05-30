@@ -57,7 +57,7 @@ type Output struct {
 }
 
 // Process will log entries received.
-func (o *Output) Process(ctx context.Context, entry *entry.Entry) error {
+func (o *Output) Process(_ context.Context, entry *entry.Entry) error {
 	o.mux.Lock()
 	err := o.encoder.Encode(entry)
 	if err != nil {

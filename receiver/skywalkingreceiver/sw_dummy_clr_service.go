@@ -14,6 +14,6 @@ type clrService struct {
 	agent.UnimplementedCLRMetricReportServiceServer
 }
 
-func (c *clrService) Collect(ctx context.Context, req *agent.CLRMetricCollection) (*common.Commands, error) {
+func (c *clrService) Collect(_ context.Context, _ *agent.CLRMetricCollection) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }

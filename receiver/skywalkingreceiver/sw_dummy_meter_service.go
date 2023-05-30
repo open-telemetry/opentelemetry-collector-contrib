@@ -11,10 +11,10 @@ type meterService struct {
 	meter.UnimplementedMeterReportServiceServer
 }
 
-func (m *meterService) Collect(stream meter.MeterReportService_CollectServer) error {
+func (m *meterService) Collect(_ meter.MeterReportService_CollectServer) error {
 	return nil
 }
 
-func (m *meterService) CollectBatch(batch meter.MeterReportService_CollectBatchServer) error {
+func (m *meterService) CollectBatch(_ meter.MeterReportService_CollectBatchServer) error {
 	return nil
 }
