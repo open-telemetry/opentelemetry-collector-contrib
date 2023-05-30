@@ -246,7 +246,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 	}
 
 	t.Setenv("HOST_NAME", hostName)
-	//t.Setenv("K8S_NAMESPACE", "namespace")
+	t.Setenv("K8S_NAMESPACE", "namespace")
 	k8sAPIServer, err := NewK8sAPIServer(mockClusterNameProvider{}, zap.NewNop(), leaderElection)
 
 	assert.NotNil(t, k8sAPIServer)
