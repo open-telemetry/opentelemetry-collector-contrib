@@ -26,11 +26,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
 
+func WithClient(client K8sClient) LeaderElectionOption {
+	return func(le *LeaderElection) {
+		le.k8sClient = client
+	}
+}
+
 func TestNewLeaderElectionOpts(t *testing.T) {
 	t.Setenv("HOST_NAME", "hostname")
 	t.Setenv("K8S_NAMESPACE", "namespace")
 
-	le, err := NewLeaderElection(zap.NewNop(), WithLeaderLockName("test"), WithLeaderLockUsingConfigMapOnly(true))
+	le, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}), WithLeaderLockName("test"), WithLeaderLockUsingConfigMapOnly(true))
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 	assert.Equal(t, "test", le.leaderLockName)
@@ -38,7 +44,7 @@ func TestNewLeaderElectionOpts(t *testing.T) {
 
 }
 func TestLeaderElectionInitErrors(t *testing.T) {
-	le, err := NewLeaderElection(zap.NewNop())
+	le, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}))
 	assert.Error(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable HOST_NAME is not set"))
 	assert.Nil(t, le)
@@ -54,9 +60,6 @@ func TestLeaderElectionInitErrors(t *testing.T) {
 func TestLeaderElectionEndToEnd(t *testing.T) {
 	hostName, err := os.Hostname()
 	assert.NoError(t, err)
-	k8sclientOption := func(le *LeaderElection) {
-		le.k8sClient = &mockK8sClient{}
-	}
 	leadingOption := func(le *LeaderElection) {
 		le.leading = true
 	}
@@ -69,7 +72,7 @@ func TestLeaderElectionEndToEnd(t *testing.T) {
 
 	t.Setenv("HOST_NAME", hostName)
 	t.Setenv("K8S_NAMESPACE", "namespace")
-	leaderElection, err := NewLeaderElection(zap.NewNop(), k8sclientOption,
+	leaderElection, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}),
 		leadingOption, broadcasterOption, isLeadingCOption)
 
 	assert.NotNil(t, leaderElection)
