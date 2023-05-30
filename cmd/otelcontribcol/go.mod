@@ -243,7 +243,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.8.1 // indirect
 	github.com/ClickHouse/ch-go v0.52.1 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.10.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.85 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.84 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.46.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.46.0-rc.1 // indirect

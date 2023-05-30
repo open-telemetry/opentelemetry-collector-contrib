@@ -711,8 +711,8 @@ github.com/ClickHouse/ch-go v0.52.1/go.mod h1:B9htMJ0hii/zrC2hljUKdnagRBuLqtRG/G
 github.com/ClickHouse/clickhouse-go/v2 v2.10.0 h1:0w/A50D5MfsRUYBaV6rLKwZ4LXWKLZKJ1u31QXjTIO4=
 github.com/ClickHouse/clickhouse-go/v2 v2.10.0/go.mod h1:teXfZNM90iQ99Jnuht+dxQXCuhDZ8nvvMoTJOFrcmcg=
 github.com/DATA-DOG/go-sqlmock v1.5.0 h1:Shsta01QNfFxHCfpW6YH2STWB0MudeXXEWMr20OEh60=
-github.com/DataDog/agent-payload/v5 v5.0.85 h1:kmcBpkNwbfKCP3fBENZ6uvahvheTMgwjVjONKajVbI8=
-github.com/DataDog/agent-payload/v5 v5.0.85/go.mod h1:oQZi1VZp1e3QvlSUX4iphZCpJaFepUxWq0hNXxihKBM=
+github.com/DataDog/agent-payload/v5 v5.0.84 h1:6m5ylcrhKfvvZ7zxvjWZ/ncCV3ZasehNNdsqJKhEQXE=
+github.com/DataDog/agent-payload/v5 v5.0.84/go.mod h1:oQZi1VZp1e3QvlSUX4iphZCpJaFepUxWq0hNXxihKBM=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0-rc.1 h1:acfr45fVXOCFNpCgI8xHnlys4evMRqjUvkbm8WdFTgc=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0-rc.1/go.mod h1:e933RWa4kAWuHi5jpzEuOiULlv21HcCFEVIYegmaB5c=
 github.com/DataDog/datadog-agent/pkg/proto v0.46.0-rc.1 h1:iYQbgDOIC9MBM3zuGRqGV62S1+DbnlY2HtS2FuNopvY=
