@@ -1,5 +1,16 @@
-# Required: type of the receiver.
+# Required: The type of the component.
 type:
+
+# Required: A high-level view of the development status and use of this component
+status:
+  # Required: The class of the component (For example receiver)
+  class: <receiver|processor|exporter|cmd|connector|extension>
+  # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
+  stability: <in development|alpha|beta|stable|deprecated|unmaintained>
+  # Optional: The distributions that this component is bundled with (For example core or contrib)
+  distributions: []string
+  # Optional: A list of warnings that should be brought to the attention of developers looking to use this component
+  warnings: []string
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
@@ -31,7 +42,7 @@ attributes:
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
 
-# Required: map of metric names with the key being the metric name and value
+# Optional: map of metric names with the key being the metric name and value
 # being described below.
 metrics:
   <metric.name>:
