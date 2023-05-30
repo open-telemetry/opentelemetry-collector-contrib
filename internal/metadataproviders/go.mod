@@ -9,6 +9,7 @@ require (
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/panta/machineid v1.0.2
 	github.com/stretchr/testify v1.8.3
+	go.opentelemetry.io/collector/semconv v0.78.3-0.20230525165144-87dd85a6c034
 )
 
 require (
