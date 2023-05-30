@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.78.0
 	github.com/shirou/gopsutil/v3 v3.23.4
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
-	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1
+	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230508183425-7277dc5ed95f
 	github.com/stretchr/testify v1.8.3
 	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
@@ -58,7 +58,7 @@ require (
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.5 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
-	github.com/signalfx/golib/v3 v3.3.47 // indirect
+	github.com/signalfx/golib/v3 v3.3.48 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
