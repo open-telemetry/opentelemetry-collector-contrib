@@ -60,7 +60,7 @@ func newMongoDBAtlasLogsReceiver(settings rcvr.CreateSettings, cfg *Config, cons
 }
 
 // Log receiver logic
-func (s *logsReceiver) Start(ctx context.Context, host component.Host) error {
+func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -83,7 +83,7 @@ func (s *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (s *logsReceiver) Shutdown(ctx context.Context) error {
+func (s *logsReceiver) Shutdown(_ context.Context) error {
 	close(s.stopperChan)
 	s.wg.Wait()
 	return s.client.Shutdown()
