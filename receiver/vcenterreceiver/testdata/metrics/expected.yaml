@@ -1,12 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: vcenter.host.name
-          value:
-            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
+        - key: vcenter.host.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
     scopeMetrics:
       - metrics:
           - description: The amount of CPU used by the host.
@@ -1683,12 +1683,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: vcenter.datastore.name
-          value:
-            stringValue: vsanDatastore
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
+        - key: vcenter.datastore.name
+          value:
+            stringValue: vsanDatastore
     scopeMetrics:
       - metrics:
           - description: The amount of space in the datastore.
@@ -1724,18 +1724,18 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: vcenter.vm.name
-          value:
-            stringValue: CentOS 7
-        - key: vcenter.vm.id
-          value:
-            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb61
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
         - key: vcenter.host.name
           value:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: vcenter.vm.id
+          value:
+            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb61
+        - key: vcenter.vm.name
+          value:
+            stringValue: CentOS 7
     scopeMetrics:
       - metrics:
           - description: The amount of CPU used by the VM.

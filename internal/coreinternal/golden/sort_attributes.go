@@ -12,7 +12,7 @@ import (
 )
 
 // sorts all Resource Metrics attributes and Datapoint Slice metric attributes
-func SortAllAttributes(ms pmetric.Metrics) {
+func sortMetrics(ms pmetric.Metrics) {
 	rms := ms.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		sortAttributeMap(rms.At(i).Resource().Attributes())

@@ -6,6 +6,7 @@ package golden // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -33,6 +34,13 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 		}
 	}
 	unmarshaller := &pmetric.JSONUnmarshaler{}
+	tempMetrics, tempErr := unmarshaller.UnmarshalMetrics(b)
+	if tempErr != nil {
+		fmt.Print("uh ohhhh -----------------------------------------")
+	}
+	writeMetrics(filePath, tempMetrics)
+	fmt.Println("wrote successfully")
+
 	return unmarshaller.UnmarshalMetrics(b)
 }
 
