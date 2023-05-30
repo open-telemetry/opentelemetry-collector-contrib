@@ -12,8 +12,8 @@ import (
 type SplittingStrategy string
 
 const (
-	Line SplittingStrategy = "line"
-	None SplittingStrategy = "none"
+	SplittingStrategyLine SplittingStrategy = "line"
+	SplittingStrategyNone SplittingStrategy = "none"
 )
 
 // Config defines configuration for the Splunk HEC receiver.
