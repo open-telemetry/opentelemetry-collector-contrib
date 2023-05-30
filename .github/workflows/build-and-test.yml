@@ -256,7 +256,7 @@ jobs:
       - name: Run Unit Tests
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With Coverage
-        run: make gotest-with-cover
+        run: make gotest-with-cover GROUP=${{ matrix.group }}
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
         with:
