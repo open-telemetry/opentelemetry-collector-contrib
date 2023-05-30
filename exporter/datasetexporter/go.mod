@@ -19,7 +19,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector v0.78.3-0.20230527001353-14c039d701ce
 )
 
 require (

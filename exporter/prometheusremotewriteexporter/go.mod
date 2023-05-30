@@ -14,7 +14,7 @@ require (
 	github.com/prometheus/prometheus v0.43.1
 	github.com/stretchr/testify v1.8.3
 	github.com/tidwall/wal v1.1.7
-	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector v0.78.3-0.20230527001353-14c039d701ce
 	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/confmap v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230525165144-87dd85a6c034
@@ -39,7 +39,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/common v0.43.0 // indirect
+	github.com/prometheus/common v0.44.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

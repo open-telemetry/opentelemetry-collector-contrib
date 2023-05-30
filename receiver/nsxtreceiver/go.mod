@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.78.0
 	github.com/stretchr/testify v1.8.3
 	github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f
-	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector v0.78.3-0.20230527001353-14c039d701ce
 	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/confmap v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230525165144-87dd85a6c034

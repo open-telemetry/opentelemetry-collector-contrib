@@ -8,7 +8,7 @@ require (
 	github.com/influxdata/influxdb-observability/otel2influx v0.3.14
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.8.3
-	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector v0.78.3-0.20230527001353-14c039d701ce
 	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/confmap v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230525165144-87dd85a6c034

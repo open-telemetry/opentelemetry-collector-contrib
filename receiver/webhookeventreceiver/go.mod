@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhoo
 go 1.19
 
 require (
-	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector v0.78.3-0.20230527001353-14c039d701ce
 	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/receiver v0.78.3-0.20230525165144-87dd85a6c034

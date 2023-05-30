@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.78.0
 	github.com/shirou/gopsutil/v3 v3.23.4
 	github.com/stretchr/testify v1.8.3
-	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector v0.78.3-0.20230527001353-14c039d701ce
 	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/confmap v0.78.3-0.20230525165144-87dd85a6c034
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230525165144-87dd85a6c034
@@ -48,7 +48,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
-	github.com/prometheus/common v0.43.0 // indirect
+	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.5 // indirect
@@ -61,10 +61,10 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.78.3-0.20230525165144-87dd85a6c034 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230525165144-87dd85a6c034 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.16.1 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.17.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
-	go.opentelemetry.io/otel/bridge/opencensus v0.38.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.38.1 // indirect
+	go.opentelemetry.io/otel/bridge/opencensus v0.39.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.39.0 // indirect
