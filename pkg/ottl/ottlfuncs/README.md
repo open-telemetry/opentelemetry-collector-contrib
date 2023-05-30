@@ -263,10 +263,13 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [FNV](#fnv)
 - [Int](#int)
 - [IsMatch](#ismatch)
 - [Log](#log)
 - [ParseJSON](#parsejson)
+- [SHA1](#sha1)
+- [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
@@ -315,6 +318,28 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### FNV
+
+`FNV(value)`
+
+The `FNV` Converter converts the `value` to an FNV hash/digest.
+
+The returned type is int64.
+
+The input `value` types:
+* string. If it fails then nil will be returned.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `FNV(attributes["device.name"])`
+
+
+- `FNV("name")`
 
 ### Int
 
@@ -423,6 +448,50 @@ Examples:
 
 
 - `ParseJSON(body)`
+
+### SHA1
+
+`SHA1(value)`
+
+The `SHA1` Converter converts the `value` to a sha1 hash/digest.
+
+The returned type is int64.
+
+The input `value` types:
+* string. If it fails then nil will be returned.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `SHA1(attributes["device.name"])`
+
+
+- `SHA1("name")`
+
+### SHA256
+
+`SHA256(value)`
+
+The `SHA256` Converter converts the `value` to a sha256 hash/digest.
+
+The returned type is int64.
+
+The input `value` types:
+* string. If it fails then nil will be returned.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `SHA256(attributes["device.name"])`
+
+
+- `SHA256("name")`
 
 ### SpanID
 
