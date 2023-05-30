@@ -30,7 +30,7 @@ func (m *mockLogConsumer) Capabilities() consumer.Capabilities {
 	}
 }
 
-func (m *mockLogConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (m *mockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.logs = append(m.logs, ld)
@@ -49,9 +49,9 @@ func (m *mockLogConsumer) Logs() []plog.Logs {
 	defer m.lock.Unlock()
 	logs := make([]plog.Logs, len(m.logs))
 	for i, log := range m.logs {
-		copy := plog.NewLogs()
-		log.CopyTo(copy)
-		logs[i] = copy
+		l := plog.NewLogs()
+		log.CopyTo(l)
+		logs[i] = l
 	}
 
 	return logs

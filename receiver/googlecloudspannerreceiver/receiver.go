@@ -104,6 +104,7 @@ func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Contex
 		BackfillEnabled:                   r.config.BackfillEnabled,
 		TopMetricsQueryMaxRows:            r.config.TopMetricsQueryMaxRows,
 		HideTopnLockstatsRowrangestartkey: r.config.HideTopnLockstatsRowrangestartkey,
+		TruncateText:                      r.config.TruncateText,
 	}
 
 	for _, project := range r.config.Projects {

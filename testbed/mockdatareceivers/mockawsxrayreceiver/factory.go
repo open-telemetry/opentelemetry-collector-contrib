@@ -40,7 +40,7 @@ func createDefaultConfig() component.Config {
 
 // CreateTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,

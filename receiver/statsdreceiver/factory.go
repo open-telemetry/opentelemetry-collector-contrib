@@ -12,13 +12,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr                    = "statsd"
-	stability                  = component.StabilityLevelBeta
 	defaultBindEndpoint        = "localhost:8125"
 	defaultTransport           = "udp"
 	defaultAggregationInterval = 60 * time.Second
@@ -33,9 +31,9 @@ var (
 // NewFactory creates a factory for the StatsD receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 

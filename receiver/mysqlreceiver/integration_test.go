@@ -22,7 +22,7 @@ import (
 
 const mysqlPort = "3306"
 
-func TestMySQLIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -55,7 +55,5 @@ func TestMySQLIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18286
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run(t)
 }

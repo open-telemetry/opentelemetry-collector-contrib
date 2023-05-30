@@ -27,7 +27,7 @@ const (
 	mysqlPort      = "3306"
 )
 
-func TestPostgresIntegration(t *testing.T) {
+func TestPostgresqlIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -136,7 +136,6 @@ func TestPostgresIntegration(t *testing.T) {
 func TestOracleDBIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithDumpActualOnFailure(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{

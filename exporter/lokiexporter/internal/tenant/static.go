@@ -15,6 +15,6 @@ type StaticTenantSource struct {
 	Value string
 }
 
-func (ts *StaticTenantSource) GetTenant(_ context.Context, logs plog.Logs) (string, error) {
+func (ts *StaticTenantSource) GetTenant(_ context.Context, _ plog.Logs) (string, error) {
 	return ts.Value, nil
 }

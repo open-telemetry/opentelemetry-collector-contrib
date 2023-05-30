@@ -16,22 +16,22 @@ type parquetExporter struct {
 	path string
 }
 
-func (e parquetExporter) start(ctx context.Context, host component.Host) error {
+func (e parquetExporter) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e parquetExporter) shutdown(ctx context.Context) error {
+func (e parquetExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e parquetExporter) consumeMetrics(ctx context.Context, ld pmetric.Metrics) error {
+func (e parquetExporter) consumeMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return nil
 }
 
-func (e parquetExporter) consumeTraces(ctx context.Context, ld ptrace.Traces) error {
+func (e parquetExporter) consumeTraces(_ context.Context, _ ptrace.Traces) error {
 	return nil
 }
 
-func (e parquetExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e parquetExporter) consumeLogs(_ context.Context, _ plog.Logs) error {
 	return nil
 }

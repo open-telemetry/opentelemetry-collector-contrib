@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 }
 
 func (f *eventhubReceiverFactory) createLogsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	settings receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
@@ -63,7 +63,7 @@ func (f *eventhubReceiverFactory) createLogsReceiver(
 }
 
 func (f *eventhubReceiverFactory) createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	settings receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,

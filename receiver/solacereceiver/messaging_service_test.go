@@ -685,13 +685,13 @@ func (c *connMock) LocalAddr() net.Addr {
 func (c *connMock) RemoteAddr() net.Addr {
 	return nil
 }
-func (c *connMock) SetDeadline(t time.Time) error {
+func (c *connMock) SetDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetReadDeadline(t time.Time) error {
+func (c *connMock) SetReadDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetWriteDeadline(t time.Time) error {
+func (c *connMock) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 

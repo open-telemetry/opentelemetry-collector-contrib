@@ -22,7 +22,7 @@ import (
 
 const elasticPort = "9200"
 
-func TestElasticsearchIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	t.Run("7.9.3", integrationTest("7_9_3"))
 	t.Run("7.16.3", integrationTest("7_16_3"))
 }
@@ -57,7 +57,5 @@ func integrationTest(name string) func(*testing.T) {
 			pmetrictest.IgnoreScopeMetricsOrder(),
 			pmetrictest.IgnoreResourceMetricsOrder(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/19755
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run
 }

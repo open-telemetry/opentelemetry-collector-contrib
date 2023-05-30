@@ -31,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func TestFlinkIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	t.Parallel()
 	networkName := "new-network"
 	ctx := context.Background()

@@ -8,5 +8,5 @@ import (
 
 const (
 	Type             = "test"
-	MetricsStability = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelDevelopment
 )

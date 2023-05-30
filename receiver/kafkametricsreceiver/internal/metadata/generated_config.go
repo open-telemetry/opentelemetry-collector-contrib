@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for kafkametricsreceiver metrics.
+// MetricsConfig provides config for kafkametrics metrics.
 type MetricsConfig struct {
 	KafkaBrokers                 MetricConfig `mapstructure:"kafka.brokers"`
 	KafkaConsumerGroupLag        MetricConfig `mapstructure:"kafka.consumer_group.lag"`
@@ -76,7 +76,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for kafkametricsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for kafkametrics metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
