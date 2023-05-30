@@ -89,7 +89,7 @@ func createLogsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	r.Component.(*splunkReceiver).logsConsumer = consumer
+	r.Unwrap().(*splunkReceiver).logsConsumer = consumer
 	return r, nil
 }
 
