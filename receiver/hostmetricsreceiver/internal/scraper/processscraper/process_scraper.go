@@ -176,6 +176,10 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 	var errs scrapererror.ScrapeErrors
 
+	if err := s.refreshHandleCounts(); err != nil {
+		errs.Add(err)
+	}
+
 	data := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
@@ -240,10 +244,6 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		}
 
 		data = append(data, md)
-	}
-
-  if err := s.refreshHandleCounts(); err != nil {
-		errs.Add(err)
 	}
 
 	return data, errs.Combine()
