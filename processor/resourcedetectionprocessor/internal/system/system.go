@@ -65,6 +65,11 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		return res, "", fmt.Errorf("failed getting host ID: %w", err)
 	}
 
+	hostArch, err := d.provider.HostArch()
+	if err != nil {
+		return res, "", fmt.Errorf("failed getting host architecture: %w", err)
+	}
+
 	for _, source := range d.hostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
@@ -72,6 +77,7 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 			attrs.PutStr(conventions.AttributeHostName, hostname)
 			attrs.PutStr(conventions.AttributeOSType, osType)
 			attrs.PutStr(conventions.AttributeHostID, hostID)
+			attrs.PutStr(conventions.AttributeHostArch, hostArch)
 
 			return res, conventions.SchemaURL, nil
 		}

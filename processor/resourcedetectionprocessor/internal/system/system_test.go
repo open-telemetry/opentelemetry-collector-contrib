@@ -45,6 +45,11 @@ func (m *mockMetadata) HostID() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *mockMetadata) HostArch() (string, error) {
+	args := m.MethodCalled("HostArch")
+	return args.String(0), args.Error(1)
+}
+
 func (m *mockMetadata) LookupCNAME() (string, error) {
 	args := m.MethodCalled("LookupCNAME")
 	return args.String(0), args.Error(1)
@@ -87,6 +92,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("FQDN").Return("fqdn", nil)
 	md.On("OSType").Return("darwin", nil)
 	md.On("HostID").Return("2", nil)
+	md.On("HostArch").Return("amd64", nil)
 
 	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -98,6 +104,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 		conventions.AttributeHostName: "fqdn",
 		conventions.AttributeOSType:   "darwin",
 		conventions.AttributeHostID:   "2",
+		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -111,6 +118,7 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
+	mdHostname.On("HostArch").Return("amd64", nil)
 
 	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"}}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -122,6 +130,7 @@ func TestFallbackHostname(t *testing.T) {
 		conventions.AttributeHostName: "hostname",
 		conventions.AttributeOSType:   "darwin",
 		conventions.AttributeHostID:   "3",
+		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -132,6 +141,7 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("Hostname").Return("hostname", nil)
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("1", nil)
+	mdHostname.On("HostArch").Return("amd64", nil)
 
 	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -143,6 +153,7 @@ func TestUseHostname(t *testing.T) {
 		conventions.AttributeHostName: "hostname",
 		conventions.AttributeOSType:   "darwin",
 		conventions.AttributeHostID:   "1",
+		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -155,6 +166,7 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("HostID").Return("", errors.New("err"))
+	mdFQDN.On("HostArch").Return("amd64", nil)
 
 	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -167,6 +179,7 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("OSType").Return("windows", nil)
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostID").Return("", errors.New("err"))
+	mdHostname.On("HostArch").Return("amd64", nil)
 
 	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -179,6 +192,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("FQDN").Return("fqdn", nil)
 	mdOSType.On("OSType").Return("", errors.New("err"))
 	mdOSType.On("HostID").Return("", errors.New("err"))
+	mdOSType.On("HostArch").Return("amd64", nil)
 
 	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
 	res, schemaURL, err = detector.Detect(context.Background())

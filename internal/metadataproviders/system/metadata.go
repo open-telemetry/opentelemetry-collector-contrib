@@ -54,6 +54,9 @@ type Provider interface {
 
 	// HostID returns Host Unique Identifier
 	HostID() (string, error)
+
+	// HostArch returns the host architecture
+	HostArch() (string, error)
 }
 
 type systemMetadataProvider struct {
@@ -119,4 +122,8 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 
 func (p systemMetadataProvider) HostID() (string, error) {
 	return machineid.ID()
+}
+
+func (systemMetadataProvider) HostArch() (string, error) {
+	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
 }
