@@ -77,7 +77,7 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
-func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
+func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("instrumentation scope context does not provide Enum support")
 }
 
