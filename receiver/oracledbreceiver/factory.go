@@ -11,12 +11,11 @@ import (
 	"strconv"
 	"time"
 
+	go_ora "github.com/sijms/go-ora/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-
-	go_ora "github.com/sijms/go-ora/v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
