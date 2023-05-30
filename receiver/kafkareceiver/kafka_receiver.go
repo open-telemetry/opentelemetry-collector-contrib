@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+	"golang.org/x/net/proxy"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
@@ -99,6 +101,27 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 		}
 		c.Version = version
 	}
+
+	if config.ProxyURL != "" {
+		httpProxyURI, err := url.Parse(config.ProxyURL)
+		if err != nil {
+			return nil, err
+		}
+
+		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+
+		c.Net.Proxy = struct {
+			Enable bool
+			Dialer proxy.Dialer
+		}{
+			Enable: config.ProxyEnabled,
+			Dialer: httpDialer,
+		}
+	}
+
 	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
@@ -192,6 +215,28 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 		}
 		c.Version = version
 	}
+
+	if config.ProxyURL != "" {
+		httpProxyURI, err := url.Parse(config.ProxyURL)
+		if err != nil {
+			return nil, err
+		}
+
+		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+
+		c.Net.Proxy = struct {
+			Enable bool
+			Dialer proxy.Dialer
+		}{
+			Enable: config.ProxyEnabled,
+			Dialer: httpDialer,
+		}
+
+	}
+
 	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
@@ -285,6 +330,28 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		}
 		c.Version = version
 	}
+
+	if config.ProxyURL != "" {
+		httpProxyURI, err := url.Parse(config.ProxyURL)
+		if err != nil {
+			return nil, err
+		}
+
+		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+
+		c.Net.Proxy = struct {
+			Enable bool
+			Dialer proxy.Dialer
+		}{
+			Enable: config.ProxyEnabled,
+			Dialer: httpDialer,
+		}
+
+	}
+
 	if err = kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}

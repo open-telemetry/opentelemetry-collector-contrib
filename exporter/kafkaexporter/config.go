@@ -37,6 +37,12 @@ type Config struct {
 
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
+
+	// ProxyURL is the url for the proxy to be used with sarama
+	ProxyURL string `mapstructure:"proxy_url"`
+
+	// ProxyEnabled is used to enable the proxy in sarama
+	ProxyEnabled bool `mapstructure:"proxy_enabled"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.

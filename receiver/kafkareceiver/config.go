@@ -60,6 +60,12 @@ type Config struct {
 
 	// Controls the way the messages are marked as consumed
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// ProxyURL is the url for the proxy to be used with sarama
+	ProxyURL string `mapstructure:"proxy_url"`
+
+	// ProxyEnabled is used to enable the proxy in sarama
+	ProxyEnabled bool `mapstructure:"proxy_enabled"`
 }
 
 const (

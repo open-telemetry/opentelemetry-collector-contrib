@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -135,27 +134,25 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
 	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
 
-	for _, u := range []string{os.Getenv("HTTP_PROXY"), os.Getenv("HTTPS_PROXY")} {
-		if u != "" {
-			httpProxyURI, err := url.Parse(u)
-			if err != nil {
-				return nil, err
-			}
-
-			httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
-			if err != nil {
-				return nil, err
-			}
-
-			c.Net.Proxy = struct {
-				Enable bool
-				Dialer proxy.Dialer
-			}{
-				Enable: true,
-				Dialer: httpDialer,
-			}
-			break
+	if config.ProxyURL != "" {
+		httpProxyURI, err := url.Parse(config.ProxyURL)
+		if err != nil {
+			return nil, err
 		}
+
+		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if err != nil {
+			return nil, err
+		}
+
+		c.Net.Proxy = struct {
+			Enable bool
+			Dialer proxy.Dialer
+		}{
+			Enable: config.ProxyEnabled,
+			Dialer: httpDialer,
+		}
+
 	}
 
 	if config.ProtocolVersion != "" {
