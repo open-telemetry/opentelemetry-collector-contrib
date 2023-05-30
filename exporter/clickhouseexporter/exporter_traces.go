@@ -46,10 +46,7 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	if err := createTracesTable(ctx, e.cfg, e.client); err != nil {
-		return err
-	}
-	return nil
+	return createTracesTable(ctx, e.cfg, e.client)
 }
 
 // shutdown will shut down the exporter.
