@@ -16,7 +16,6 @@ package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -25,9 +24,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 )
 
@@ -42,19 +42,11 @@ type PrometheusScraper struct {
 	host                     component.Host
 	clusterNameProvider      clusterNameProvider
 	simplePrometheusReceiver receiver.Metrics
+	leaderElection           *LeaderElection
+	running                  bool
 }
 
-func NewPrometheusScraper(ctx context.Context, telemetrySettings component.TelemetrySettings, nextConsumer consumer.Metrics, host component.Host, clusterNameProvider clusterNameProvider) (*PrometheusScraper, error) {
-	// TODO: need leader election
-
-	k8sClient := k8sclient.Get(telemetrySettings.Logger)
-	if k8sClient == nil {
-		return nil, errors.New("failed to start k8sapiserver because k8sclient is nil")
-	}
-
-	// get endpoint
-	endpoint := k8sClient.GetClientSet().CoreV1().RESTClient().Get().AbsPath("/").URL().Hostname()
-
+func NewPrometheusScraper(ctx context.Context, telemetrySettings component.TelemetrySettings, endpoint string, nextConsumer consumer.Metrics, host component.Host, clusterNameProvider clusterNameProvider, leaderElection *LeaderElection) (*PrometheusScraper, error) {
 	spConfig := simpleprometheusreceiver.Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: endpoint,
@@ -89,13 +81,34 @@ func NewPrometheusScraper(ctx context.Context, telemetrySettings component.Telem
 		host:                     host,
 		clusterNameProvider:      clusterNameProvider,
 		simplePrometheusReceiver: spr,
+		leaderElection:           leaderElection,
 	}, nil
 }
 
-func (ps *PrometheusScraper) Start() error {
-	return ps.simplePrometheusReceiver.Start(ps.ctx, ps.host)
-}
+func (ps *PrometheusScraper) GetMetrics() []pmetric.Metrics {
+	// This method will never return metrics because the metrics are collected by the scraper.
+	// This method will ensure the scraper is running
+	if !ps.leaderElection.leading {
+		return nil
+	}
 
-func (ps *PrometheusScraper) Shutdown() error {
-	return ps.simplePrometheusReceiver.Shutdown(ps.ctx)
+	// if we are leading, ensure we are running
+	if !ps.running {
+		ps.settings.Logger.Info("The scraper is not running, starting up the scraper")
+		err := ps.simplePrometheusReceiver.Start(ps.ctx, ps.host)
+		if err != nil {
+			ps.settings.Logger.Error("Unable to start SimplePrometheusReceiver", zap.Error(err))
+		}
+		ps.running = err == nil
+	}
+	return nil
+}
+func (ps *PrometheusScraper) Shutdown() {
+	if ps.running {
+		err := ps.simplePrometheusReceiver.Shutdown(ps.ctx)
+		if err != nil {
+			ps.settings.Logger.Error("Unable to shutdown SimplePrometheusReceiver", zap.Error(err))
+		}
+		ps.running = err != nil
+	}
 }

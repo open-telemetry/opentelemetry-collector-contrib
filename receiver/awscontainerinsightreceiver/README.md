@@ -112,6 +112,8 @@ rules:
     resources: ["configmaps"]
     resourceNames: ["otel-container-insight-clusterleader"]
     verbs: ["get","update"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get", "list", "watch"]
 
 ---
 kind: ClusterRoleBinding

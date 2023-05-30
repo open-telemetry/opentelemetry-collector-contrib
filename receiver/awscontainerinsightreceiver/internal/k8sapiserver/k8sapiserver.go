@@ -20,52 +20,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/leaderelection"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"k8s.io/client-go/tools/record"
-	"k8s.io/klog"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 )
-
-// eventBroadcaster is adpated from record.EventBroadcaster
-type eventBroadcaster interface {
-	// StartRecordingToSink starts sending events received from this EventBroadcaster to the given
-	// sink. The return value can be ignored or used to stop recording, if desired.
-	StartRecordingToSink(sink record.EventSink) watch.Interface
-	// StartLogging starts sending events received from this EventBroadcaster to the given logging
-	// function. The return value can be ignored or used to stop recording, if desired.
-	StartLogging(logf func(format string, args ...interface{})) watch.Interface
-	// NewRecorder returns an EventRecorder that can be used to send events to this EventBroadcaster
-	// with the event source set to the given event source.
-	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder
-}
-
-type K8sClient interface {
-	GetClientSet() kubernetes.Interface
-	GetEpClient() k8sclient.EpClient
-	GetNodeClient() k8sclient.NodeClient
-	GetPodClient() k8sclient.PodClient
-	GetDeploymentClient() k8sclient.DeploymentClient
-	GetDaemonSetClient() k8sclient.DaemonSetClient
-	ShutdownNodeClient()
-	ShutdownPodClient()
-	ShutdownDeploymentClient()
-	ShutdownDaemonSetClient()
-}
 
 // K8sAPIServer is a struct that produces metrics from kubernetes api server
 type K8sAPIServer struct {
@@ -73,23 +34,7 @@ type K8sAPIServer struct {
 	logger              *zap.Logger
 	clusterNameProvider clusterNameProvider
 	cancel              context.CancelFunc
-
-	mu                           sync.Mutex
-	leading                      bool
-	leaderLockName               string
-	leaderLockUsingConfigMapOnly bool
-
-	k8sClient        K8sClient // *k8sclient.K8sClient
-	epClient         k8sclient.EpClient
-	nodeClient       k8sclient.NodeClient
-	podClient        k8sclient.PodClient
-	deploymentClient k8sclient.DeploymentClient
-	daemonSetClient  k8sclient.DaemonSetClient
-
-	// the following can be set to mocks in testing
-	broadcaster eventBroadcaster
-	// the close of isLeadingC indicates the leader election is done. This is used in testing
-	isLeadingC chan bool
+	leaderElection      *LeaderElection
 }
 
 type clusterNameProvider interface {
@@ -98,37 +43,28 @@ type clusterNameProvider interface {
 
 type Option func(*K8sAPIServer)
 
-func WithLeaderLockName(name string) Option {
-	return func(server *K8sAPIServer) {
-		server.leaderLockName = name
-	}
-}
+// NewK8sAPIServer creates a k8sApiServer which can generate cluster-level metrics
+func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection *LeaderElection, options ...Option) (*K8sAPIServer, error) {
 
-func WithLeaderLockUsingConfigMapOnly(leaderLockUsingConfigMapOnly bool) Option {
-	return func(server *K8sAPIServer) {
-		server.leaderLockUsingConfigMapOnly = leaderLockUsingConfigMapOnly
-	}
-}
-
-// New creates a k8sApiServer which can generate cluster-level metrics
-func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ...Option) (*K8sAPIServer, error) {
 	k := &K8sAPIServer{
 		logger:              logger,
-		clusterNameProvider: clusterNameProvider,
-		k8sClient:           k8sclient.Get(logger),
-		broadcaster:         record.NewBroadcaster(),
+		clusterNameProvider: cnp,
+		leaderElection:      leaderElection,
 	}
 
 	for _, opt := range options {
 		opt(k)
 	}
 
-	if k.k8sClient == nil {
-		return nil, errors.New("failed to start k8sapiserver because k8sclient is nil")
+	if k.leaderElection == nil {
+		return nil, errors.New("cannot start k8sapiserver, leader election is nil")
 	}
 
-	if err := k.init(); err != nil {
-		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %w", err)
+	_, k.cancel = context.WithCancel(context.Background())
+
+	k.nodeName = os.Getenv("HOST_NAME")
+	if k.nodeName == "" {
+		return nil, errors.New("environment variable HOST_NAME is not set in k8s deployment config")
 	}
 
 	return k, nil
@@ -139,9 +75,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	var result []pmetric.Metrics
 
 	// don't generate any metrics if the current collector is not the leader
-	k.mu.Lock()
-	defer k.mu.Unlock()
-	if !k.leading {
+	if !k.leaderElection.leading {
 		return result
 	}
 
@@ -166,8 +100,8 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 
 func (k *K8sAPIServer) getClusterMetrics(clusterName, timestampNs string) pmetric.Metrics {
 	fields := map[string]interface{}{
-		"cluster_failed_node_count": k.nodeClient.ClusterFailedNodeCount(),
-		"cluster_node_count":        k.nodeClient.ClusterNodeCount(),
+		"cluster_failed_node_count": k.leaderElection.nodeClient.ClusterFailedNodeCount(),
+		"cluster_node_count":        k.leaderElection.nodeClient.ClusterNodeCount(),
 	}
 	attributes := map[string]string{
 		ci.ClusterNameKey: clusterName,
@@ -184,7 +118,7 @@ func (k *K8sAPIServer) getClusterMetrics(clusterName, timestampNs string) pmetri
 
 func (k *K8sAPIServer) getNamespaceMetrics(clusterName, timestampNs string) []pmetric.Metrics {
 	var metrics []pmetric.Metrics
-	for namespace, podNum := range k.podClient.NamespaceToRunningPodNum() {
+	for namespace, podNum := range k.leaderElection.podClient.NamespaceToRunningPodNum() {
 		fields := map[string]interface{}{
 			"namespace_number_of_running_pods": podNum,
 		}
@@ -208,7 +142,7 @@ func (k *K8sAPIServer) getNamespaceMetrics(clusterName, timestampNs string) []pm
 
 func (k *K8sAPIServer) getDeploymentMetrics(clusterName, timestampNs string) []pmetric.Metrics {
 	var metrics []pmetric.Metrics
-	deployments := k.deploymentClient.DeploymentInfos()
+	deployments := k.leaderElection.deploymentClient.DeploymentInfos()
 	for _, deployment := range deployments {
 		fields := map[string]interface{}{
 			ci.MetricName(ci.TypeClusterDeployment, ci.SpecReplicas):              deployment.Spec.Replicas,              // deployment_spec_replicas
@@ -238,7 +172,7 @@ func (k *K8sAPIServer) getDeploymentMetrics(clusterName, timestampNs string) []p
 
 func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pmetric.Metrics {
 	var metrics []pmetric.Metrics
-	daemonSets := k.daemonSetClient.DaemonSetInfos()
+	daemonSets := k.leaderElection.daemonSetClient.DaemonSetInfos()
 	for _, daemonSet := range daemonSets {
 		fields := map[string]interface{}{
 			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusNumberAvailable):        daemonSet.Status.NumberAvailable,        // daemonset_status_number_available
@@ -268,7 +202,7 @@ func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pm
 
 func (k *K8sAPIServer) getServiceMetrics(clusterName, timestampNs string) []pmetric.Metrics {
 	var metrics []pmetric.Metrics
-	for service, podNum := range k.epClient.ServiceToPodNum() {
+	for service, podNum := range k.leaderElection.epClient.ServiceToPodNum() {
 		fields := map[string]interface{}{
 			"service_number_of_running_pods": podNum,
 		}
@@ -292,154 +226,9 @@ func (k *K8sAPIServer) getServiceMetrics(clusterName, timestampNs string) []pmet
 	return metrics
 }
 
-func (k *K8sAPIServer) init() error {
-	var ctx context.Context
-	ctx, k.cancel = context.WithCancel(context.Background())
-
-	k.nodeName = os.Getenv("HOST_NAME")
-	if k.nodeName == "" {
-		return errors.New("environment variable HOST_NAME is not set in k8s deployment config")
-	}
-
-	lockNamespace := os.Getenv("K8S_NAMESPACE")
-	if lockNamespace == "" {
-		return errors.New("environment variable K8S_NAMESPACE is not set in k8s deployment config")
-	}
-
-	resourceLockConfig := resourcelock.ResourceLockConfig{
-		Identity:      k.nodeName,
-		EventRecorder: k.createRecorder(k.leaderLockName, lockNamespace),
-	}
-
-	clientSet := k.k8sClient.GetClientSet()
-	configMapInterface := clientSet.CoreV1().ConfigMaps(lockNamespace)
-	if configMap, err := configMapInterface.Get(ctx, k.leaderLockName, metav1.GetOptions{}); configMap == nil || err != nil {
-		k.logger.Info(fmt.Sprintf("Cannot get the leader config map: %v, try to create the config map...", err))
-		configMap, err = configMapInterface.Create(ctx,
-			&v1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: lockNamespace,
-					Name:      k.leaderLockName,
-				},
-			}, metav1.CreateOptions{})
-		k.logger.Info(fmt.Sprintf("configMap: %v, err: %v", configMap, err))
-	}
-
-	var lock resourcelock.Interface
-	if k.leaderLockUsingConfigMapOnly {
-		lock = &ConfigMapLock{
-			ConfigMapMeta: metav1.ObjectMeta{
-				Namespace: lockNamespace,
-				Name:      k.leaderLockName,
-			},
-			Client:     clientSet.CoreV1(),
-			LockConfig: resourceLockConfig,
-		}
-	} else {
-		l, err := resourcelock.New(
-			resourcelock.ConfigMapsLeasesResourceLock,
-			lockNamespace, k.leaderLockName,
-			clientSet.CoreV1(),
-			clientSet.CoordinationV1(),
-			resourceLockConfig)
-		if err != nil {
-			k.logger.Warn("Failed to create resource lock", zap.Error(err))
-			return err
-		}
-		lock = l
-	}
-
-	go k.startLeaderElection(ctx, lock)
-
-	return nil
-}
-
 // Shutdown stops the k8sApiServer
 func (k *K8sAPIServer) Shutdown() {
 	if k.cancel != nil {
 		k.cancel()
 	}
-}
-
-func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {
-
-	for {
-		leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
-			Lock: lock,
-			// IMPORTANT: you MUST ensure that any code you have that
-			// is protected by the lease must terminate **before**
-			// you call cancel. Otherwise, you could have a background
-			// loop still running and another process could
-			// get elected before your background loop finished, violating
-			// the stated goal of the lease.
-			LeaseDuration: 60 * time.Second,
-			RenewDeadline: 15 * time.Second,
-			RetryPeriod:   5 * time.Second,
-			Callbacks: leaderelection.LeaderCallbacks{
-				OnStartedLeading: func(ctx context.Context) {
-					k.logger.Info(fmt.Sprintf("k8sapiserver OnStartedLeading: %s", k.nodeName))
-					// we're notified when we start
-					k.mu.Lock()
-					k.leading = true
-					// always retrieve clients in case previous ones shut down during leader switching
-					k.nodeClient = k.k8sClient.GetNodeClient()
-					k.podClient = k.k8sClient.GetPodClient()
-					k.epClient = k.k8sClient.GetEpClient()
-					k.deploymentClient = k.k8sClient.GetDeploymentClient()
-					k.daemonSetClient = k.k8sClient.GetDaemonSetClient()
-					k.mu.Unlock()
-
-					if k.isLeadingC != nil {
-						// this executes only in testing
-						close(k.isLeadingC)
-					}
-
-					for {
-						k.mu.Lock()
-						leading := k.leading
-						k.mu.Unlock()
-						if !leading {
-							k.logger.Info("no longer leading")
-							return
-						}
-						select {
-						case <-ctx.Done():
-							k.logger.Info("ctx cancelled")
-							return
-						case <-time.After(time.Second):
-						}
-					}
-				},
-				OnStoppedLeading: func() {
-					k.logger.Info(fmt.Sprintf("k8sapiserver OnStoppedLeading: %s", k.nodeName))
-					// we can do cleanup here, or after the RunOrDie method returns
-					k.mu.Lock()
-					defer k.mu.Unlock()
-					k.leading = false
-					// The following are only used for cluster level metrics, whereas endpoint is used for decorator too.
-					k.k8sClient.ShutdownNodeClient()
-					k.k8sClient.ShutdownPodClient()
-					k.k8sClient.ShutdownDeploymentClient()
-					k.k8sClient.ShutdownDaemonSetClient()
-				},
-				OnNewLeader: func(identity string) {
-					k.logger.Info(fmt.Sprintf("k8sapiserver Switch New Leader: %s", identity))
-				},
-			},
-		})
-
-		select {
-		case <-ctx.Done(): // when leader election ends, the channel ctx.Done() will be closed
-			k.logger.Info(fmt.Sprintf("k8sapiserver shutdown Leader Election: %s", k.nodeName))
-			return
-		default:
-		}
-	}
-}
-
-func (k *K8sAPIServer) createRecorder(name, namespace string) record.EventRecorder {
-	k.broadcaster.StartLogging(klog.Infof)
-	clientSet := k.k8sClient.GetClientSet()
-	k.broadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: corev1.New(clientSet.CoreV1().RESTClient()).Events(namespace)})
-	return k.broadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: name})
 }
