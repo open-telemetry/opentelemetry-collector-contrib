@@ -54,7 +54,7 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 }
 
 // Start will instantiate required components needed by the Docker observer
-func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
+func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 	dCtx, cancel := context.WithCancel(context.Background())
 	d.cancel = cancel
 	d.ctx = dCtx
@@ -103,7 +103,7 @@ func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (d *dockerObserver) Shutdown(ctx context.Context) error {
+func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.cancel()
 	return nil
 }

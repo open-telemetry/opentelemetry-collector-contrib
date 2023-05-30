@@ -35,7 +35,7 @@ type k8sObserver struct {
 }
 
 // Start will populate the cache.SharedInformers for pods and nodes as configured and run them as goroutines.
-func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
+func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 	if k.once == nil {
 		return fmt.Errorf("cannot Start() partial k8sObserver (nil *sync.Once)")
 	}
@@ -65,7 +65,7 @@ func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown tells any cache.SharedInformers to stop running.
-func (k *k8sObserver) Shutdown(ctx context.Context) error {
+func (k *k8sObserver) Shutdown(_ context.Context) error {
 	close(k.stop)
 	return nil
 }
