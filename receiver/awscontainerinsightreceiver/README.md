@@ -646,30 +646,34 @@ kubectl apply -f config.yaml
 
 
 ### Container
-| Metric                                  | Unit          |
-|-----------------------------------------|---------------|
-| container_cpu_limit                     | Millicore     |
-| container_cpu_request                   | Millicore     |
-| container_cpu_usage_system              | Millicore     |
-| container_cpu_usage_total               | Millicore     |
-| container_cpu_usage_user                | Millicore     |
-| container_cpu_utilization               | Percent       |
-| container_memory_cache                  | Bytes         |
-| container_memory_failcnt                | Count         |
-| container_memory_hierarchical_pgfault   | Count/Second  |
-| container_memory_hierarchical_pgmajfault| Count/Second  |
-| container_memory_limit                  | Bytes         |
-| container_memory_mapped_file            | Bytes         |
-| container_memory_max_usage              | Bytes         |
-| container_memory_pgfault                | Count/Second  |
-| container_memory_pgmajfault             | Count/Second  |
-| container_memory_request                | Bytes         |
-| container_memory_rss                    | Bytes         |
-| container_memory_swap                   | Bytes         |
-| container_memory_usage                  | Bytes         |
-| container_memory_utilization            | Percent       |
-| container_memory_working_set            | Bytes         |
-| number_of_container_restarts            | Count         |
+| Metric                                   | Unit         |
+|------------------------------------------|--------------|
+| container_cpu_limit                      | Millicore    |
+| container_cpu_request                    | Millicore    |
+| container_cpu_usage_system               | Millicore    |
+| container_cpu_usage_total                | Millicore    |
+| container_cpu_usage_user                 | Millicore    |
+| container_cpu_utilization                | Percent      |
+| container_memory_cache                   | Bytes        |
+| container_memory_failcnt                 | Count        |
+| container_memory_hierarchical_pgfault    | Count/Second |
+| container_memory_hierarchical_pgmajfault | Count/Second |
+| container_memory_limit                   | Bytes        |
+| container_memory_mapped_file             | Bytes        |
+| container_memory_max_usage               | Bytes        |
+| container_memory_pgfault                 | Count/Second |
+| container_memory_pgmajfault              | Count/Second |
+| container_memory_request                 | Bytes        |
+| container_memory_rss                     | Bytes        |
+| container_memory_swap                    | Bytes        |
+| container_memory_usage                   | Bytes        |
+| container_memory_utilization             | Percent      |
+| container_memory_working_set             | Bytes        |
+| number_of_container_restarts             | Count        |
+| container_status_running                 | Count        |
+| container_status_terminated              | Count        |
+| container_status_waiting                 | Count        |
+| container_status_waiting_reason_crashed  | Count        |
 
 <br/><br/> 
 

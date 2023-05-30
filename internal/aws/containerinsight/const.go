@@ -93,6 +93,10 @@ const (
 	StatusConditionNetworkUnavailable = "status_condition_network_unavailable"
 	StatusCapacityPods                = "status_capacity_pods"
 	StatusAllocatablePods             = "status_allocatable_pods"
+	StatusRunning                     = "status_running"
+	StatusTerminated                  = "status_terminated"
+	StatusWaiting                     = "status_waiting"
+	StatusWaitingReasonCrashed        = "status_waiting_reason_crashed"
 
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
@@ -217,6 +221,12 @@ func init() {
 		StatusConditionNetworkUnavailable: UnitCount,
 		StatusCapacityPods:                UnitCount,
 		StatusAllocatablePods:             UnitCount,
+
+		// kube-state-metrics equivalents
+		StatusRunning:              UnitCount,
+		StatusTerminated:           UnitCount,
+		StatusWaiting:              UnitCount,
+		StatusWaitingReasonCrashed: UnitCount,
 
 		// cluster metrics
 		NodeCount:       UnitCount,

@@ -469,16 +469,28 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 		if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 			for _, containerStatus := range pod.Status.ContainerStatuses {
 				if containerStatus.Name == containerName {
+					possibleStatuses := map[string]int{
+						ci.StatusRunning:              0,
+						ci.StatusWaiting:              0,
+						ci.StatusWaitingReasonCrashed: 0,
+						ci.StatusTerminated:           0,
+					}
 					switch {
 					case containerStatus.State.Running != nil:
 						metric.AddTag(ci.ContainerStatus, "Running")
+						possibleStatuses[ci.StatusRunning] = 1
 					case containerStatus.State.Waiting != nil:
 						metric.AddTag(ci.ContainerStatus, "Waiting")
+						possibleStatuses[ci.StatusWaiting] = 1
 						if containerStatus.State.Waiting.Reason != "" {
 							metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Waiting.Reason)
+							if strings.Contains(containerStatus.State.Waiting.Reason, "Crash") {
+								possibleStatuses[ci.StatusWaitingReasonCrashed] = 1
+							}
 						}
 					case containerStatus.State.Terminated != nil:
 						metric.AddTag(ci.ContainerStatus, "Terminated")
+						possibleStatuses[ci.StatusTerminated] = 1
 						if containerStatus.State.Terminated.Reason != "" {
 							metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Terminated.Reason)
 						}
@@ -499,6 +511,11 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 							metric.AddField(ci.ContainerRestartCount, result)
 						}
 						p.setPrevMeasurement(ci.TypeContainer, containerKey, prevContainerMeasurement{restarts: int(containerStatus.RestartCount)})
+					}
+
+					// add container containerStatus metrics
+					for name, val := range possibleStatuses {
+						metric.AddField(ci.MetricName(ci.TypeContainer, name), val)
 					}
 				}
 			}
