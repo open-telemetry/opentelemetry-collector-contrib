@@ -178,8 +178,8 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	}
 	n, err := r.file.Read(dst)
 	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
-	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
-	if appendCount == 0 {
+	if appendCount == 0 || int(r.Offset)+appendCount < len(r.Fingerprint.FirstBytes) {
+		r.Debugw("Fingerprint does not need to be updated")
 		return n, err
 	}
 

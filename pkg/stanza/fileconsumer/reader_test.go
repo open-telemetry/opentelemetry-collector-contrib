@@ -5,6 +5,7 @@ package fileconsumer
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -87,6 +88,56 @@ func TestTokenization(t *testing.T) {
 				require.Equal(t, expected, readToken(t, emitChan))
 			}
 		})
+	}
+}
+
+// TestReadingWithLargeFingerPrintSizeAndFileLargerThanScannerBuf tests for reading of log file when:
+// - fingerprint size is larger than the size of scanner default buffer (defaultBufSize)
+// - size of the log file is lower than fingerprint size
+func TestReadingWithLargeFingerPrintSizeAndFileLargerThanScannerBuf(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+
+	// Generate log lines
+	body := "abcdefghijklmnopqrstuvwxyz1234567890"
+	fileContent := ""
+	expected := [][]byte{}
+	fingerPrintSize := defaultBufSize + 2*1024
+
+	for i := 0; len(fileContent) < fingerPrintSize-1024; i++ {
+		log := fmt.Sprintf("line %d log %s, end of line %d", i, body, i)
+		fileContent += fmt.Sprintf("%s\n", log)
+		expected = append(expected, []byte(log))
+	}
+
+	// Create a new file
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, fileContent)
+
+	// Create reader
+	emitChan := make(chan *emitParams, 1000)
+	splitterConfig := helper.NewSplitterConfig()
+	f := &readerFactory{
+		SugaredLogger: testutil.Logger(t),
+		readerConfig: &readerConfig{
+			fingerprintSize: fingerPrintSize,
+			maxLogSize:      defaultMaxLogSize,
+			emit:            testEmitFunc(emitChan),
+		},
+		fromBeginning:   true,
+		splitterFactory: newMultilineSplitterFactory(splitterConfig),
+		encodingConfig:  splitterConfig.EncodingConfig,
+	}
+
+	r, err := f.newReaderBuilder().withFile(temp).build()
+	require.NoError(t, err)
+
+	initialFingerPrintSize := len(r.Fingerprint.FirstBytes)
+	r.ReadToEnd(context.Background())
+	require.Equal(t, initialFingerPrintSize, len(r.Fingerprint.FirstBytes))
+
+	for _, expected := range expected {
+		require.Equal(t, expected, readToken(t, emitChan))
 	}
 }
 
