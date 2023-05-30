@@ -56,7 +56,7 @@ func newCustomizeSplitterFactory(
 }
 
 // Build builds Multiline Splitter struct
-func (factory *customizeSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
+func (factory *customizeSplitterFactory) Build(_ int) (bufio.SplitFunc, error) {
 	flusher := factory.Flusher.Build()
 	if flusher != nil {
 		return flusher.SplitFunc(factory.Splitter), nil

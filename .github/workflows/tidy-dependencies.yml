@@ -7,17 +7,16 @@ on:
 
 jobs:
   setup-environment:
+    # disabling until permission issues is resolved
+    # see: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22953
+    if: ${{ false }}
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+    # if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
     steps:
       - uses: actions/checkout@v3
         with:
-          # currently the fork of this repo is from a personal fork
-          # because of an issue when creating multiple forks using forking renovate
-          #
-          # see https://github.com/renovatebot/renovate/discussions/21057
-          repository: "renovate-bot/codeboten-_-opentelemetry-collector-contrib"
+          repository: "renovate-bot/open-telemetry-_-opentelemetry-collector-contrib"
           ref: ${{ github.head_ref }}
           token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
       - uses: actions/setup-go@v4

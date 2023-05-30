@@ -125,7 +125,7 @@ type Input struct {
 }
 
 // Start will start listening for messages on a socket.
-func (u *Input) Start(persister operator.Persister) error {
+func (u *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	u.cancel = cancel
 

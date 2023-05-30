@@ -29,7 +29,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new Azure metadata detector
-func NewDetector(p processor.CreateSettings, cfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &Detector{
 		provider: azure.NewProvider(),
 		logger:   p.Logger,

@@ -58,7 +58,7 @@ func (f *receiver) Start(ctx context.Context, host component.Host) error {
 	return f.input.Start(storageClient)
 }
 
-func (f *receiver) Shutdown(ctx context.Context) error {
+func (f *receiver) Shutdown(_ context.Context) error {
 	return f.input.Stop()
 }
 
@@ -124,7 +124,7 @@ func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, conf
 	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createTracesReceiver(ctx context.Context, settings rcvr.CreateSettings, configuration component.Config, traces consumer.Traces) (rcvr.Traces, error) {
+func createTracesReceiver(_ context.Context, settings rcvr.CreateSettings, configuration component.Config, traces consumer.Traces) (rcvr.Traces, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
