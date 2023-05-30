@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-logfmt/logfmt v0.6.0
-	github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928
+	github.com/grafana/loki/pkg/push v0.0.0-20230530091601-558cebf7a257
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.78.0

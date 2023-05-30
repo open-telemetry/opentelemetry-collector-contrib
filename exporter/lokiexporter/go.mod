@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928
+	github.com/grafana/loki/pkg/push v0.0.0-20230530091601-558cebf7a257
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.78.0
 	github.com/prometheus/common v0.43.0
 	github.com/stretchr/testify v1.8.3

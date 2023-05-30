@@ -122,6 +122,8 @@ github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928 h1:KCbGfs9SGr3lL3RWc+c+njCYyWUOa++Oas6McnwdQ2I=
 github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928/go.mod h1:DhJMrd2QInI/1CNtTN43BZuTmkccdizW1jZ+F6aHkhY=
+github.com/grafana/loki/pkg/push v0.0.0-20230530091601-558cebf7a257 h1:Z9MrkoxGAbvh98x2Du5GV4o9D9wsx4GOGHGFt8Eyr7o=
+github.com/grafana/loki/pkg/push v0.0.0-20230530091601-558cebf7a257/go.mod h1:BjNgF1EfQglDCrCbF0qiQLqAoBKva0/es63lSKT2TXw=
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd h1:PpuIBO5P3e9hpqBD0O/HjhShYuM6XE0i/lbE6J94kww=
 github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
