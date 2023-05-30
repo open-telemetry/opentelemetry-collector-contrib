@@ -12,7 +12,7 @@ status:
     stable: [metrics]
   distributions: [contrib]
   warnings:
-    - Any additonal information that should be brought to the consumer's attention
+    - Any additional information that should be brought to the consumer's attention
 
 resource_attributes:
   string.resource.attr:
