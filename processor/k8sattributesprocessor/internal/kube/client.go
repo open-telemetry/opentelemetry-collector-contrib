@@ -175,7 +175,7 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handlePodUpdate(old, new interface{}) {
+func (c *WatchClient) handlePodUpdate(_, new interface{}) {
 	observability.RecordPodUpdated()
 	if pod, ok := new.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
@@ -207,7 +207,7 @@ func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleNamespaceUpdate(old, new interface{}) {
+func (c *WatchClient) handleNamespaceUpdate(_, new interface{}) {
 	observability.RecordNamespaceUpdated()
 	if namespace, ok := new.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
@@ -695,7 +695,7 @@ func (c *WatchClient) handleReplicaSetAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(old, new interface{}) {
+func (c *WatchClient) handleReplicaSetUpdate(_, new interface{}) {
 	observability.RecordReplicaSetUpdated()
 	if replicaset, ok := new.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)

@@ -103,7 +103,7 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 	return err
 }
 
-func (t *TransformerOperator) Skip(ctx context.Context, entry *entry.Entry) (bool, error) {
+func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool, error) {
 	if t.IfExpr == nil {
 		return false, nil
 	}

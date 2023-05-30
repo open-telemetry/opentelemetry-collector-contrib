@@ -39,11 +39,11 @@ func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }
 
-func (f *FakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+func (f *FakeInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	return nil, nil
 }
 
-func (f *FakeInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+func (f *FakeInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
 	return nil
 }
 
@@ -51,7 +51,7 @@ func (f *FakeInformer) IsStopped() bool {
 	return false
 }
 
-func (f *FakeInformer) SetTransform(handler cache.TransformFunc) error {
+func (f *FakeInformer) SetTransform(_ cache.TransformFunc) error {
 	return nil
 }
 
@@ -75,9 +75,9 @@ func NewFakeNamespaceInformer(
 	}
 }
 
-func (f *FakeNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+func (f *FakeNamespaceInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
 
-func (f *FakeNamespaceInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+func (f *FakeNamespaceInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) {
 }
 
 func (f *FakeNamespaceInformer) GetStore() cache.Store {
@@ -94,19 +94,19 @@ type FakeReplicaSetInformer struct {
 
 func NewFakeReplicaSetInformer(
 	_ kubernetes.Interface,
-	namespace string,
+	_ string,
 ) cache.SharedInformer {
 	return &FakeInformer{
 		FakeController: &FakeController{},
 	}
 }
 
-func (f *FakeReplicaSetInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+func (f *FakeReplicaSetInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
 
-func (f *FakeReplicaSetInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+func (f *FakeReplicaSetInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) {
 }
 
-func (f *FakeReplicaSetInformer) SetTransform(handler cache.TransformFunc) error {
+func (f *FakeReplicaSetInformer) SetTransform(_ cache.TransformFunc) error {
 	return nil
 }
 
@@ -163,15 +163,15 @@ func NewNoOpInformer(
 func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }
-func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	return nil, nil
 }
 
-func (f *NoOpInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+func (f *NoOpInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
 	return nil
 }
 
-func (f *NoOpInformer) SetTransform(handler cache.TransformFunc) error {
+func (f *NoOpInformer) SetTransform(_ cache.TransformFunc) error {
 	return nil
 }
 
