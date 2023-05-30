@@ -84,7 +84,7 @@ func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCusto
 		resourceCustomizer(rl.Resource())
 	}
 	sl := rl.ScopeLogs().AppendEmpty()
-	if config.Splitting == None {
+	if config.Splitting == SplittingStrategyNone {
 		b, err := io.ReadAll(bodyReader)
 		if err != nil {
 			return ld, 0, err

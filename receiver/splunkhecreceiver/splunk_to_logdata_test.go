@@ -442,7 +442,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 			},
 			config: func() *Config {
 				return &Config{
-					Splitting: None,
+					Splitting: SplittingStrategyNone,
 				}
 			}(),
 		},

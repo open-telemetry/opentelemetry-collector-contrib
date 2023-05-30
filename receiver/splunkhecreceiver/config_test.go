@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 					AccessTokenPassthrough: true,
 				},
 				RawPath:    "/foo",
-				Splitting:  Line,
+				Splitting:  SplittingStrategyLine,
 				HealthPath: "/bar",
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "file.name",
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 					AccessTokenPassthrough: false,
 				},
 				RawPath:    "/services/collector/raw",
-				Splitting:  Line,
+				Splitting:  SplittingStrategyLine,
 				HealthPath: "/services/collector/health",
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "com.splunk.source",

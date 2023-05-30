@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 		},
 		RawPath:    splunk.DefaultRawPath,
 		HealthPath: splunk.DefaultHealthPath,
-		Splitting:  Line,
+		Splitting:  SplittingStrategyLine,
 	}
 }
 
