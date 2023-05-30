@@ -47,6 +47,8 @@ github.com/envoyproxy/go-control-plane v0.9.9-0.20210217033140-668b12f5399d/go.m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/facebook/time v0.0.0-20220713225404-f7a0d7702d50 h1:3fALCgsB+zI8Bxlv4ph4lCgt1CEQHIdU5sWxbkaMkuc=
 github.com/facebook/time v0.0.0-20220713225404-f7a0d7702d50/go.mod h1:IQmM+Ezbn5X7gpDO0IjKU5RmW9xT1a19dLp+NbivoXE=
+github.com/facebook/time v0.0.0-20230529151911-512b3b30ab23 h1:2bNmQUpwOmOwPrUFts4znQaefE8fYMzf3yutKzWztWM=
+github.com/facebook/time v0.0.0-20230529151911-512b3b30ab23/go.mod h1:dfouHrgxDA7FxAzPYOFIGHFcrFlG2trLpeLtA5+hs+Q=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/fatih/structs v1.1.0/go.mod h1:9NiDSp5zOcgEDl+j00MP/WkGVPOlPRLejGD8Ga6PJ7M=
