@@ -4,7 +4,7 @@ type:
 # Required: A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
-  class: <receiver|processor|exporter|cmd|connector|extension>
+  class: <receiver|processor|exporter|connector|extension>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
   stability: <in development|alpha|beta|stable|deprecated|unmaintained>
   # Optional: The distributions that this component is bundled with (For example core or contrib)
