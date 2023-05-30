@@ -23,7 +23,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 	input.PutDouble("test5", 1234)
 	input.PutBool("test6", true)
 
-	target := &ottl.StandardTypeGetter[pcommon.Map, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -200,7 +200,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 func Test_replaceAllPatterns_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -214,7 +214,7 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 }
 
 func Test_replaceAllPatterns_get_nil(t *testing.T) {
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -228,7 +228,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 }
 
 func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil
@@ -243,7 +243,7 @@ func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
 }
 
 func Test_replaceAllPatterns_invalid_model(t *testing.T) {
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil
