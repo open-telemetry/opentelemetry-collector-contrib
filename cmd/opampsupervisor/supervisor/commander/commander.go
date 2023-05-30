@@ -154,21 +154,15 @@ func (c *Commander) Stop(ctx context.Context) error {
 		return err
 	}
 
-	finished := make(chan struct{})
+	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 
 	// Setup a goroutine to wait a while for process to finish and send kill signal
 	// to the process if it doesn't finish.
 	var innerErr error
 	go func() {
-		// Wait 10 seconds.
-		t := time.After(10 * time.Second)
-		select {
-		case <-ctx.Done():
-			break
-		case <-t:
-			break
-		case <-finished:
-			// Process is successfully finished.
+		<-waitCtx.Done()
+
+		if waitCtx.Err() != context.DeadlineExceeded {
 			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", c.cmd.Process.Pid))
 			return
 		}
@@ -188,7 +182,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	c.running.Store(0)
 
 	// Let goroutine know process is finished.
-	close(finished)
+	cancel()
 
 	return innerErr
 }
