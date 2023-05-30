@@ -103,7 +103,8 @@ func (c *Commander) watch() {
 	// cmd.Wait returns an exec.ExitError when the Collector exits unsuccessfully or stops
 	// after receiving a signal. The Commander caller will handle these cases, so we filter
 	// them out here.
-	if ok := errors.Is(err, &exec.ExitError{}); err != nil && !ok {
+	var exitError *exec.ExitError
+	if ok := errors.As(err, &exitError); err != nil && !ok {
 		c.logger.Error("An error occurred while watching the agent process", zap.Error(err))
 	}
 
