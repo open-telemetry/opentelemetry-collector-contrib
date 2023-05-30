@@ -20,7 +20,7 @@ type hclog2ZapLogger struct {
 	name string
 }
 
-func (l *hclog2ZapLogger) Log(level hclog.Level, msg string, args ...interface{}) {}
+func (l *hclog2ZapLogger) Log(_ hclog.Level, _ string, _ ...interface{}) {}
 
 func (l *hclog2ZapLogger) ImpliedArgs() []interface{} {
 	return nil
@@ -30,12 +30,12 @@ func (l *hclog2ZapLogger) Name() string {
 	return l.name
 }
 
-func (l *hclog2ZapLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
+func (l *hclog2ZapLogger) StandardWriter(_ *hclog.StandardLoggerOptions) io.Writer {
 	return nil
 }
 
 // Trace implementation.
-func (l *hclog2ZapLogger) Trace(msg string, args ...interface{}) {}
+func (l *hclog2ZapLogger) Trace(_ string, _ ...interface{}) {}
 
 // Debug implementation.
 func (l *hclog2ZapLogger) Debug(msg string, args ...interface{}) {
@@ -83,13 +83,13 @@ func (l *hclog2ZapLogger) Named(name string) hclog.Logger {
 }
 
 // ResetNamed implementation.
-func (l *hclog2ZapLogger) ResetNamed(name string) hclog.Logger {
+func (l *hclog2ZapLogger) ResetNamed(_ string) hclog.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
 	return &hclog2ZapLogger{}
 }
 
 // SetLevel implementation.
-func (l *hclog2ZapLogger) SetLevel(level hclog.Level) {
+func (l *hclog2ZapLogger) SetLevel(_ hclog.Level) {
 	// no need to implement that as go-plugin doesn't use this method.
 }
 
@@ -100,7 +100,7 @@ func (l *hclog2ZapLogger) GetLevel() hclog.Level {
 }
 
 // StandardLogger implementation.
-func (l *hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
+func (l *hclog2ZapLogger) StandardLogger(_ *hclog.StandardLoggerOptions) *log.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
 	return log.New(io.Discard, "", 0)
 }

@@ -65,7 +65,7 @@ require (
 	github.com/antonmedv/expr v1.12.5 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.270 // indirect
+	github.com/aws/aws-sdk-go v1.44.271 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -76,7 +76,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/digitalocean/godo v1.97.0 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v24.0.1+incompatible // indirect
+	github.com/docker/docker v24.0.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
@@ -225,7 +225,7 @@ require (
 	go.opentelemetry.io/contrib/zpages v0.41.1 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.38.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.38.1 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.39.0 // indirect

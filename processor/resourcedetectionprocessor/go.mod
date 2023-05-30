@@ -5,7 +5,7 @@ go 1.19
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
-	github.com/aws/aws-sdk-go v1.44.270
+	github.com/aws/aws-sdk-go v1.44.271
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.78.0
@@ -31,7 +31,7 @@ require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v24.0.1+incompatible // indirect
+	github.com/docker/docker v24.0.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
