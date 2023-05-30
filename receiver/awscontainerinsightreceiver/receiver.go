@@ -101,16 +101,17 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		}
 
 		// TODO: enable this via config
-		/*endpoint, err := acir.getK8sApiServerEndpoint()
+		endpoint, err := acir.getK8sAPIServerEndpoint()
 		if err != nil {
 			acir.settings.Logger.Error("Unable to start the prometheus scraper", zap.Error(err))
 		} else {
+			acir.settings.Logger.Debug("k8sapiserver endpoint found", zap.String("endpoint", endpoint))
 			// use the same leader
-			acir.prometheusScraper, err = k8sapiserver.NewPrometheusScraper(ctx, acir.settings, endpoint, acir.nextConsumer, host, hostinfo, leaderElection)
+			/*acir.prometheusScraper, err = k8sapiserver.NewPrometheusScraper(ctx, acir.settings, endpoint, acir.nextConsumer, host, hostinfo, leaderElection)
 			if err != nil {
 				acir.settings.Logger.Error("Unable to start the prometheus scraper", zap.Error(err))
-			}
-		}*/
+			}*/
+		}
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
 
@@ -196,7 +197,7 @@ func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error 
 	return nil
 }
 
-func (acir *awsContainerInsightReceiver) getK8sApiServerEndpoint() (string, error) {
+func (acir *awsContainerInsightReceiver) getK8sAPIServerEndpoint() (string, error) {
 	k8sClient := k8sclient.Get(acir.settings.Logger)
 	if k8sClient == nil {
 		return "", errors.New("cannot start k8s client, unable to find K8sApiServer endpoint")
