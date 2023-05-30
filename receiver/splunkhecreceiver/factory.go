@@ -68,7 +68,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	r.Component.(*splunkReceiver).metricsConsumer = consumer
+	r.Unwrap().(*splunkReceiver).metricsConsumer = consumer
 	return r, nil
 }
 
