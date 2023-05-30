@@ -1,10 +1,10 @@
-name: oracledbreceiver
+type: oracledb
 
 status:
-  type: receiver
-  stability: alpha
-  pipelines: [metrics]
-  distributions: [contrib]
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, splunk]
 
 resource_attributes:
   oracledb.instance.name:
@@ -232,3 +232,21 @@ metrics:
       value_type: int
       input_type: string
     unit: By
+  oracledb.db_block_gets:
+    description: Number of times a current block was requested from the buffer cache.
+    enabled: false
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{gets}"
+  oracledb.consistent_gets:
+    description: Number of times a consistent read was requested for a block from the buffer cache.
+    enabled: false
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{gets}"

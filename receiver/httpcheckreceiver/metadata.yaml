@@ -1,10 +1,10 @@
-name: httpcheckreceiver
+type: httpcheck
 
 status:
-  type: receiver
-  stability: development
-  pipelines: [metrics]
-  distributions: [contrib]
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib, sumo]
   warnings: []
 
 resource_attributes:

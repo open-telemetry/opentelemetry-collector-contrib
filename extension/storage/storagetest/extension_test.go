@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package storagetest
 
@@ -95,9 +84,9 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 	// Perform some additional operations
 	set := storage.SetOperation("foo3", []byte("bar3"))
 	get := storage.GetOperation("foo3")
-	delete := storage.DeleteOperation("foo3")
+	deleteOp := storage.DeleteOperation("foo3")
 	getNil := storage.GetOperation("foo3")
-	require.NoError(t, clientTwo.Batch(ctx, set, get, delete, getNil))
+	require.NoError(t, clientTwo.Batch(ctx, set, get, deleteOp, getNil))
 	require.Equal(t, get.Value, []byte("bar3"))
 	require.Nil(t, getNil.Value)
 

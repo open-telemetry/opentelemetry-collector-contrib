@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
@@ -338,7 +327,6 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
 func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 	// convert CWMetric into map format for compatible with PLE input
-	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
 
 	// restore the json objects that are stored as string in attributes
@@ -369,12 +357,51 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 		}
 	}
 
-	// Create `_aws` section only if there are measurements
+	// Create EMF metrics if there are measurements
+	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure
 	if len(cWMetric.measurements) > 0 {
-		// Create `_aws` section only if there are measurements
-		cWMetricMap["CloudWatchMetrics"] = cWMetric.measurements
-		cWMetricMap["Timestamp"] = cWMetric.timestampMs
-		fieldMap["_aws"] = cWMetricMap
+		if config.Version == "1" {
+			/* 	EMF V1
+				"Version": "1",
+				"_aws": {
+					"CloudWatchMetrics": [
+					{
+						"Namespace": "ECS",
+						"Dimensions": [ ["ClusterName"] ],
+						"Metrics": [{"Name": "memcached_commands_total"}]
+					}
+					],
+					"Timestamp": 1668387032641
+			  	}
+			*/
+			fieldMap["Version"] = "1"
+			fieldMap["_aws"] = map[string]interface{}{
+				"CloudWatchMetrics": cWMetric.measurements,
+				"Timestamp":         cWMetric.timestampMs,
+			}
+
+		}
+	}
+
+	if config.Version == "0" {
+		fieldMap["Timestamp"] = fmt.Sprint(cWMetric.timestampMs)
+		if len(cWMetric.measurements) > 0 {
+			/* 	EMF V0
+				{
+					"Version": "0",
+					"CloudWatchMetrics": [
+					{
+						"Namespace": "ECS",
+						"Dimensions": [ ["ClusterName"] ],
+						"Metrics": [{"Name": "memcached_commands_total"}]
+					}
+					],
+					"Timestamp": "1668387032641"
+			  	}
+			*/
+			fieldMap["Version"] = "0"
+			fieldMap["CloudWatchMetrics"] = cWMetric.measurements
+		}
 	}
 
 	pleMsg, err := json.Marshal(fieldMap)

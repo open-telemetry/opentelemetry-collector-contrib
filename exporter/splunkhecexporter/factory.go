@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -31,8 +20,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr                = "splunk_hec"
 	defaultMaxIdleCons     = 100
 	defaultHTTPTimeout     = 10 * time.Second
 	defaultIdleConnTimeout = 10 * time.Second
@@ -54,11 +41,11 @@ type baseLogsExporter struct {
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability),
-		exporter.WithMetrics(createMetricsExporter, metadata.Stability),
-		exporter.WithLogs(createLogsExporter, metadata.Stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -80,6 +67,7 @@ func createDefaultConfig() component.Config {
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
+		MaxEventSize:            defaultMaxEventSize,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
@@ -93,6 +81,11 @@ func createDefaultConfig() component.Config {
 		HealthPath:            splunk.DefaultHealthPath,
 		HecHealthCheckEnabled: false,
 		ExportRaw:             false,
+		Telemetry: HecTelemetry{
+			Enabled:              false,
+			OverrideMetricsNames: map[string]string{},
+			ExtraAttributes:      map[string]string{},
+		},
 	}
 }
 
@@ -103,12 +96,7 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newTracesClient(set, cfg)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -130,12 +118,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newMetricsClient(set, cfg)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
@@ -167,12 +150,7 @@ func createLogsExporter(
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
 
-	c := &client{
-		config:            cfg,
-		logger:            set.Logger,
-		telemetrySettings: set.TelemetrySettings,
-		buildInfo:         set.BuildInfo,
-	}
+	c := newLogsClient(set, cfg)
 
 	logsExporter, err := exporterhelper.NewLogsExporter(
 		ctx,
@@ -192,7 +170,12 @@ func createLogsExporter(
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs:      batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, logsExporter),
+		Logs: batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, &perScopeBatcher{
+			logsEnabled:      cfg.LogDataEnabled,
+			profilingEnabled: cfg.ProfilingDataEnabled,
+			logger:           set.Logger,
+			next:             logsExporter,
+		}),
 	}
 
 	return wrapped, nil

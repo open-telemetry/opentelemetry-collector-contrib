@@ -1,21 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package recombine
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -299,11 +290,12 @@ func TestTransformer(t *testing.T) {
 			[]*entry.Entry{
 				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file2", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "end", map[string]string{"file.path": "file1"}),
 			},
 			[]*entry.Entry{
 				entryWithBodyAttr(t1, "file1\nfile1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "end", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file2\nend", map[string]string{"file.path": "file1"}),
 			},
 		},
 		{
@@ -320,13 +312,44 @@ func TestTransformer(t *testing.T) {
 				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "content1", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content3", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content4", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content5", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
 			},
 			[]*entry.Entry{
 				entryWithBodyAttr(t1, "start\ncontent1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content2\ncontent3", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content4\ncontent5", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+			},
+		},
+		{
+			"TestBatchSplitWhenTriggerTheBatchSizeLimit",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'start'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxBatchSize = 5
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content3", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content4", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content5", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content6", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content7", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content8", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content9", map[string]string{"file.path": "file1"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "start\ncontent1\ncontent2\ncontent3\ncontent4", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "content5\ncontent6\ncontent7\ncontent8\ncontent9", map[string]string{"file.path": "file1"}),
 			},
 		},
 	}
@@ -395,7 +418,51 @@ func TestTransformer(t *testing.T) {
 func BenchmarkRecombine(b *testing.B) {
 	cfg := NewConfig()
 	cfg.CombineField = entry.NewBodyField()
-	cfg.IsFirstEntry = "false"
+	cfg.IsFirstEntry = "body startsWith 'log-0'"
+	cfg.OutputIDs = []string{"fake"}
+	cfg.SourceIdentifier = entry.NewAttributeField("file.path")
+	op, err := cfg.Build(testutil.Logger(b))
+	require.NoError(b, err)
+	recombine := op.(*Transformer)
+
+	fake := testutil.NewFakeOutput(b)
+	require.NoError(b, recombine.SetOutputs([]operator.Operator{fake}))
+
+	go func() {
+		for {
+			<-fake.Received
+		}
+	}()
+
+	sourcesNum := 10
+	logsNum := 10
+	entries := []*entry.Entry{}
+	for i := 0; i < logsNum; i++ {
+		for j := 0; j < sourcesNum; j++ {
+			start := entry.New()
+			start.Timestamp = time.Now()
+			start.Body = strings.Repeat(fmt.Sprintf("log-%d", i), 50)
+			start.Attributes = map[string]any{"file.path": fmt.Sprintf("file-%d", j)}
+			entries = append(entries, start)
+		}
+	}
+
+	ctx := context.Background()
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		for _, e := range entries {
+			require.NoError(b, recombine.Process(ctx, e))
+		}
+		recombine.flushUncombined(ctx)
+	}
+}
+
+func BenchmarkRecombineLimitTrigger(b *testing.B) {
+	cfg := NewConfig()
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsFirstEntry = "body == 'start'"
+	cfg.MaxLogSize = 6
 	cfg.OutputIDs = []string{"fake"}
 	op, err := cfg.Build(testutil.Logger(b))
 	require.NoError(b, err)
@@ -411,20 +478,24 @@ func BenchmarkRecombine(b *testing.B) {
 		}
 	}()
 
-	e := entry.New()
-	e.Timestamp = time.Now()
-	e.Body = "body"
+	start := entry.New()
+	start.Timestamp = time.Now()
+	start.Body = "start"
+
+	next := entry.New()
+	next.Timestamp = time.Now()
+	next.Body = "next"
 
 	ctx := context.Background()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
+		require.NoError(b, recombine.Process(ctx, start))
+		require.NoError(b, recombine.Process(ctx, next))
+		require.NoError(b, recombine.Process(ctx, start))
+		require.NoError(b, recombine.Process(ctx, next))
 		recombine.flushUncombined(ctx)
 	}
+
 }
 
 func TestTimeout(t *testing.T) {
@@ -464,5 +535,86 @@ func TestTimeout(t *testing.T) {
 		t.FailNow()
 	}
 
+	require.NoError(t, recombine.Stop())
+}
+
+// This test is to make sure the timeout would take effect when there
+// are constantly logs that meet the aggregation criteria
+func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
+	t.Parallel()
+
+	cfg := NewConfig()
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsFirstEntry = "body == 'start'"
+	cfg.CombineWith = ""
+	cfg.OutputIDs = []string{"fake"}
+	cfg.ForceFlushTimeout = 100 * time.Millisecond
+	op, err := cfg.Build(testutil.Logger(t))
+	require.NoError(t, err)
+	recombine := op.(*Transformer)
+
+	fake := testutil.NewFakeOutput(t)
+	require.NoError(t, recombine.SetOutputs([]operator.Operator{fake}))
+
+	e := entry.New()
+	e.Timestamp = time.Now()
+	e.Body = "start"
+
+	ctx := context.Background()
+
+	require.NoError(t, recombine.Start(nil))
+	require.NoError(t, recombine.Process(ctx, e))
+
+	go func() {
+		next := e.Copy()
+		next.Body = "next"
+		for {
+			time.Sleep(cfg.ForceFlushTimeout / 2)
+			require.NoError(t, recombine.Process(ctx, next))
+		}
+	}()
+
+	select {
+	case <-fake.Received:
+	case <-time.After(5 * time.Second):
+		t.Logf("The entry should be flushed by now")
+		t.FailNow()
+	}
+	require.NoError(t, recombine.Stop())
+}
+
+func TestSourceBatchDelete(t *testing.T) {
+	t.Parallel()
+
+	cfg := NewConfig()
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsFirstEntry = "body == 'start'"
+	cfg.OutputIDs = []string{"fake"}
+	cfg.ForceFlushTimeout = 100 * time.Millisecond
+	cfg.MaxLogSize = 6
+	op, err := cfg.Build(testutil.Logger(t))
+	require.NoError(t, err)
+	recombine := op.(*Transformer)
+
+	fake := testutil.NewFakeOutput(t)
+	require.NoError(t, recombine.SetOutputs([]operator.Operator{fake}))
+
+	start := entry.New()
+	start.Timestamp = time.Now()
+	start.Body = "start"
+	start.AddAttribute("file.path", "file1")
+
+	next := entry.New()
+	next.Timestamp = time.Now()
+	next.Body = "next"
+	start.AddAttribute("file.path", "file1")
+
+	ctx := context.Background()
+
+	require.NoError(t, recombine.Process(ctx, start))
+	require.NoError(t, recombine.Process(ctx, next))
+	require.Equal(t, 1, len(recombine.batchMap))
+	require.NoError(t, recombine.flushSource("file1", true))
+	require.Equal(t, 0, len(recombine.batchMap))
 	require.NoError(t, recombine.Stop())
 }

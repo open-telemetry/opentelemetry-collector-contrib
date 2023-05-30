@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -28,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -50,11 +40,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				Token:                   "00000000-0000-0000-0000-0000000000000",
 				Source:                  "otel",
@@ -65,6 +55,7 @@ func TestLoadConfig(t *testing.T) {
 				LogDataEnabled:          true,
 				ProfilingDataEnabled:    true,
 				ExportRaw:               true,
+				MaxEventSize:            5 * 1024 * 1024,
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
@@ -108,6 +99,19 @@ func TestLoadConfig(t *testing.T) {
 				},
 				HealthPath:            "/services/collector/health",
 				HecHealthCheckEnabled: false,
+				Heartbeat: HecHeartbeat{
+					Interval: 30 * time.Second,
+				},
+				Telemetry: HecTelemetry{
+					Enabled: true,
+					OverrideMetricsNames: map[string]string{
+						"otelcol_exporter_splunkhec_heartbeats_sent":   "app_heartbeats_success_total",
+						"otelcol_exporter_splunkhec_heartbeats_failed": "app_heartbeats_failed_total",
+					},
+					ExtraAttributes: map[string]string{
+						"customKey": "customVal",
+					},
+				},
 			},
 		},
 	}
@@ -189,6 +193,17 @@ func TestConfig_Validate(t *testing.T) {
 				return cfg
 			}(),
 			wantErr: "requires \"max_content_length_traces\" <= 838860800",
+		},
+		{
+			name: "max default event-size",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.MaxEventSize = maxMaxEventSize + 1
+				cfg.Token = "foo"
+				return cfg
+			}(),
+			wantErr: "requires \"max_event_size\" <= 838860800",
 		},
 	}
 

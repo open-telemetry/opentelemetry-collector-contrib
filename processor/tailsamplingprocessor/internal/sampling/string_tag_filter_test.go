@@ -1,26 +1,16 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sampling
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 // TestStringAttributeCfg is replicated with StringAttributeCfg
@@ -212,8 +202,8 @@ func TestStringTagFilter(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			filter := NewStringAttributeFilter(zap.NewNop(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
-			decision, err := filter.Evaluate(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
+			filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
+			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
@@ -222,20 +212,20 @@ func TestStringTagFilter(t *testing.T) {
 
 func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 	trace := newTraceStringAttrs(map[string]interface{}{"example": "value"}, "", "")
-	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"}, false, 0, false)
+	filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"value"}, false, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := filter.Evaluate(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		_, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
 		assert.NoError(b, err)
 	}
 }
 
 func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 	trace := newTraceStringAttrs(map[string]interface{}{"example": "grpc.health.v1.HealthCheck"}, "", "")
-	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
+	filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := filter.Evaluate(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		_, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
 		assert.NoError(b, err)
 	}
 }

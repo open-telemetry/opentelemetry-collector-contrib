@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package transformprocessor
 
@@ -24,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,7 +25,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
 				TraceStatements: []common.ContextStatements{
@@ -86,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "ignore_errors"),
+			id: component.NewIDWithName(metadata.Type, "ignore_errors"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
 				TraceStatements: []common.ContextStatements{
@@ -102,27 +92,27 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_trace"),
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "unknown_function_trace"),
+			id:           component.NewIDWithName(metadata.Type, "unknown_function_trace"),
 			errorMessage: "undefined function not_a_function",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "unknown_function_metric"),
+			id:           component.NewIDWithName(metadata.Type, "unknown_function_metric"),
 			errorMessage: "undefined function not_a_function",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_log"),
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "unknown_function_log"),
+			id:           component.NewIDWithName(metadata.Type, "unknown_function_log"),
 			errorMessage: "undefined function not_a_function",
 		},
 	}
@@ -149,7 +139,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func Test_UnknownContextID(t *testing.T) {
-	id := component.NewIDWithName(typeStr, "unknown_context")
+	id := component.NewIDWithName(metadata.Type, "unknown_context")
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	assert.NoError(t, err)
@@ -163,7 +153,7 @@ func Test_UnknownContextID(t *testing.T) {
 }
 
 func Test_UnknownErrorMode(t *testing.T) {
-	id := component.NewIDWithName(typeStr, "unknown_error_mode")
+	id := component.NewIDWithName(metadata.Type, "unknown_error_mode")
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	assert.NoError(t, err)

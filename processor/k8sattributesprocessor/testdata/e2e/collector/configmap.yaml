@@ -29,6 +29,7 @@ data:
           - k8s.pod.uid
           - k8s.namespace.name
           - k8s.deployment.name
+          - k8s.deployment.uid
           - k8s.replicaset.name
           - k8s.replicaset.uid
           - k8s.statefulset.name
@@ -49,7 +50,7 @@ data:
       otlp:
         protocols:
           grpc:
-            endpoint: ${MY_POD_IP}:4317
+            endpoint: ${env:MY_POD_IP}:4317
     service:
       extensions:
       - health_check

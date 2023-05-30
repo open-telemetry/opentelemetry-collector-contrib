@@ -1,7 +1,7 @@
-name: resourceprocessor
+type: resource
 
 status:
-  type: processor
-  stability: beta
-  pipelines: [logs, metrics, traces]
-  distributions: [core, contrib]
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [core, contrib, splunk, observiq, sumo]

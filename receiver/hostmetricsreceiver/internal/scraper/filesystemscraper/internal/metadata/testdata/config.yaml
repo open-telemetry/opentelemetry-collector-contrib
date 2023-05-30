@@ -7,7 +7,6 @@ all_set:
       enabled: true
     system.filesystem.utilization:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     system.filesystem.inodes.usage:
@@ -16,4 +15,3 @@ none_set:
       enabled: false
     system.filesystem.utilization:
       enabled: false
-  resource_attributes:

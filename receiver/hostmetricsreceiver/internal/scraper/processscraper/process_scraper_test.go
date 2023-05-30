@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package processscraper
 
@@ -45,7 +34,7 @@ func skipTestOnUnsupportedOS(t *testing.T) {
 	}
 }
 
-func enableLinuxOnlyMetrics(ms *metadata.MetricsSettings) {
+func enableLinuxOnlyMetrics(ms *metadata.MetricsConfig) {
 	if runtime.GOOS != "linux" {
 		return
 	}
@@ -59,9 +48,9 @@ func enableLinuxOnlyMetrics(ms *metadata.MetricsSettings) {
 func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 	type testCase struct {
-		name                  string
-		mutateScraper         func(*scraper)
-		mutateMetricsSettings func(*testing.T, *metadata.MetricsSettings)
+		name                string
+		mutateScraper       func(*scraper)
+		mutateMetricsConfig func(*testing.T, *metadata.MetricsConfig)
 	}
 	testCases := []testCase{
 		{
@@ -69,7 +58,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Enable Linux-only metrics",
-			mutateMetricsSettings: func(t *testing.T, ms *metadata.MetricsSettings) {
+			mutateMetricsConfig: func(t *testing.T, ms *metadata.MetricsConfig) {
 				if runtime.GOOS != "linux" {
 					t.Skipf("skipping test on %v", runtime.GOOS)
 				}
@@ -79,7 +68,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Enable memory utilization",
-			mutateMetricsSettings: func(t *testing.T, ms *metadata.MetricsSettings) {
+			mutateMetricsConfig: func(t *testing.T, ms *metadata.MetricsConfig) {
 				ms.ProcessMemoryUtilization.Enabled = true
 			},
 		},
@@ -96,8 +85,8 @@ func TestScrape(t *testing.T) {
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
 			}
 
-			if test.mutateMetricsSettings != nil {
-				test.mutateMetricsSettings(t, &metricsBuilderConfig.Metrics)
+			if test.mutateMetricsConfig != nil {
+				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			if test.mutateScraper != nil {
@@ -476,7 +465,7 @@ func (p *processHandleMock) NumFDs() (int32, error) {
 	return args.Get(0).(int32), args.Error(1)
 }
 
-func (p *processHandleMock) RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error) {
+func (p *processHandleMock) RlimitUsage(_ bool) ([]process.RlimitStat, error) {
 	args := p.MethodCalled("RlimitUsage")
 	return args.Get(0).([]process.RlimitStat), args.Error(1)
 }
@@ -628,7 +617,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 	}
 }
 
-func enableOptionalMetrics(ms *metadata.MetricsSettings) {
+func enableOptionalMetrics(ms *metadata.MetricsConfig) {
 	ms.ProcessMemoryUtilization.Enabled = true
 	ms.ProcessThreads.Enabled = true
 	ms.ProcessPagingFaults.Enabled = true
