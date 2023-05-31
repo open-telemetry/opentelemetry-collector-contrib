@@ -247,7 +247,7 @@ flowControlLoop:
 			}
 		} else {
 			// no forward error
-			s.metrics.recordReportedSpans()
+			s.metrics.recordReportedSpans(int64(traces.SpanCount()))
 			break flowControlLoop
 		}
 	}
