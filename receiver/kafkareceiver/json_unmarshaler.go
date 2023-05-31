@@ -27,7 +27,7 @@ func (r *jsonLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 		return p, err
 	}
 
-	// dig down to the Log Records level of the Logs struct
+	// create a new log record
 	logRecords := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	logRecords.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
