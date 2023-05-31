@@ -405,6 +405,24 @@ As measured over the most recent 20s interval.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {KiBy/s} | Sum | Int | Cumulative | false |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### vcenter.vm.memory.utilization
+
+The memory utilization of the VM.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
