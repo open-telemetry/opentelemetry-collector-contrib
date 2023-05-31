@@ -45,7 +45,7 @@ func (r *fileReceiver) Start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *fileReceiver) Shutdown(ctx context.Context) error {
+func (r *fileReceiver) Shutdown(_ context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}
