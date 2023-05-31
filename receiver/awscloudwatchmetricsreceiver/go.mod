@@ -3,6 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsclo
 go 1.20
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.18.0
+	github.com/aws/aws-sdk-go-v2/config v1.8.3
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.89.0
 	go.opentelemetry.io/collector/consumer v0.89.0
@@ -11,6 +13,20 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go-v2/credentials v1.4.3 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.6.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.33 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.27 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.2.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.3.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.4.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.7.2 // indirect
+	github.com/aws/smithy-go v1.13.5 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+)
+
+require (
+	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.26.0
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -28,11 +44,11 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.89.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.89.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0018 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018
 	go.opentelemetry.io/otel v1.20.0 // indirect
 	go.opentelemetry.io/otel/metric v1.20.0 // indirect
 	go.opentelemetry.io/otel/trace v1.20.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/multierr v1.11.0
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
