@@ -112,6 +112,8 @@ rules:
     resources: ["configmaps"]
     resourceNames: ["otel-container-insight-clusterleader"]
     verbs: ["get","update"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get", "list", "watch"]
 
 ---
 kind: ClusterRoleBinding
@@ -338,10 +340,19 @@ kubectl apply -f config.yaml
 
 ## Available Metrics and Resource Attributes
 ### Cluster
-| Metric                    | Unit  |
-|---------------------------|-------|
-| cluster_failed_node_count | Count |
-| cluster_node_count        | Count |
+| Metric                                                     | Unit    |
+|------------------------------------------------------------|---------|
+| cluster_failed_node_count                                  | Count   |
+| cluster_node_count                                         | Count   |
+| apiserver_storage_objects                                  | Count   |
+| apiserver_request_total                                    | Count   |
+| apiserver_request_duration_seconds                         | Seconds |
+| apiserver_admission_controller_admission_duration_seconds  | Seconds |
+| rest_client_request_duration_seconds                       | Seconds |
+| rest_client_requests_total                                 | Count   |
+| etcd_request_duration_seconds                              | Seconds |
+
+
 
 <br/><br/> 
 | Resource Attribute |
@@ -397,6 +408,24 @@ kubectl apply -f config.yaml
 
 
 <br/><br/> 
+
+### Cluster Endpoint
+| Metric                      | Unit  |
+|-----------------------------|-------|
+| etcd_db_total_size_in_bytes | bytes |
+
+
+<br/><br/>
+| Resource Attribute |
+|--------------------|
+| ClusterName        |
+| NodeName           |
+| Endpoint           |
+| Type               |
+| Timestamp          |
+| Version            |
+| Sources            |
+
 <br/><br/> 
 
 ### Cluster Deployment

@@ -14,6 +14,9 @@
 package k8sclient
 
 import (
+	"sort"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -21,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
-	"testing"
 )
 
 var desired = int32(20)
@@ -98,6 +100,9 @@ func TestDeploymentClient(t *testing.T) {
 		},
 	}
 	actual := client.DeploymentInfos()
+	sort.Slice(actual, func(i, j int) bool {
+		return actual[i].Name < actual[j].Name
+	})
 	assert.Equal(t, expected, actual)
 	client.shutdown()
 	assert.True(t, client.stopped)

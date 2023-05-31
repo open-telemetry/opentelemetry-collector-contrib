@@ -93,7 +93,10 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger, _ = zap.NewDevelopment()
 
-	scraper, err := NewPrometheusScraper(context.TODO(), settings, consumer, componenttest.NewNopHost(), mockClusterNameProvider{})
+	leaderElection := LeaderElection{
+		leading: true,
+	}
+	scraper, err := NewPrometheusScraper(context.TODO(), settings, "", consumer, componenttest.NewNopHost(), mockClusterNameProvider{}, &leaderElection)
 	assert.NoError(t, err)
 	assert.Equal(t, mockClusterNameProvider{}, scraper.clusterNameProvider)
 
@@ -135,13 +138,15 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	assert.NotNil(t, mp)
 	defer mp.Close()
 
-	scraper.Start()
+	// perform a single scrape, this will kick off the scraper process for additional scrapes
+	scraper.GetMetrics()
 
 	t.Cleanup(func() {
 		scraper.Shutdown()
 	})
 
-	// wait for scrape
+	// wait for 2 scrapes, one initiated by us, another by the new scraper process
+	mp.wg.Wait()
 	mp.wg.Wait()
 
 	assert.True(t, *consumer.up)
