@@ -25,7 +25,6 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 			path.Join(rootDir, "metrics_test.go.tmpl"):         {},
 			path.Join(rootDir, "config.go.tmpl"):               {},
 			path.Join(rootDir, "config_test.go.tmpl"):          {},
-			path.Join(rootDir, "readme.connector.md.tmpl"):     {},
 			path.Join(rootDir, "readme.md.tmpl"):               {},
 			path.Join(rootDir, "status.go.tmpl"):               {},
 			path.Join(rootDir, "testdata", "config.yaml.tmpl"): {},

@@ -62,7 +62,7 @@ func run(ymlPath string) error {
 		}
 
 		if err = inlineReplace(
-			filepath.Join(tmplDir, templateForClass(md.Status.Class)),
+			filepath.Join(tmplDir, "readme.md.tmpl"),
 			filepath.Join(ymlDir, "README.md"),
 			md, statusStart, statusEnd); err != nil {
 			return err
@@ -146,13 +146,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return result
 				},
-				"keys": func(m map[string][]string) []string {
-					keys := make([]string, 0, len(m))
-					for k := range m {
-						keys = append(keys, k)
-					}
-					return keys
-				},
 				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
@@ -220,11 +213,4 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 	}
 
 	return formatErr
-}
-
-func templateForClass(class string) string {
-	if class == "connector" {
-		return "readme.connector.md.tmpl"
-	}
-	return "readme.md.tmpl"
 }
