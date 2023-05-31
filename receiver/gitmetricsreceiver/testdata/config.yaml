@@ -1,0 +1,22 @@
+receivers:
+  gitmetrics:
+    scrapers:
+      github:
+  gitmetrics/customname:
+    collection_interval: 45s
+    scrapers:
+      github:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [gitmetrics]
+      processors: [nop]
+      exporters: [nop]
+

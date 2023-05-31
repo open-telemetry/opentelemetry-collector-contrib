@@ -171,6 +171,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
+      - receiver/gitmetrics
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
