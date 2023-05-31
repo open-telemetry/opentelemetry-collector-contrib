@@ -37,12 +37,16 @@ func TestNewLeaderElectionOpts(t *testing.T) {
 	t.Setenv("K8S_NAMESPACE", "namespace")
 
 	le, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}), WithLeaderLockName("test"), WithLeaderLockUsingConfigMapOnly(true))
+	t.Cleanup(func() {
+		le.cancel()
+	})
 	assert.NotNil(t, le)
 	assert.NoError(t, err)
 	assert.Equal(t, "test", le.leaderLockName)
 	assert.True(t, le.leaderLockUsingConfigMapOnly)
 
 }
+
 func TestLeaderElectionInitErrors(t *testing.T) {
 	le, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}))
 	assert.Error(t, err)
@@ -91,11 +95,11 @@ func TestLeaderElectionEndToEnd(t *testing.T) {
 	<-leaderElection.isLeadingC
 	assert.True(t, leaderElection.leading)
 
-	// shut down
-	leaderElection.cancel()
+	t.Cleanup(func() {
+		leaderElection.cancel()
 
-	assert.Eventually(t, func() bool {
-		return !leaderElection.leading
-	}, 2*time.Second, 5*time.Millisecond)
-
+		assert.Eventually(t, func() bool {
+			return !leaderElection.leading
+		}, 2*time.Second, 5*time.Millisecond)
+	})
 }
