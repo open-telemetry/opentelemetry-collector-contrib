@@ -21,6 +21,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	NoStreamName = "THIS IS INVALID STREAM"
+)
+
 type logsReceiver struct {
 	region              string
 	profile             string
@@ -221,7 +225,11 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 }
 
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
+	var logRecord plog.LogRecord
 	logs := plog.NewLogs()
+
+	resourceMap := map[string](map[string]plog.ResourceLogs){}
+
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
 			l.logger.Error("unable to determine timestamp of event as the timestamp is nil")
@@ -238,15 +246,31 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			continue
 		}
 
-		rl := logs.ResourceLogs().AppendEmpty()
-		resourceAttributes := rl.Resource().Attributes()
-		resourceAttributes.PutStr("aws.region", l.region)
-		resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
-		if e.LogStreamName != nil {
-			resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
+		resource := l.getResourceLogs(resourceMap, logGroupName, e.LogStreamName)
+
+		if resource == nil {
+			rl := logs.ResourceLogs().AppendEmpty()
+
+			resourceAttributes := rl.Resource().Attributes()
+			resourceAttributes.PutStr("aws.region", l.region)
+			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
+
+			if _, ok := resourceMap[logGroupName]; !ok {
+				resourceMap[logGroupName] = map[string]plog.ResourceLogs{}
+			}
+
+			if e.LogStreamName != nil {
+				resourceMap[logGroupName][*e.LogStreamName] = rl
+				resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
+			} else {
+				resourceMap[logGroupName][NoStreamName] = rl
+			}
+
+			logRecord = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		} else {
+			logRecord = resource.ScopeLogs().At(0).LogRecords().AppendEmpty()
 		}
 
-		logRecord := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
@@ -254,6 +278,20 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 		logRecord.Attributes().PutStr("id", *e.EventId)
 	}
 	return logs
+}
+
+func (*logsReceiver) getResourceLogs(m map[string](map[string]plog.ResourceLogs), group string, logStream *string) *plog.ResourceLogs {
+	if streamMap := m[group]; streamMap != nil {
+		if logStream == nil {
+			if resource, ok := streamMap[NoStreamName]; ok {
+				return &resource
+			}
+		} else if resource, ok := streamMap[*logStream]; ok {
+			return &resource
+		}
+	}
+
+	return nil
 }
 
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
