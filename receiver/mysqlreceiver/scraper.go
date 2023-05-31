@@ -79,6 +79,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	innodbStats, innoErr := m.sqlclient.getInnodbStats()
 	if innoErr != nil {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
+		return pmetric.Metrics{}, innoErr
 	}
 
 	errs := &scrapererror.ScrapeErrors{}

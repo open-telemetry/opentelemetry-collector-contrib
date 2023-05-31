@@ -122,6 +122,15 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			if len(allMetrics) == 0 {
 				return false
 			}
+			// if len(observedLogs.All()) > 0 {
+			// 	logs := strings.Builder{}
+			// 	for _, e := range observedLogs.All() {
+			// 		logs.WriteString(e.Message + "\n")
+			// 	}
+			// 	t.Errorf("full log:\n%s", logs.String())
+			// 	t.FailNow()
+			// }
+
 			if it.writeExpected {
 				require.NoError(t, golden.WriteMetrics(t, it.expectedFile, allMetrics[0]))
 				return true
