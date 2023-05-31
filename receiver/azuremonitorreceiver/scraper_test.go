@@ -137,7 +137,7 @@ type metricsValuesClientMock struct {
 	lists map[string]map[string]armmonitor.MetricsClientListResponse
 }
 
-func (mvcm metricsValuesClientMock) List(ctx context.Context, resourceURI string, _ *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
+func (mvcm metricsValuesClientMock) List(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
 	return mvcm.lists[resourceURI][*options.Metricnames], nil
 }
 
