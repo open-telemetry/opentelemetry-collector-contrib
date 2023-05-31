@@ -2,7 +2,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: prometheusreceiver
+component: exporter/splunk_hec
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Make sure the `max_event_size` option is used to drop events larger than `max_event_size` instead of using it for batch size.
