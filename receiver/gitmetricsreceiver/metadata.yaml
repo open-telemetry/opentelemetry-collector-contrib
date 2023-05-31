@@ -1,0 +1,66 @@
+type: gitmetricsreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+
+# this might need to be unique per sub receiver implementation
+resource_attributes:
+  organization.name:
+    enabled: true
+    description: "Git Organization or Project Name"
+    type: string
+
+attributes:
+  repository.name:
+    description: "The full name of the Git repository"
+    type: string
+  branch.name:
+    description: "The name of the branch in a given repository"
+    type: string
+
+metrics:
+  git.repository.count:
+    enabled: true
+    description: "Number of repositories that exist in an organization"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: []
+  git.repository.branch.count:
+    enabled: true
+    description: "Number of branches that exist in the repository"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name]
+  git.repository.contributor.count:
+    enabled: true
+    description: "Total number of unique contributors to this repository"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name]
+  git.repository.branch.commit.count:
+    enabled: true
+    description: "The total number of commits on a given branch"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.branch.time:
+    enabled: true
+    description: "Time the branch has existed"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.pull_request.time:
+    enabled: true
+    description: "Time the PR has been open"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
