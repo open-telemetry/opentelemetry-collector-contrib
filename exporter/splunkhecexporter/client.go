@@ -59,7 +59,7 @@ func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) 
 		logger:            set.Logger,
 		telemetrySettings: set.TelemetrySettings,
 		buildInfo:         set.BuildInfo,
-		bufferStatePool:   newBufferStatePool(maxContentLength, !cfg.DisableCompression, cfg.MaxEventSize),
+		bufferStatePool:   newBufferStatePool(maxContentLength, !cfg.DisableCompression),
 	}
 }
 
@@ -198,7 +198,7 @@ func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (
 
 					// JSON encoding event and writing to buffer.
 					var err error
-					b, err = marshalEvent(event, bs.jsonStream)
+					b, err = marshalEvent(event, c.config.MaxEventSize, bs.jsonStream)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 							"dropped log event: %v, error: %w", event, err)))
@@ -255,7 +255,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is 
 				}
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
-					b, err := marshalEvent(event, bs.jsonStream)
+					b, err := marshalEvent(event, c.config.MaxEventSize, bs.jsonStream)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
 						continue
@@ -303,7 +303,7 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, bs *bufferState, is iter
 				event := mapSpanToSplunkEvent(rs.Resource(), span, c.config)
 
 				// JSON encoding event and writing to buffer.
-				b, err := marshalEvent(event, bs.jsonStream)
+				b, err := marshalEvent(event, c.config.MaxEventSize, bs.jsonStream)
 				if err != nil {
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
 					continue
@@ -596,12 +596,15 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 }
 
 // marshalEvent marshals an event to JSON using a reusable jsoniter stream.
-func marshalEvent(event *splunk.Event, stream *jsoniter.Stream) ([]byte, error) {
+func marshalEvent(event *splunk.Event, sizeLimit uint, stream *jsoniter.Stream) ([]byte, error) {
 	stream.Reset(nil)
 	stream.Error = nil
 	stream.WriteVal(event)
 	if stream.Error != nil {
 		return nil, stream.Error
+	}
+	if uint(stream.Buffered()) > sizeLimit {
+		return nil, fmt.Errorf("event size %d exceeds limit %d", stream.Buffered(), sizeLimit)
 	}
 	return stream.Buffer(), nil
 }

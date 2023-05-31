@@ -19,10 +19,8 @@ var (
 
 // bufferState encapsulates intermediate buffer state when pushing data
 type bufferState struct {
-	maxEventLength uint
-	buf            buffer
-	jsonStream     *jsoniter.Stream
-	rawLength      int
+	buf        buffer
+	jsonStream *jsoniter.Stream
 }
 
 type buffer interface {
@@ -31,6 +29,7 @@ type buffer interface {
 	io.Closer
 	Reset()
 	Len() int
+	Empty() bool
 }
 
 func (b *bufferState) compressionEnabled() bool {
@@ -39,12 +38,11 @@ func (b *bufferState) compressionEnabled() bool {
 }
 
 func (b *bufferState) containsData() bool {
-	return b.rawLength > 0
+	return !b.buf.Empty()
 }
 
 func (b *bufferState) reset() {
 	b.buf.Reset()
-	b.rawLength = 0
 }
 
 func (b *bufferState) Read(p []byte) (n int, err error) {
@@ -57,12 +55,8 @@ func (b *bufferState) Close() error {
 
 // accept returns true if data is accepted by the buffer
 func (b *bufferState) accept(data []byte) (bool, error) {
-	if len(data)+b.rawLength > int(b.maxEventLength) {
-		return false, nil
-	}
 	_, err := b.buf.Write(data)
 	if err == nil {
-		b.rawLength += len(data)
 		return true, nil
 	}
 	if errors.Is(err, errOverCapacity) {
@@ -102,25 +96,31 @@ func (c *cancellableBytesWriter) Len() int {
 	return c.innerWriter.Len()
 }
 
+func (c *cancellableBytesWriter) Empty() bool {
+	return c.innerWriter.Len() == 0
+}
+
 type cancellableGzipWriter struct {
 	innerBuffer *bytes.Buffer
 	innerWriter *gzip.Writer
 	maxCapacity uint
-	len         int
+	rawLen      int
 }
 
 func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 	if c.maxCapacity == 0 {
+		c.rawLen += len(b)
 		return c.innerWriter.Write(b)
 	}
-	c.len += len(b)
+
 	// if we see that at a 50% compression rate, we'd be over max capacity, start flushing.
-	if (c.len / 2) > int(c.maxCapacity) {
+	if c.rawLen > 0 && (c.rawLen+len(b))/2 > int(c.maxCapacity) {
 		// we flush so the length of the underlying buffer is accurate.
 		if err := c.innerWriter.Flush(); err != nil {
 			return 0, err
 		}
 	}
+
 	// we find that the new content uncompressed, added to our buffer, would overflow our max capacity.
 	if c.innerBuffer.Len()+len(b) > int(c.maxCapacity) {
 		// so we create a copy of our content and add this new data, compressed, to check that it fits.
@@ -139,6 +139,8 @@ func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 			return 0, errOverCapacity
 		}
 	}
+
+	c.rawLen += len(b)
 	return c.innerWriter.Write(b)
 }
 
@@ -149,7 +151,7 @@ func (c *cancellableGzipWriter) Read(p []byte) (int, error) {
 func (c *cancellableGzipWriter) Reset() {
 	c.innerBuffer.Reset()
 	c.innerWriter.Reset(c.innerBuffer)
-	c.len = 0
+	c.rawLen = 0
 }
 
 func (c *cancellableGzipWriter) Close() error {
@@ -158,6 +160,10 @@ func (c *cancellableGzipWriter) Close() error {
 
 func (c *cancellableGzipWriter) Len() int {
 	return c.innerBuffer.Len()
+}
+
+func (c *cancellableGzipWriter) Empty() bool {
+	return c.rawLen == 0
 }
 
 // bufferStatePool is a pool of bufferState objects.
@@ -177,7 +183,7 @@ func (p bufferStatePool) put(bf *bufferState) {
 
 const initBufferCap = 512
 
-func newBufferStatePool(bufCap uint, compressionEnabled bool, maxEventLength uint) bufferStatePool {
+func newBufferStatePool(bufCap uint, compressionEnabled bool) bufferStatePool {
 	return bufferStatePool{
 		&sync.Pool{
 			New: func() interface{} {
@@ -196,9 +202,8 @@ func newBufferStatePool(bufCap uint, compressionEnabled bool, maxEventLength uin
 					}
 				}
 				return &bufferState{
-					buf:            buf,
-					jsonStream:     jsoniter.NewStream(jsoniter.ConfigDefault, nil, initBufferCap),
-					maxEventLength: maxEventLength,
+					buf:        buf,
+					jsonStream: jsoniter.NewStream(jsoniter.ConfigDefault, nil, initBufferCap),
 				}
 			},
 		},

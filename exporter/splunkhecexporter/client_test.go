@@ -723,7 +723,7 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxEventSize = 20000 // small so we can reproduce without allocating big logs.
+				cfg.MaxEventSize = 20000 // makes the third event too large to send.
 				cfg.DisableCompression = true
 				return cfg
 			}(),
@@ -747,7 +747,6 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxEventSize = 10000 // small so we can reproduce without allocating big logs.
 				cfg.MaxContentLengthLogs = 5000
 				cfg.DisableCompression = true
 				return cfg
