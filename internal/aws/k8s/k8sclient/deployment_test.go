@@ -14,6 +14,7 @@
 package k8sclient
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -99,7 +100,10 @@ func TestDeploymentClient(t *testing.T) {
 		},
 	}
 	actual := client.DeploymentInfos()
-	assert.EqualValues(t, expected, actual)
+	sort.Slice(actual, func(i, j int) bool {
+		return actual[i].Name < actual[j].Name
+	})
+	assert.Equal(t, expected, actual)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }
