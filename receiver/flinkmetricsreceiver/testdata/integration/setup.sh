@@ -5,6 +5,6 @@
 
 set -e
 
-./usr/local/flink/bin/flink run --detached /usr/local/flink/examples/streaming/StateMachineExample.jar
+/opt/flink/bin/flink run --detached /opt/flink/examples/streaming/StateMachineExample.jar
 
 exit 0

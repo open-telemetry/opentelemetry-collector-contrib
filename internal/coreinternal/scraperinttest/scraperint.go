@@ -45,6 +45,7 @@ func NewIntegrationTest(f receiver.Factory, opts ...TestOption) *IntegrationTest
 }
 
 type IntegrationTest struct {
+	networkRequest         *testcontainers.NetworkRequest
 	containerRequests      []testcontainers.ContainerRequest
 	createContainerTimeout time.Duration
 
@@ -60,6 +61,13 @@ type IntegrationTest struct {
 
 func (it *IntegrationTest) Run(t *testing.T) {
 	it.validate(t)
+
+	if it.networkRequest != nil {
+		network := it.createNetwork(t)
+		defer func() {
+			require.NoError(t, network.Remove(context.Background()))
+		}()
+	}
 
 	ci := it.createContainers(t)
 	defer ci.terminate(t)
@@ -113,6 +121,26 @@ func (it *IntegrationTest) Run(t *testing.T) {
 		it.compareTimeout, it.compareTimeout/20)
 }
 
+func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
+	var errs error
+
+	var network testcontainers.Network
+	var err error
+	require.Eventuallyf(t, func() bool {
+		network, err = testcontainers.GenericNetwork(
+			context.Background(),
+			testcontainers.GenericNetworkRequest{
+				NetworkRequest: *it.networkRequest,
+			})
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			return false
+		}
+		return true
+	}, it.createContainerTimeout, time.Second, "create network timeout: %v", errs)
+	return network
+}
+
 func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 	var wg sync.WaitGroup
 	ci := &ContainerInfo{
@@ -122,12 +150,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 	for _, cr := range it.containerRequests {
 		go func(req testcontainers.ContainerRequest) {
 			var errs error
-			defer func() {
-				if t.Failed() && errs != nil {
-					t.Errorf("create container: %v", errs)
-				}
-			}()
-			require.Eventually(t, func() bool {
+			require.Eventuallyf(t, func() bool {
 				c, err := testcontainers.GenericContainer(
 					context.Background(),
 					testcontainers.GenericContainerRequest{
@@ -140,7 +163,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 				}
 				ci.add(req.Name, c)
 				return true
-			}, it.createContainerTimeout, time.Second)
+			}, it.createContainerTimeout, time.Second, "create container timeout: %v", errs)
 			wg.Done()
 		}(cr)
 	}
@@ -164,6 +187,12 @@ func (it *IntegrationTest) validate(t *testing.T) {
 }
 
 type TestOption func(*IntegrationTest)
+
+func WithNetworkRequest(nr testcontainers.NetworkRequest) TestOption {
+	return func(it *IntegrationTest) {
+		it.networkRequest = &nr
+	}
+}
 
 func WithContainerRequest(cr testcontainers.ContainerRequest) TestOption {
 	return func(it *IntegrationTest) {
