@@ -32,8 +32,9 @@ func (r *jsonLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	logRecords.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	// Set the unmarshaled jsonVal as the body of the log record
-	logRecords.Body().SetEmptyMap().FromRaw(jsonVal)
-
+	if err := logRecords.Body().SetEmptyMap().FromRaw(jsonVal); err != nil {
+		return p, err
+	}
 	return p, nil
 }
 
