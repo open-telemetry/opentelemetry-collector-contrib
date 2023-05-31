@@ -85,7 +85,7 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 func (cfg *Config) buildDSN(database string) (string, error) {
 	dsnURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return "", fmt.Errorf("%w: %w", errConfigInvalidEndpoint, err)
+		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err.Error())
 	}
 
 	queryParams := dsnURL.Query()
