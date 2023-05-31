@@ -4,7 +4,6 @@
 package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 

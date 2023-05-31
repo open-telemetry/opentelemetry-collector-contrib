@@ -4,7 +4,6 @@
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
