@@ -194,10 +194,8 @@ type CapturingData struct {
 func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
-	if c.checkCompression {
-		if len(body) > minCompressionLen && r.Header.Get("Content-Encoding") != "gzip" {
-			c.testing.Fatal("No compression")
-		}
+	if c.checkCompression && r.Header.Get("Content-Encoding") != "gzip" {
+		c.testing.Fatal("No compression")
 	}
 
 	if err != nil {
@@ -377,12 +375,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 	type wantType struct {
 		batches    [][]string
 		numBatches int
-		compressed bool
 	}
-
-	// The test cases depend on the constant minCompressionLen = 1500.
-	// If the constant changed, the test cases with want.compressed=true must be updated.
-	require.Equal(t, minCompressionLen, 1500)
 
 	tests := []struct {
 		name   string
@@ -396,6 +389,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthTraces = 0
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -414,6 +408,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthTraces = 320
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -432,6 +427,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthTraces = 640
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -443,7 +439,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			},
 		},
 		{
-			name:   "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			name:   "1 compressed batch of 2037 bytes",
 			traces: createTraceData(1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
@@ -453,7 +449,6 @@ func TestReceiveTracesBatches(t *testing.T) {
 					{`"start_time":1`, `"start_time":2`, `"start_time":3`, `"start_time":4`, `"start_time":7`, `"start_time":8`, `"start_time":9`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
@@ -461,18 +456,17 @@ func TestReceiveTracesBatches(t *testing.T) {
 			traces: createTraceData(1, 100),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthTraces = minCompressionLen + 500
+				cfg.MaxContentLengthTraces = 2000
 				return cfg
 			}(),
 			want: wantType{
 				// just test that the test has 2 batches, don't test its contents.
 				batches:    [][]string{{""}, {""}},
 				numBatches: 2,
-				compressed: true,
 			},
 		},
 		{
-			name:   "100 events, make sure that we produce only one compressed batch when MaxContentLengthTraces is 0",
+			name:   "100 events",
 			traces: createTraceData(1, 100),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
@@ -484,7 +478,6 @@ func TestReceiveTracesBatches(t *testing.T) {
 					{`"start_time":1`, `"start_time":2`, `"start_time":3`, `"start_time":4`, `"start_time":7`, `"start_time":8`, `"start_time":9`, `"start_time":20`, `"start_time":40`, `"start_time":85`, `"start_time":98`, `"start_time":99`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
@@ -514,12 +507,12 @@ func TestReceiveTracesBatches(t *testing.T) {
 				if test.conf.MaxContentLengthTraces != 0 {
 					require.True(t, int(test.conf.MaxContentLengthTraces) > len(got[i].body))
 				}
-				if test.want.compressed {
-					validateCompressedContains(t, batch, got[i].body)
-				} else {
+				if test.conf.DisableCompression {
 					for _, expected := range batch {
 						assert.Contains(t, string(got[i].body), expected)
 					}
+				} else {
+					validateCompressedContains(t, batch, got[i].body)
 				}
 			}
 
@@ -528,7 +521,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 				eventFound := false
 				for _, batch := range got {
 					batchBody := batch.body
-					if test.want.compressed {
+					if !test.conf.DisableCompression {
 						z, err := gzip.NewReader(bytes.NewReader(batchBody))
 						require.NoError(t, err)
 						batchBody, err = io.ReadAll(z)
@@ -553,14 +546,9 @@ func TestReceiveLogs(t *testing.T) {
 	type wantType struct {
 		batches    [][]string
 		numBatches int
-		compressed bool
 		wantErr    string
 		wantDrops  int // expected number of dropped events
 	}
-
-	// The test cases depend on the constant minCompressionLen = 1500.
-	// If the constant changed, the test cases with want.compressed=true must be updated.
-	require.Equal(t, minCompressionLen, 1500)
 
 	tests := []struct {
 		name string
@@ -574,6 +562,7 @@ func TestReceiveLogs(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 0
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -592,6 +581,7 @@ func TestReceiveLogs(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 300
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -605,7 +595,7 @@ func TestReceiveLogs(t *testing.T) {
 			},
 		},
 		{
-			name: "1 log event long enough to trigger compression",
+			name: "1 log long event",
 			logs: func() plog.Logs {
 				l := createLogData(1, 1, 1)
 				l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(strings.Repeat("a", 1800))
@@ -621,7 +611,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
@@ -630,6 +619,7 @@ func TestReceiveLogs(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 448
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -641,7 +631,7 @@ func TestReceiveLogs(t *testing.T) {
 			},
 		},
 		{
-			name: "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			name: "1 compressed batch of 2037 bytes",
 			logs: createLogData(1, 1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
@@ -651,7 +641,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`, `"otel.log.name":"0_0_5"`, `"otel.log.name":"0_0_6"`, `"otel.log.name":"0_0_7"`, `"otel.log.name":"0_0_8"`, `"otel.log.name":"0_0_9"`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
@@ -659,7 +648,7 @@ func TestReceiveLogs(t *testing.T) {
 			logs: createLogData(1, 1, 150),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthLogs = minCompressionLen + 150
+				cfg.MaxContentLengthLogs = 1650
 				return cfg
 			}(),
 			want: wantType{
@@ -668,7 +657,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_110"`, `"otel.log.name":"0_0_149"`},
 				},
 				numBatches: 2,
-				compressed: true,
 			},
 		},
 		{
@@ -684,14 +672,13 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_90"`, `"otel.log.name":"0_0_110"`, `"otel.log.name":"0_0_149"`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
-			name: "one event with 1340 bytes, then one triggering compression (going over 1500 bytes) and bypassing the max length, moving to a separate batch",
+			name: "one event with 1340 bytes and another one bypassing the max length, moving to a separate batch",
 			logs: func() plog.Logs {
 				firstLog := createLogData(1, 1, 2)
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(1340))
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(1500))
 				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(repeatableString(2800000))
 				return firstLog
 			}(),
@@ -705,7 +692,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`}, {`"otel.log.name":"0_0_1"`},
 				},
 				numBatches: 2,
-				compressed: true,
 			},
 		},
 		{
@@ -723,7 +709,6 @@ func TestReceiveLogs(t *testing.T) {
 			want: wantType{
 				batches:    [][]string{},
 				numBatches: 0,
-				compressed: true,
 				wantErr:    "timeout", // our server will time out waiting for the data.
 			},
 		},
@@ -806,12 +791,12 @@ func TestReceiveLogs(t *testing.T) {
 				if test.conf.MaxContentLengthLogs != 0 {
 					require.True(t, int(test.conf.MaxContentLengthLogs) > len(got[i].body))
 				}
-				if test.want.compressed {
-					validateCompressedContains(t, wantBatch, got[i].body)
-				} else {
+				if test.conf.DisableCompression {
 					for _, expected := range wantBatch {
 						assert.Contains(t, string(got[i].body), expected)
 					}
+				} else {
+					validateCompressedContains(t, wantBatch, got[i].body)
 				}
 			}
 
@@ -828,7 +813,7 @@ func TestReceiveLogs(t *testing.T) {
 						eventFound := false
 						for _, batch := range got {
 							batchBody := batch.body
-							if test.want.compressed {
+							if !test.conf.DisableCompression {
 								z, err := gzip.NewReader(bytes.NewReader(batchBody))
 								require.NoError(t, err)
 								batchBody, err = io.ReadAll(z)
@@ -867,6 +852,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "mylog\n",
@@ -881,6 +867,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "bXlieXRlcw==\n",
@@ -895,6 +882,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "64.345\n",
@@ -905,6 +893,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "mylog\nmylog\nmylog\nmylog\nmylog\n",
@@ -919,6 +908,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "[1,\"foo\",true]\n",
@@ -933,6 +923,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "{\"foo\":\"bar\"}\n",
@@ -1019,10 +1010,6 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		compressed bool
 	}
 
-	// The test cases depend on the constant minCompressionLen = 1500.
-	// If the constant changed, the test cases with want.compressed=true must be updated.
-	require.Equal(t, minCompressionLen, 1500)
-
 	tests := []struct {
 		name    string
 		conf    *Config
@@ -1035,6 +1022,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthMetrics = 0
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -1050,6 +1038,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthMetrics = 300
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -1068,6 +1057,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthMetrics = 448
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -1079,7 +1069,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:    "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			name:    "1 compressed batch of 2037 bytes",
 			metrics: createMetricsData(1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
@@ -1097,7 +1087,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			metrics: createMetricsData(1, 100),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthMetrics = minCompressionLen + 150
+				cfg.MaxContentLengthMetrics = 1650
 				return cfg
 			}(),
 			want: wantType{
@@ -1533,38 +1523,68 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 // 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
 func Benchmark_pushLogData_10_10_1024(b *testing.B) {
-	benchPushLogData(b, 10, 10, 1024)
+	benchPushLogData(b, 10, 10, 1024, false)
 }
 
 // 10 resources, 10 records, 8Kb max HEC batch: 2 HEC batches
 func Benchmark_pushLogData_10_10_8K(b *testing.B) {
-	benchPushLogData(b, 10, 10, 8*1024)
+	benchPushLogData(b, 10, 10, 8*1024, false)
 }
 
 // 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
 func Benchmark_pushLogData_10_10_2M(b *testing.B) {
-	benchPushLogData(b, 10, 10, 2*1024*1024)
+	benchPushLogData(b, 10, 10, 2*1024*1024, false)
 }
 
 // 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
 func Benchmark_pushLogData_10_200_2M(b *testing.B) {
-	benchPushLogData(b, 10, 200, 2*1024*1024)
+	benchPushLogData(b, 10, 200, 2*1024*1024, false)
 }
 
 // 100 resources, 200 records, 2Mb max HEC batch: 2 HEC batches
 func Benchmark_pushLogData_100_200_2M(b *testing.B) {
-	benchPushLogData(b, 100, 200, 2*1024*1024)
+	benchPushLogData(b, 100, 200, 2*1024*1024, false)
 }
 
 // 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
 func Benchmark_pushLogData_100_200_5M(b *testing.B) {
-	benchPushLogData(b, 100, 200, 5*1024*1024)
+	benchPushLogData(b, 100, 200, 5*1024*1024, false)
 }
 
-func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint) {
+// 10 resources, 10 records, 1Kb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_compressed_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 1024, true)
+}
+
+// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batche
+func Benchmark_pushLogData_compressed_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 8*1024, true)
+}
+
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_compressed_10_10_2M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 2*1024*1024, true)
+}
+
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_compressed_10_200_2M(b *testing.B) {
+	benchPushLogData(b, 10, 200, 2*1024*1024, true)
+}
+
+// 100 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_compressed_100_200_2M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 2*1024*1024, true)
+}
+
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushLogData_compressed_100_200_5M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 5*1024*1024, true)
+}
+
+func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = bufSize
-	config.DisableCompression = true
+	config.DisableCompression = !compressionEnabled
 	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 	c.hecWorker = &mockHecWorker{}
 	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
