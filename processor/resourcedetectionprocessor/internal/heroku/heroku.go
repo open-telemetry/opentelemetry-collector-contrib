@@ -39,7 +39,7 @@ type detector struct {
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 	dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID")
 	if !ok {

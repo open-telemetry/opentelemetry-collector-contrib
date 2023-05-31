@@ -38,10 +38,10 @@ func TestMain(m *testing.M) {
 type testlogger struct{}
 
 // Trace implements Logger.
-func (testlogger) Trace(v ...interface{}) {}
+func (testlogger) Trace(_ ...interface{}) {}
 
 // Tracef implements Logger.
-func (testlogger) Tracef(format string, params ...interface{}) {}
+func (testlogger) Tracef(_ string, _ ...interface{}) {}
 
 // Debug implements Logger.
 func (testlogger) Debug(v ...interface{}) { fmt.Println("DEBUG", fmt.Sprint(v...)) }

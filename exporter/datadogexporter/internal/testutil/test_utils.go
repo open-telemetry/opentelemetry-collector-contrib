@@ -97,7 +97,7 @@ type validateAPIKeyResponse struct {
 	Valid bool `json:"valid"`
 }
 
-func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: true}
 	resJSON, _ := json.Marshal(res)
 
@@ -108,7 +108,7 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpointInvalid(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: false}
 	resJSON, _ := json.Marshal(res)
 
@@ -123,7 +123,7 @@ type metricsResponse struct {
 	Status string `json:"status"`
 }
 
-func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
+func metricsEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 
@@ -135,7 +135,7 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func metricsV2Endpoint(w http.ResponseWriter, r *http.Request) {
+func metricsV2Endpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 
@@ -218,7 +218,7 @@ type MockSourceProvider struct {
 	Src source.Source
 }
 
-func (s *MockSourceProvider) Source(ctx context.Context) (source.Source, error) {
+func (s *MockSourceProvider) Source(_ context.Context) (source.Source, error) {
 	return s.Src, nil
 }
 
@@ -226,7 +226,7 @@ type MockStatsProcessor struct {
 	In []pb.ClientStatsPayload
 }
 
-func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, lang, tracerVersion string) {
+func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, _, _ string) {
 	s.In = append(s.In, in)
 }
 

@@ -309,7 +309,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return out, nil
 }
 
-func (s *scraper) shutdown(ctx context.Context) error {
+func (s *scraper) shutdown(_ context.Context) error {
 	if s.db == nil {
 		return nil
 	}
