@@ -59,4 +59,8 @@ type Config struct {
 	// When this flag is set to true, the leader election logic will be forced to use ConfigMap only. This flag mainly exists for backwards compatibility.
 	// The default value is false.
 	LeaderLockUsingConfigMapOnly bool `mapstructure:"leader_lock_using_config_map_only"`
+
+	// EnableControlPlaneMetrics enables additional metrics sourced from the Kubernetes API server /metrics prometheus endpoint
+	// The default value is false.
+	EnableControlPlaneMetrics bool `mapstructure:"enable_control_plane_metrics"`
 }

@@ -100,17 +100,9 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 			return err
 		}
 
-		// TODO: enable this via config
-		endpoint, err := acir.getK8sAPIServerEndpoint()
+		err = acir.startPrometheusScraper(ctx, host, hostinfo, leaderElection)
 		if err != nil {
-			acir.settings.Logger.Error("Unable to start the prometheus scraper", zap.Error(err))
-		} else {
-			acir.settings.Logger.Debug("k8sapiserver endpoint found", zap.String("endpoint", endpoint))
-			// use the same leader
-			/*acir.prometheusScraper, err = k8sapiserver.NewPrometheusScraper(ctx, acir.settings, endpoint, acir.nextConsumer, host, hostinfo, leaderElection)
-			if err != nil {
-				acir.settings.Logger.Error("Unable to start the prometheus scraper", zap.Error(err))
-			}*/
+			acir.settings.Logger.Debug("Unable to start kube apiserver prometheus scraper", zap.Error(err))
 		}
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
@@ -150,6 +142,22 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 	}()
 
 	return nil
+}
+
+func (acir *awsContainerInsightReceiver) startPrometheusScraper(ctx context.Context, host component.Host, hostinfo *hostInfo.Info, leaderElection *k8sapiserver.LeaderElection) error {
+	if !acir.config.EnableControlPlaneMetrics {
+		return nil
+	}
+
+	endpoint, err := acir.getK8sAPIServerEndpoint()
+	if err != nil {
+		return err
+	}
+
+	acir.settings.Logger.Debug("kube apiserver endpoint found", zap.String("endpoint", endpoint))
+	// use the same leader
+	acir.prometheusScraper, err = k8sapiserver.NewPrometheusScraper(ctx, acir.settings, endpoint, acir.nextConsumer, host, hostinfo, leaderElection)
+	return err
 }
 
 // Shutdown stops the awsContainerInsightReceiver receiver.
