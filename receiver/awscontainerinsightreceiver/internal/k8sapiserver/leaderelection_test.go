@@ -79,7 +79,12 @@ func TestLeaderElectionEndToEnd(t *testing.T) {
 		},
 	)
 
-	<-leaderElection.isLeadingC
+	select {
+	case b := <-leaderElection.isLeadingC:
+		assert.True(t, b)
+	case <-time.After(100 * time.Millisecond):
+		t.Errorf("failed to elect leader after 100ms")
+	}
 	assert.True(t, leaderElection.leading)
 
 	t.Cleanup(func() {

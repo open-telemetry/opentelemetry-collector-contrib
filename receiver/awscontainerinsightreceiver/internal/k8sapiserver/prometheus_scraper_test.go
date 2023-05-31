@@ -79,6 +79,15 @@ func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) er
 
 	return nil
 }
+
+func TestNewPrometheusScraperNilLeaderElection(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger, _ = zap.NewDevelopment()
+
+	scraper, err := NewPrometheusScraper(context.TODO(), settings, "", mockConsumer{}, componenttest.NewNopHost(), mockClusterNameProvider{}, nil)
+	assert.Error(t, err)
+	assert.Nil(t, scraper)
+}
 func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 
 	upPtr := false

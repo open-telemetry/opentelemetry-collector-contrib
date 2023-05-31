@@ -16,6 +16,7 @@ package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -47,6 +48,10 @@ type PrometheusScraper struct {
 }
 
 func NewPrometheusScraper(ctx context.Context, telemetrySettings component.TelemetrySettings, endpoint string, nextConsumer consumer.Metrics, host component.Host, clusterNameProvider clusterNameProvider, leaderElection *LeaderElection) (*PrometheusScraper, error) {
+	if leaderElection == nil {
+		return nil, errors.New("leader election cannot be null")
+	}
+
 	spConfig := simpleprometheusreceiver.Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: endpoint,
@@ -109,6 +114,6 @@ func (ps *PrometheusScraper) Shutdown() {
 		if err != nil {
 			ps.settings.Logger.Error("Unable to shutdown SimplePrometheusReceiver", zap.Error(err))
 		}
-		ps.running = err != nil
+		ps.running = false
 	}
 }
