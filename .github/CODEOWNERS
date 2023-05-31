@@ -137,7 +137,7 @@ processor/deltatorateprocessor/                          @open-telemetry/collect
 processor/filterprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                         @open-telemetry/collector-contrib-approvers
 processor/groupbytraceprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/k8sattributesprocessor/                        @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
+processor/k8sattributesprocessor/                        @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick @fatsheep9146
 processor/logstransformprocessor/                        @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
 processor/metricsgenerationprocessor/                    @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/metricstransformprocessor/                     @open-telemetry/collector-contrib-approvers @dmitryax
