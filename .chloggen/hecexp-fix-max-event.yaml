@@ -5,7 +5,7 @@ change_type: bug_fix
 component: prometheusreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Make sure the `max_event_size` option is used to drop events larger that that instead of using it for batch size.
+note: Make sure the `max_event_size` option is used to drop events larger than `max_event_size` instead of using it for batch size.
 
 # One or more tracking issues related to the change
 issues: [18066]
