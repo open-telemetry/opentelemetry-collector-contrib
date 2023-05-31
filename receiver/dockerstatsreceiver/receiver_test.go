@@ -394,7 +394,10 @@ func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttribu
 }
 
 func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
-	cb.config.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
+	cb.config.EnvVarsToMetricLabels = map[string]string{
+		"ENV_VAR":   "env-var-metric-label",
+		"ENV_VAR_2": "env-var-metric-label-2",
+	}
 	cb.config.ContainerLabelsToMetricLabels = map[string]string{
 		"container.label":   "container-metric-label",
 		"container.label.2": "container-metric-label-2",
