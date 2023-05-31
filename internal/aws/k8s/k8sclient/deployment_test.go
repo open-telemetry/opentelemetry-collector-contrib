@@ -99,7 +99,7 @@ func TestDeploymentClient(t *testing.T) {
 		},
 	}
 	actual := client.DeploymentInfos()
-	assert.Equal(t, expected, actual)
+	assert.EqualValues(t, expected, actual)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

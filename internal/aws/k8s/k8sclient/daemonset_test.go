@@ -89,7 +89,7 @@ func TestDaemonSetClient(t *testing.T) {
 		},
 	}
 	actual := client.DaemonSetInfos()
-	assert.Equal(t, expected, actual)
+	assert.EqualValues(t, expected, actual)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }
