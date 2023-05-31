@@ -3406,6 +3406,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.ContainerCPUPercent.Enabled {
+		settings.Logger.Warn("[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.")
+	}
+	if !mbc.Metrics.ContainerCPUUtilization.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.")
+	}
 	mb := &MetricsBuilder{
 		startTime:                                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                    pmetric.NewMetrics(),

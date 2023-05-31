@@ -49,6 +49,14 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0

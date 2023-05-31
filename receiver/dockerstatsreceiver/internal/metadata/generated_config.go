@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for dockerstatsreceiver metrics.
+// MetricsConfig provides config for docker_stats metrics.
 type MetricsConfig struct {
 	ContainerBlockioIoMergedRecursive          MetricConfig `mapstructure:"container.blockio.io_merged_recursive"`
 	ContainerBlockioIoQueuedRecursive          MetricConfig `mapstructure:"container.blockio.io_queued_recursive"`
@@ -293,7 +293,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for dockerstatsreceiver resource attributes.
+// ResourceAttributesConfig provides config for docker_stats resource attributes.
 type ResourceAttributesConfig struct {
 	ContainerHostname  ResourceAttributeConfig `mapstructure:"container.hostname"`
 	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
@@ -322,7 +322,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for dockerstatsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for docker_stats metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
