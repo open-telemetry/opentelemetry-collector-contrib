@@ -59,7 +59,7 @@ func initializeLogKernel(cfg *Config) error {
 	return nil
 }
 
-func (e *logsExporter) Start(ctx context.Context, host component.Host) error {
+func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
 	initializeErr := initializeLogKernel(e.cfg)
 	return initializeErr
 }

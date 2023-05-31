@@ -10,6 +10,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
+func newLogsReceiver(_ receiver.CreateSettings, _ Config, _ consumer.Logs) (receiver.Logs, error) {
 	return nil, errors.New("unimplemented")
 }

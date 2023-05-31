@@ -118,7 +118,7 @@ func buildEventFromLog(log plog.LogRecord, resource pcommon.Resource, scope pcom
 	}
 }
 
-func (e *DatasetExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e *DatasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	var events []*add_events.EventBundle
 
 	resourceLogs := ld.ResourceLogs()
