@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -68,6 +70,8 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	it.customConfig(t, cfg, ci)
 	sink := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopCreateSettings()
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings.Logger = zap.New(observedZapCore)
 
 	rcvr, err := it.factory.CreateMetricsReceiver(context.Background(), settings, cfg, sink)
 	require.NoError(t, err, "failed creating metrics receiver")
@@ -87,6 +91,13 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	defer func() {
 		if t.Failed() && validateErr != nil {
 			t.Error(validateErr.Error())
+
+			logs := strings.Builder{}
+			for _, e := range observedLogs.All() {
+				logs.WriteString(e.Message + "\n")
+			}
+			t.Errorf("full log:\n%s", logs.String())
+
 			if len(sink.AllMetrics()) == 0 {
 				t.Error("no data emitted by scraper")
 				return
