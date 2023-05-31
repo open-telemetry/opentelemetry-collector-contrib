@@ -652,7 +652,7 @@ metrics:
 
   # Base
   container.uptime:
-    enabled: true
+    enabled: false
     description: "Time elapsed since container start time."
     unit: s
     gauge:

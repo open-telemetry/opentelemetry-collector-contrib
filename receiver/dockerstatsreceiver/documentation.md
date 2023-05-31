@@ -150,14 +150,6 @@ Outgoing packets dropped.
 | ---- | ----------- | ------ |
 | interface | Network interface. | Any Str |
 
-### container.uptime
-
-Time elapsed since container start time.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Double |
-
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -693,6 +685,14 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
+
+### container.uptime
+
+Time elapsed since container start time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
 
 ## Resource Attributes
 

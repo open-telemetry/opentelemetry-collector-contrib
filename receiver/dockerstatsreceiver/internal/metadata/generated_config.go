@@ -287,7 +287,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerUptime: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
