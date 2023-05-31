@@ -523,7 +523,7 @@ func (c *client) stop(context.Context) error {
 	return nil
 }
 
-func (c *client) start(ctx context.Context, host component.Host) (err error) {
+func (c *client) start(_ context.Context, host component.Host) (err error) {
 
 	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
 	if err != nil {
