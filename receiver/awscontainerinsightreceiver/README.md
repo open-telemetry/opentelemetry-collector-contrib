@@ -399,6 +399,58 @@ kubectl apply -f config.yaml
 <br/><br/> 
 <br/><br/> 
 
+### Cluster Deployment
+| Metric                                 | Unit  |
+|----------------------------------------|-------|
+| deployment_spec_replicas               | Count |
+| deployment_status_replicas             | Count |
+| deployment_status_replicas_available   | Count |
+| deployment_status_replicas_unavailable | Count |
+
+
+<br/><br/>
+| Resource Attribute |
+|--------------------|
+| ClusterName        |
+| NodeName           |
+| Namespace          |
+| PodName            |
+| Type               |
+| Timestamp          |
+| Version            |
+| Sources            |
+| kubernetes         |
+
+
+<br/><br/>
+<br/><br/>
+
+### Cluster DaemonSet
+| Metric                                    | Unit  |
+|-------------------------------------------|-------|
+| daemonset_status_number_available         | Count |
+| daemonset_status_number_unavailable       | Count |
+| daemonset_status_desired_number_scheduled | Count |
+| daemonset_status_current_number_scheduled | Count |
+
+
+<br/><br/>
+| Resource Attribute |
+|--------------------|
+| ClusterName        |
+| NodeName           |
+| Namespace          |
+| PodName            |
+| Type               |
+| Timestamp          |
+| Version            |
+| Sources            |
+| kubernetes         |
+
+
+<br/><br/>
+<br/><br/>
+
 ### Node
 | Metric                                    | Unit         |
 |-------------------------------------------|--------------|

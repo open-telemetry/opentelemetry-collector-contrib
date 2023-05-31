@@ -59,8 +59,12 @@ type K8sClient interface {
 	GetEpClient() k8sclient.EpClient
 	GetNodeClient() k8sclient.NodeClient
 	GetPodClient() k8sclient.PodClient
+	GetDeploymentClient() k8sclient.DeploymentClient
+	GetDaemonSetClient() k8sclient.DaemonSetClient
 	ShutdownNodeClient()
 	ShutdownPodClient()
+	ShutdownDeploymentClient()
+	ShutdownDaemonSetClient()
 }
 
 // K8sAPIServer is a struct that produces metrics from kubernetes api server
@@ -75,10 +79,12 @@ type K8sAPIServer struct {
 	leaderLockName               string
 	leaderLockUsingConfigMapOnly bool
 
-	k8sClient  K8sClient // *k8sclient.K8sClient
-	epClient   k8sclient.EpClient
-	nodeClient k8sclient.NodeClient
-	podClient  k8sclient.PodClient
+	k8sClient        K8sClient // *k8sclient.K8sClient
+	epClient         k8sclient.EpClient
+	nodeClient       k8sclient.NodeClient
+	podClient        k8sclient.PodClient
+	deploymentClient k8sclient.DeploymentClient
+	daemonSetClient  k8sclient.DaemonSetClient
 
 	// the following can be set to mocks in testing
 	broadcaster eventBroadcaster
@@ -149,6 +155,16 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	k.logger.Info("collect data from K8s API Server...")
 	timestampNs := strconv.FormatInt(time.Now().UnixNano(), 10)
 
+	result = append(result, k.getClusterMetrics(clusterName, timestampNs))
+	result = append(result, k.getNamespaceMetrics(clusterName, timestampNs)...)
+	result = append(result, k.getDeploymentMetrics(clusterName, timestampNs)...)
+	result = append(result, k.getDaemonSetMetrics(clusterName, timestampNs)...)
+	result = append(result, k.getServiceMetrics(clusterName, timestampNs)...)
+
+	return result
+}
+
+func (k *K8sAPIServer) getClusterMetrics(clusterName, timestampNs string) pmetric.Metrics {
 	fields := map[string]interface{}{
 		"cluster_failed_node_count": k.nodeClient.ClusterFailedNodeCount(),
 		"cluster_node_count":        k.nodeClient.ClusterNodeCount(),
@@ -163,9 +179,95 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 		attributes["NodeName"] = k.nodeName
 	}
 	attributes[ci.SourcesKey] = "[\"apiserver\"]"
-	md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-	result = append(result, md)
+	return ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+}
 
+func (k *K8sAPIServer) getNamespaceMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+	for namespace, podNum := range k.podClient.NamespaceToRunningPodNum() {
+		fields := map[string]interface{}{
+			"namespace_number_of_running_pods": podNum,
+		}
+		attributes := map[string]string{
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterNamespace,
+			ci.Timestamp:      timestampNs,
+			ci.K8sNamespace:   namespace,
+			ci.Version:        "0",
+		}
+		if k.nodeName != "" {
+			attributes["NodeName"] = k.nodeName
+		}
+		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
+		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+		metrics = append(metrics, md)
+	}
+	return metrics
+}
+
+func (k *K8sAPIServer) getDeploymentMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+	deployments := k.deploymentClient.DeploymentInfos()
+	for _, deployment := range deployments {
+		fields := map[string]interface{}{
+			ci.MetricName(ci.TypeClusterDeployment, ci.SpecReplicas):              deployment.Spec.Replicas,              // deployment_spec_replicas
+			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicas):            deployment.Status.Replicas,            // deployment_status_replicas
+			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicasAvailable):   deployment.Status.AvailableReplicas,   // deployment_status_replicas_available
+			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicasUnavailable): deployment.Status.UnavailableReplicas, // deployment_status_replicas_unavailable
+		}
+		attributes := map[string]string{
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterDeployment,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     deployment.Name,
+			ci.K8sNamespace:   deployment.Namespace,
+			ci.Version:        "0",
+		}
+		if k.nodeName != "" {
+			attributes[ci.NodeNameKey] = k.nodeName
+		}
+		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		//attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"deployment_name\":\"%s\"}",
+		//	deployment.Namespace, deployment.Name)
+		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+		metrics = append(metrics, md)
+	}
+	return metrics
+}
+
+func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+	daemonSets := k.daemonSetClient.DaemonSetInfos()
+	for _, daemonSet := range daemonSets {
+		fields := map[string]interface{}{
+			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusNumberAvailable):        daemonSet.Status.NumberAvailable,        // daemonset_status_number_available
+			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusNumberUnavailable):      daemonSet.Status.NumberUnavailable,      // daemonset_status_number_unavailable
+			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusDesiredNumberScheduled): daemonSet.Status.DesiredNumberScheduled, // daemonset_status_desired_number_scheduled
+			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusCurrentNumberScheduled): daemonSet.Status.CurrentNumberScheduled, // daemonset_status_current_number_scheduled
+		}
+		attributes := map[string]string{
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterDaemonSet,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     daemonSet.Name,
+			ci.K8sNamespace:   daemonSet.Namespace,
+			ci.Version:        "0",
+		}
+		if k.nodeName != "" {
+			attributes[ci.NodeNameKey] = k.nodeName
+		}
+		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		//attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"daemonset_name\":\"%s\"}",
+		//	daemonSet.Namespace, daemonSet.Name)
+		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+		metrics = append(metrics, md)
+	}
+	return metrics
+}
+
+func (k *K8sAPIServer) getServiceMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
 	for service, podNum := range k.epClient.ServiceToPodNum() {
 		fields := map[string]interface{}{
 			"service_number_of_running_pods": podNum,
@@ -185,30 +287,9 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
 			service.Namespace, service.ServiceName)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-		result = append(result, md)
+		metrics = append(metrics, md)
 	}
-
-	for namespace, podNum := range k.podClient.NamespaceToRunningPodNum() {
-		fields := map[string]interface{}{
-			"namespace_number_of_running_pods": podNum,
-		}
-		attributes := map[string]string{
-			ci.ClusterNameKey: clusterName,
-			ci.MetricType:     ci.TypeClusterNamespace,
-			ci.Timestamp:      timestampNs,
-			ci.K8sNamespace:   namespace,
-			ci.Version:        "0",
-		}
-		if k.nodeName != "" {
-			attributes["NodeName"] = k.nodeName
-		}
-		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
-		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-		result = append(result, md)
-	}
-
-	return result
+	return metrics
 }
 
 func (k *K8sAPIServer) init() error {
@@ -304,6 +385,8 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 					k.nodeClient = k.k8sClient.GetNodeClient()
 					k.podClient = k.k8sClient.GetPodClient()
 					k.epClient = k.k8sClient.GetEpClient()
+					k.deploymentClient = k.k8sClient.GetDeploymentClient()
+					k.daemonSetClient = k.k8sClient.GetDaemonSetClient()
 					k.mu.Unlock()
 
 					if k.isLeadingC != nil {
@@ -333,9 +416,11 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 					k.mu.Lock()
 					defer k.mu.Unlock()
 					k.leading = false
-					// node and pod are only used for cluster level metrics, endpoint is used for decorator too.
+					// The following are only used for cluster level metrics, whereas endpoint is used for decorator too.
 					k.k8sClient.ShutdownNodeClient()
 					k.k8sClient.ShutdownPodClient()
+					k.k8sClient.ShutdownDeploymentClient()
+					k.k8sClient.ShutdownDaemonSetClient()
 				},
 				OnNewLeader: func(identity string) {
 					k.logger.Info(fmt.Sprintf("k8sapiserver Switch New Leader: %s", identity))

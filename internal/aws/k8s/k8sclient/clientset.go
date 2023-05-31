@@ -194,6 +194,16 @@ type replicaSetClientWithStopper interface {
 	stopper
 }
 
+type deploymentClientWithStopper interface {
+	DeploymentClient
+	stopper
+}
+
+type daemonSetClientWithStopper interface {
+	DaemonSetClient
+	stopper
+}
+
 type K8sClient struct {
 	kubeConfigPath       string
 	initSyncPollInterval time.Duration
@@ -220,6 +230,12 @@ type K8sClient struct {
 
 	rsMu       sync.Mutex
 	replicaSet replicaSetClientWithStopper
+
+	dMu        sync.Mutex
+	deployment deploymentClientWithStopper
+
+	dsMu      sync.Mutex
+	daemonSet daemonSetClientWithStopper
 
 	logger *zap.Logger
 }
@@ -264,6 +280,8 @@ func (c *K8sClient) init(logger *zap.Logger, options ...Option) error {
 	c.node = nil
 	c.job = nil
 	c.replicaSet = nil
+	c.deployment = nil
+	c.daemonSet = nil
 
 	return nil
 }
@@ -357,6 +375,46 @@ func (c *K8sClient) ShutdownReplicaSetClient() {
 	})
 }
 
+func (c *K8sClient) GetDeploymentClient() DeploymentClient {
+	var err error
+	c.dMu.Lock()
+	if c.deployment == nil || reflect.ValueOf(c.deployment).IsNil() {
+		c.deployment, err = newDeploymentClient(c.clientSet, c.logger, deploymentSyncCheckerOption(c.syncChecker))
+		if err != nil {
+			c.logger.Error("use an no-op deployment client instead because of error", zap.Error(err))
+			c.deployment = &noOpDeploymentClient{}
+		}
+	}
+	c.dMu.Unlock()
+	return c.deployment
+}
+
+func (c *K8sClient) ShutdownDeploymentClient() {
+	shutdownClient(c.deployment, &c.dMu, func() {
+		c.deployment = nil
+	})
+}
+
+func (c *K8sClient) GetDaemonSetClient() DaemonSetClient {
+	var err error
+	c.dsMu.Lock()
+	if c.daemonSet == nil || reflect.ValueOf(c.daemonSet).IsNil() {
+		c.daemonSet, err = newDaemonSetClient(c.clientSet, c.logger, daemonSetSyncCheckerOption(c.syncChecker))
+		if err != nil {
+			c.logger.Error("use an no-op daemonSet client instead because of error", zap.Error(err))
+			c.daemonSet = &noOpDaemonSetClient{}
+		}
+	}
+	c.dsMu.Unlock()
+	return c.daemonSet
+}
+
+func (c *K8sClient) ShutdownDaemonSetClient() {
+	shutdownClient(c.daemonSet, &c.dsMu, func() {
+		c.daemonSet = nil
+	})
+}
+
 func (c *K8sClient) GetClientSet() kubernetes.Interface {
 	return c.clientSet
 }
@@ -371,6 +429,8 @@ func (c *K8sClient) Shutdown() {
 	c.ShutdownNodeClient()
 	c.ShutdownJobClient()
 	c.ShutdownReplicaSetClient()
+	c.ShutdownDeploymentClient()
+	c.ShutdownDaemonSetClient()
 
 	// remove the current instance of k8s client from map
 	for key, val := range optionsToK8sClient {

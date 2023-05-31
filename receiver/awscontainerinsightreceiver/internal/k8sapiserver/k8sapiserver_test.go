@@ -60,11 +60,27 @@ func (m *mockK8sClient) GetPodClient() k8sclient.PodClient {
 	return mockClient
 }
 
+func (m *mockK8sClient) GetDeploymentClient() k8sclient.DeploymentClient {
+	return mockClient
+}
+
+func (m *mockK8sClient) GetDaemonSetClient() k8sclient.DaemonSetClient {
+	return mockClient
+}
+
 func (m *mockK8sClient) ShutdownNodeClient() {
 
 }
 
 func (m *mockK8sClient) ShutdownPodClient() {
+
+}
+
+func (m *mockK8sClient) ShutdownDeploymentClient() {
+
+}
+
+func (m *mockK8sClient) ShutdownDaemonSetClient() {
 
 }
 
@@ -74,6 +90,18 @@ type MockClient struct {
 	k8sclient.EpClient
 
 	mock.Mock
+}
+
+// k8sclient.DeploymentClient
+func (client *MockClient) DeploymentInfos() []*k8sclient.DeploymentInfo {
+	args := client.Called()
+	return args.Get(0).([]*k8sclient.DeploymentInfo)
+}
+
+// k8sclient.DaemonSetClient
+func (client *MockClient) DaemonSetInfos() []*k8sclient.DaemonSetInfo {
+	args := client.Called()
+	return args.Get(0).([]*k8sclient.DaemonSetInfo)
 }
 
 // k8sclient.PodClient
@@ -202,6 +230,32 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			NewService("service2", "kube-system"): 1,
 		},
 	)
+	mockClient.On("DeploymentInfos").Return([]*k8sclient.DeploymentInfo{
+		{
+			Name:      "deployment1",
+			Namespace: "kube-system",
+			Spec: &k8sclient.DeploymentSpec{
+				Replicas: 10,
+			},
+			Status: &k8sclient.DeploymentStatus{
+				Replicas:            11,
+				AvailableReplicas:   9,
+				UnavailableReplicas: 2,
+			},
+		},
+	})
+	mockClient.On("DaemonSetInfos").Return([]*k8sclient.DaemonSetInfo{
+		{
+			Name:      "daemonset1",
+			Namespace: "kube-system",
+			Status: &k8sclient.DaemonSetStatus{
+				NumberAvailable:        10,
+				NumberUnavailable:      4,
+				DesiredNumberScheduled: 7,
+				CurrentNumberScheduled: 6,
+			},
+		},
+	})
 
 	<-k8sAPIServer.isLeadingC
 	metrics := k8sAPIServer.GetMetrics()
@@ -212,6 +266,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		tags: map[Service:service2 Timestamp:1557291396709 Type:ClusterService], fields: map[service_number_of_running_pods:1],
 		tags: map[Service:service1 Timestamp:1557291396709 Type:ClusterService], fields: map[service_number_of_running_pods:1],
 		tags: map[Namespace:default Timestamp:1557291396709 Type:ClusterNamespace], fields: map[namespace_number_of_running_pods:2],
+		tags: map[PodName:deployment1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDeployment], fields: map[deployment_spec_replicas:10 deployment_status_replicas:11 deployment_status_replicas_available:9 deployment_status_replicas_unavailable:2],
+		tags: map[PodName:daemonset1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDaemonSet], fields: map[daemonset_status_number_available:10 daemonset_status_number_unavailable:4 daemonset_status_desired_number_scheduled:7 daemonset_status_current_number_scheduled:6],
 	*/
 	for _, metric := range metrics {
 		assert.Equal(t, "cluster-name", getStringAttrVal(metric, ci.ClusterNameKey))
@@ -227,6 +283,22 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		case ci.TypeClusterNamespace:
 			assertMetricValueEqual(t, metric, "namespace_number_of_running_pods", int64(2))
 			assert.Equal(t, "default", getStringAttrVal(metric, ci.K8sNamespace))
+		case ci.TypeClusterDeployment:
+			assertMetricValueEqual(t, metric, "deployment_spec_replicas", int64(10))
+			assertMetricValueEqual(t, metric, "deployment_status_replicas", int64(11))
+			assertMetricValueEqual(t, metric, "deployment_status_replicas_available", int64(9))
+			assertMetricValueEqual(t, metric, "deployment_status_replicas_unavailable", int64(2))
+			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
+			assert.Equal(t, "deployment1", getStringAttrVal(metric, ci.PodNameKey))
+			assert.Equal(t, "ClusterDeployment", getStringAttrVal(metric, ci.MetricType))
+		case ci.TypeClusterDaemonSet:
+			assertMetricValueEqual(t, metric, "daemonset_status_number_available", int64(10))
+			assertMetricValueEqual(t, metric, "daemonset_status_number_unavailable", int64(4))
+			assertMetricValueEqual(t, metric, "daemonset_status_desired_number_scheduled", int64(7))
+			assertMetricValueEqual(t, metric, "daemonset_status_current_number_scheduled", int64(6))
+			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
+			assert.Equal(t, "daemonset1", getStringAttrVal(metric, ci.PodNameKey))
+			assert.Equal(t, "ClusterDaemonSet", getStringAttrVal(metric, ci.MetricType))
 		default:
 			assert.Fail(t, "Unexpected metric type: "+metricType)
 		}
