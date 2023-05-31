@@ -46,7 +46,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 }
 
 // shutdown will shut down the exporter.
-func (e *metricsExporter) shutdown(ctx context.Context) error {
+func (e *metricsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}

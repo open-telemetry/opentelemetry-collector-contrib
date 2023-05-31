@@ -39,7 +39,7 @@ type mockPusher struct {
 	mock.Mock
 }
 
-func (p *mockPusher) AddLogEntry(logEvent *cwlogs.Event) error {
+func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {

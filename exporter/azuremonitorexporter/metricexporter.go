@@ -19,7 +19,7 @@ type metricExporter struct {
 	packer           *metricPacker
 }
 
-func (exporter *metricExporter) onMetricData(context context.Context, metricData pmetric.Metrics) error {
+func (exporter *metricExporter) onMetricData(_ context.Context, metricData pmetric.Metrics) error {
 	resourceMetrics := metricData.ResourceMetrics()
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
