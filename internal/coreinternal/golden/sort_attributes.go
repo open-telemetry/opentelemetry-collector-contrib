@@ -4,7 +4,6 @@
 package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 
 import (
-	"fmt"
 	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,8 +22,13 @@ func sortMetrics(ms pmetric.Metrics) {
 			for k := 0; k < metricsList.Len(); k++ {
 				metric := metricsList.At(k)
 				switch metricsList.At(k).Type() {
-				case pmetric.MetricTypeGauge, pmetric.MetricTypeSum:
-					ds := getDataPointSlice(metric)
+				case pmetric.MetricTypeGauge:
+					ds := metric.Gauge().DataPoints()
+					for l := 0; l < ds.Len(); l++ {
+						sortAttributeMap(ds.At(l).Attributes())
+					}
+				case pmetric.MetricTypeSum:
+					ds := metric.Sum().DataPoints()
 					for l := 0; l < ds.Len(); l++ {
 						sortAttributeMap(ds.At(l).Attributes())
 					}
@@ -80,17 +84,4 @@ func sortAttributeMap(mp pcommon.Map) {
 		}
 	}
 	tempMap.CopyTo(mp)
-}
-
-func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
-	var dataPointSlice pmetric.NumberDataPointSlice
-	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		dataPointSlice = metric.Gauge().DataPoints()
-	case pmetric.MetricTypeSum:
-		dataPointSlice = metric.Sum().DataPoints()
-	default:
-		panic(fmt.Sprintf("data type not supported: %s", metric.Type()))
-	}
-	return dataPointSlice
 }
