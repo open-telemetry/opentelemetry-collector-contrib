@@ -1,34 +1,59 @@
-kafka:
-  topic: spans
-  brokers:
-    - "foo:123"
-    - "bar:456"
-  client_id: otel-collector
-  group_id: otel-collector
-  auth:
-    tls:
-      ca_file: ca.pem
-      cert_file: cert.pem
-      key_file: key.pem
-  metadata:
-    retry:
-      max: 10
-      backoff: 5s
-kafka/logs:
-  topic: logs
-  encoding: direct
-  brokers:
-    - "coffee:123"
-    - "foobar:456"
-  client_id: otel-collector
-  group_id: otel-collector
-  initial_offset: earliest
-  auth:
-    tls:
-      ca_file: ca.pem
-      cert_file: cert.pem
-      key_file: key.pem
-  metadata:
-    retry:
-      max: 10
-      backoff: 5s
+receivers:
+  kafka/logs:
+    protocol_version: 2.0.0
+    topic: json-logs
+    encoding: json
+    client_id: otel-collector
+    group_id: otel-collector
+    metadata:
+      retry:
+        max: 10
+        backoff: 5s
+
+exporters:
+  file:
+    path: ./receiver/kafkareceiver/output/logs.txt
+  logging:
+    verbosity: detailed
+    sampling_thereafter: 1
+
+service:
+  pipelines:
+    logs:
+      receivers: [kafka/logs]
+      exporters: [logging, file]
+# Original config from otelcotribcol, produces decoding errors from 'initial_offset' when run
+# kafka:
+#   topic: spans
+#   brokers:
+#     - "foo:123"
+#     - "bar:456"
+#   client_id: otel-collector
+#   group_id: otel-collector
+#   auth:
+#     tls:
+#       ca_file: ca.pem
+#       cert_file: cert.pem
+#       key_file: key.pem
+#   metadata:
+#     retry:
+#       max: 10
+#       backoff: 5s
+# kafka/logs:
+#   topic: logs
+#   encoding: text
+#   brokers:
+#     - "coffee:123"
+#     - "foobar:456"
+#   client_id: otel-collector
+#   group_id: otel-collector
+#   initial_offset: earliest
+#   auth:
+#     tls:
+#       ca_file: ca.pem
+#       cert_file: cert.pem
+#       key_file: key.pem
+#   metadata:
+#     retry:
+#       max: 10
+#       backoff: 5s
