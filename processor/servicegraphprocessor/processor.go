@@ -490,7 +490,7 @@ func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 func (p *serviceGraphProcessor) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.reqServerDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("traces_service_graph_request_server_seconds")
+		mDuration.SetName("traces_service_graph_request_client_seconds")
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
