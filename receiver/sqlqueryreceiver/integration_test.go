@@ -9,6 +9,7 @@ package sqlqueryreceiver
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -134,6 +135,9 @@ func TestPostgresqlIntegration(t *testing.T) {
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
 // test the receiver itself.
 func TestOracleDBIntegration(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("Incompatible with arm64")
+	}
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
