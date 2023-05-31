@@ -849,7 +849,7 @@ func getRecordFunc(metricName string) metricRecordFunc {
 	}
 }
 
-func MeasurementsToMetric(mb *MetricsBuilder, meas *mongodbatlas.Measurements, buildUnrecognized bool) error {
+func MeasurementsToMetric(mb *MetricsBuilder, meas *mongodbatlas.Measurements, _ bool) error {
 	recordFunc := getRecordFunc(meas.Name)
 	if recordFunc == nil {
 		return nil

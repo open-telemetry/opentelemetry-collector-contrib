@@ -25,8 +25,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.45.0-rc.4 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.2.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.2.3 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.3 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect

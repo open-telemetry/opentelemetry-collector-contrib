@@ -36,7 +36,7 @@ func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	}
 }
 
-func (s *scraper) start(ctx context.Context, host component.Host) error {
+func (s *scraper) start(_ context.Context, host component.Host) error {
 	s.host = host
 	client, err := newClient(s.config, s.settings, s.host, s.settings.Logger)
 	if err != nil {

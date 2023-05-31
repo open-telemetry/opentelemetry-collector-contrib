@@ -43,7 +43,7 @@ OUTER:
 	lostWG.Wait()
 }
 
-func (r *detectLostFiles) roll(ctx context.Context, readers []*Reader) {
+func (r *detectLostFiles) roll(_ context.Context, readers []*Reader) {
 	for _, reader := range r.oldReaders {
 		reader.Close()
 	}

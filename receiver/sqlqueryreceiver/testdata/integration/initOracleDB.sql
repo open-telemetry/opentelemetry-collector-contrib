@@ -19,6 +19,6 @@ values ('Mission Impossible', 'Action', 7.1);
 /* The alter session command is required to enable user creation in an Oracle docker container
    This command shouldn't be used outside of test environments. */
 alter session set "_ORACLE_SCRIPT"=true;
-CREATE USER OTEL IDENTIFIED BY password;
+CREATE USER OTEL IDENTIFIED BY "p@ssw%rd";
 GRANT CREATE SESSION TO OTEL;
 GRANT ALL ON movie TO OTEL;

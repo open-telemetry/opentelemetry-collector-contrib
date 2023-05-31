@@ -153,7 +153,7 @@ func TestOracleDBIntegration(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = "oracle"
-				rCfg.DataSource = fmt.Sprintf("oracle://otel:password@%s:%s/XE",
+				rCfg.DataSource = fmt.Sprintf("oracle://otel:p@ssw%%25rd@%s:%s/XE",
 					ci.Host(t), ci.MappedPort(t, oraclePort))
 				rCfg.Queries = []Query{
 					{

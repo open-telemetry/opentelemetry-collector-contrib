@@ -78,7 +78,7 @@ type samplingServer struct {
 	api_v2.UnimplementedSamplingManagerServer
 }
 
-func (s samplingServer) GetSamplingStrategy(ctx context.Context, param *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
+func (s samplingServer) GetSamplingStrategy(_ context.Context, _ *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
 	return &api_v2.SamplingStrategyResponse{
 		StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC,
 	}, nil
