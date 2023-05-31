@@ -138,10 +138,8 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	assert.NotNil(t, mp)
 	defer mp.Close()
 
-	// perform an async scrape, this will kick off the scraper process
-	go func() {
-		scraper.GetMetrics()
-	}()
+	// perform a single scrape, this will kick off the scraper process for additional scrapes
+	scraper.GetMetrics()
 
 	t.Cleanup(func() {
 		scraper.Shutdown()

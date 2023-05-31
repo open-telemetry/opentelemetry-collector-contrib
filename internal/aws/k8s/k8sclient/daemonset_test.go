@@ -14,6 +14,8 @@
 package k8sclient
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -21,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
-	"testing"
 )
 
 var daemonSetObjects = []runtime.Object{
