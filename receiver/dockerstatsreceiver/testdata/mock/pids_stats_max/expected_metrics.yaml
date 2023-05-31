@@ -104,6 +104,14 @@ resourceMetrics:
                   timeUnixNano: "1683723781130612000"
               isMonotonic: true
             unit: By
+          - description: CPU limit set for the container.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1683723781127718000"
+                  timeUnixNano: "1683723781130612000"
+            name: container.cpu.limit
+            unit: "{cpus}"
           - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
@@ -111,6 +119,15 @@ resourceMetrics:
                   startTimeUnixNano: "1683723781127718000"
                   timeUnixNano: "1683723781130612000"
             name: container.cpu.percent
+            unit: "1"
+          - description: CPU shares set for the container.
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1683723781127718000"
+                  timeUnixNano: "1683723781130612000"
+            name: container.cpu.shares
             unit: "1"
           - description: Number of periods with throttling active.
             name: container.cpu.throttling_data.periods
@@ -412,6 +429,16 @@ resourceMetrics:
                   startTimeUnixNano: "1683723781127718000"
                   timeUnixNano: "1683723781130612000"
             unit: '{pids}'
+          - description: Number of restarts for the container.
+            name: container.restarts
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1683723781127718000"
+                  timeUnixNano: "1683723781130612000"
+              isMonotonic: true
+            unit: "{restarts}"
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest

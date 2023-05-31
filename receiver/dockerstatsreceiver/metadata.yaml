@@ -127,6 +127,20 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
+  container.cpu.limit:
+    enabled: false
+    description: "CPU limit set for the container."
+    unit: "{cpus}"
+    gauge:
+      value_type: double
+  container.cpu.shares:
+    enabled: false
+    description: "CPU shares set for the container."
+    unit: "1"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
 
 
   # Memory
@@ -640,25 +654,11 @@ metrics:
       aggregation: cumulative
       monotonic: false
 
-  # Inspect
-  container.cpu.limit:
-    enabled: false
-    description: "CPU limit set for the container."
-    unit: "1"
-    gauge:
-      value_type: double
-  container.cpu.shares:
-    enabled: false
-    description: "CPU shares set for the container."
-    unit: "1"
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation: cumulative
+  # Container
   container.restarts:
     enabled: false
     description: "Number of restarts for the container."
-    unit: "1"
+    unit: "{restarts}"
     sum:
       value_type: int
       monotonic: true

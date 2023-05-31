@@ -452,6 +452,55 @@ func newMetricContainerBlockioSectorsRecursive(cfg MetricConfig) metricContainer
 	return m
 }
 
+type metricContainerCPULimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.cpu.limit metric with initial data.
+func (m *metricContainerCPULimit) init() {
+	m.data.SetName("container.cpu.limit")
+	m.data.SetDescription("CPU limit set for the container.")
+	m.data.SetUnit("{cpus}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricContainerCPULimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPULimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPULimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPULimit(cfg MetricConfig) metricContainerCPULimit {
+	m := metricContainerCPULimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerCPUPercent struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -494,6 +543,57 @@ func (m *metricContainerCPUPercent) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUPercent(cfg MetricConfig) metricContainerCPUPercent {
 	m := metricContainerCPUPercent{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerCPUShares struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.cpu.shares metric with initial data.
+func (m *metricContainerCPUShares) init() {
+	m.data.SetName("container.cpu.shares")
+	m.data.SetDescription("CPU shares set for the container.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerCPUShares) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPUShares) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPUShares) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPUShares(cfg MetricConfig) metricContainerCPUShares {
+	m := metricContainerCPUShares{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3271,6 +3371,57 @@ func newMetricContainerPidsLimit(cfg MetricConfig) metricContainerPidsLimit {
 	return m
 }
 
+type metricContainerRestarts struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.restarts metric with initial data.
+func (m *metricContainerRestarts) init() {
+	m.data.SetName("container.restarts")
+	m.data.SetDescription("Number of restarts for the container.")
+	m.data.SetUnit("{restarts}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerRestarts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerRestarts) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerRestarts) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerRestarts(cfg MetricConfig) metricContainerRestarts {
+	m := metricContainerRestarts{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -3288,7 +3439,9 @@ type MetricsBuilder struct {
 	metricContainerBlockioIoTimeRecursive            metricContainerBlockioIoTimeRecursive
 	metricContainerBlockioIoWaitTimeRecursive        metricContainerBlockioIoWaitTimeRecursive
 	metricContainerBlockioSectorsRecursive           metricContainerBlockioSectorsRecursive
+	metricContainerCPULimit                          metricContainerCPULimit
 	metricContainerCPUPercent                        metricContainerCPUPercent
+	metricContainerCPUShares                         metricContainerCPUShares
 	metricContainerCPUThrottlingDataPeriods          metricContainerCPUThrottlingDataPeriods
 	metricContainerCPUThrottlingDataThrottledPeriods metricContainerCPUThrottlingDataThrottledPeriods
 	metricContainerCPUThrottlingDataThrottledTime    metricContainerCPUThrottlingDataThrottledTime
@@ -3343,6 +3496,7 @@ type MetricsBuilder struct {
 	metricContainerNetworkIoUsageTxPackets           metricContainerNetworkIoUsageTxPackets
 	metricContainerPidsCount                         metricContainerPidsCount
 	metricContainerPidsLimit                         metricContainerPidsLimit
+	metricContainerRestarts                          metricContainerRestarts
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3369,7 +3523,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(mbc.Metrics.ContainerBlockioIoTimeRecursive),
 		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mbc.Metrics.ContainerBlockioIoWaitTimeRecursive),
 		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mbc.Metrics.ContainerBlockioSectorsRecursive),
+		metricContainerCPULimit:                          newMetricContainerCPULimit(mbc.Metrics.ContainerCPULimit),
 		metricContainerCPUPercent:                        newMetricContainerCPUPercent(mbc.Metrics.ContainerCPUPercent),
+		metricContainerCPUShares:                         newMetricContainerCPUShares(mbc.Metrics.ContainerCPUShares),
 		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.Metrics.ContainerCPUThrottlingDataPeriods),
 		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
 		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mbc.Metrics.ContainerCPUThrottlingDataThrottledTime),
@@ -3424,6 +3580,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mbc.Metrics.ContainerNetworkIoUsageTxPackets),
 		metricContainerPidsCount:                         newMetricContainerPidsCount(mbc.Metrics.ContainerPidsCount),
 		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mbc.Metrics.ContainerPidsLimit),
+		metricContainerRestarts:                          newMetricContainerRestarts(mbc.Metrics.ContainerRestarts),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3530,7 +3687,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerBlockioIoTimeRecursive.emit(ils.Metrics())
 	mb.metricContainerBlockioIoWaitTimeRecursive.emit(ils.Metrics())
 	mb.metricContainerBlockioSectorsRecursive.emit(ils.Metrics())
+	mb.metricContainerCPULimit.emit(ils.Metrics())
 	mb.metricContainerCPUPercent.emit(ils.Metrics())
+	mb.metricContainerCPUShares.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledTime.emit(ils.Metrics())
@@ -3585,6 +3744,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerNetworkIoUsageTxPackets.emit(ils.Metrics())
 	mb.metricContainerPidsCount.emit(ils.Metrics())
 	mb.metricContainerPidsLimit.emit(ils.Metrics())
+	mb.metricContainerRestarts.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(mb.resourceAttributesConfig, rm)
@@ -3645,9 +3805,19 @@ func (mb *MetricsBuilder) RecordContainerBlockioSectorsRecursiveDataPoint(ts pco
 	mb.metricContainerBlockioSectorsRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
+// RecordContainerCPULimitDataPoint adds a data point to container.cpu.limit metric.
+func (mb *MetricsBuilder) RecordContainerCPULimitDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricContainerCPULimit.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordContainerCPUPercentDataPoint adds a data point to container.cpu.percent metric.
 func (mb *MetricsBuilder) RecordContainerCPUPercentDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricContainerCPUPercent.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerCPUSharesDataPoint adds a data point to container.cpu.shares metric.
+func (mb *MetricsBuilder) RecordContainerCPUSharesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerCPUShares.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerCPUThrottlingDataPeriodsDataPoint adds a data point to container.cpu.throttling_data.periods metric.
@@ -3918,6 +4088,11 @@ func (mb *MetricsBuilder) RecordContainerPidsCountDataPoint(ts pcommon.Timestamp
 // RecordContainerPidsLimitDataPoint adds a data point to container.pids.limit metric.
 func (mb *MetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerPidsLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerRestartsDataPoint adds a data point to container.restarts metric.
+func (mb *MetricsBuilder) RecordContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerRestarts.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

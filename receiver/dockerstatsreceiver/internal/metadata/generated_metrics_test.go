@@ -79,9 +79,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
+			allMetricsCount++
+			mb.RecordContainerCPULimitDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUPercentDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerCPUSharesDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
@@ -255,6 +261,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerPidsLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerRestartsDataPoint(ts, 1)
 
 			metrics := mb.Emit(WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
 
@@ -500,6 +509,18 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+				case "container.cpu.limit":
+					assert.False(t, validatedMetrics["container.cpu.limit"], "Found a duplicate in the metrics slice: container.cpu.limit")
+					validatedMetrics["container.cpu.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU limit set for the container.", ms.At(i).Description())
+					assert.Equal(t, "{cpus}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "container.cpu.percent":
 					assert.False(t, validatedMetrics["container.cpu.percent"], "Found a duplicate in the metrics slice: container.cpu.percent")
 					validatedMetrics["container.cpu.percent"] = true
@@ -512,6 +533,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "container.cpu.shares":
+					assert.False(t, validatedMetrics["container.cpu.shares"], "Found a duplicate in the metrics slice: container.cpu.shares")
+					validatedMetrics["container.cpu.shares"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "CPU shares set for the container.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.cpu.throttling_data.periods":
 					assert.False(t, validatedMetrics["container.cpu.throttling_data.periods"], "Found a duplicate in the metrics slice: container.cpu.throttling_data.periods")
 					validatedMetrics["container.cpu.throttling_data.periods"] = true
@@ -1287,6 +1322,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Maximum number of pids in the container's cgroup.", ms.At(i).Description())
 					assert.Equal(t, "{pids}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.restarts":
+					assert.False(t, validatedMetrics["container.restarts"], "Found a duplicate in the metrics slice: container.restarts")
+					validatedMetrics["container.restarts"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of restarts for the container.", ms.At(i).Description())
+					assert.Equal(t, "{restarts}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

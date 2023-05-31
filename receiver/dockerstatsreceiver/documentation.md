@@ -292,7 +292,7 @@ CPU limit set for the container.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| {cpus} | Gauge | Double |
 
 ### container.cpu.shares
 
@@ -694,13 +694,13 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
 
-### container.restart.count
+### container.restarts
 
 Number of restarts for the container.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| {restarts} | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 

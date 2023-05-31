@@ -116,7 +116,8 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
-	r.recordInspectMetrics(now, container.ContainerJSON)
+	r.recordHostConfigMetrics(now, container.ContainerJSON)
+	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
 
 	// Always-present resource attrs + the user-configured resource attrs
 	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
@@ -266,8 +267,7 @@ func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.Pi
 	}
 }
 
-func (r *receiver) recordInspectMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) {
-	r.mb.RecordContainerCPULimitDataPoint(now, float64(containerJSON.HostConfig.NanoCPUs)/1e9)
+func (r *receiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) {
+	r.mb.RecordContainerCPULimitDataPoint(now, calculateCPULimit(containerJSON))
 	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
-	r.mb.RecordContainerRestartsDataPoint(now, int64(containerJSON.RestartCount))
 }

@@ -4,6 +4,9 @@
 package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 
 import (
+	"strconv"
+	"strings"
+
 	dtypes "github.com/docker/docker/api/types"
 )
 
@@ -70,4 +73,48 @@ func calculateMemoryPercent(limit uint64, usedNoCache uint64) float64 {
 		return float64(usedNoCache) / float64(limit) * 100.0
 	}
 	return 0.0
+}
+
+// calculateCPULimit calculate the number of cpus assigned to a container.
+//
+// Calculation is based on 3 alternatives by the following order:
+// - nanocpus:   if set by i.e docker run -cpus=2
+// - cpusetCpus: if set by i.e docker run -docker run -cpuset-cpus="0,2"
+// - cpuquota:   if set by i.e docker run -cpu-quota=50000
+//
+// See https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler for background.
+func calculateCPULimit(container *dtypes.ContainerJSON) float64 {
+	var cpuLimit float64
+
+	switch {
+	case container.HostConfig.NanoCPUs > 0:
+		cpuLimit = float64(container.HostConfig.NanoCPUs) / 1e9
+	case container.HostConfig.CpusetCpus != "":
+		cpuLimit = parseCPUSet(container.HostConfig.CpusetCpus)
+	case container.HostConfig.CPUQuota > 0:
+		period := container.HostConfig.CPUPeriod
+		if period == 0 {
+			period = 100000 // Default CFS Period
+		}
+		cpuLimit = float64(container.HostConfig.CPUQuota) / float64(period)
+	}
+	return cpuLimit
+}
+
+// parseCPUSet helper function to decompose -cpuset-cpus value into number os cpus.
+func parseCPUSet(line string) float64 {
+	var numCPUs uint64
+
+	lineSlice := strings.Split(line, ",")
+	for _, l := range lineSlice {
+		lineParts := strings.Split(l, "-")
+		if len(lineParts) == 2 {
+			p0, _ := strconv.Atoi(lineParts[0])
+			p1, _ := strconv.Atoi(lineParts[1])
+			numCPUs += uint64(p1 - p0 + 1)
+		} else if len(lineParts) == 1 {
+			numCPUs++
+		}
+	}
+	return float64(numCPUs)
 }
