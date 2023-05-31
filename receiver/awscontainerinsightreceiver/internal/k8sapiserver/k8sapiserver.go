@@ -162,7 +162,7 @@ func (k *K8sAPIServer) getDeploymentMetrics(clusterName, timestampNs string) []p
 			attributes[ci.NodeNameKey] = k.nodeName
 		}
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		//attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"deployment_name\":\"%s\"}",
+		// attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"deployment_name\":\"%s\"}",
 		//	deployment.Namespace, deployment.Name)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)
@@ -192,7 +192,7 @@ func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pm
 			attributes[ci.NodeNameKey] = k.nodeName
 		}
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		//attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"daemonset_name\":\"%s\"}",
+		// attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"daemonset_name\":\"%s\"}",
 		//	daemonSet.Namespace, daemonSet.Name)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)
