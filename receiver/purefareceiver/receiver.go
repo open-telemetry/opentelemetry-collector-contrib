@@ -40,7 +40,7 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 
 	commomLabel := model.LabelSet{
 		"deployment.environment": model.LabelValue(r.cfg.Env),
-		"host.name":                   model.LabelValue(r.cfg.Endpoint),
+		"host.name":              model.LabelValue(r.cfg.Endpoint),
 	}
 
 	// Extracting deployment.environment from commonLabel
