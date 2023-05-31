@@ -4,7 +4,6 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -27,7 +26,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: multierr.Combine(
-				fmt.Errorf("%s: %w", errInvalidEndpoint, errors.New(`parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
 		},
 		{

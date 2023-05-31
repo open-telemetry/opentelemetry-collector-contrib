@@ -211,7 +211,7 @@ func (u *Input) readMessage() ([]byte, net.Addr, error) {
 	}
 
 	// Remove trailing characters and NULs
-	for ; (n > 0) && (u.buffer[n-1] < 32); n-- {
+	for ; (n > 0) && (u.buffer[n-1] < 32); n-- { // nolint
 	}
 
 	return u.buffer[:n], addr, nil
