@@ -27,7 +27,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: multierr.Combine(
-				fmt.Errorf("%w: %w", errInvalidEndpoint, errors.New(`parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
 		},
 		{
