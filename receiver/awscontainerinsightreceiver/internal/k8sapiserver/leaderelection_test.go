@@ -99,6 +99,8 @@ func TestLeaderElectionEndToEnd(t *testing.T) {
 		leaderElection.cancel()
 
 		assert.Eventually(t, func() bool {
+			leaderElection.mu.Lock()
+			defer leaderElection.mu.Unlock()
 			return !leaderElection.leading
 		}, 2*time.Second, 5*time.Millisecond)
 	})
