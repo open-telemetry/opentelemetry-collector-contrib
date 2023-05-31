@@ -144,7 +144,7 @@ type testClickhouseDriver struct {
 	recorder recorder
 }
 
-func (t *testClickhouseDriver) Open(name string) (driver.Conn, error) {
+func (t *testClickhouseDriver) Open(_ string) (driver.Conn, error) {
 	return &testClickhouseDriverConn{
 		recorder: t.recorder,
 	}, nil
@@ -169,7 +169,7 @@ func (*testClickhouseDriverConn) Begin() (driver.Tx, error) {
 	return &testClickhouseDriverTx{}, nil
 }
 
-func (*testClickhouseDriverConn) CheckNamedValue(v *driver.NamedValue) error {
+func (*testClickhouseDriverConn) CheckNamedValue(_ *driver.NamedValue) error {
 	return nil
 }
 
@@ -190,7 +190,7 @@ func (t *testClickhouseDriverStmt) Exec(args []driver.Value) (driver.Result, err
 	return nil, t.recorder(t.query, args)
 }
 
-func (t *testClickhouseDriverStmt) Query(args []driver.Value) (driver.Rows, error) {
+func (t *testClickhouseDriverStmt) Query(_ []driver.Value) (driver.Rows, error) {
 	return nil, nil
 }
 

@@ -179,7 +179,7 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 	return 0, nil
 }
 
-func (t *transaction) AppendHistogram(_ storage.SeriesRef, _ labels.Labels, _ int64, h *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
+func (t *transaction) AppendHistogram(_ storage.SeriesRef, _ labels.Labels, _ int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
 	//TODO: implement this func
 	return 0, nil
 }
@@ -262,7 +262,7 @@ func (t *transaction) Rollback() error {
 	return nil
 }
 
-func (t *transaction) UpdateMetadata(ref storage.SeriesRef, l labels.Labels, m metadata.Metadata) (storage.SeriesRef, error) {
+func (t *transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ metadata.Metadata) (storage.SeriesRef, error) {
 	//TODO: implement this func
 	return 0, nil
 }

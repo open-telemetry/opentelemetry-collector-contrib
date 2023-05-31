@@ -34,7 +34,7 @@ type logServiceLogsSender struct {
 }
 
 func (s *logServiceLogsSender) pushLogsData(
-	ctx context.Context,
+	_ context.Context,
 	md plog.Logs) error {
 	var err error
 	clsLogs := convertLogs(md)
