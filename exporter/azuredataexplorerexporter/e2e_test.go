@@ -231,7 +231,6 @@ func TestCreateMetricsExporterE2E(t *testing.T) {
 	t.Cleanup(func() { _ = exp.Shutdown(context.Background()) })
 }
 
-// prepareQuery no longer used
 func getConfig() (*Config, bool) {
 	if os.Getenv(clusterURI) == "" || os.Getenv(appID) == "" || os.Getenv(appKey) == "" || os.Getenv(tenantID) == "" || os.Getenv(otelE2EDb) == "" {
 		return nil, false
