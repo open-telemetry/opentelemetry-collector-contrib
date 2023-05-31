@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsProcessor(
-	ctx context.Context,
+	_ context.Context,
 	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (processor.Logs, error) {

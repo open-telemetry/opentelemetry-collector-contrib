@@ -37,7 +37,7 @@ type scraper struct {
 	labels         model.LabelSet
 }
 
-func NewScraper(ctx context.Context,
+func NewScraper(_ context.Context,
 	scraperType ScraperType,
 	endpoint string,
 	configs []ScraperConfig,
@@ -53,7 +53,7 @@ func NewScraper(ctx context.Context,
 	}
 }
 
-func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.Factory) ([]*config.ScrapeConfig, error) {
+func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Factory) ([]*config.ScrapeConfig, error) {
 	scrapeCfgs := []*config.ScrapeConfig{}
 
 	for _, arr := range h.configs {
