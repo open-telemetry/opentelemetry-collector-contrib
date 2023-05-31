@@ -32,21 +32,6 @@ func WithClient(client K8sClient) LeaderElectionOption {
 	}
 }
 
-func TestNewLeaderElectionOpts(t *testing.T) {
-	t.Setenv("HOST_NAME", "hostname")
-	t.Setenv("K8S_NAMESPACE", "namespace")
-
-	le, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}), WithLeaderLockName("test"), WithLeaderLockUsingConfigMapOnly(true))
-	t.Cleanup(func() {
-		le.cancel()
-	})
-	assert.NotNil(t, le)
-	assert.NoError(t, err)
-	assert.Equal(t, "test", le.leaderLockName)
-	assert.True(t, le.leaderLockUsingConfigMapOnly)
-
-}
-
 func TestLeaderElectionInitErrors(t *testing.T) {
 	le, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}))
 	assert.Error(t, err)
@@ -77,10 +62,12 @@ func TestLeaderElectionEndToEnd(t *testing.T) {
 	t.Setenv("HOST_NAME", hostName)
 	t.Setenv("K8S_NAMESPACE", "namespace")
 	leaderElection, err := NewLeaderElection(zap.NewNop(), WithClient(&mockK8sClient{}),
-		leadingOption, broadcasterOption, isLeadingCOption)
+		leadingOption, broadcasterOption, isLeadingCOption, WithLeaderLockName("test"), WithLeaderLockUsingConfigMapOnly(true))
 
 	assert.NotNil(t, leaderElection)
 	assert.NoError(t, err)
+	assert.Equal(t, "test", leaderElection.leaderLockName)
+	assert.True(t, leaderElection.leaderLockUsingConfigMapOnly)
 
 	mockClient.On("NamespaceToRunningPodNum").Return(map[string]int{"default": 2})
 	mockClient.On("ClusterFailedNodeCount").Return(1)
