@@ -13,4 +13,6 @@ issues: [18743, 16578]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Latency metrics are now split into server and client
+subtext: Latency metric `traces_service_graph_request_duration_seconds` are deprecated in favor of server and client metrics |
+    `traces_service_graph_server_request_seconds` and `traces_service_graph_client_request_seconds` |
+    respectively. Use the feature gate `processor.servicegraph.legacyLatencyMetricNames` to enable the old metric names.

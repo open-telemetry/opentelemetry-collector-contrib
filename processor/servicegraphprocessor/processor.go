@@ -475,6 +475,19 @@ func (p *serviceGraphProcessor) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 }
 
 func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	// TODO: Remove this once legacy metric names are removed
+	if legacyMetricNamesFeatureGate.IsEnabled() {
+		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration_seconds")
+	}
+
+	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server_seconds"); err != nil {
+		return err
+	}
+
+	return p.collectClientLatencyMetrics(ilm)
+}
+
+func (p *serviceGraphProcessor) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.reqServerDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_server_seconds")
@@ -492,7 +505,6 @@ func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 		dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
 
 		// TODO: Support exemplars
-
 		dimensions, ok := p.dimensionsForSeries(key)
 		if !ok {
 			return fmt.Errorf("failed to find dimensions for key %s", key)
@@ -500,10 +512,13 @@ func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 
 		dimensions.CopyTo(dpDuration.Attributes())
 	}
+	return nil
+}
 
-	for key := range p.reqClientDurationSecondsCount {
+func (p *serviceGraphProcessor) collectServerLatencyMetrics(ilm pmetric.ScopeMetrics, mName string) error {
+	for key := range p.reqServerDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("traces_service_graph_request_client_seconds")
+		mDuration.SetName(mName)
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -518,7 +533,6 @@ func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 		dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
 
 		// TODO: Support exemplars
-
 		dimensions, ok := p.dimensionsForSeries(key)
 		if !ok {
 			return fmt.Errorf("failed to find dimensions for key %s", key)
@@ -526,7 +540,6 @@ func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 
 		dimensions.CopyTo(dpDuration.Attributes())
 	}
-
 	return nil
 }
 
