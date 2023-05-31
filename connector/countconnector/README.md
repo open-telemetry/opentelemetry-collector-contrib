@@ -272,9 +272,4 @@ service:
       exporters: [bar/counts_only]
 ```
 
-[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
-[Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
-[Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
