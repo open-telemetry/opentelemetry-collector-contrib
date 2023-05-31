@@ -219,7 +219,7 @@ func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), bs.bufferMaxLen)))
+							" content length %d bytes", len(b), c.config.MaxContentLengthLogs)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 			}
@@ -277,7 +277,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is 
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), bs.bufferMaxLen)))
+							" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 			}
@@ -322,7 +322,7 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, bs *bufferState, is iter
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), bs.bufferMaxLen)))
+							" content length %d bytes", len(b), c.config.MaxContentLengthTraces)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 			}
@@ -381,7 +381,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 }
 
 func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers map[string]string) error {
-	if err := bufState.Close(); err != nil {
+	if err := bufState.buf.Close(); err != nil {
 		return err
 	}
 	return c.hecWorker.send(ctx, bufState, headers)
