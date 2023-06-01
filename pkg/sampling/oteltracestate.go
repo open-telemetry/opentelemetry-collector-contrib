@@ -11,12 +11,12 @@ type OTelTraceState struct {
 	commonTraceState
 
 	// sampling r, s, and t-values
-	ru uint64  // r value parsed, as unsigned
-	r  string  // 14 ASCII hex digits
-	sf float64 // s value parsed, as a probability
-	s  string  // original float syntax preserved
-	tf float64 // t value parsed, as a probability
-	t  string  // original float syntax preserved
+	ru uint64    // r value parsed, as unsigned
+	r  string    // 14 ASCII hex digits
+	sf Threshold // s value parsed, as a probability
+	s  string    // original float syntax preserved
+	tf Threshold // t value parsed, as a probability
+	t  string    // original float syntax preserved
 }
 
 const (
@@ -79,14 +79,14 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
 			if err == nil {
 				otts.s = value
-				otts.sf = prob
+				otts.sf, _ = ProbabilityToThreshold(prob)
 			}
 		case "t":
 			var prob float64
 			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
 			if err == nil {
 				otts.t = value
-				otts.tf = prob
+				otts.tf, _ = ProbabilityToThreshold(prob)
 			}
 		default:
 			otts.kvs = append(otts.kvs, KV{
@@ -120,7 +120,7 @@ func (otts OTelTraceState) SValue() string {
 	return otts.s
 }
 
-func (otts OTelTraceState) SValueProbability() float64 {
+func (otts OTelTraceState) SValueThreshold() Threshold {
 	return otts.sf
 }
 
@@ -132,8 +132,18 @@ func (otts OTelTraceState) TValue() string {
 	return otts.t
 }
 
-func (otts OTelTraceState) TValueProbability() float64 {
+func (otts OTelTraceState) TValueThreshold() Threshold {
 	return otts.tf
+}
+
+func (otts *OTelTraceState) SetTValue(value string, threshold Threshold) {
+	otts.t = value
+	otts.tf = threshold
+}
+
+func (otts *OTelTraceState) UnsetTValue() {
+	otts.t = ""
+	otts.tf = Threshold{}
 }
 
 func (otts OTelTraceState) HasAnyValue() bool {

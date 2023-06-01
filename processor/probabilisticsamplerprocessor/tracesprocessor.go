@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 
@@ -114,12 +115,12 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 	} else {
 		// Encode t-value (OTEP 226), like %.4f.  (See FormatFloat().)
 		ratio := pct / 100
-		tval, err := sampling.ProbabilityToTvalue(ratio, 'f', 4)
+		tval, err := sampling.ProbabilityToEncoded(ratio, 'f', 4)
 		if err != nil {
 			return nil, err
 		}
 		// Parse the exact value of probability encoded at this precision.
-		ratio, _, err = sampling.TvalueToProbabilityAndAdjustedCount(tval)
+		ratio, _, err = sampling.EncodedToProbabilityAndAdjustedCount(tval)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +171,7 @@ func (ts *traceIDSampler) updateSampled(span ptrace.Span, should bool) error {
 		if should {
 			state.FromRaw(ts.tValueEncoding)
 		} else {
-			state.FromRaw(sampling.TValueZeroEncoding)
+			state.FromRaw(sampling.ProbabilityZeroEncoding)
 		}
 		return nil
 	}
@@ -188,7 +189,9 @@ func (ts *traceIDSampler) updateSampled(span ptrace.Span, should bool) error {
 	// Incoming TValue consistency is not checked when this happens.
 	if !should {
 		otts.SetTValue("0", sampling.Threshold{})
-		state.FromRaw(wts.Serialize())
+		var w strings.Builder
+		wts.Serialize(&w)
+		state.FromRaw(w.String())
 		return nil
 	}
 
@@ -215,7 +218,9 @@ func (ts *traceIDSampler) updateSampled(span ptrace.Span, should bool) error {
 
 	// Set the new effective t-value.
 	otts.SetTValue(ts.tValueEncoding, ts.traceIDThreshold)
-	state.FromRaw(wts.Serialize())
+	var w strings.Builder
+	wts.Serialize(&w)
+	state.FromRaw(w.String())
 	return err
 }
 

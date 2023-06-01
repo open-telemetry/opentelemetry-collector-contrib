@@ -1,9 +1,9 @@
 package sampling
 
 import (
+	"io"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 type W3CTraceState struct {
@@ -101,15 +101,15 @@ func (w3c W3CTraceState) HasAnyValue() bool {
 	return w3c.HasOTelValue() || w3c.HasExtraValues()
 }
 
-func (w3c W3CTraceState) OTelValue() OTelTraceState {
-	return w3c.otts
+func (w3c W3CTraceState) OTelValue() *OTelTraceState {
+	return &w3c.otts
 }
 
 func (w3c W3CTraceState) HasOTelValue() bool {
 	return w3c.otts.HasAnyValue()
 }
 
-func (w3c W3CTraceState) Serialize(w *strings.Builder) {
+func (w3c W3CTraceState) Serialize(w io.StringWriter) {
 	cnt := 0
 	sep := func() {
 		if cnt != 0 {
