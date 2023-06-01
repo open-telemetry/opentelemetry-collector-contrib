@@ -72,7 +72,7 @@ func TestScanner(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			reader := bytes.NewReader(tc.stream)
 			splitter := simpleSplit(tc.delimiter)
-			scanner := NewPositionalScanner(reader, tc.maxSize, tc.startOffset, splitter)
+			scanner := NewPositionalScanner(reader, tc.maxSize, tc.startOffset, defaultBufSize, splitter)
 
 			for i, p := 0, 0; scanner.Scan(); i++ {
 				require.NoError(t, scanner.getError())

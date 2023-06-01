@@ -129,7 +129,7 @@ func TestReadingWithLargeFingerPrintSizeAndFileLargerThanScannerBuf(t *testing.T
 		encodingConfig:  splitterConfig.EncodingConfig,
 	}
 
-	r, err := f.newReaderBuilder().withFile(temp).build()
+	r, err := f.newReaderBuilder().withFile(temp).withBufferSize().build()
 	require.NoError(t, err)
 
 	initialFingerPrintSize := len(r.Fingerprint.FirstBytes)

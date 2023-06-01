@@ -28,6 +28,7 @@ func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, erro
 	return f.newReaderBuilder().
 		withFile(file).
 		withFingerprint(fp).
+		withBufferSize().
 		build()
 }
 
@@ -36,6 +37,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 	return f.newReaderBuilder().
 		withFile(newFile).
 		withFingerprint(old.Fingerprint.Copy()).
+		withBufferSize().
 		withOffset(old.Offset).
 		withSplitterFunc(old.lineSplitFunc).
 		withHeaderAttributes(mapCopy(old.FileAttributes.HeaderAttributes)).
@@ -44,7 +46,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 }
 
 func (f *readerFactory) unsafeReader() (*Reader, error) {
-	return f.newReaderBuilder().build()
+	return f.newReaderBuilder().withBufferSize().build()
 }
 
 func (f *readerFactory) newFingerprint(file *os.File) (*Fingerprint, error) {
@@ -55,6 +57,7 @@ type readerBuilder struct {
 	*readerFactory
 	file             *os.File
 	fp               *Fingerprint
+	bufferSize       int
 	offset           int64
 	splitFunc        bufio.SplitFunc
 	headerFinalized  bool
@@ -80,6 +83,15 @@ func (b *readerBuilder) withFingerprint(fp *Fingerprint) *readerBuilder {
 	return b
 }
 
+func (b *readerBuilder) withBufferSize() *readerBuilder {
+	if b.readerConfig.fingerprintSize > defaultBufSize {
+		b.bufferSize = b.readerConfig.fingerprintSize
+	} else {
+		b.bufferSize = defaultBufSize
+	}
+	return b
+}
+
 func (b *readerBuilder) withOffset(offset int64) *readerBuilder {
 	b.offset = offset
 	return b
@@ -98,6 +110,7 @@ func (b *readerBuilder) withHeaderAttributes(attrs map[string]any) *readerBuilde
 func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
 		readerConfig:    b.readerConfig,
+		bufferSize:      b.bufferSize,
 		Offset:          b.offset,
 		headerSettings:  b.headerSettings,
 		HeaderFinalized: b.headerFinalized,

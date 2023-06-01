@@ -32,6 +32,7 @@ type Reader struct {
 	processFunc   EmitFunc
 
 	Fingerprint    *Fingerprint
+	bufferSize     int
 	Offset         int64
 	generation     int
 	file           *os.File
@@ -63,7 +64,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.bufferSize, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -102,7 +103,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				return
 			}
 
-			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.bufferSize, r.splitFunc)
 		}
 
 		r.Offset = scanner.Pos()
@@ -178,8 +179,8 @@ func (r *Reader) Read(dst []byte) (int, error) {
 	}
 	n, err := r.file.Read(dst)
 	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
-	if appendCount == 0 || int(r.Offset)+appendCount < len(r.Fingerprint.FirstBytes) {
-		r.Debugw("Fingerprint does not need to be updated")
+	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
+	if appendCount == 0 {
 		return n, err
 	}
 
