@@ -4,4 +4,4 @@ status:
   class: exporter
   stability:
     beta: [traces]
-  distributions: [contrib, splunk, observiq]
+  distributions: [contrib, splunk, observiq, aws]
