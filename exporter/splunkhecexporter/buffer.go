@@ -9,19 +9,11 @@ import (
 	"errors"
 	"io"
 	"sync"
-
-	jsoniter "github.com/json-iterator/go"
 )
 
 var (
 	errOverCapacity = errors.New("over capacity")
 )
-
-// bufferState encapsulates intermediate buffer state when pushing data
-type bufferState struct {
-	buf        buffer
-	jsonStream *jsoniter.Stream
-}
 
 type buffer interface {
 	io.Writer
@@ -30,39 +22,6 @@ type buffer interface {
 	Reset()
 	Len() int
 	Empty() bool
-}
-
-func (b *bufferState) compressionEnabled() bool {
-	_, ok := b.buf.(*cancellableGzipWriter)
-	return ok
-}
-
-func (b *bufferState) containsData() bool {
-	return !b.buf.Empty()
-}
-
-func (b *bufferState) reset() {
-	b.buf.Reset()
-}
-
-func (b *bufferState) Read(p []byte) (n int, err error) {
-	return b.buf.Read(p)
-}
-
-func (b *bufferState) Close() error {
-	return b.buf.Close()
-}
-
-// accept returns true if data is accepted by the buffer
-func (b *bufferState) accept(data []byte) (bool, error) {
-	_, err := b.buf.Write(data)
-	if err == nil {
-		return true, nil
-	}
-	if errors.Is(err, errOverCapacity) {
-		return false, nil
-	}
-	return false, err
 }
 
 type cancellableBytesWriter struct {
@@ -166,44 +125,34 @@ func (c *cancellableGzipWriter) Empty() bool {
 	return c.rawLen == 0
 }
 
-// bufferStatePool is a pool of bufferState objects.
-type bufferStatePool struct {
+// bufferPool is a pool of buffer objects.
+type bufferPool struct {
 	pool *sync.Pool
 }
 
-// get returns a bufferState from the pool.
-func (p bufferStatePool) get() *bufferState {
-	return p.pool.Get().(*bufferState)
+func (p bufferPool) get() buffer {
+	return p.pool.Get().(buffer)
 }
 
-// put returns a bufferState to the pool.
-func (p bufferStatePool) put(bf *bufferState) {
+func (p bufferPool) put(bf buffer) {
 	p.pool.Put(bf)
 }
 
-const initBufferCap = 512
-
-func newBufferStatePool(bufCap uint, compressionEnabled bool) bufferStatePool {
-	return bufferStatePool{
+func newBufferPool(bufCap uint, compressionEnabled bool) bufferPool {
+	return bufferPool{
 		&sync.Pool{
 			New: func() interface{} {
-				innerBuffer := bytes.NewBuffer(make([]byte, 0, initBufferCap))
-				var buf buffer
+				innerBuffer := &bytes.Buffer{}
 				if compressionEnabled {
-					buf = &cancellableGzipWriter{
+					return &cancellableGzipWriter{
 						innerBuffer: innerBuffer,
-						innerWriter: gzip.NewWriter(buf),
-						maxCapacity: bufCap,
-					}
-				} else {
-					buf = &cancellableBytesWriter{
-						innerWriter: innerBuffer,
+						innerWriter: gzip.NewWriter(innerBuffer),
 						maxCapacity: bufCap,
 					}
 				}
-				return &bufferState{
-					buf:        buf,
-					jsonStream: jsoniter.NewStream(jsoniter.ConfigDefault, nil, initBufferCap),
+				return &cancellableBytesWriter{
+					innerWriter: innerBuffer,
+					maxCapacity: bufCap,
 				}
 			},
 		},
