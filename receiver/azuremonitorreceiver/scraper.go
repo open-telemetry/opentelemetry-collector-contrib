@@ -132,7 +132,7 @@ func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
 	return client
 }
 
-func (s *azureScraper) start(_ context.Context, host component.Host) (err error) {
+func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
 	if err != nil {
 		return err
