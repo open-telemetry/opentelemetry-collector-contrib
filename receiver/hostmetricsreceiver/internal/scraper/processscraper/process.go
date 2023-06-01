@@ -124,7 +124,6 @@ func parentPid(handle processHandle, pid int32) (int32, error) {
 	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
 		return 0, nil
 	}
-	pPid, err := handle.Ppid()
 
-	return pPid, err
+	return handle.Ppid()
 }
