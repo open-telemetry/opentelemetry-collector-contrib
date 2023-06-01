@@ -268,6 +268,6 @@ func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.Pi
 }
 
 func (r *receiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) {
-	r.mb.RecordContainerCPULimitDataPoint(now, calculateCPULimit(containerJSON))
+	r.mb.RecordContainerCPULimitDataPoint(now, calculateCPULimit(containerJSON.HostConfig))
 	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
 }

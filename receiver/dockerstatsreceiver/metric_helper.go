@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	dtypes "github.com/docker/docker/api/types"
+	ctypes "github.com/docker/docker/api/types/container"
 )
 
 // Following functions has been copied from: calculateCPUPercentUnix(), calculateMemUsageUnixNoCache(), calculateMemPercentUnixNoCache()
@@ -83,20 +84,20 @@ func calculateMemoryPercent(limit uint64, usedNoCache uint64) float64 {
 // - cpuquota:   if set by i.e docker run -cpu-quota=50000
 //
 // See https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler for background.
-func calculateCPULimit(container *dtypes.ContainerJSON) float64 {
+func calculateCPULimit(hostConfig *ctypes.HostConfig) float64 {
 	var cpuLimit float64
 
 	switch {
-	case container.HostConfig.NanoCPUs > 0:
-		cpuLimit = float64(container.HostConfig.NanoCPUs) / 1e9
-	case container.HostConfig.CpusetCpus != "":
-		cpuLimit = parseCPUSet(container.HostConfig.CpusetCpus)
-	case container.HostConfig.CPUQuota > 0:
-		period := container.HostConfig.CPUPeriod
+	case hostConfig.NanoCPUs > 0:
+		cpuLimit = float64(hostConfig.NanoCPUs) / 1e9
+	case hostConfig.CpusetCpus != "":
+		cpuLimit = parseCPUSet(hostConfig.CpusetCpus)
+	case hostConfig.CPUQuota > 0:
+		period := hostConfig.CPUPeriod
 		if period == 0 {
 			period = 100000 // Default CFS Period
 		}
-		cpuLimit = float64(container.HostConfig.CPUQuota) / float64(period)
+		cpuLimit = float64(hostConfig.CPUQuota) / float64(period)
 	}
 	return cpuLimit
 }
