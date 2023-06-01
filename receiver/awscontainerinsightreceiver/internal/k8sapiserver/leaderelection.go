@@ -58,7 +58,7 @@ type LeaderElection struct {
 	// the following can be set to mocks in testing
 	broadcaster eventBroadcaster
 	// the close of isLeadingC indicates the leader election is done. This is used in testing
-	isLeadingC chan bool
+	isLeadingC chan struct{}
 }
 
 type eventBroadcaster interface {
