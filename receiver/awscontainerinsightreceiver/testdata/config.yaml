@@ -8,3 +8,5 @@ awscontainerinsightreceiver/leader_lock_name:
   leader_lock_name: override-container-insight-clusterleader
 awscontainerinsightreceiver/leader_lock_using_config_map_only:
   leader_lock_using_config_map_only: true
+awscontainerinsightreceiver/enable_control_plane_metrics:
+  enable_control_plane_metrics: true

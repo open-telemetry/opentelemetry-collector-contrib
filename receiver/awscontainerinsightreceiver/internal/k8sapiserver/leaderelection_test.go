@@ -56,7 +56,7 @@ func TestLeaderElectionEndToEnd(t *testing.T) {
 		le.broadcaster = &mockEventBroadcaster{}
 	}
 	isLeadingCOption := func(le *LeaderElection) {
-		le.isLeadingC = make(chan bool)
+		le.isLeadingC = make(chan struct{})
 	}
 
 	t.Setenv("HOST_NAME", hostName)
@@ -79,7 +79,12 @@ func TestLeaderElectionEndToEnd(t *testing.T) {
 		},
 	)
 
-	<-leaderElection.isLeadingC
+	select {
+	case val := <-leaderElection.isLeadingC:
+		assert.NotNil(t, val)
+	case <-time.After(1000 * time.Millisecond):
+		t.Errorf("failed to elect leader after 1000ms")
+	}
 	assert.True(t, leaderElection.leading)
 
 	t.Cleanup(func() {

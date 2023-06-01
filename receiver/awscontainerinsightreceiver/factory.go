@@ -54,6 +54,9 @@ const (
 
 	// Default locking resource name during EKS leader election
 	defaultLeaderLockName = "otel-container-insight-clusterleader"
+
+	// Don't enable EKS control plane metrics by default
+	defaultEnableControlPlaneMetrics = false
 )
 
 // NewFactory creates a factory for AWS container insight receiver
@@ -75,6 +78,7 @@ func createDefaultConfig() component.Config {
 		AddContainerNameMetricLabel: defaultAddContainerNameMetricLabel,
 		ClusterName:                 defaultClusterName,
 		LeaderLockName:              defaultLeaderLockName,
+		EnableControlPlaneMetrics:   defaultEnableControlPlaneMetrics,
 	}
 }
 

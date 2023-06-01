@@ -242,7 +242,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		daemonSetClient:  mockClient,
 		leading:          true,
 		broadcaster:      &mockEventBroadcaster{},
-		isLeadingC:       make(chan bool),
+		isLeadingC:       make(chan struct{}),
 	}
 
 	t.Setenv("HOST_NAME", hostName)
