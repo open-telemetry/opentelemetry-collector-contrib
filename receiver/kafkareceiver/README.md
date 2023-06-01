@@ -4,10 +4,11 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics, logs, traces   |
-| Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Distributions | [contrib], [aws], [observiq], [splunk], [sumo] |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[aws]: https://github.com/aws-observability/aws-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
