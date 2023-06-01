@@ -37,6 +37,10 @@ type AWSSessionSettings struct {
 	ResourceARN string `mapstructure:"resource_arn"`
 	// IAM role to upload segments to a different account.
 	RoleARN string `mapstructure:"role_arn"`
+	// Change the default profile for shared creds file
+	Profile string `mapstructure:"profile"`
+	// Change the default profile for shared creds file
+	SharedCredentialsFile []string `mapstructure:"shared_credentials_file"`
 }
 
 func CreateDefaultSessionConfig() AWSSessionSettings {

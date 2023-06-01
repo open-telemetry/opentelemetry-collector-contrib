@@ -16,10 +16,15 @@ package awscontainerinsightreceiver // import "github.com/open-telemetry/opentel
 
 import (
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 // Config defines configuration for aws ecs container metrics receiver.
 type Config struct {
+	// AWSSessionSettings contains the common configuration options
+	// for creating AWS session to communicate with backend
+	awsutil.AWSSessionSettings `mapstructure:",squash"`
 
 	// CollectionInterval is the interval at which metrics should be collected. The default is 60 second.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`

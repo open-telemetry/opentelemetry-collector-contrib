@@ -43,7 +43,7 @@ func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (c *mockConn) newAWSSession(logger *zap.Logger, roleArn string, region string) (*session.Session, error) {
+func (c *mockConn) newAWSSession(logger *zap.Logger, roleArn string, region string, profile string, sharedCredentialsFile []string) (*session.Session, error) {
 	return c.sn, nil
 }
 
@@ -119,11 +119,11 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
-	se, err := conn.newAWSSession(logger, roleArn, region)
+	se, err := conn.newAWSSession(logger, roleArn, region, "", nil)
 	assert.NotNil(t, err)
 	assert.Nil(t, se)
 	roleArn = ""
-	se, err = conn.newAWSSession(logger, roleArn, region)
+	se, err = conn.newAWSSession(logger, roleArn, region, "", nil)
 	assert.NotNil(t, err)
 	assert.Nil(t, se)
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
@@ -153,7 +153,7 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 func TestGetDefaultSession(t *testing.T) {
 	logger := zap.NewNop()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
-	_, err := GetDefaultSession(logger)
+	_, err := GetDefaultSession(logger, session.Options{})
 	assert.NotNil(t, err)
 }
 

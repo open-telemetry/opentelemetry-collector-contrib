@@ -36,7 +36,7 @@ import (
 )
 
 type ConnAttr interface {
-	newAWSSession(logger *zap.Logger, roleArn string, region string) (*session.Session, error)
+	newAWSSession(logger *zap.Logger, roleArn string, region string, profile string, sharedCredentialsFile []string) (*session.Session, error)
 	getEC2Region(s *session.Session) (string, error)
 }
 
@@ -137,7 +137,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
 	case !cfg.NoVerifySSL:
 		var es *session.Session
-		es, err = GetDefaultSession(logger)
+		es, err = GetDefaultSession(logger, session.Options{})
 		if err != nil {
 			logger.Error("Unable to retrieve default session", zap.Error(err))
 		} else {
@@ -156,7 +156,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		logger.Error(msg)
 		return nil, nil, awserr.New("NoAwsRegion", msg, nil)
 	}
-	s, err = cn.newAWSSession(logger, cfg.RoleARN, awsRegion)
+	s, err = cn.newAWSSession(logger, cfg.RoleARN, awsRegion, cfg.Profile, cfg.SharedCredentialsFile)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -204,11 +204,19 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 	return transport, nil
 }
 
-func (c *Conn) newAWSSession(logger *zap.Logger, roleArn string, region string) (*session.Session, error) {
+func (c *Conn) newAWSSession(logger *zap.Logger, roleArn string, region string, profile string, sharedCredentialsFile []string) (*session.Session, error) {
 	var s *session.Session
 	var err error
 	if roleArn == "" {
-		s, err = GetDefaultSession(logger)
+		// if an empty or nil list of sharedCredentialsFile is passed use the sdk default
+		if sharedCredentialsFile == nil || len(sharedCredentialsFile) < 1 {
+			sharedCredentialsFile = nil
+		}
+		options := session.Options{
+			Profile:           profile,
+			SharedConfigFiles: sharedCredentialsFile,
+		}
+		s, err = GetDefaultSession(logger, options)
 		if err != nil {
 			return s, err
 		}
@@ -231,7 +239,7 @@ func (c *Conn) newAWSSession(logger *zap.Logger, roleArn string, region string) 
 // STS regional endpoint is disabled. In this case STS credentials are fetched from STS primary regional endpoint
 // in the respective AWS partition.
 func getSTSCreds(logger *zap.Logger, region string, roleArn string) (*credentials.Credentials, error) {
-	t, err := GetDefaultSession(logger)
+	t, err := GetDefaultSession(logger, session.Options{})
 	if err != nil {
 		return nil, err
 	}
@@ -298,8 +306,8 @@ func getSTSRegionalEndpoint(r string) string {
 	return e
 }
 
-func GetDefaultSession(logger *zap.Logger) (*session.Session, error) {
-	result, serr := session.NewSession()
+func GetDefaultSession(logger *zap.Logger, options session.Options) (*session.Session, error) {
+	result, serr := session.NewSessionWithOptions(options)
 	if serr != nil {
 		logger.Error("Error in creating session object ", zap.Error(serr))
 		return result, serr
