@@ -69,6 +69,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlTableOpenCache:          MetricConfig{Enabled: true},
 					MysqlThreads:                 MetricConfig{Enabled: true},
 					MysqlTmpResources:            MetricConfig{Enabled: true},
+					MysqlUptime:                  MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MysqlInstanceEndpoint: ResourceAttributeConfig{Enabled: true},
@@ -122,6 +123,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlTableOpenCache:          MetricConfig{Enabled: false},
 					MysqlThreads:                 MetricConfig{Enabled: false},
 					MysqlTmpResources:            MetricConfig{Enabled: false},
+					MysqlUptime:                  MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MysqlInstanceEndpoint: ResourceAttributeConfig{Enabled: false},
