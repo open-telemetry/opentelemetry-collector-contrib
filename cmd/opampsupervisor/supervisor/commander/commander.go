@@ -155,7 +155,7 @@ func (c *Commander) Stop(ctx context.Context) error {
 	go func() {
 		<-waitCtx.Done()
 
-		if waitCtx.Err() != context.DeadlineExceeded {
+		if !errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
 			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", c.cmd.Process.Pid))
 			return
 		}

@@ -524,7 +524,7 @@ func (s *Supervisor) healthCheck() {
 		health.Healthy = false
 		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
 			health.LastError = "Agent is starting"
-			s.agentStartHealthCheckAttempts += 1
+			s.agentStartHealthCheckAttempts++
 		} else {
 			health.LastError = err.Error()
 			s.logger.Error("Agent is not healthy", zap.Error(err))
