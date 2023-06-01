@@ -126,10 +126,11 @@ collector:
   # extra command line flags to pass to the Collector executable.
   args:
 
-  # extra environment variables to set when executing the Collector
+  # Extra environment variables to set when executing the Collector.
+  env:
+  
   # Optional user name to drop the privileges to when running the
   # Collector process.
-  env:
   run_as: myuser
   # Path to optional local Collector config file to be merged with the
   # config provided by the OpAMP server.
