@@ -1,15 +1,15 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
+        - key: bigip.pool.name
           value:
-            stringValue: /Common/test-virtual-server2
+            stringValue: /Common/test-pool-1
         - key: bigip.virtual_server.destination
           value:
             stringValue: 10.1.10.100:21
-        - key: bigip.pool.name
+        - key: bigip.virtual_server.name
           value:
-            stringValue: /Common/test-pool-1
+            stringValue: /Common/test-virtual-server2
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.
@@ -123,15 +123,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
+        - key: bigip.pool.name
           value:
-            stringValue: /Common/test-virtual-server3
+            stringValue: /Common/test-pool-1
         - key: bigip.virtual_server.destination
           value:
             stringValue: 10.1.10.101:80
-        - key: bigip.pool.name
+        - key: bigip.virtual_server.name
           value:
-            stringValue: /Common/test-pool-1
+            stringValue: /Common/test-virtual-server3
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.
@@ -245,15 +245,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
-          value:
-            stringValue: /stage/stage
-        - key: bigip.virtual_server.destination
-          value:
-            stringValue: 10.1.2.1:21
         - key: bigip.pool.name
           value:
             stringValue: ""
+        - key: bigip.virtual_server.destination
+          value:
+            stringValue: 10.1.2.1:21
+        - key: bigip.virtual_server.name
+          value:
+            stringValue: /stage/stage
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.
@@ -367,15 +367,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
-          value:
-            stringValue: /Common/test-virtual-server1
-        - key: bigip.virtual_server.destination
-          value:
-            stringValue: 10.1.10.100:80
         - key: bigip.pool.name
           value:
             stringValue: /Common/dev
+        - key: bigip.virtual_server.destination
+          value:
+            stringValue: 10.1.10.100:80
+        - key: bigip.virtual_server.name
+          value:
+            stringValue: /Common/test-virtual-server1
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.
@@ -761,15 +761,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: bigip.pool.name
+          value:
+            stringValue: /Common/dev
+        - key: bigip.pool_member.ip_address
+          value:
+            stringValue: 10.33.104.2
         - key: bigip.pool_member.name
           value:
             stringValue: /Common/dev:80
-        - key: bigip.pool_member.ip_address
-          value:
-            stringValue: 10.33.104.2
-        - key: bigip.pool.name
-          value:
-            stringValue: /Common/dev
     scopeMetrics:
       - metrics:
           - description: Availability of the pool member.
@@ -892,15 +892,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: bigip.pool.name
+          value:
+            stringValue: /Common/test-pool-1
+        - key: bigip.pool_member.ip_address
+          value:
+            stringValue: 10.33.121.108
         - key: bigip.pool_member.name
           value:
             stringValue: /Common/nginx:80
-        - key: bigip.pool_member.ip_address
-          value:
-            stringValue: 10.33.121.108
-        - key: bigip.pool.name
-          value:
-            stringValue: /Common/test-pool-1
     scopeMetrics:
       - metrics:
           - description: Availability of the pool member.
@@ -1023,15 +1023,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: bigip.pool.name
+          value:
+            stringValue: /Common/test-pool-1
+        - key: bigip.pool_member.ip_address
+          value:
+            stringValue: 10.0.0.1
         - key: bigip.pool_member.name
           value:
             stringValue: /Common/test-node-1:80
-        - key: bigip.pool_member.ip_address
-          value:
-            stringValue: 10.0.0.1
-        - key: bigip.pool.name
-          value:
-            stringValue: /Common/test-pool-1
     scopeMetrics:
       - metrics:
           - description: Availability of the pool member.
@@ -1154,15 +1154,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: bigip.pool.name
+          value:
+            stringValue: /Common/test-pool-1
+        - key: bigip.pool_member.ip_address
+          value:
+            stringValue: 10.0.0.2
         - key: bigip.pool_member.name
           value:
             stringValue: /Common/test-node-2:80
-        - key: bigip.pool_member.ip_address
-          value:
-            stringValue: 10.0.0.2
-        - key: bigip.pool.name
-          value:
-            stringValue: /Common/test-pool-1
     scopeMetrics:
       - metrics:
           - description: Availability of the pool member.
@@ -1285,15 +1285,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: bigip.pool.name
+          value:
+            stringValue: /Common/test-pool-1
+        - key: bigip.pool_member.ip_address
+          value:
+            stringValue: 10.0.0.3
         - key: bigip.pool_member.name
           value:
             stringValue: /Common/test-node-3:80
-        - key: bigip.pool_member.ip_address
-          value:
-            stringValue: 10.0.0.3
-        - key: bigip.pool.name
-          value:
-            stringValue: /Common/test-pool-1
     scopeMetrics:
       - metrics:
           - description: Availability of the pool member.
@@ -1416,12 +1416,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.node.name
-          value:
-            stringValue: /Common/test-node-1
         - key: bigip.node.ip_address
           value:
             stringValue: 10.0.0.1
+        - key: bigip.node.name
+          value:
+            stringValue: /Common/test-node-1
     scopeMetrics:
       - metrics:
           - description: Availability of the node.
@@ -1544,12 +1544,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.node.name
-          value:
-            stringValue: /Common/test-node-2
         - key: bigip.node.ip_address
           value:
             stringValue: 10.0.0.2
+        - key: bigip.node.name
+          value:
+            stringValue: /Common/test-node-2
     scopeMetrics:
       - metrics:
           - description: Availability of the node.
@@ -1672,12 +1672,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.node.name
-          value:
-            stringValue: /Common/test-node-3
         - key: bigip.node.ip_address
           value:
             stringValue: 10.0.0.3
+        - key: bigip.node.name
+          value:
+            stringValue: /Common/test-node-3
     scopeMetrics:
       - metrics:
           - description: Availability of the node.
@@ -1800,12 +1800,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.node.name
-          value:
-            stringValue: /Common/dev
         - key: bigip.node.ip_address
           value:
             stringValue: 10.33.104.2
+        - key: bigip.node.name
+          value:
+            stringValue: /Common/dev
     scopeMetrics:
       - metrics:
           - description: Availability of the node.
@@ -1928,12 +1928,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.node.name
-          value:
-            stringValue: /Common/nginx
         - key: bigip.node.ip_address
           value:
             stringValue: 10.33.121.108
+        - key: bigip.node.name
+          value:
+            stringValue: /Common/nginx
     scopeMetrics:
       - metrics:
           - description: Availability of the node.

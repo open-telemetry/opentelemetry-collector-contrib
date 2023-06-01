@@ -12,6 +12,7 @@ resourceMetrics:
               isMonotonic: true
             unit: connections
           - description: The current number of nginx connections by state
+            name: nginx.connections_current
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -39,8 +40,6 @@ resourceMetrics:
                       value:
                         stringValue: waiting
                   timeUnixNano: "1638471548185885000"
-              isMonotonic: false
-            name: nginx.connections_current
             unit: connections
           - description: The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
             name: nginx.connections_handled

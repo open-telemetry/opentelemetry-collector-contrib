@@ -506,12 +506,12 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: collection
                       value:
                         stringValue: products
+                    - key: database
+                      value:
+                        stringValue: fakedatabase
                   startTimeUnixNano: "1659372940162070000"
                   timeUnixNano: "1659372940162165000"
             unit: '{accesses}'
@@ -528,12 +528,12 @@ resourceMetrics:
               dataPoints:
                 - asInt: "2"
                   attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
                     - key: collection
                       value:
                         stringValue: orders
+                    - key: database
+                      value:
+                        stringValue: fakedatabase
                   startTimeUnixNano: "1659372940162070000"
                   timeUnixNano: "1659372940162165000"
             unit: '{accesses}'

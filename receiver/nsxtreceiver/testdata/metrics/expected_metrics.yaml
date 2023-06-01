@@ -4,15 +4,15 @@ resourceMetrics:
         - key: device.id
           value:
             stringValue: vmnic0
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
         - key: nsxt.node.name
           value:
             stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.type
           value:
             stringValue: TransportNode
-        - key: nsxt.node.id
-          value:
-            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
     scopeMetrics:
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -111,15 +111,15 @@ resourceMetrics:
         - key: device.id
           value:
             stringValue: vmk10
+        - key: nsxt.node.id
+          value:
+            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
         - key: nsxt.node.name
           value:
             stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.type
           value:
             stringValue: TransportNode
-        - key: nsxt.node.id
-          value:
-            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
     scopeMetrics:
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -215,12 +215,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: nsxt.node.name
-          value:
-            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.id
           value:
             stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.type
           value:
             stringValue: transport
@@ -299,15 +299,15 @@ resourceMetrics:
         - key: device.id
           value:
             stringValue: vmnic0
+        - key: nsxt.node.id
+          value:
+            stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
         - key: nsxt.node.name
           value:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.type
           value:
             stringValue: TransportNode
-        - key: nsxt.node.id
-          value:
-            stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
     scopeMetrics:
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -406,15 +406,15 @@ resourceMetrics:
         - key: device.id
           value:
             stringValue: vmk10
+        - key: nsxt.node.id
+          value:
+            stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
         - key: nsxt.node.name
           value:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.type
           value:
             stringValue: TransportNode
-        - key: nsxt.node.id
-          value:
-            stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
     scopeMetrics:
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -510,12 +510,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: nsxt.node.name
-          value:
-            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.id
           value:
             stringValue: f5045ed2-43ab-4a35-a2c5-d20c30a32292
+        - key: nsxt.node.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
         - key: nsxt.node.type
           value:
             stringValue: transport
@@ -594,15 +594,15 @@ resourceMetrics:
         - key: device.id
           value:
             stringValue: lo
+        - key: nsxt.node.id
+          value:
+            stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
         - key: nsxt.node.name
           value:
             stringValue: nsxmgr-03
         - key: nsxt.node.type
           value:
             stringValue: ClusterNodeConfig
-        - key: nsxt.node.id
-          value:
-            stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
     scopeMetrics:
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -701,15 +701,15 @@ resourceMetrics:
         - key: device.id
           value:
             stringValue: eth0
+        - key: nsxt.node.id
+          value:
+            stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
         - key: nsxt.node.name
           value:
             stringValue: nsxmgr-03
         - key: nsxt.node.type
           value:
             stringValue: ClusterNodeConfig
-        - key: nsxt.node.id
-          value:
-            stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
     scopeMetrics:
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -805,12 +805,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: nsxt.node.name
-          value:
-            stringValue: nsxmgr-03
         - key: nsxt.node.id
           value:
             stringValue: b7a79908-9808-4c9e-bb49-b70008993fcb
+        - key: nsxt.node.name
+          value:
+            stringValue: nsxmgr-03
         - key: nsxt.node.type
           value:
             stringValue: manager
