@@ -1,11 +1,11 @@
-type: zookeeperreceiver
+type: zookeeper
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+
 resource_attributes:
   server.state:
     description: State of the Zookeeper server (leader, standalone or follower).

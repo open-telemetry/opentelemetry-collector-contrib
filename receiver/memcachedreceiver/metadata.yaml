@@ -4,8 +4,8 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+
 attributes:
   command:
     description: The type of command.

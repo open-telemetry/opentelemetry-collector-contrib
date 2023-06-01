@@ -1,20 +1,9 @@
 # Copyright The OpenTelemetry Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 module-sets:
   contrib-base:
-    version: v0.77.0
+    version: v0.78.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -148,9 +137,12 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
@@ -220,6 +212,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
@@ -239,7 +232,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter
-
 
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol

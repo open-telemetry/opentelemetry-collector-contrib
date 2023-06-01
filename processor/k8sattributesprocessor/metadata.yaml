@@ -4,4 +4,4 @@ status:
   class: processor
   stability:
     beta: [logs, metrics, traces]
-  distributions: [contrib]
+  distributions: [contrib, splunk, observiq, sumo]

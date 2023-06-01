@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -70,7 +59,7 @@ func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) 
 		logger:            set.Logger,
 		telemetrySettings: set.TelemetrySettings,
 		buildInfo:         set.BuildInfo,
-		bufferStatePool:   newBufferStatePool(maxContentLength, !cfg.DisableCompression, cfg.MaxEventSize),
+		bufferStatePool:   newBufferStatePool(maxContentLength, !cfg.DisableCompression),
 	}
 }
 
@@ -172,7 +161,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillLogsBuffer(ld, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -180,9 +169,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewLogs(err, subLogs(ld, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
@@ -198,8 +184,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (
 	for i := is.resource; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
 		for j := is.library; j < rl.ScopeLogs().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
 			sl := rl.ScopeLogs().At(j)
 			for k := is.record; k < sl.LogRecords().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
 				logRecord := sl.LogRecords().At(k)
 
 				if c.config.ExportRaw {
@@ -207,9 +195,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (
 				} else {
 					// Parsing log record to Splunk event.
 					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
+
 					// JSON encoding event and writing to buffer.
 					var err error
-					b, err = jsoniter.Marshal(event)
+					b, err = marshalEvent(event, c.config.MaxEventSize, bs.jsonStream)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 							"dropped log event: %v, error: %w", event, err)))
@@ -230,7 +219,7 @@ func (c *client) fillLogsBuffer(logs plog.Logs, bs *bufferState, is iterState) (
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped log event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), bs.bufferMaxLen)))
+							" content length %d bytes", len(b), c.config.MaxContentLengthLogs)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 			}
@@ -246,8 +235,10 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is 
 	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
 			sm := rm.ScopeMetrics().At(j)
 			for k := is.record; k < sm.Metrics().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
 				metric := sm.Metrics().At(k)
 
 				// Parsing metric record to Splunk event.
@@ -264,7 +255,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is 
 				}
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
-					b, err := jsoniter.Marshal(event)
+					b, err := marshalEvent(event, c.config.MaxEventSize, bs.jsonStream)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
 						continue
@@ -286,7 +277,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, bs *bufferState, is 
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), bs.bufferMaxLen)))
+							" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 			}
@@ -302,14 +293,17 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, bs *bufferState, is iter
 	for i := is.resource; i < traces.ResourceSpans().Len(); i++ {
 		rs := traces.ResourceSpans().At(i)
 		for j := is.library; j < rs.ScopeSpans().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
 			ss := rs.ScopeSpans().At(j)
 			for k := is.record; k < ss.Spans().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
 				span := ss.Spans().At(k)
 
 				// Parsing span record to Splunk event.
 				event := mapSpanToSplunkEvent(rs.Resource(), span, c.config)
+
 				// JSON encoding event and writing to buffer.
-				b, err := jsoniter.Marshal(event)
+				b, err := marshalEvent(event, c.config.MaxEventSize, bs.jsonStream)
 				if err != nil {
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
 					continue
@@ -328,7 +322,7 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, bs *bufferState, is iter
 					}
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(
 						fmt.Errorf("dropped span event: error: event size %d bytes larger than configured max"+
-							" content length %d bytes", len(b), bs.bufferMaxLen)))
+							" content length %d bytes", len(b), c.config.MaxContentLengthTraces)))
 					return iterState{i, j, k + 1, false}, permanentErrors
 				}
 			}
@@ -347,7 +341,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -355,9 +349,6 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 			if err := c.postEvents(ctx, bufState, headers); err != nil {
 				return consumererror.NewMetrics(err, subMetrics(md, is))
 			}
-		}
-		if latestIterState.done {
-			break
 		}
 		is = latestIterState
 	}
@@ -374,7 +365,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	is := iterState{}
 	var permanentErrors []error
 
-	for {
+	for !is.done {
 		bufState.reset()
 		latestIterState, batchPermanentErrors := c.fillTracesBuffer(td, bufState, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
@@ -383,9 +374,6 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 				return consumererror.NewTraces(err, subTraces(td, is))
 			}
 		}
-		if latestIterState.done {
-			break
-		}
 		is = latestIterState
 	}
 
@@ -393,7 +381,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 }
 
 func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers map[string]string) error {
-	if err := bufState.Close(); err != nil {
+	if err := bufState.buf.Close(); err != nil {
 		return err
 	}
 	return c.hecWorker.send(ctx, bufState, headers)
@@ -535,7 +523,7 @@ func (c *client) stop(context.Context) error {
 	return nil
 }
 
-func (c *client) start(ctx context.Context, host component.Host) (err error) {
+func (c *client) start(_ context.Context, host component.Host) (err error) {
 
 	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
 	if err != nil {
@@ -605,4 +593,18 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"__splunk_app_name":    config.SplunkAppName,
 		"__splunk_app_version": config.SplunkAppVersion,
 	}
+}
+
+// marshalEvent marshals an event to JSON using a reusable jsoniter stream.
+func marshalEvent(event *splunk.Event, sizeLimit uint, stream *jsoniter.Stream) ([]byte, error) {
+	stream.Reset(nil)
+	stream.Error = nil
+	stream.WriteVal(event)
+	if stream.Error != nil {
+		return nil, stream.Error
+	}
+	if uint(stream.Buffered()) > sizeLimit {
+		return nil, fmt.Errorf("event size %d exceeds limit %d", stream.Buffered(), sizeLimit)
+	}
+	return stream.Buffer(), nil
 }

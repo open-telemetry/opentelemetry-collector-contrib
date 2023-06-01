@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
@@ -113,7 +102,7 @@ type armClientMock struct {
 	pages   []armresources.ClientListResponse
 }
 
-func (acm *armClientMock) NewListPager(options *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
+func (acm *armClientMock) NewListPager(_ *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armresources.ClientListResponse]{
 		More: func(page armresources.ClientListResponse) bool {
 			return acm.current < len(acm.pages)
@@ -131,7 +120,7 @@ type metricsDefinitionsClientMock struct {
 	pages   map[string][]armmonitor.MetricDefinitionsClientListResponse
 }
 
-func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
+func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armmonitor.MetricDefinitionsClientListResponse]{
 		More: func(page armmonitor.MetricDefinitionsClientListResponse) bool {
 			return mdcm.current[resourceURI] < len(mdcm.pages[resourceURI])

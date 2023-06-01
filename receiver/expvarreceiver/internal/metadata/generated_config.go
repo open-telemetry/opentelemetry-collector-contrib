@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for expvarreceiver metrics.
+// MetricsConfig provides config for expvar metrics.
 type MetricsConfig struct {
 	ProcessRuntimeMemstatsBuckHashSys   MetricConfig `mapstructure:"process.runtime.memstats.buck_hash_sys"`
 	ProcessRuntimeMemstatsFrees         MetricConfig `mapstructure:"process.runtime.memstats.frees"`
@@ -136,7 +136,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for expvarreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for expvar metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

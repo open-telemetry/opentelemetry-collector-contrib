@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for dockerstatsreceiver metrics.
+// MetricsConfig provides config for docker_stats metrics.
 type MetricsConfig struct {
 	ContainerBlockioIoMergedRecursive          MetricConfig `mapstructure:"container.blockio.io_merged_recursive"`
 	ContainerBlockioIoQueuedRecursive          MetricConfig `mapstructure:"container.blockio.io_queued_recursive"`
@@ -58,7 +58,6 @@ type MetricsConfig struct {
 	ContainerMemoryPgpgout                     MetricConfig `mapstructure:"container.memory.pgpgout"`
 	ContainerMemoryRss                         MetricConfig `mapstructure:"container.memory.rss"`
 	ContainerMemoryRssHuge                     MetricConfig `mapstructure:"container.memory.rss_huge"`
-	ContainerMemorySwap                        MetricConfig `mapstructure:"container.memory.swap"`
 	ContainerMemoryTotalActiveAnon             MetricConfig `mapstructure:"container.memory.total_active_anon"`
 	ContainerMemoryTotalActiveFile             MetricConfig `mapstructure:"container.memory.total_active_file"`
 	ContainerMemoryTotalCache                  MetricConfig `mapstructure:"container.memory.total_cache"`
@@ -72,7 +71,6 @@ type MetricsConfig struct {
 	ContainerMemoryTotalPgpgout                MetricConfig `mapstructure:"container.memory.total_pgpgout"`
 	ContainerMemoryTotalRss                    MetricConfig `mapstructure:"container.memory.total_rss"`
 	ContainerMemoryTotalRssHuge                MetricConfig `mapstructure:"container.memory.total_rss_huge"`
-	ContainerMemoryTotalSwap                   MetricConfig `mapstructure:"container.memory.total_swap"`
 	ContainerMemoryTotalUnevictable            MetricConfig `mapstructure:"container.memory.total_unevictable"`
 	ContainerMemoryTotalWriteback              MetricConfig `mapstructure:"container.memory.total_writeback"`
 	ContainerMemoryUnevictable                 MetricConfig `mapstructure:"container.memory.unevictable"`
@@ -88,6 +86,8 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxDropped           MetricConfig `mapstructure:"container.network.io.usage.tx_dropped"`
 	ContainerNetworkIoUsageTxErrors            MetricConfig `mapstructure:"container.network.io.usage.tx_errors"`
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
+	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
+	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -191,9 +191,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryRssHuge: MetricConfig{
 			Enabled: false,
 		},
-		ContainerMemorySwap: MetricConfig{
-			Enabled: false,
-		},
 		ContainerMemoryTotalActiveAnon: MetricConfig{
 			Enabled: false,
 		},
@@ -231,9 +228,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryTotalRssHuge: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalSwap: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryTotalUnevictable: MetricConfig{
@@ -281,6 +275,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerNetworkIoUsageTxPackets: MetricConfig{
 			Enabled: false,
 		},
+		ContainerPidsCount: MetricConfig{
+			Enabled: false,
+		},
+		ContainerPidsLimit: MetricConfig{
+			Enabled: false,
+		},
 	}
 }
 
@@ -289,7 +289,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for dockerstatsreceiver resource attributes.
+// ResourceAttributesConfig provides config for docker_stats resource attributes.
 type ResourceAttributesConfig struct {
 	ContainerHostname  ResourceAttributeConfig `mapstructure:"container.hostname"`
 	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
@@ -318,7 +318,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for dockerstatsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for docker_stats metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

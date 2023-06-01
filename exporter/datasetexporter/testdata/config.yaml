@@ -5,19 +5,26 @@ dataset/minimal:
 dataset/lib:
   dataset_url: https://app.eu.scalyr.com
   api_key: key-lib
-  max_delay_ms: 12345
-  group_by:
-    - attributes.container_id
-    - attributes.log.file.path
+  buffer:
+    max_lifetime: 345ms
+    group_by:
+      - attributes.container_id
+      - attributes.log.file.path
 
 dataset/full:
   dataset_url: https://app.scalyr.com
   api_key: key-full
-  max_delay_ms: 3456
-  group_by:
-    - body.map.kubernetes.pod_id
-    - body.map.kubernetes.docker_id
-    - body.map.stream
+  buffer:
+    max_lifetime: 3456ms
+    group_by:
+      - body.map.kubernetes.pod_id
+      - body.map.kubernetes.docker_id
+      - body.map.stream
+    retry_initial_interval: 21s
+    retry_max_interval: 22s
+    retry_max_elapsed_time: 23s
+  traces:
+    max_wait: 3s
   retry_on_failure:
     enabled: true
     initial_interval: 11

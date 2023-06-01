@@ -342,6 +342,24 @@ resourceMetrics:
                   timeUnixNano: "1682426015943175000"
               isMonotonic: true
             unit: '{packets}'
+          - description: Number of pids in the container's cgroup.
+            name: container.pids.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: '{pids}'
+          - description: Maximum number of pids in the container's cgroup.
+            name: container.pids.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4694"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: '{pids}'
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest

@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for mysqlreceiver metrics.
+// MetricsConfig provides config for mysql metrics.
 type MetricsConfig struct {
 	MysqlBufferPoolDataPages     MetricConfig `mapstructure:"mysql.buffer_pool.data_pages"`
 	MysqlBufferPoolLimit         MetricConfig `mapstructure:"mysql.buffer_pool.limit"`
@@ -209,7 +209,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for mysqlreceiver resource attributes.
+// ResourceAttributesConfig provides config for mysql resource attributes.
 type ResourceAttributesConfig struct {
 	MysqlInstanceEndpoint ResourceAttributeConfig `mapstructure:"mysql.instance.endpoint"`
 }
@@ -222,7 +222,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for mysqlreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for mysql metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

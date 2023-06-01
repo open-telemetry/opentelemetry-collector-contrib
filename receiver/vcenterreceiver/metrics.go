@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
@@ -57,6 +46,11 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
 	swappedMem := vm.Summary.QuickStats.SwappedMemory
 	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
+
+	if totalMemory := vm.Summary.Config.MemorySizeMB; totalMemory > 0 && memUsage > 0 {
+		memoryUtilization := float64(memUsage) / float64(totalMemory) * 100
+		v.mb.RecordVcenterVMMemoryUtilizationDataPoint(now, memoryUtilization)
+	}
 
 	v.mb.RecordVcenterVMMemoryUsageDataPoint(now, int64(memUsage))
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))

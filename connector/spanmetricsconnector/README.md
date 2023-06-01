@@ -1,10 +1,10 @@
 # Span Metrics Connector
 
-| Status                   |                                                            |
-|------------------------- |------------------------------------------------------------|
-| Stability                | [alpha]                                                    |
-| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types)  |
-| Distributions            | [contrib]                                                  |
+| Status                   |                                                           |
+| ------------------------ | --------------------------------------------------------- |
+| Stability                | [alpha]                                                   |
+| Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
+| Distributions            | [contrib], [sumo]                                         |
 
 ## Supported Pipeline Types
 
@@ -65,15 +65,15 @@ visit the [Connectors README].
 
 The following settings can be optionally configured:
 
-- `histogram` (default: `explicit_buckets`): Use to configure the type of histogram to record
-  calculated from spans duration measurements.
-  - `unit` (default: `ms`, allowed values: `ms`, `s`): The time unit for recording duration measurements.
-  calculated from spans duration measurements.
+- `histogram` (default: `explicit`): Use to configure the type of histogram to record
+  calculated from spans duration measurements. Must be either `explicit` or `exponential`.
+  - `unit` (default: `ms`): The time unit for recording duration measurements.
+  calculated from spans duration measurements. One of either: `ms` or `s`.
   - `explicit`:
     - `buckets`: the list of durations defining the duration histogram time buckets. Default
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
   - `exponential`:
-    - `max_size` (default: 160) the maximum number of buckets per positive or negative number range.
+    - `max_size` (default: `160`) the maximum number of buckets per positive or negative number range.
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
   
   Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
@@ -82,13 +82,12 @@ The following settings can be optionally configured:
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
-- `dimensions_cache_size`: the max items number of `metric_key_to_dimensions_cache`. If not provided, will
-  use default value size `1000`.
-- `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
+- `dimensions_cache_size` (default: `1000`): the size of cache for storing Dimensions to improve collectors memory usage. Must be a positive number. 
+- `aggregation_temporality` (default: `AGGREGATION_TEMPORALITY_CUMULATIVE`): Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
-  - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
 - `namespace`: Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
-
+- `metrics_flush_interval` (default: `15s`): Defines the flush interval of the generated metrics.
+  
 ## Examples
 
 The following is a simple example usage of the `spanmetrics` connector.
@@ -114,7 +113,8 @@ connectors:
         default: GET
       - name: http.status_code
     dimensions_cache_size: 1000
-    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"     
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
+    metrics_flush_interval: 15s 
 
 service:
   pipelines:
@@ -180,6 +180,8 @@ calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPA
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
-[Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
-[Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
-[Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[sumo]: https://github.com/SumoLogic/sumologic-otel-collector
+[Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+[Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
+[Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type

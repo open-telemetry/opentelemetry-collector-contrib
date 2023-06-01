@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 
@@ -58,27 +47,33 @@ func WriteMetrics(t *testing.T, filePath string, metrics pmetric.Metrics) error 
 	return nil
 }
 
-// writeMetrics writes a pmetric.Metrics to the specified file in YAML format.
-func writeMetrics(filePath string, metrics pmetric.Metrics) error {
+// MarshalMetricsYAML marshals a pmetric.Metrics to YAML format.
+func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 	unmarshaler := &pmetric.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalMetrics(metrics)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var jsonVal map[string]interface{}
 	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
-		return err
+		return nil, err
 	}
 	b := &bytes.Buffer{}
 	enc := yaml.NewEncoder(b)
 	enc.SetIndent(2)
 	if err := enc.Encode(jsonVal); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+// writeMetrics writes a pmetric.Metrics to the specified file in YAML format.
+func writeMetrics(filePath string, metrics pmetric.Metrics) error {
+	b, err := MarshalMetricsYAML(metrics)
+	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filePath, b.Bytes(), 0600); err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(filePath, b, 0600)
 }
 
 // ReadLogs reads a plog.Logs from the specified YAML or JSON file.

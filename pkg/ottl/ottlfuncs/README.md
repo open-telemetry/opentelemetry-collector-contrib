@@ -20,16 +20,17 @@ See the component-specific guides for how each uses error mode:
 - [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
 - [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
 
-## Functions
+## Editors
 
-Functions are what OTTL uses to transform telemetry.
+Editors are what OTTL uses to transform telemetry.
 
-Functions:
+Editors:
+
 - Are allowed to transform telemetry.  When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
 - May have side effects.  Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
 - May return values.  Although not common and not required, Functions may return values.
 
-Available Functions:
+Available Editors:
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
