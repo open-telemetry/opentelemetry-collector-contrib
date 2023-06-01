@@ -22,7 +22,7 @@ func Test_FNV(t *testing.T) {
 		{
 			name:     "string",
 			value:    "hello world",
-			expected: uint64(8618312879776256743),
+			expected: int64(8618312879776256743),
 		},
 		{
 			name:     "empty string",

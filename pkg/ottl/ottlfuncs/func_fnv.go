@@ -44,9 +44,9 @@ func FNVHashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error)
 		hash := fnv.New64a()
 		_, err1 := hash.Write([]byte(val))
 		if err1 != nil {
-			return val, err1
+			return nil, err1
 		}
 		hashValue := hash.Sum64()
-		return hashValue, nil
+		return int64(hashValue), nil
 	}, nil
 }

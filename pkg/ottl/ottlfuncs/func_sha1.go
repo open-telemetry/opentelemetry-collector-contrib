@@ -8,7 +8,6 @@ import (
 	"crypto/sha1" // #nosec
 	"encoding/hex"
 	"fmt"
-	"io"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -44,8 +43,9 @@ func SHA1HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error
 		}
 
 		hash := sha1.New() // #nosec
-		if _, err := io.WriteString(hash, val); err != nil {
-			return val, err
+		_, err1 := hash.Write([]byte(val))
+		if err1 != nil {
+			return nil, err1
 		}
 		hashValue := hex.EncodeToString(hash.Sum(nil))
 		return hashValue, nil

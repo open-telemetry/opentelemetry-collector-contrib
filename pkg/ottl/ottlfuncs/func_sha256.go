@@ -45,10 +45,9 @@ func SHA256HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], err
 		hash := sha256.New()
 		_, err1 := hash.Write([]byte(val))
 		if err1 != nil {
-			return val, err1
+			return nil, err1
 		}
 		hashValue := hex.EncodeToString(hash.Sum(nil))
-		fmt.Print(hashValue)
 		return hashValue, nil
 	}, nil
 }
