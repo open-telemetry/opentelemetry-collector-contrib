@@ -18,12 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/golang-jwt/jwt/v5"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type jwtExtension struct {
@@ -97,7 +98,7 @@ func (e *jwtExtension) authenticate(ctx context.Context, headers map[string][]st
 			jwtClaims: claims,
 		}
 		return client.NewContext(ctx, cl), nil
-	} else {
-		return ctx, fmt.Errorf("failed to get claims from token: %w", err)
 	}
+
+	return ctx, fmt.Errorf("failed to get claims from token: %w", err)
 }

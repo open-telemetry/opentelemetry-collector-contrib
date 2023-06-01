@@ -17,14 +17,15 @@ package jwtauthextension
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
-	"testing"
-	"time"
 )
 
 func TestJWTAuthenticationSucceeded(t *testing.T) {
