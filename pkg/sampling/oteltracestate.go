@@ -11,12 +11,12 @@ type OTelTraceState struct {
 	commonTraceState
 
 	// sampling r, s, and t-values
-	ru uint64    // r value parsed, as unsigned
-	r  string    // 14 ASCII hex digits
-	sf Threshold // s value parsed, as a probability
-	s  string    // original float syntax preserved
-	tf Threshold // t value parsed, as a probability
-	t  string    // original float syntax preserved
+	ru Randomness // r value parsed, as unsigned
+	r  string     // 14 ASCII hex digits
+	sp float64    // s value parsed, as a probability
+	s  string     // original float syntax preserved
+	tt Threshold  // t value parsed, as a threshold
+	t  string     // original float syntax preserved
 }
 
 const (
@@ -71,7 +71,9 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 					err = ErrRandomValueRange
 				} else {
 					otts.r = value
-					otts.ru = unsigned
+					otts.ru = Randomness{
+						unsigned: unsigned,
+					}
 				}
 			}
 		case "s":
@@ -79,14 +81,14 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
 			if err == nil {
 				otts.s = value
-				otts.sf, _ = ProbabilityToThreshold(prob)
+				otts.sp = prob
 			}
 		case "t":
 			var prob float64
 			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
 			if err == nil {
 				otts.t = value
-				otts.tf, _ = ProbabilityToThreshold(prob)
+				otts.tt, _ = ProbabilityToThreshold(prob)
 			}
 		default:
 			otts.kvs = append(otts.kvs, KV{
@@ -100,57 +102,62 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 	return otts, err
 }
 
-func (otts OTelTraceState) HasRValue() bool {
+func (otts *OTelTraceState) HasRValue() bool {
 	return otts.r != ""
 }
 
-func (otts OTelTraceState) RValue() string {
+func (otts *OTelTraceState) RValue() string {
 	return otts.r
 }
 
-func (otts OTelTraceState) RValueUnsigned() uint64 {
+func (otts *OTelTraceState) RValueRandomness() Randomness {
 	return otts.ru
 }
 
-func (otts OTelTraceState) HasSValue() bool {
+func (otts *OTelTraceState) HasSValue() bool {
 	return otts.s != ""
 }
 
-func (otts OTelTraceState) SValue() string {
+func (otts *OTelTraceState) SValue() string {
 	return otts.s
 }
 
-func (otts OTelTraceState) SValueThreshold() Threshold {
-	return otts.sf
+func (otts *OTelTraceState) SValueProbability() float64 {
+	return otts.sp
 }
 
-func (otts OTelTraceState) HasTValue() bool {
+func (otts *OTelTraceState) SetSValue(value string, probability float64) {
+	otts.s = value
+	otts.sp = probability
+}
+
+func (otts *OTelTraceState) HasTValue() bool {
 	return otts.t != ""
 }
 
-func (otts OTelTraceState) TValue() string {
+func (otts *OTelTraceState) TValue() string {
 	return otts.t
 }
 
-func (otts OTelTraceState) TValueThreshold() Threshold {
-	return otts.tf
+func (otts *OTelTraceState) TValueThreshold() Threshold {
+	return otts.tt
 }
 
 func (otts *OTelTraceState) SetTValue(value string, threshold Threshold) {
 	otts.t = value
-	otts.tf = threshold
+	otts.tt = threshold
 }
 
 func (otts *OTelTraceState) UnsetTValue() {
 	otts.t = ""
-	otts.tf = Threshold{}
+	otts.tt = Threshold{}
 }
 
-func (otts OTelTraceState) HasAnyValue() bool {
+func (otts *OTelTraceState) HasAnyValue() bool {
 	return otts.HasRValue() || otts.HasSValue() || otts.HasTValue() || otts.HasExtraValues()
 }
 
-func (otts OTelTraceState) Serialize(w io.StringWriter) {
+func (otts *OTelTraceState) Serialize(w io.StringWriter) {
 	cnt := 0
 	sep := func() {
 		if cnt != 0 {

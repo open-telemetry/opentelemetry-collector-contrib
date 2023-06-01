@@ -52,6 +52,12 @@ type Threshold struct {
 	unsigned uint64
 }
 
+// Randomness may be derived from r-value or TraceID.
+type Randomness struct {
+	// randomness is in the range [0, MaxAdjustedCount-1]
+	unsigned uint64
+}
+
 var (
 	// ErrProbabilityRange is returned when a value should be in the range [MinSamplingProb, 1].
 	ErrProbabilityRange = fmt.Errorf("sampling probability out of range (0x1p-56 <= valid <= 1)")
@@ -167,9 +173,14 @@ func ProbabilityToThreshold(prob float64) (Threshold, error) {
 
 // ShouldSample returns true when the span passes this sampler's
 // consistent sampling decision.
-func (t Threshold) ShouldSample(id pcommon.TraceID) bool {
-	value := binary.BigEndian.Uint64(id[8:]) & LeastHalfTraceIDThresholdMask
-	return value < t.unsigned
+func (t Threshold) ShouldSample(rnd Randomness) bool {
+	return rnd.unsigned < t.unsigned
+}
+
+func RandomnessFromTraceID(id pcommon.TraceID) Randomness {
+	return Randomness{
+		unsigned: binary.BigEndian.Uint64(id[8:]) & LeastHalfTraceIDThresholdMask,
+	}
 }
 
 // Probability is the sampling ratio in the range [MinSamplingProb, 1].
