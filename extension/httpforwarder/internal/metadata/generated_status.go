@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "httpforwarder"
-	Stability = component.StabilityLevelBeta
+	Type               = "http_forwarder"
+	ExtensionStability = component.StabilityLevelBeta
 )

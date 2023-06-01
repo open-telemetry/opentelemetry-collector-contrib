@@ -1,6 +1,7 @@
-type: healthcheck
+type: health_check
 
 status:
   class: extension
-  stability: beta
-  distributions: [core, contrib]
+  stability:
+    beta: [extension]
+  distributions: [core, contrib, splunk, observiq, sumo]

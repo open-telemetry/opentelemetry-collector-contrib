@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 )
 
 type testConfigCollection int
@@ -57,8 +56,8 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 
 			var val1 float64 = 1
-			metadataValues := []*armmonitor.MetadataValue{}
-			mb.AddDataPoint("resId1", "metric1", "count", "unit", metadataValues, ts, val1)
+			attributes := map[string]*string{}
+			mb.AddDataPoint("resId1", "metric1", "count", "unit", attributes, ts, val1)
 
 			metrics := mb.Emit(WithAzureMonitorSubscriptionID("attr-val"), WithAzureMonitorTenantID("attr-val"))
 

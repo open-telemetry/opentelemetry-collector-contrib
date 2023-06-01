@@ -1,6 +1,7 @@
-type: oauth2clientauthextension
+type: oauth2client
 
 status:
   class: extension
-  stability: beta
-  distributions: [contrib]
+  stability:
+    beta: [extension]
+  distributions: [contrib, sumo]

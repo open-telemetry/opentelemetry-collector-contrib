@@ -27,6 +27,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: ~1.19.8
+          cache: false
       - name: Prepare release for contrib
         working-directory: opentelemetry-collector-contrib
         env:

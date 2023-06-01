@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 
@@ -24,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 type SpanContext interface {
@@ -65,11 +54,11 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 			return accessStringSpanID[K](), nil
 		}
 	case "trace_state":
-		mapKey := path[0].MapKey
+		mapKey := path[0].Keys
 		if mapKey == nil {
 			return accessTraceState[K](), nil
 		}
-		return accessTraceStateKey[K](mapKey), nil
+		return accessTraceStateKey[K](mapKey)
 	case "parent_span_id":
 		if len(path) == 1 {
 			return accessParentSpanID[K](), nil
@@ -80,17 +69,25 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 	case "name":
 		return accessSpanName[K](), nil
 	case "kind":
-		return accessKind[K](), nil
+		if len(path) == 1 {
+			return accessKind[K](), nil
+		}
+		if path[1].Name == "string" {
+			return accessStringKind[K](), nil
+		}
+		if path[1].Name == "deprecated_string" {
+			return accessDeprecatedStringKind[K](), nil
+		}
 	case "start_time_unix_nano":
 		return accessStartTimeUnixNano[K](), nil
 	case "end_time_unix_nano":
 		return accessEndTimeUnixNano[K](), nil
 	case "attributes":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
+		mapKeys := path[0].Keys
+		if mapKeys == nil {
 			return accessAttributes[K](), nil
 		}
-		return accessAttributesKey[K](mapKey), nil
+		return accessAttributesKey[K](mapKeys), nil
 	case "dropped_attributes_count":
 		return accessSpanDroppedAttributesCount[K](), nil
 	case "events":
@@ -210,25 +207,34 @@ func accessTraceState[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessTraceStateKey[K SpanContext](mapKey *string) ottl.StandardGetSetter[K] {
+func accessTraceStateKey[K SpanContext](keys []ottl.Key) (ottl.StandardGetSetter[K], error) {
+	if len(keys) != 1 {
+		return ottl.StandardGetSetter[K]{}, fmt.Errorf("must provide exactly 1 key when accessing trace_state")
+	}
+	if keys[0].String == nil {
+		return ottl.StandardGetSetter[K]{}, fmt.Errorf("trace_state indexing type must be a string")
+	}
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
 			if ts, err := trace.ParseTraceState(tCtx.GetSpan().TraceState().AsRaw()); err == nil {
-				return ts.Get(*mapKey), nil
+				if keys[0].String == nil {
+					return nil, err
+				}
+				return ts.Get(*keys[0].String), nil
 			}
 			return nil, nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
 				if ts, err := trace.ParseTraceState(tCtx.GetSpan().TraceState().AsRaw()); err == nil {
-					if updated, err := ts.Insert(*mapKey, str); err == nil {
+					if updated, err := ts.Insert(*keys[0].String, str); err == nil {
 						tCtx.GetSpan().TraceState().FromRaw(updated.String())
 					}
 				}
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
 func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
@@ -292,6 +298,68 @@ func accessKind[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
+func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().Kind().String(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if s, ok := val.(string); ok {
+				var kind ptrace.SpanKind
+				switch s {
+				case "Unspecified":
+					kind = ptrace.SpanKindUnspecified
+				case "Internal":
+					kind = ptrace.SpanKindInternal
+				case "Server":
+					kind = ptrace.SpanKindServer
+				case "Client":
+					kind = ptrace.SpanKindClient
+				case "Producer":
+					kind = ptrace.SpanKindProducer
+				case "Consumer":
+					kind = ptrace.SpanKindConsumer
+				default:
+					return fmt.Errorf("unknown span kind string, %v", s)
+				}
+				tCtx.GetSpan().SetKind(kind)
+			}
+			return nil
+		},
+	}
+}
+
+func accessDeprecatedStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return traceutil.SpanKindStr(tCtx.GetSpan().Kind()), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if s, ok := val.(string); ok {
+				var kind ptrace.SpanKind
+				switch s {
+				case "SPAN_KIND_UNSPECIFIED":
+					kind = ptrace.SpanKindUnspecified
+				case "SPAN_KIND_INTERNAL":
+					kind = ptrace.SpanKindInternal
+				case "SPAN_KIND_SERVER":
+					kind = ptrace.SpanKindServer
+				case "SPAN_KIND_CLIENT":
+					kind = ptrace.SpanKindClient
+				case "SPAN_KIND_PRODUCER":
+					kind = ptrace.SpanKindProducer
+				case "SPAN_KIND_CONSUMER":
+					kind = ptrace.SpanKindConsumer
+				default:
+					return fmt.Errorf("unknown span kind deprecated string, %v", s)
+				}
+				tCtx.GetSpan().SetKind(kind)
+			}
+			return nil
+		},
+	}
+}
+
 func accessStartTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
@@ -334,14 +402,13 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K SpanContext](mapKey *string) ottl.StandardGetSetter[K] {
+func accessAttributesKey[K SpanContext](keys []ottl.Key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.GetSpan().Attributes(), *mapKey), nil
+			return GetMapValue(tCtx.GetSpan().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.GetSpan().Attributes(), *mapKey, val)
-			return nil
+			return SetMapValue(tCtx.GetSpan().Attributes(), keys, val)
 		},
 	}
 }

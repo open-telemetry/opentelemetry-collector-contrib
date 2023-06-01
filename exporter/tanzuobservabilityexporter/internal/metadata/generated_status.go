@@ -7,6 +7,7 @@ import (
 )
 
 const (
-	Type      = "tanzuobservability"
-	Stability = component.StabilityLevelBeta
+	Type             = "tanzuobservability"
+	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
 )

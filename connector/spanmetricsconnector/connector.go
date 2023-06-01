@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
@@ -127,8 +116,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 	}, nil
 }
 
-func (p *connectorImp) initHistogramMetrics() metrics.HistogramMetrics {
-	cfg := p.config
+func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 	if cfg.Histogram.Exponential != nil {
 		maxSize := structure.DefaultMaxSize
 		if cfg.Histogram.Exponential.MaxSize != 0 {
@@ -136,10 +124,22 @@ func (p *connectorImp) initHistogramMetrics() metrics.HistogramMetrics {
 		}
 		return metrics.NewExponentialHistogramMetrics(maxSize)
 	}
-	bounds := defaultHistogramBucketsMs
+
+	var bounds []float64
 	if cfg.Histogram.Explicit != nil && cfg.Histogram.Explicit.Buckets != nil {
 		bounds = durationsToUnits(cfg.Histogram.Explicit.Buckets, unitDivider(cfg.Histogram.Unit))
+	} else {
+		switch cfg.Histogram.Unit {
+		case metrics.Milliseconds:
+			bounds = defaultHistogramBucketsMs
+		case metrics.Seconds:
+			bounds = make([]float64, len(defaultHistogramBucketsMs))
+			for i, v := range defaultHistogramBucketsMs {
+				bounds[i] = v / float64(time.Second.Milliseconds())
+			}
+		}
 	}
+
 	return metrics.NewExplicitHistogramMetrics(bounds)
 }
 
@@ -325,7 +325,7 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	v, ok := p.resourceMetrics[key]
 	if !ok {
 		v = &resourceMetrics{
-			histograms: p.initHistogramMetrics(),
+			histograms: initHistogramMetrics(p.config),
 			sums:       metrics.NewSumMetrics(),
 			attributes: attr,
 		}

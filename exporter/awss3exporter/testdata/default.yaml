@@ -6,7 +6,7 @@ exporters:
     s3uploader:
       region: 'us-east-1'
       s3_partition: 'minute'
-        
+
 processors:
   nop:
 

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -89,8 +78,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
@@ -116,8 +109,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
@@ -130,8 +127,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
@@ -144,8 +145,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   1.2,
@@ -158,8 +163,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -172,8 +181,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes array empty",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_empty"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_empty"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -189,8 +202,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -207,8 +224,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -225,8 +246,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -243,8 +268,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -261,8 +290,12 @@ func TestScopePathGetSetter(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -273,6 +306,63 @@ func TestScopePathGetSetter(t *testing.T) {
 			modified: func(is pcommon.InstrumentationScope) {
 				newArr := is.Attributes().PutEmptySlice("arr_bytes")
 				newArr.AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refIS.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(is pcommon.InstrumentationScope) {
+				is.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(is pcommon.InstrumentationScope) {
+				s := is.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 	}
@@ -331,6 +421,9 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	arrBytes := is.Attributes().PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{2, 3, 4})
+
+	s := is.Attributes().PutEmptySlice("slice")
+	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
 
 	return is
 }

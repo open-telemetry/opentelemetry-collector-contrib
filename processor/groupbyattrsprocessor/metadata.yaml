@@ -2,7 +2,7 @@ type: groupbyattrs
 
 status:
   class: processor
-  stability: beta
-  pipelines: [traces, metrics, logs]
-  distributions: [contrib]
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo]
   warnings: []

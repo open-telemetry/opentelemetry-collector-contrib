@@ -1,15 +1,15 @@
 type: azuremonitor
 
 status:
-   class: receiver
-   stability: development
-   pipelines: [metrics]
-   distributions: [contrib]
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
 
 resource_attributes:
   azuremonitor.tenant_id:
-    description:  Azure tenant ID
+    description: Azure tenant ID
     type: string
   azuremonitor.subscription_id:
-    description:  Azure subscription ID
+    description: Azure subscription ID
     type: string

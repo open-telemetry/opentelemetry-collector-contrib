@@ -1,4 +1,10 @@
-type: elasticsearchreceiver
+type: elasticsearch
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   elasticsearch.cluster.name:

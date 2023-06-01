@@ -1,10 +1,10 @@
-type: bigipreceiver
+type: bigip
 
 status:
   class: receiver
-  stability: beta
-  pipelines: [metrics]
-  distributions: [contrib]
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   bigip.virtual_server.name:

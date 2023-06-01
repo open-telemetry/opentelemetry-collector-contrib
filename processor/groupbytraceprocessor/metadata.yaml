@@ -2,7 +2,7 @@ type: groupbytrace
 
 status:
   class: processor
-  stability: beta
-  pipelines: [traces]
-  distributions: [contrib]
+  stability:
+    beta: [traces]
+  distributions: [contrib, observiq, sumo]
   warnings: [Statefulness]

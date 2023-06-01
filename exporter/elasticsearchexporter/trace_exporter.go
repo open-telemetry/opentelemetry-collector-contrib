@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // Package elasticsearchexporter contains an opentelemetry-collector exporter
 // for Elasticsearch.
@@ -29,8 +18,9 @@ import (
 type elasticsearchTracesExporter struct {
 	logger *zap.Logger
 
-	index       string
-	maxAttempts int
+	index        string
+	dynamicIndex bool
+	maxAttempts  int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -65,9 +55,10 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:       cfg.TracesIndex,
-		maxAttempts: maxAttempts,
-		model:       model,
+		index:        cfg.TracesIndex,
+		dynamicIndex: cfg.TracesDynamicIndex.Enabled,
+		maxAttempts:  maxAttempts,
+		model:        model,
 	}, nil
 }
 
@@ -102,9 +93,17 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 }
 
 func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, span)
+		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, span)
+
+		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
 	document, err := e.model.encodeSpan(resource, span)
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, e.index, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
 }

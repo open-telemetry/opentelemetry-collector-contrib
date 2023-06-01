@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 
@@ -21,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -225,7 +213,7 @@ func (mb *MetricsBuilder) AddDataPoint(
 	metric,
 	aggregation,
 	unit string,
-	metadataValues []*armmonitor.MetadataValue,
+	attributes map[string]*string,
 	ts pcommon.Timestamp,
 	val float64,
 ) {
@@ -245,8 +233,8 @@ func (mb *MetricsBuilder) AddDataPoint(
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("azuremonitor.resource_id", resourceID)
-	for _, value := range metadataValues {
-		dp.Attributes().PutStr(*value.Name.Value, *value.Value)
+	for key, value := range attributes {
+		dp.Attributes().PutStr(key, *value)
 	}
 }
 

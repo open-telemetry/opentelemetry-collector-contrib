@@ -1,6 +1,7 @@
-type: httpforwarder
+type: http_forwarder
 
 status:
   class: extension
-  stability: beta
-  distributions: [contrib]
+  stability:
+    beta: [extension]
+  distributions: [contrib, splunk, sumo]

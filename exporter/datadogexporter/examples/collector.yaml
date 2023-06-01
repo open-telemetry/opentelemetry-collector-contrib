@@ -169,7 +169,7 @@ exporters:
 
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
-      # histogram: 
+      # histogram:
         ## @param mode - string - optional - default: distributions
         ## How to report histograms. Valid values are:
         ##

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "groupbytrace"
-	Stability = component.StabilityLevelBeta
+	Type            = "groupbytrace"
+	TracesStability = component.StabilityLevelBeta
 )

@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type      = "k8sobserver"
-	Stability = component.StabilityLevelAlpha
+	Type               = "k8s_observer"
+	ExtensionStability = component.StabilityLevelAlpha
 )

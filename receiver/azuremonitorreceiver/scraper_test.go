@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
@@ -113,7 +102,7 @@ type armClientMock struct {
 	pages   []armresources.ClientListResponse
 }
 
-func (acm *armClientMock) NewListPager(options *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
+func (acm *armClientMock) NewListPager(_ *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armresources.ClientListResponse]{
 		More: func(page armresources.ClientListResponse) bool {
 			return acm.current < len(acm.pages)
@@ -131,7 +120,7 @@ type metricsDefinitionsClientMock struct {
 	pages   map[string][]armmonitor.MetricDefinitionsClientListResponse
 }
 
-func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
+func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armmonitor.MetricDefinitionsClientListResponse]{
 		More: func(page armmonitor.MetricDefinitionsClientListResponse) bool {
 			return mdcm.current[resourceURI] < len(mdcm.pages[resourceURI])
@@ -161,6 +150,11 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 	cfg := createDefaultConfig().(*Config)
 	cfg.MaximumNumberOfMetricsInACall = 2
+
+	cfgTagsEnabled := createDefaultConfig().(*Config)
+	cfgTagsEnabled.AppendTagsAsAttributes = true
+	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -168,9 +162,18 @@ func TestAzureScraperScrape(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "",
+			name: "metrics_golden",
 			fields: fields{
 				cfg: cfg,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
+		{
+			name: "metrics_tags_golden",
+			fields: fields{
+				cfg: cfgTagsEnabled,
 			},
 			args: args{
 				ctx: context.Background(),
@@ -184,7 +187,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 			armClientMock := &armClientMock{
 				current: 0,
-				pages:   getResourcesMockData(),
+				pages:   getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
 			}
 
 			counters, pages := getMetricsDefinitionsMockData()
@@ -214,7 +217,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+			expectedFile := filepath.Join("testdata", "expected_metrics", tt.name+".yaml")
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
@@ -226,19 +229,26 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
+
 	}
 }
 
-func getResourcesMockData() []armresources.ClientListResponse {
-	id1, id2, id3 := "resourceId1", "resourceId2", "resourceId3"
+func getResourcesMockData(tags bool) []armresources.ClientListResponse {
+	id1, id2, id3, location1 := "resourceId1", "resourceId2", "resourceId3", "location1"
 
+	resourceID1 := armresources.GenericResourceExpanded{
+		ID:       &id1,
+		Location: &location1,
+	}
+	if tags {
+		tagName1, tagValue1 := "tagName1", "tagValue1"
+		resourceID1.Tags = map[string]*string{tagName1: &tagValue1}
+	}
 	return []armresources.ClientListResponse{
 		{
 			ResourceListResult: armresources.ResourceListResult{
 				Value: []*armresources.GenericResourceExpanded{
-					{
-						ID: &id1,
-					},
+					&resourceID1,
 					{
 						ID: &id2,
 					},
