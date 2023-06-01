@@ -85,10 +85,8 @@ func (c *Commander) Restart(ctx context.Context) error {
 	if err := c.Stop(ctx); err != nil {
 		return err
 	}
-	if err := c.Start(ctx); err != nil {
-		return err
-	}
-	return nil
+
+	return c.Start(ctx)
 }
 
 func (c *Commander) watch() {
