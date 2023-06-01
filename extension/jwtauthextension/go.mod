@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jwtau
 go 1.19
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.0.0-rc.1
-	github.com/stretchr/testify v1.8.2
+	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.78.0
 	go.opentelemetry.io/collector/component v0.78.0
 	go.uber.org/zap v1.24.0
