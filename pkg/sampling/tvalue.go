@@ -18,7 +18,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -37,11 +36,11 @@ const (
 	// the unsigned value of bytes 9 through 15.
 	LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
 
-	// TValueZeroEncoding is the encoding for 0 adjusted count.
-	TValueZeroEncoding = "t:0"
+	// ProbabilityZeroEncoding is the encoding for 0 adjusted count.
+	ProbabilityZeroEncoding = "0"
 
-	// TValueOneEncoding is the encoding for 100% sampling.
-	TValueOneEncoding = "t:1"
+	// ProbabilityOneEncoding is the encoding for 100% sampling.
+	ProbabilityOneEncoding = "1"
 )
 
 // Threshold used to compare with the least-significant 7 bytes of the TraceID.
@@ -72,30 +71,31 @@ func probabilityInRange(prob float64) bool {
 	return prob >= MinSamplingProb && prob <= 1
 }
 
-// AdjustedCountToTvalue encodes a t-value given an adjusted count. In
-// this form, the encoding is a decimal integer.
-func AdjustedCountToTvalue(count uint64) (string, error) {
+// AdjustedCountToEncoded encodes a s-value or t-value given an
+// adjusted count. In this form, the encoding is a decimal integer.
+func AdjustedCountToEncoded(count uint64) (string, error) {
 	switch {
 	case count == 0:
-		return TValueZeroEncoding, nil
+		return ProbabilityZeroEncoding, nil
 	case count < 0:
 		return "", ErrProbabilityRange
 	case count > uint64(MaxAdjustedCount):
 		return "", ErrAdjustedCountRange
 	}
-	return "t:" + strconv.FormatInt(int64(count), 10), nil
+	return strconv.FormatInt(int64(count), 10), nil
 }
 
-// ProbabilityToTvalue encodes a t-value given a probability.  In this
-// form, the user controls floating-point format and precision.  See
-// strconv.FormatFloat() for an explanation of `format` and `prec`.
-func ProbabilityToTvalue(prob float64, format byte, prec int) (string, error) {
+// ProbabilityToEncoded encodes a s-value or t-value given a
+// probability.  In this form, the user controls floating-point format
+// and precision.  See strconv.FormatFloat() for an explanation of
+// `format` and `prec`.
+func ProbabilityToEncoded(prob float64, format byte, prec int) (string, error) {
 	// Probability cases
 	switch {
 	case prob == 1:
-		return TValueOneEncoding, nil
+		return ProbabilityOneEncoding, nil
 	case prob == 0:
-		return TValueZeroEncoding, nil
+		return ProbabilityZeroEncoding, nil
 	case !probabilityInRange(prob):
 		return "", ErrProbabilityRange
 	}
@@ -111,21 +111,18 @@ func ProbabilityToTvalue(prob float64, format byte, prec int) (string, error) {
 		return "", ErrPrecisionRange
 
 	}
-	return "t:" + strconv.FormatFloat(prob, format, prec, 64), nil
+	return strconv.FormatFloat(prob, format, prec, 64), nil
 }
 
-// TvalueToProbabilityAndAdjustedCount parses the t-value and returns
+// EncodedToProbabilityAndAdjustedCount parses the t-value and returns
 // both the probability and the adjusted count.  In a Span-to-Metrics
 // pipeline, users should count either the inverse of probability or
 // the adjusted count.  When the arriving t-value encodes adjusted
 // count as opposed to probability, the adjusted count will be exactly
 // the specified integer value; in these cases, probability corresponds
 // with exactly implemented sampling ratio.
-func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
-	if !strings.HasPrefix(s, "t:") {
-		return 0, 0, strconv.ErrSyntax
-	}
-	number, err := strconv.ParseFloat(s[2:], 64) // e.g., "0x1.b7p-02" -> approx 3/7
+func EncodedToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
+	number, err := strconv.ParseFloat(s, 64) // e.g., "0x1.b7p-02" -> approx 3/7
 	if err != nil {
 		return 0, 0, err
 	}
@@ -139,7 +136,7 @@ func TvalueToProbabilityAndAdjustedCount(s string) (float64, float64, error) {
 	case number > 1:
 		// Greater than 1 indicates adjusted count; re-parse
 		// as a decimal integer.
-		integer, err := strconv.ParseInt(s[2:], 10, 64)
+		integer, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
 			return 0, 0, ErrAdjustedCountOnlyInteger
 		}

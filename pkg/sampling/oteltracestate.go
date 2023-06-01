@@ -1,108 +1,172 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+package sampling
 
 import (
 	"fmt"
-	"strings"
+	"io"
+	"regexp"
+	"strconv"
 )
 
-// OTelTraceState parses the sampling t-value.  It accumulates other,
-// unrecognized fields in the baseTraceState object.
 type OTelTraceState struct {
-	tvalueString string
-	tvalueParsed Threshold
-	baseTraceState
+	commonTraceState
+
+	// sampling r, s, and t-values
+	ru uint64  // r value parsed, as unsigned
+	r  string  // 14 ASCII hex digits
+	sf float64 // s value parsed, as a probability
+	s  string  // original float syntax preserved
+	tf float64 // t value parsed, as a probability
+	t  string  // original float syntax preserved
 }
 
-// otelSyntax describes the OTel trace state entry.
-var otelSyntax = anyTraceStateSyntax[OTelTraceState, otelTraceStateParser]{
-	separator:  ';',
-	equality:   ':',
-	allowPunct: "._-+",
-}
+const (
+	// hardMaxOTelLength is the maximum encoded size of an OTel
+	// tracestate value.
+	hardMaxOTelLength = 256
 
-// otelTraceStateParser parses tracestate strings like `k1:v1;k2:v2`
-type otelTraceStateParser struct{}
+	// chr        = ucalpha / lcalpha / DIGIT / "." / "_" / "-"
+	// ucalpha    = %x41-5A ; A-Z
+	// lcalpha    = %x61-7A ; a-z
+	// key        = lcalpha *(lcalpha / DIGIT )
+	// value      = *(chr)
+	// list-member = key ":" value
+	// list        = list-member *( ";" list-member )
+	otelKeyRegexp             = lcAlphaRegexp + lcDigitRegexp + `*`
+	otelValueRegexp           = `[a-zA-Z0-9._\-]*`
+	otelMemberRegexp          = `(?:` + otelKeyRegexp + `:` + otelValueRegexp + `)`
+	otelSemicolonMemberRegexp = `(?:` + `;` + otelMemberRegexp + `)`
+	otelTracestateRegexp      = `^` + otelMemberRegexp + otelSemicolonMemberRegexp + `*$`
+)
 
-// parseField recognizes and parses t-value entries.
-func (wp otelTraceStateParser) parseField(instance *OTelTraceState, key, input string) error {
-	switch {
-	case key == "t":
-		value, err := stripKey(key, input)
-		if err != nil {
-			return err
-		}
+var (
+	otelTracestateRe = regexp.MustCompile(otelTracestateRegexp)
 
-		prob, _, err := TvalueToProbabilityAndAdjustedCount(value)
-		if err != nil {
-			return fmt.Errorf("otel tracestate t-value: %w", err)
-		}
+	ErrRandomValueRange = fmt.Errorf("r-value out of range")
 
-		th, err := ProbabilityToThreshold(prob)
-		if err != nil {
-			return fmt.Errorf("otel tracestate t-value: %w", err)
-		}
+	otelSyntax = keyValueScanner{
+		maxItems:  -1,
+		trim:      false,
+		separator: ';',
+		equality:  ':',
+	}
+)
 
-		instance.tvalueString = input
-		instance.tvalueParsed = th
-
-		return nil
+func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
+	if len(input) > hardMaxOTelLength {
+		return otts, ErrTraceStateSize
 	}
 
-	return baseTraceStateParser{}.parseField(&instance.baseTraceState, key, input)
-}
-
-// serialize generates the OTel tracestate encoding.  Called by W3CTraceState.Serialize.
-func (otts *OTelTraceState) serialize() string {
-	var sb strings.Builder
-
-	if otts.TValue() != "" {
-		_, _ = sb.WriteString(otts.tvalueString)
+	if !otelTracestateRe.MatchString(input) {
+		return OTelTraceState{}, strconv.ErrSyntax
 	}
 
-	otelSyntax.serializeBase(&otts.baseTraceState, &sb)
+	err := otelSyntax.scanKeyValues(input, func(key, value string) error {
+		var err error
+		switch key {
+		case "r":
+			var unsigned uint64
+			unsigned, err = strconv.ParseUint(value, 16, 64)
+			if err == nil {
+				if unsigned >= 0x1p56 {
+					err = ErrRandomValueRange
+				} else {
+					otts.r = value
+					otts.ru = unsigned
+				}
+			}
+		case "s":
+			var prob float64
+			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
+			if err == nil {
+				otts.s = value
+				otts.sf = prob
+			}
+		case "t":
+			var prob float64
+			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
+			if err == nil {
+				otts.t = value
+				otts.tf = prob
+			}
+		default:
+			otts.kvs = append(otts.kvs, KV{
+				Key:   key,
+				Value: value,
+			})
+		}
+		return err
+	})
 
-	return sb.String()
+	return otts, err
 }
 
-// HasTValue indicates whether a non-empty t-value was received.
-func (otts *OTelTraceState) HasTValue() bool {
-	return otts.tvalueString != ""
+func (otts OTelTraceState) HasRValue() bool {
+	return otts.r != ""
 }
 
-// UnsetTValue clears the t-value, generally meant for use when the
-// t-value is inconsistent.
-func (otts *OTelTraceState) UnsetTValue() {
-	otts.tvalueString = ""
-	otts.tvalueParsed = Threshold{}
+func (otts OTelTraceState) RValue() string {
+	return otts.r
 }
 
-// TValue returns a whole encoding, including the leading "t:".
-func (otts *OTelTraceState) TValue() string {
-	return otts.tvalueString
+func (otts OTelTraceState) RValueUnsigned() uint64 {
+	return otts.ru
 }
 
-// TValueThreshold returns the threshold used given the parsed t-value.
-func (otts *OTelTraceState) TValueThreshold() Threshold {
-	return otts.tvalueParsed
+func (otts OTelTraceState) HasSValue() bool {
+	return otts.s != ""
 }
 
-// SetTValue modifies the t-value.  The user should supply the correct
-// new threshold, it will not be re-calculated.
-func (otts *OTelTraceState) SetTValue(encoded string, threshold Threshold) {
-	otts.tvalueString = encoded
-	otts.tvalueParsed = threshold
+func (otts OTelTraceState) SValue() string {
+	return otts.s
+}
+
+func (otts OTelTraceState) SValueProbability() float64 {
+	return otts.sf
+}
+
+func (otts OTelTraceState) HasTValue() bool {
+	return otts.t != ""
+}
+
+func (otts OTelTraceState) TValue() string {
+	return otts.t
+}
+
+func (otts OTelTraceState) TValueProbability() float64 {
+	return otts.tf
+}
+
+func (otts OTelTraceState) HasAnyValue() bool {
+	return otts.HasRValue() || otts.HasSValue() || otts.HasTValue() || otts.HasExtraValues()
+}
+
+func (otts OTelTraceState) Serialize(w io.StringWriter) {
+	cnt := 0
+	sep := func() {
+		if cnt != 0 {
+			w.WriteString(";")
+		}
+		cnt++
+	}
+	if otts.HasRValue() {
+		sep()
+		w.WriteString("r:")
+		w.WriteString(otts.RValue())
+	}
+	if otts.HasSValue() {
+		sep()
+		w.WriteString("s:")
+		w.WriteString(otts.SValue())
+	}
+	if otts.HasTValue() {
+		sep()
+		w.WriteString("t:")
+		w.WriteString(otts.TValue())
+	}
+	for _, kv := range otts.ExtraValues() {
+		sep()
+		w.WriteString(kv.Key)
+		w.WriteString(":")
+		w.WriteString(kv.Value)
+	}
 }

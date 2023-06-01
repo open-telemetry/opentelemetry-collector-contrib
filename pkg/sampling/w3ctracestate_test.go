@@ -16,6 +16,7 @@ package sampling
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,35 +25,62 @@ import (
 func TestParseW3CTraceState(t *testing.T) {
 	type testCase struct {
 		in        string
-		otval     string
+		rval      string
+		sval      string
+		tval      string
 		expectErr error
 	}
-	const notset = ""
+	const ns = ""
 	for _, test := range []testCase{
 		// correct cases
-		{"ot=t:1", "t:1", nil},
-		{"ot=t:100", "t:100", nil},
+		{"ot=t:1", ns, ns, "1", nil},
+		{"ot=t:100", ns, ns, "100", nil},
+		{"ot=s:100;t:200", ns, "100", "200", nil},
+		{"ot=r:1", "1", ns, ns, nil},
+		{"ot=r:1,unknown:value,other=something", "1", ns, ns, nil},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {
-			wts, err := w3cSyntax.parse(test.in)
+			w3c, err := NewW3CTraceState(test.in)
 
 			if test.expectErr != nil {
-				require.True(t, errors.Is(err, test.expectErr), "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
+				require.True(t, errors.Is(err, test.expectErr),
+					"%q: not expecting %v wanted %v", test.in, err, test.expectErr,
+				)
 			} else {
 				require.NoError(t, err)
 			}
-			if test.otval != notset {
-				require.True(t, wts.hasOTelValue())
-				require.Equal(t, "ot="+test.otval, wts.otelString)
+			if test.rval != ns {
+				require.True(t, w3c.HasOTelValue())
+				require.True(t, w3c.OTelValue().HasRValue())
+				require.Equal(t, test.rval, w3c.OTelValue().RValue())
 			} else {
-
-				require.False(t, wts.hasOTelValue(), "should have no otel value")
+				require.False(t, w3c.OTelValue().HasRValue(), "should have no r-value")
+			}
+			if test.sval != ns {
+				require.True(t, w3c.HasOTelValue())
+				require.True(t, w3c.OTelValue().HasSValue())
+				require.Equal(t, test.sval, w3c.OTelValue().SValue())
+			} else {
+				require.False(t, w3c.OTelValue().HasSValue(), "should have no s-value")
+			}
+			if test.tval != ns {
+				require.True(t, w3c.HasOTelValue())
+				require.True(t, w3c.OTelValue().HasTValue())
+				require.Equal(t, test.tval, w3c.OTelValue().TValue())
+			} else {
+				require.False(t, w3c.OTelValue().HasTValue(), "should have no t-value")
 			}
 
-			// on success w/o t-value, serialize() should not modify
-			if !wts.hasOTelValue() && test.expectErr == nil {
-				require.Equal(t, test.in, wts.serialize())
+			if test.expectErr != nil {
+				return
 			}
+			// on success Serialize() should not modify
+			// test by re-parsing
+			var w strings.Builder
+			w3c.Serialize(&w)
+			cpy, err := NewW3CTraceState(w.String())
+			require.NoError(t, err, "with %v", w.String())
+			require.Equal(t, w3c, cpy, "with %v", w.String())
 		})
 	}
 }

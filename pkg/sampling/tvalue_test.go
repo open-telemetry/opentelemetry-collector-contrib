@@ -41,54 +41,54 @@ func mustNot[T any](t T, err error) error {
 }
 
 func TestValidAdjustedCountToTvalue(t *testing.T) {
-	require.Equal(t, "0", must(AdjustedCountToTvalue(0)))
-	require.Equal(t, "1", must(AdjustedCountToTvalue(1)))
-	require.Equal(t, "2", must(AdjustedCountToTvalue(2)))
+	require.Equal(t, "0", must(AdjustedCountToEncoded(0)))
+	require.Equal(t, "1", must(AdjustedCountToEncoded(1)))
+	require.Equal(t, "2", must(AdjustedCountToEncoded(2)))
 
 	const largest uint64 = 0x1p+56
-	require.Equal(t, "72057594037927936", must(AdjustedCountToTvalue(largest)))
-	require.Equal(t, fmt.Sprint(largest-1), must(AdjustedCountToTvalue(largest-1)))
+	require.Equal(t, "72057594037927936", must(AdjustedCountToEncoded(largest)))
+	require.Equal(t, fmt.Sprint(largest-1), must(AdjustedCountToEncoded(largest-1)))
 }
 
-func TestInvalidAdjustedCountToTvalue(t *testing.T) {
+func TestInvalidAdjustedCountToEncoded(t *testing.T) {
 	// Because unsigned, no too-small value.
-	require.Error(t, mustNot(AdjustedCountToTvalue(0x1p56+1)))
-	require.Error(t, mustNot(AdjustedCountToTvalue(math.MaxInt64)))
+	require.Error(t, mustNot(AdjustedCountToEncoded(0x1p56+1)))
+	require.Error(t, mustNot(AdjustedCountToEncoded(math.MaxInt64)))
 }
 
-func TestValidProbabilityToTvalue(t *testing.T) {
-	require.Equal(t, "0x1p-01", must(ProbabilityToTvalue(0.5, 'x', -1)))
-	require.Equal(t, "0x1p-56", must(ProbabilityToTvalue(0x1p-56, 'x', -1)))
-	require.Equal(t, "0x1.555p-02", must(ProbabilityToTvalue(1/3., 'x', 3)))
-	require.Equal(t, "0", must(ProbabilityToTvalue(0, 'x', 3)))
-	require.Equal(t, "0", must(ProbabilityToTvalue(0, 'f', 4)))
+func TestValidProbabilityToEncoded(t *testing.T) {
+	require.Equal(t, "0x1p-01", must(ProbabilityToEncoded(0.5, 'x', -1)))
+	require.Equal(t, "0x1p-56", must(ProbabilityToEncoded(0x1p-56, 'x', -1)))
+	require.Equal(t, "0x1.555p-02", must(ProbabilityToEncoded(1/3., 'x', 3)))
+	require.Equal(t, "0", must(ProbabilityToEncoded(0, 'x', 3)))
+	require.Equal(t, "0", must(ProbabilityToEncoded(0, 'f', 4)))
 }
 
-func TestInvalidProbabilityToTvalue(t *testing.T) {
+func TestInvalidProbabilityToEncoded(t *testing.T) {
 	// Too small
-	require.Error(t, mustNot(ProbabilityToTvalue(0x1p-57, 'x', -1)))
-	require.Error(t, mustNot(ProbabilityToTvalue(0x1p-57, 'x', 0)))
+	require.Error(t, mustNot(ProbabilityToEncoded(0x1p-57, 'x', -1)))
+	require.Error(t, mustNot(ProbabilityToEncoded(0x1p-57, 'x', 0)))
 
 	// Too big
-	require.Error(t, mustNot(ProbabilityToTvalue(1.1, 'x', -1)))
-	require.Error(t, mustNot(ProbabilityToTvalue(1.1, 'x', 0)))
+	require.Error(t, mustNot(ProbabilityToEncoded(1.1, 'x', -1)))
+	require.Error(t, mustNot(ProbabilityToEncoded(1.1, 'x', 0)))
 
 	// Bad precision
-	require.Error(t, mustNot(ProbabilityToTvalue(0.5, 'x', -3)))
-	require.Error(t, mustNot(ProbabilityToTvalue(0.5, 'x', 15)))
+	require.Error(t, mustNot(ProbabilityToEncoded(0.5, 'x', -3)))
+	require.Error(t, mustNot(ProbabilityToEncoded(0.5, 'x', 15)))
 }
 
 func testTValueToProb(tv string) (float64, error) {
-	p, _, err := TvalueToProbabilityAndAdjustedCount(tv)
+	p, _, err := EncodedToProbabilityAndAdjustedCount(tv)
 	return p, err
 }
 
 func testTValueToAdjCount(tv string) (float64, error) {
-	_, ac, err := TvalueToProbabilityAndAdjustedCount(tv)
+	_, ac, err := EncodedToProbabilityAndAdjustedCount(tv)
 	return ac, err
 }
 
-func TestTvalueToProbability(t *testing.T) {
+func TestEncodedToProbability(t *testing.T) {
 	require.Equal(t, 0.5, must(testTValueToProb("0.5")))
 	require.Equal(t, 0.444, must(testTValueToProb("0.444")))
 	require.Equal(t, 1.0, must(testTValueToProb("1")))
@@ -97,7 +97,7 @@ func TestTvalueToProbability(t *testing.T) {
 	require.InEpsilon(t, 1/3., must(testTValueToProb("3")), 1e-9)
 }
 
-func TestTvalueToAdjCount(t *testing.T) {
+func TestEncodedToAdjCount(t *testing.T) {
 	require.Equal(t, 2.0, must(testTValueToAdjCount("0.5")))
 	require.Equal(t, 2.0, must(testTValueToAdjCount("2")))
 	require.Equal(t, 3., must(testTValueToAdjCount("3")))

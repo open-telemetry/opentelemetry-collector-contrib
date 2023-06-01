@@ -1,103 +1,131 @@
-// Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+package sampling
 
 import (
-	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
-// W3CTraceState represents a W3C tracestate header, which is
-// organized into vendor-specific sections.  OpenTelemetry specifies
-// a section that uses "ot" as the vendor key, where the t-value
-// used for consistent sampling may be encoded.
-//
-// Note that we do not implement the limits specified in
-// https://www.w3.org/TR/trace-context/#tracestate-limits because at
-// this point in the traces pipeline, the tracestate is no longer
-// being propagated.  Those are propagation limits, OTel does not
-// specifically restrict TraceState.
-//
-// TODO: Should this package's tracestate support do more to implement
-// those limits?  See
-// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/tracestate-handling.md,
-// which indicates that OTel should use a limit of 256 bytes, while
-// the W3C tracestate entry as a whole recommends a limit of 512
-// bytes.
 type W3CTraceState struct {
-	otelParsed OTelTraceState
-	baseTraceState
+	commonTraceState
+	otts OTelTraceState
 }
 
-// w3cSyntax describes the W3C tracestate entry.
-var w3cSyntax = anyTraceStateSyntax[W3CTraceState, w3CTraceStateParser]{
-	separator:  ',',
-	equality:   '=',
-	allowPunct: ";:._-+",
-}
+const (
+	hardMaxW3CLength = 1024
 
-// w3CTraceStateParser parses tracestate strings like `k1=v1,k2=v2`
-type w3CTraceStateParser struct{}
+	// keyRegexp is not an exact test, it permits all the
+	// characters and then we check various conditions.
 
-// NewW3CTraceState parses a W3C tracestate entry, especially tracking
-// the OpenTelemetry entry where t-value resides for use in sampling
-// decisions.
-func NewW3CTraceState(input string) (W3CTraceState, error) {
-	return w3cSyntax.parse(input)
-}
+	// key              = simple-key / multi-tenant-key
+	// simple-key       = lcalpha 0*255( lcalpha / DIGIT / "_" / "-"/ "*" / "/" )
+	// multi-tenant-key = tenant-id "@" system-id
+	// tenant-id        = ( lcalpha / DIGIT ) 0*240( lcalpha / DIGIT / "_" / "-"/ "*" / "/" )
+	// system-id        = lcalpha 0*13( lcalpha / DIGIT / "_" / "-"/ "*" / "/" )
+	// lcalpha          = %x61-7A ; a-z
 
-// parseField recognizes the OpenTelemetry tracestate entry.
-func (wp w3CTraceStateParser) parseField(instance *W3CTraceState, key, input string) error {
-	switch {
-	case key == "ot":
-		value, err := stripKey(key, input)
-		if err != nil {
+	lcAlphaRegexp        = `[a-z]`
+	lcDigitPunctRegexp   = `[a-z0-9\-\*/_]`
+	lcDigitRegexp        = `[a-z0-9]`
+	tenantIDRegexp       = lcDigitRegexp + lcDigitPunctRegexp + `{0,240}`
+	systemIDRegexp       = lcAlphaRegexp + lcDigitPunctRegexp + `{0,13}`
+	multiTenantKeyRegexp = tenantIDRegexp + `@` + systemIDRegexp
+	simpleKeyRegexp      = lcAlphaRegexp + lcDigitPunctRegexp + `{0,255}`
+	keyRegexp            = `(?:(?:` + simpleKeyRegexp + `)|(?:` + multiTenantKeyRegexp + `))`
+
+	// value    = 0*255(chr) nblk-chr
+	// nblk-chr = %x21-2B / %x2D-3C / %x3E-7E
+	// chr      = %x20 / nblk-chr
+	//
+	// Note the use of double-quoted strings in two places below.
+	// This is for \x expansion in these two cases.  Also note
+	// \x2d is a hyphen character, so a quoted \ (i.e., \\\x2d)
+	// appears below.
+	valueNonblankCharRegexp = "[\x21-\x2b\\\x2d-\x3c\x3e-\x7e]"
+	valueCharRegexp         = "[\x20-\x2b\\\x2d-\x3c\x3e-\x7e]"
+	valueRegexp             = valueCharRegexp + `{0,255}` + valueNonblankCharRegexp
+
+	// tracestate  = list-member 0*31( OWS "," OWS list-member )
+	// list-member = (key "=" value) / OWS
+
+	owsCharSet      = ` \t`
+	owsRegexp       = `[` + owsCharSet + `]*`
+	w3cMemberRegexp = `(?:` + keyRegexp + `=` + valueRegexp + `)|(?:` + owsRegexp + `)`
+
+	// This regexp is large enough that regexp impl refuses to
+	// make 31 copies of it (i.e., `{0,31}`) so we use `*` below.
+	w3cOwsCommaMemberRegexp = `(?:` + owsRegexp + `,` + owsRegexp + w3cMemberRegexp + `)`
+
+	// The limit to 31 of owsCommaMemberRegexp is applied in code.
+	w3cTracestateRegexp = `^` + w3cMemberRegexp + w3cOwsCommaMemberRegexp + `*$`
+)
+
+var (
+	w3cTracestateRe = regexp.MustCompile(w3cTracestateRegexp)
+
+	w3cSyntax = keyValueScanner{
+		maxItems:  32,
+		trim:      true,
+		separator: ',',
+		equality:  '=',
+	}
+)
+
+func NewW3CTraceState(input string) (w3c W3CTraceState, _ error) {
+	if len(input) > hardMaxW3CLength {
+		return w3c, ErrTraceStateSize
+	}
+
+	if !w3cTracestateRe.MatchString(input) {
+		return w3c, strconv.ErrSyntax
+	}
+
+	err := w3cSyntax.scanKeyValues(input, func(key, value string) error {
+		switch key {
+		case "ot":
+			var err error
+			w3c.otts, err = NewOTelTraceState(value)
 			return err
+		default:
+			w3c.kvs = append(w3c.kvs, KV{
+				Key:   key,
+				Value: value,
+			})
+			return nil
 		}
-
-		otts, err := otelSyntax.parse(value)
-
-		if err != nil {
-			return fmt.Errorf("w3c tracestate otel value: %w", err)
-		}
-
-		instance.otelParsed = otts
-		return nil
-	}
-
-	return baseTraceStateParser{}.parseField(&instance.baseTraceState, key, input)
+	})
+	return w3c, err
 }
 
-// Serialize returns a W3C tracestate encoding, as would be encoded in
-// a ptrace.Span.TraceState().
-func (wts *W3CTraceState) Serialize() string {
-	var sb strings.Builder
-
-	ots := wts.otelParsed.serialize()
-	if ots != "" {
-		_, _ = sb.WriteString("ot=")
-		_, _ = sb.WriteString(ots)
-	}
-
-	w3cSyntax.serializeBase(&wts.baseTraceState, &sb)
-
-	return sb.String()
+func (w3c W3CTraceState) HasAnyValue() bool {
+	return w3c.HasOTelValue() || w3c.HasExtraValues()
 }
 
-// OTelValue returns a reference to this value's OpenTelemetry trace
-// state entry.
-func (wts *W3CTraceState) OTelValue() *OTelTraceState {
-	return &wts.otelParsed
+func (w3c W3CTraceState) OTelValue() OTelTraceState {
+	return w3c.otts
+}
+
+func (w3c W3CTraceState) HasOTelValue() bool {
+	return w3c.otts.HasAnyValue()
+}
+
+func (w3c W3CTraceState) Serialize(w *strings.Builder) {
+	cnt := 0
+	sep := func() {
+		if cnt != 0 {
+			w.WriteString(",")
+		}
+		cnt++
+	}
+	if w3c.otts.HasAnyValue() {
+		sep()
+		w.WriteString("ot=")
+		w3c.otts.Serialize(w)
+	}
+	for _, kv := range w3c.ExtraValues() {
+		sep()
+		w.WriteString(kv.Key)
+		w.WriteString("=")
+		w.WriteString(kv.Value)
+	}
 }
