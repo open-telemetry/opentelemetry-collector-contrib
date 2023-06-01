@@ -123,7 +123,7 @@ collector:
   # Path to Collector executable. Required.
   executable: /opt/otelcol/bin/otelcol
 
-  # extra command line flags to pass to the Collector executable.
+  # Extra command line flags to pass to the Collector executable.
   args:
 
   # Extra environment variables to set when executing the Collector.
