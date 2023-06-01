@@ -22,7 +22,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factories.Processors[metadata.Type] = NewFactory()
-	factories.Connectors[metadata.Type] = NewConnectorFactory()
+	factories.Connectors[metadata.Type] = NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)()
 
 	// Test
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)

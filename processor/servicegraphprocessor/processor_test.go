@@ -76,7 +76,7 @@ func TestProcessorStart(t *testing.T) {
 
 func TestConnectorStart(t *testing.T) {
 	// Create servicegraph processor
-	factory := NewConnectorFactory()
+	factory := NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	procCreationParams := connectortest.NewNopCreateSettings()
@@ -108,7 +108,7 @@ func TestProcessorShutdown(t *testing.T) {
 
 func TestConnectorShutdown(t *testing.T) {
 	// Prepare
-	factory := NewConnectorFactory()
+	factory := NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Test
