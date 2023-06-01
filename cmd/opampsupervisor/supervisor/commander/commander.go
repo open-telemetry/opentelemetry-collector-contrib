@@ -55,7 +55,14 @@ func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Comma
 
 // Start the Agent and begin watching the process.
 // Agent's stdout and stderr are written to a file.
+// Calling this method when a command is already running
+// is a no-op.
 func (c *Commander) Start(ctx context.Context) error {
+	if c.running.Load() == 1 {
+		// Already started, nothing to do
+		return nil
+	}
+
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
 	logFilePath := "agent.log"
@@ -139,7 +146,7 @@ func (c *Commander) IsRunning() bool {
 // and if the process does not finish kills it forcedly by sending SIGKILL.
 // Returns after the process is terminated.
 func (c *Commander) Stop(ctx context.Context) error {
-	if c.cmd == nil || c.cmd.Process == nil {
+	if c.running.Load() == 0 {
 		// Not started, nothing to do.
 		return nil
 	}
