@@ -208,6 +208,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlTmpResourcesDataPoint(ts, "1", AttributeTmpResource(1))
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlUptimeDataPoint(ts, "1")
+
 			metrics := mb.Emit(WithMysqlInstanceEndpoint("attr-val"))
 
 			if test.configSet == testSetNone {
@@ -1013,6 +1017,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
 					assert.Equal(t, "disk_tables", attrVal.Str())
+				case "mysql.uptime":
+					assert.False(t, validatedMetrics["mysql.uptime"], "Found a duplicate in the metrics slice: mysql.uptime")
+					validatedMetrics["mysql.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of seconds that the server has been up.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})
