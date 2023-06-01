@@ -18,7 +18,7 @@ This receiver queries MySQL's global status and InnoDB tables.
 
 This receiver supports MySQL version 8.0
 
-Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`. The `buffer_pool_size` metric requires access to the `information_schema.innodb_metrics` table. Please refer to [setup.sh](./testdata/integration/scripts/setup.sh) for an example of how to configure these permissions. 
+Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`.
 
 ## Configuration
 

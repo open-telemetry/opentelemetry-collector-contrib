@@ -79,7 +79,6 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	innodbStats, innoErr := m.sqlclient.getInnodbStats()
 	if innoErr != nil {
 		m.logger.Error("Failed to fetch InnoDB stats", zap.Error(innoErr))
-		return pmetric.Metrics{}, innoErr
 	}
 
 	errs := &scrapererror.ScrapeErrors{}
@@ -103,7 +102,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeGlobalStats(now, errs)
 
 	// colect replicas status metrics.
-	m.scrapeReplicaStatusStats(now, errs)
+	m.scrapeReplicaStatusStats(now)
 
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
@@ -529,11 +528,10 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 	}
 }
 
-func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
 	if err != nil {
-		m.logger.Error("Failed to fetch replica status stats", zap.Error(err))
-		errs.AddPartial(8, err)
+		m.logger.Info("Failed to fetch replica status stats", zap.Error(err))
 		return
 	}
 

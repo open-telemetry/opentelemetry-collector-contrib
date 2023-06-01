@@ -39,13 +39,8 @@ func TestIntegration(t *testing.T) {
 				},
 				Files: []testcontainers.ContainerFile{
 					{
-						HostFilePath:      filepath.Join("testdata", "integration", "grant.sh"),
-						ContainerFilePath: "/docker-entrypoint-initdb.d/",
-						FileMode:          700,
-					},
-					{
-						HostFilePath:      filepath.Join("testdata", "integration", "init.sql"),
-						ContainerFilePath: "/docker-entrypoint-initdb.d/",
+						HostFilePath:      filepath.Join("testdata", "integration", "init.sh"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/init.sh",
 						FileMode:          700,
 					},
 				},
