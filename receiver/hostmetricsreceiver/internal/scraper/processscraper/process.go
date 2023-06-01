@@ -126,10 +126,5 @@ func parentPid(handle processHandle, pid int32) (int32, error) {
 	}
 	pPid, err := handle.Ppid()
 
-	if err != nil {
-		// return pid of -1 along with error for all other problems retrieving parent pid
-		return pPid, err
-	}
-
-	return pPid, nil
+	return pPid, err
 }
