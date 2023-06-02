@@ -19,6 +19,15 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
+			desc: "missing endpoint",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{},
+			},
+			expectedErr: multierr.Combine(
+				errMissingEndpoint,
+			),
+		},
+		{
 			desc: "invalid endpoint",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -33,7 +42,7 @@ func TestValidate(t *testing.T) {
 			desc: "valid config",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: defaultEndpoint,
+					Endpoint: "https://opentelemetry.io",
 				},
 			},
 			expectedErr: nil,
