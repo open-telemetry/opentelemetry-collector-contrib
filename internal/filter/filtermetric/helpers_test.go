@@ -4,12 +4,13 @@
 package filtermetric
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
-func createConfig(filters []string, matchType filterset.MatchType) *MatchProperties {
-	return &MatchProperties{
-		MatchType:   MatchType(matchType),
+func createConfig(filters []string, matchType filterset.MatchType) *filterconfig.MetricMatchProperties {
+	return &filterconfig.MetricMatchProperties{
+		MatchType:   filterconfig.MetricMatchType(matchType),
 		MetricNames: filters,
 	}
 }
