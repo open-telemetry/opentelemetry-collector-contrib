@@ -162,15 +162,17 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 	}
 
 	var cWMeasurements []cWMeasurement
-	if len(config.MetricDeclarations) == 0 {
-		// If there are no metric declarations defined, translate grouped metric
-		// into the corresponding CW Measurement
-		cwm := groupedMetricToCWMeasurement(groupedMetric, config)
-		cWMeasurements = []cWMeasurement{cwm}
-	} else {
-		// If metric declarations are defined, filter grouped metric's metrics using
-		// metric declarations and translate into the corresponding list of CW Measurements
-		cWMeasurements = groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+	if !config.DisableMetricExtraction { // If metric extraction is disabled, there is no need to compute & set the measurements
+		if len(config.MetricDeclarations) == 0 {
+			// If there are no metric declarations defined, translate grouped metric
+			// into the corresponding CW Measurement
+			cwm := groupedMetricToCWMeasurement(groupedMetric, config)
+			cWMeasurements = []cWMeasurement{cwm}
+		} else {
+			// If metric declarations are defined, filter grouped metric's metrics using
+			// metric declarations and translate into the corresponding list of CW Measurements
+			cWMeasurements = groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+		}
 	}
 
 	return &cWMetrics{
@@ -376,7 +378,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 
 	// Create EMF metrics if there are measurements
 	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html#CloudWatch_Embedded_Metric_Format_Specification_structure
-	if len(cWMetric.measurements) > 0 {
+	if len(cWMetric.measurements) > 0 && !config.DisableMetricExtraction {
 		if config.Version == "1" {
 			/* 	EMF V1
 				"Version": "1",

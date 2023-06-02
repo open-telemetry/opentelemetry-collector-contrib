@@ -13,3 +13,5 @@ awsemf/metric_descriptors:
     - metric_name: memcached_current_items
       unit: Count
       overwrite: true
+awsemf/disable_metric_extraction:
+  disable_metric_extraction: true

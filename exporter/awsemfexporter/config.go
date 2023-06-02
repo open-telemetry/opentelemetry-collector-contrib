@@ -80,6 +80,11 @@ type Config struct {
 	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
 	EKSFargateContainerInsightsEnabled bool `mapstructure:"eks_fargate_container_insights_enabled"`
 
+	// DisableMetricExtraction is an option to disable the extraction of metrics from the EMF logs.
+	// Setting this to true essentially skips generating and setting the _aws / CloudWatchMetrics section of the EMF log, thus effectively
+	// retaining all the fields / labels in the EMF log except for the section responsible for extraction of metrics.
+	DisableMetricExtraction bool `mapstructure:"disable_metric_extraction"`
+
 	// ResourceToTelemetrySettings is an option for converting resource attrihutes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.

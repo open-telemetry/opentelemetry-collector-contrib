@@ -567,9 +567,10 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 func TestTranslateCWMetricToEMF(t *testing.T) {
 	testCases := map[string]struct {
-		emfVersion          string
-		measurements        []cWMeasurement
-		expectedEMFLogEvent string
+		emfVersion              string
+		measurements            []cWMeasurement
+		disableMetricExtraction bool
+		expectedEMFLogEvent     string
 	}{
 		"WithMeasurementAndEMFV1": {
 			emfVersion: "1",
@@ -581,7 +582,8 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 					"Unit": "Count",
 				}},
 			}},
-			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			disableMetricExtraction: false,
+			expectedEMFLogEvent:     "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 		"WithMeasurementAndEMFV0": {
 			emfVersion: "0",
@@ -593,17 +595,33 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 					"Unit": "Count",
 				}},
 			}},
-			expectedEMFLogEvent: "{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			disableMetricExtraction: false,
+			expectedEMFLogEvent:     "{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 		"WithNoMeasurement": {
-			emfVersion:          "1",
-			measurements:        nil,
-			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			emfVersion:              "1",
+			measurements:            nil,
+			disableMetricExtraction: false,
+			expectedEMFLogEvent:     "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 		"WithNoMeasurementAndEMFV0": {
-			emfVersion:          "0",
-			measurements:        nil,
-			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			emfVersion:              "0",
+			measurements:            nil,
+			disableMetricExtraction: false,
+			expectedEMFLogEvent:     "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+		},
+		"WithMeasurementAndDisableMetricExtraction": {
+			emfVersion: "1",
+			measurements: []cWMeasurement{{
+				Namespace:  "test-emf",
+				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
+				Metrics: []map[string]string{{
+					"Name": "spanCounter",
+					"Unit": "Count",
+				}},
+			}},
+			disableMetricExtraction: true,
+			expectedEMFLogEvent:     "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 	}
 
@@ -614,6 +632,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 				// include valid json string, a non-existing key, and keys whose value are not json/string
 				ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName", "spanCounter"},
 				Version:                         tc.emfVersion,
+				DisableMetricExtraction:         tc.disableMetricExtraction,
 				logger:                          zap.NewNop(),
 			}
 
@@ -643,10 +662,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 	timestamp := int64(1596151098037)
 	namespace := "Namespace"
 	testCases := []struct {
-		testName           string
-		groupedMetric      *groupedMetric
-		metricDeclarations []*MetricDeclaration
-		expectedCWMetric   *cWMetrics
+		testName                string
+		groupedMetric           *groupedMetric
+		metricDeclarations      []*MetricDeclaration
+		disableMetricExtraction bool
+		expectedCWMetric        *cWMetrics
 	}{
 		{
 			"single metric w/o metric declarations",
@@ -668,6 +688,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 			},
 			nil,
+			false,
 			&cWMetrics{
 				measurements: []cWMeasurement{
 					{
@@ -713,6 +734,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					MetricNameSelectors: []string{"metric.*"},
 				},
 			},
+			false,
 			&cWMetrics{
 				measurements: []cWMeasurement{
 					{
@@ -762,6 +784,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 			},
 			nil,
+			false,
 			&cWMetrics{
 				measurements: []cWMeasurement{
 					{
@@ -837,6 +860,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					MetricNameSelectors: []string{"metric2"},
 				},
 			},
+			false,
 			&cWMetrics{
 				measurements: []cWMeasurement{
 					{
@@ -885,6 +909,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 			},
 			nil,
+			false,
 			&cWMetrics{
 				measurements: []cWMeasurement{
 					{
@@ -921,6 +946,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 			},
 			nil,
+			false,
 			&cWMetrics{
 				measurements: []cWMeasurement{
 					{
@@ -942,6 +968,36 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 			},
 		},
+		{
+			"single metric w/ disable_metric_extraction",
+			&groupedMetric{
+				labels: map[string]string{
+					"label1": "value1",
+				},
+				metrics: map[string]*metricInfo{
+					"metric1": {
+						value: 1,
+						unit:  "Count",
+					},
+				},
+				metadata: cWMetricMetadata{
+					groupedMetricMetadata: groupedMetricMetadata{
+						namespace:   namespace,
+						timestampMs: timestamp,
+					},
+				},
+			},
+			nil,
+			true,
+			&cWMetrics{
+				measurements: []cWMeasurement{},
+				timestampMs:  timestamp,
+				fields: map[string]interface{}{
+					"label1":  "value1",
+					"metric1": 1,
+				},
+			},
+		},
 	}
 
 	logger := zap.NewNop()
@@ -949,9 +1005,10 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			config := &Config{
-				MetricDeclarations:    tc.metricDeclarations,
-				DimensionRollupOption: "",
-				logger:                logger,
+				MetricDeclarations:      tc.metricDeclarations,
+				DimensionRollupOption:   "",
+				DisableMetricExtraction: tc.disableMetricExtraction,
+				logger:                  logger,
 			}
 			for _, decl := range tc.metricDeclarations {
 				err := decl.init(logger)
