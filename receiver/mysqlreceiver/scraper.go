@@ -47,7 +47,7 @@ func newMySQLScraper(
 }
 
 // start starts the scraper by initializing the db client connection.
-func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
+func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 	sqlclient := newMySQLClient(m.config)
 
 	err := sqlclient.Connect()
@@ -395,6 +395,10 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlMysqlxConnectionsDataPoint(now, v, metadata.AttributeConnectionStatusClosed))
 		case "Mysqlx_connections_rejected":
 			addPartialIfError(errs, m.mb.RecordMysqlMysqlxConnectionsDataPoint(now, v, metadata.AttributeConnectionStatusRejected))
+
+		// uptime
+		case "Uptime":
+			addPartialIfError(errs, m.mb.RecordMysqlUptimeDataPoint(now, v))
 		}
 	}
 }

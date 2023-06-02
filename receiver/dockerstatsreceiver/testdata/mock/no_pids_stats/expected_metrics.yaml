@@ -1,9 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: container.runtime
+        - key: container-metric-label
           value:
-            stringValue: docker
+            stringValue: container-label
         - key: container.hostname
           value:
             stringValue: 10b703fb312b
@@ -16,12 +16,12 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: bold_sinoussi
+        - key: container.runtime
+          value:
+            stringValue: docker
         - key: env-var-metric-label
           value:
             stringValue: env-var
-        - key: container-metric-label
-          value:
-            stringValue: container-label
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:
@@ -195,7 +195,7 @@ resourceMetrics:
                   timeUnixNano: "1683723817613281000"
               isMonotonic: true
             unit: '{operations}'
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0.0002888012543185477

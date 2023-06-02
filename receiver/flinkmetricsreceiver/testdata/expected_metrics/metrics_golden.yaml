@@ -1,12 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
         - key: flink.resource.type
           value:
             stringValue: jobmanager
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -228,15 +228,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
-        - key: flink.taskmanager.id
-          value:
-            stringValue: mock-taskmanager-id
         - key: flink.resource.type
           value:
             stringValue: taskmanager
+        - key: flink.taskmanager.id
+          value:
+            stringValue: mock-taskmanager-id
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -458,15 +458,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
+        - key: flink.resource.type
           value:
-            stringValue: mock-host2
+            stringValue: taskmanager
         - key: flink.taskmanager.id
           value:
             stringValue: mock-taskmanager-id2
-        - key: flink.resource.type
+        - key: host.name
           value:
-            stringValue: taskmanager
+            stringValue: mock-host2
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -688,12 +688,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
         - key: flink.job.name
           value:
             stringValue: mock-job-name
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The number of checkpoints completed or failed.
@@ -758,12 +758,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host2
         - key: flink.job.name
           value:
             stringValue: mock-job-name2
+        - key: host.name
+          value:
+            stringValue: mock-host2
     scopeMetrics:
       - metrics:
           - description: The number of checkpoints completed or failed.
@@ -828,21 +828,21 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
-        - key: flink.taskmanager.id
-          value:
-            stringValue: mock-taskmanager-id
         - key: flink.job.name
           value:
             stringValue: mock-job-name
-        - key: flink.task.name
-          value:
-            stringValue: mock-task-name
         - key: flink.subtask.index
           value:
             stringValue: mock-subtask-index
+        - key: flink.task.name
+          value:
+            stringValue: mock-task-name
+        - key: flink.taskmanager.id
+          value:
+            stringValue: mock-taskmanager-id
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The number of records an operator has.

@@ -99,7 +99,7 @@ func (fo *Output) Stop() error {
 }
 
 // Process will write an entry to the output file.
-func (fo *Output) Process(ctx context.Context, entry *entry.Entry) error {
+func (fo *Output) Process(_ context.Context, entry *entry.Entry) error {
 	fo.mux.Lock()
 	defer fo.mux.Unlock()
 

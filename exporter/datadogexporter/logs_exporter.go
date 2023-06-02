@@ -69,7 +69,7 @@ func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *C
 var _ consumer.ConsumeLogsFunc = (*logsExporter)(nil).consumeLogs
 
 // consumeLogs is implementation of cosumer.ConsumeLogsFunc
-func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err error) {
+func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error) {
 	defer func() { err = exp.scrubber.Scrub(err) }()
 	if exp.cfg.HostMetadata.Enabled {
 		// start host metadata with resource attributes from

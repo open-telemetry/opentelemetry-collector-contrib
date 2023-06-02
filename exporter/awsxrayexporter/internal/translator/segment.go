@@ -33,6 +33,12 @@ const (
 	OriginAppRunner  = "AWS::AppRunner::Service"
 )
 
+// x-ray only span attributes - https://github.com/open-telemetry/opentelemetry-java-contrib/pull/802
+const (
+	awsLocalService  = "aws.local.service"
+	awsRemoteService = "aws.remote.service"
+)
+
 var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
@@ -107,9 +113,24 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
-	// peer.service should always be prioritized for segment names when set because it is what the user decided.
-	if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
-		name = peerService.Str()
+	// support x-ray specific service name attributes as segment name if it exists
+	if span.Kind() == ptrace.SpanKindServer || span.Kind() == ptrace.SpanKindConsumer {
+		if localServiceName, ok := attributes.Get(awsLocalService); ok {
+			name = localServiceName.Str()
+		}
+	}
+	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
+		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
+			name = remoteServiceName.Str()
+		}
+	}
+
+	// peer.service should always be prioritized for segment names when it set by users and
+	// the new x-ray specific service name attributes are not found
+	if name == "" {
+		if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
+			name = peerService.Str()
+		}
 	}
 
 	if namespace == "" {

@@ -204,17 +204,12 @@ func (SpanData_TransactionEvent_Initiator) EnumDescriptor() ([]byte, []int) {
 	return file_receive_v1_proto_rawDescGZIP(), []int{0, 2, 1}
 }
 
-// Version 1.0
+// A message will be compatible with this specification if its topic matches:
+// _telemetry/broker/trace/receive/v1[/additional/topic/levels]
 //
-// Messages with a topic of matching the following topic contain a v1.x
-// specification of this message.
-// #telemetry/broker/trace/receive/v1[/<additional/topic/levels]
-// Note that the specification allows for additional topic levels to be added
-// in the future. Receiving clients must not assume there are no additional
-// topic levels.
-//
-// The versioning strategy follows semantic versioning such that all v1.x
-// specifications are compatible with each other.
+// Note that the topic above allows for additional topic levels to be added in
+// the future. Receiving clients must not assume there are no additional topic
+// levels.
 //
 // This message describes telemetry data that a Solace PubSub+ broker captures
 // when a received message is identified as a message to be traced.
@@ -1117,13 +1112,21 @@ type SpanData_EnqueueEvent struct {
 	// The presence of an error_description indicates the message matched the
 	// destination, but it is not being enqueued due to the description.
 	ErrorDescription *string `protobuf:"bytes,4,opt,name=error_description,json=errorDescription,proto3,oneof" json:"error_description,omitempty"`
-	// This will never be set when there is not an error_desription present.
-	// If this is set, it indicates that all other non-errored enqueue events
-	// part of this span are rejected. In other words, regardless of what some
-	// enqueue events may indicate, the message is not enqueued to any
-	// destinations. When this is set, the span's error_description is always
-	// set and the span's error_description is always sent to the publisher in
-	// the rejection message.
+	// This flag being set on one or more enqueue events for a message implies
+	// that the message is not enqueued to any destination, regardless of the
+	// presence of successful enqueue events in the span.
+	//
+	// This will never be set when there is not an error_description present. If
+	// this is set, it indicates that the error described by error_description
+	// is a cause for the message to be rejected.
+	//
+	// Rejected non-transacted messages cause the message to be nacked to the
+	// publisher and rejected transacted messages result in a change in
+	// transacted session state that will cause a future commit attempt to fail.
+	//
+	// The cause for message rejection indicated to the client in either a
+	// message nack or commit failure response is the error_description of the
+	// first enqueue event that has this flag set.
 	RejectsAllEnqueues bool `protobuf:"varint,5,opt,name=rejects_all_enqueues,json=rejectsAllEnqueues,proto3" json:"rejects_all_enqueues,omitempty"`
 	// If the message is enqueued to a partitioned queue, this field indicates
 	// the partition number the message is enqueued to.

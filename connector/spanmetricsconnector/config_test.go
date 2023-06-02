@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
@@ -31,15 +32,15 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, "default"),
+			id:       component.NewIDWithName(metadata.Type, "default"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id:       component.NewIDWithName(typeStr, "default_explicit_histogram"),
+			id:       component.NewIDWithName(metadata.Type, "default_explicit_histogram"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "full"),
+			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				AggregationTemporality: delta,
 				Dimensions: []Dimension{
@@ -61,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "exponential_histogram"),
+			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
 			expected: &Config{
 				AggregationTemporality: cumulative,
 				DimensionsCacheSize:    1000,
@@ -75,11 +76,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "exponential_and_explicit_histogram"),
+			id:           component.NewIDWithName(metadata.Type, "exponential_and_explicit_histogram"),
 			errorMessage: "use either `explicit` or `exponential` buckets histogram",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_histogram_unit"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_histogram_unit"),
 			errorMessage: "unknown Unit \"h\"",
 		},
 	}

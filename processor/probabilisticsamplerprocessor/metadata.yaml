@@ -5,4 +5,4 @@ status:
   stability:
     beta: [traces]
     alpha: [logs]
-  distributions: [core, contrib, observiq, splunk, sumo]
+  distributions: [core, contrib, observiq, splunk, sumo, aws]
