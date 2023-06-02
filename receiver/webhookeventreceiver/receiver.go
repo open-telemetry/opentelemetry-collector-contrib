@@ -81,7 +81,7 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 }
 
 // Start function manages receiver startup tasks. part of the receiver.Logs interface.
-func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
+func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 	// noop if not nil. if start has not been called before these values should be nil.
 	if er.server != nil && er.server.Handler != nil {
 		return nil
@@ -132,7 +132,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown function manages receiver shutdown tasks. part of the receiver.Logs interface.
-func (er *eventReceiver) Shutdown(ctx context.Context) error {
+func (er *eventReceiver) Shutdown(_ context.Context) error {
 	err := er.server.Close()
 	er.shutdownWG.Wait()
 	return err
@@ -203,12 +203,12 @@ func (er *eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Reques
 // write response on a failed/bad request. Generates a small json body based on the thrown by
 // the handle func and the appropriate http status code. many webhooks will either log these responses or
 // notify webhook users should a none 2xx code be detected.
-func (er *eventReceiver) failBadReq(_ctx context.Context,
+func (er *eventReceiver) failBadReq(_ context.Context,
 	w http.ResponseWriter,
 	httpStatusCode int,
 	err error) {
-	jsonResp, error := jsoniter.Marshal(err.Error())
-	if error != nil {
+	jsonResp, err := jsoniter.Marshal(err.Error())
+	if err != nil {
 		er.settings.Logger.Warn("failed to marshall error to json")
 	}
 
@@ -216,8 +216,8 @@ func (er *eventReceiver) failBadReq(_ctx context.Context,
 	w.WriteHeader(httpStatusCode)
 	if len(jsonResp) > 0 {
 		w.Header().Add("Content-Type", "application/json")
-		_, error := w.Write(jsonResp)
-		if error != nil {
+		_, err := w.Write(jsonResp)
+		if err != nil {
 			er.settings.Logger.Warn("failed to write json response", zap.Error(err))
 		}
 	}
