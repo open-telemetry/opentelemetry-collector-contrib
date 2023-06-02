@@ -120,7 +120,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert traces", zap.Int("records", td.SpanCount()),
+	e.logger.Debug("insert traces", zap.Int("records", td.SpanCount()),
 		zap.String("cost", duration.String()))
 	return err
 }

@@ -101,7 +101,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
 }
