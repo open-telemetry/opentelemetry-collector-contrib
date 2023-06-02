@@ -40,6 +40,7 @@ The following settings are optional:
 - `username`: If authentication is required, the user can with `clusterMonitor` permissions can be provided here.
 - `password`: If authentication is required, the password can be provided here.
 - `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `replica_set`: If the deployment of MongoDB is a replica set then this allows users to specify the replica set name which allows for autodiscovery of other nodes in the replica set.
 - `timeout`: (default = `1m`) The timeout of running commands against mongo.
 - `tls`: (defaults defined [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)): TLS control. By default insecure settings are rejected and certificate verification is on.
@@ -54,6 +55,7 @@ receivers:
     username: otel
     password: ${env:MONGODB_PASSWORD}
     collection_interval: 60s
+    initial_delay: 1s
     tls:
       insecure: true
       insecure_skip_verify: true

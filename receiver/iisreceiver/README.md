@@ -20,6 +20,7 @@ Because of this, it is a Windows only receiver.
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 Example:
 
@@ -27,6 +28,7 @@ Example:
     receivers:
       iis:
         collection_interval: 10s
+        initial_delay: 1s
 
 ```
 
