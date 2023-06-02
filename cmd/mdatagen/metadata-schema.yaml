@@ -1,15 +1,21 @@
-# Required: The type of the component.
+# Required: The type of the component - Usually the name. The type and class combined uniquely identify the component (eg. receiver/otlp) or subcomponent (eg. receiver/hostmetricsreceiver/cpu)
 type:
 
-# Required: A high-level view of the development status and use of this component
+# Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
   class: <receiver|processor|exporter|connector|extension>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
-  stability: <development|alpha|beta|stable|deprecated|unmaintained>
-  # Optional: The distributions that this component is bundled with (For example core or contrib)
+  stability:
+    development: [<metrics|traces|logs>]
+    alpha: [<metrics|traces|logs>]
+    beta: [<metrics|traces|logs>]
+    stable: [<metrics|traces|logs>]
+    deprecated: [<metrics|traces|logs>]
+    unmaintained: [<metrics|traces|logs>]
+  # Optional: The distributions that this component is bundled with (For example core or contrib). See statusdata.go for a list of common distros.
   distributions: []string
-  # Optional: A list of warnings that should be brought to the attention of developers looking to use this component
+  # Optional: A list of warnings that should be brought to the attention of users looking to use this component
   warnings: []string
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
@@ -24,7 +30,7 @@ resource_attributes:
     # Required: description of the attribute.
     description:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
-    enum:
+    enum: []string
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
 
@@ -38,7 +44,7 @@ attributes:
     # Required: description of the attribute.
     description:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
-    enum:
+    enum: []string
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
 
@@ -47,7 +53,7 @@ attributes:
 metrics:
   <metric.name>:
     # Required: whether the metric is collected by default.
-    enabled: # true | false
+    enabled: bool
     # Required: metric description.
     description:
     # Optional: extended documentation of the metric.
@@ -68,11 +74,11 @@ metrics:
     # Required: metric type with its settings.
     <sum|gauge>:
       # Required for sum and gauge metrics: type of number data point values.
-      value_type: # int | double
+      value_type: <int|double>
       # Required for sum metric: whether the metric is monotonic (no negative delta values).
-      monotonic: # true | false
+      monotonic: bool
       # Required for sum metric: whether reported values incorporate previous measurements
       # (cumulative) or not (delta).
-      aggregation: # delta | cumulative
+      aggregation: <delta|cumulative>
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
-    attributes:
+    attributes: []string
