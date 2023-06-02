@@ -4,8 +4,11 @@
 package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 
 import (
+	"bytes"
+	"fmt"
 	"sort"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -51,6 +54,7 @@ func sortMetrics(ms pmetric.Metrics) {
 			}
 		}
 	}
+	sortMetricDataPointSlices(ms)
 }
 
 // sortAttributeMap sorts the attributes of a pcommon.Map according to the alphanumeric ordering of the keys
@@ -84,4 +88,96 @@ func sortAttributeMap(mp pcommon.Map) {
 		}
 	}
 	tempMap.CopyTo(mp)
+}
+
+func sortMetricDataPointSlices(ms pmetric.Metrics) {
+	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
+		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					sortNumberDataPointSlice(m.Gauge().DataPoints())
+				case pmetric.MetricTypeSum:
+					sortNumberDataPointSlice(m.Sum().DataPoints())
+				case pmetric.MetricTypeHistogram:
+					sortHistogramDataPointSlice(m.Histogram().DataPoints())
+				case pmetric.MetricTypeExponentialHistogram:
+					sortExponentialHistogramDataPointSlice(m.ExponentialHistogram().DataPoints())
+				case pmetric.MetricTypeSummary:
+					sortSummaryDataPointSlice(m.Summary().DataPoints())
+				}
+
+			}
+		}
+	}
+	fmt.Println("wrote it aahahahahahahahha")
+}
+
+func sortNumberDataPointSlice(ndps pmetric.NumberDataPointSlice) {
+	ndps.Sort(func(a, b pmetric.NumberDataPoint) bool {
+		aTime := a.Timestamp().String()
+		bTime := b.Timestamp().String()
+		aAttrs := pdatautil.MapHash(a.Attributes())
+		bAttrs := pdatautil.MapHash(b.Attributes())
+		if bytes.Compare(aAttrs[:], bAttrs[:]) == 0 {
+			return compareTimestamp(aTime, bTime)
+		}
+		return compareTimestamp(aTime, bTime)
+	})
+}
+
+func sortSummaryDataPointSlice(sdps pmetric.SummaryDataPointSlice) {
+	sdps.Sort(func(a, b pmetric.SummaryDataPoint) bool {
+		aTime := a.Timestamp().String()
+		bTime := b.Timestamp().String()
+		aAttrs := pdatautil.MapHash(a.Attributes())
+		bAttrs := pdatautil.MapHash(b.Attributes())
+		if bytes.Compare(aAttrs[:], bAttrs[:]) == 0 {
+			return compareTimestamp(aTime, bTime)
+		}
+		return compareTimestamp(aTime, bTime)
+	})
+}
+
+func sortHistogramDataPointSlice(hdps pmetric.HistogramDataPointSlice) {
+	hdps.Sort(func(a, b pmetric.HistogramDataPoint) bool {
+		aTime := a.Timestamp().String()
+		bTime := b.Timestamp().String()
+		aAttrs := pdatautil.MapHash(a.Attributes())
+		bAttrs := pdatautil.MapHash(b.Attributes())
+		if bytes.Compare(aAttrs[:], bAttrs[:]) == 0 {
+			return compareTimestamp(aTime, bTime)
+		}
+		return compareTimestamp(aTime, bTime)
+	})
+}
+
+func sortExponentialHistogramDataPointSlice(ehdps pmetric.ExponentialHistogramDataPointSlice) {
+	ehdps.Sort(func(a, b pmetric.ExponentialHistogramDataPoint) bool {
+		aTime := a.Timestamp().String()
+		bTime := b.Timestamp().String()
+		aAttrs := pdatautil.MapHash(a.Attributes())
+		bAttrs := pdatautil.MapHash(b.Attributes())
+		if bytes.Compare(aAttrs[:], bAttrs[:]) == 0 {
+			return compareTimestamp(aTime, bTime)
+		}
+		return compareTimestamp(aTime, bTime)
+	})
+}
+
+func compareTimestamp(a, b string) bool {
+	lenA, lenB := len(a), len(b)
+
+	if lenA != lenB {
+		return lenA < lenB
+	}
+
+	for i := 0; i < lenA; i++ {
+		if a[i] != b[i] {
+			return a[i] < b[i]
+		}
+	}
+
+	return false
 }

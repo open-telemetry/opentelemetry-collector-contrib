@@ -74,6 +74,20 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "23"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: active_primary
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "1"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: unassigned_delayed
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
                 - asInt: "45"
                   attributes:
                     - key: state
@@ -102,20 +116,6 @@ resourceMetrics:
                         stringValue: unassigned
                   startTimeUnixNano: "1662458370557980000"
                   timeUnixNano: "1662458370559258000"
-                - asInt: "23"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: active_primary
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "1"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: unassigned_delayed
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
             unit: '{shards}'
         scope:
           name: otelcol/elasticsearchreceiver

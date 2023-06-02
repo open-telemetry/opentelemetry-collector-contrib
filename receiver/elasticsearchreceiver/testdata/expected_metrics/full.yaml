@@ -64,13 +64,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "510027366"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: parent
-                  startTimeUnixNano: "1662950372948795000"
-                  timeUnixNano: "1662950372950468000"
                 - asInt: "322122547"
                   attributes:
                     - key: name
@@ -106,6 +99,13 @@ resourceMetrics:
                         stringValue: accounting
                   startTimeUnixNano: "1661811689941624000"
                   timeUnixNano: "1661811689943245000"
+                - asInt: "510027366"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: parent
+                  startTimeUnixNano: "1662950372948795000"
+                  timeUnixNano: "1662950372950468000"
             unit: By
           - description: Total number of times the circuit breaker has been triggered and prevented an out of memory error.
             name: elasticsearch.breaker.tripped
