@@ -166,7 +166,10 @@ func (p *serviceGraphProcessor) ConsumeTraces(ctx context.Context, td ptrace.Tra
 
 	// Skip empty metrics.
 	if md.MetricCount() == 0 {
-		return p.tracesConsumer.ConsumeTraces(ctx, td)
+		if p.tracesConsumer != nil {
+			return p.tracesConsumer.ConsumeTraces(ctx, td)
+		}
+		return nil
 	}
 
 	// true when p is a connector
