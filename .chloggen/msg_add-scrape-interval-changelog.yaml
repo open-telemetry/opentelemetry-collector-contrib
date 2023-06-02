@@ -25,8 +25,10 @@ subtext: |
   - `apachespark`
   - `azuremonitor`
   - `couchdb`
+  - `chrony`
   - `docker_stats`
   - `elasticsearch`
+  - `expvar`
   - `filestats`
   - `flinkmetrics`
   - `googlecloudspanner`
