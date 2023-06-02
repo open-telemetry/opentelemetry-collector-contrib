@@ -242,6 +242,7 @@ func TestPodStore_decorateCpu(t *testing.T) {
 	assert.Equal(t, uint64(10), metric.GetField("container_cpu_request").(uint64))
 	assert.Equal(t, uint64(10), metric.GetField("container_cpu_limit").(uint64))
 	assert.Equal(t, float64(1), metric.GetField("container_cpu_usage_total").(float64))
+	assert.Equal(t, float64(10), metric.GetField("container_cpu_utilization_over_container_limit").(float64))
 }
 
 func TestPodStore_decorateMem(t *testing.T) {
@@ -261,14 +262,15 @@ func TestPodStore_decorateMem(t *testing.T) {
 	assert.Equal(t, uint64(10*1024*1024), metric.GetField("pod_memory_working_set").(uint64))
 
 	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.ContainerNamekey: "ubuntu"}
-	fields = map[string]interface{}{ci.MetricName(ci.TypeContainer, ci.MemWorkingset): float64(10 * 1024 * 1024)}
+	fields = map[string]interface{}{ci.MetricName(ci.TypeContainer, ci.MemWorkingset): uint64(10 * 1024 * 1024)}
 
 	metric = generateMetric(fields, tags)
 	podStore.decorateMem(metric, pod)
 
 	assert.Equal(t, uint64(52428800), metric.GetField("container_memory_request").(uint64))
 	assert.Equal(t, uint64(52428800), metric.GetField("container_memory_limit").(uint64))
-	assert.Equal(t, float64(10*1024*1024), metric.GetField("container_memory_working_set").(float64))
+	assert.Equal(t, uint64(10*1024*1024), metric.GetField("container_memory_working_set").(uint64))
+	assert.Equal(t, float64(20), metric.GetField("container_memory_utilization_over_container_limit").(float64))
 }
 
 func TestPodStore_addContainerCount(t *testing.T) {

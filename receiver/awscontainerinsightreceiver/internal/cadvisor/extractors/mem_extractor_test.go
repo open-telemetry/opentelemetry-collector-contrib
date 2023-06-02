@@ -51,6 +51,7 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_memory_hierarchical_pgfault", 1000, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_memory_pgmajfault", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_memory_hierarchical_pgmajfault", 10, 0)
+	AssertContainsTaggedFloat(t, cMetrics[0], "container_memory_failures_total", 1010, 0.0000001)
 
 	// for node type
 	containerType = TypeNode

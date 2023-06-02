@@ -61,6 +61,9 @@ func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInf
 		float64(curStats.Memory.HierarchicalData.Pgfault), curStats.Timestamp, multiplier)
 	assignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemHierarchicalPgmajfault), info.Name,
 		float64(curStats.Memory.HierarchicalData.Pgmajfault), curStats.Timestamp, multiplier)
+	memoryFailuresTotal := curStats.Memory.ContainerData.Pgfault + curStats.Memory.ContainerData.Pgmajfault
+	assignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemFailuresTotal), info.Name,
+		float64(memoryFailuresTotal), curStats.Timestamp, multiplier)
 
 	memoryCapacity := mInfo.GetMemoryCapacity()
 	if metric.fields[ci.MetricName(containerType, ci.MemWorkingset)] != nil && memoryCapacity != 0 {

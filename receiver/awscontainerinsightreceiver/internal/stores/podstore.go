@@ -385,14 +385,16 @@ func (p *PodStore) decorateCPU(metric CIMetric, pod *corev1.Pod) {
 	} else if metric.GetTag(ci.MetricType) == ci.TypeContainer {
 		// add cpu limit and request for container
 		if metric.HasField(ci.MetricName(ci.TypeContainer, ci.CPUTotal)) {
+			containerCPUTotal := metric.GetField(ci.MetricName(ci.TypeContainer, ci.CPUTotal))
 			if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 				for _, containerSpec := range pod.Spec.Containers {
 					if containerSpec.Name == containerName {
-						if cpuLimit, ok := getLimitForContainer(cpuKey, containerSpec); ok {
-							metric.AddField(ci.MetricName(ci.TypeContainer, ci.CPULimit), cpuLimit)
+						if containerCPULimit, ok := getLimitForContainer(cpuKey, containerSpec); ok {
+							metric.AddField(ci.MetricName(ci.TypeContainer, ci.CPULimit), containerCPULimit)
+							metric.AddField(ci.MetricName(ci.TypeContainer, ci.CPUUtilizationOverContainerLimit), containerCPUTotal.(float64)/float64(containerCPULimit)*100)
 						}
-						if cpuReq, ok := getRequestForContainer(cpuKey, containerSpec); ok {
-							metric.AddField(ci.MetricName(ci.TypeContainer, ci.CPURequest), cpuReq)
+						if containerCPUReq, ok := getRequestForContainer(cpuKey, containerSpec); ok {
+							metric.AddField(ci.MetricName(ci.TypeContainer, ci.CPURequest), containerCPUReq)
 						}
 					}
 				}
@@ -428,15 +430,18 @@ func (p *PodStore) decorateMem(metric CIMetric, pod *corev1.Pod) {
 		}
 	} else if metric.GetTag(ci.MetricType) == ci.TypeContainer {
 		// add mem limit and request for container
-		if metric.HasField(ci.MetricName(ci.TypeContainer, ci.MemWorkingset)) {
+		memWorkingsetMetric := ci.MetricName(ci.TypeContainer, ci.MemWorkingset)
+		if metric.HasField(memWorkingsetMetric) {
+			containerMemWorkingset := metric.GetField(memWorkingsetMetric)
 			if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 				for _, containerSpec := range pod.Spec.Containers {
 					if containerSpec.Name == containerName {
-						if memLimit, ok := getLimitForContainer(memoryKey, containerSpec); ok {
-							metric.AddField(ci.MetricName(ci.TypeContainer, ci.MemLimit), memLimit)
+						if containerMemLimit, ok := getLimitForContainer(memoryKey, containerSpec); ok {
+							metric.AddField(ci.MetricName(ci.TypeContainer, ci.MemLimit), containerMemLimit)
+							metric.AddField(ci.MetricName(ci.TypeContainer, ci.MemUtilizationOverContainerLimit), float64(containerMemWorkingset.(uint64))/float64(containerMemLimit)*100)
 						}
-						if memReq, ok := getRequestForContainer(memoryKey, containerSpec); ok {
-							metric.AddField(ci.MetricName(ci.TypeContainer, ci.MemRequest), memReq)
+						if containerMemReq, ok := getRequestForContainer(memoryKey, containerSpec); ok {
+							metric.AddField(ci.MetricName(ci.TypeContainer, ci.MemRequest), containerMemReq)
 						}
 					}
 				}
