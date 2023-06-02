@@ -26,6 +26,7 @@ configured:
 ```yaml
 hostmetrics:
   collection_interval: <duration> # default = 1m
+  initial_delay: <duration> # default = 1s
   root_path: <string>
   scrapers:
     <scraper1>:
