@@ -6,189 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for bigipreceiver metrics.
-type MetricsSettings struct {
-	BigipNodeAvailability             MetricSettings `mapstructure:"bigip.node.availability"`
-	BigipNodeConnectionCount          MetricSettings `mapstructure:"bigip.node.connection.count"`
-	BigipNodeDataTransmitted          MetricSettings `mapstructure:"bigip.node.data.transmitted"`
-	BigipNodeEnabled                  MetricSettings `mapstructure:"bigip.node.enabled"`
-	BigipNodePacketCount              MetricSettings `mapstructure:"bigip.node.packet.count"`
-	BigipNodeRequestCount             MetricSettings `mapstructure:"bigip.node.request.count"`
-	BigipNodeSessionCount             MetricSettings `mapstructure:"bigip.node.session.count"`
-	BigipPoolAvailability             MetricSettings `mapstructure:"bigip.pool.availability"`
-	BigipPoolConnectionCount          MetricSettings `mapstructure:"bigip.pool.connection.count"`
-	BigipPoolDataTransmitted          MetricSettings `mapstructure:"bigip.pool.data.transmitted"`
-	BigipPoolEnabled                  MetricSettings `mapstructure:"bigip.pool.enabled"`
-	BigipPoolMemberCount              MetricSettings `mapstructure:"bigip.pool.member.count"`
-	BigipPoolPacketCount              MetricSettings `mapstructure:"bigip.pool.packet.count"`
-	BigipPoolRequestCount             MetricSettings `mapstructure:"bigip.pool.request.count"`
-	BigipPoolMemberAvailability       MetricSettings `mapstructure:"bigip.pool_member.availability"`
-	BigipPoolMemberConnectionCount    MetricSettings `mapstructure:"bigip.pool_member.connection.count"`
-	BigipPoolMemberDataTransmitted    MetricSettings `mapstructure:"bigip.pool_member.data.transmitted"`
-	BigipPoolMemberEnabled            MetricSettings `mapstructure:"bigip.pool_member.enabled"`
-	BigipPoolMemberPacketCount        MetricSettings `mapstructure:"bigip.pool_member.packet.count"`
-	BigipPoolMemberRequestCount       MetricSettings `mapstructure:"bigip.pool_member.request.count"`
-	BigipPoolMemberSessionCount       MetricSettings `mapstructure:"bigip.pool_member.session.count"`
-	BigipVirtualServerAvailability    MetricSettings `mapstructure:"bigip.virtual_server.availability"`
-	BigipVirtualServerConnectionCount MetricSettings `mapstructure:"bigip.virtual_server.connection.count"`
-	BigipVirtualServerDataTransmitted MetricSettings `mapstructure:"bigip.virtual_server.data.transmitted"`
-	BigipVirtualServerEnabled         MetricSettings `mapstructure:"bigip.virtual_server.enabled"`
-	BigipVirtualServerPacketCount     MetricSettings `mapstructure:"bigip.virtual_server.packet.count"`
-	BigipVirtualServerRequestCount    MetricSettings `mapstructure:"bigip.virtual_server.request.count"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		BigipNodeAvailability: MetricSettings{
-			Enabled: true,
-		},
-		BigipNodeConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipNodeDataTransmitted: MetricSettings{
-			Enabled: true,
-		},
-		BigipNodeEnabled: MetricSettings{
-			Enabled: true,
-		},
-		BigipNodePacketCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipNodeRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipNodeSessionCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolAvailability: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolDataTransmitted: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolEnabled: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolPacketCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberAvailability: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberDataTransmitted: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberEnabled: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberPacketCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberSessionCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerAvailability: MetricSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerDataTransmitted: MetricSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerEnabled: MetricSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerPacketCount: MetricSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerRequestCount: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for bigipreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	BigipNodeIPAddress            ResourceAttributeSettings `mapstructure:"bigip.node.ip_address"`
-	BigipNodeName                 ResourceAttributeSettings `mapstructure:"bigip.node.name"`
-	BigipPoolName                 ResourceAttributeSettings `mapstructure:"bigip.pool.name"`
-	BigipPoolMemberIPAddress      ResourceAttributeSettings `mapstructure:"bigip.pool_member.ip_address"`
-	BigipPoolMemberName           ResourceAttributeSettings `mapstructure:"bigip.pool_member.name"`
-	BigipVirtualServerDestination ResourceAttributeSettings `mapstructure:"bigip.virtual_server.destination"`
-	BigipVirtualServerName        ResourceAttributeSettings `mapstructure:"bigip.virtual_server.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		BigipNodeIPAddress: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		BigipNodeName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		BigipPoolName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberIPAddress: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		BigipPoolMemberName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerDestination: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		BigipVirtualServerName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeActiveStatus specifies the a value active.status attribute.
 type AttributeActiveStatus int
@@ -300,7 +121,7 @@ var MapAttributeEnabledStatus = map[string]AttributeEnabledStatus{
 
 type metricBigipNodeAvailability struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -314,7 +135,7 @@ func (m *metricBigipNodeAvailability) init() {
 }
 
 func (m *metricBigipNodeAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -333,16 +154,16 @@ func (m *metricBigipNodeAvailability) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipNodeAvailability) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipNodeAvailability(settings MetricSettings) metricBigipNodeAvailability {
-	m := metricBigipNodeAvailability{settings: settings}
-	if settings.Enabled {
+func newMetricBigipNodeAvailability(cfg MetricConfig) metricBigipNodeAvailability {
+	m := metricBigipNodeAvailability{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -351,7 +172,7 @@ func newMetricBigipNodeAvailability(settings MetricSettings) metricBigipNodeAvai
 
 type metricBigipNodeConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -366,7 +187,7 @@ func (m *metricBigipNodeConnectionCount) init() {
 }
 
 func (m *metricBigipNodeConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -384,16 +205,16 @@ func (m *metricBigipNodeConnectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipNodeConnectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipNodeConnectionCount(settings MetricSettings) metricBigipNodeConnectionCount {
-	m := metricBigipNodeConnectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipNodeConnectionCount(cfg MetricConfig) metricBigipNodeConnectionCount {
+	m := metricBigipNodeConnectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -402,7 +223,7 @@ func newMetricBigipNodeConnectionCount(settings MetricSettings) metricBigipNodeC
 
 type metricBigipNodeDataTransmitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -418,7 +239,7 @@ func (m *metricBigipNodeDataTransmitted) init() {
 }
 
 func (m *metricBigipNodeDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -437,16 +258,16 @@ func (m *metricBigipNodeDataTransmitted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipNodeDataTransmitted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipNodeDataTransmitted(settings MetricSettings) metricBigipNodeDataTransmitted {
-	m := metricBigipNodeDataTransmitted{settings: settings}
-	if settings.Enabled {
+func newMetricBigipNodeDataTransmitted(cfg MetricConfig) metricBigipNodeDataTransmitted {
+	m := metricBigipNodeDataTransmitted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -455,7 +276,7 @@ func newMetricBigipNodeDataTransmitted(settings MetricSettings) metricBigipNodeD
 
 type metricBigipNodeEnabled struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -469,7 +290,7 @@ func (m *metricBigipNodeEnabled) init() {
 }
 
 func (m *metricBigipNodeEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -488,16 +309,16 @@ func (m *metricBigipNodeEnabled) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipNodeEnabled) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipNodeEnabled(settings MetricSettings) metricBigipNodeEnabled {
-	m := metricBigipNodeEnabled{settings: settings}
-	if settings.Enabled {
+func newMetricBigipNodeEnabled(cfg MetricConfig) metricBigipNodeEnabled {
+	m := metricBigipNodeEnabled{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -506,7 +327,7 @@ func newMetricBigipNodeEnabled(settings MetricSettings) metricBigipNodeEnabled {
 
 type metricBigipNodePacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -522,7 +343,7 @@ func (m *metricBigipNodePacketCount) init() {
 }
 
 func (m *metricBigipNodePacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -541,16 +362,16 @@ func (m *metricBigipNodePacketCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipNodePacketCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipNodePacketCount(settings MetricSettings) metricBigipNodePacketCount {
-	m := metricBigipNodePacketCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipNodePacketCount(cfg MetricConfig) metricBigipNodePacketCount {
+	m := metricBigipNodePacketCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -559,7 +380,7 @@ func newMetricBigipNodePacketCount(settings MetricSettings) metricBigipNodePacke
 
 type metricBigipNodeRequestCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -574,7 +395,7 @@ func (m *metricBigipNodeRequestCount) init() {
 }
 
 func (m *metricBigipNodeRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -592,16 +413,16 @@ func (m *metricBigipNodeRequestCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipNodeRequestCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipNodeRequestCount(settings MetricSettings) metricBigipNodeRequestCount {
-	m := metricBigipNodeRequestCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipNodeRequestCount(cfg MetricConfig) metricBigipNodeRequestCount {
+	m := metricBigipNodeRequestCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -610,7 +431,7 @@ func newMetricBigipNodeRequestCount(settings MetricSettings) metricBigipNodeRequ
 
 type metricBigipNodeSessionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -625,7 +446,7 @@ func (m *metricBigipNodeSessionCount) init() {
 }
 
 func (m *metricBigipNodeSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -643,16 +464,16 @@ func (m *metricBigipNodeSessionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipNodeSessionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipNodeSessionCount(settings MetricSettings) metricBigipNodeSessionCount {
-	m := metricBigipNodeSessionCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipNodeSessionCount(cfg MetricConfig) metricBigipNodeSessionCount {
+	m := metricBigipNodeSessionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -661,7 +482,7 @@ func newMetricBigipNodeSessionCount(settings MetricSettings) metricBigipNodeSess
 
 type metricBigipPoolAvailability struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -675,7 +496,7 @@ func (m *metricBigipPoolAvailability) init() {
 }
 
 func (m *metricBigipPoolAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -694,16 +515,16 @@ func (m *metricBigipPoolAvailability) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolAvailability) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolAvailability(settings MetricSettings) metricBigipPoolAvailability {
-	m := metricBigipPoolAvailability{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolAvailability(cfg MetricConfig) metricBigipPoolAvailability {
+	m := metricBigipPoolAvailability{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -712,7 +533,7 @@ func newMetricBigipPoolAvailability(settings MetricSettings) metricBigipPoolAvai
 
 type metricBigipPoolConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -727,7 +548,7 @@ func (m *metricBigipPoolConnectionCount) init() {
 }
 
 func (m *metricBigipPoolConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -745,16 +566,16 @@ func (m *metricBigipPoolConnectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolConnectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolConnectionCount(settings MetricSettings) metricBigipPoolConnectionCount {
-	m := metricBigipPoolConnectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolConnectionCount(cfg MetricConfig) metricBigipPoolConnectionCount {
+	m := metricBigipPoolConnectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -763,7 +584,7 @@ func newMetricBigipPoolConnectionCount(settings MetricSettings) metricBigipPoolC
 
 type metricBigipPoolDataTransmitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -779,7 +600,7 @@ func (m *metricBigipPoolDataTransmitted) init() {
 }
 
 func (m *metricBigipPoolDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -798,16 +619,16 @@ func (m *metricBigipPoolDataTransmitted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolDataTransmitted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolDataTransmitted(settings MetricSettings) metricBigipPoolDataTransmitted {
-	m := metricBigipPoolDataTransmitted{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolDataTransmitted(cfg MetricConfig) metricBigipPoolDataTransmitted {
+	m := metricBigipPoolDataTransmitted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -816,7 +637,7 @@ func newMetricBigipPoolDataTransmitted(settings MetricSettings) metricBigipPoolD
 
 type metricBigipPoolEnabled struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -830,7 +651,7 @@ func (m *metricBigipPoolEnabled) init() {
 }
 
 func (m *metricBigipPoolEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -849,16 +670,16 @@ func (m *metricBigipPoolEnabled) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolEnabled) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolEnabled(settings MetricSettings) metricBigipPoolEnabled {
-	m := metricBigipPoolEnabled{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolEnabled(cfg MetricConfig) metricBigipPoolEnabled {
+	m := metricBigipPoolEnabled{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -867,7 +688,7 @@ func newMetricBigipPoolEnabled(settings MetricSettings) metricBigipPoolEnabled {
 
 type metricBigipPoolMemberCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -883,7 +704,7 @@ func (m *metricBigipPoolMemberCount) init() {
 }
 
 func (m *metricBigipPoolMemberCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, activeStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -902,16 +723,16 @@ func (m *metricBigipPoolMemberCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberCount(settings MetricSettings) metricBigipPoolMemberCount {
-	m := metricBigipPoolMemberCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberCount(cfg MetricConfig) metricBigipPoolMemberCount {
+	m := metricBigipPoolMemberCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -920,7 +741,7 @@ func newMetricBigipPoolMemberCount(settings MetricSettings) metricBigipPoolMembe
 
 type metricBigipPoolPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -936,7 +757,7 @@ func (m *metricBigipPoolPacketCount) init() {
 }
 
 func (m *metricBigipPoolPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -955,16 +776,16 @@ func (m *metricBigipPoolPacketCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolPacketCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolPacketCount(settings MetricSettings) metricBigipPoolPacketCount {
-	m := metricBigipPoolPacketCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolPacketCount(cfg MetricConfig) metricBigipPoolPacketCount {
+	m := metricBigipPoolPacketCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -973,7 +794,7 @@ func newMetricBigipPoolPacketCount(settings MetricSettings) metricBigipPoolPacke
 
 type metricBigipPoolRequestCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -988,7 +809,7 @@ func (m *metricBigipPoolRequestCount) init() {
 }
 
 func (m *metricBigipPoolRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1006,16 +827,16 @@ func (m *metricBigipPoolRequestCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolRequestCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolRequestCount(settings MetricSettings) metricBigipPoolRequestCount {
-	m := metricBigipPoolRequestCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolRequestCount(cfg MetricConfig) metricBigipPoolRequestCount {
+	m := metricBigipPoolRequestCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1024,7 +845,7 @@ func newMetricBigipPoolRequestCount(settings MetricSettings) metricBigipPoolRequ
 
 type metricBigipPoolMemberAvailability struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1038,7 +859,7 @@ func (m *metricBigipPoolMemberAvailability) init() {
 }
 
 func (m *metricBigipPoolMemberAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1057,16 +878,16 @@ func (m *metricBigipPoolMemberAvailability) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberAvailability) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberAvailability(settings MetricSettings) metricBigipPoolMemberAvailability {
-	m := metricBigipPoolMemberAvailability{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberAvailability(cfg MetricConfig) metricBigipPoolMemberAvailability {
+	m := metricBigipPoolMemberAvailability{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1075,7 +896,7 @@ func newMetricBigipPoolMemberAvailability(settings MetricSettings) metricBigipPo
 
 type metricBigipPoolMemberConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1090,7 +911,7 @@ func (m *metricBigipPoolMemberConnectionCount) init() {
 }
 
 func (m *metricBigipPoolMemberConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1108,16 +929,16 @@ func (m *metricBigipPoolMemberConnectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberConnectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberConnectionCount(settings MetricSettings) metricBigipPoolMemberConnectionCount {
-	m := metricBigipPoolMemberConnectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberConnectionCount(cfg MetricConfig) metricBigipPoolMemberConnectionCount {
+	m := metricBigipPoolMemberConnectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1126,7 +947,7 @@ func newMetricBigipPoolMemberConnectionCount(settings MetricSettings) metricBigi
 
 type metricBigipPoolMemberDataTransmitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1142,7 +963,7 @@ func (m *metricBigipPoolMemberDataTransmitted) init() {
 }
 
 func (m *metricBigipPoolMemberDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1161,16 +982,16 @@ func (m *metricBigipPoolMemberDataTransmitted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberDataTransmitted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberDataTransmitted(settings MetricSettings) metricBigipPoolMemberDataTransmitted {
-	m := metricBigipPoolMemberDataTransmitted{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberDataTransmitted(cfg MetricConfig) metricBigipPoolMemberDataTransmitted {
+	m := metricBigipPoolMemberDataTransmitted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1179,7 +1000,7 @@ func newMetricBigipPoolMemberDataTransmitted(settings MetricSettings) metricBigi
 
 type metricBigipPoolMemberEnabled struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1193,7 +1014,7 @@ func (m *metricBigipPoolMemberEnabled) init() {
 }
 
 func (m *metricBigipPoolMemberEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1212,16 +1033,16 @@ func (m *metricBigipPoolMemberEnabled) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberEnabled) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberEnabled(settings MetricSettings) metricBigipPoolMemberEnabled {
-	m := metricBigipPoolMemberEnabled{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberEnabled(cfg MetricConfig) metricBigipPoolMemberEnabled {
+	m := metricBigipPoolMemberEnabled{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1230,7 +1051,7 @@ func newMetricBigipPoolMemberEnabled(settings MetricSettings) metricBigipPoolMem
 
 type metricBigipPoolMemberPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1246,7 +1067,7 @@ func (m *metricBigipPoolMemberPacketCount) init() {
 }
 
 func (m *metricBigipPoolMemberPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1265,16 +1086,16 @@ func (m *metricBigipPoolMemberPacketCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberPacketCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberPacketCount(settings MetricSettings) metricBigipPoolMemberPacketCount {
-	m := metricBigipPoolMemberPacketCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberPacketCount(cfg MetricConfig) metricBigipPoolMemberPacketCount {
+	m := metricBigipPoolMemberPacketCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1283,7 +1104,7 @@ func newMetricBigipPoolMemberPacketCount(settings MetricSettings) metricBigipPoo
 
 type metricBigipPoolMemberRequestCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1298,7 +1119,7 @@ func (m *metricBigipPoolMemberRequestCount) init() {
 }
 
 func (m *metricBigipPoolMemberRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1316,16 +1137,16 @@ func (m *metricBigipPoolMemberRequestCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberRequestCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberRequestCount(settings MetricSettings) metricBigipPoolMemberRequestCount {
-	m := metricBigipPoolMemberRequestCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberRequestCount(cfg MetricConfig) metricBigipPoolMemberRequestCount {
+	m := metricBigipPoolMemberRequestCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1334,7 +1155,7 @@ func newMetricBigipPoolMemberRequestCount(settings MetricSettings) metricBigipPo
 
 type metricBigipPoolMemberSessionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1349,7 +1170,7 @@ func (m *metricBigipPoolMemberSessionCount) init() {
 }
 
 func (m *metricBigipPoolMemberSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1367,16 +1188,16 @@ func (m *metricBigipPoolMemberSessionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipPoolMemberSessionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipPoolMemberSessionCount(settings MetricSettings) metricBigipPoolMemberSessionCount {
-	m := metricBigipPoolMemberSessionCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipPoolMemberSessionCount(cfg MetricConfig) metricBigipPoolMemberSessionCount {
+	m := metricBigipPoolMemberSessionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1385,7 +1206,7 @@ func newMetricBigipPoolMemberSessionCount(settings MetricSettings) metricBigipPo
 
 type metricBigipVirtualServerAvailability struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1399,7 +1220,7 @@ func (m *metricBigipVirtualServerAvailability) init() {
 }
 
 func (m *metricBigipVirtualServerAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1418,16 +1239,16 @@ func (m *metricBigipVirtualServerAvailability) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipVirtualServerAvailability) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipVirtualServerAvailability(settings MetricSettings) metricBigipVirtualServerAvailability {
-	m := metricBigipVirtualServerAvailability{settings: settings}
-	if settings.Enabled {
+func newMetricBigipVirtualServerAvailability(cfg MetricConfig) metricBigipVirtualServerAvailability {
+	m := metricBigipVirtualServerAvailability{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1436,7 +1257,7 @@ func newMetricBigipVirtualServerAvailability(settings MetricSettings) metricBigi
 
 type metricBigipVirtualServerConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1451,7 +1272,7 @@ func (m *metricBigipVirtualServerConnectionCount) init() {
 }
 
 func (m *metricBigipVirtualServerConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1469,16 +1290,16 @@ func (m *metricBigipVirtualServerConnectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipVirtualServerConnectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipVirtualServerConnectionCount(settings MetricSettings) metricBigipVirtualServerConnectionCount {
-	m := metricBigipVirtualServerConnectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipVirtualServerConnectionCount(cfg MetricConfig) metricBigipVirtualServerConnectionCount {
+	m := metricBigipVirtualServerConnectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1487,7 +1308,7 @@ func newMetricBigipVirtualServerConnectionCount(settings MetricSettings) metricB
 
 type metricBigipVirtualServerDataTransmitted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1503,7 +1324,7 @@ func (m *metricBigipVirtualServerDataTransmitted) init() {
 }
 
 func (m *metricBigipVirtualServerDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1522,16 +1343,16 @@ func (m *metricBigipVirtualServerDataTransmitted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipVirtualServerDataTransmitted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipVirtualServerDataTransmitted(settings MetricSettings) metricBigipVirtualServerDataTransmitted {
-	m := metricBigipVirtualServerDataTransmitted{settings: settings}
-	if settings.Enabled {
+func newMetricBigipVirtualServerDataTransmitted(cfg MetricConfig) metricBigipVirtualServerDataTransmitted {
+	m := metricBigipVirtualServerDataTransmitted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1540,7 +1361,7 @@ func newMetricBigipVirtualServerDataTransmitted(settings MetricSettings) metricB
 
 type metricBigipVirtualServerEnabled struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1554,7 +1375,7 @@ func (m *metricBigipVirtualServerEnabled) init() {
 }
 
 func (m *metricBigipVirtualServerEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1573,16 +1394,16 @@ func (m *metricBigipVirtualServerEnabled) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipVirtualServerEnabled) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipVirtualServerEnabled(settings MetricSettings) metricBigipVirtualServerEnabled {
-	m := metricBigipVirtualServerEnabled{settings: settings}
-	if settings.Enabled {
+func newMetricBigipVirtualServerEnabled(cfg MetricConfig) metricBigipVirtualServerEnabled {
+	m := metricBigipVirtualServerEnabled{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1591,7 +1412,7 @@ func newMetricBigipVirtualServerEnabled(settings MetricSettings) metricBigipVirt
 
 type metricBigipVirtualServerPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1607,7 +1428,7 @@ func (m *metricBigipVirtualServerPacketCount) init() {
 }
 
 func (m *metricBigipVirtualServerPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1626,16 +1447,16 @@ func (m *metricBigipVirtualServerPacketCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipVirtualServerPacketCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipVirtualServerPacketCount(settings MetricSettings) metricBigipVirtualServerPacketCount {
-	m := metricBigipVirtualServerPacketCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipVirtualServerPacketCount(cfg MetricConfig) metricBigipVirtualServerPacketCount {
+	m := metricBigipVirtualServerPacketCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1644,7 +1465,7 @@ func newMetricBigipVirtualServerPacketCount(settings MetricSettings) metricBigip
 
 type metricBigipVirtualServerRequestCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1659,7 +1480,7 @@ func (m *metricBigipVirtualServerRequestCount) init() {
 }
 
 func (m *metricBigipVirtualServerRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1677,37 +1498,31 @@ func (m *metricBigipVirtualServerRequestCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricBigipVirtualServerRequestCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricBigipVirtualServerRequestCount(settings MetricSettings) metricBigipVirtualServerRequestCount {
-	m := metricBigipVirtualServerRequestCount{settings: settings}
-	if settings.Enabled {
+func newMetricBigipVirtualServerRequestCount(cfg MetricConfig) metricBigipVirtualServerRequestCount {
+	m := metricBigipVirtualServerRequestCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                               pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                         int                 // maximum observed number of metrics per resource.
 	resourceCapacity                        int                 // maximum observed number of resource attributes.
 	metricsBuffer                           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo // contains version information
-	resourceAttributesSettings              ResourceAttributesSettings
+	resourceAttributesConfig                ResourceAttributesConfig
 	metricBigipNodeAvailability             metricBigipNodeAvailability
 	metricBigipNodeConnectionCount          metricBigipNodeConnectionCount
 	metricBigipNodeDataTransmitted          metricBigipNodeDataTransmitted
@@ -1747,19 +1562,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
-		resourceAttributesSettings:              mbc.ResourceAttributes,
+		resourceAttributesConfig:                mbc.ResourceAttributes,
 		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(mbc.Metrics.BigipNodeAvailability),
 		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(mbc.Metrics.BigipNodeConnectionCount),
 		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(mbc.Metrics.BigipNodeDataTransmitted),
@@ -1805,12 +1613,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithBigipNodeIPAddress sets provided value as "bigip.node.ip_address" attribute for current resource.
 func WithBigipNodeIPAddress(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.BigipNodeIPAddress.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.BigipNodeIPAddress.Enabled {
 			rm.Resource().Attributes().PutStr("bigip.node.ip_address", val)
 		}
 	}
@@ -1818,8 +1626,8 @@ func WithBigipNodeIPAddress(val string) ResourceMetricsOption {
 
 // WithBigipNodeName sets provided value as "bigip.node.name" attribute for current resource.
 func WithBigipNodeName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.BigipNodeName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.BigipNodeName.Enabled {
 			rm.Resource().Attributes().PutStr("bigip.node.name", val)
 		}
 	}
@@ -1827,8 +1635,8 @@ func WithBigipNodeName(val string) ResourceMetricsOption {
 
 // WithBigipPoolName sets provided value as "bigip.pool.name" attribute for current resource.
 func WithBigipPoolName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.BigipPoolName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.BigipPoolName.Enabled {
 			rm.Resource().Attributes().PutStr("bigip.pool.name", val)
 		}
 	}
@@ -1836,8 +1644,8 @@ func WithBigipPoolName(val string) ResourceMetricsOption {
 
 // WithBigipPoolMemberIPAddress sets provided value as "bigip.pool_member.ip_address" attribute for current resource.
 func WithBigipPoolMemberIPAddress(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.BigipPoolMemberIPAddress.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.BigipPoolMemberIPAddress.Enabled {
 			rm.Resource().Attributes().PutStr("bigip.pool_member.ip_address", val)
 		}
 	}
@@ -1845,8 +1653,8 @@ func WithBigipPoolMemberIPAddress(val string) ResourceMetricsOption {
 
 // WithBigipPoolMemberName sets provided value as "bigip.pool_member.name" attribute for current resource.
 func WithBigipPoolMemberName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.BigipPoolMemberName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.BigipPoolMemberName.Enabled {
 			rm.Resource().Attributes().PutStr("bigip.pool_member.name", val)
 		}
 	}
@@ -1854,8 +1662,8 @@ func WithBigipPoolMemberName(val string) ResourceMetricsOption {
 
 // WithBigipVirtualServerDestination sets provided value as "bigip.virtual_server.destination" attribute for current resource.
 func WithBigipVirtualServerDestination(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.BigipVirtualServerDestination.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.BigipVirtualServerDestination.Enabled {
 			rm.Resource().Attributes().PutStr("bigip.virtual_server.destination", val)
 		}
 	}
@@ -1863,8 +1671,8 @@ func WithBigipVirtualServerDestination(val string) ResourceMetricsOption {
 
 // WithBigipVirtualServerName sets provided value as "bigip.virtual_server.name" attribute for current resource.
 func WithBigipVirtualServerName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.BigipVirtualServerName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.BigipVirtualServerName.Enabled {
 			rm.Resource().Attributes().PutStr("bigip.virtual_server.name", val)
 		}
 	}
@@ -1873,7 +1681,7 @@ func WithBigipVirtualServerName(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1931,7 +1739,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricBigipVirtualServerRequestCount.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1941,7 +1749,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

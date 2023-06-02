@@ -6,85 +6,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for sshcheckreceiver metrics.
-type MetricsSettings struct {
-	SshcheckDuration     MetricSettings `mapstructure:"sshcheck.duration"`
-	SshcheckError        MetricSettings `mapstructure:"sshcheck.error"`
-	SshcheckSftpDuration MetricSettings `mapstructure:"sshcheck.sftp_duration"`
-	SshcheckSftpError    MetricSettings `mapstructure:"sshcheck.sftp_error"`
-	SshcheckSftpStatus   MetricSettings `mapstructure:"sshcheck.sftp_status"`
-	SshcheckStatus       MetricSettings `mapstructure:"sshcheck.status"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SshcheckDuration: MetricSettings{
-			Enabled: true,
-		},
-		SshcheckError: MetricSettings{
-			Enabled: true,
-		},
-		SshcheckSftpDuration: MetricSettings{
-			Enabled: false,
-		},
-		SshcheckSftpError: MetricSettings{
-			Enabled: false,
-		},
-		SshcheckSftpStatus: MetricSettings{
-			Enabled: false,
-		},
-		SshcheckStatus: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for sshcheckreceiver resource attributes.
-type ResourceAttributesSettings struct {
-	SSHEndpoint ResourceAttributeSettings `mapstructure:"ssh.endpoint"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		SSHEndpoint: ResourceAttributeSettings{
-			Enabled: false,
-		},
-	}
-}
-
 type metricSshcheckDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -97,7 +26,7 @@ func (m *metricSshcheckDuration) init() {
 }
 
 func (m *metricSshcheckDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -115,16 +44,16 @@ func (m *metricSshcheckDuration) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckDuration) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckDuration(settings MetricSettings) metricSshcheckDuration {
-	m := metricSshcheckDuration{settings: settings}
-	if settings.Enabled {
+func newMetricSshcheckDuration(cfg MetricConfig) metricSshcheckDuration {
+	m := metricSshcheckDuration{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -133,7 +62,7 @@ func newMetricSshcheckDuration(settings MetricSettings) metricSshcheckDuration {
 
 type metricSshcheckError struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -149,7 +78,7 @@ func (m *metricSshcheckError) init() {
 }
 
 func (m *metricSshcheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -168,16 +97,16 @@ func (m *metricSshcheckError) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckError) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckError(settings MetricSettings) metricSshcheckError {
-	m := metricSshcheckError{settings: settings}
-	if settings.Enabled {
+func newMetricSshcheckError(cfg MetricConfig) metricSshcheckError {
+	m := metricSshcheckError{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -186,7 +115,7 @@ func newMetricSshcheckError(settings MetricSettings) metricSshcheckError {
 
 type metricSshcheckSftpDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -199,7 +128,7 @@ func (m *metricSshcheckSftpDuration) init() {
 }
 
 func (m *metricSshcheckSftpDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -217,16 +146,16 @@ func (m *metricSshcheckSftpDuration) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckSftpDuration) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckSftpDuration(settings MetricSettings) metricSshcheckSftpDuration {
-	m := metricSshcheckSftpDuration{settings: settings}
-	if settings.Enabled {
+func newMetricSshcheckSftpDuration(cfg MetricConfig) metricSshcheckSftpDuration {
+	m := metricSshcheckSftpDuration{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -235,7 +164,7 @@ func newMetricSshcheckSftpDuration(settings MetricSettings) metricSshcheckSftpDu
 
 type metricSshcheckSftpError struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -251,7 +180,7 @@ func (m *metricSshcheckSftpError) init() {
 }
 
 func (m *metricSshcheckSftpError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -270,16 +199,16 @@ func (m *metricSshcheckSftpError) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckSftpError) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckSftpError(settings MetricSettings) metricSshcheckSftpError {
-	m := metricSshcheckSftpError{settings: settings}
-	if settings.Enabled {
+func newMetricSshcheckSftpError(cfg MetricConfig) metricSshcheckSftpError {
+	m := metricSshcheckSftpError{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -288,7 +217,7 @@ func newMetricSshcheckSftpError(settings MetricSettings) metricSshcheckSftpError
 
 type metricSshcheckSftpStatus struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -303,7 +232,7 @@ func (m *metricSshcheckSftpStatus) init() {
 }
 
 func (m *metricSshcheckSftpStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -321,16 +250,16 @@ func (m *metricSshcheckSftpStatus) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckSftpStatus) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckSftpStatus(settings MetricSettings) metricSshcheckSftpStatus {
-	m := metricSshcheckSftpStatus{settings: settings}
-	if settings.Enabled {
+func newMetricSshcheckSftpStatus(cfg MetricConfig) metricSshcheckSftpStatus {
+	m := metricSshcheckSftpStatus{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -339,7 +268,7 @@ func newMetricSshcheckSftpStatus(settings MetricSettings) metricSshcheckSftpStat
 
 type metricSshcheckStatus struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -354,7 +283,7 @@ func (m *metricSshcheckStatus) init() {
 }
 
 func (m *metricSshcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -372,37 +301,31 @@ func (m *metricSshcheckStatus) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSshcheckStatus) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSshcheckStatus(settings MetricSettings) metricSshcheckStatus {
-	m := metricSshcheckStatus{settings: settings}
-	if settings.Enabled {
+func newMetricSshcheckStatus(cfg MetricConfig) metricSshcheckStatus {
+	m := metricSshcheckStatus{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity            int                 // maximum observed number of metrics per resource.
 	resourceCapacity           int                 // maximum observed number of resource attributes.
 	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                  component.BuildInfo // contains version information
-	resourceAttributesSettings ResourceAttributesSettings
+	resourceAttributesConfig   ResourceAttributesConfig
 	metricSshcheckDuration     metricSshcheckDuration
 	metricSshcheckError        metricSshcheckError
 	metricSshcheckSftpDuration metricSshcheckSftpDuration
@@ -421,19 +344,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
 		buildInfo:                  settings.BuildInfo,
-		resourceAttributesSettings: mbc.ResourceAttributes,
+		resourceAttributesConfig:   mbc.ResourceAttributes,
 		metricSshcheckDuration:     newMetricSshcheckDuration(mbc.Metrics.SshcheckDuration),
 		metricSshcheckError:        newMetricSshcheckError(mbc.Metrics.SshcheckError),
 		metricSshcheckSftpDuration: newMetricSshcheckSftpDuration(mbc.Metrics.SshcheckSftpDuration),
@@ -458,12 +374,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithSSHEndpoint sets provided value as "ssh.endpoint" attribute for current resource.
 func WithSSHEndpoint(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.SSHEndpoint.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.SSHEndpoint.Enabled {
 			rm.Resource().Attributes().PutStr("ssh.endpoint", val)
 		}
 	}
@@ -472,7 +388,7 @@ func WithSSHEndpoint(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -509,7 +425,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSshcheckStatus.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -519,7 +435,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

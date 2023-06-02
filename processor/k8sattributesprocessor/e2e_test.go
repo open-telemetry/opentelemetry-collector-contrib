@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build e2e
 // +build e2e
@@ -86,12 +75,16 @@ func TestE2E(t *testing.T) {
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := createCollectorObjects(t, dynamicClient, testID)
-	telemetryGenObjs := createTelemetryGenObjects(t, dynamicClient, testID)
+	telemetryGenObjs, telemetryGenObjInfos := createTelemetryGenObjects(t, dynamicClient, testID)
 	defer func() {
 		for _, obj := range append(collectorObjs, telemetryGenObjs...) {
 			require.NoErrorf(t, deleteObject(dynamicClient, obj), "failed to delete object %s", obj.GetName())
 		}
 	}()
+
+	for _, info := range telemetryGenObjInfos {
+		waitForTelemetryGenToStart(t, dynamicClient, info.namespace, info.podLabelSelectors, info.workload, info.dataType)
+	}
 
 	metricsConsumer := new(consumertest.MetricsSink)
 	tracesConsumer := new(consumertest.TracesSink)
@@ -159,6 +152,7 @@ func TestE2E(t *testing.T) {
 				"k8s.node.name":            newExpectedValue(exist, ""),
 				"k8s.namespace.name":       newExpectedValue(equal, "default"),
 				"k8s.deployment.name":      newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
+				"k8s.deployment.uid":       newExpectedValue(exist, ""),
 				"k8s.replicaset.name":      newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*"),
 				"k8s.replicaset.uid":       newExpectedValue(exist, ""),
 				"k8s.annotations.workload": newExpectedValue(equal, "deployment"),
@@ -244,6 +238,7 @@ func TestE2E(t *testing.T) {
 				"k8s.node.name":            newExpectedValue(exist, ""),
 				"k8s.namespace.name":       newExpectedValue(equal, "default"),
 				"k8s.deployment.name":      newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
+				"k8s.deployment.uid":       newExpectedValue(exist, ""),
 				"k8s.replicaset.name":      newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*"),
 				"k8s.replicaset.uid":       newExpectedValue(exist, ""),
 				"k8s.annotations.workload": newExpectedValue(equal, "deployment"),
@@ -329,6 +324,7 @@ func TestE2E(t *testing.T) {
 				"k8s.node.name":            newExpectedValue(exist, ""),
 				"k8s.namespace.name":       newExpectedValue(equal, "default"),
 				"k8s.deployment.name":      newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
+				"k8s.deployment.uid":       newExpectedValue(exist, ""),
 				"k8s.replicaset.name":      newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*"),
 				"k8s.replicaset.uid":       newExpectedValue(exist, ""),
 				"k8s.annotations.workload": newExpectedValue(equal, "deployment"),
@@ -534,7 +530,15 @@ func selectorFromMap(labelMap map[string]any) labels.Selector {
 	return labelSet.AsSelector()
 }
 
-func createTelemetryGenObjects(t *testing.T, client *dynamic.DynamicClient, testID string) []*unstructured.Unstructured {
+type telemetrygenObjInfo struct {
+	namespace         string
+	podLabelSelectors map[string]any
+	dataType          string
+	workload          string
+}
+
+func createTelemetryGenObjects(t *testing.T, client *dynamic.DynamicClient, testID string) ([]*unstructured.Unstructured, []*telemetrygenObjInfo) {
+	telemetrygenObjInfos := make([]*telemetrygenObjInfo, 0)
 	manifestsDir := filepath.Join(".", "testdata", "e2e", "telemetrygen")
 	manifestFiles, err := os.ReadDir(manifestsDir)
 	require.NoErrorf(t, err, "failed to read telemetrygen manifests directory %s", manifestsDir)
@@ -550,10 +554,17 @@ func createTelemetryGenObjects(t *testing.T, client *dynamic.DynamicClient, test
 			}))
 			obj, err := createObject(client, manifest.Bytes())
 			require.NoErrorf(t, err, "failed to create telemetrygen object from manifest %s", manifestFile.Name())
+			selector := obj.Object["spec"].(map[string]any)["selector"]
+			telemetrygenObjInfos = append(telemetrygenObjInfos, &telemetrygenObjInfo{
+				namespace:         "default",
+				podLabelSelectors: selector.(map[string]any)["matchLabels"].(map[string]any),
+				dataType:          dataType,
+				workload:          obj.GetKind(),
+			})
 			createdObjs = append(createdObjs, obj)
 		}
 	}
-	return createdObjs
+	return createdObjs, telemetrygenObjInfos
 }
 
 func createObject(client *dynamic.DynamicClient, manifest []byte) (*unstructured.Unstructured, error) {
@@ -579,6 +590,23 @@ func deleteObject(client *dynamic.DynamicClient, obj *unstructured.Unstructured)
 		Resource: strings.ToLower(gvk.Kind + "s"),
 	}
 	return client.Resource(gvr).Namespace(obj.GetNamespace()).Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{})
+}
+
+func waitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, podNamespace string, podLabels map[string]any, workload, dataType string) {
+	podGVR := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
+	listOptions := metav1.ListOptions{LabelSelector: selectorFromMap(podLabels).String()}
+	podTimeoutMinutes := 3
+	var podPhase string
+	require.Eventually(t, func() bool {
+		list, err := client.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
+		require.NoError(t, err, "failed to list collector pods")
+		if len(list.Items) == 0 {
+			return false
+		}
+		podPhase = list.Items[0].Object["status"].(map[string]interface{})["phase"].(string)
+		return podPhase == "Running"
+	}, time.Duration(podTimeoutMinutes)*time.Minute, 50*time.Millisecond,
+		"telemetrygen pod of workload [%s] in datatype [%s] haven't started within %d minutes, latest pod phase is %s", workload, dataType, podTimeoutMinutes, podPhase)
 }
 
 func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) {

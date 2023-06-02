@@ -1,5 +1,11 @@
-type: sshcheckreceiver
+type: sshcheck
 
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  
 resource_attributes:
   ssh.endpoint:
     description: Full SSH endpoint

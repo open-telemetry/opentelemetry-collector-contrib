@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "iisreceiver"
+	Type             = "iis"
 	MetricsStability = component.StabilityLevelBeta
 )

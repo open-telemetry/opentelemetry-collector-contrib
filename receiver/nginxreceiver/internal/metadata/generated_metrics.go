@@ -6,55 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for nginxreceiver metrics.
-type MetricsSettings struct {
-	NginxConnectionsAccepted MetricSettings `mapstructure:"nginx.connections_accepted"`
-	NginxConnectionsCurrent  MetricSettings `mapstructure:"nginx.connections_current"`
-	NginxConnectionsHandled  MetricSettings `mapstructure:"nginx.connections_handled"`
-	NginxRequests            MetricSettings `mapstructure:"nginx.requests"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		NginxConnectionsAccepted: MetricSettings{
-			Enabled: true,
-		},
-		NginxConnectionsCurrent: MetricSettings{
-			Enabled: true,
-		},
-		NginxConnectionsHandled: MetricSettings{
-			Enabled: true,
-		},
-		NginxRequests: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeState specifies the a value state attribute.
 type AttributeState int
@@ -92,7 +47,7 @@ var MapAttributeState = map[string]AttributeState{
 
 type metricNginxConnectionsAccepted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -107,7 +62,7 @@ func (m *metricNginxConnectionsAccepted) init() {
 }
 
 func (m *metricNginxConnectionsAccepted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -125,16 +80,16 @@ func (m *metricNginxConnectionsAccepted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNginxConnectionsAccepted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNginxConnectionsAccepted(settings MetricSettings) metricNginxConnectionsAccepted {
-	m := metricNginxConnectionsAccepted{settings: settings}
-	if settings.Enabled {
+func newMetricNginxConnectionsAccepted(cfg MetricConfig) metricNginxConnectionsAccepted {
+	m := metricNginxConnectionsAccepted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -143,7 +98,7 @@ func newMetricNginxConnectionsAccepted(settings MetricSettings) metricNginxConne
 
 type metricNginxConnectionsCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -157,7 +112,7 @@ func (m *metricNginxConnectionsCurrent) init() {
 }
 
 func (m *metricNginxConnectionsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -176,16 +131,16 @@ func (m *metricNginxConnectionsCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNginxConnectionsCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNginxConnectionsCurrent(settings MetricSettings) metricNginxConnectionsCurrent {
-	m := metricNginxConnectionsCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricNginxConnectionsCurrent(cfg MetricConfig) metricNginxConnectionsCurrent {
+	m := metricNginxConnectionsCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -194,7 +149,7 @@ func newMetricNginxConnectionsCurrent(settings MetricSettings) metricNginxConnec
 
 type metricNginxConnectionsHandled struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -209,7 +164,7 @@ func (m *metricNginxConnectionsHandled) init() {
 }
 
 func (m *metricNginxConnectionsHandled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -227,16 +182,16 @@ func (m *metricNginxConnectionsHandled) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNginxConnectionsHandled) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNginxConnectionsHandled(settings MetricSettings) metricNginxConnectionsHandled {
-	m := metricNginxConnectionsHandled{settings: settings}
-	if settings.Enabled {
+func newMetricNginxConnectionsHandled(cfg MetricConfig) metricNginxConnectionsHandled {
+	m := metricNginxConnectionsHandled{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -245,7 +200,7 @@ func newMetricNginxConnectionsHandled(settings MetricSettings) metricNginxConnec
 
 type metricNginxRequests struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -260,7 +215,7 @@ func (m *metricNginxRequests) init() {
 }
 
 func (m *metricNginxRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -278,29 +233,77 @@ func (m *metricNginxRequests) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNginxRequests) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricNginxRequests(settings MetricSettings) metricNginxRequests {
-	m := metricNginxRequests{settings: settings}
-	if settings.Enabled {
+func newMetricNginxRequests(cfg MetricConfig) metricNginxRequests {
+	m := metricNginxRequests{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics MetricsSettings `mapstructure:"metrics"`
+type metricTempConnectionsCurrent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills temp.connections_current metric with initial data.
+func (m *metricTempConnectionsCurrent) init() {
+	m.data.SetName("temp.connections_current")
+	m.data.SetDescription("Temporary placeholder for new version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.")
+	m.data.SetUnit("connections")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricTempConnectionsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("state", stateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricTempConnectionsCurrent) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricTempConnectionsCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricTempConnectionsCurrent(cfg MetricConfig) metricTempConnectionsCurrent {
+	m := metricTempConnectionsCurrent{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                      pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                int                 // maximum observed number of metrics per resource.
@@ -311,6 +314,7 @@ type MetricsBuilder struct {
 	metricNginxConnectionsCurrent  metricNginxConnectionsCurrent
 	metricNginxConnectionsHandled  metricNginxConnectionsHandled
 	metricNginxRequests            metricNginxRequests
+	metricTempConnectionsCurrent   metricTempConnectionsCurrent
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -323,12 +327,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsSettings(),
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
@@ -338,6 +336,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricNginxConnectionsCurrent:  newMetricNginxConnectionsCurrent(mbc.Metrics.NginxConnectionsCurrent),
 		metricNginxConnectionsHandled:  newMetricNginxConnectionsHandled(mbc.Metrics.NginxConnectionsHandled),
 		metricNginxRequests:            newMetricNginxRequests(mbc.Metrics.NginxRequests),
+		metricTempConnectionsCurrent:   newMetricTempConnectionsCurrent(mbc.Metrics.TempConnectionsCurrent),
 	}
 	for _, op := range options {
 		op(mb)
@@ -394,6 +393,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricNginxConnectionsCurrent.emit(ils.Metrics())
 	mb.metricNginxConnectionsHandled.emit(ils.Metrics())
 	mb.metricNginxRequests.emit(ils.Metrics())
+	mb.metricTempConnectionsCurrent.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(rm)
@@ -406,7 +406,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer
@@ -432,6 +432,11 @@ func (mb *MetricsBuilder) RecordNginxConnectionsHandledDataPoint(ts pcommon.Time
 // RecordNginxRequestsDataPoint adds a data point to nginx.requests metric.
 func (mb *MetricsBuilder) RecordNginxRequestsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricNginxRequests.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordTempConnectionsCurrentDataPoint adds a data point to temp.connections_current metric.
+func (mb *MetricsBuilder) RecordTempConnectionsCurrentDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
+	mb.metricTempConnectionsCurrent.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

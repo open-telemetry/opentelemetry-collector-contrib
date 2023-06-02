@@ -8,241 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for saphanareceiver metrics.
-type MetricsSettings struct {
-	SaphanaAlertCount                       MetricSettings `mapstructure:"saphana.alert.count"`
-	SaphanaBackupLatest                     MetricSettings `mapstructure:"saphana.backup.latest"`
-	SaphanaColumnMemoryUsed                 MetricSettings `mapstructure:"saphana.column.memory.used"`
-	SaphanaComponentMemoryUsed              MetricSettings `mapstructure:"saphana.component.memory.used"`
-	SaphanaConnectionCount                  MetricSettings `mapstructure:"saphana.connection.count"`
-	SaphanaCPUUsed                          MetricSettings `mapstructure:"saphana.cpu.used"`
-	SaphanaDiskSizeCurrent                  MetricSettings `mapstructure:"saphana.disk.size.current"`
-	SaphanaHostMemoryCurrent                MetricSettings `mapstructure:"saphana.host.memory.current"`
-	SaphanaHostSwapCurrent                  MetricSettings `mapstructure:"saphana.host.swap.current"`
-	SaphanaInstanceCodeSize                 MetricSettings `mapstructure:"saphana.instance.code_size"`
-	SaphanaInstanceMemoryCurrent            MetricSettings `mapstructure:"saphana.instance.memory.current"`
-	SaphanaInstanceMemorySharedAllocated    MetricSettings `mapstructure:"saphana.instance.memory.shared.allocated"`
-	SaphanaInstanceMemoryUsedPeak           MetricSettings `mapstructure:"saphana.instance.memory.used.peak"`
-	SaphanaLicenseExpirationTime            MetricSettings `mapstructure:"saphana.license.expiration.time"`
-	SaphanaLicenseLimit                     MetricSettings `mapstructure:"saphana.license.limit"`
-	SaphanaLicensePeak                      MetricSettings `mapstructure:"saphana.license.peak"`
-	SaphanaNetworkRequestAverageTime        MetricSettings `mapstructure:"saphana.network.request.average_time"`
-	SaphanaNetworkRequestCount              MetricSettings `mapstructure:"saphana.network.request.count"`
-	SaphanaNetworkRequestFinishedCount      MetricSettings `mapstructure:"saphana.network.request.finished.count"`
-	SaphanaReplicationAverageTime           MetricSettings `mapstructure:"saphana.replication.average_time"`
-	SaphanaReplicationBacklogSize           MetricSettings `mapstructure:"saphana.replication.backlog.size"`
-	SaphanaReplicationBacklogTime           MetricSettings `mapstructure:"saphana.replication.backlog.time"`
-	SaphanaRowStoreMemoryUsed               MetricSettings `mapstructure:"saphana.row_store.memory.used"`
-	SaphanaSchemaMemoryUsedCurrent          MetricSettings `mapstructure:"saphana.schema.memory.used.current"`
-	SaphanaSchemaMemoryUsedMax              MetricSettings `mapstructure:"saphana.schema.memory.used.max"`
-	SaphanaSchemaOperationCount             MetricSettings `mapstructure:"saphana.schema.operation.count"`
-	SaphanaSchemaRecordCompressedCount      MetricSettings `mapstructure:"saphana.schema.record.compressed.count"`
-	SaphanaSchemaRecordCount                MetricSettings `mapstructure:"saphana.schema.record.count"`
-	SaphanaServiceCodeSize                  MetricSettings `mapstructure:"saphana.service.code_size"`
-	SaphanaServiceCount                     MetricSettings `mapstructure:"saphana.service.count"`
-	SaphanaServiceMemoryCompactorsAllocated MetricSettings `mapstructure:"saphana.service.memory.compactors.allocated"`
-	SaphanaServiceMemoryCompactorsFreeable  MetricSettings `mapstructure:"saphana.service.memory.compactors.freeable"`
-	SaphanaServiceMemoryEffectiveLimit      MetricSettings `mapstructure:"saphana.service.memory.effective_limit"`
-	SaphanaServiceMemoryHeapCurrent         MetricSettings `mapstructure:"saphana.service.memory.heap.current"`
-	SaphanaServiceMemoryLimit               MetricSettings `mapstructure:"saphana.service.memory.limit"`
-	SaphanaServiceMemorySharedCurrent       MetricSettings `mapstructure:"saphana.service.memory.shared.current"`
-	SaphanaServiceMemoryUsed                MetricSettings `mapstructure:"saphana.service.memory.used"`
-	SaphanaServiceStackSize                 MetricSettings `mapstructure:"saphana.service.stack_size"`
-	SaphanaServiceThreadCount               MetricSettings `mapstructure:"saphana.service.thread.count"`
-	SaphanaTransactionBlocked               MetricSettings `mapstructure:"saphana.transaction.blocked"`
-	SaphanaTransactionCount                 MetricSettings `mapstructure:"saphana.transaction.count"`
-	SaphanaUptime                           MetricSettings `mapstructure:"saphana.uptime"`
-	SaphanaVolumeOperationCount             MetricSettings `mapstructure:"saphana.volume.operation.count"`
-	SaphanaVolumeOperationSize              MetricSettings `mapstructure:"saphana.volume.operation.size"`
-	SaphanaVolumeOperationTime              MetricSettings `mapstructure:"saphana.volume.operation.time"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SaphanaAlertCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaBackupLatest: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaColumnMemoryUsed: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaComponentMemoryUsed: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaConnectionCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaCPUUsed: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaDiskSizeCurrent: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaHostMemoryCurrent: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaHostSwapCurrent: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaInstanceCodeSize: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaInstanceMemoryCurrent: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaInstanceMemorySharedAllocated: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaInstanceMemoryUsedPeak: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaLicenseExpirationTime: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaLicenseLimit: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaLicensePeak: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaNetworkRequestAverageTime: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaNetworkRequestCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaNetworkRequestFinishedCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaReplicationAverageTime: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaReplicationBacklogSize: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaReplicationBacklogTime: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaRowStoreMemoryUsed: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaSchemaMemoryUsedCurrent: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaSchemaMemoryUsedMax: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaSchemaOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaSchemaRecordCompressedCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaSchemaRecordCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceCodeSize: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryCompactorsAllocated: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryCompactorsFreeable: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryEffectiveLimit: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryHeapCurrent: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryLimit: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceMemorySharedCurrent: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceMemoryUsed: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceStackSize: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaServiceThreadCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaTransactionBlocked: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaTransactionCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaUptime: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaVolumeOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaVolumeOperationSize: MetricSettings{
-			Enabled: true,
-		},
-		SaphanaVolumeOperationTime: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular resource attribute.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for saphanareceiver resource attributes.
-type ResourceAttributesSettings struct {
-	DbSystem    ResourceAttributeSettings `mapstructure:"db.system"`
-	SaphanaHost ResourceAttributeSettings `mapstructure:"saphana.host"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		DbSystem: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		SaphanaHost: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeActivePendingRequestState specifies the a value active_pending_request_state attribute.
 type AttributeActivePendingRequestState int
@@ -758,7 +527,7 @@ var MapAttributeVolumeOperationType = map[string]AttributeVolumeOperationType{
 
 type metricSaphanaAlertCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -774,7 +543,7 @@ func (m *metricSaphanaAlertCount) init() {
 }
 
 func (m *metricSaphanaAlertCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, alertRatingAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -793,16 +562,16 @@ func (m *metricSaphanaAlertCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaAlertCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaAlertCount(settings MetricSettings) metricSaphanaAlertCount {
-	m := metricSaphanaAlertCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaAlertCount(cfg MetricConfig) metricSaphanaAlertCount {
+	m := metricSaphanaAlertCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -811,7 +580,7 @@ func newMetricSaphanaAlertCount(settings MetricSettings) metricSaphanaAlertCount
 
 type metricSaphanaBackupLatest struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -824,7 +593,7 @@ func (m *metricSaphanaBackupLatest) init() {
 }
 
 func (m *metricSaphanaBackupLatest) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -842,16 +611,16 @@ func (m *metricSaphanaBackupLatest) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaBackupLatest) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaBackupLatest(settings MetricSettings) metricSaphanaBackupLatest {
-	m := metricSaphanaBackupLatest{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaBackupLatest(cfg MetricConfig) metricSaphanaBackupLatest {
+	m := metricSaphanaBackupLatest{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -860,7 +629,7 @@ func newMetricSaphanaBackupLatest(settings MetricSettings) metricSaphanaBackupLa
 
 type metricSaphanaColumnMemoryUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -876,7 +645,7 @@ func (m *metricSaphanaColumnMemoryUsed) init() {
 }
 
 func (m *metricSaphanaColumnMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, columnMemoryTypeAttributeValue string, columnMemorySubtypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -896,16 +665,16 @@ func (m *metricSaphanaColumnMemoryUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaColumnMemoryUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaColumnMemoryUsed(settings MetricSettings) metricSaphanaColumnMemoryUsed {
-	m := metricSaphanaColumnMemoryUsed{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaColumnMemoryUsed(cfg MetricConfig) metricSaphanaColumnMemoryUsed {
+	m := metricSaphanaColumnMemoryUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -914,7 +683,7 @@ func newMetricSaphanaColumnMemoryUsed(settings MetricSettings) metricSaphanaColu
 
 type metricSaphanaComponentMemoryUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -930,7 +699,7 @@ func (m *metricSaphanaComponentMemoryUsed) init() {
 }
 
 func (m *metricSaphanaComponentMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, componentAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -949,16 +718,16 @@ func (m *metricSaphanaComponentMemoryUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaComponentMemoryUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaComponentMemoryUsed(settings MetricSettings) metricSaphanaComponentMemoryUsed {
-	m := metricSaphanaComponentMemoryUsed{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaComponentMemoryUsed(cfg MetricConfig) metricSaphanaComponentMemoryUsed {
+	m := metricSaphanaComponentMemoryUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -967,7 +736,7 @@ func newMetricSaphanaComponentMemoryUsed(settings MetricSettings) metricSaphanaC
 
 type metricSaphanaConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -983,7 +752,7 @@ func (m *metricSaphanaConnectionCount) init() {
 }
 
 func (m *metricSaphanaConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1002,16 +771,16 @@ func (m *metricSaphanaConnectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaConnectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaConnectionCount(settings MetricSettings) metricSaphanaConnectionCount {
-	m := metricSaphanaConnectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaConnectionCount(cfg MetricConfig) metricSaphanaConnectionCount {
+	m := metricSaphanaConnectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1020,7 +789,7 @@ func newMetricSaphanaConnectionCount(settings MetricSettings) metricSaphanaConne
 
 type metricSaphanaCPUUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1036,7 +805,7 @@ func (m *metricSaphanaCPUUsed) init() {
 }
 
 func (m *metricSaphanaCPUUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1055,16 +824,16 @@ func (m *metricSaphanaCPUUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaCPUUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaCPUUsed(settings MetricSettings) metricSaphanaCPUUsed {
-	m := metricSaphanaCPUUsed{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaCPUUsed(cfg MetricConfig) metricSaphanaCPUUsed {
+	m := metricSaphanaCPUUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1073,7 +842,7 @@ func newMetricSaphanaCPUUsed(settings MetricSettings) metricSaphanaCPUUsed {
 
 type metricSaphanaDiskSizeCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1089,7 +858,7 @@ func (m *metricSaphanaDiskSizeCurrent) init() {
 }
 
 func (m *metricSaphanaDiskSizeCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pathAttributeValue string, diskUsageTypeAttributeValue string, diskStateUsedFreeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1110,16 +879,16 @@ func (m *metricSaphanaDiskSizeCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaDiskSizeCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaDiskSizeCurrent(settings MetricSettings) metricSaphanaDiskSizeCurrent {
-	m := metricSaphanaDiskSizeCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaDiskSizeCurrent(cfg MetricConfig) metricSaphanaDiskSizeCurrent {
+	m := metricSaphanaDiskSizeCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1128,7 +897,7 @@ func newMetricSaphanaDiskSizeCurrent(settings MetricSettings) metricSaphanaDiskS
 
 type metricSaphanaHostMemoryCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1144,7 +913,7 @@ func (m *metricSaphanaHostMemoryCurrent) init() {
 }
 
 func (m *metricSaphanaHostMemoryCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryStateUsedFreeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1163,16 +932,16 @@ func (m *metricSaphanaHostMemoryCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaHostMemoryCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaHostMemoryCurrent(settings MetricSettings) metricSaphanaHostMemoryCurrent {
-	m := metricSaphanaHostMemoryCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaHostMemoryCurrent(cfg MetricConfig) metricSaphanaHostMemoryCurrent {
+	m := metricSaphanaHostMemoryCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1181,7 +950,7 @@ func newMetricSaphanaHostMemoryCurrent(settings MetricSettings) metricSaphanaHos
 
 type metricSaphanaHostSwapCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1197,7 +966,7 @@ func (m *metricSaphanaHostSwapCurrent) init() {
 }
 
 func (m *metricSaphanaHostSwapCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, hostSwapStateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1216,16 +985,16 @@ func (m *metricSaphanaHostSwapCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaHostSwapCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaHostSwapCurrent(settings MetricSettings) metricSaphanaHostSwapCurrent {
-	m := metricSaphanaHostSwapCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaHostSwapCurrent(cfg MetricConfig) metricSaphanaHostSwapCurrent {
+	m := metricSaphanaHostSwapCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1234,7 +1003,7 @@ func newMetricSaphanaHostSwapCurrent(settings MetricSettings) metricSaphanaHostS
 
 type metricSaphanaInstanceCodeSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1249,7 +1018,7 @@ func (m *metricSaphanaInstanceCodeSize) init() {
 }
 
 func (m *metricSaphanaInstanceCodeSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1267,16 +1036,16 @@ func (m *metricSaphanaInstanceCodeSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaInstanceCodeSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaInstanceCodeSize(settings MetricSettings) metricSaphanaInstanceCodeSize {
-	m := metricSaphanaInstanceCodeSize{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaInstanceCodeSize(cfg MetricConfig) metricSaphanaInstanceCodeSize {
+	m := metricSaphanaInstanceCodeSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1285,7 +1054,7 @@ func newMetricSaphanaInstanceCodeSize(settings MetricSettings) metricSaphanaInst
 
 type metricSaphanaInstanceMemoryCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1301,7 +1070,7 @@ func (m *metricSaphanaInstanceMemoryCurrent) init() {
 }
 
 func (m *metricSaphanaInstanceMemoryCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryStateUsedFreeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1320,16 +1089,16 @@ func (m *metricSaphanaInstanceMemoryCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaInstanceMemoryCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaInstanceMemoryCurrent(settings MetricSettings) metricSaphanaInstanceMemoryCurrent {
-	m := metricSaphanaInstanceMemoryCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaInstanceMemoryCurrent(cfg MetricConfig) metricSaphanaInstanceMemoryCurrent {
+	m := metricSaphanaInstanceMemoryCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1338,7 +1107,7 @@ func newMetricSaphanaInstanceMemoryCurrent(settings MetricSettings) metricSaphan
 
 type metricSaphanaInstanceMemorySharedAllocated struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1353,7 +1122,7 @@ func (m *metricSaphanaInstanceMemorySharedAllocated) init() {
 }
 
 func (m *metricSaphanaInstanceMemorySharedAllocated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1371,16 +1140,16 @@ func (m *metricSaphanaInstanceMemorySharedAllocated) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaInstanceMemorySharedAllocated) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaInstanceMemorySharedAllocated(settings MetricSettings) metricSaphanaInstanceMemorySharedAllocated {
-	m := metricSaphanaInstanceMemorySharedAllocated{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaInstanceMemorySharedAllocated(cfg MetricConfig) metricSaphanaInstanceMemorySharedAllocated {
+	m := metricSaphanaInstanceMemorySharedAllocated{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1389,7 +1158,7 @@ func newMetricSaphanaInstanceMemorySharedAllocated(settings MetricSettings) metr
 
 type metricSaphanaInstanceMemoryUsedPeak struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1404,7 +1173,7 @@ func (m *metricSaphanaInstanceMemoryUsedPeak) init() {
 }
 
 func (m *metricSaphanaInstanceMemoryUsedPeak) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1422,16 +1191,16 @@ func (m *metricSaphanaInstanceMemoryUsedPeak) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaInstanceMemoryUsedPeak) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaInstanceMemoryUsedPeak(settings MetricSettings) metricSaphanaInstanceMemoryUsedPeak {
-	m := metricSaphanaInstanceMemoryUsedPeak{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaInstanceMemoryUsedPeak(cfg MetricConfig) metricSaphanaInstanceMemoryUsedPeak {
+	m := metricSaphanaInstanceMemoryUsedPeak{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1440,7 +1209,7 @@ func newMetricSaphanaInstanceMemoryUsedPeak(settings MetricSettings) metricSapha
 
 type metricSaphanaLicenseExpirationTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1454,7 +1223,7 @@ func (m *metricSaphanaLicenseExpirationTime) init() {
 }
 
 func (m *metricSaphanaLicenseExpirationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1474,16 +1243,16 @@ func (m *metricSaphanaLicenseExpirationTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaLicenseExpirationTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaLicenseExpirationTime(settings MetricSettings) metricSaphanaLicenseExpirationTime {
-	m := metricSaphanaLicenseExpirationTime{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaLicenseExpirationTime(cfg MetricConfig) metricSaphanaLicenseExpirationTime {
+	m := metricSaphanaLicenseExpirationTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1492,7 +1261,7 @@ func newMetricSaphanaLicenseExpirationTime(settings MetricSettings) metricSaphan
 
 type metricSaphanaLicenseLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1508,7 +1277,7 @@ func (m *metricSaphanaLicenseLimit) init() {
 }
 
 func (m *metricSaphanaLicenseLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1528,16 +1297,16 @@ func (m *metricSaphanaLicenseLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaLicenseLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaLicenseLimit(settings MetricSettings) metricSaphanaLicenseLimit {
-	m := metricSaphanaLicenseLimit{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaLicenseLimit(cfg MetricConfig) metricSaphanaLicenseLimit {
+	m := metricSaphanaLicenseLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1546,7 +1315,7 @@ func newMetricSaphanaLicenseLimit(settings MetricSettings) metricSaphanaLicenseL
 
 type metricSaphanaLicensePeak struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1562,7 +1331,7 @@ func (m *metricSaphanaLicensePeak) init() {
 }
 
 func (m *metricSaphanaLicensePeak) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1582,16 +1351,16 @@ func (m *metricSaphanaLicensePeak) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaLicensePeak) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaLicensePeak(settings MetricSettings) metricSaphanaLicensePeak {
-	m := metricSaphanaLicensePeak{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaLicensePeak(cfg MetricConfig) metricSaphanaLicensePeak {
+	m := metricSaphanaLicensePeak{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1600,7 +1369,7 @@ func newMetricSaphanaLicensePeak(settings MetricSettings) metricSaphanaLicensePe
 
 type metricSaphanaNetworkRequestAverageTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1613,7 +1382,7 @@ func (m *metricSaphanaNetworkRequestAverageTime) init() {
 }
 
 func (m *metricSaphanaNetworkRequestAverageTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1631,16 +1400,16 @@ func (m *metricSaphanaNetworkRequestAverageTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaNetworkRequestAverageTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaNetworkRequestAverageTime(settings MetricSettings) metricSaphanaNetworkRequestAverageTime {
-	m := metricSaphanaNetworkRequestAverageTime{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaNetworkRequestAverageTime(cfg MetricConfig) metricSaphanaNetworkRequestAverageTime {
+	m := metricSaphanaNetworkRequestAverageTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1649,7 +1418,7 @@ func newMetricSaphanaNetworkRequestAverageTime(settings MetricSettings) metricSa
 
 type metricSaphanaNetworkRequestCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1665,7 +1434,7 @@ func (m *metricSaphanaNetworkRequestCount) init() {
 }
 
 func (m *metricSaphanaNetworkRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, activePendingRequestStateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1684,16 +1453,16 @@ func (m *metricSaphanaNetworkRequestCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaNetworkRequestCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaNetworkRequestCount(settings MetricSettings) metricSaphanaNetworkRequestCount {
-	m := metricSaphanaNetworkRequestCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaNetworkRequestCount(cfg MetricConfig) metricSaphanaNetworkRequestCount {
+	m := metricSaphanaNetworkRequestCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1702,7 +1471,7 @@ func newMetricSaphanaNetworkRequestCount(settings MetricSettings) metricSaphanaN
 
 type metricSaphanaNetworkRequestFinishedCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1718,7 +1487,7 @@ func (m *metricSaphanaNetworkRequestFinishedCount) init() {
 }
 
 func (m *metricSaphanaNetworkRequestFinishedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, internalExternalRequestTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1737,16 +1506,16 @@ func (m *metricSaphanaNetworkRequestFinishedCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaNetworkRequestFinishedCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaNetworkRequestFinishedCount(settings MetricSettings) metricSaphanaNetworkRequestFinishedCount {
-	m := metricSaphanaNetworkRequestFinishedCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaNetworkRequestFinishedCount(cfg MetricConfig) metricSaphanaNetworkRequestFinishedCount {
+	m := metricSaphanaNetworkRequestFinishedCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1755,7 +1524,7 @@ func newMetricSaphanaNetworkRequestFinishedCount(settings MetricSettings) metric
 
 type metricSaphanaReplicationAverageTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1769,7 +1538,7 @@ func (m *metricSaphanaReplicationAverageTime) init() {
 }
 
 func (m *metricSaphanaReplicationAverageTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1791,16 +1560,16 @@ func (m *metricSaphanaReplicationAverageTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaReplicationAverageTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaReplicationAverageTime(settings MetricSettings) metricSaphanaReplicationAverageTime {
-	m := metricSaphanaReplicationAverageTime{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaReplicationAverageTime(cfg MetricConfig) metricSaphanaReplicationAverageTime {
+	m := metricSaphanaReplicationAverageTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1809,7 +1578,7 @@ func newMetricSaphanaReplicationAverageTime(settings MetricSettings) metricSapha
 
 type metricSaphanaReplicationBacklogSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1825,7 +1594,7 @@ func (m *metricSaphanaReplicationBacklogSize) init() {
 }
 
 func (m *metricSaphanaReplicationBacklogSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1847,16 +1616,16 @@ func (m *metricSaphanaReplicationBacklogSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaReplicationBacklogSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaReplicationBacklogSize(settings MetricSettings) metricSaphanaReplicationBacklogSize {
-	m := metricSaphanaReplicationBacklogSize{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaReplicationBacklogSize(cfg MetricConfig) metricSaphanaReplicationBacklogSize {
+	m := metricSaphanaReplicationBacklogSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1865,7 +1634,7 @@ func newMetricSaphanaReplicationBacklogSize(settings MetricSettings) metricSapha
 
 type metricSaphanaReplicationBacklogTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1881,7 +1650,7 @@ func (m *metricSaphanaReplicationBacklogTime) init() {
 }
 
 func (m *metricSaphanaReplicationBacklogTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1903,16 +1672,16 @@ func (m *metricSaphanaReplicationBacklogTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaReplicationBacklogTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaReplicationBacklogTime(settings MetricSettings) metricSaphanaReplicationBacklogTime {
-	m := metricSaphanaReplicationBacklogTime{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaReplicationBacklogTime(cfg MetricConfig) metricSaphanaReplicationBacklogTime {
+	m := metricSaphanaReplicationBacklogTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1921,7 +1690,7 @@ func newMetricSaphanaReplicationBacklogTime(settings MetricSettings) metricSapha
 
 type metricSaphanaRowStoreMemoryUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1937,7 +1706,7 @@ func (m *metricSaphanaRowStoreMemoryUsed) init() {
 }
 
 func (m *metricSaphanaRowStoreMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rowMemoryTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1956,16 +1725,16 @@ func (m *metricSaphanaRowStoreMemoryUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaRowStoreMemoryUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaRowStoreMemoryUsed(settings MetricSettings) metricSaphanaRowStoreMemoryUsed {
-	m := metricSaphanaRowStoreMemoryUsed{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaRowStoreMemoryUsed(cfg MetricConfig) metricSaphanaRowStoreMemoryUsed {
+	m := metricSaphanaRowStoreMemoryUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1974,7 +1743,7 @@ func newMetricSaphanaRowStoreMemoryUsed(settings MetricSettings) metricSaphanaRo
 
 type metricSaphanaSchemaMemoryUsedCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1990,7 +1759,7 @@ func (m *metricSaphanaSchemaMemoryUsedCurrent) init() {
 }
 
 func (m *metricSaphanaSchemaMemoryUsedCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, schemaMemoryTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2010,16 +1779,16 @@ func (m *metricSaphanaSchemaMemoryUsedCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaMemoryUsedCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaSchemaMemoryUsedCurrent(settings MetricSettings) metricSaphanaSchemaMemoryUsedCurrent {
-	m := metricSaphanaSchemaMemoryUsedCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaSchemaMemoryUsedCurrent(cfg MetricConfig) metricSaphanaSchemaMemoryUsedCurrent {
+	m := metricSaphanaSchemaMemoryUsedCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2028,7 +1797,7 @@ func newMetricSaphanaSchemaMemoryUsedCurrent(settings MetricSettings) metricSaph
 
 type metricSaphanaSchemaMemoryUsedMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2044,7 +1813,7 @@ func (m *metricSaphanaSchemaMemoryUsedMax) init() {
 }
 
 func (m *metricSaphanaSchemaMemoryUsedMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2063,16 +1832,16 @@ func (m *metricSaphanaSchemaMemoryUsedMax) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaMemoryUsedMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaSchemaMemoryUsedMax(settings MetricSettings) metricSaphanaSchemaMemoryUsedMax {
-	m := metricSaphanaSchemaMemoryUsedMax{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaSchemaMemoryUsedMax(cfg MetricConfig) metricSaphanaSchemaMemoryUsedMax {
+	m := metricSaphanaSchemaMemoryUsedMax{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2081,7 +1850,7 @@ func newMetricSaphanaSchemaMemoryUsedMax(settings MetricSettings) metricSaphanaS
 
 type metricSaphanaSchemaOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2097,7 +1866,7 @@ func (m *metricSaphanaSchemaOperationCount) init() {
 }
 
 func (m *metricSaphanaSchemaOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, schemaOperationTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2117,16 +1886,16 @@ func (m *metricSaphanaSchemaOperationCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaOperationCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaSchemaOperationCount(settings MetricSettings) metricSaphanaSchemaOperationCount {
-	m := metricSaphanaSchemaOperationCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaSchemaOperationCount(cfg MetricConfig) metricSaphanaSchemaOperationCount {
+	m := metricSaphanaSchemaOperationCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2135,7 +1904,7 @@ func newMetricSaphanaSchemaOperationCount(settings MetricSettings) metricSaphana
 
 type metricSaphanaSchemaRecordCompressedCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2151,7 +1920,7 @@ func (m *metricSaphanaSchemaRecordCompressedCount) init() {
 }
 
 func (m *metricSaphanaSchemaRecordCompressedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2170,16 +1939,16 @@ func (m *metricSaphanaSchemaRecordCompressedCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaRecordCompressedCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaSchemaRecordCompressedCount(settings MetricSettings) metricSaphanaSchemaRecordCompressedCount {
-	m := metricSaphanaSchemaRecordCompressedCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaSchemaRecordCompressedCount(cfg MetricConfig) metricSaphanaSchemaRecordCompressedCount {
+	m := metricSaphanaSchemaRecordCompressedCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2188,7 +1957,7 @@ func newMetricSaphanaSchemaRecordCompressedCount(settings MetricSettings) metric
 
 type metricSaphanaSchemaRecordCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2204,7 +1973,7 @@ func (m *metricSaphanaSchemaRecordCount) init() {
 }
 
 func (m *metricSaphanaSchemaRecordCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, schemaRecordTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2224,16 +1993,16 @@ func (m *metricSaphanaSchemaRecordCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaSchemaRecordCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaSchemaRecordCount(settings MetricSettings) metricSaphanaSchemaRecordCount {
-	m := metricSaphanaSchemaRecordCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaSchemaRecordCount(cfg MetricConfig) metricSaphanaSchemaRecordCount {
+	m := metricSaphanaSchemaRecordCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2242,7 +2011,7 @@ func newMetricSaphanaSchemaRecordCount(settings MetricSettings) metricSaphanaSch
 
 type metricSaphanaServiceCodeSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2258,7 +2027,7 @@ func (m *metricSaphanaServiceCodeSize) init() {
 }
 
 func (m *metricSaphanaServiceCodeSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2277,16 +2046,16 @@ func (m *metricSaphanaServiceCodeSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceCodeSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceCodeSize(settings MetricSettings) metricSaphanaServiceCodeSize {
-	m := metricSaphanaServiceCodeSize{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceCodeSize(cfg MetricConfig) metricSaphanaServiceCodeSize {
+	m := metricSaphanaServiceCodeSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2295,7 +2064,7 @@ func newMetricSaphanaServiceCodeSize(settings MetricSettings) metricSaphanaServi
 
 type metricSaphanaServiceCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2311,7 +2080,7 @@ func (m *metricSaphanaServiceCount) init() {
 }
 
 func (m *metricSaphanaServiceCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2330,16 +2099,16 @@ func (m *metricSaphanaServiceCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceCount(settings MetricSettings) metricSaphanaServiceCount {
-	m := metricSaphanaServiceCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceCount(cfg MetricConfig) metricSaphanaServiceCount {
+	m := metricSaphanaServiceCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2348,7 +2117,7 @@ func newMetricSaphanaServiceCount(settings MetricSettings) metricSaphanaServiceC
 
 type metricSaphanaServiceMemoryCompactorsAllocated struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2364,7 +2133,7 @@ func (m *metricSaphanaServiceMemoryCompactorsAllocated) init() {
 }
 
 func (m *metricSaphanaServiceMemoryCompactorsAllocated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2383,16 +2152,16 @@ func (m *metricSaphanaServiceMemoryCompactorsAllocated) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceMemoryCompactorsAllocated) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceMemoryCompactorsAllocated(settings MetricSettings) metricSaphanaServiceMemoryCompactorsAllocated {
-	m := metricSaphanaServiceMemoryCompactorsAllocated{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceMemoryCompactorsAllocated(cfg MetricConfig) metricSaphanaServiceMemoryCompactorsAllocated {
+	m := metricSaphanaServiceMemoryCompactorsAllocated{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2401,7 +2170,7 @@ func newMetricSaphanaServiceMemoryCompactorsAllocated(settings MetricSettings) m
 
 type metricSaphanaServiceMemoryCompactorsFreeable struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2417,7 +2186,7 @@ func (m *metricSaphanaServiceMemoryCompactorsFreeable) init() {
 }
 
 func (m *metricSaphanaServiceMemoryCompactorsFreeable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2436,16 +2205,16 @@ func (m *metricSaphanaServiceMemoryCompactorsFreeable) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceMemoryCompactorsFreeable) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceMemoryCompactorsFreeable(settings MetricSettings) metricSaphanaServiceMemoryCompactorsFreeable {
-	m := metricSaphanaServiceMemoryCompactorsFreeable{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceMemoryCompactorsFreeable(cfg MetricConfig) metricSaphanaServiceMemoryCompactorsFreeable {
+	m := metricSaphanaServiceMemoryCompactorsFreeable{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2454,7 +2223,7 @@ func newMetricSaphanaServiceMemoryCompactorsFreeable(settings MetricSettings) me
 
 type metricSaphanaServiceMemoryEffectiveLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2470,7 +2239,7 @@ func (m *metricSaphanaServiceMemoryEffectiveLimit) init() {
 }
 
 func (m *metricSaphanaServiceMemoryEffectiveLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2489,16 +2258,16 @@ func (m *metricSaphanaServiceMemoryEffectiveLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceMemoryEffectiveLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceMemoryEffectiveLimit(settings MetricSettings) metricSaphanaServiceMemoryEffectiveLimit {
-	m := metricSaphanaServiceMemoryEffectiveLimit{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceMemoryEffectiveLimit(cfg MetricConfig) metricSaphanaServiceMemoryEffectiveLimit {
+	m := metricSaphanaServiceMemoryEffectiveLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2507,7 +2276,7 @@ func newMetricSaphanaServiceMemoryEffectiveLimit(settings MetricSettings) metric
 
 type metricSaphanaServiceMemoryHeapCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2523,7 +2292,7 @@ func (m *metricSaphanaServiceMemoryHeapCurrent) init() {
 }
 
 func (m *metricSaphanaServiceMemoryHeapCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string, memoryStateUsedFreeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2543,16 +2312,16 @@ func (m *metricSaphanaServiceMemoryHeapCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceMemoryHeapCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceMemoryHeapCurrent(settings MetricSettings) metricSaphanaServiceMemoryHeapCurrent {
-	m := metricSaphanaServiceMemoryHeapCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceMemoryHeapCurrent(cfg MetricConfig) metricSaphanaServiceMemoryHeapCurrent {
+	m := metricSaphanaServiceMemoryHeapCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2561,7 +2330,7 @@ func newMetricSaphanaServiceMemoryHeapCurrent(settings MetricSettings) metricSap
 
 type metricSaphanaServiceMemoryLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2577,7 +2346,7 @@ func (m *metricSaphanaServiceMemoryLimit) init() {
 }
 
 func (m *metricSaphanaServiceMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2596,16 +2365,16 @@ func (m *metricSaphanaServiceMemoryLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceMemoryLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceMemoryLimit(settings MetricSettings) metricSaphanaServiceMemoryLimit {
-	m := metricSaphanaServiceMemoryLimit{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceMemoryLimit(cfg MetricConfig) metricSaphanaServiceMemoryLimit {
+	m := metricSaphanaServiceMemoryLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2614,7 +2383,7 @@ func newMetricSaphanaServiceMemoryLimit(settings MetricSettings) metricSaphanaSe
 
 type metricSaphanaServiceMemorySharedCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2630,7 +2399,7 @@ func (m *metricSaphanaServiceMemorySharedCurrent) init() {
 }
 
 func (m *metricSaphanaServiceMemorySharedCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string, memoryStateUsedFreeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2650,16 +2419,16 @@ func (m *metricSaphanaServiceMemorySharedCurrent) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceMemorySharedCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceMemorySharedCurrent(settings MetricSettings) metricSaphanaServiceMemorySharedCurrent {
-	m := metricSaphanaServiceMemorySharedCurrent{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceMemorySharedCurrent(cfg MetricConfig) metricSaphanaServiceMemorySharedCurrent {
+	m := metricSaphanaServiceMemorySharedCurrent{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2668,7 +2437,7 @@ func newMetricSaphanaServiceMemorySharedCurrent(settings MetricSettings) metricS
 
 type metricSaphanaServiceMemoryUsed struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2684,7 +2453,7 @@ func (m *metricSaphanaServiceMemoryUsed) init() {
 }
 
 func (m *metricSaphanaServiceMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string, serviceMemoryUsedTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2704,16 +2473,16 @@ func (m *metricSaphanaServiceMemoryUsed) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceMemoryUsed) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceMemoryUsed(settings MetricSettings) metricSaphanaServiceMemoryUsed {
-	m := metricSaphanaServiceMemoryUsed{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceMemoryUsed(cfg MetricConfig) metricSaphanaServiceMemoryUsed {
+	m := metricSaphanaServiceMemoryUsed{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2722,7 +2491,7 @@ func newMetricSaphanaServiceMemoryUsed(settings MetricSettings) metricSaphanaSer
 
 type metricSaphanaServiceStackSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2738,7 +2507,7 @@ func (m *metricSaphanaServiceStackSize) init() {
 }
 
 func (m *metricSaphanaServiceStackSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, serviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2757,16 +2526,16 @@ func (m *metricSaphanaServiceStackSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceStackSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceStackSize(settings MetricSettings) metricSaphanaServiceStackSize {
-	m := metricSaphanaServiceStackSize{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceStackSize(cfg MetricConfig) metricSaphanaServiceStackSize {
+	m := metricSaphanaServiceStackSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2775,7 +2544,7 @@ func newMetricSaphanaServiceStackSize(settings MetricSettings) metricSaphanaServ
 
 type metricSaphanaServiceThreadCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2791,7 +2560,7 @@ func (m *metricSaphanaServiceThreadCount) init() {
 }
 
 func (m *metricSaphanaServiceThreadCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2810,16 +2579,16 @@ func (m *metricSaphanaServiceThreadCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaServiceThreadCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaServiceThreadCount(settings MetricSettings) metricSaphanaServiceThreadCount {
-	m := metricSaphanaServiceThreadCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaServiceThreadCount(cfg MetricConfig) metricSaphanaServiceThreadCount {
+	m := metricSaphanaServiceThreadCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2828,7 +2597,7 @@ func newMetricSaphanaServiceThreadCount(settings MetricSettings) metricSaphanaSe
 
 type metricSaphanaTransactionBlocked struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2843,7 +2612,7 @@ func (m *metricSaphanaTransactionBlocked) init() {
 }
 
 func (m *metricSaphanaTransactionBlocked) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2861,16 +2630,16 @@ func (m *metricSaphanaTransactionBlocked) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaTransactionBlocked) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaTransactionBlocked(settings MetricSettings) metricSaphanaTransactionBlocked {
-	m := metricSaphanaTransactionBlocked{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaTransactionBlocked(cfg MetricConfig) metricSaphanaTransactionBlocked {
+	m := metricSaphanaTransactionBlocked{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2879,7 +2648,7 @@ func newMetricSaphanaTransactionBlocked(settings MetricSettings) metricSaphanaTr
 
 type metricSaphanaTransactionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2895,7 +2664,7 @@ func (m *metricSaphanaTransactionCount) init() {
 }
 
 func (m *metricSaphanaTransactionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, transactionTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2914,16 +2683,16 @@ func (m *metricSaphanaTransactionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaTransactionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaTransactionCount(settings MetricSettings) metricSaphanaTransactionCount {
-	m := metricSaphanaTransactionCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaTransactionCount(cfg MetricConfig) metricSaphanaTransactionCount {
+	m := metricSaphanaTransactionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2932,7 +2701,7 @@ func newMetricSaphanaTransactionCount(settings MetricSettings) metricSaphanaTran
 
 type metricSaphanaUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2948,7 +2717,7 @@ func (m *metricSaphanaUptime) init() {
 }
 
 func (m *metricSaphanaUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemAttributeValue string, databaseAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2968,16 +2737,16 @@ func (m *metricSaphanaUptime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaUptime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaUptime(settings MetricSettings) metricSaphanaUptime {
-	m := metricSaphanaUptime{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaUptime(cfg MetricConfig) metricSaphanaUptime {
+	m := metricSaphanaUptime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2986,7 +2755,7 @@ func newMetricSaphanaUptime(settings MetricSettings) metricSaphanaUptime {
 
 type metricSaphanaVolumeOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3002,7 +2771,7 @@ func (m *metricSaphanaVolumeOperationCount) init() {
 }
 
 func (m *metricSaphanaVolumeOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3023,16 +2792,16 @@ func (m *metricSaphanaVolumeOperationCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaVolumeOperationCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaVolumeOperationCount(settings MetricSettings) metricSaphanaVolumeOperationCount {
-	m := metricSaphanaVolumeOperationCount{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaVolumeOperationCount(cfg MetricConfig) metricSaphanaVolumeOperationCount {
+	m := metricSaphanaVolumeOperationCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3041,7 +2810,7 @@ func newMetricSaphanaVolumeOperationCount(settings MetricSettings) metricSaphana
 
 type metricSaphanaVolumeOperationSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3057,7 +2826,7 @@ func (m *metricSaphanaVolumeOperationSize) init() {
 }
 
 func (m *metricSaphanaVolumeOperationSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3078,16 +2847,16 @@ func (m *metricSaphanaVolumeOperationSize) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaVolumeOperationSize) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaVolumeOperationSize(settings MetricSettings) metricSaphanaVolumeOperationSize {
-	m := metricSaphanaVolumeOperationSize{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaVolumeOperationSize(cfg MetricConfig) metricSaphanaVolumeOperationSize {
+	m := metricSaphanaVolumeOperationSize{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3096,7 +2865,7 @@ func newMetricSaphanaVolumeOperationSize(settings MetricSettings) metricSaphanaV
 
 type metricSaphanaVolumeOperationTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3112,7 +2881,7 @@ func (m *metricSaphanaVolumeOperationTime) init() {
 }
 
 func (m *metricSaphanaVolumeOperationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3133,37 +2902,31 @@ func (m *metricSaphanaVolumeOperationTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSaphanaVolumeOperationTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaVolumeOperationTime(settings MetricSettings) metricSaphanaVolumeOperationTime {
-	m := metricSaphanaVolumeOperationTime{settings: settings}
-	if settings.Enabled {
+func newMetricSaphanaVolumeOperationTime(cfg MetricConfig) metricSaphanaVolumeOperationTime {
+	m := metricSaphanaVolumeOperationTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                                     pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                               int                 // maximum observed number of metrics per resource.
 	resourceCapacity                              int                 // maximum observed number of resource attributes.
 	metricsBuffer                                 pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                     component.BuildInfo // contains version information
-	resourceAttributesSettings                    ResourceAttributesSettings
+	resourceAttributesConfig                      ResourceAttributesConfig
 	metricSaphanaAlertCount                       metricSaphanaAlertCount
 	metricSaphanaBackupLatest                     metricSaphanaBackupLatest
 	metricSaphanaColumnMemoryUsed                 metricSaphanaColumnMemoryUsed
@@ -3221,19 +2984,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                 pmetric.NewMetrics(),
 		buildInfo:                                     settings.BuildInfo,
-		resourceAttributesSettings:                    mbc.ResourceAttributes,
+		resourceAttributesConfig:                      mbc.ResourceAttributes,
 		metricSaphanaAlertCount:                       newMetricSaphanaAlertCount(mbc.Metrics.SaphanaAlertCount),
 		metricSaphanaBackupLatest:                     newMetricSaphanaBackupLatest(mbc.Metrics.SaphanaBackupLatest),
 		metricSaphanaColumnMemoryUsed:                 newMetricSaphanaColumnMemoryUsed(mbc.Metrics.SaphanaColumnMemoryUsed),
@@ -3297,12 +3053,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithDbSystem sets provided value as "db.system" attribute for current resource.
 func WithDbSystem(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.DbSystem.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.DbSystem.Enabled {
 			rm.Resource().Attributes().PutStr("db.system", val)
 		}
 	}
@@ -3310,8 +3066,8 @@ func WithDbSystem(val string) ResourceMetricsOption {
 
 // WithSaphanaHost sets provided value as "saphana.host" attribute for current resource.
 func WithSaphanaHost(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.SaphanaHost.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.SaphanaHost.Enabled {
 			rm.Resource().Attributes().PutStr("saphana.host", val)
 		}
 	}
@@ -3320,7 +3076,7 @@ func WithSaphanaHost(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3396,7 +3152,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSaphanaVolumeOperationTime.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -3406,7 +3162,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

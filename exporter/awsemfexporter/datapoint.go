@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
@@ -37,7 +26,7 @@ var (
 	summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
 )
 
-func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, timestampMs time.Time) (interface{}, bool) {
+func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
 	metricEntry := val.(summaryMetricEntry)
 	summaryDelta := metricEntry.sum
 	countDelta := metricEntry.count
@@ -109,7 +98,7 @@ type summaryMetricEntry struct {
 }
 
 // CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
+func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool) ([]dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
@@ -149,7 +138,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 }
 
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
-func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
+func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())

@@ -1,9 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: container.runtime
+        - key: container-metric-label
           value:
-            stringValue: docker
+            stringValue: container-label
+        - key: container.hostname
+          value:
+            stringValue: a359c0fc87c5
         - key: container.id
           value:
             stringValue: a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce
@@ -13,15 +16,12 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: pensive_aryabhata
-        - key: container.hostname
+        - key: container.runtime
           value:
-            stringValue: a359c0fc87c5
+            stringValue: docker
         - key: env-var-metric-label
           value:
             stringValue: env-var
-        - key: container-metric-label
-          value:
-            stringValue: container-label
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:
@@ -195,7 +195,7 @@ resourceMetrics:
                   timeUnixNano: "1661128790158163000"
               isMonotonic: true
             unit: '{operations}'
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -353,7 +353,7 @@ resourceMetrics:
           - description: Percentage of memory used.
             gauge:
               dataPoints:
-                - asDouble: 0.016983729192463173
+                - asDouble: 0.02053846320949035
                   timeUnixNano: "1657771832637112000"
             name: container.memory.percent
             unit: "1"
@@ -557,12 +557,12 @@ resourceMetrics:
                 - asInt: "6172672"
                   timeUnixNano: "1657771832637112000"
             unit: By
-          - description: Memory usage of the container. This excludes the total cache.
+          - description: Memory usage of the container. This excludes the cache.
             name: container.memory.usage.total
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "352256"
+                - asInt: "425984"
                   timeUnixNano: "1657771832637112000"
             unit: By
           - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
@@ -677,14 +677,25 @@ resourceMetrics:
                   timeUnixNano: "1657771832637112000"
               isMonotonic: true
             unit: '{packets}'
+          - description: Number of pids in the container's cgroup.
+            name: container.pids.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1657771832637112000"
+            unit: '{pids}'
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest
   - resource:
       attributes:
-        - key: container.runtime
+        - key: container-metric-label
           value:
-            stringValue: docker
+            stringValue: container-label2
+        - key: container.hostname
+          value:
+            stringValue: 89d28931fd8b
         - key: container.id
           value:
             stringValue: 89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7
@@ -694,15 +705,12 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: loving_torvalds
-        - key: container.hostname
+        - key: container.runtime
           value:
-            stringValue: 89d28931fd8b
+            stringValue: docker
         - key: env-var-metric-label
           value:
             stringValue: env-var2
-        - key: container-metric-label
-          value:
-            stringValue: container-label2
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:
@@ -876,7 +884,7 @@ resourceMetrics:
                   timeUnixNano: "1661128790158163000"
               isMonotonic: true
             unit: '{operations}'
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -1034,7 +1042,7 @@ resourceMetrics:
           - description: Percentage of memory used.
             gauge:
               dataPoints:
-                - asDouble: 0.01836612575464041
+                - asDouble: 0.037324707178785346
                   timeUnixNano: "1657771832637093000"
             name: container.memory.percent
             unit: "1"
@@ -1238,12 +1246,12 @@ resourceMetrics:
                 - asInt: "6201344"
                   timeUnixNano: "1657771832637093000"
             unit: By
-          - description: Memory usage of the container. This excludes the total cache.
+          - description: Memory usage of the container. This excludes the cache.
             name: container.memory.usage.total
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "380928"
+                - asInt: "774144"
                   timeUnixNano: "1657771832637093000"
             unit: By
           - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
@@ -1358,6 +1366,14 @@ resourceMetrics:
                   timeUnixNano: "1657771832637093000"
               isMonotonic: true
             unit: '{packets}'
+          - description: Number of pids in the container's cgroup.
+            name: container.pids.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1657771832637093000"
+            unit: '{pids}'
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest

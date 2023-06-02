@@ -1,21 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
 import (
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -39,11 +31,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
@@ -64,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "resource_attr_to_label"),
+			id: component.NewIDWithName(metadata.Type, "resource_attr_to_label"),
 			expected: &Config{
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
@@ -86,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metric_descriptors"),
+			id: component.NewIDWithName(metadata.Type, "metric_descriptors"),
 			expected: &Config{
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
@@ -180,6 +172,91 @@ func TestRetentionValidateWrong(t *testing.T) {
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		logger:                      zap.NewNop(),
 	}
-	assert.Error(t, wrongcfg.Validate())
+	assert.Error(t, component.ValidateConfig(wrongcfg))
 
+}
+
+func TestValidateTags(t *testing.T) {
+	// Create *string values for tags inputs
+	basicValue := "avalue"
+	wrongRegexValue := "***"
+	emptyValue := ""
+	tooLongValue := strings.Repeat("a", 257)
+
+	// Create a map with no items and then one with too many items for testing
+	emptyMap := make(map[string]*string)
+	bigMap := make(map[string]*string)
+	for i := 0; i < 51; i++ {
+		bigMap[strconv.Itoa(i)] = &basicValue
+	}
+
+	tests := []struct {
+		id           component.ID
+		tags         map[string]*string
+		errorMessage string
+	}{
+		{
+			id:   component.NewIDWithName(metadata.Type, "validate-correct"),
+			tags: map[string]*string{"basicKey": &basicValue},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "too-little-tags"),
+			tags:         emptyMap,
+			errorMessage: "invalid amount of items. Please input at least 1 tag or remove the tag field",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "too-many-tags"),
+			tags:         bigMap,
+			errorMessage: "invalid amount of items. Please input at most 50 tags",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "wrong-key-regex"),
+			tags:         map[string]*string{"***": &basicValue},
+			errorMessage: "key - *** does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "wrong-value-regex"),
+			tags:         map[string]*string{"basicKey": &wrongRegexValue},
+			errorMessage: "value - " + wrongRegexValue + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "key-too-short"),
+			tags:         map[string]*string{"": &basicValue},
+			errorMessage: "key -  has an invalid length. Please use keys with a length of 1 to 128 characters",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "key-too-long"),
+			tags:         map[string]*string{strings.Repeat("a", 129): &basicValue},
+			errorMessage: "key - " + strings.Repeat("a", 129) + " has an invalid length. Please use keys with a length of 1 to 128 characters",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "value-too-short"),
+			tags:         map[string]*string{"basicKey": &emptyValue},
+			errorMessage: "value - " + emptyValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "value-too-long"),
+			tags:         map[string]*string{"basicKey": &tooLongValue},
+			errorMessage: "value - " + tooLongValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cfg := &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            1,
+				},
+				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+				Tags:                        tt.tags,
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				logger:                      zap.NewNop(),
+			}
+			if tt.errorMessage != "" {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+		})
+	}
 }

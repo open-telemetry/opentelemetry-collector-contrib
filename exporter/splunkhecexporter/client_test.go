@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -25,6 +14,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -37,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -44,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -82,50 +72,55 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 	}, &headers
 }
 
-func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
-
+func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
-	rm := metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("k0", "v0")
-	rm.Resource().Attributes().PutStr("k1", "v1")
 
-	for i := 0; i < numberOfDataPoints; i++ {
-		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
-
-		ilm := rm.ScopeMetrics().AppendEmpty()
-		metric := ilm.Metrics().AppendEmpty()
-		metric.SetName("gauge_double_with_dims")
-		doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
-		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-		doublePt.SetDoubleValue(doubleVal)
-		doublePt.Attributes().PutStr("k/n0", "vn0")
-		doublePt.Attributes().PutStr("k/n1", "vn1")
-		doublePt.Attributes().PutStr("k/r0", "vr0")
-		doublePt.Attributes().PutStr("k/r1", "vr1")
+	for i := 0; i < resourcesNum; i++ {
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("k0", fmt.Sprintf("v%d", i))
+		rm.Resource().Attributes().PutStr("k1", "v1")
+		for j := 0; j < dataPointsNum; j++ {
+			count := i*dataPointsNum + j
+			tsUnix := time.Unix(int64(count), int64(count)*time.Millisecond.Nanoseconds())
+			ilm := rm.ScopeMetrics().AppendEmpty()
+			metric := ilm.Metrics().AppendEmpty()
+			metric.SetName("gauge_double_with_dims")
+			doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+			doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+			doublePt.SetDoubleValue(doubleVal)
+			doublePt.Attributes().PutStr("k/n0", "vn0")
+			doublePt.Attributes().PutStr("k/n1", "vn1")
+			doublePt.Attributes().PutStr("k/r0", "vr0")
+			doublePt.Attributes().PutStr("k/r1", "vr1")
+		}
 	}
 
 	return metrics
 }
 
-func createTraceData(numberOfTraces int) ptrace.Traces {
+func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr("resource", "R1")
-	ils := rs.ScopeSpans().AppendEmpty()
-	ils.Spans().EnsureCapacity(numberOfTraces)
-	for i := 0; i < numberOfTraces; i++ {
-		span := ils.Spans().AppendEmpty()
-		span.SetName("root")
-		span.SetStartTimestamp(pcommon.Timestamp((i + 1) * 1e9))
-		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
-		span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
-		span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
-		span.TraceState().FromRaw("foo")
-		if i%2 == 0 {
-			span.SetParentSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-			span.Status().SetCode(ptrace.StatusCodeOk)
-			span.Status().SetMessage("ok")
+
+	for i := 0; i < resourcesNum; i++ {
+		rs.Resource().Attributes().PutStr("resource", fmt.Sprintf("R%d", i))
+		ils := rs.ScopeSpans().AppendEmpty()
+		ils.Spans().EnsureCapacity(spansNum)
+		for j := 0; j < spansNum; j++ {
+			span := ils.Spans().AppendEmpty()
+			span.SetName("root")
+			count := i*spansNum + j
+			span.SetStartTimestamp(pcommon.Timestamp((count + 1) * 1e9))
+			span.SetEndTimestamp(pcommon.Timestamp((count + 2) * 1e9))
+			span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
+			span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+			span.TraceState().FromRaw("foo")
+			if count%2 == 0 {
+				span.SetParentSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+				span.Status().SetCode(ptrace.StatusCodeOk)
+				span.Status().SetMessage("ok")
+			}
 		}
 	}
 
@@ -199,10 +194,8 @@ type CapturingData struct {
 func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
-	if c.checkCompression {
-		if len(body) > minCompressionLen && r.Header.Get("Content-Encoding") != "gzip" {
-			c.testing.Fatal("No compression")
-		}
+	if c.checkCompression && r.Header.Get("Content-Encoding") != "gzip" {
+		c.testing.Fatal("No compression")
 	}
 
 	if err != nil {
@@ -382,12 +375,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 	type wantType struct {
 		batches    [][]string
 		numBatches int
-		compressed bool
 	}
-
-	// The test cases depend on the constant minCompressionLen = 1500.
-	// If the constant changed, the test cases with want.compressed=true must be updated.
-	require.Equal(t, minCompressionLen, 1500)
 
 	tests := []struct {
 		name   string
@@ -397,10 +385,11 @@ func TestReceiveTracesBatches(t *testing.T) {
 	}{
 		{
 			name:   "all trace events in payload when max content length unknown (configured max content length 0)",
-			traces: createTraceData(4),
+			traces: createTraceData(1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthTraces = 0
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -415,10 +404,11 @@ func TestReceiveTracesBatches(t *testing.T) {
 		},
 		{
 			name:   "1 trace event per payload (configured max content length is same as event size)",
-			traces: createTraceData(4),
+			traces: createTraceData(1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthTraces = 320
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -433,10 +423,11 @@ func TestReceiveTracesBatches(t *testing.T) {
 		},
 		{
 			name:   "2 trace events per payload (configured max content length is twice event size)",
-			traces: createTraceData(4),
+			traces: createTraceData(1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthTraces = 640
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -448,8 +439,8 @@ func TestReceiveTracesBatches(t *testing.T) {
 			},
 		},
 		{
-			name:   "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
-			traces: createTraceData(10),
+			name:   "1 compressed batch of 2037 bytes",
+			traces: createTraceData(1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
 			}(),
@@ -458,26 +449,25 @@ func TestReceiveTracesBatches(t *testing.T) {
 					{`"start_time":1`, `"start_time":2`, `"start_time":3`, `"start_time":4`, `"start_time":7`, `"start_time":8`, `"start_time":9`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
 			name:   "100 events, make sure that we produce more than one compressed batch",
-			traces: createTraceData(100),
+			traces: createTraceData(1, 100),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthTraces = minCompressionLen + 500
+				cfg.MaxContentLengthTraces = 2000
 				return cfg
 			}(),
 			want: wantType{
 				// just test that the test has 2 batches, don't test its contents.
 				batches:    [][]string{{""}, {""}},
 				numBatches: 2,
-				compressed: true,
 			},
-		}, {
-			name:   "100 events, make sure that we produce only one compressed batch when MaxContentLengthTraces is 0",
-			traces: createTraceData(100),
+		},
+		{
+			name:   "100 events",
+			traces: createTraceData(1, 100),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthTraces = 0
@@ -488,7 +478,19 @@ func TestReceiveTracesBatches(t *testing.T) {
 					{`"start_time":1`, `"start_time":2`, `"start_time":3`, `"start_time":4`, `"start_time":7`, `"start_time":8`, `"start_time":9`, `"start_time":20`, `"start_time":40`, `"start_time":85`, `"start_time":98`, `"start_time":99`},
 				},
 				numBatches: 1,
-				compressed: true,
+			},
+		},
+		{
+			name:   "10 resources, 10 spans, no compression",
+			traces: createTraceData(10, 10),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.DisableCompression = true
+				cfg.MaxContentLengthTraces = 5000
+				return cfg
+			}(),
+			want: wantType{
+				numBatches: 7,
 			},
 		},
 	}
@@ -500,18 +502,41 @@ func TestReceiveTracesBatches(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, got, test.want.numBatches, "expected exact number of batches")
 
-			for i := 0; i < test.want.numBatches; i++ {
+			for i, batch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthTraces != 0 {
 					require.True(t, int(test.conf.MaxContentLengthTraces) > len(got[i].body))
 				}
-				if test.want.compressed {
-					validateCompressedContains(t, test.want.batches[i], got[i].body)
-				} else {
-					for _, expected := range test.want.batches[i] {
+				if test.conf.DisableCompression {
+					for _, expected := range batch {
 						assert.Contains(t, string(got[i].body), expected)
 					}
+				} else {
+					validateCompressedContains(t, batch, got[i].body)
 				}
+			}
+
+			// ensure all events are sent out
+			for i := 1; i < test.traces.SpanCount(); i++ {
+				eventFound := false
+				for _, batch := range got {
+					batchBody := batch.body
+					if !test.conf.DisableCompression {
+						z, err := gzip.NewReader(bytes.NewReader(batchBody))
+						require.NoError(t, err)
+						batchBody, err = io.ReadAll(z)
+						z.Close()
+						require.NoError(t, err)
+					}
+					timeStr := fmt.Sprintf(`"time":%d,`, i+1)
+					if strings.Contains(string(batchBody), timeStr) {
+						if eventFound {
+							t.Errorf("span event %d found in multiple batches", i)
+						}
+						eventFound = true
+					}
+				}
+				assert.Truef(t, eventFound, "span event %d not found in any batch", i)
 			}
 		})
 	}
@@ -521,13 +546,9 @@ func TestReceiveLogs(t *testing.T) {
 	type wantType struct {
 		batches    [][]string
 		numBatches int
-		compressed bool
 		wantErr    string
+		wantDrops  int // expected number of dropped events
 	}
-
-	// The test cases depend on the constant minCompressionLen = 1500.
-	// If the constant changed, the test cases with want.compressed=true must be updated.
-	require.Equal(t, minCompressionLen, 1500)
 
 	tests := []struct {
 		name string
@@ -541,6 +562,7 @@ func TestReceiveLogs(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 0
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -559,6 +581,7 @@ func TestReceiveLogs(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 300
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -572,7 +595,7 @@ func TestReceiveLogs(t *testing.T) {
 			},
 		},
 		{
-			name: "1 log event long enough to trigger compression",
+			name: "1 log long event",
 			logs: func() plog.Logs {
 				l := createLogData(1, 1, 1)
 				l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(strings.Repeat("a", 1800))
@@ -588,7 +611,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
@@ -597,6 +619,7 @@ func TestReceiveLogs(t *testing.T) {
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthLogs = 448
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -608,7 +631,7 @@ func TestReceiveLogs(t *testing.T) {
 			},
 		},
 		{
-			name: "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			name: "1 compressed batch of 2037 bytes",
 			logs: createLogData(1, 1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
@@ -618,7 +641,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`, `"otel.log.name":"0_0_5"`, `"otel.log.name":"0_0_6"`, `"otel.log.name":"0_0_7"`, `"otel.log.name":"0_0_8"`, `"otel.log.name":"0_0_9"`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
@@ -626,7 +648,7 @@ func TestReceiveLogs(t *testing.T) {
 			logs: createLogData(1, 1, 150),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthLogs = minCompressionLen + 150
+				cfg.MaxContentLengthLogs = 1650
 				return cfg
 			}(),
 			want: wantType{
@@ -635,7 +657,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_110"`, `"otel.log.name":"0_0_149"`},
 				},
 				numBatches: 2,
-				compressed: true,
 			},
 		},
 		{
@@ -651,14 +672,13 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_90"`, `"otel.log.name":"0_0_110"`, `"otel.log.name":"0_0_149"`},
 				},
 				numBatches: 1,
-				compressed: true,
 			},
 		},
 		{
-			name: "one event with 1340 bytes, then one triggering compression (going over 1500 bytes) and bypassing the max length, moving to a separate batch",
+			name: "one event with 1340 bytes and another one bypassing the max length, moving to a separate batch",
 			logs: func() plog.Logs {
 				firstLog := createLogData(1, 1, 2)
-				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(1340))
+				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(repeatableString(1500))
 				firstLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(repeatableString(2800000))
 				return firstLog
 			}(),
@@ -672,7 +692,6 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`}, {`"otel.log.name":"0_0_1"`},
 				},
 				numBatches: 2,
-				compressed: true,
 			},
 		},
 		{
@@ -690,7 +709,6 @@ func TestReceiveLogs(t *testing.T) {
 			want: wantType{
 				batches:    [][]string{},
 				numBatches: 0,
-				compressed: true,
 				wantErr:    "timeout", // our server will time out waiting for the data.
 			},
 		},
@@ -705,7 +723,7 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxEventSize = 20000 // small so we can reproduce without allocating big logs.
+				cfg.MaxEventSize = 20000 // makes the third event too large to send.
 				cfg.DisableCompression = true
 				return cfg
 			}(),
@@ -714,6 +732,7 @@ func TestReceiveLogs(t *testing.T) {
 					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`},
 				},
 				numBatches: 1,
+				wantDrops:  1,
 			},
 		},
 		{
@@ -728,7 +747,6 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxEventSize = 10000 // small so we can reproduce without allocating big logs.
 				cfg.MaxContentLengthLogs = 5000
 				cfg.DisableCompression = true
 				return cfg
@@ -742,32 +760,80 @@ func TestReceiveLogs(t *testing.T) {
 				numBatches: 3,
 			},
 		},
+		{
+			name: "10 resource logs, 1 scope logs, 10 log records, no compression",
+			logs: createLogData(10, 1, 10),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.DisableCompression = true
+				cfg.MaxContentLengthLogs = 5000
+				return cfg
+			}(),
+			want: wantType{
+				numBatches: 4,
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := runLogExport(test.conf, test.logs, test.want.numBatches, t)
-
 			if test.want.wantErr != "" {
 				require.EqualError(t, err, test.want.wantErr)
-			} else {
-				require.NoError(t, err)
+				return
 			}
+			require.NoError(t, err)
 			require.Equal(t, test.want.numBatches, len(got))
 
-			for i := 0; i < test.want.numBatches; i++ {
+			for i, wantBatch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthLogs != 0 {
 					require.True(t, int(test.conf.MaxContentLengthLogs) > len(got[i].body))
 				}
-				if test.want.compressed {
-					validateCompressedContains(t, test.want.batches[i], got[i].body)
-				} else {
-					for _, expected := range test.want.batches[i] {
+				if test.conf.DisableCompression {
+					for _, expected := range wantBatch {
 						assert.Contains(t, string(got[i].body), expected)
+					}
+				} else {
+					validateCompressedContains(t, wantBatch, got[i].body)
+				}
+			}
+
+			// ensure all events are sent out
+			droppedCount := test.logs.LogRecordCount()
+			for i := 0; i < test.logs.ResourceLogs().Len(); i++ {
+				rl := test.logs.ResourceLogs().At(i)
+				for j := 0; j < rl.ScopeLogs().Len(); j++ {
+					sl := rl.ScopeLogs().At(j)
+					for k := 0; k < sl.LogRecords().Len(); k++ {
+						lr := sl.LogRecords().At(k)
+						attrVal, ok := lr.Attributes().Get("otel.log.name")
+						require.True(t, ok)
+						eventFound := false
+						for _, batch := range got {
+							batchBody := batch.body
+							if !test.conf.DisableCompression {
+								z, err := gzip.NewReader(bytes.NewReader(batchBody))
+								require.NoError(t, err)
+								batchBody, err = io.ReadAll(z)
+								z.Close()
+								require.NoError(t, err)
+							}
+							if strings.Contains(string(batchBody), fmt.Sprintf(`"%s"`, attrVal.Str())) {
+								if eventFound {
+									t.Errorf("log event %s found in multiple batches", attrVal.Str())
+								}
+								eventFound = true
+								droppedCount--
+							}
+						}
+						if test.want.wantDrops == 0 {
+							assert.Truef(t, eventFound, "log event %s not found in any batch", attrVal.Str())
+						}
 					}
 				}
 			}
+			assert.Equal(t, test.want.wantDrops, droppedCount, "expected %d dropped events, got %d", test.want.wantDrops, droppedCount)
 		})
 	}
 }
@@ -785,6 +851,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "mylog\n",
@@ -799,6 +866,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "bXlieXRlcw==\n",
@@ -813,6 +881,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "64.345\n",
@@ -823,6 +892,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "mylog\nmylog\nmylog\nmylog\nmylog\n",
@@ -837,6 +907,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "[1,\"foo\",true]\n",
@@ -851,6 +922,7 @@ func TestReceiveRaw(t *testing.T) {
 			conf: func() *Config {
 				conf := createDefaultConfig().(*Config)
 				conf.ExportRaw = true
+				conf.DisableCompression = true
 				return conf
 			}(),
 			text: "{\"foo\":\"bar\"}\n",
@@ -866,8 +938,59 @@ func TestReceiveRaw(t *testing.T) {
 	}
 }
 
+func TestReceiveLogEvent(t *testing.T) {
+	logs := createLogData(1, 1, 1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runLogExport(cfg, logs, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_log_event.json")
+}
+
+func TestReceiveMetricEvent(t *testing.T) {
+	metrics := createMetricsData(1, 1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runMetricsExport(cfg, metrics, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_metric_event.json")
+}
+
+func TestReceiveSpanEvent(t *testing.T) {
+	traces := createTraceData(1, 1)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+
+	actual, err := runTraceExport(cfg, traces, 1, t)
+	assert.Len(t, actual, 1)
+	assert.NoError(t, err)
+
+	compareWithTestData(t, actual[0].body, "testdata/hec_span_event.json")
+}
+
+// compareWithTestData compares hec output with a json file using maps instead of strings to avoid key ordering
+// issues (jsoniter doesn't sort the keys).
+func compareWithTestData(t *testing.T, actual []byte, file string) {
+	wantStr, err := os.ReadFile(file)
+	require.NoError(t, err)
+	wantMap := map[string]any{}
+	err = jsoniter.Unmarshal(wantStr, &wantMap)
+	require.NoError(t, err)
+
+	gotMap := map[string]any{}
+	err = jsoniter.Unmarshal(actual, &gotMap)
+	require.NoError(t, err)
+	assert.Equal(t, wantMap, gotMap)
+}
+
 func TestReceiveMetrics(t *testing.T) {
-	md := createMetricsData(3)
+	md := createMetricsData(1, 3)
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.DisableCompression = true
 	actual, err := runMetricsExport(cfg, md, 1, t)
@@ -886,10 +1009,6 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		compressed bool
 	}
 
-	// The test cases depend on the constant minCompressionLen = 1500.
-	// If the constant changed, the test cases with want.compressed=true must be updated.
-	require.Equal(t, minCompressionLen, 1500)
-
 	tests := []struct {
 		name    string
 		conf    *Config
@@ -898,10 +1017,11 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 	}{
 		{
 			name:    "all metrics events in payload when max content length unknown (configured max content length 0)",
-			metrics: createMetricsData(4),
+			metrics: createMetricsData(1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthMetrics = 0
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -913,10 +1033,11 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		},
 		{
 			name:    "1 metric event per payload (configured max content length is same as event size)",
-			metrics: createMetricsData(4),
+			metrics: createMetricsData(1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthMetrics = 300
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -931,10 +1052,11 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		},
 		{
 			name:    "2 metric events per payload (configured max content length is twice event size)",
-			metrics: createMetricsData(4),
+			metrics: createMetricsData(1, 4),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthMetrics = 448
+				cfg.DisableCompression = true
 				return cfg
 			}(),
 			want: wantType{
@@ -946,8 +1068,8 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:    "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
-			metrics: createMetricsData(10),
+			name:    "1 compressed batch of 2037 bytes",
+			metrics: createMetricsData(1, 10),
 			conf: func() *Config {
 				return NewFactory().CreateDefaultConfig().(*Config)
 			}(),
@@ -961,10 +1083,10 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		},
 		{
 			name:    "200 events, make sure that we produce more than one compressed batch",
-			metrics: createMetricsData(100),
+			metrics: createMetricsData(1, 100),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				cfg.MaxContentLengthMetrics = minCompressionLen + 150
+				cfg.MaxContentLengthMetrics = 1650
 				return cfg
 			}(),
 			want: wantType{
@@ -978,7 +1100,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		},
 		{
 			name:    "200 events, make sure that we produce only one compressed batch when MaxContentLengthMetrics is 0",
-			metrics: createMetricsData(100),
+			metrics: createMetricsData(1, 100),
 			conf: func() *Config {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.MaxContentLengthMetrics = 0
@@ -992,6 +1114,19 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				compressed: true,
 			},
 		},
+		{
+			name:    "10 resources, 10 datapoints, no compression",
+			metrics: createMetricsData(10, 10),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.DisableCompression = true
+				cfg.MaxContentLengthMetrics = 5000
+				return cfg
+			}(),
+			want: wantType{
+				numBatches: 5,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -1001,17 +1136,17 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, got, test.want.numBatches)
 
-			for i := 0; i < test.want.numBatches; i++ {
+			for i, batch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthMetrics != 0 {
 					require.True(t, int(test.conf.MaxContentLengthMetrics) > len(got[i].body))
 				}
 				if test.want.compressed {
-					validateCompressedContains(t, test.want.batches[i], got[i].body)
+					validateCompressedContains(t, batch, got[i].body)
 				} else {
 					found := false
 
-					for _, expected := range test.want.batches[i] {
+					for _, expected := range batch {
 						if strings.Contains(string(got[i].body), expected) {
 							found = true
 							break
@@ -1019,6 +1154,29 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 					}
 					assert.True(t, found, "%s did not match any expected batch", string(got[i].body))
 				}
+			}
+
+			// ensure all events are sent out
+			for i := 1; i < test.metrics.MetricCount(); i++ {
+				eventFound := false
+				for _, batch := range got {
+					batchBody := batch.body
+					if test.want.compressed {
+						z, err := gzip.NewReader(bytes.NewReader(batchBody))
+						require.NoError(t, err)
+						batchBody, err = io.ReadAll(z)
+						z.Close()
+						require.NoError(t, err)
+					}
+					time := float64(i) + 0.001*float64(i)
+					if strings.Contains(string(batchBody), fmt.Sprintf(`"time":%g`, time)) {
+						if eventFound {
+							t.Errorf("metric event %d found in multiple batches", i)
+						}
+						eventFound = true
+					}
+				}
+				assert.Truef(t, eventFound, "metric event %d not found in any batch", i)
 			}
 		})
 	}
@@ -1033,11 +1191,8 @@ func Test_PushMetricsData_Histogram_NaN_Sum(t *testing.T) {
 	dp := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zap.NewNop(),
-		hecWorker: &mockHecWorker{},
-	}
+	c := newMetricsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
 	assert.NoError(t, permanentErrors)
@@ -1052,11 +1207,8 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 	dp := summary.SetEmptySummary().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zap.NewNop(),
-		hecWorker: &mockHecWorker{},
-	}
+	c := newMetricsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
 	assert.NoError(t, permanentErrors)
@@ -1065,7 +1217,7 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 func TestReceiveMetricsWithCompression(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.MaxContentLengthMetrics = 1800
-	request, err := runMetricsExport(cfg, createMetricsData(100), 1, t)
+	request, err := runMetricsExport(cfg, createMetricsData(1, 100), 1, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "gzip", request[0].headers.Get("Content-Encoding"))
 	assert.NotEqual(t, "", request)
@@ -1108,7 +1260,7 @@ func TestErrorReceived(t *testing.T) {
 		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 
-	td := createTraceData(3)
+	td := createTraceData(1, 3)
 
 	err = exporter.ConsumeTraces(context.Background(), td)
 	select {
@@ -1149,7 +1301,7 @@ func TestInvalidURL(t *testing.T) {
 	defer func() {
 		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
-	td := createTraceData(2)
+	td := createTraceData(1, 2)
 
 	err = exporter.ConsumeTraces(context.Background(), td)
 	assert.EqualError(t, err, "Post \"ftp://example.com:134/services/collector\": unsupported protocol scheme \"ftp\"")
@@ -1213,10 +1365,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		},
 	}
 
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-		logger: zaptest.NewLogger(t),
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
 
 	for _, test := range tests {
 		for _, disabled := range []bool{true, false} {
@@ -1231,10 +1380,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-		logger: zaptest.NewLogger(t),
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
 
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -1247,11 +1393,8 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zaptest.NewLogger(t),
-		hecWorker: &defaultHecWorker{url: &url.URL{Host: "in va lid"}},
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+	c.hecWorker = &defaultHecWorker{url: &url.URL{Host: "in va lid"}}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
 	logs := createLogData(1, 1, 2000)
@@ -1289,10 +1432,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	splunkClient := client{
-		config: config,
-		logger: zaptest.NewLogger(t),
-	}
+	splunkClient := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
 	logs := createLogData(1, 1, 1)
 
 	responseBody := `some error occurred`
@@ -1320,17 +1460,15 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
+
+	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
+	config.MaxContentLengthLogs, config.DisableCompression = 250, true
+
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := client{
-		config: config,
-		logger: zaptest.NewLogger(t),
-	}
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
 
 	// Just two records
 	logs := createLogData(2, 1, 1)
-
-	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
 
 	// The first record is to be sent successfully, the second one should not
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
@@ -1349,22 +1487,23 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := client{
-		config: config,
-		logger: zaptest.NewLogger(t),
-	}
 
-	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
+	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
+	config.MaxContentLengthLogs, config.DisableCompression = 300, true
+
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+
+	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs"}, []int{10})
+	profilingData := createLogDataWithCustomLibraries(1, []string{"otel.profiling"}, []int{20})
 	var headers *[]http.Header
 
 	httpClient, headers := newTestClient(200, "OK")
+	url := &url.URL{Scheme: "http", Host: "splunk"}
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
-	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
-
 	err := c.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+	err = c.pushLogData(context.Background(), profilingData)
 	require.NoError(t, err)
 	assert.Equal(t, 30, len(*headers))
 
@@ -1381,76 +1520,127 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	assert.Equal(t, 10, nonProfilingCount)
 }
 
-func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
-	benchPushLogData(b, 100, 10, 10, 1024)
+// 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
+func Benchmark_pushLogData_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 1024, false)
 }
 
-func Benchmark_pushLogData_10_100_100_1024(b *testing.B) {
-	benchPushLogData(b, 10, 100, 100, 1024)
+// 10 resources, 10 records, 8Kb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 8*1024, false)
 }
 
-func Benchmark_pushLogData_10_0_100_1024(b *testing.B) {
-	benchPushLogData(b, 10, 0, 100, 1024)
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_10_10_2M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 2*1024*1024, false)
 }
 
-func Benchmark_pushLogData_10_100_0_1024(b *testing.B) {
-	benchPushLogData(b, 10, 100, 0, 1024)
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_10_200_2M(b *testing.B) {
+	benchPushLogData(b, 10, 200, 2*1024*1024, false)
 }
 
-func Benchmark_pushLogData_10_10_10_256(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 256)
+// 100 resources, 200 records, 2Mb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_100_200_2M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 2*1024*1024, false)
 }
 
-func Benchmark_pushLogData_10_10_10_1024(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 1024)
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushLogData_100_200_5M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 5*1024*1024, false)
 }
 
-func Benchmark_pushLogData_10_10_10_8K(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 8*1024)
+// 10 resources, 10 records, 1Kb max HEC batch: 2 HEC batches
+func Benchmark_pushLogData_compressed_10_10_1024(b *testing.B) {
+	benchPushLogData(b, 10, 10, 1024, true)
 }
 
-func Benchmark_pushLogData_10_10_10_1M(b *testing.B) {
-	benchPushLogData(b, 10, 10, 10, 1024*1024)
-}
-func Benchmark_pushLogData_10_1_1_1024(b *testing.B) {
-	benchPushLogData(b, 10, 1, 1, 1024)
+// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batche
+func Benchmark_pushLogData_compressed_10_10_8K(b *testing.B) {
+	benchPushLogData(b, 10, 10, 8*1024, true)
 }
 
-func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonProfiling int, bufSize uint) {
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_compressed_10_10_2M(b *testing.B) {
+	benchPushLogData(b, 10, 10, 2*1024*1024, true)
+}
+
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_compressed_10_200_2M(b *testing.B) {
+	benchPushLogData(b, 10, 200, 2*1024*1024, true)
+}
+
+// 100 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushLogData_compressed_100_200_2M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 2*1024*1024, true)
+}
+
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushLogData_compressed_100_200_5M(b *testing.B) {
+	benchPushLogData(b, 100, 200, 5*1024*1024, true)
+}
+
+func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := client{
-		config: config,
-		logger: zaptest.NewLogger(b),
+	config.MaxContentLengthLogs = bufSize
+	config.DisableCompression = !compressionEnabled
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+	c.hecWorker = &mockHecWorker{}
+	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushLogData)
+	require.NoError(b, err)
+	exp = &baseLogsExporter{
+		Component: exp,
+		Logs: &perScopeBatcher{
+			logsEnabled: true,
+			logger:      zap.NewNop(),
+			next:        exp,
+		},
 	}
 
-	httpClient, _ := newTestClient(200, "OK")
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
+	logs := createLogData(numResources, 1, numRecords)
 
-	c.config.MaxContentLengthLogs = bufSize
-	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
-
+	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := c.pushLogData(context.Background(), logs)
+		err := exp.ConsumeLogs(context.Background(), logs)
 		require.NoError(b, err)
+	}
+}
+
+func BenchmarkConsumeLogsRejected(b *testing.B) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.DisableCompression = true
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+	c.hecWorker = &mockHecWorker{failSend: true}
+
+	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushLogData)
+	require.NoError(b, err)
+
+	logs := createLogData(10, 1, 100)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := exp.ConsumeLogs(context.Background(), logs)
+		require.Error(b, err)
 	}
 }
 
 func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	c := client{
-		config:    config,
-		logger:    zaptest.NewLogger(t),
-		hecWorker: &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())},
-	}
-	c.config.MaxContentLengthLogs = 1
+	config.MaxContentLengthLogs = 1
 
 	logs := createLogData(1, 1, 2000)
 
 	for _, disable := range []bool{true, false} {
-		c.config.DisableCompression = disable
+		config.DisableCompression = disable
+
+		c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
 		err := c.pushLogData(context.Background(), logs)
 		require.Error(t, err)
@@ -1517,13 +1707,8 @@ func TestSubLogs(t *testing.T) {
 	// Creating 12 logs (2 resources x 2 libraries x 3 records)
 	logs := createLogData(2, 2, 3)
 
-	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-	}
-
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &index{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := c.subLogs(logs, _0_0_0, nil)
+	got := subLogs(logs, iterState{resource: 0, library: 0, record: 0})
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -1536,8 +1721,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _0_1_2, nil)
+	got = subLogs(logs, iterState{resource: 0, library: 1, record: 2})
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -1549,8 +1733,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(logs, _1_1_2, nil)
+	got = subLogs(logs, iterState{resource: 1, library: 1, record: 2})
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
@@ -1558,31 +1741,50 @@ func TestSubLogs(t *testing.T) {
 	// The name of the sole log record should be 1_1_2.
 	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_2", val.AsString())
+}
 
-	// Now see how profiling and log data are merged
-	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
-	slice := &index{resource: 1, library: 0, record: 5}
-	profSlice := &index{resource: 0, library: 1, record: 8}
+func TestPushLogsPartialSuccess(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.ExportRaw = true
+	cfg.MaxContentLengthLogs = 6
+	c := newLogsClient(exportertest.NewNopCreateSettings(), cfg)
 
-	got = c.subLogs(logs, slice, profSlice)
+	// The first request succeeds, the second fails.
+	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo())}
 
-	assert.Equal(t, 5+2+10, got.LogRecordCount())
-	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_5", val.AsString())
-	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_0_9", val.AsString())
+	logs := plog.NewLogs()
+	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	logRecords.AppendEmpty().Body().SetStr("log-1")         // should be successfully sent
+	logRecords.AppendEmpty().Body().SetStr("log-2-too-big") // should be permanently rejected as it's too big
+	logRecords.AppendEmpty().Body().SetStr("log-3")         // should be rejected and returned to for retry
 
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_8", val.AsString())
-	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "0_1_9", val.AsString())
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).ScopeLogs().At(0).Scope().Name())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_0", val.AsString())
-	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
-	assert.Equal(t, "1_1_9", val.AsString())
+	err := c.pushLogData(context.Background(), logs)
+	expectedErr := consumererror.Logs{}
+	require.ErrorContains(t, err, "503")
+	require.ErrorAs(t, err, &expectedErr)
+	require.Equal(t, 1, expectedErr.Data().LogRecordCount())
+	assert.Equal(t, "log-3", expectedErr.Data().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Str())
+}
+
+func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
+	c := newLogsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+
+	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
+	url := &url.URL{Scheme: "http", Host: "splunk"}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo())}
+
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-2")
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-3")
+
+	err := c.pushLogData(context.Background(), logs)
+	expectedErr := consumererror.Logs{}
+	require.ErrorContains(t, err, "503")
+	require.ErrorAs(t, err, &expectedErr)
+	assert.Equal(t, logs, expectedErr.Data())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings
@@ -1597,22 +1799,4 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 		assert.Contains(t, string(p), e)
 	}
 
-}
-
-func BenchmarkPushLogRecords(b *testing.B) {
-	logs := createLogData(1, 1, 1)
-	c := client{
-		config:    NewFactory().CreateDefaultConfig().(*Config),
-		logger:    zap.NewNop(),
-		hecWorker: &mockHecWorker{},
-	}
-
-	state := makeBlankBufferState(4096, true, 4096)
-	for n := 0; n < b.N; n++ {
-		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), state, map[string]string{})
-		assert.NoError(b, sendingErr)
-		for _, permanentErr := range permanentErrs {
-			assert.NoError(b, permanentErr)
-		}
-	}
 }

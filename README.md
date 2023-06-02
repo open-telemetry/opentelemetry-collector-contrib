@@ -75,8 +75,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
+- [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
+- [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
@@ -94,6 +96,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
+- [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:

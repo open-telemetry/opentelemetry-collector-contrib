@@ -19,82 +19,82 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
                     - key: http.method
                       value:
                         stringValue: GET
                     - key: http.status_class
                       value:
                         stringValue: 1xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1651783208655196000"
                   timeUnixNano: "1651783208656862000"
                 - asInt: "1"
                   attributes:
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
                     - key: http.method
                       value:
                         stringValue: GET
                     - key: http.status_class
                       value:
                         stringValue: 2xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1651783208655196000"
                   timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
                     - key: http.method
                       value:
                         stringValue: GET
                     - key: http.status_class
                       value:
                         stringValue: 3xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1651783208655196000"
                   timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
                     - key: http.method
                       value:
                         stringValue: GET
                     - key: http.status_class
                       value:
                         stringValue: 4xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1651783208655196000"
                   timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
                     - key: http.method
                       value:
                         stringValue: GET
                     - key: http.status_class
                       value:
                         stringValue: 5xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
                   startTimeUnixNano: "1651783208655196000"
                   timeUnixNano: "1651783208656862000"
             unit: "1"
