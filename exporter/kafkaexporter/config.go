@@ -100,11 +100,7 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	if err = validateSASLConfig(cfg.Authentication.SASL); err != nil {
-		return err
-	}
-
-	return nil
+	return validateSASLConfig(cfg.Authentication.SASL)
 }
 
 func validateSASLConfig(c *SASLConfig) error {
