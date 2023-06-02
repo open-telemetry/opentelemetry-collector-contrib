@@ -1,7 +1,7 @@
-name: azureeventhubreceiver
+type: azureeventhub
 
 status:
-  type: receiver
-  stability: alpha
-  pipelines: [logs, metrics]
-  distributions: [contrib]
+  class: receiver
+  stability:
+    alpha: [metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo]

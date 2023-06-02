@@ -1,0 +1,7 @@
+type: awsxray
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+  distributions: [contrib, aws, observiq, sumo]

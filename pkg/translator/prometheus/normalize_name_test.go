@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 
@@ -150,10 +139,7 @@ func TestOtelReceivers(t *testing.T) {
 }
 
 func TestTrimPromSuffixes(t *testing.T) {
-	registry := featuregate.NewRegistry()
-	_, err := registry.Register(normalizeNameGate.ID(), featuregate.StageBeta)
-	require.NoError(t, err)
-	normalizer := NewNormalizer(registry)
+	normalizer := NewNormalizer(featuregate.NewRegistry())
 
 	assert.Equal(t, "active_directory_ds_replication_network_io", normalizer.TrimPromSuffixes("active_directory_ds_replication_network_io_bytes_total", pmetric.MetricTypeSum, "bytes"))
 	assert.Equal(t, "active_directory_ds_name_cache_hit_rate", normalizer.TrimPromSuffixes("active_directory_ds_name_cache_hit_rate_percent", pmetric.MetricTypeGauge, "percent"))
@@ -186,7 +172,10 @@ func TestTrimPromSuffixes(t *testing.T) {
 }
 
 func TestTrimPromSuffixesWithFeatureGateDisabled(t *testing.T) {
-	normalizer := NewNormalizer(featuregate.NewRegistry())
+	registry := featuregate.NewRegistry()
+	_, err := registry.Register(normalizeNameGate.ID(), featuregate.StageAlpha)
+	require.NoError(t, err)
+	normalizer := NewNormalizer(registry)
 
 	assert.Equal(t, "apache_current_connections", normalizer.TrimPromSuffixes("apache_current_connections", pmetric.MetricTypeGauge, "connections"))
 	assert.Equal(t, "apache_requests_total", normalizer.TrimPromSuffixes("apache_requests_total", pmetric.MetricTypeSum, "1"))

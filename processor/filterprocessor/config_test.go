@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor
 
@@ -29,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 // TestLoadingConfigRegexp tests loading testdata/config_strict.yaml
@@ -892,36 +882,36 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "spans_mix_config"),
+			id:           component.NewIDWithName(metadata.Type, "spans_mix_config"),
 			errorMessage: "cannot use ottl conditions and include/exclude for spans at the same time",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "metrics_mix_config"),
+			id:           component.NewIDWithName(metadata.Type, "metrics_mix_config"),
 			errorMessage: "cannot use ottl conditions and include/exclude for metrics at the same time",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "logs_mix_config"),
+			id:           component.NewIDWithName(metadata.Type, "logs_mix_config"),
 			errorMessage: "cannot use ottl conditions and include/exclude for logs at the same time",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_span"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_span"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_spanevent"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:33: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
+			errorMessage: "unable to parse OTTL statement: 1:34: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_datapoint"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			id:           component.NewIDWithName(metadata.Type, "bad_syntax_log"),
+			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
 		},
 	}
 

@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check: {}
+    processors:
+      k8sattributes:
+        extract:
+          annotations:
+          - from: pod
+            key: workload
+            tag_name: k8s.annotations.workload
+          labels:
+          - from: pod
+            key: app
+            tag_name: k8s.labels.app
+          metadata:
+          - k8s.pod.name
+          - k8s.pod.start_time
+          - k8s.pod.uid
+          - k8s.namespace.name
+          - k8s.deployment.name
+          - k8s.deployment.uid
+          - k8s.replicaset.name
+          - k8s.replicaset.uid
+          - k8s.statefulset.name
+          - k8s.statefulset.uid
+          - k8s.daemonset.name
+          - k8s.daemonset.uid
+          - k8s.cronjob.name
+          - k8s.job.name
+          - k8s.job.uid
+          - k8s.node.name
+          - container.id
+          - container.image.name
+          - container.image.tag
+        pod_association:
+        - sources:
+          - from: connection
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+      - health_check
+      pipelines:
+        logs:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp
+        metrics:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp
+        traces:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp

@@ -6,201 +6,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for snowflakereceiver metrics.
-type MetricsSettings struct {
-	SnowflakeBillingCloudServiceTotal              MetricSettings `mapstructure:"snowflake.billing.cloud_service.total"`
-	SnowflakeBillingTotalCreditTotal               MetricSettings `mapstructure:"snowflake.billing.total_credit.total"`
-	SnowflakeBillingVirtualWarehouseTotal          MetricSettings `mapstructure:"snowflake.billing.virtual_warehouse.total"`
-	SnowflakeBillingWarehouseCloudServiceTotal     MetricSettings `mapstructure:"snowflake.billing.warehouse.cloud_service.total"`
-	SnowflakeBillingWarehouseTotalCreditTotal      MetricSettings `mapstructure:"snowflake.billing.warehouse.total_credit.total"`
-	SnowflakeBillingWarehouseVirtualWarehouseTotal MetricSettings `mapstructure:"snowflake.billing.warehouse.virtual_warehouse.total"`
-	SnowflakeDatabaseBytesScannedAvg               MetricSettings `mapstructure:"snowflake.database.bytes_scanned.avg"`
-	SnowflakeDatabaseQueryCount                    MetricSettings `mapstructure:"snowflake.database.query.count"`
-	SnowflakeLoginsTotal                           MetricSettings `mapstructure:"snowflake.logins.total"`
-	SnowflakePipeCreditsUsedTotal                  MetricSettings `mapstructure:"snowflake.pipe.credits_used.total"`
-	SnowflakeQueryBlocked                          MetricSettings `mapstructure:"snowflake.query.blocked"`
-	SnowflakeQueryBytesDeletedAvg                  MetricSettings `mapstructure:"snowflake.query.bytes_deleted.avg"`
-	SnowflakeQueryBytesSpilledLocalAvg             MetricSettings `mapstructure:"snowflake.query.bytes_spilled.local.avg"`
-	SnowflakeQueryBytesSpilledRemoteAvg            MetricSettings `mapstructure:"snowflake.query.bytes_spilled.remote.avg"`
-	SnowflakeQueryBytesWrittenAvg                  MetricSettings `mapstructure:"snowflake.query.bytes_written.avg"`
-	SnowflakeQueryCompilationTimeAvg               MetricSettings `mapstructure:"snowflake.query.compilation_time.avg"`
-	SnowflakeQueryDataScannedCacheAvg              MetricSettings `mapstructure:"snowflake.query.data_scanned_cache.avg"`
-	SnowflakeQueryExecuted                         MetricSettings `mapstructure:"snowflake.query.executed"`
-	SnowflakeQueryExecutionTimeAvg                 MetricSettings `mapstructure:"snowflake.query.execution_time.avg"`
-	SnowflakeQueryPartitionsScannedAvg             MetricSettings `mapstructure:"snowflake.query.partitions_scanned.avg"`
-	SnowflakeQueryQueuedOverload                   MetricSettings `mapstructure:"snowflake.query.queued_overload"`
-	SnowflakeQueryQueuedProvision                  MetricSettings `mapstructure:"snowflake.query.queued_provision"`
-	SnowflakeQueuedOverloadTimeAvg                 MetricSettings `mapstructure:"snowflake.queued_overload_time.avg"`
-	SnowflakeQueuedProvisioningTimeAvg             MetricSettings `mapstructure:"snowflake.queued_provisioning_time.avg"`
-	SnowflakeQueuedRepairTimeAvg                   MetricSettings `mapstructure:"snowflake.queued_repair_time.avg"`
-	SnowflakeRowsDeletedAvg                        MetricSettings `mapstructure:"snowflake.rows_deleted.avg"`
-	SnowflakeRowsInsertedAvg                       MetricSettings `mapstructure:"snowflake.rows_inserted.avg"`
-	SnowflakeRowsProducedAvg                       MetricSettings `mapstructure:"snowflake.rows_produced.avg"`
-	SnowflakeRowsUnloadedAvg                       MetricSettings `mapstructure:"snowflake.rows_unloaded.avg"`
-	SnowflakeRowsUpdatedAvg                        MetricSettings `mapstructure:"snowflake.rows_updated.avg"`
-	SnowflakeSessionIDCount                        MetricSettings `mapstructure:"snowflake.session_id.count"`
-	SnowflakeStorageFailsafeBytesTotal             MetricSettings `mapstructure:"snowflake.storage.failsafe_bytes.total"`
-	SnowflakeStorageStageBytesTotal                MetricSettings `mapstructure:"snowflake.storage.stage_bytes.total"`
-	SnowflakeStorageStorageBytesTotal              MetricSettings `mapstructure:"snowflake.storage.storage_bytes.total"`
-	SnowflakeTotalElapsedTimeAvg                   MetricSettings `mapstructure:"snowflake.total_elapsed_time.avg"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SnowflakeBillingCloudServiceTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeBillingTotalCreditTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeBillingVirtualWarehouseTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseCloudServiceTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseTotalCreditTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeDatabaseBytesScannedAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeDatabaseQueryCount: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeLoginsTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakePipeCreditsUsedTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeQueryBlocked: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueryBytesDeletedAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueryBytesSpilledLocalAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeQueryBytesSpilledRemoteAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeQueryBytesWrittenAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueryCompilationTimeAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueryDataScannedCacheAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeQueryExecuted: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueryExecutionTimeAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueryPartitionsScannedAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeQueryQueuedOverload: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueryQueuedProvision: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueuedOverloadTimeAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueuedProvisioningTimeAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeQueuedRepairTimeAvg: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeRowsDeletedAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeRowsInsertedAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeRowsProducedAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeRowsUnloadedAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeRowsUpdatedAvg: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeSessionIDCount: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeStorageFailsafeBytesTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeStorageStageBytesTotal: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeStorageStorageBytesTotal: MetricSettings{
-			Enabled: true,
-		},
-		SnowflakeTotalElapsedTimeAvg: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for snowflakereceiver metrics.
-type ResourceAttributesSettings struct {
-	SnowflakeAccountName ResourceAttributeSettings `mapstructure:"snowflake.account.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		SnowflakeAccountName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
-
 type metricSnowflakeBillingCloudServiceTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -214,7 +27,7 @@ func (m *metricSnowflakeBillingCloudServiceTotal) init() {
 }
 
 func (m *metricSnowflakeBillingCloudServiceTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -233,16 +46,16 @@ func (m *metricSnowflakeBillingCloudServiceTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingCloudServiceTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeBillingCloudServiceTotal(settings MetricSettings) metricSnowflakeBillingCloudServiceTotal {
-	m := metricSnowflakeBillingCloudServiceTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeBillingCloudServiceTotal(cfg MetricConfig) metricSnowflakeBillingCloudServiceTotal {
+	m := metricSnowflakeBillingCloudServiceTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -251,7 +64,7 @@ func newMetricSnowflakeBillingCloudServiceTotal(settings MetricSettings) metricS
 
 type metricSnowflakeBillingTotalCreditTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -265,7 +78,7 @@ func (m *metricSnowflakeBillingTotalCreditTotal) init() {
 }
 
 func (m *metricSnowflakeBillingTotalCreditTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -284,16 +97,16 @@ func (m *metricSnowflakeBillingTotalCreditTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingTotalCreditTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeBillingTotalCreditTotal(settings MetricSettings) metricSnowflakeBillingTotalCreditTotal {
-	m := metricSnowflakeBillingTotalCreditTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeBillingTotalCreditTotal(cfg MetricConfig) metricSnowflakeBillingTotalCreditTotal {
+	m := metricSnowflakeBillingTotalCreditTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -302,7 +115,7 @@ func newMetricSnowflakeBillingTotalCreditTotal(settings MetricSettings) metricSn
 
 type metricSnowflakeBillingVirtualWarehouseTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -316,7 +129,7 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) init() {
 }
 
 func (m *metricSnowflakeBillingVirtualWarehouseTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -335,16 +148,16 @@ func (m *metricSnowflakeBillingVirtualWarehouseTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingVirtualWarehouseTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeBillingVirtualWarehouseTotal(settings MetricSettings) metricSnowflakeBillingVirtualWarehouseTotal {
-	m := metricSnowflakeBillingVirtualWarehouseTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeBillingVirtualWarehouseTotal(cfg MetricConfig) metricSnowflakeBillingVirtualWarehouseTotal {
+	m := metricSnowflakeBillingVirtualWarehouseTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -353,7 +166,7 @@ func newMetricSnowflakeBillingVirtualWarehouseTotal(settings MetricSettings) met
 
 type metricSnowflakeBillingWarehouseCloudServiceTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -367,7 +180,7 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) init() {
 }
 
 func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -386,16 +199,16 @@ func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeBillingWarehouseCloudServiceTotal(settings MetricSettings) metricSnowflakeBillingWarehouseCloudServiceTotal {
-	m := metricSnowflakeBillingWarehouseCloudServiceTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeBillingWarehouseCloudServiceTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseCloudServiceTotal {
+	m := metricSnowflakeBillingWarehouseCloudServiceTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -404,7 +217,7 @@ func newMetricSnowflakeBillingWarehouseCloudServiceTotal(settings MetricSettings
 
 type metricSnowflakeBillingWarehouseTotalCreditTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -418,7 +231,7 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) init() {
 }
 
 func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -437,16 +250,16 @@ func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeBillingWarehouseTotalCreditTotal(settings MetricSettings) metricSnowflakeBillingWarehouseTotalCreditTotal {
-	m := metricSnowflakeBillingWarehouseTotalCreditTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeBillingWarehouseTotalCreditTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseTotalCreditTotal {
+	m := metricSnowflakeBillingWarehouseTotalCreditTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -455,7 +268,7 @@ func newMetricSnowflakeBillingWarehouseTotalCreditTotal(settings MetricSettings)
 
 type metricSnowflakeBillingWarehouseVirtualWarehouseTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -469,7 +282,7 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) init() {
 }
 
 func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -488,16 +301,16 @@ func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) updateCapacity() 
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(settings MetricSettings) metricSnowflakeBillingWarehouseVirtualWarehouseTotal {
-	m := metricSnowflakeBillingWarehouseVirtualWarehouseTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(cfg MetricConfig) metricSnowflakeBillingWarehouseVirtualWarehouseTotal {
+	m := metricSnowflakeBillingWarehouseVirtualWarehouseTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -506,7 +319,7 @@ func newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(settings MetricSett
 
 type metricSnowflakeDatabaseBytesScannedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -520,7 +333,7 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) init() {
 }
 
 func (m *metricSnowflakeDatabaseBytesScannedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -545,16 +358,16 @@ func (m *metricSnowflakeDatabaseBytesScannedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeDatabaseBytesScannedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeDatabaseBytesScannedAvg(settings MetricSettings) metricSnowflakeDatabaseBytesScannedAvg {
-	m := metricSnowflakeDatabaseBytesScannedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeDatabaseBytesScannedAvg(cfg MetricConfig) metricSnowflakeDatabaseBytesScannedAvg {
+	m := metricSnowflakeDatabaseBytesScannedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -563,7 +376,7 @@ func newMetricSnowflakeDatabaseBytesScannedAvg(settings MetricSettings) metricSn
 
 type metricSnowflakeDatabaseQueryCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -577,7 +390,7 @@ func (m *metricSnowflakeDatabaseQueryCount) init() {
 }
 
 func (m *metricSnowflakeDatabaseQueryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -602,16 +415,16 @@ func (m *metricSnowflakeDatabaseQueryCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeDatabaseQueryCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeDatabaseQueryCount(settings MetricSettings) metricSnowflakeDatabaseQueryCount {
-	m := metricSnowflakeDatabaseQueryCount{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeDatabaseQueryCount(cfg MetricConfig) metricSnowflakeDatabaseQueryCount {
+	m := metricSnowflakeDatabaseQueryCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -620,7 +433,7 @@ func newMetricSnowflakeDatabaseQueryCount(settings MetricSettings) metricSnowfla
 
 type metricSnowflakeLoginsTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -634,7 +447,7 @@ func (m *metricSnowflakeLoginsTotal) init() {
 }
 
 func (m *metricSnowflakeLoginsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, errorMessageAttributeValue string, reportedClientTypeAttributeValue string, isSuccessAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -655,16 +468,16 @@ func (m *metricSnowflakeLoginsTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeLoginsTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeLoginsTotal(settings MetricSettings) metricSnowflakeLoginsTotal {
-	m := metricSnowflakeLoginsTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeLoginsTotal(cfg MetricConfig) metricSnowflakeLoginsTotal {
+	m := metricSnowflakeLoginsTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -673,7 +486,7 @@ func newMetricSnowflakeLoginsTotal(settings MetricSettings) metricSnowflakeLogin
 
 type metricSnowflakePipeCreditsUsedTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -687,7 +500,7 @@ func (m *metricSnowflakePipeCreditsUsedTotal) init() {
 }
 
 func (m *metricSnowflakePipeCreditsUsedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, pipeNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -706,16 +519,16 @@ func (m *metricSnowflakePipeCreditsUsedTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakePipeCreditsUsedTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakePipeCreditsUsedTotal(settings MetricSettings) metricSnowflakePipeCreditsUsedTotal {
-	m := metricSnowflakePipeCreditsUsedTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakePipeCreditsUsedTotal(cfg MetricConfig) metricSnowflakePipeCreditsUsedTotal {
+	m := metricSnowflakePipeCreditsUsedTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -724,7 +537,7 @@ func newMetricSnowflakePipeCreditsUsedTotal(settings MetricSettings) metricSnowf
 
 type metricSnowflakeQueryBlocked struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -738,7 +551,7 @@ func (m *metricSnowflakeQueryBlocked) init() {
 }
 
 func (m *metricSnowflakeQueryBlocked) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -757,16 +570,16 @@ func (m *metricSnowflakeQueryBlocked) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBlocked) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryBlocked(settings MetricSettings) metricSnowflakeQueryBlocked {
-	m := metricSnowflakeQueryBlocked{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryBlocked(cfg MetricConfig) metricSnowflakeQueryBlocked {
+	m := metricSnowflakeQueryBlocked{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -775,7 +588,7 @@ func newMetricSnowflakeQueryBlocked(settings MetricSettings) metricSnowflakeQuer
 
 type metricSnowflakeQueryBytesDeletedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -789,7 +602,7 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) init() {
 }
 
 func (m *metricSnowflakeQueryBytesDeletedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -814,16 +627,16 @@ func (m *metricSnowflakeQueryBytesDeletedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesDeletedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryBytesDeletedAvg(settings MetricSettings) metricSnowflakeQueryBytesDeletedAvg {
-	m := metricSnowflakeQueryBytesDeletedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryBytesDeletedAvg(cfg MetricConfig) metricSnowflakeQueryBytesDeletedAvg {
+	m := metricSnowflakeQueryBytesDeletedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -832,7 +645,7 @@ func newMetricSnowflakeQueryBytesDeletedAvg(settings MetricSettings) metricSnowf
 
 type metricSnowflakeQueryBytesSpilledLocalAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -846,7 +659,7 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) init() {
 }
 
 func (m *metricSnowflakeQueryBytesSpilledLocalAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -871,16 +684,16 @@ func (m *metricSnowflakeQueryBytesSpilledLocalAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesSpilledLocalAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryBytesSpilledLocalAvg(settings MetricSettings) metricSnowflakeQueryBytesSpilledLocalAvg {
-	m := metricSnowflakeQueryBytesSpilledLocalAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryBytesSpilledLocalAvg(cfg MetricConfig) metricSnowflakeQueryBytesSpilledLocalAvg {
+	m := metricSnowflakeQueryBytesSpilledLocalAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -889,7 +702,7 @@ func newMetricSnowflakeQueryBytesSpilledLocalAvg(settings MetricSettings) metric
 
 type metricSnowflakeQueryBytesSpilledRemoteAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -903,7 +716,7 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) init() {
 }
 
 func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -928,16 +741,16 @@ func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryBytesSpilledRemoteAvg(settings MetricSettings) metricSnowflakeQueryBytesSpilledRemoteAvg {
-	m := metricSnowflakeQueryBytesSpilledRemoteAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryBytesSpilledRemoteAvg(cfg MetricConfig) metricSnowflakeQueryBytesSpilledRemoteAvg {
+	m := metricSnowflakeQueryBytesSpilledRemoteAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -946,7 +759,7 @@ func newMetricSnowflakeQueryBytesSpilledRemoteAvg(settings MetricSettings) metri
 
 type metricSnowflakeQueryBytesWrittenAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -960,7 +773,7 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) init() {
 }
 
 func (m *metricSnowflakeQueryBytesWrittenAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -985,16 +798,16 @@ func (m *metricSnowflakeQueryBytesWrittenAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryBytesWrittenAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryBytesWrittenAvg(settings MetricSettings) metricSnowflakeQueryBytesWrittenAvg {
-	m := metricSnowflakeQueryBytesWrittenAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryBytesWrittenAvg(cfg MetricConfig) metricSnowflakeQueryBytesWrittenAvg {
+	m := metricSnowflakeQueryBytesWrittenAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1003,7 +816,7 @@ func newMetricSnowflakeQueryBytesWrittenAvg(settings MetricSettings) metricSnowf
 
 type metricSnowflakeQueryCompilationTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1017,7 +830,7 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) init() {
 }
 
 func (m *metricSnowflakeQueryCompilationTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1042,16 +855,16 @@ func (m *metricSnowflakeQueryCompilationTimeAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryCompilationTimeAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryCompilationTimeAvg(settings MetricSettings) metricSnowflakeQueryCompilationTimeAvg {
-	m := metricSnowflakeQueryCompilationTimeAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryCompilationTimeAvg(cfg MetricConfig) metricSnowflakeQueryCompilationTimeAvg {
+	m := metricSnowflakeQueryCompilationTimeAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1060,7 +873,7 @@ func newMetricSnowflakeQueryCompilationTimeAvg(settings MetricSettings) metricSn
 
 type metricSnowflakeQueryDataScannedCacheAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1074,7 +887,7 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) init() {
 }
 
 func (m *metricSnowflakeQueryDataScannedCacheAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1099,16 +912,16 @@ func (m *metricSnowflakeQueryDataScannedCacheAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryDataScannedCacheAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryDataScannedCacheAvg(settings MetricSettings) metricSnowflakeQueryDataScannedCacheAvg {
-	m := metricSnowflakeQueryDataScannedCacheAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryDataScannedCacheAvg(cfg MetricConfig) metricSnowflakeQueryDataScannedCacheAvg {
+	m := metricSnowflakeQueryDataScannedCacheAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1117,7 +930,7 @@ func newMetricSnowflakeQueryDataScannedCacheAvg(settings MetricSettings) metricS
 
 type metricSnowflakeQueryExecuted struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1131,7 +944,7 @@ func (m *metricSnowflakeQueryExecuted) init() {
 }
 
 func (m *metricSnowflakeQueryExecuted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1150,16 +963,16 @@ func (m *metricSnowflakeQueryExecuted) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryExecuted) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryExecuted(settings MetricSettings) metricSnowflakeQueryExecuted {
-	m := metricSnowflakeQueryExecuted{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryExecuted(cfg MetricConfig) metricSnowflakeQueryExecuted {
+	m := metricSnowflakeQueryExecuted{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1168,7 +981,7 @@ func newMetricSnowflakeQueryExecuted(settings MetricSettings) metricSnowflakeQue
 
 type metricSnowflakeQueryExecutionTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1182,7 +995,7 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) init() {
 }
 
 func (m *metricSnowflakeQueryExecutionTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1207,16 +1020,16 @@ func (m *metricSnowflakeQueryExecutionTimeAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryExecutionTimeAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryExecutionTimeAvg(settings MetricSettings) metricSnowflakeQueryExecutionTimeAvg {
-	m := metricSnowflakeQueryExecutionTimeAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryExecutionTimeAvg(cfg MetricConfig) metricSnowflakeQueryExecutionTimeAvg {
+	m := metricSnowflakeQueryExecutionTimeAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1225,7 +1038,7 @@ func newMetricSnowflakeQueryExecutionTimeAvg(settings MetricSettings) metricSnow
 
 type metricSnowflakeQueryPartitionsScannedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1239,7 +1052,7 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) init() {
 }
 
 func (m *metricSnowflakeQueryPartitionsScannedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1264,16 +1077,16 @@ func (m *metricSnowflakeQueryPartitionsScannedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryPartitionsScannedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryPartitionsScannedAvg(settings MetricSettings) metricSnowflakeQueryPartitionsScannedAvg {
-	m := metricSnowflakeQueryPartitionsScannedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryPartitionsScannedAvg(cfg MetricConfig) metricSnowflakeQueryPartitionsScannedAvg {
+	m := metricSnowflakeQueryPartitionsScannedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1282,7 +1095,7 @@ func newMetricSnowflakeQueryPartitionsScannedAvg(settings MetricSettings) metric
 
 type metricSnowflakeQueryQueuedOverload struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1296,7 +1109,7 @@ func (m *metricSnowflakeQueryQueuedOverload) init() {
 }
 
 func (m *metricSnowflakeQueryQueuedOverload) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1315,16 +1128,16 @@ func (m *metricSnowflakeQueryQueuedOverload) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryQueuedOverload) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryQueuedOverload(settings MetricSettings) metricSnowflakeQueryQueuedOverload {
-	m := metricSnowflakeQueryQueuedOverload{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryQueuedOverload(cfg MetricConfig) metricSnowflakeQueryQueuedOverload {
+	m := metricSnowflakeQueryQueuedOverload{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1333,7 +1146,7 @@ func newMetricSnowflakeQueryQueuedOverload(settings MetricSettings) metricSnowfl
 
 type metricSnowflakeQueryQueuedProvision struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1347,7 +1160,7 @@ func (m *metricSnowflakeQueryQueuedProvision) init() {
 }
 
 func (m *metricSnowflakeQueryQueuedProvision) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1366,16 +1179,16 @@ func (m *metricSnowflakeQueryQueuedProvision) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueryQueuedProvision) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueryQueuedProvision(settings MetricSettings) metricSnowflakeQueryQueuedProvision {
-	m := metricSnowflakeQueryQueuedProvision{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueryQueuedProvision(cfg MetricConfig) metricSnowflakeQueryQueuedProvision {
+	m := metricSnowflakeQueryQueuedProvision{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1384,7 +1197,7 @@ func newMetricSnowflakeQueryQueuedProvision(settings MetricSettings) metricSnowf
 
 type metricSnowflakeQueuedOverloadTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1398,7 +1211,7 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) init() {
 }
 
 func (m *metricSnowflakeQueuedOverloadTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1423,16 +1236,16 @@ func (m *metricSnowflakeQueuedOverloadTimeAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueuedOverloadTimeAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueuedOverloadTimeAvg(settings MetricSettings) metricSnowflakeQueuedOverloadTimeAvg {
-	m := metricSnowflakeQueuedOverloadTimeAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueuedOverloadTimeAvg(cfg MetricConfig) metricSnowflakeQueuedOverloadTimeAvg {
+	m := metricSnowflakeQueuedOverloadTimeAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1441,7 +1254,7 @@ func newMetricSnowflakeQueuedOverloadTimeAvg(settings MetricSettings) metricSnow
 
 type metricSnowflakeQueuedProvisioningTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1455,7 +1268,7 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) init() {
 }
 
 func (m *metricSnowflakeQueuedProvisioningTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1480,16 +1293,16 @@ func (m *metricSnowflakeQueuedProvisioningTimeAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueuedProvisioningTimeAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueuedProvisioningTimeAvg(settings MetricSettings) metricSnowflakeQueuedProvisioningTimeAvg {
-	m := metricSnowflakeQueuedProvisioningTimeAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueuedProvisioningTimeAvg(cfg MetricConfig) metricSnowflakeQueuedProvisioningTimeAvg {
+	m := metricSnowflakeQueuedProvisioningTimeAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1498,7 +1311,7 @@ func newMetricSnowflakeQueuedProvisioningTimeAvg(settings MetricSettings) metric
 
 type metricSnowflakeQueuedRepairTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1512,7 +1325,7 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) init() {
 }
 
 func (m *metricSnowflakeQueuedRepairTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1537,16 +1350,16 @@ func (m *metricSnowflakeQueuedRepairTimeAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeQueuedRepairTimeAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeQueuedRepairTimeAvg(settings MetricSettings) metricSnowflakeQueuedRepairTimeAvg {
-	m := metricSnowflakeQueuedRepairTimeAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeQueuedRepairTimeAvg(cfg MetricConfig) metricSnowflakeQueuedRepairTimeAvg {
+	m := metricSnowflakeQueuedRepairTimeAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1555,7 +1368,7 @@ func newMetricSnowflakeQueuedRepairTimeAvg(settings MetricSettings) metricSnowfl
 
 type metricSnowflakeRowsDeletedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1569,7 +1382,7 @@ func (m *metricSnowflakeRowsDeletedAvg) init() {
 }
 
 func (m *metricSnowflakeRowsDeletedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1594,16 +1407,16 @@ func (m *metricSnowflakeRowsDeletedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsDeletedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeRowsDeletedAvg(settings MetricSettings) metricSnowflakeRowsDeletedAvg {
-	m := metricSnowflakeRowsDeletedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeRowsDeletedAvg(cfg MetricConfig) metricSnowflakeRowsDeletedAvg {
+	m := metricSnowflakeRowsDeletedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1612,7 +1425,7 @@ func newMetricSnowflakeRowsDeletedAvg(settings MetricSettings) metricSnowflakeRo
 
 type metricSnowflakeRowsInsertedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1626,7 +1439,7 @@ func (m *metricSnowflakeRowsInsertedAvg) init() {
 }
 
 func (m *metricSnowflakeRowsInsertedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1651,16 +1464,16 @@ func (m *metricSnowflakeRowsInsertedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsInsertedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeRowsInsertedAvg(settings MetricSettings) metricSnowflakeRowsInsertedAvg {
-	m := metricSnowflakeRowsInsertedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeRowsInsertedAvg(cfg MetricConfig) metricSnowflakeRowsInsertedAvg {
+	m := metricSnowflakeRowsInsertedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1669,7 +1482,7 @@ func newMetricSnowflakeRowsInsertedAvg(settings MetricSettings) metricSnowflakeR
 
 type metricSnowflakeRowsProducedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1683,7 +1496,7 @@ func (m *metricSnowflakeRowsProducedAvg) init() {
 }
 
 func (m *metricSnowflakeRowsProducedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1708,16 +1521,16 @@ func (m *metricSnowflakeRowsProducedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsProducedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeRowsProducedAvg(settings MetricSettings) metricSnowflakeRowsProducedAvg {
-	m := metricSnowflakeRowsProducedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeRowsProducedAvg(cfg MetricConfig) metricSnowflakeRowsProducedAvg {
+	m := metricSnowflakeRowsProducedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1726,7 +1539,7 @@ func newMetricSnowflakeRowsProducedAvg(settings MetricSettings) metricSnowflakeR
 
 type metricSnowflakeRowsUnloadedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1740,7 +1553,7 @@ func (m *metricSnowflakeRowsUnloadedAvg) init() {
 }
 
 func (m *metricSnowflakeRowsUnloadedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1765,16 +1578,16 @@ func (m *metricSnowflakeRowsUnloadedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsUnloadedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeRowsUnloadedAvg(settings MetricSettings) metricSnowflakeRowsUnloadedAvg {
-	m := metricSnowflakeRowsUnloadedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeRowsUnloadedAvg(cfg MetricConfig) metricSnowflakeRowsUnloadedAvg {
+	m := metricSnowflakeRowsUnloadedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1783,7 +1596,7 @@ func newMetricSnowflakeRowsUnloadedAvg(settings MetricSettings) metricSnowflakeR
 
 type metricSnowflakeRowsUpdatedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1797,7 +1610,7 @@ func (m *metricSnowflakeRowsUpdatedAvg) init() {
 }
 
 func (m *metricSnowflakeRowsUpdatedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1822,16 +1635,16 @@ func (m *metricSnowflakeRowsUpdatedAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeRowsUpdatedAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeRowsUpdatedAvg(settings MetricSettings) metricSnowflakeRowsUpdatedAvg {
-	m := metricSnowflakeRowsUpdatedAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeRowsUpdatedAvg(cfg MetricConfig) metricSnowflakeRowsUpdatedAvg {
+	m := metricSnowflakeRowsUpdatedAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1840,7 +1653,7 @@ func newMetricSnowflakeRowsUpdatedAvg(settings MetricSettings) metricSnowflakeRo
 
 type metricSnowflakeSessionIDCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1854,7 +1667,7 @@ func (m *metricSnowflakeSessionIDCount) init() {
 }
 
 func (m *metricSnowflakeSessionIDCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, userNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1873,16 +1686,16 @@ func (m *metricSnowflakeSessionIDCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeSessionIDCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeSessionIDCount(settings MetricSettings) metricSnowflakeSessionIDCount {
-	m := metricSnowflakeSessionIDCount{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeSessionIDCount(cfg MetricConfig) metricSnowflakeSessionIDCount {
+	m := metricSnowflakeSessionIDCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1891,7 +1704,7 @@ func newMetricSnowflakeSessionIDCount(settings MetricSettings) metricSnowflakeSe
 
 type metricSnowflakeStorageFailsafeBytesTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1904,7 +1717,7 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) init() {
 }
 
 func (m *metricSnowflakeStorageFailsafeBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1922,16 +1735,16 @@ func (m *metricSnowflakeStorageFailsafeBytesTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeStorageFailsafeBytesTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeStorageFailsafeBytesTotal(settings MetricSettings) metricSnowflakeStorageFailsafeBytesTotal {
-	m := metricSnowflakeStorageFailsafeBytesTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeStorageFailsafeBytesTotal(cfg MetricConfig) metricSnowflakeStorageFailsafeBytesTotal {
+	m := metricSnowflakeStorageFailsafeBytesTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1940,7 +1753,7 @@ func newMetricSnowflakeStorageFailsafeBytesTotal(settings MetricSettings) metric
 
 type metricSnowflakeStorageStageBytesTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1953,7 +1766,7 @@ func (m *metricSnowflakeStorageStageBytesTotal) init() {
 }
 
 func (m *metricSnowflakeStorageStageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -1971,16 +1784,16 @@ func (m *metricSnowflakeStorageStageBytesTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeStorageStageBytesTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeStorageStageBytesTotal(settings MetricSettings) metricSnowflakeStorageStageBytesTotal {
-	m := metricSnowflakeStorageStageBytesTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeStorageStageBytesTotal(cfg MetricConfig) metricSnowflakeStorageStageBytesTotal {
+	m := metricSnowflakeStorageStageBytesTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1989,7 +1802,7 @@ func newMetricSnowflakeStorageStageBytesTotal(settings MetricSettings) metricSno
 
 type metricSnowflakeStorageStorageBytesTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2002,7 +1815,7 @@ func (m *metricSnowflakeStorageStorageBytesTotal) init() {
 }
 
 func (m *metricSnowflakeStorageStorageBytesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -2020,16 +1833,16 @@ func (m *metricSnowflakeStorageStorageBytesTotal) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeStorageStorageBytesTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeStorageStorageBytesTotal(settings MetricSettings) metricSnowflakeStorageStorageBytesTotal {
-	m := metricSnowflakeStorageStorageBytesTotal{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeStorageStorageBytesTotal(cfg MetricConfig) metricSnowflakeStorageStorageBytesTotal {
+	m := metricSnowflakeStorageStorageBytesTotal{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2038,7 +1851,7 @@ func newMetricSnowflakeStorageStorageBytesTotal(settings MetricSettings) metricS
 
 type metricSnowflakeTotalElapsedTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2052,7 +1865,7 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) init() {
 }
 
 func (m *metricSnowflakeTotalElapsedTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -2077,37 +1890,31 @@ func (m *metricSnowflakeTotalElapsedTimeAvg) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSnowflakeTotalElapsedTimeAvg) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSnowflakeTotalElapsedTimeAvg(settings MetricSettings) metricSnowflakeTotalElapsedTimeAvg {
-	m := metricSnowflakeTotalElapsedTimeAvg{settings: settings}
-	if settings.Enabled {
+func newMetricSnowflakeTotalElapsedTimeAvg(cfg MetricConfig) metricSnowflakeTotalElapsedTimeAvg {
+	m := metricSnowflakeTotalElapsedTimeAvg{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                                            pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                                      int                 // maximum observed number of metrics per resource.
 	resourceCapacity                                     int                 // maximum observed number of resource attributes.
 	metricsBuffer                                        pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                            component.BuildInfo // contains version information
-	resourceAttributesSettings                           ResourceAttributesSettings
+	resourceAttributesConfig                             ResourceAttributesConfig
 	metricSnowflakeBillingCloudServiceTotal              metricSnowflakeBillingCloudServiceTotal
 	metricSnowflakeBillingTotalCreditTotal               metricSnowflakeBillingTotalCreditTotal
 	metricSnowflakeBillingVirtualWarehouseTotal          metricSnowflakeBillingVirtualWarehouseTotal
@@ -2155,26 +1962,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                        pmetric.NewMetrics(),
 		buildInfo:                                            settings.BuildInfo,
-		resourceAttributesSettings:                           mbc.ResourceAttributes,
+		resourceAttributesConfig:                             mbc.ResourceAttributes,
 		metricSnowflakeBillingCloudServiceTotal:              newMetricSnowflakeBillingCloudServiceTotal(mbc.Metrics.SnowflakeBillingCloudServiceTotal),
 		metricSnowflakeBillingTotalCreditTotal:               newMetricSnowflakeBillingTotalCreditTotal(mbc.Metrics.SnowflakeBillingTotalCreditTotal),
 		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(mbc.Metrics.SnowflakeBillingVirtualWarehouseTotal),
@@ -2228,12 +2021,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithSnowflakeAccountName sets provided value as "snowflake.account.name" attribute for current resource.
 func WithSnowflakeAccountName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.SnowflakeAccountName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.SnowflakeAccountName.Enabled {
 			rm.Resource().Attributes().PutStr("snowflake.account.name", val)
 		}
 	}
@@ -2242,7 +2035,7 @@ func WithSnowflakeAccountName(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2308,7 +2101,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSnowflakeTotalElapsedTimeAvg.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -2318,7 +2111,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

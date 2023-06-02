@@ -1,36 +1,21 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery/file"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
@@ -96,43 +81,6 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	}
 	if err := checkFile(tlsConfig.KeyFile); err != nil {
 		return fmt.Errorf("error checking client key file %q: %w", tlsConfig.KeyFile, err)
-	}
-	if len(tlsConfig.CertFile) > 0 && len(tlsConfig.KeyFile) == 0 {
-		return fmt.Errorf("client cert file %q specified without client key file", tlsConfig.CertFile)
-	}
-	if len(tlsConfig.KeyFile) > 0 && len(tlsConfig.CertFile) == 0 {
-		return fmt.Errorf("client key file %q specified without client cert file", tlsConfig.KeyFile)
-	}
-	return nil
-}
-
-// Method to exercise the prometheus file discovery behavior to ensure there are no errors
-// - reference https://github.com/prometheus/prometheus/blob/c0c22ed04200a8d24d1d5719f605c85710f0d008/discovery/file/file.go#L372
-func checkSDFile(filename string) error {
-	content, err := os.ReadFile(filepath.Clean(filename))
-	if err != nil {
-		return err
-	}
-
-	var targetGroups []*targetgroup.Group
-
-	switch ext := filepath.Ext(filename); strings.ToLower(ext) {
-	case ".json":
-		if err := json.Unmarshal(content, &targetGroups); err != nil {
-			return fmt.Errorf("error in unmarshaling json file extension: %w", err)
-		}
-	case ".yml", ".yaml":
-		if err := yaml.UnmarshalStrict(content, &targetGroups); err != nil {
-			return fmt.Errorf("error in unmarshaling yaml file extension: %w", err)
-		}
-	default:
-		return fmt.Errorf("invalid file extension: %q", ext)
-	}
-
-	for i, tg := range targetGroups {
-		if tg == nil {
-			return fmt.Errorf("nil target group item found (index %d)", i)
-		}
 	}
 	return nil
 }
@@ -206,27 +154,9 @@ func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
 		}
 
 		for _, c := range sc.ServiceDiscoveryConfigs {
-			switch c := c.(type) {
-			case *kubernetes.SDConfig:
+			if c, ok := c.(*kubernetes.SDConfig); ok {
 				if err := checkTLSConfig(c.HTTPClientConfig.TLSConfig); err != nil {
 					return err
-				}
-			case *file.SDConfig:
-				for _, file := range c.Files {
-					files, err := filepath.Glob(file)
-					if err != nil {
-						return err
-					}
-					if len(files) != 0 {
-						for _, f := range files {
-							err = checkSDFile(f)
-							if err != nil {
-								return fmt.Errorf("checking SD file %q: %w", file, err)
-							}
-						}
-						continue
-					}
-					return fmt.Errorf("file %q for file_sd in scrape job %q does not exist", file, sc.JobName)
 				}
 			}
 		}

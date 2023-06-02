@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: apachesparkreceiver
+
+note: Changes required to move the Apache Spark receiver to Alpha stability
+
+issues: [21046]
+
+subtext:

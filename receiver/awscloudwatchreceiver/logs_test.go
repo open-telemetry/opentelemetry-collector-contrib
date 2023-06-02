@@ -1,24 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -30,9 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
@@ -78,7 +65,7 @@ func TestPrefixedConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
-	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
+	expected, err := golden.ReadLogs(filepath.Join("testdata", "processed", "prefixed.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
@@ -106,11 +93,15 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
 
+	groupRequests := alertRcvr.groupRequests
+	require.Len(t, groupRequests, 1)
+	require.Equal(t, groupRequests[0].groupName(), "test-log-group-name")
+
 	err = alertRcvr.Shutdown(context.Background())
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
-	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
+	expected, err := golden.ReadLogs(filepath.Join("testdata", "processed", "prefixed.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
@@ -268,20 +259,4 @@ func (mc *mockClient) DescribeLogGroupsWithContext(ctx context.Context, input *c
 func (mc *mockClient) FilterLogEventsWithContext(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...request.Option) (*cloudwatchlogs.FilterLogEventsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
-}
-
-func readLogs(path string) (plog.Logs, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return plog.Logs{}, err
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return plog.Logs{}, err
-	}
-
-	unmarshaler := plog.JSONUnmarshaler{}
-	return unmarshaler.UnmarshalLogs(b)
 }

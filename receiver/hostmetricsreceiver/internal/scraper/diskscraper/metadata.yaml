@@ -1,4 +1,4 @@
-name: hostmetricsreceiver/disk
+type: hostmetricsreceiver/disk
 
 sem_conv_version: 1.9.0
 
