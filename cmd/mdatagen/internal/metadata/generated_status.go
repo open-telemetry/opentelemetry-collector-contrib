@@ -8,5 +8,7 @@ import (
 
 const (
 	Type             = "test"
-	MetricsStability = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelStable
 )
