@@ -8,8 +8,9 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
 
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -25,15 +26,8 @@ jobs:
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -68,15 +62,8 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.19
       - name: Cache Go
@@ -118,15 +105,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./*.tar
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: JUNIT
-          test_format: JUNIT
-          test_path: |
-            ./testbed/tests/results/junit/*.xml
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         run: issuegenerator $TEST_RESULTS

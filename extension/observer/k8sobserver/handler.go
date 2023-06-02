@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 }
 
 // OnAdd is called in response to a new pod or node being detected.
-func (h *handler) OnAdd(objectInterface interface{}) {
+func (h *handler) OnAdd(objectInterface interface{}, isInitialList bool) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {

@@ -23,13 +23,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "filter"
-	// The stability level of the processor.
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -37,11 +31,11 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, stability),
-		processor.WithLogs(createLogsProcessor, stability),
-		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 	)
 }
 

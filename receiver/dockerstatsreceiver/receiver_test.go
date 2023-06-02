@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ import (
 var mockFolder = filepath.Join("testdata", "mock")
 
 var (
-	metricEnabled     = metadata.MetricSettings{Enabled: true}
-	allMetricsEnabled = metadata.MetricsSettings{
+	metricEnabled     = metadata.MetricConfig{Enabled: true}
+	allMetricsEnabled = metadata.MetricsConfig{
 		ContainerBlockioIoMergedRecursive:          metricEnabled,
 		ContainerBlockioIoQueuedRecursive:          metricEnabled,
 		ContainerBlockioIoServiceBytesRecursive:    metricEnabled,

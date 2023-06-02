@@ -39,7 +39,7 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
 			return sql.Open("oracle", dataSourceName)
-		}, newDbClient), metadata.Stability))
+		}, newDbClient), metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

@@ -43,7 +43,7 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 }
 
 type Parser[K any] struct {
-	functions         map[string]interface{}
+	functions         map[string]Factory[K]
 	pathParser        PathExpressionParser[K]
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
@@ -77,7 +77,7 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 }
 
 func NewParser[K any](
-	functions map[string]interface{},
+	functions map[string]Factory[K],
 	pathParser PathExpressionParser[K],
 	settings component.TelemetrySettings,
 	options ...Option[K],

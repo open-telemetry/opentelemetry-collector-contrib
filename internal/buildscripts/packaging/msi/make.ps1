@@ -43,7 +43,7 @@ function Install-Tools {
 
 function New-MSI(
     [string]$Version="0.0.1",
-    [string]$Config="./examples/tracing/otel-collector-config.yml"
+    [string]$Config="./examples/demo/otel-collector-config.yaml"
 ) {
     Set-Path
     candle.exe -arch x64 -dVersion="$Version" -dConfig="$Config" internal/buildscripts/packaging/msi/opentelemetry-contrib-collector.wxs

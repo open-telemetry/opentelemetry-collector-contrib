@@ -734,7 +734,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		{
 			name: "drop everything by dropping all logs",
 			conditions: []string{
-				`IsMatch(body, "operation.*") == true`,
+				`IsMatch(body, "operation.*")`,
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,
@@ -742,8 +742,8 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		{
 			name: "multiple conditions",
 			conditions: []string{
-				`IsMatch(body, "wrong name") == true`,
-				`IsMatch(body, "operation.*") == true`,
+				`IsMatch(body, "wrong name")`,
+				`IsMatch(body, "operation.*")`,
 			},
 			filterEverything: true,
 			errorMode:        ottl.IgnoreError,

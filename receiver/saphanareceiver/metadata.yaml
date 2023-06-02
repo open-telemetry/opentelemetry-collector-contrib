@@ -1,4 +1,11 @@
-name: saphanareceiver
+type: saphanareceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   saphana.host:
     type: string

@@ -21,7 +21,7 @@ The following settings can be optionally configured:
     - `region` (default = us-west-2): the region that the kinesis stream is deployed in
     - `role` (no default): The role to be used in order to send data to the kinesis stream
 - `encoding`
-    - `name` (default = otlp): defines the export type to be used to send to kinesis (available is `otlp_proto`, `otlp_json`, `zipkin_proto`, `zipkin_json`, `jaeger`)
+    - `name` (default = otlp): defines the export type to be used to send to kinesis (available is `otlp_proto`, `otlp_json`, `zipkin_proto`, `zipkin_json`, `jaeger_proto`)
       - **Note** : `otlp_json` is considered experimental and _should not_ be used for production environments. 
     - `compression` (default = none): allows to set the compression type (defaults BestSpeed for all) before forwarding to kinesis (available is `flate`, `gzip`, `zlib` or `none`)
 - `max_records_per_batch` (default = 500, PutRecords limit): The number of records that can be batched together then sent to kinesis.
@@ -35,7 +35,7 @@ The following settings can be optionally configured:
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data; ignored if `enabled` is `false`;
+  - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping data; ignored if `enabled` is `false`;
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.

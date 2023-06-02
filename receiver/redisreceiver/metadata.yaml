@@ -1,5 +1,11 @@
-name: redisreceiver
+type: redisreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   redis.version:
     description: Redis server's version.

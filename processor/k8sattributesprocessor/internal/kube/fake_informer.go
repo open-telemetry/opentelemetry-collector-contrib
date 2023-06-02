@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 }
 
 func (f *FakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
-	return handler, nil
+	return nil, nil
 }
 
 func (f *FakeInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
@@ -145,7 +145,7 @@ func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }
 func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
-	return handler, nil
+	return nil, nil
 }
 
 func (f *NoOpInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {

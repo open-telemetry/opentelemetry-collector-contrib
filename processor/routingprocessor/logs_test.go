@@ -268,11 +268,11 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
+				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme")`,
 				Exporters: []string{"otlp/1"},
 			},
 			{
-				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
+				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme")`,
 				Exporters: []string{"otlp/2"},
 			},
 		},

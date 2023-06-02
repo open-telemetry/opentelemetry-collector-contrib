@@ -2,26 +2,8 @@ resourceMetrics:
   - resource: {}
     scopeMetrics:
       - metrics:
-          - description: Total number of requests made to the server since it started
-            name: nginx.requests
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  timeUnixNano: "1643729289485220000"
-              isMonotonic: true
-            unit: requests
           - description: The total number of accepted client connections
             name: nginx.connections_accepted
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  timeUnixNano: "1643729289485220000"
-              isMonotonic: true
-            unit: connections
-          - description: The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
-            name: nginx.connections_handled
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -58,6 +40,24 @@ resourceMetrics:
                   timeUnixNano: "1643729289485220000"
             name: nginx.connections_current
             unit: connections
+          - description: The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
+            name: nginx.connections_handled
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1643729289485220000"
+              isMonotonic: true
+            unit: connections
+          - description: Total number of requests made to the server since it started
+            name: nginx.requests
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  timeUnixNano: "1643729289485220000"
+              isMonotonic: true
+            unit: requests
         scope:
           name: otelcol/nginxreceiver
           version: latest

@@ -21,6 +21,8 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 type ExprFunc[K any] func(ctx context.Context, tCtx K) (interface{}, error)
@@ -69,10 +71,58 @@ func (l literal[K]) Get(context.Context, K) (interface{}, error) {
 
 type exprGetter[K any] struct {
 	expr Expr[K]
+	keys []Key
 }
 
 func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
-	return g.expr.Eval(ctx, tCtx)
+	result, err := g.expr.Eval(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if g.keys == nil {
+		return result, nil
+	}
+
+	for _, k := range g.keys {
+		switch {
+		case k.String != nil:
+			switch r := result.(type) {
+			case pcommon.Map:
+				val, ok := r.Get(*k.String)
+				if !ok {
+					return nil, fmt.Errorf("key not found in map")
+				}
+				result = ottlcommon.GetValue(val)
+			case map[string]interface{}:
+				val, ok := r[*k.String]
+				if !ok {
+					return nil, fmt.Errorf("key not found in map")
+				}
+				result = val
+			default:
+				return nil, fmt.Errorf("type, %T, does not support string indexing", result)
+			}
+		case k.Int != nil:
+			switch r := result.(type) {
+			case pcommon.Slice:
+				if int(*k.Int) >= r.Len() || int(*k.Int) < 0 {
+					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
+				}
+				result = ottlcommon.GetValue(r.At(int(*k.Int)))
+			case []interface{}:
+				if int(*k.Int) >= len(r) || int(*k.Int) < 0 {
+					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
+				}
+				result = r[*k.Int]
+			default:
+				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
+			}
+		default:
+			return nil, fmt.Errorf("neither map nor slice index were set; this is an error in OTTL")
+		}
+	}
+	return result, nil
 }
 
 type listGetter[K any] struct {
@@ -209,16 +259,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return p.pathParser(eL.Path)
 		}
 		if eL.Converter != nil {
-			call, err := p.newFunctionCall(invocation{
-				Function:  eL.Converter.Function,
-				Arguments: eL.Converter.Arguments,
-			})
-			if err != nil {
-				return nil, err
-			}
-			return &exprGetter[K]{
-				expr: call,
-			}, nil
+			return p.newGetterFromConverter(*eL.Converter)
 		}
 	}
 
@@ -239,4 +280,15 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		return nil, fmt.Errorf("no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
 	return p.evaluateMathExpression(val.MathExpression)
+}
+
+func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
+	call, err := p.newFunctionCall(invocation(c))
+	if err != nil {
+		return nil, err
+	}
+	return &exprGetter[K]{
+		expr: call,
+		keys: c.Keys,
+	}, nil
 }

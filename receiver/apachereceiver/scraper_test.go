@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ func TestScraper(t *testing.T) {
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	require.NoError(t, err)
 	scraper := newApacheScraper(receivertest.NewNopCreateSettings(), cfg, serverName, port)
 

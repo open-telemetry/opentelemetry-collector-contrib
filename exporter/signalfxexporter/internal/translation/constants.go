@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -214,9 +214,14 @@ translation_rules:
 
 # Translations to derive filesystem metrics
 ## sf_temp.disk.total, required to compute disk.utilization
+## same as df, disk.utilization = (used/(used + free)) * 100 see: https://github.com/shirou/gopsutil/issues/562
 - action: copy_metrics
   mapping:
     system.filesystem.usage: sf_temp.disk.total
+  dimension_key: state
+  dimension_values:
+    used: true
+    free: true
 - action: aggregate_metric
   metric_name: sf_temp.disk.total
   aggregation_method: sum
@@ -224,9 +229,14 @@ translation_rules:
     - state
 
 ## sf_temp.disk.summary_total, required to compute disk.summary_utilization
+## same as df, don't count root fs, ie: total = used + free
 - action: copy_metrics
   mapping:
     system.filesystem.usage: sf_temp.disk.summary_total
+  dimension_key: state
+  dimension_values:
+    used: true
+    free: true
 - action: aggregate_metric
   metric_name: sf_temp.disk.summary_total
   aggregation_method: avg

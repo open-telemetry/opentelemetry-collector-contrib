@@ -62,7 +62,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				},
 			},
 		}
-		if err := exporter.Export(context.Background(), rm); err != nil {
+		if err := exporter.Export(context.Background(), &rm); err != nil {
 			w.logger.Fatal("exporter failed", zap.Error(err))
 		}
 		if err := limiter.Wait(context.Background()); err != nil {

@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -34,7 +34,7 @@ func TestNewFactory(t *testing.T) {
 		receiver.CreateSettings{
 			TelemetrySettings: component.TelemetrySettings{
 				TracerProvider: trace.NewNoopTracerProvider(),
-				MeterProvider:  metric.NewNoopMeterProvider(),
+				MeterProvider:  noop.NewMeterProvider(),
 			},
 		},
 		factory.CreateDefaultConfig(),

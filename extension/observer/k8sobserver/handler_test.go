@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ func newTestHandler() *handler {
 
 func TestPodEndpointsAdded(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(podWithNamedPorts)
+	th.OnAdd(podWithNamedPorts, true)
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
@@ -66,7 +66,7 @@ func TestPodEndpointsAdded(t *testing.T) {
 
 func TestPodEndpointsRemoved(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(podWithNamedPorts)
+	th.OnAdd(podWithNamedPorts, true)
 	th.OnDelete(podWithNamedPorts)
 	assert.Empty(t, th.ListEndpoints())
 }
@@ -117,7 +117,7 @@ func TestPodEndpointsChanged(t *testing.T) {
 
 func TestNodeEndpointsAdded(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(node1V1)
+	th.OnAdd(node1V1, true)
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/node1-uid",
@@ -140,7 +140,7 @@ func TestNodeEndpointsAdded(t *testing.T) {
 
 func TestNodeEndpointsRemoved(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(node1V1)
+	th.OnAdd(node1V1, true)
 	th.OnDelete(node1V1)
 	assert.Empty(t, th.ListEndpoints())
 }

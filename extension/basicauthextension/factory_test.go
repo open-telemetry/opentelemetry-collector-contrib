@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -54,5 +56,5 @@ func TestCreateExtension_ValidConfig(t *testing.T) {
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
-	assert.Equal(t, f.Type(), component.Type(typeStr))
+	assert.Equal(t, f.Type(), component.Type(metadata.Type))
 }

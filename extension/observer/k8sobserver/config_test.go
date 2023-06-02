@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -35,11 +36,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "own-node-only"),
+			id: component.NewIDWithName(metadata.Type, "own-node-only"),
 			expected: &Config{
 				Node:        "node-1",
 				APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
@@ -47,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "observe-all"),
+			id: component.NewIDWithName(metadata.Type, "observe-all"),
 			expected: &Config{
 				Node:         "",
 				APIConfig:    k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
@@ -56,11 +57,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalid_auth"),
+			id:          component.NewIDWithName(metadata.Type, "invalid_auth"),
 			expectedErr: "invalid authType for kubernetes: not a real auth type",
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalid_no_observing"),
+			id:          component.NewIDWithName(metadata.Type, "invalid_no_observing"),
 			expectedErr: "one of observe_pods and observe_nodes must be true",
 		},
 	}

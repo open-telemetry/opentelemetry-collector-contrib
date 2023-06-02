@@ -1,6 +1,7 @@
-name: oidcauthextension
+type: oidc
 
 status:
-  type: extension
-  stability: beta
+  class: extension
+  stability:
+    beta: [extension]
   distributions: [contrib]

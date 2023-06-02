@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -156,15 +156,15 @@ func TestScrape(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
 		cfg.MetricsBuilderConfig = metadata.MetricsBuilderConfig{
-			Metrics: metadata.DefaultMetricsSettings(),
-			ResourceAttributes: metadata.ResourceAttributesSettings{
-				SqlserverDatabaseName: metadata.ResourceAttributeSettings{
+			Metrics: metadata.DefaultMetricsConfig(),
+			ResourceAttributes: metadata.ResourceAttributesConfig{
+				SqlserverDatabaseName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverInstanceName: metadata.ResourceAttributeSettings{
+				SqlserverInstanceName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
-				SqlserverComputerName: metadata.ResourceAttributeSettings{
+				SqlserverComputerName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
 			},

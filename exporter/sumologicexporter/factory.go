@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
@@ -21,13 +23,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "sumologic"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
 )
 
 // NewFactory returns a new factory for the sumologic exporter.
@@ -35,8 +37,8 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 

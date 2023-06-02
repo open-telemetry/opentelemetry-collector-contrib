@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		requestID    string
 		queueURL     string
 		tableName    string
+		tableNames   []string
 		sdk          string
 		sdkName      string
 		sdkLanguage  string
@@ -167,7 +168,15 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		queueURL = value.Str()
 	}
 	if value, ok := attributes[conventions.AttributeAWSDynamoDBTableNames]; ok {
-		tableName = value.Str()
+		if value.Slice().Len() == 1 {
+			tableName = value.Slice().At(0).Str()
+		} else if value.Slice().Len() > 1 {
+			tableName = ""
+			tableNames = []string{}
+			for i := 0; i < value.Slice().Len(); i++ {
+				tableNames = append(tableNames, value.Slice().At(i).Str())
+			}
+		}
 	}
 
 	// EC2 - add ec2 metadata to xray request if
@@ -264,6 +273,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		RequestID:    awsxray.String(requestID),
 		QueueURL:     awsxray.String(queueURL),
 		TableName:    awsxray.String(tableName),
+		TableNames:   tableNames,
 	}
 	return filtered, awsData
 }

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,10 +68,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
 					m := metadata.DefaultMetricsBuilderConfig()
-					m.Metrics.ContainerCPUUsageSystem = metadata.MetricSettings{
+					m.Metrics.ContainerCPUUsageSystem = metadata.MetricConfig{
 						Enabled: false,
 					}
-					m.Metrics.ContainerMemoryTotalRss = metadata.MetricSettings{
+					m.Metrics.ContainerMemoryTotalRss = metadata.MetricConfig{
 						Enabled: true,
 					}
 					return m
@@ -93,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.74.0
+    version: v0.77.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -35,9 +35,11 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
@@ -155,6 +157,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver
@@ -164,11 +167,11 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver

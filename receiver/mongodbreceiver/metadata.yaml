@@ -1,5 +1,11 @@
-name: mongodbreceiver
+type: mongodbreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   database:
     description: The name of a database.

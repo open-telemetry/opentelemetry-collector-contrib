@@ -1,5 +1,11 @@
-name: mysqlreceiver
+type: mysqlreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.

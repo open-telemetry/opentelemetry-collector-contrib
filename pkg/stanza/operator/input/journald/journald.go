@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"regexp"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -60,12 +62,15 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig `mapstructure:",squash"`
 
-	Directory *string  `mapstructure:"directory,omitempty"`
-	Files     []string `mapstructure:"files,omitempty"`
-	StartAt   string   `mapstructure:"start_at,omitempty"`
-	Units     []string `mapstructure:"units,omitempty"`
-	Priority  string   `mapstructure:"priority,omitempty"`
+	Directory *string       `mapstructure:"directory,omitempty"`
+	Files     []string      `mapstructure:"files,omitempty"`
+	StartAt   string        `mapstructure:"start_at,omitempty"`
+	Units     []string      `mapstructure:"units,omitempty"`
+	Priority  string        `mapstructure:"priority,omitempty"`
+	Matches   []MatchConfig `mapstructure:"matches,omitempty"`
 }
+
+type MatchConfig map[string]string
 
 // Build will build a journald input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
@@ -74,6 +79,25 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
+	args, err := c.buildArgs()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Input{
+		InputOperator: inputOperator,
+		newCmd: func(ctx context.Context, cursor []byte) cmd {
+			if cursor != nil {
+				args = append(args, "--after-cursor", string(cursor))
+			}
+			return exec.CommandContext(ctx, "journalctl", args...) // #nosec - ...
+			// journalctl is an executable that is required for this operator to function
+		},
+		json: jsoniter.ConfigFastest,
+	}, nil
+}
+
+func (c Config) buildArgs() ([]string, error) {
 	args := make([]string, 0, 10)
 
 	// Export logs in UTC time
@@ -108,17 +132,54 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		}
 	}
 
-	return &Input{
-		InputOperator: inputOperator,
-		newCmd: func(ctx context.Context, cursor []byte) cmd {
-			if cursor != nil {
-				args = append(args, "--after-cursor", string(cursor))
-			}
-			return exec.CommandContext(ctx, "journalctl", args...) // #nosec - ...
-			// journalctl is an executable that is required for this operator to function
-		},
-		json: jsoniter.ConfigFastest,
-	}, nil
+	if len(c.Matches) > 0 {
+		matches, err := c.buildMatchesConfig()
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, matches...)
+	}
+
+	return args, nil
+}
+
+func buildMatchConfig(mc MatchConfig) ([]string, error) {
+	re := regexp.MustCompile("^[_A-Z]+$")
+
+	// Sort keys to be consistent with every run and to be predictable for tests
+	sortedKeys := make([]string, 0, len(mc))
+	for key := range mc {
+		if !re.MatchString(key) {
+			return []string{}, fmt.Errorf("'%s' is not a valid Systemd field name", key)
+		}
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	configs := []string{}
+	for _, key := range sortedKeys {
+		configs = append(configs, fmt.Sprintf("%s=%s", key, mc[key]))
+	}
+
+	return configs, nil
+}
+
+func (c Config) buildMatchesConfig() ([]string, error) {
+	matches := []string{}
+
+	for i, mc := range c.Matches {
+		if i > 0 {
+			matches = append(matches, "+")
+		}
+		mcs, err := buildMatchConfig(mc)
+		if err != nil {
+			return []string{}, err
+		}
+
+		matches = append(matches, mcs...)
+	}
+
+	return matches, nil
 }
 
 // Input is an operator that process logs using journald

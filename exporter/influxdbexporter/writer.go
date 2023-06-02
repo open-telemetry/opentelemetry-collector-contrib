@@ -1,4 +1,4 @@
-// Copyright 2021, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
 // to the internal line protocol buffer. This method implements otel2influx.InfluxWriter.
 func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
 	b.encoder.StartLine(measurement)
-	for _, tag := range b.sortTags(tags) {
+	for _, tag := range b.optimizeTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)
 	}
 	for k, v := range b.convertFields(fields) {
@@ -194,12 +194,16 @@ type tag struct {
 	k, v string
 }
 
-func (b *influxHTTPWriterBatch) sortTags(m map[string]string) []tag {
+// optimizeTags sorts tags by key and removes tags with empty keys or values
+func (b *influxHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
 	tags := make([]tag, 0, len(m))
 	for k, v := range m {
-		if k == "" {
+		switch {
+		case k == "":
 			b.logger.Debug("empty tag key")
-		} else {
+		case v == "":
+			b.logger.Debug("empty tag value", "key", k)
+		default:
 			tags = append(tags, tag{k, v})
 		}
 	}

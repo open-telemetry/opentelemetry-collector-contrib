@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -93,6 +94,9 @@ type Config struct {
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
 
+	// Dimension update client configuration used for metadata updates.
+	DimensionClient DimensionClientConfig `mapstructure:"dimension_client"`
+
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
@@ -140,6 +144,15 @@ type Config struct {
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
 	// Deprecated: use HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConnsPerHost instead.
 	MaxConnections int `mapstructure:"max_connections"`
+}
+
+type DimensionClientConfig struct {
+	MaxBuffered         int           `mapstructure:"max_buffered"`
+	SendDelay           time.Duration `mapstructure:"send_delay"`
+	MaxIdleConns        int           `mapstructure:"max_idle_conns"`
+	MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host"`
+	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
+	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
 func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricTranslator, error) {

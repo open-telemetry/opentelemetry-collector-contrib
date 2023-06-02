@@ -30,7 +30,7 @@ const (
 	stability = component.StabilityLevelDevelopment
 
 	// default value for max unaked messages
-	defaultMaxUnaked uint32 = 1000
+	defaultMaxUnaked int32 = 1000
 	// default value for host
 	defaultHost string = "localhost:5671"
 )

@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "rabbitmq"
-	stability = component.StabilityLevelBeta
+	typeStr = "rabbitmq"
 )
 
 var errConfigNotRabbit = errors.New("config was not a RabbitMQ receiver config")
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

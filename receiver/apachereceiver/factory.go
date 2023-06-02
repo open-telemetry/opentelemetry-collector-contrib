@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.Stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -56,7 +56,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func parseResourseAttributes(endpoint string) (string, string, error) {
+func parseResourceAttributes(endpoint string) (string, string, error) {
 	u, err := url.Parse(endpoint)
 	serverName := u.Hostname()
 	port := u.Port()
@@ -80,7 +80,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	if err != nil {
 		return nil, err
 	}

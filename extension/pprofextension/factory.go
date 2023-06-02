@@ -26,19 +26,16 @@ import (
 )
 
 const (
-	// The value of extension "type" in configuration.
-	typeStr = "pprof"
-
 	defaultEndpoint = "localhost:1777"
 )
 
 // NewFactory creates a factory for pprof extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.Stability,
+		metadata.ExtensionStability,
 	)
 }
 

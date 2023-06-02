@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -305,7 +305,8 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueStr(tableName)
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueSlice()
+	attributes[conventions.AttributeAWSDynamoDBTableNames].Slice().AppendEmpty().SetStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 

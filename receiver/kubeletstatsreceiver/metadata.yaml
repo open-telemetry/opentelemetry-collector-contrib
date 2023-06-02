@@ -1,4 +1,4 @@
-name: kubeletstatsreceiver
+type: kubeletstatsreceiver
 
 resource_attributes:
   k8s.node.name:

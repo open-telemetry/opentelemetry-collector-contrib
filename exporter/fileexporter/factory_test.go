@@ -137,7 +137,9 @@ func TestBuildFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, closer io.WriteCloser) {
-				writer, ok := closer.(*lumberjack.Logger)
+				bwc, ok := closer.(*bufferedWriteCloser)
+				assert.Equal(t, true, ok)
+				writer, ok := bwc.wrapped.(*lumberjack.Logger)
 				assert.Equal(t, true, ok)
 				assert.Equal(t, defaultMaxBackups, writer.MaxBackups)
 			},
@@ -156,7 +158,9 @@ func TestBuildFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, closer io.WriteCloser) {
-				writer, ok := closer.(*lumberjack.Logger)
+				bwc, ok := closer.(*bufferedWriteCloser)
+				assert.Equal(t, true, ok)
+				writer, ok := bwc.wrapped.(*lumberjack.Logger)
 				assert.Equal(t, true, ok)
 				assert.Equal(t, 3, writer.MaxBackups)
 				assert.Equal(t, 30, writer.MaxSize)

@@ -1,4 +1,4 @@
-name: dockerstatsreceiver
+type: dockerstatsreceiver
 
 sem_conv_version: 1.6.1
 

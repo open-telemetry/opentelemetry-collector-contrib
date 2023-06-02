@@ -1,4 +1,4 @@
-// Copyright OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,18 @@ func oldFormatProperties(c *Config, j supportedJar) error {
 // If you change this variable name, please open an issue in opentelemetry-java-contrib
 // so that repository's release automation can be updated
 var jmxMetricsGathererVersions = map[string]supportedJar{
+	"6a41aa8fb8edcafac604324818216a405a96245255a66ba96cf3668ef59927b8": {
+		version: "1.25.1-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"b6f5030acdbef44afb79afe1c547f55a446f6e60c24db9cdcf6e8dba49f87a16": {
+		version: "1.25.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"7ac5485801bf5fea347aac0d828bade875686fecbed83b3ce44088c87bdf9d46": {
+		version: "1.24.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
 	"af15e12aa1edb0f694408cbf0b7fae7fb8d36e7904d9b68c93c7645101769f63": {
 		version: "1.23.0-alpha",
 		jar:     "JMX metrics gatherer",

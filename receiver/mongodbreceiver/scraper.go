@@ -149,6 +149,9 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 }
 
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+	if databaseName == "local" {
+		return
+	}
 	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch index stats metrics: %w", err))

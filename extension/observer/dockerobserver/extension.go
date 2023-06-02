@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,6 +56,9 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 	d := &dockerObserver{
 		logger: logger, config: config,
 		once: &sync.Once{},
+		cancel: func() {
+			// Safe value provided on initialisation
+		},
 	}
 	d.EndpointsWatcher = observer.NewEndpointsWatcher(d, time.Second, logger)
 	return d, nil

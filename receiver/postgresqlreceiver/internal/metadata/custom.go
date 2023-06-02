@@ -22,7 +22,7 @@ func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPointWithoutDatabase(ts pcom
 }
 
 func (m *metricPostgresqlDbSize) recordDatapointWithoutDatabase(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -37,7 +37,7 @@ func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPointWithoutDatabase(ts pc
 }
 
 func (m *metricPostgresqlBackends) recordDatapointWithoutDatabase(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -52,7 +52,7 @@ func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndT
 }
 
 func (m *metricPostgresqlBlocksRead) recordDatapointWithoutDatabaseAndTable(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -68,7 +68,7 @@ func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPointWithoutDatabase(ts pco
 }
 
 func (m *metricPostgresqlCommits) recordDatapointWithoutDatabase(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -83,7 +83,7 @@ func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPointWithoutDatabase(ts p
 }
 
 func (m *metricPostgresqlRollbacks) recordDatapointWithoutDatabase(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -98,7 +98,7 @@ func (mb *MetricsBuilder) RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(t
 }
 
 func (m *metricPostgresqlRows) recordDatapointWithoutDatabaseAndTable(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -114,7 +114,7 @@ func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPointWithoutDatabaseAndT
 }
 
 func (m *metricPostgresqlOperations) recordDatapointWithoutDatabaseAndTable(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()

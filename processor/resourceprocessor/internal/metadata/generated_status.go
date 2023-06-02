@@ -6,4 +6,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const Stability = component.StabilityLevelBeta
+const (
+	Type             = "resourceprocessor"
+	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
+)

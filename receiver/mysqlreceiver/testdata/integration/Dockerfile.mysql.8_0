@@ -1,4 +1,4 @@
-FROM mysql:8.0.27
+FROM mysql:8.0.33-debian
 
 RUN \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29 && \

@@ -24,6 +24,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
+type convertSummarySumValToSumArguments struct {
+	StringAggTemp string `ottlarg:"0"`
+	Monotonic     bool   `ottlarg:"1"`
+}
+
+func newConvertSummarySumValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("convert_summary_sum_val_to_sum", &convertSummarySumValToSumArguments{}, createConvertSummarySumValToSumFunction)
+}
+
+func createConvertSummarySumValToSumFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	args, ok := oArgs.(*convertSummarySumValToSumArguments)
+
+	if !ok {
+		return nil, fmt.Errorf("convertSummarySumValToSumFactory args must be of type *convertSummarySumValToSumArguments")
+	}
+
+	return convertSummarySumValToSum(args.StringAggTemp, args.Monotonic)
+}
+
 func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {

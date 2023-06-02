@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,11 +35,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				TCPAddr:              confignet.TCPAddr{Endpoint: "127.0.0.1:1777"},
 				BlockProfileFraction: 3,

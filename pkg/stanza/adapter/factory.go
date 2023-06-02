@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -76,7 +77,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			id:        params.ID,
 			pipe:      pipe,
 			emitter:   emitter,
-			consumer:  nextConsumer,
+			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
 			logger:    params.Logger,
 			converter: converter,
 			obsrecv:   obsrecv,

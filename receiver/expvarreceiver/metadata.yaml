@@ -1,4 +1,4 @@
-name: expvarreceiver
+type: expvarreceiver
 
 metrics:
   process.runtime.memstats.total_alloc:

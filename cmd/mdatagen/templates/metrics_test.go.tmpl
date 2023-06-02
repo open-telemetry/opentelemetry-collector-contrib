@@ -3,13 +3,9 @@
 package {{ .Package }}
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -51,7 +47,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
@@ -110,11 +106,13 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- range $name, $info := .ResourceAttributes }}
 				attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
 				attrCount++
-				assert.Equal(t, mb.resourceAttributesSettings.{{ $name.Render }}.Enabled, ok)
-				if mb.resourceAttributesSettings.{{ $name.Render }}.Enabled {
+				assert.Equal(t, mb.resourceAttributesConfig.{{ $name.Render }}.Enabled, ok)
+				if mb.resourceAttributesConfig.{{ $name.Render }}.Enabled {
 					enabledAttrCount++
 					{{- if $info.Enum }}
 						assert.Equal(t, "{{ index $info.Enum 0 }}", attrVal.Str())
+					{{- else if or (eq $info.Type.String "Slice") (eq $info.Type.String "Map") }}
+						assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}().AsRaw())
 					{{- else }}
 						assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}())
 					{{- end }}
@@ -161,6 +159,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ok)
 					{{- if (attributeInfo $attr).Enum }}
 					assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
+					{{- else if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}
+					assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}().AsRaw())
 					{{- else }}
 					assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}())
 					{{- end }}
@@ -170,14 +170,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

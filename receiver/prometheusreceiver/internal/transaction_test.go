@@ -130,6 +130,28 @@ func TestTransactionAppendResource(t *testing.T) {
 	require.Equal(t, expectedResource, gotResource)
 }
 
+func TestReceiverVersionAndNameAreAttached(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+	assert.NoError(t, tr.Commit())
+
+	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+
+	gotScope := mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope()
+	require.Equal(t, receiverName, gotScope.Name())
+	require.Equal(t, component.NewDefaultBuildInfo().Version, gotScope.Version())
+}
+
 func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 	goodLabels := labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",

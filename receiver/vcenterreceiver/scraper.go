@@ -287,13 +287,24 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
+		var hwSum mo.HostSystem
+		err = host.Properties(ctx, host.Reference(),
+			[]string{
+				"summary.hardware",
+			}, &hwSum)
+
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+
 		if moVM.Config == nil {
 			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
 			continue
 		}
 		vmUUID := moVM.Config.InstanceUuid
 
-		v.collectVM(ctx, colTime, moVM, errs)
+		v.collectVM(ctx, colTime, moVM, hwSum, errs)
 		v.mb.EmitForResource(
 			metadata.WithVcenterVMName(vm.Name()),
 			metadata.WithVcenterVMID(vmUUID),
@@ -308,8 +319,9 @@ func (v *vcenterMetricScraper) collectVM(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
 	vm mo.VirtualMachine,
+	hs mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	v.recordVMUsages(colTime, vm)
+	v.recordVMUsages(colTime, vm, hs)
 	v.recordVMPerformance(ctx, vm, errs)
 }

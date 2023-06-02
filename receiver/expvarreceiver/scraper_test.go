@@ -33,9 +33,9 @@ import (
 )
 
 var (
-	metricEnabled     = metadata.MetricSettings{Enabled: true}
-	metricDisabled    = metadata.MetricSettings{Enabled: false}
-	allMetricsEnabled = metadata.MetricsSettings{
+	metricEnabled     = metadata.MetricConfig{Enabled: true}
+	metricDisabled    = metadata.MetricConfig{Enabled: false}
+	allMetricsEnabled = metadata.MetricsConfig{
 		ProcessRuntimeMemstatsBuckHashSys:   metricEnabled,
 		ProcessRuntimeMemstatsFrees:         metricEnabled,
 		ProcessRuntimeMemstatsGcCPUFraction: metricEnabled,
@@ -63,7 +63,7 @@ var (
 		ProcessRuntimeMemstatsSys:           metricEnabled,
 		ProcessRuntimeMemstatsTotalAlloc:    metricEnabled,
 	}
-	allMetricsDisabled = metadata.MetricsSettings{
+	allMetricsDisabled = metadata.MetricsConfig{
 		ProcessRuntimeMemstatsBuckHashSys:   metricDisabled,
 		ProcessRuntimeMemstatsFrees:         metricDisabled,
 		ProcessRuntimeMemstatsGcCPUFraction: metricDisabled,

@@ -117,7 +117,7 @@ type HistogramConfig struct {
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
 	// The default is false.
-	// Deprecated: [v0.75.0] Use `send_aggregations` (HistogramConfig.SendAggregations) instead.
+	// Deprecated: [v0.75.0] Use `send_aggregation_metrics` (HistogramConfig.SendAggregations) instead.
 	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
 
 	// SendAggregations states if the exporter should send .sum, .count, .min and .max metrics for histograms.

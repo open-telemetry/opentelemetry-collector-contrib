@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -828,6 +828,38 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 		"value1": -987.65,
 		"value2": true,
 	}, segment.Metadata["default"]["map_value"])
+}
+
+func TestSpanWithSingleDynamoDBTableHasTableName(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = []string{"table1"}
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "table1", *segment.AWS.TableName)
+	assert.Nil(t, segment.AWS.TableNames)
+	assert.Equal(t, []interface{}{"table1"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
+}
+
+func TestSpanWithMultipleDynamoDBTablesHasTableNames(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = []string{"table1", "table2"}
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.AWS.TableName)
+	assert.Equal(t, []string{"table1", "table2"}, segment.AWS.TableNames)
+	assert.Equal(t, []interface{}{"table1", "table2"}, segment.Metadata["default"][conventions.AttributeAWSDynamoDBTableNames])
 }
 
 func TestSegmentWithLogGroupsFromConfig(t *testing.T) {

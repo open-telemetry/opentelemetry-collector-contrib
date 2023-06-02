@@ -1,4 +1,10 @@
-name: nginxreceiver
+type: nginxreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
 
 attributes:
   state:

@@ -162,10 +162,20 @@ func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], 
 			return BoolExpr[K]{}, err
 		}
 	case value.ConstExpr != nil:
-		if *value.ConstExpr {
-			boolExpr = BoolExpr[K]{alwaysTrue[K]}
-		} else {
-			boolExpr = BoolExpr[K]{alwaysFalse[K]}
+		switch {
+		case value.ConstExpr.Boolean != nil:
+			if *value.ConstExpr.Boolean {
+				boolExpr = BoolExpr[K]{alwaysTrue[K]}
+			} else {
+				boolExpr = BoolExpr[K]{alwaysFalse[K]}
+			}
+		case value.ConstExpr.Converter != nil:
+			boolExpr, err = p.newConverterEvaluator(*value.ConstExpr.Converter)
+			if err != nil {
+				return BoolExpr[K]{}, err
+			}
+		default:
+			return BoolExpr[K]{}, fmt.Errorf("unhandled boolean operation %v", value)
 		}
 	case value.SubExpr != nil:
 		boolExpr, err = p.newBoolExpr(value.SubExpr)
@@ -180,4 +190,22 @@ func (p *Parser[K]) newBooleanValueEvaluator(value *booleanValue) (BoolExpr[K], 
 		return not(boolExpr)
 	}
 	return boolExpr, nil
+}
+
+func (p *Parser[K]) newConverterEvaluator(c converter) (BoolExpr[K], error) {
+	getter, err := p.newGetterFromConverter(c)
+	if err != nil {
+		return BoolExpr[K]{}, err
+	}
+	return BoolExpr[K]{func(ctx context.Context, tCtx K) (bool, error) {
+		result, err := getter.Get(ctx, tCtx)
+		if err != nil {
+			return false, err
+		}
+		boolResult, ok := result.(bool)
+		if !ok {
+			return false, fmt.Errorf("value returned from Converter in constant expression must be bool but got %T", result)
+		}
+		return boolResult, nil
+	}}, nil
 }
