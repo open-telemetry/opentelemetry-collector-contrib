@@ -64,7 +64,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 func (p *datadogProcessor) Start(_ context.Context, host component.Host) error {
 	var datadogs []exporter.Metrics
 loop:
-	for k, exp := range host.GetExporters()[component.DataTypeMetrics] {
+	for k, exp := range host.GetExporters()[component.DataTypeMetrics] { //nolint:staticcheck
 		mexp, ok := exp.(exporter.Metrics)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
