@@ -111,7 +111,7 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	if p.metricsConsumer == nil {
-		exporters := host.GetExporters()
+		exporters := host.GetExporters() //nolint:staticcheck
 
 		// The available list of exporters come from any configured metrics pipelines' exporters.
 		for k, exp := range exporters[component.DataTypeMetrics] {

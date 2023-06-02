@@ -67,7 +67,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs]) //nolint:staticcheck
 	if err != nil {
 		return err
 	}
