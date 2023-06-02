@@ -131,8 +131,6 @@ func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 	}
 	t := time.NewTimer(timeout)
 
-	subprocess.cancel()
-
 	// Wait for the subprocess to exit or the timeout period to elapse
 	select {
 	case <-ctx.Done():

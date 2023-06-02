@@ -34,7 +34,7 @@ import (
 
 var jmxJarReleases = map[string]string{
 	"1.26.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.26.0-alpha/opentelemetry-jmx-metrics-1.26.0-alpha.jar",
-	"1.10.0":       "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
+	"1.10.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
 }
 
 type JMXIntegrationSuite struct {
@@ -43,7 +43,7 @@ type JMXIntegrationSuite struct {
 }
 
 // It is recommended that this test be run locally with a longer timeout than the default 30s
-// /opt/homebrew/bin/go test -timeout 60s -run ^TestJMXIntegration$ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
+// go test -timeout 60s -run ^TestJMXIntegration$ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 func TestJMXIntegration(t *testing.T) {
 	suite.Run(t, new(JMXIntegrationSuite))
 }
