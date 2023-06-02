@@ -184,6 +184,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.78.3-0.20230601234953-deffd4892002
 	go.opentelemetry.io/collector/component v0.78.3-0.20230601234953-deffd4892002
+	go.opentelemetry.io/collector/confmap v0.78.3-0.20230601234953-deffd4892002
 	go.opentelemetry.io/collector/connector/forwardconnector v0.78.3-0.20230601234953-deffd4892002
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230601234953-deffd4892002
 	go.opentelemetry.io/collector/exporter v0.78.3-0.20230601234953-deffd4892002
@@ -617,7 +618,6 @@ require (
 	go.mongodb.org/atlas v0.28.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.78.3-0.20230601234953-deffd4892002 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230601234953-deffd4892002 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230601234953-deffd4892002 // indirect
 	go.opentelemetry.io/collector/semconv v0.78.3-0.20230601234953-deffd4892002 // indirect
