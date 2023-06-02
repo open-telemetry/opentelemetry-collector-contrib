@@ -13,9 +13,9 @@ require (
 	go.opentelemetry.io/collector/component v0.78.3-0.20230601234953-deffd4892002
 	go.opentelemetry.io/collector/confmap v0.78.3-0.20230601234953-deffd4892002
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/exporter v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector/exporter v0.78.3-0.20230601234953-deffd4892002
 	go.opentelemetry.io/collector/receiver v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.3-0.20230601234953-deffd4892002
 	go.uber.org/zap v1.24.0
 )
 
