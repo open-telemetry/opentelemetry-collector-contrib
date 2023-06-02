@@ -262,7 +262,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: ${{ matrix.go-version == '1.20' }} # remove the go-version conditional next release of go
         with:
-          name: coverage-artifact
+          name: coverage-artifacts
           path: ${{ matrix.group }}-coverage.txt
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
