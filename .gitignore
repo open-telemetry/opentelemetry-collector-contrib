@@ -27,11 +27,9 @@ dist/
 *.DS_Store
 
 # Coverage
-coverage.txt
-coverage.html
-integration-coverage.html
-coverage.out
+coverage/*
 *-coverage.txt
+integration-coverage.html
 
 # Wix
 *.wixobj
