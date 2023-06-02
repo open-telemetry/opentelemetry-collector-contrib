@@ -327,12 +327,9 @@ The `FNV` Converter converts the `value` to an FNV hash/digest.
 
 The returned type is int64.
 
-The input `value` types:
-* string. If it fails then nil will be returned.
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
 
-If `value` is another type or parsing failed nil is always returned.
-
-The `value` is either a path expression to a telemetry field to retrieve or a literal.
+If an error occurs during hashing it will be returned.
 
 Examples:
 
@@ -455,14 +452,11 @@ Examples:
 
 The `SHA1` Converter converts the `value` to a sha1 hash/digest.
 
-The returned type is int64.
+The returned type is string.
 
-The input `value` types:
-* string. If it fails then nil will be returned.
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
 
-If `value` is another type or parsing failed nil is always returned.
-
-The `value` is either a path expression to a telemetry field to retrieve or a literal.
+If an error occurs during hashing it will be returned.
 
 Examples:
 
@@ -471,20 +465,19 @@ Examples:
 
 - `SHA1("name")`
 
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
 ### SHA256
 
 `SHA256(value)`
 
 The `SHA256` Converter converts the `value` to a sha256 hash/digest.
 
-The returned type is int64.
+The returned type is string.
 
-The input `value` types:
-* string. If it fails then nil will be returned.
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
 
-If `value` is another type or parsing failed nil is always returned.
-
-The `value` is either a path expression to a telemetry field to retrieve or a literal.
+If an error occurs during hashing it will be returned.
 
 Examples:
 
@@ -492,6 +485,8 @@ Examples:
 
 
 - `SHA256("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
 
 ### SpanID
 

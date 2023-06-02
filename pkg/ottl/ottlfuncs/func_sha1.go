@@ -37,15 +37,10 @@ func SHA1HashString[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error
 		if err != nil {
 			return nil, err
 		}
-
-		if val == "" {
-			return val, nil
-		}
-
 		hash := sha1.New() // #nosec
-		_, err1 := hash.Write([]byte(val))
-		if err1 != nil {
-			return nil, err1
+		_, err = hash.Write([]byte(val))
+		if err != nil {
+			return nil, err
 		}
 		hashValue := hex.EncodeToString(hash.Sum(nil))
 		return hashValue, nil
