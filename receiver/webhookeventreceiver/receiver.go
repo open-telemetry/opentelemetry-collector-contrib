@@ -216,7 +216,7 @@ func (er *eventReceiver) failBadReq(_ context.Context,
 	w.WriteHeader(httpStatusCode)
 	if len(jsonResp) > 0 {
 		w.Header().Add("Content-Type", "application/json")
-		_, err := w.Write(jsonResp)
+		_, err = w.Write(jsonResp)
 		if err != nil {
 			er.settings.Logger.Warn("failed to write json response", zap.Error(err))
 		}
