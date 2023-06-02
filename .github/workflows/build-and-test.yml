@@ -257,10 +257,10 @@ jobs:
         if: ${{ matrix.go-version == '1.19' }}
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With Coverage
-        if: ${{ matrix.go-version == '1.20' }} # remove the go-version conditional next release of go
+        if: ${{ matrix.go-version == '1.20' }} # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@v3
-        if: ${{ matrix.go-version == '1.20' }} # remove the go-version conditional next release of go
+        if: ${{ matrix.go-version == '1.20' }} # only run coverage on one version
         with:
           name: coverage-artifacts
           path: ${{ matrix.group }}-coverage.txt
