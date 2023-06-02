@@ -25,6 +25,7 @@ The following settings are optional:
 
 - `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
 as the specified metric label key.
 - `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use

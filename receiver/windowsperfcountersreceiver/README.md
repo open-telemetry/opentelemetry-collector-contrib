@@ -35,6 +35,7 @@ be configured:
 ```yaml
 windowsperfcounters:
   collection_interval: <duration> # default = "1m"
+  initial_delay: <duration> # default = "1s"
   metrics:
     <metric name>:
       description: <description>
