@@ -23,7 +23,9 @@
 [{{.}}]: {{ distroURL . }}
 {{- end }}
 {{- if eq $class "connector"}}
+
 ## Supported Pipeline Types
+
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
 {{- range $stability, $pipelines := .Status.Stability }}
