@@ -1001,6 +1001,15 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
 		},
 		{
+			name: "Disable histogram",
+			config: Config{
+				Histogram: HistogramConfig{
+					Disable: true,
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "initialize explicit histogram with default bounds (ms)",
 			config: Config{
 				Histogram: HistogramConfig{
