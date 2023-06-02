@@ -39,7 +39,7 @@ type AWSSessionSettings struct {
 	RoleARN string `mapstructure:"role_arn"`
 	// Change the default profile for shared creds file
 	Profile string `mapstructure:"profile"`
-	// Change the default profile for shared creds file
+	// Change the default shared creds file location
 	SharedCredentialsFile []string `mapstructure:"shared_credentials_file"`
 }
 
