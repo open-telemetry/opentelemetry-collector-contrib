@@ -61,7 +61,7 @@ func WithClusterName(name string) Option {
 }
 
 // NewInfo creates a new Info struct
-func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...Option) (*Info, error) {
+func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...Option) (*Info, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mInfo := &Info{
 		cancel:           cancel,
@@ -92,8 +92,7 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 	}
 	mInfo.nodeCapacity = nodeCapacity
 
-	defaultSessionConfig := awsutil.CreateDefaultSessionConfig()
-	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &defaultSessionConfig)
+	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &awsSessionSettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
