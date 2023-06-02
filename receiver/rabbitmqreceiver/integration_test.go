@@ -27,10 +27,12 @@ func TestIntegration(t *testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
-					Dockerfile: "Dockerfile.rabbitmq",
-				},
+				Image: "rabbitmq:3.11-management",
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "setup.sh"),
+					ContainerFilePath: "/setup.sh",
+					FileMode:          700,
+				}},
 				ExposedPorts: []string{rabbitmqPort},
 				WaitingFor:   wait.ForListeningPort(rabbitmqPort).WithStartupTimeout(time.Minute),
 				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
