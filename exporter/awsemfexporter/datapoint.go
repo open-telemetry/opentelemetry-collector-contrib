@@ -167,35 +167,41 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
 func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
 	metric := dps.ExponentialHistogramDataPointSlice.At(i)
-	labels := createLabels(metric.Attributes(), instrumentationScopeName)
-	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	scale := metric.Scale()
 	base := math.Pow(2, math.Pow(2, float64(-scale)))
 	datapoints := []dataPoint{}
 	arrayValues := []float64{}
-	arrayCountes := []float64{}
+	arrayCounts := []float64{}
+	var bucketBegin float64
+	var bucketEnd float64
 
 	// Set mid-point of positive buckets in values/counts array.
 	positiveBuckets := metric.Positive()
 	positiveOffset := positiveBuckets.Offset()
 	positiveBucketCounts := positiveBuckets.BucketCounts()
+	bucketBegin = 0
+	bucketEnd = 0
 	for i := 0; i < positiveBucketCounts.Len(); i++ {
 		index := i + int(positiveOffset)
-		bucketBegin := math.Pow(base, float64(index))
-		bucketEnd := math.Pow(base, float64(index+1))
+		if bucketBegin == 0 {
+			bucketBegin = math.Pow(base, float64(index))
+		} else {
+			bucketBegin = bucketEnd
+		}
+		bucketEnd = math.Pow(base, float64(index+1))
 		metricVal := (bucketBegin + bucketEnd) / 2
 		count := positiveBucketCounts.At(i)
 		if count > 0 {
 			arrayValues = append(arrayValues, metricVal)
-			arrayCountes = append(arrayCountes, float64(count))
+			arrayCounts = append(arrayCounts, float64(count))
 		}
 	}
 
 	// Set count of zero bucket in values/counts array.
 	if metric.ZeroCount() > 0 {
 		arrayValues = append(arrayValues, 0)
-		arrayCountes = append(arrayCountes, float64(metric.ZeroCount()))
+		arrayCounts = append(arrayCounts, float64(metric.ZeroCount()))
 	}
 
 	// Set mid-point of negative buckets in values/counts array.
@@ -204,18 +210,25 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(i int, in
 	// However, the negative support is defined in metrics data model.
 	// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram
 	// The negative is also supported but only verified with unit test.
+
 	negativeBuckets := metric.Negative()
 	negativeOffset := negativeBuckets.Offset()
 	negativeBucketCounts := negativeBuckets.BucketCounts()
+	bucketBegin = 0
+	bucketEnd = 0
 	for i := 0; i < negativeBucketCounts.Len(); i++ {
 		index := i + int(negativeOffset)
-		bucketBegin := -math.Pow(base, float64(index+1))
-		bucketEnd := -math.Pow(base, float64(index))
+		if bucketEnd == 0 {
+			bucketEnd = -math.Pow(base, float64(index))
+		} else {
+			bucketEnd = bucketBegin
+		}
+		bucketBegin = -math.Pow(base, float64(index+1))
 		metricVal := (bucketBegin + bucketEnd) / 2
 		count := negativeBucketCounts.At(i)
 		if count > 0 {
 			arrayValues = append(arrayValues, metricVal)
-			arrayCountes = append(arrayCountes, float64(count))
+			arrayCounts = append(arrayCounts, float64(count))
 		}
 	}
 
@@ -224,14 +237,14 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(i int, in
 		name: MetricName,
 		value: &cWMetricHistogram{
 			Values: arrayValues,
-			Counts: arrayCountes,
+			Counts: arrayCounts,
 			Count:  metric.Count(),
 			Sum:    metric.Sum(),
 			Max:    metric.Max(),
 			Min:    metric.Min(),
 		},
-		labels:      labels,
-		timestampMs: timestamp,
+		labels:      createLabels(metric.Attributes(), instrumentationScopeName),
+		timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
 	})
 
 	return datapoints, true

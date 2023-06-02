@@ -115,6 +115,7 @@ func generateTestExponentialHistogramMetric(name string) pmetric.Metrics {
 	exponentialHistogramDatapoint.Negative().BucketCounts().FromRaw([]uint64{
 		1, 0, 1,
 	})
+	exponentialHistogramDatapoint.Attributes().PutStr("label1", "value1")
 	return otelMetrics
 }
 
@@ -383,7 +384,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 		expectedDatapoint dataPoint
 	}{
 		{
-			name: "Histogram with min and max",
+			name: "Exponential histogram with min and max",
 			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
 				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
 				histogramDP := histogramDPS.AppendEmpty()
@@ -401,7 +402,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			},
 		},
 		{
-			name: "Histogram without min and max",
+			name: "Exponential histogram without min and max",
 			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
 				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
 				histogramDP := histogramDPS.AppendEmpty()
@@ -418,21 +419,41 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			},
 		},
 		{
-			name: "Histogram with buckets",
+			name: "Exponential histogram with buckets",
 			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
 				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
 				histogramDP := histogramDPS.AppendEmpty()
-				histogramDP.SetCount(uint64(17))
-				histogramDP.SetSum(17.13)
 				histogramDP.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3})
+				histogramDP.SetZeroCount(4)
 				histogramDP.Negative().BucketCounts().FromRaw([]uint64{1, 2, 3})
 				histogramDP.Attributes().PutStr("label1", "value1")
 				return histogramDPS
 			}(),
 			expectedDatapoint: dataPoint{
 				name:   "foo",
-				value:  &cWMetricHistogram{Values: []float64{1.5, 3, 6, -1.5, -3, -6}, Counts: []float64{1, 2, 3, 1, 2, 3}, Sum: 17.13, Count: 17, Min: 0, Max: 0},
+				value:  &cWMetricHistogram{Values: []float64{1.5, 3, 6, 0, -1.5, -3, -6}, Counts: []float64{1, 2, 3, 4, 1, 2, 3}},
 				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			},
+		},
+		{
+			name: "Exponential histogram with different scale/offset/labels",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetScale(-1)
+				histogramDP.Positive().SetOffset(-1)
+				histogramDP.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3})
+				histogramDP.SetZeroCount(4)
+				histogramDP.Negative().SetOffset(-1)
+				histogramDP.Negative().BucketCounts().FromRaw([]uint64{1, 2, 3})
+				histogramDP.Attributes().PutStr("label1", "value1")
+				histogramDP.Attributes().PutStr("label2", "value2")
+				return histogramDPS
+			}(),
+			expectedDatapoint: dataPoint{
+				name:   "foo",
+				value:  &cWMetricHistogram{Values: []float64{0.625, 2.5, 10, 0, -0.625, -2.5, -10}, Counts: []float64{1, 2, 3, 4, 1, 2, 3}},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1", "label2": "value2"},
 			},
 		},
 	}
@@ -653,6 +674,15 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds().AsRaw())
+				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
+			case exponentialHistogramDataPointSlice:
+				assert.Equal(t, 1, convertedDPS.Len())
+				dp := convertedDPS.ExponentialHistogramDataPointSlice.At(0)
+				assert.Equal(t, float64(0), dp.Sum())
+				assert.Equal(t, uint64(4), dp.Count())
+				assert.Equal(t, []uint64{1, 0, 1}, dp.Positive().BucketCounts().AsRaw())
+				assert.Equal(t, []uint64{1, 0, 1}, dp.Negative().BucketCounts().AsRaw())
+				assert.Equal(t, uint64(0), dp.ZeroCount())
 				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
 			case summaryDataPointSlice:
 				expectedDPS := tc.expectedDatapointSlice.(summaryDataPointSlice)

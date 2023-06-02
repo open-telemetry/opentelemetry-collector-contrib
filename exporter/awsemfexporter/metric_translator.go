@@ -56,6 +56,8 @@ type cWMetricStats struct {
 	Sum   float64
 }
 
+// The SampleCount of CloudWatch metrics will be calculated by the sum of the 'Counts' array.
+// The 'Count' field should be same as the sum of the 'Counts' array and will be ignored in CloudWatch.
 type cWMetricHistogram struct {
 	Values []float64
 	Counts []float64
