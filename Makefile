@@ -96,9 +96,9 @@ gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
 .PHONY: gotest-with-cover
-gotest-with-cover: $(GOCOVMERGE)
+gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
-	$(GOCOVMERGE) $$(find . -name coverage.out) > $(GROUP)-coverage.txt
+	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
 
 .PHONY: gofmt
 gofmt:
