@@ -31,18 +31,18 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory with valid default config",
+			desc: "creates a new factory with default config",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
+
+				httpSettings := confighttp.NewDefaultHTTPClientSettings()
+				httpSettings.Timeout = 10 * time.Second
 
 				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
 					},
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: defaultEndpoint,
-						Timeout:  10 * time.Second,
-					},
+					HTTPClientSettings:   httpSettings,
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 					Method:               "GET",
 				}
