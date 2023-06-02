@@ -16,6 +16,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"sync"
 	"time"
 )
 
@@ -54,9 +55,12 @@ type Flusher struct {
 	// if previousDataLength = 0 - no new data have been received after flush
 	// if previousDataLength > 0 - there is data which has not been flushed yet and it doesn't changed since lastDataChange
 	previousDataLength int
+	rwLock             sync.RWMutex
 }
 
 func (f *Flusher) UpdateDataChangeTime(length int) {
+	f.rwLock.Lock()
+	defer f.rwLock.Unlock()
 	// Skip if length is greater than 0 and didn't changed
 	if length > 0 && length == f.previousDataLength {
 		return
@@ -75,6 +79,8 @@ func (f *Flusher) Flushed() {
 
 // ShouldFlush returns true if data should be forcefully flushed
 func (f *Flusher) ShouldFlush() bool {
+	f.rwLock.RLock()
+	defer f.rwLock.RUnlock()
 	// Returns true if there is f.forcePeriod after f.lastDataChange and data length is greater than 0
 	return f.forcePeriod > 0 && time.Since(f.lastDataChange) > f.forcePeriod && f.previousDataLength > 0
 }

@@ -369,6 +369,9 @@ func TestMoveFile(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -401,6 +404,9 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -486,6 +492,9 @@ func TestTruncateThenWrite(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -523,6 +532,9 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -583,6 +595,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	waitForToken(t, emitCalls, log1)
 
 	// Stop the operator, then rename and write a new log
+	fmt.Println("okay")
 	require.NoError(t, operator.Stop())
 
 	err := os.Rename(temp.Name(), fmt.Sprintf("%s2", temp.Name()))

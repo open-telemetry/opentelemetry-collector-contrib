@@ -34,6 +34,7 @@ type Manager struct {
 	*zap.SugaredLogger
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
+	ctx    context.Context
 
 	readerFactory readerFactory
 	finder        Finder
@@ -49,12 +50,23 @@ type Manager struct {
 	seenPaths  map[string]struct{}
 
 	currentFps []*Fingerprint
+
+	// Following fields are used only when useThreadPool is enabled
+	workerWg       sync.WaitGroup
+	knownFilesLock sync.RWMutex
+
+	readerChan chan ReaderWrapper
+	trieLock   sync.RWMutex
+
+	// TRIE - this data structure stores the fingerprint of the files which are currently being consumed
+	trie *Trie
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 	m.persister = persister
+	m.ctx = ctx
 
 	// Load offsets from disk
 	if err := m.loadLastPollFiles(ctx); err != nil {
@@ -67,6 +79,14 @@ func (m *Manager) Start(persister operator.Persister) error {
 			"exclude", m.finder.Exclude)
 	}
 
+	// If useThreadPool is enabled, kick off the worker threads
+	if useThreadPool.IsEnabled() {
+		m.readerChan = make(chan ReaderWrapper, m.maxBatchFiles*2)
+		for i := 0; i < m.maxBatchFiles; i++ {
+			m.workerWg.Add(1)
+			go m.worker(ctx)
+		}
+	}
 	// Start polling goroutine
 	m.startPoller(ctx)
 
@@ -77,6 +97,13 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
+	if useThreadPool.IsEnabled() {
+		close(m.readerChan)
+		m.workerWg.Wait()
+	}
+	// save off any files left
+	m.syncLastPollFiles(m.ctx)
+
 	m.roller.cleanup()
 	for _, reader := range m.knownFiles {
 		reader.Close()
@@ -101,8 +128,11 @@ func (m *Manager) startPoller(ctx context.Context) {
 				return
 			case <-globTicker.C:
 			}
-
-			m.poll(ctx)
+			if useThreadPool.IsEnabled() {
+				m.pollConcurrent(ctx)
+			} else {
+				m.poll(ctx)
+			}
 		}
 	}()
 }

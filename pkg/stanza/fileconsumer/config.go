@@ -39,6 +39,13 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
 )
 
+var useThreadPool = featuregate.GlobalRegistry().MustRegister(
+	"filelog.useThreadPool",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, log collection switches to a thread pool model, respecting the `poll_interval` config."),
+	// featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+)
+
 var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowHeaderMetadataParsing",
 	featuregate.StageAlpha,
@@ -150,8 +157,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
 	}
-
-	return &Manager{
+	manager := Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
 		readerFactory: readerFactory{
@@ -174,7 +180,12 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
-	}, nil
+	}
+	if useThreadPool.IsEnabled() {
+		manager.readerChan = make(chan ReaderWrapper, c.MaxConcurrentFiles)
+		manager.trie = NewTrie()
+	}
+	return &manager, nil
 }
 
 func (c Config) validate() error {

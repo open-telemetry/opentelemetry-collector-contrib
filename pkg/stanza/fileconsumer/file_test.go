@@ -35,6 +35,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
+func TestMain(m *testing.M) {
+	// Run once with thread pool featuregate disabled
+	code := m.Run()
+	if code > 0 {
+		os.Exit(code)
+	}
+
+	// // Run once with thread pool featuregate enabled
+	featuregate.GlobalRegistry().Set(useThreadPool.ID(), true)
+	code = m.Run()
+	featuregate.GlobalRegistry().Set(useThreadPool.ID(), false)
+	if code > 0 {
+		os.Exit(code)
+	}
+}
+
 func TestCleanStop(t *testing.T) {
 	t.Parallel()
 	t.Skip(`Skipping due to goroutine leak in opencensus.
@@ -403,6 +419,9 @@ func TestReadNewLogs(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Poll once so we know this isn't a new file
@@ -431,6 +450,9 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Start with a file with an entry in it, and expect that entry
@@ -455,6 +477,9 @@ func TestStartAtEnd(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -483,6 +508,9 @@ func TestStartAtEndNewFile(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	operator.poll(context.Background())
@@ -600,6 +628,9 @@ func TestSplitWrite(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -620,6 +651,9 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -874,6 +908,9 @@ func TestFileBatching(t *testing.T) {
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
 	operator, _ := buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls))
+	if useThreadPool.IsEnabled() {
+		operator, _ = buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	core, observedLogs := observer.New(zap.DebugLevel)
@@ -1231,6 +1268,9 @@ func TestDeleteAfterRead(t *testing.T) {
 	emitCalls := make(chan *emitParams, totalLines)
 	operator, _ := buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls))
 
+	if useThreadPool.IsEnabled() {
+		operator, _ = buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	}
 	operator.poll(context.Background())
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
 
@@ -1261,6 +1301,9 @@ func TestMaxBatching(t *testing.T) {
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
 	operator, _ := buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls))
+	if useThreadPool.IsEnabled() {
+		operator, _ = buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	core, observedLogs := observer.New(zap.DebugLevel)
@@ -1376,6 +1419,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, longFileLines+1)
 	operator, _ := buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls))
+	if useThreadPool.IsEnabled() {
+		operator, _ = buildTestManagerWithOptions(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	shortFile := openTemp(t, tempDir)
@@ -1525,6 +1571,9 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	cfg.FingerprintSize = 18
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManagerWithOptions(t, cfg)
+	if useThreadPool.IsEnabled() {
+		operator, emitCalls = buildTestManagerWithOptions(t, cfg, withReaderChan())
+	}
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Both of they will be include

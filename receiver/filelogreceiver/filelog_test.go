@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -136,28 +137,56 @@ func TestReadRotatingFiles(t *testing.T) {
 
 	tests := []rotationTest{
 		{
-			name:         "CopyTruncateTimestamped",
-			copyTruncate: true,
-			sequential:   false,
+			name:             "CopyTruncateTimestamped",
+			copyTruncate:     true,
+			sequential:       false,
+			enableThreadPool: false,
 		},
 		{
-			name:         "CopyTruncateSequential",
-			copyTruncate: true,
-			sequential:   true,
+			name:             "CopyTruncateSequential",
+			copyTruncate:     true,
+			sequential:       true,
+			enableThreadPool: false,
+		},
+		{
+			name:             "CopyTruncateTimestampedThreadPool",
+			copyTruncate:     true,
+			sequential:       false,
+			enableThreadPool: true,
+		},
+		{
+			name:             "CopyTruncateSequentialThreadPool",
+			copyTruncate:     true,
+			sequential:       true,
+			enableThreadPool: true,
 		},
 	}
 	if runtime.GOOS != "windows" {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		tests = append(tests, []rotationTest{
 			{
-				name:         "MoveCreateTimestamped",
-				copyTruncate: false,
-				sequential:   false,
+				name:             "MoveCreateTimestampedThreadPool",
+				copyTruncate:     false,
+				sequential:       false,
+				enableThreadPool: true,
 			},
 			{
-				name:         "MoveCreateSequential",
-				copyTruncate: false,
-				sequential:   true,
+				name:             "MoveCreateSequentialThreadPool",
+				copyTruncate:     false,
+				sequential:       true,
+				enableThreadPool: true,
+			},
+			{
+				name:             "MoveCreateTimestamped",
+				copyTruncate:     false,
+				sequential:       false,
+				enableThreadPool: false,
+			},
+			{
+				name:             "MoveCreateSequential",
+				copyTruncate:     false,
+				sequential:       true,
+				enableThreadPool: false,
 			},
 		}...)
 	}
@@ -168,9 +197,10 @@ func TestReadRotatingFiles(t *testing.T) {
 }
 
 type rotationTest struct {
-	name         string
-	copyTruncate bool
-	sequential   bool
+	name             string
+	copyTruncate     bool
+	sequential       bool
+	enableThreadPool bool
 }
 
 func (rt *rotationTest) Run(t *testing.T) {
@@ -178,6 +208,12 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	tempDir := t.TempDir()
 
+	if rt.enableThreadPool {
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("filelog.useThreadPool", false))
+		})
+		require.NoError(t, featuregate.GlobalRegistry().Set("filelog.useThreadPool", true))
+	}
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 

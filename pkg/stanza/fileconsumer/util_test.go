@@ -77,7 +77,8 @@ type emitParams struct {
 }
 
 type testManagerConfig struct {
-	emitChan chan *emitParams
+	emitChan          chan *emitParams
+	initializeChannel bool
 }
 
 type testManagerOption func(*testManagerConfig)
@@ -88,6 +89,12 @@ func withEmitChan(emitChan chan *emitParams) testManagerOption {
 	}
 }
 
+func withReaderChan() testManagerOption {
+	return func(m *testManagerConfig) {
+		m.initializeChannel = true
+	}
+}
+
 func buildTestManagerWithOptions(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
 	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
 	for _, opt := range opts {
@@ -95,6 +102,17 @@ func buildTestManagerWithOptions(t *testing.T, cfg *Config, opts ...testManagerO
 	}
 	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
+	if tmc.initializeChannel {
+		input.readerChan = make(chan ReaderWrapper, cfg.MaxConcurrentFiles/2)
+		ctx, cancel := context.WithCancel(context.Background())
+		input.cancel = cancel
+		input.ctx = ctx
+		for i := 0; i < cfg.MaxConcurrentFiles/2; i++ {
+			input.workerWg.Add(1)
+			go input.worker(ctx)
+		}
+	}
+
 	return input, tmc.emitChan
 }
 
