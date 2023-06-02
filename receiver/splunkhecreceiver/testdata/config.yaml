@@ -5,6 +5,7 @@ splunk_hec/allsettings:
   endpoint: localhost:8088
   access_token_passthrough: true
   raw_path: "/foo"
+  splitting: "line"
   health_path: "/bar"
   hec_metadata_to_otel_attrs:
     source: "file.name"

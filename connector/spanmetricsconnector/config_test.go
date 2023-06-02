@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsconnector
 
@@ -26,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
@@ -42,15 +32,15 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, "default"),
+			id:       component.NewIDWithName(metadata.Type, "default"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id:       component.NewIDWithName(typeStr, "default_explicit_histogram"),
+			id:       component.NewIDWithName(metadata.Type, "default_explicit_histogram"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "full"),
+			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				AggregationTemporality: delta,
 				Dimensions: []Dimension{
@@ -72,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "exponential_histogram"),
+			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
 			expected: &Config{
 				AggregationTemporality: cumulative,
 				DimensionsCacheSize:    1000,
@@ -86,11 +76,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "exponential_and_explicit_histogram"),
+			id:           component.NewIDWithName(metadata.Type, "exponential_and_explicit_histogram"),
 			errorMessage: "use either `explicit` or `exponential` buckets histogram",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_histogram_unit"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_histogram_unit"),
 			errorMessage: "unknown Unit \"h\"",
 		},
 	}

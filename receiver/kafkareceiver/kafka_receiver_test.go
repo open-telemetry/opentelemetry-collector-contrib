@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkareceiver
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -39,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
 func TestNewTracesReceiver_version_err(t *testing.T) {
@@ -808,6 +799,147 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	wg.Wait()
 }
 
+// Test unmarshaler for different charsets and encodings.
+func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		enc  string
+	}{
+		{
+			name: "unmarshal test for Englist (ASCII characters) with text_utf8",
+			text: "ASCII characters test",
+			enc:  "utf8",
+		},
+		{
+			name: "unmarshal test for unicode with text_utf8",
+			text: "UTF8 测试 測試 テスト 테스트 ☺️",
+			enc:  "utf8",
+		},
+		{
+			name: "unmarshal test for Simplified Chinese with text_gbk",
+			text: "GBK 简体中文解码测试",
+			enc:  "gbk",
+		},
+		{
+			name: "unmarshal test for Japanese with text_shift_jis",
+			text: "Shift_JIS 日本のデコードテスト",
+			enc:  "shift_jis",
+		},
+		{
+			name: "unmarshal test for Korean with text_euc-kr",
+			text: "EUC-KR 한국 디코딩 테스트",
+			enc:  "euc-kr",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+			require.NoError(t, err)
+			unmarshaler := newTextLogsUnmarshaler()
+			unmarshaler, err = unmarshaler.WithEnc(test.enc)
+			require.NoError(t, err)
+			sink := &consumertest.LogsSink{}
+			c := logsConsumerGroupHandler{
+				unmarshaler:  unmarshaler,
+				logger:       zap.NewNop(),
+				ready:        make(chan bool),
+				nextConsumer: sink,
+				obsrecv:      obsrecv,
+			}
+
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			groupClaim := &testConsumerGroupClaim{
+				messageChan: make(chan *sarama.ConsumerMessage),
+			}
+			go func() {
+				err = c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+				assert.NoError(t, err)
+				wg.Done()
+			}()
+			encCfg := textutils.NewEncodingConfig()
+			encCfg.Encoding = test.enc
+			enc, err := encCfg.Build()
+			require.NoError(t, err)
+			encoder := enc.Encoding.NewEncoder()
+			encoded, err := encoder.Bytes([]byte(test.text))
+			require.NoError(t, err)
+			t1 := time.Now()
+			groupClaim.messageChan <- &sarama.ConsumerMessage{Value: encoded}
+			close(groupClaim.messageChan)
+			wg.Wait()
+			require.Equal(t, sink.LogRecordCount(), 1)
+			log := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+			assert.Equal(t, log.Body().Str(), test.text)
+			assert.LessOrEqual(t, t1, log.ObservedTimestamp().AsTime())
+			assert.LessOrEqual(t, log.ObservedTimestamp().AsTime(), time.Now())
+		})
+	}
+}
+
+func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
+	tests := []struct {
+		name     string
+		encoding string
+	}{
+		{
+			name:     "default text encoding",
+			encoding: "text",
+		},
+		{
+			name:     "utf-8 text encoding",
+			encoding: "text_utf-8",
+		},
+		{
+			name:     "gbk text encoding",
+			encoding: "text_gbk",
+		},
+		{
+			name:     "shift_jis text encoding, which contains an underline",
+			encoding: "text_shift_jis",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers())
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestGetLogsUnmarshaler_encoding_text_error(t *testing.T) {
+	tests := []struct {
+		name     string
+		encoding string
+	}{
+		{
+			name:     "text encoding has typo",
+			encoding: "text_uft-8",
+		},
+		{
+			name:     "text encoding is a random string",
+			encoding: "text_vnbqgoba156",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers())
+			assert.ErrorContains(t, err, fmt.Sprintf("unsupported encoding '%v'", test.encoding[5:]))
+		})
+	}
+}
+
+func TestCreateLogsReceiver_encoding_text_error(t *testing.T) {
+	cfg := Config{
+		Encoding: "text_uft-8",
+	}
+	_, err := newLogsReceiver(cfg, receivertest.NewNopCreateSettings(), defaultLogsUnmarshalers(), consumertest.NewNop())
+	// encoding error comes first
+	assert.Error(t, err, "unsupported encoding")
+}
+
 func TestToSaramaInitialOffset_earliest(t *testing.T) {
 	saramaInitialOffset, err := toSaramaInitialOffset(offsetEarliest)
 
@@ -924,7 +1056,7 @@ func (t *testConsumerGroup) Close() error {
 	return nil
 }
 
-func (t *testConsumerGroup) Pause(partitions map[string][]int32) {
+func (t *testConsumerGroup) Pause(_ map[string][]int32) {
 	panic("implement me")
 }
 
@@ -932,7 +1064,7 @@ func (t *testConsumerGroup) PauseAll() {
 	panic("implement me")
 }
 
-func (t *testConsumerGroup) Resume(topicPartitions map[string][]int32) {
+func (t *testConsumerGroup) Resume(_ map[string][]int32) {
 	panic("implement me")
 }
 

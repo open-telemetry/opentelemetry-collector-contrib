@@ -1,11 +1,11 @@
-type: mysqlreceiver
+type: mysql
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+
 resource_attributes:
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
@@ -398,6 +398,15 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [opened_resources]
+  mysql.uptime:
+    enabled: true
+    description: The number of seconds that the server has been up.
+    unit: s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
   mysql.table.lock_wait.read.count:
     enabled: false
     description: The total table lock wait read events.

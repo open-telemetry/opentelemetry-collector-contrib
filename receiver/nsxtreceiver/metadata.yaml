@@ -1,10 +1,10 @@
-type: nsxtreceiver
+type: nsxt
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, sumo]
   
 resource_attributes:
   nsxt.node.name:

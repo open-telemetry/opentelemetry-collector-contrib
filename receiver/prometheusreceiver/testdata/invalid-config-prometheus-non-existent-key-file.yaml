@@ -4,4 +4,5 @@ prometheus:
       - job_name: 'demo'
         scrape_interval: 5s
         tls_config:
+          cert_file: ./testdata/dummy-tls-cert-file
           key_file: /nonexistentkeyfile

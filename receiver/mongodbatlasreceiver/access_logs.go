@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -94,7 +83,7 @@ func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer c
 	return r
 }
 
-func (alr *accessLogsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
+func (alr *accessLogsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
 	alr.logger.Debug("Starting up access log receiver")
 	cancelCtx, cancel := context.WithCancel(ctx)
 	alr.cancel = cancel
@@ -103,7 +92,7 @@ func (alr *accessLogsReceiver) Start(ctx context.Context, host component.Host, s
 	return alr.startPolling(cancelCtx)
 }
 
-func (alr *accessLogsReceiver) Shutdown(ctx context.Context) error {
+func (alr *accessLogsReceiver) Shutdown(_ context.Context) error {
 	alr.logger.Debug("Shutting down accessLog receiver")
 	alr.cancel()
 	alr.wg.Wait()

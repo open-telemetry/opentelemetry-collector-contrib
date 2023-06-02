@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
@@ -50,11 +39,11 @@ func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }
 
-func (f *FakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+func (f *FakeInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	return nil, nil
 }
 
-func (f *FakeInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+func (f *FakeInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
 	return nil
 }
 
@@ -62,7 +51,7 @@ func (f *FakeInformer) IsStopped() bool {
 	return false
 }
 
-func (f *FakeInformer) SetTransform(handler cache.TransformFunc) error {
+func (f *FakeInformer) SetTransform(_ cache.TransformFunc) error {
 	return nil
 }
 
@@ -86,9 +75,9 @@ func NewFakeNamespaceInformer(
 	}
 }
 
-func (f *FakeNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+func (f *FakeNamespaceInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
 
-func (f *FakeNamespaceInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+func (f *FakeNamespaceInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) {
 }
 
 func (f *FakeNamespaceInformer) GetStore() cache.Store {
@@ -105,19 +94,19 @@ type FakeReplicaSetInformer struct {
 
 func NewFakeReplicaSetInformer(
 	_ kubernetes.Interface,
-	namespace string,
+	_ string,
 ) cache.SharedInformer {
 	return &FakeInformer{
 		FakeController: &FakeController{},
 	}
 }
 
-func (f *FakeReplicaSetInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+func (f *FakeReplicaSetInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
 
-func (f *FakeReplicaSetInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+func (f *FakeReplicaSetInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) {
 }
 
-func (f *FakeReplicaSetInformer) SetTransform(handler cache.TransformFunc) error {
+func (f *FakeReplicaSetInformer) SetTransform(_ cache.TransformFunc) error {
 	return nil
 }
 
@@ -174,15 +163,15 @@ func NewNoOpInformer(
 func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }
-func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	return nil, nil
 }
 
-func (f *NoOpInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+func (f *NoOpInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
 	return nil
 }
 
-func (f *NoOpInformer) SetTransform(handler cache.TransformFunc) error {
+func (f *NoOpInformer) SetTransform(_ cache.TransformFunc) error {
 	return nil
 }
 

@@ -4,8 +4,8 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+
 resource_attributes:
   riak.node.name:
     description: The name this node uses to identify itself.

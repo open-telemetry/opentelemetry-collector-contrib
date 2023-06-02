@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
@@ -186,7 +175,7 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handlePodUpdate(old, new interface{}) {
+func (c *WatchClient) handlePodUpdate(_, new interface{}) {
 	observability.RecordPodUpdated()
 	if pod, ok := new.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
@@ -218,7 +207,7 @@ func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleNamespaceUpdate(old, new interface{}) {
+func (c *WatchClient) handleNamespaceUpdate(_, new interface{}) {
 	observability.RecordNamespaceUpdated()
 	if namespace, ok := new.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
@@ -706,7 +695,7 @@ func (c *WatchClient) handleReplicaSetAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(old, new interface{}) {
+func (c *WatchClient) handleReplicaSetUpdate(_, new interface{}) {
 	observability.RecordReplicaSetUpdated()
 	if replicaset, ok := new.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)

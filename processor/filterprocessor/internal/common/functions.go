@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 
@@ -27,11 +16,11 @@ import (
 
 func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 	funcs := filterottl.StandardMetricFuncs()
-	hasAttributeKeyOnDatapoint := newHasAttributeKeyOnDatapointFactory()
-	funcs[hasAttributeKeyOnDatapoint.Name()] = hasAttributeKeyOnDatapoint
+	hasAttributeKeyOnDatapointFactory := newHasAttributeKeyOnDatapointFactory()
+	funcs[hasAttributeKeyOnDatapointFactory.Name()] = hasAttributeKeyOnDatapointFactory
 
-	hasAttributeOnDatapoint := newHasAttributeOnDatapointFactory()
-	funcs[hasAttributeOnDatapoint.Name()] = hasAttributeOnDatapoint
+	hasAttributeOnDatapointFactory := newHasAttributeOnDatapointFactory()
+	funcs[hasAttributeOnDatapointFactory.Name()] = hasAttributeOnDatapointFactory
 	return funcs
 }
 
@@ -44,7 +33,7 @@ func newHasAttributeOnDatapointFactory() ottl.Factory[ottlmetric.TransformContex
 	return ottl.NewFactory("HasAttrOnDatapoint", &hasAttributeOnDatapointArguments{}, createHasAttributeOnDatapointFunction)
 }
 
-func createHasAttributeOnDatapointFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createHasAttributeOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*hasAttributeOnDatapointArguments)
 
 	if !ok {
@@ -68,8 +57,8 @@ func newHasAttributeKeyOnDatapointFactory() ottl.Factory[ottlmetric.TransformCon
 	return ottl.NewFactory("HasAttrKeyOnDatapoint", &hasAttributeKeyOnDatapointArguments{}, createHasAttributeKeyOnDatapointFunction)
 }
 
-func createHasAttributeKeyOnDatapointFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	args, ok := oArgs.(*hasAttributeOnDatapointArguments)
+func createHasAttributeKeyOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	args, ok := oArgs.(*hasAttributeKeyOnDatapointArguments)
 
 	if !ok {
 		return nil, fmt.Errorf("hasAttributeKeyOnDatapointFactory args must be of type *hasAttributeOnDatapointArguments")

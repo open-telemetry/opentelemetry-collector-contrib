@@ -1,4 +1,10 @@
-type: dockerstatsreceiver
+type: docker_stats
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 sem_conv_version: 1.6.1
 
@@ -115,10 +121,20 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
-  container.cpu.percent:
-    enabled: true
+  container.cpu.utilization:
+    enabled: false
     description: "Percent of CPU used by the container."
     unit: "1"
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in v0.82.0.
+    gauge:
+      value_type: double
+  container.cpu.percent:
+    enabled: true
+    description: "Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container."
+    unit: "1"
+    warnings:
+      if_enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.
     gauge:
       value_type: double
 
@@ -220,14 +236,6 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
-  container.memory.swap:
-    enabled: false
-    description: "The amount of swap currently used by the processes in this cgroup."
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
   container.memory.pgfault:
     enabled: false
     description: "Indicate the number of times that a process of the cgroup triggered a page fault."
@@ -366,14 +374,6 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
-  container.memory.total_swap:
-    enabled: false
-    description: "The amount of swap currently used by the processes in this cgroup and descendant groups."
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
   container.memory.total_pgfault:
     enabled: false
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault."
@@ -628,3 +628,24 @@ metrics:
       aggregation: cumulative
     attributes:
       - interface
+
+  # Pids
+  container.pids.count:
+    enabled: false
+    description: "Number of pids in the container's cgroup."
+    extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
+    unit: "{pids}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  container.pids.limit:
+    enabled: false
+    description: "Maximum number of pids in the container's cgroup."
+    extended_documentation: "It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup supported. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/pids.txt)"
+    unit: "{pids}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false

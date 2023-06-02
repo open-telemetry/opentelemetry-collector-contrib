@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 
@@ -122,7 +111,7 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	if p.metricsConsumer == nil {
-		exporters := host.GetExporters()
+		exporters := host.GetExporters() //nolint:staticcheck
 
 		// The available list of exporters come from any configured metrics pipelines' exporters.
 		for k, exp := range exporters[component.DataTypeMetrics] {
@@ -177,6 +166,9 @@ func (p *serviceGraphProcessor) ConsumeTraces(ctx context.Context, td ptrace.Tra
 
 	// Skip empty metrics.
 	if md.MetricCount() == 0 {
+		if p.tracesConsumer != nil {
+			return p.tracesConsumer.ConsumeTraces(ctx, td)
+		}
 		return nil
 	}
 
