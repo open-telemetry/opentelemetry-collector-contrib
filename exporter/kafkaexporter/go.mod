@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Shopify/sarama v1.38.1
-	github.com/aws/aws-sdk-go v1.44.271
+	github.com/aws/aws-sdk-go v1.44.274
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0
