@@ -27,7 +27,7 @@ func Test_encodeModel_encodeSpan(t *testing.T) {
 		{
 			name:    "simple",
 			args:    args{resource: newResource(), span: sampleSpan()},
-			want:    nil,
+			want:    []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","EndTimestamp":"1970-01-01T00:00:00.000000000Z","Kind":"SPAN_KIND_UNSPECIFIED","Link":"[]","Resource.test":"rest","SpanId":"0100000000000000","TraceStatus":0}`),
 			wantErr: assert.NoError,
 		},
 	}
