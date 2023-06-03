@@ -4,6 +4,6 @@ ENV ORACLE_PASSWORD=mysecurepassword
 
 RUN mkdir -p /container-entrypoint-initdb.d
 
-COPY initOracleDB.sql /container-entrypoint-initdb.d/startup.sql
+COPY init.sql /container-entrypoint-initdb.d/startup.sql
 
 HEALTHCHECK CMD "$ORACLE_BASE/healthcheck.sh"

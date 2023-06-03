@@ -31,6 +31,7 @@ The following settings are optional:
 - `database`: The database name. If not specified, metrics will be collected for all databases.
 
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 - `transport`: (default = `tcp`): Defines the network to use for connecting to the server.
 - `statement_events`: Additional configuration for query to build `mysql.statement_events.count` and `mysql.statement_events.wait.time` metrics:
@@ -48,6 +49,7 @@ receivers:
     password: ${env:MYSQL_PASSWORD}
     database: otel
     collection_interval: 10s
+    initial_delay: 1s
     statement_events:
       digest_text_limit: 120
       time_limit: 24h
