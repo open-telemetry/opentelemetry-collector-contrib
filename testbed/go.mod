@@ -255,6 +255,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaege
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../exporter/opencensusexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../exporter/prometheusexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../exporter/prometheusremotewriteexporter
