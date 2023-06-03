@@ -2,7 +2,7 @@ receivers:
   snmp:
     community: "1.3.6.1.6.1.1.0"
     collection_interval: 10s
-    endpoint: udp://localhost:1024
+    endpoint: udp://host.docker.internal:1024
     version: v2c
     resource_attributes:
       ra1:

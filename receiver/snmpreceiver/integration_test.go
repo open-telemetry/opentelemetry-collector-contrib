@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"go.opentelemetry.io/collector/component"
@@ -88,7 +89,8 @@ var (
 			Context:    filepath.Join("testdata", "integration", "docker"),
 			Dockerfile: "snmp_agent.Dockerfile",
 		},
-		ExposedPorts: []string{"1024:1024/udp"},
+		ExposedPorts:       []string{"1024:1024/udp"},
+		HostConfigModifier: addExtraHost,
 	}
 )
 
@@ -102,4 +104,8 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 		})
 	require.NoError(t, err)
 	return container
+}
+
+func addExtraHost(conf *container.HostConfig) {
+	conf.ExtraHosts = []string{"host.docker.internal:host-gateway"}
 }

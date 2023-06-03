@@ -1,6 +1,6 @@
 # https://github.com/maxgio92/docker-snmpsim
-# WARNING: This can't be updated beyond 3.7 as snmpsim seems to have issues!
-FROM python:3.7-slim
+# WARNING: This can't be updated beyond 3.5 as snmpsim seems to have issues running on linux!
+FROM python:3.5-slim
 
 RUN pip install snmpsim
 
