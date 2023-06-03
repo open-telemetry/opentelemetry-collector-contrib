@@ -1,16 +1,5 @@
-// Copyright 2023, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package opensearchexporter
 
@@ -22,12 +11,12 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -161,13 +150,13 @@ func TestExporter_PushDocument(t *testing.T) {
 		handlers := map[string]func(attempts *atomic.Int64) bulkHandler{
 			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
-					attempts.Inc()
+					attempts.Add(1)
 					return nil, &httpTestError{message: "oops"}
 				}
 			},
 			"fail item": func(attempts *atomic.Int64) bulkHandler {
 				return func(docs []itemRequest) ([]itemResponse, error) {
-					attempts.Inc()
+					attempts.Add(1)
 					return itemsReportStatus(docs, http.StatusTooManyRequests)
 				}
 			},
@@ -179,7 +168,7 @@ func TestExporter_PushDocument(t *testing.T) {
 				for name, configurer := range configurations {
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
-						attempts := atomic.NewInt64(0)
+						attempts := &atomic.Int64{}
 						server := newTestServer(t, handler(attempts))
 
 						testConfig := configurer(server.URL)
@@ -195,9 +184,9 @@ func TestExporter_PushDocument(t *testing.T) {
 	})
 
 	t.Run("do not retry invalid request", func(t *testing.T) {
-		attempts := atomic.NewInt64(0)
+		attempts := &atomic.Int64{}
 		server := newTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			attempts.Inc()
+			attempts.Add(1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
 
@@ -229,9 +218,9 @@ func TestExporter_PushDocument(t *testing.T) {
 	})
 
 	t.Run("do not retry bad item", func(t *testing.T) {
-		attempts := atomic.NewInt64(0)
+		attempts := &atomic.Int64{}
 		server := newTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			attempts.Inc()
+			attempts.Add(1)
 			return itemsReportStatus(docs, http.StatusBadRequest)
 		})
 
