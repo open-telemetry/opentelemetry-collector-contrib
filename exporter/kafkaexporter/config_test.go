@@ -113,8 +113,7 @@ func TestValidate_err_compression(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+	assert.EqualError(t, err, "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
 }
 
 func TestValidate_sasl_username(t *testing.T) {
@@ -132,8 +131,7 @@ func TestValidate_sasl_username(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "auth.sasl.username is required")
+	assert.EqualError(t, err, "auth.sasl.username is required")
 }
 
 func TestValidate_sasl_password(t *testing.T) {
@@ -151,8 +149,7 @@ func TestValidate_sasl_password(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "auth.sasl.password is required")
+	assert.EqualError(t, err, "auth.sasl.password is required")
 }
 
 func TestValidate_sasl_mechanism(t *testing.T) {
@@ -170,8 +167,7 @@ func TestValidate_sasl_mechanism(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FAKE")
+	assert.EqualError(t, err, "auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FAKE")
 }
 
 func TestValidate_sasl_version(t *testing.T) {
@@ -190,8 +186,7 @@ func TestValidate_sasl_version(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "auth.sasl.version has to be either 0 or 1. configured value 42")
+	assert.EqualError(t, err, "auth.sasl.version has to be either 0 or 1. configured value 42")
 }
 
 func Test_saramaProducerCompressionCodec(t *testing.T) {
