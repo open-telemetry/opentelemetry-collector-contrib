@@ -162,8 +162,8 @@ github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
 github.com/influxdata/influxdb-client-go/v2 v2.12.3 h1:28nRlNMRIV4QbtIUvxhWqaxn0IpXeMSkY/uJa/O/vC4=
 github.com/influxdata/influxdb-client-go/v2 v2.12.3/go.mod h1:IrrLUbCjjfkmRuaCiGQg4m2GbkaeJDcuWoxiWdQEbA0=
-github.com/influxdata/influxdb-observability/common v0.3.14 h1:bLiWxXmgum06lpGlaQF+sKgZibQLK/wI46qHtULn8nM=
-github.com/influxdata/influxdb-observability/common v0.3.14/go.mod h1:nOCV0NIPXW0a6k5/Q/sYVR0SbNnrL1LRmj64Nvjwf64=
+github.com/influxdata/influxdb-observability/common v0.4.2 h1:iisr8azMzsCGhQx5EszDgOgJz7XVw7ojIQY9QiI8jwg=
+github.com/influxdata/influxdb-observability/common v0.4.2/go.mod h1:LQxo5ANY0J3lQMYy5/wAmJMyr+EGHsurJm9zFXZ4svI=
 github.com/influxdata/influxdb-observability/influx2otel v0.3.14 h1:i13/90SFxvYsQvRjEsgS0uAtO4T6PFTRxAPNYzbbbO0=
 github.com/influxdata/influxdb-observability/influx2otel v0.3.14/go.mod h1:Isvc5hqlaIm6AAUVwjNuJ2aIC/1N3irisyPhdwTfrf4=
 github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c h1:qSHzRbhzK8RdXOsAdfDgO49TtqC1oZ+acxPrkfTxcCs=
