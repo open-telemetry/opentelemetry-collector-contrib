@@ -5,7 +5,7 @@ change_type: bug_fix
 component: telemetrygen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: `telemetrygen traces` now correctly sets the `service.name` resource attribute on generated traces
+note: "`telemetrygen traces`" now correctly sets the "`service.name`" resource attribute on generated traces
 
 # One or more tracking issues related to the change
 issues: [9597]
