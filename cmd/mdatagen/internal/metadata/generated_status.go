@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Type             = "test"
+	Type             = "file"
 	TracesStability  = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelDevelopment
 	MetricsStability = component.StabilityLevelStable
