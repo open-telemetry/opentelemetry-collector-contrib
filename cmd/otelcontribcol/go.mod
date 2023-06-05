@@ -185,7 +185,7 @@ require (
 	go.opentelemetry.io/collector v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/component v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/confmap v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/connector/forwardconnector v0.78.3-0.20230601234953-deffd4892002
+	go.opentelemetry.io/collector/connector/forwardconnector v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/exporter v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.78.3-0.20230605151302-371fc4517197
