@@ -4,8 +4,10 @@
 package golden
 
 import (
+	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -40,5 +42,17 @@ func TestSortAttributes(t *testing.T) {
 			t.Errorf("Incorrect key at index %d. Expected: %s, Actual: %s", i, key, actualKeys[i])
 		}
 	}
+
+}
+
+func TestSortMetricDatapointSlice(t *testing.T) {
+	beforePath := filepath.Join("testdata", "sort-datapoint-slice", "before.yaml")
+	afterPath := filepath.Join("testdata", "sort-datapoint-slice", "after.yaml")
+	before, err := ReadMetrics(beforePath)
+	require.NoError(t, err)
+	after, err := ReadMetrics(afterPath)
+	require.NoError(t, err)
+	sortMetrics(before)
+	require.Equal(t, before, after)
 
 }

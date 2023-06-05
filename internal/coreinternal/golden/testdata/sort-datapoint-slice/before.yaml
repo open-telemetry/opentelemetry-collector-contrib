@@ -1,0 +1,49 @@
+resourceMetrics:
+  - resource:
+    scopeMetrics:
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: DDDD
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: c
+                      value:
+                        stringValue: CCCC
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: BBBBFirst
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: BBBBSecond
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+              isMonotonic: true
+            unit: By
+        scope:
+          name: otelcol/nsxtreceiver
+          version: latest
