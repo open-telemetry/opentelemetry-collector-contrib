@@ -52,7 +52,8 @@ func TestMetricNormalize(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: normalizeMetric, useOpenMetrics: true},
 			},
-			validateFunc: verifyNormalizeMetric,
+			normalizedName: true,
+			validateFunc:   verifyNormalizeMetric,
 		},
 	}
 
@@ -148,5 +149,5 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 				},
 			}),
 	}
-	doCompare(t, "scrape-metricNormalize-1", wantAttributes, m1, e1)
+	doCompareNormalized(t, "scrape-metricNormalize-1", wantAttributes, m1, e1, true)
 }

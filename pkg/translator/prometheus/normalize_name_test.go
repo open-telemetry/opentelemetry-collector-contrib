@@ -150,7 +150,10 @@ func TestOtelReceivers(t *testing.T) {
 }
 
 func TestTrimPromSuffixes(t *testing.T) {
-	normalizer := NewNormalizer(featuregate.NewRegistry())
+	registry := featuregate.NewRegistry()
+	_, err := registry.Register(normalizeNameGate.ID(), featuregate.StageBeta)
+	require.NoError(t, err)
+	normalizer := NewNormalizer(registry)
 
 	assert.Equal(t, "active_directory_ds_replication_network_io", normalizer.TrimPromSuffixes("active_directory_ds_replication_network_io_bytes_total", pmetric.MetricTypeSum, "bytes"))
 	assert.Equal(t, "active_directory_ds_name_cache_hit_rate", normalizer.TrimPromSuffixes("active_directory_ds_name_cache_hit_rate_percent", pmetric.MetricTypeGauge, "percent"))
@@ -183,10 +186,7 @@ func TestTrimPromSuffixes(t *testing.T) {
 }
 
 func TestTrimPromSuffixesWithFeatureGateDisabled(t *testing.T) {
-	registry := featuregate.NewRegistry()
-	_, err := registry.Register(normalizeNameGate.ID(), featuregate.StageAlpha)
-	require.NoError(t, err)
-	normalizer := NewNormalizer(registry)
+	normalizer := NewNormalizer(featuregate.NewRegistry())
 
 	assert.Equal(t, "apache_current_connections", normalizer.TrimPromSuffixes("apache_current_connections", pmetric.MetricTypeGauge, "connections"))
 	assert.Equal(t, "apache_requests_total", normalizer.TrimPromSuffixes("apache_requests_total", pmetric.MetricTypeSum, "1"))

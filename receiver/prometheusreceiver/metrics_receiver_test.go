@@ -36,8 +36,8 @@ var target1Page1 = `
 # TYPE go_threads gauge
 go_threads 19
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 100
 http_requests_total{method="post",code="400"} 5
 
@@ -64,8 +64,8 @@ var target1Page2 = `
 # TYPE go_threads gauge
 go_threads 18
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 199
 http_requests_total{method="post",code="400"} 12
 
@@ -94,8 +94,8 @@ var target1Page3 = `
 # TYPE go_threads gauge
 go_threads 16
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 99
 http_requests_total{method="post",code="400"} 3
 
@@ -139,7 +139,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -201,7 +201,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -264,7 +264,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -333,8 +333,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 50
 http_request_duration_seconds_sum{method="post",code="400"} 25
 http_request_duration_seconds_count{method="post",code="400"} 50
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 10
 http_requests_total{method="post",code="400"} 50
 
@@ -368,8 +368,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
 http_request_duration_seconds_sum{method="post",code="400"} 30
 http_request_duration_seconds_count{method="post",code="400"} 60
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
 http_requests_total{method="post",code="300"} 3
 http_requests_total{method="post",code="400"} 60
@@ -407,8 +407,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
 http_request_duration_seconds_sum{method="post",code="400"} 30
 http_request_duration_seconds_count{method="post",code="400"} 60
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
 http_requests_total{method="post",code="300"} 5
 http_requests_total{method="post",code="400"} 60
@@ -446,8 +446,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
 http_request_duration_seconds_sum{method="post",code="400"} 29
 http_request_duration_seconds_count{method="post",code="400"} 59
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 49
 http_requests_total{method="post",code="300"} 3
 http_requests_total{method="post",code="400"} 59
@@ -485,8 +485,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
 http_request_duration_seconds_sum{method="post",code="400"} 29
 http_request_duration_seconds_count{method="post",code="400"} 59
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
 http_requests_total{method="post",code="300"} 5
 http_requests_total{method="post",code="400"} 59
@@ -545,7 +545,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -633,7 +633,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -737,7 +737,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -841,7 +841,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -945,7 +945,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -1080,6 +1080,9 @@ rpc_duration_seconds_count{foo="no_quantile"} 55
 var target4Page1 = `
 # A simple counter
 # TYPE foo counter
+foo 0
+# Another counter with the same name but also _total suffix
+# TYPE foo_total counter
 foo_total 1
 `
 
@@ -1196,8 +1199,8 @@ func verifyTarget4(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
-	// m1 has 1 metric + 5 internal scraper metrics
-	assert.Equal(t, 6, metricsCount(m1))
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
 
 	wantAttributes := td.attributes
 
@@ -1205,6 +1208,16 @@ func verifyTarget4(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("foo",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0),
+					},
+				},
+			}),
+		assertMetricPresent("foo_total",
 			compareMetricIsMonotonic(true),
 			[]dataPointExpectation{
 				{
@@ -1270,8 +1283,8 @@ var startTimeMetricPage = `
 # HELP go_threads Number of OS threads created
 # TYPE go_threads gauge
 go_threads 19
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 100
 http_requests_total{method="post",code="400"} 5
 # HELP http_request_duration_seconds A histogram of the request duration.
@@ -1356,8 +1369,8 @@ var startTimeMetricRegexPage = `
 # HELP go_threads Number of OS threads created
 # TYPE go_threads gauge
 go_threads 19
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 100
 http_requests_total{method="post",code="400"} 5
 # HELP http_request_duration_seconds A histogram of the request duration.
