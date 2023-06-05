@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/influxdata/influxdb-observability/common v0.3.14
-	github.com/influxdata/influxdb-observability/otel2influx v0.3.14
+	github.com/influxdata/influxdb-observability/common v0.3.15
+	github.com/influxdata/influxdb-observability/otel2influx v0.4.2
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.78.3-0.20230601234953-deffd4892002
@@ -26,7 +26,6 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -46,8 +45,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
