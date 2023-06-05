@@ -86,6 +86,7 @@ func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.Wri
 		rNotify:    make(chan struct{}),
 		rWALIndex:  &atomic.Uint64{},
 		wWALIndex:  &atomic.Uint64{},
+		log:        zap.NewNop(),
 	}
 
 	return &wal, nil

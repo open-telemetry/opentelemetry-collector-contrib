@@ -114,6 +114,7 @@ func TestWAL_persist(t *testing.T) {
 
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.Nil(t, err)
+	pwal.log = zap.Must(zap.NewDevelopment())
 
 	// 1. Write out all the entries.
 	reqL := []*prompb.WriteRequest{
