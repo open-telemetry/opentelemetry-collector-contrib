@@ -1666,7 +1666,7 @@ resourceMetrics:
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
-            unit: "s"
+            unit: s
         scope:
           name: otelcol/mysqlreceiver
           version: latest
