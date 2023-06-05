@@ -8,11 +8,12 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/iancoleman/strcase v0.2.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.79.0
-	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.79.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
-	go.opentelemetry.io/otel/trace v1.16.0
+	github.com/observiq/ctimefmt v1.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
+	github.com/stretchr/testify v1.8.2
+	go.opentelemetry.io/collector/component v0.77.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
+	go.opentelemetry.io/otel/trace v1.15.1
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db
 )
