@@ -73,8 +73,7 @@ func Test_split(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Split(tt.target, tt.delimiter)
-			assert.NoError(t, err)
+			exprFunc := split(tt.target, tt.delimiter)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -88,8 +87,7 @@ func Test_Split_Error(t *testing.T) {
 			return 1, nil
 		},
 	}
-	exprFunc, err := Split[interface{}](target, ",")
-	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	exprFunc := split[interface{}](target, ",")
+	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }

@@ -1,0 +1,7 @@
+type: loki
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]

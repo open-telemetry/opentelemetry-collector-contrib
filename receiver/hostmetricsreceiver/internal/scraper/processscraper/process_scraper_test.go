@@ -40,12 +40,12 @@ import (
 )
 
 func skipTestOnUnsupportedOS(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
 		t.Skipf("skipping test on %v", runtime.GOOS)
 	}
 }
 
-func enableLinuxOnlyMetrics(ms *metadata.MetricsSettings) {
+func enableLinuxOnlyMetrics(ms *metadata.MetricsConfig) {
 	if runtime.GOOS != "linux" {
 		return
 	}
@@ -59,9 +59,9 @@ func enableLinuxOnlyMetrics(ms *metadata.MetricsSettings) {
 func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 	type testCase struct {
-		name                  string
-		mutateScraper         func(*scraper)
-		mutateMetricsSettings func(*testing.T, *metadata.MetricsSettings)
+		name                string
+		mutateScraper       func(*scraper)
+		mutateMetricsConfig func(*testing.T, *metadata.MetricsConfig)
 	}
 	testCases := []testCase{
 		{
@@ -69,7 +69,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Enable Linux-only metrics",
-			mutateMetricsSettings: func(t *testing.T, ms *metadata.MetricsSettings) {
+			mutateMetricsConfig: func(t *testing.T, ms *metadata.MetricsConfig) {
 				if runtime.GOOS != "linux" {
 					t.Skipf("skipping test on %v", runtime.GOOS)
 				}
@@ -79,7 +79,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Enable memory utilization",
-			mutateMetricsSettings: func(t *testing.T, ms *metadata.MetricsSettings) {
+			mutateMetricsConfig: func(t *testing.T, ms *metadata.MetricsConfig) {
 				ms.ProcessMemoryUtilization.Enabled = true
 			},
 		},
@@ -91,8 +91,13 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
-			if test.mutateMetricsSettings != nil {
-				test.mutateMetricsSettings(t, &metricsBuilderConfig.Metrics)
+			if runtime.GOOS == "darwin" {
+				// disable darwin unsupported default metric
+				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+			}
+
+			if test.mutateMetricsConfig != nil {
+				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			if test.mutateScraper != nil {
@@ -129,7 +134,9 @@ func TestScrape(t *testing.T) {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.cpu.utilization")
 			}
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			assertDiskIoMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			if metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled {
+				assertDiskIoMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
 			if metricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled {
 				assertDiskOperationsMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
@@ -621,7 +628,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 	}
 }
 
-func enableOptionalMetrics(ms *metadata.MetricsSettings) {
+func enableOptionalMetrics(ms *metadata.MetricsConfig) {
 	ms.ProcessMemoryUtilization.Enabled = true
 	ms.ProcessThreads.Enabled = true
 	ms.ProcessPagingFaults.Enabled = true
@@ -662,12 +669,20 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading process name for pid 1: err1`,
 		},
 		{
-			name:          "Exe Error",
-			exeError:      errors.New("err1"),
-			expectedError: `error reading process executable for pid 1: err1`,
+			name:     "Exe Error",
+			osFilter: "darwin",
+			exeError: errors.New("err1"),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return `error reading process executable for pid 1: err1; ` +
+						`error reading process name for pid 1: executable path is empty`
+				}
+				return `error reading process executable for pid 1: err1`
+			}(),
 		},
 		{
 			name:          "Cmdline Error",
+			osFilter:      "darwin",
 			cmdlineError:  errors.New("err2"),
 			expectedError: `error reading command for process "test" (pid 1): err2`,
 		},
@@ -693,46 +708,55 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 		{
 			name:               "Memory Percent Error",
+			osFilter:           "darwin",
 			memoryPercentError: errors.New("err-mem-percent"),
 			expectedError:      `error reading memory utilization for process "test" (pid 1): err-mem-percent`,
 		},
 		{
 			name:            "IO Counters Error",
+			osFilter:        "darwin",
 			ioCountersError: errors.New("err7"),
 			expectedError:   `error reading disk usage for process "test" (pid 1): err7`,
 		},
 		{
 			name:           "Parent PID Error",
+			osFilter:       "darwin",
 			parentPidError: errors.New("err8"),
 			expectedError:  `error reading parent pid for process "test" (pid 1): err8`,
 		},
 		{
 			name:            "Page Faults Error",
+			osFilter:        "darwin",
 			pageFaultsError: errors.New("err-paging"),
 			expectedError:   `error reading memory paging info for process "test" (pid 1): err-paging`,
 		},
 		{
 			name:            "Thread count Error",
+			osFilter:        "darwin",
 			numThreadsError: errors.New("err8"),
 			expectedError:   `error reading thread info for process "test" (pid 1): err8`,
 		},
 		{
 			name:                "Context Switches Error",
+			osFilter:            "darwin",
 			numCtxSwitchesError: errors.New("err9"),
 			expectedError:       `error reading context switch counts for process "test" (pid 1): err9`,
 		},
 		{
 			name:          "File Descriptors Error",
+			osFilter:      "darwin",
 			numFDsError:   errors.New("err10"),
 			expectedError: `error reading open file descriptor count for process "test" (pid 1): err10`,
 		},
 		{
 			name:          "Signals Pending Error",
+			osFilter:      "darwin",
 			rlimitError:   errors.New("err-rlimit"),
 			expectedError: `error reading pending signals for process "test" (pid 1): err-rlimit`,
 		},
 		{
 			name:                "Multiple Errors",
+			osFilter:            "darwin",
 			cmdlineError:        errors.New("err2"),
 			usernameError:       errors.New("err3"),
 			createTimeError:     errors.New("err4"),
@@ -760,6 +784,15 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 	}
 
+	if runtime.GOOS == "darwin" {
+		darwinTestCase := testCase{
+			name:          "Darwin Cmdline Error",
+			cmdlineError:  errors.New("err2"),
+			expectedError: `error reading process executable for pid 1: err2; error reading command for process "test" (pid 1): err2`,
+		}
+		testCases = append(testCases, darwinTestCase)
+	}
+
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			if test.osFilter == runtime.GOOS {
@@ -767,7 +800,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			}
 
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
-			enableOptionalMetrics(&metricsBuilderConfig.Metrics)
+			if runtime.GOOS != "darwin" {
+				enableOptionalMetrics(&metricsBuilderConfig.Metrics)
+			} else {
+				// disable darwin unsupported default metric
+				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+			}
 
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -809,7 +847,13 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+			// In darwin we get the exe path with Cmdline()
+			executableError := test.exeError
+			if runtime.GOOS == "darwin" {
+				executableError = test.cmdlineError
+			}
+
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -817,7 +861,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -826,7 +870,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError error) (int, int) {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 0, 0
+	}
+
 	if nameError != nil {
 		return 0, 0
 	}
@@ -838,25 +886,25 @@ func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPerce
 	if memError == nil {
 		expectedLen += memoryMetricsLen
 	}
-	if memPercentError == nil {
+	if memPercentError == nil && runtime.GOOS != "darwin" {
 		expectedLen += memoryUtilizationMetricsLen
 	}
-	if diskError == nil {
+	if diskError == nil && runtime.GOOS != "darwin" {
 		expectedLen += diskMetricsLen
 	}
-	if pageFaultsError == nil {
+	if pageFaultsError == nil && runtime.GOOS != "darwin" {
 		expectedLen += pagingMetricsLen
 	}
-	if rlimitError == nil {
+	if rlimitError == nil && runtime.GOOS != "darwin" {
 		expectedLen += signalMetricsLen
 	}
-	if threadError == nil {
+	if threadError == nil && runtime.GOOS != "darwin" {
 		expectedLen += threadMetricsLen
 	}
-	if contextSwitchError == nil {
+	if contextSwitchError == nil && runtime.GOOS != "darwin" {
 		expectedLen += contextSwitchMetricsLen
 	}
-	if fileDescriptorError == nil {
+	if fileDescriptorError == nil && runtime.GOOS != "darwin" {
 		expectedLen += fileDescriptorMetricsLen
 	}
 
@@ -867,10 +915,21 @@ func getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPerce
 }
 
 func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
+	if runtime.GOOS == "windows" && exeError != nil {
+		return 2
+	}
+
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+
+	// excluding unsupported metrics from darwin 'metricsLen'
+	if runtime.GOOS == "darwin" {
+		darwinMetricsLen := cpuMetricsLen + memoryMetricsLen
+		return darwinMetricsLen - expectedMetricsLen
+	}
+
 	return metricsLen - expectedMetricsLen
 }
 
@@ -878,6 +937,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	processNameError := errors.New("err1")
+	processEmptyExeError := errors.New("executable path is empty")
 
 	type testCase struct {
 		name                 string
@@ -907,21 +967,38 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			muteProcessNameError: false,
 			muteProcessExeError:  true,
 			muteProcessIOError:   true,
-			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 		{
 			name:                 "Process Name Error Enabled And Process Exe Error Enabled And Process IO Error Muted",
 			muteProcessNameError: false,
 			muteProcessExeError:  false,
 			muteProcessIOError:   true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 		{
 			name:            "Process Name Error Default (Enabled) And Process Exe Error Default (Enabled) And Process IO Error Default (Enabled)",
 			omitConfigField: true,
-			expectedError: fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
-				fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+			expectedError: func() string {
+				if runtime.GOOS == "windows" {
+					return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+						fmt.Sprintf("error reading process name for pid 1: %v", processEmptyExeError)
+				}
+				return fmt.Sprintf("error reading process executable for pid 1: %v; ", processNameError) +
+					fmt.Sprintf("error reading process name for pid 1: %v", processNameError)
+			}(),
 		},
 	}
 
@@ -941,6 +1018,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			handleMock := &processHandleMock{}
 			handleMock.On("Name").Return("test", processNameError)
 			handleMock.On("Exe").Return("test", processNameError)
+			handleMock.On("Cmdline").Return("test", processNameError)
 
 			if config.MuteProcessIOError {
 				handleMock.On("IOCounters").Return("test", errors.New("permission denied"))

@@ -59,15 +59,18 @@ You can change this list with `metadata` configuration.
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
 
-The following container level attributes require additional attributes to identify a particular container in a pod:
-1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
-   as a resource attribute (similar to all other attributes, pod has to be identified as well):
+Additional container level attributes can be extracted provided that certain resource attributes are provided:
+
+1. If the `container.id` resource attribute is provided, the following additional attributes will be available:
+   - k8s.container.name
    - container.image.name
    - container.image.tag
-2. Container attributes - in addition to pod identifier and `k8s.container.name` attribute, `k8s.container.restart_count` 
-   resource attribute is needed to get association with a particular container instance, but not required. 
-   If `k8s.container.restart_count` is not set, the latest container instance will be used:
-   - container.id (not added by default, have to be specified in `metadata`)
+2. If the `k8s.container.name` resource attribute is provided, the following additional attributes will be available:
+   - container.image.name
+   - container.image.tag
+3. If the `k8s.container.restart_count` resource attribute is provided, it can be used to associate with a particular container
+   instance. If it's not set, the latest container instance will be used:
+   - container.id (not added by default, has to be specified in `metadata`)
 
 The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods and namespaces.
 The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
@@ -102,28 +105,28 @@ labels:
 
 ```yaml
 k8sattributes:
-  k8sattributes/2:
-    auth_type: "serviceAccount"
-    passthrough: false
-    filter:
-      node_from_env_var: KUBE_NODE_NAME
-    extract:
-      metadata:
-        - k8s.pod.name
-        - k8s.pod.uid
-        - k8s.deployment.name
-        - k8s.namespace.name
-        - k8s.node.name
-        - k8s.pod.start_time
-    pod_association:
-      - sources:
-          - from: resource_attribute
-            name: k8s.pod.ip
-      - sources:
-          - from: resource_attribute
-            name: k8s.pod.uid
-      - sources:
-          - from: connection
+k8sattributes/2:
+ auth_type: "serviceAccount"
+ passthrough: false
+ filter:
+   node_from_env_var: KUBE_NODE_NAME
+ extract:
+   metadata:
+     - k8s.pod.name
+     - k8s.pod.uid
+     - k8s.deployment.name
+     - k8s.namespace.name
+     - k8s.node.name
+     - k8s.pod.start_time
+ pod_association:
+   - sources:
+       - from: resource_attribute
+         name: k8s.pod.ip
+   - sources:
+       - from: resource_attribute
+         name: k8s.pod.uid
+   - sources:
+       - from: connection
 ```
 
 ## Role-based access control

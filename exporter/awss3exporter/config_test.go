@@ -1,4 +1,4 @@
-// Copyright 2021 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,13 +29,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
+	factories.Exporters["awss3"] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID(typeStr)].(*Config)
+	e := cfg.Exporters[component.NewID("awss3")].(*Config)
 	assert.Equal(t, e,
 		&Config{
 			S3Uploader: S3UploaderConfig{
@@ -59,7 +59,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID(typeStr)].(*Config)
+	e := cfg.Exporters[component.NewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{

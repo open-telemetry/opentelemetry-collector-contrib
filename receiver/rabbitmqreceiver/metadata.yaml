@@ -1,5 +1,11 @@
-name: rabbitmqreceiver
+type: rabbitmqreceiver
 
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   rabbitmq.queue.name:
     description: The name of the RabbitMQ queue.

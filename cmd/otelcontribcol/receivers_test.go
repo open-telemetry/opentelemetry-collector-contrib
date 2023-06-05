@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -116,6 +117,18 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires Azure event hub to run
 		},
 		{
+			receiver: "azuremonitor",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["azuremonitor"].CreateDefaultConfig().(*azuremonitorreceiver.Config)
+				cfg.TenantID = "tenant_id"
+				cfg.SubscriptionID = "subscription_id"
+				cfg.ClientID = "client_id"
+				cfg.ClientSecret = "client_secret"
+				return cfg
+			},
+			skipLifecyle: true, // Requires Azure event hub to run
+		},
+		{
 			receiver: "bigip",
 		},
 		{
@@ -169,6 +182,9 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.InputConfig.Include = []string{filepath.Join(t.TempDir(), "*")}
 				return cfg
 			},
+		},
+		{
+			receiver: "filestats",
 		},
 		{
 			receiver: "flinkmetrics",
@@ -238,6 +254,9 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "kubeletstats",
 			skipLifecyle: true, // Requires access to certificates to auth against kubelet
+		},
+		{
+			receiver: "loki",
 		},
 		{
 			receiver: "memcached",
@@ -355,6 +374,9 @@ func TestDefaultReceivers(t *testing.T) {
 				}
 				return cfg
 			},
+		},
+		{
+			receiver: "snowflake",
 		},
 		{
 			receiver: "splunk_hec",

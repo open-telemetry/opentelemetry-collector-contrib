@@ -49,8 +49,8 @@ func newTracesExporter(cfg component.Config, set exp.CreateSettings) (*tracesExp
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
 	}
 
-	if oCfg.Traces.Endpoint == "" || oCfg.Traces.Endpoint == "https://" || oCfg.Traces.Endpoint == "http://" {
-		return nil, errors.New("coralogix exporter config requires `Traces.endpoint` configuration")
+	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Traces.Endpoint) {
+		return nil, errors.New("coralogix exporter config requires `domain` or `traces.endpoint` configuration")
 	}
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
@@ -59,8 +59,16 @@ func newTracesExporter(cfg component.Config, set exp.CreateSettings) (*tracesExp
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
-		return err
+
+	switch {
+	case !isEmpty(e.config.Traces.Endpoint):
+		if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
+	case !isEmpty(e.config.Domain):
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
 	}
 
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
 const (
@@ -245,7 +246,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	if len(msg.Datapoints) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
@@ -266,7 +267,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	err = r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(ctx, typeStr, len(msg.Datapoints), err)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(msg.Datapoints), err)
 
 	r.writeResponse(ctx, resp, err)
 }
@@ -291,7 +292,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	if len(msg.Events) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
@@ -310,7 +311,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	err := r.logsConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndMetricsOp(
 		ctx,
-		typeStr,
+		metadata.Type,
 		len(msg.Events),
 		err)
 

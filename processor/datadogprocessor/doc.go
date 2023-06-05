@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 // Package datadogprocessor contains the Datadog Processor. The Datadog Processor is used in
 // conjunction with the Collector's tail samplers (such as the tailsamplingprocessor or the
 // probabilisticsamplerprocessor) to extract accurate APM Stats in situations when not all

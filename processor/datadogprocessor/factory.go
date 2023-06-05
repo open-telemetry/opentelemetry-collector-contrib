@@ -20,14 +20,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor/internal/metadata"
 )
 
-// NewFactory creates a factory for the spanmetrics processor.
+// NewFactory creates a factory for the datadog processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		"datadog",
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, component.StabilityLevelBeta),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 	)
 }
 

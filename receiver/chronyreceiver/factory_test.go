@@ -48,11 +48,11 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 
 	factory := NewFactory()
 	mbc := metadata.DefaultMetricsBuilderConfig()
-	mbc.Metrics = metadata.MetricsSettings{
-		NtpTimeCorrection: metadata.MetricSettings{
+	mbc.Metrics = metadata.MetricsConfig{
+		NtpTimeCorrection: metadata.MetricConfig{
 			Enabled: true,
 		},
-		NtpSkew: metadata.MetricSettings{
+		NtpSkew: metadata.MetricConfig{
 			Enabled: true,
 		},
 	}

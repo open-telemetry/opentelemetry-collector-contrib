@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
-	featuregate.WithRegisterRemovalVersion("v0.69.0"),
+	featuregate.WithRegisterToVersion("v0.69.0"),
 )
 
 // NewFactory creates a factory for the googlecloud exporter

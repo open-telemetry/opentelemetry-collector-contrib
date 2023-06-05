@@ -4,6 +4,212 @@
 
 <!-- next version -->
 
+## v0.77.0
+
+### 🛑 Breaking changes 🛑
+
+- `dotnetdiagnosticsreceiver`: Removing component which has been unmaintained for over 6 months (#13218)
+- `cmd/mdatagen`: Don't expose `resource_attributes` user config section if it's empty. (#21519)
+- `pkg/ottl`: Reimplement all OTTL function factories to implement the `ottl.Factory` interface. (#14712)
+  The `ottl.Factory` interface allows making factories extendable and defines
+  canonical names for the functions across components using the OTTL.
+
+### 🚀 New components 🚀
+
+- `datasetexporter`: Add new DataSet exporter. (#20660)
+
+### 💡 Enhancements 💡
+
+- `receiver/azuremonitorreceiver`: Providing an option to include resource tags and location as metric attributes (#21173)
+- `mdatagen`: Support stability level per signal (#21153)
+- `filestatsreceiver`: Promote filestats receiver to alpha, add to the otelcontribcol tests. (#21257)
+- `mdatagen`: Add support for slice and map attributes. (#18272)
+- `receiver/mongodbatlasreceiver`: emit "`mongodb_atlas.cluster.name`" attribute which is thename of the cluster as defined in Atlas. This attribute is disabled by default, if you want to emit it, you'll need to explicitly enable it. (#21154)
+- `pkg/ottl`: Allow using Converters as constant boolean expressions (#20911)
+  This means you don't need to add `== true` after `IsMatch` in OTTL conditions.
+- `pkg/ottl`: Add support for complex indexing of Paths and Converters to allow accessing nested items. (#20754)
+  All components using OTTL can take advantage of this feature.
+- `signalfxexporter`: Expose dimension_client configuration for dimension/metadata updates (#21512)
+- `pkg/stanza`: Add "unquote" operator (#10282)
+
+### 🧰 Bug fixes 🧰
+
+- `snowflakereceiver`: Wiring snowflakereceiver component by adding it to components.go (#21381)
+- `pkg/stanza`: Fix errors in loop evaluating file attributes on windows if the file path contains a Junction (#21088)
+- `clickhouseexporter`: Fix insert metrics with duplicate scope data (#21082)
+- `transformprocessor`: Fixed a scenario where replace_all_patterns would wipe out non-string values on key name change. (#21109)
+- `influxdbexporter`: handle empty attribute values emitted by hostmetricsreceiver with logger.Debug instead of PermanentError (#21474)
+- `receiver/k8scluster`: Make sure the k8scluster receiver is watching for v2 and v2beta2 HorizontalPodAutoscalers for Kubernetes 1.26 (#20480)
+- `splunkhecexporter`: Enforce marshaling json with sorted keys by alphabetical order to produce identical hashes when merging events. (#21486)
+- `googlecloudspannerreceiver`: Changing type of USED_BYTES from INT to FLOAT (#21500)
+- `receiver/mongodbatlasreceiver`: Disk Usage & Utilization metrics are now being reported correctly. (#21180)
+- `receiver/mongodbatlasreceiver`: Reduce the likelihood that mongodbatlas log receivers will emit empty logs, causing unnecessary events to propagate through a pipeline. (#14170)
+- `datadogexporter`: Use literal 'host' resource attribute on OTLP payloads when present as the host value to avoid double tagging. (#21507)
+- `receiver/nsx`: Remove incorrectly exposed resource attributes from the user configuration interface. (#21523)
+- `signalfxexporter`: disk.utilization and disk.summary_utilization now matches the df command by only counting non-root usage. disk.utilization = (used/(used + free)) * 100 (#20656)
+
+## v0.76.1
+
+### 🛑 Breaking changes 🛑
+
+- `prometheusreceiver, prometheusexporter, prometheusremotewrite`: Enable pkg.translator.prometheus.NormalizeName by default (#20518)
+  Enabling normalization by default changes the emitted metrics for components that rely on
+  the prometheus translation package. This feature can still be disabled via the following
+  `--feature-gates=-pkg.translator.prometheus.NormalizeName`
+  
+- `cumulativetodeltaprocessor`: Removes stable `processor.cumulativetodeltaprocessor.EnableHistogramSupport` feature gate. Setting this gate will cause an error. (#20717)
+- `exporter/lokiexporter`: Remove deprecated Loki exporters parameters. (#15653, #15365)
+  The support of `labels.{attributes/resource}`, `labels.record`, `tenant`, | and `format` configuration parameters are dropped in favor of attribute hints way of configuring the exporter.
+- `solacereceiver`: Changed the type of the max_unacknowledged configuration option from uint32 to int32 (#20666)
+
+### 🚩 Deprecations 🚩
+
+- `dotnetdiagnosticsreceiver`: add deprecation notice (#20740)
+
+### 🚀 New components 🚀
+
+- `lokireceiver`: Added implementation of the Loki receiver component (#18635)
+- `receiver/azuremonitorreceiver`: New component for scraping Azure Monitor metrics (#18899)
+- `cassandra_exporter`: Cassandra exporter implementation (#17910)
+- `lokireceiver`: Mark loki receiver as Alpha (#18635)
+- `filestatsreceiver`: Initial implementation of the new filestatsreceiver component. (#19729)
+
+### 💡 Enhancements 💡
+
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.24.0-alpha to the supported jars hash list (#20551)
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.25.0-alpha to the supported jars hash list (#21052)
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.25.1-alpha to the supported jars hash list (#21103)
+- `exporter/awsxray`: Add opt-in telemetry for X-Ray receiver/exporter (#19415)
+- `awsemfexporter`: Add support AWS Embedded Metric Format Version 0 (#20314)
+- `splunkhecexporter`: Set the default value of the idle connection timeout to 10s, rather than 30s by default (#20543)
+- `coralogixexporter`: Allow users to use only Coralogix domain to configure exporter (#20719)
+- `datadogexporter`: Ensure that container tags are set globally on the payload so that they can be picked up as primary tags in the app (APM). (#20923)
+- `datadogexporter`: Reduce log level of retriable errors to Debug level (#20755)
+- `datadogexporter`: Support OTel semconv 1.17.0 in Datadog OTLP trace ingestion. (#20923)
+- `datadogexporter`: Use minimum and maximum values from cumulative Histograms. Values are used only when we can assume they are from the last time window or otherwise to clamp estimates. (#20872)
+- `journaldreceiver`: add support for `matches` configuration (#20295)
+- `fileexporter`: Add periodic flushing (#18251)
+  Adding flushing to the file exporter eases the analysis
+  of the output the exporter generates.
+  
+- `pkg/stanza`: Add and option to pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components. (#20511)
+  Add a `retry_on_failure` config option (disabled by default) that can be used to slow down reading logs instead of 
+  dropping logs if downstream components return a non-permanent error. The configuration has the following options:
+    - `enabled`: Enable or disable the retry mechanism. Default is `false`.
+    - `initial_interval`: The initial interval to wait before retrying. Default is `1s`.
+    - `max_interval`: The maximum interval to wait before retrying. Default is `30s`.
+    - `max_elapsed_time`: The maximum amount of time to wait before giving up. Default is `5m`.
+  
+- `k8sattributesprocessor`: Allow getting k8s.container.name, container.image.name and container.image.tag by container.id. (#19468)
+  The container.id resource attribute can be set automatically in most SDKs by means of API.
+- `instanaexporter`: Preserve resource attributes in converted spans (#20454)
+- `splunkhecexporter`: Apply a new config `maxEventSize` on our events, it would break down the events based on this. This basically implements HEC's `maxEventSize` on our exporter. It is implemented on uncompressed data. (#20290)
+- `splunkhecreceiver`: Make Splunk HEC receiver Health endpoint mimic the real one (#20871)
+- `receiver/mongodbatlasreceiver`: emit "`mongodb_atlas.user.alias`" attribute which is the user-friendly hostname of the cluster node as displayed in the Atlas portal. This attribute is disabled by default, if you want to emit it, you'll need to explicitly enable it. (#18881)
+- `prometheusreceiver`: All receivers are setting receiver name and version when sending data. This change introduces the same behaviour to the prometheus receiver. (#20902)
+- `splunkhecexporter`: Adding an option in splunkhecexporter to enable heartbeat. A heartbeat is a metadata event about the current environment and build information. If heartbeat is enabled, splunkhecexporter will periodically send heartbeat to the destination in given time intervals from configurations. (#20225)
+- `vcenterreceiver`: Adds VM CPU usage and utilization metrics (#20895)
+- `awss3exporter`: Add implementation of AWS S3 exporter (#2835)
+
+### 🧰 Bug fixes 🧰
+
+- `servicegraphprocessor`: Only create client virtual nodes when server spans are orphans (#19764)
+- `datadogexporter`: Re-add support for span links (span links are added as metadata to the converted span), which were erroneously removed from previous release. (#20923)
+- `datadogexporter`: Fix issue in hostname detection. (#20923)
+  In the latest release, feature gate (exporter.datadog.hostname.preview) was graduated to Stable. The behaviour was set to the behaviour of the feature gate disabled, instead of enabled. The behaviour is now set to the behaviour of the feature gate enabled.
+- `azuremonitorexporter`: Ensure that metric attributes are exported to Azure Monitor (#19407)
+- `pkg/stanza`: fix eventData format for Windows events (#20547)
+- `fluentforwardreceiver`: Fixed performance issue. (#20721)
+- `receiver/k8scluster`: Use newer v2 HorizontalPodAutoscaler for Kubernetes 1.26 (#20480)
+  v2beta2 HorizontalPodAutoscaler is no longer available starting in Kubernetes 1.26
+- `pkg/stanza`: fix flaky test (#20877)
+- `pkg/stanza`: Fix issue where recombine operator would never flush. (#20451)
+  1.Make the forceFlushTimeout compare with timeSinceFirstEntry not timeSinceLastEntry 2.set the period of ticker to 1/5 forceFlushTimeout
+- `spanmetricsconnector`: fix spanmetrics connector to support adding exemplar to metric (#20771)
+- `mongodbreceiver`: Fixes scraper error `Unauthorized` by not calling index stats on an internal local MongoDB database. (#21114)
+- `receiver/mongodbatlasreceiver`: Ensure that Process metrics are emitted with only the correct subset of attributes. (#21155)
+- `splunkhecexporter`: Do not send data to a Splunk backend if no data is present in the batch. Previously compressed batches would not correctly detect data was not present in the batch. (#20290)
+- `filelogreceiver`: Fix issue where first few lines of a file could be ignored when another file had recently contained the same beginning. (#20745)
+- `filelogreceiver`: stanza panic when trace_flags is an empty string (#20924)
+- `hostmetricsreceiver/processscraper`: fixing the processmetrics tests to support testing collection in darwin (#19141)
+  Darwin only supports some of the processmetrics + using Cmdline to get the Executable Path, which caused tests to fail.
+- `awsxrayexporter`: Fixed DynamoDB table name from being set as an empty string when reading from attributes (#19204)
+
+## v0.75.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Graduate exporter.datadog.hostname.preview feature gate to Stable. (#20286)
+- `pkg/ottl`: Add typed getter for `pcommon.map` and update related functions to use it. (#19781)
+  Using the impacted functions, such as `keep_keys` or `replace_all_patterns`, without a `pcommon.map` will now result in an error. Only pass these function paths that result in a `pcommon.map` or set `ErrorMode` to `IgnoreError`.
+- `pkg/ottl`: Updates `ConvertCase`, `ParseJSON`, `Split`, and `Substring` to use `StringGetter` (#19137)
+  Affected components: `transformprocessor`, `filterprocessor`, `routingprocessor`.  It is HIGHLY recommended to use each component's `error_mode` configuration option to handle errors returned by these functions. 
+  
+- `pkg/ottl`: Adds new StringLikeGetter for converting values to string for use. (#19782)
+  Concat now converts more types to string instead of ignoring them.  IsMatch now converts []byte to string using `hex.EncodeToString(v)`.
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `metrics::histograms::send_count_sum_metrics` in favor of `metrics::histograms::send_aggregation_metrics`. (#20285)
+  Toggling `metrics::histograms::send_count_sum_metrics` will now send .min and .max metrics when available.
+  
+
+### 🚀 New components 🚀
+
+- `awss3exporter`: Add new AWS S3 exporter. (#9979)
+- `servicegraphconnector`: Add servicegraph connector to the build. (#20452)
+
+### 💡 Enhancements 💡
+
+- `clickhouseexporter`: Insert instrumentation scope name and version to SpanAttributes column in traces table (#17408)
+- `stanza`: Enhancement pkg/stanza/flatten to support resource and attributes (#20448)
+- `azuredataexplorerexporter`: Migrate stablity to beta. All the dependent libraries have moved to beta. (#19161)
+- `awsecscontainermetricsreceiver`: Add ServiceName from task metadata endpoint (#19728)
+- `mdatagen`: Warnings can now be specified in metadata.yaml to be included in the generated status table. (#20242)
+- `coralogixexporter`: Change coralogixexporter to default to gzip compression for logs and traces (#20337)
+- `datadogexporter`: Adds support for span links (span links are added as metadata to the converted span). (#20286)
+- `mdatagen`: Do not print "Supported pipeline types" in the generated status for extensions (#20236)
+- `filereceiver`: Update file receiver to be able to replay metrics in time. (#14638)
+- `googlecloudspannerreceiver`: adding table size statistics as metrics (#18689)
+- `processscraper`: Introduced `mute_process_exe_error` and `mute_process_io_error` flags to allow scraping of all processes on Linux machines. (#18923)
+- `attributesprocessor, resourceprocessor`: Add feature gate to support using SHA2-256 instead of SHA-1 for hashing (#4759, #5576)
+  enable switching to use SHA-2 256 with the feature gate `coreinternal.attraction.hash.sha256`
+- `translator/loki`: Normalize label names so they follow the Prometheus label names standard (#14113)
+  Loki doesn't support label names containing dots. |
+  Users had to convert dot-separated attributes into underscore-separated attributes before promoting them to Loki labels. |
+  From now on users can drop relabeling from their configuration. All dots in label names will be replaced with underscores automatically before sending request to Loki.
+  
+- `mongodbatlasreceiver`: Add support to collect organization events. (#19449, #20308)
+- `datadogexporter`: Send .min and .max metrics for delta OTLP Histograms and Exponential Histograms when `metrics::histograms::send_aggregation_metrics` is enabled. (#20285)
+- `receiver/purefareceiver`: Add missing code snippet that validate the config file (#14886)
+- `servicegraphprocessor`: Making cache and expire loop time configurable (#19639)
+  add new config items(cache_loop, store_expiration_loop)
+  
+- `servicegraphprocessor`: Making peer attributes of virtual node building configurable (#20428)
+  add new config items(virtual_node_peer_attributes: [db.name, rpc.service]) in Config:
+- `solacereceiver`: Updated solacereceiver to handle new features of Solace PubSub+ 10.4.x (#20349)
+- `sqlserverreceiver`: Adds support to collect metrics from a SQL Server that has a named instance. (#19140, #20247)
+- `logicmonitorexporter`: adds support for traces. (#19646)
+- `elasticsearchexporter`: Support Persistent queue for Elasticsearch exporter. (#19424)
+
+### 🧰 Bug fixes 🧰
+
+- `coralogixexporter`: Correctly declare mutation capability in factory for all signal exporter. (#20292)
+- `processor/metricstransform`: Preserve metric description while aggregating labels (#14577)
+- `extension/sigv4authextension`: Don't panic if no credentials provider is set up. (#19796)
+- `clickhouseexporter`: Fix clickhouse exporter default TTL settings. (#20302)
+- `receiver/elasticsearchreceiver`: Fix bug - no nodeStatsMetrics for es version before 7.9 (#19389)
+- `prometheusreceiver`: Update Prometheus dependency and disable newly-failing OpenMetrics compatibility tests (#20270)
+  Prometheus now accepts exemplar data on all metric types, which causes OpenMetrics compatibility tests to fail.
+  This change disables the negative tests relating to exemplar parsing.
+  
+- `processor/k8sattributes`: Fix image name parsing when repository name contains a port number. (#20239)
+- `mongodbatlasreceiver`: Fix issue where default collection interval of 1 minute was too short to collect several metrics. (#18032)
+  Default collection interval is now 3 minutes.
+- `pkg/ottl`: Fix bug where StringGetter was not allowed in a slice as a function param. (#19783)
+- `splunkhecexporter`: Make sure to not return an error if we are over capacity, just return that we cannot accept the event. (#20481)
+- `signalfxexporter`: Fixes undesired default reporting of per-core system.cpu.time for idle states. (#20354)
+
 ## v0.74.0
 
 ### 🛑 Breaking changes 🛑

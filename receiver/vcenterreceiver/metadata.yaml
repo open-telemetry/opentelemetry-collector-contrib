@@ -1,5 +1,11 @@
-name: vcenterreceiver
+type: vcenterreceiver
 
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  
 resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
@@ -382,3 +388,19 @@ metrics:
       aggregation: cumulative
     attributes: []
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.cpu.utilization:
+    enabled: true
+    description: The CPU utilization of the VM.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+  vcenter.vm.cpu.usage:
+    enabled: true
+    description: The amount of CPU used by the VM.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []

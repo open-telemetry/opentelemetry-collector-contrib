@@ -64,7 +64,7 @@ type LogParserCollection struct {
 
 type LogParserCollectionOption func(*LogParserCollection) error
 
-func WithLogParser(functions map[string]interface{}) LogParserCollectionOption {
+func WithLogParser(functions map[string]ottl.Factory[ottllog.TransformContext]) LogParserCollectionOption {
 	return func(lp *LogParserCollection) error {
 		logParser, err := ottllog.NewParser(functions, lp.settings)
 		if err != nil {

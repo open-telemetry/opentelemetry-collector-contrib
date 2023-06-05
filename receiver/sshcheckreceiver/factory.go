@@ -28,8 +28,7 @@ import (
 )
 
 const (
-	typeStr   = "sshcheck"
-	stability = component.StabilityLevelDevelopment
+	typeStr = "sshcheck"
 )
 
 // NewFactory creates a new receiver factory
@@ -37,7 +36,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

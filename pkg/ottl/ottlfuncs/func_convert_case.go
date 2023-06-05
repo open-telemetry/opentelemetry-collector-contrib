@@ -24,7 +24,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func ConvertCase[K any](target ottl.StringGetter[K], toCase string) (ottl.ExprFunc[K], error) {
+type ConvertCaseArguments[K any] struct {
+	Target ottl.StringGetter[K] `ottlarg:"0"`
+	ToCase string               `ottlarg:"1"`
+}
+
+func NewConvertCaseFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("ConvertCase", &ConvertCaseArguments[K]{}, createConvertCaseFunction[K])
+}
+
+func createConvertCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ConvertCaseArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("ConvertCaseFactory args must be of type *ConvertCaseArguments[K]")
+	}
+
+	return convertCase(args.Target, args.ToCase)
+}
+
+func convertCase[K any](target ottl.StringGetter[K], toCase string) (ottl.ExprFunc[K], error) {
 	if toCase != "lower" && toCase != "upper" && toCase != "snake" && toCase != "camel" {
 		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, snake, camel", toCase)
 	}

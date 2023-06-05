@@ -796,6 +796,27 @@ func TestConvertTrace(t *testing.T) {
 	require.Equal(t, uint32(0x01), uint32(record.Flags()))
 }
 
+func TestConvertTraceEmptyFlags(t *testing.T) {
+	record := convertAndDrill(&entry.Entry{
+		TraceID: []byte{
+			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		},
+		SpanID: []byte{
+			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		},
+		TraceFlags: []byte{}})
+
+	require.Equal(t, pcommon.TraceID(
+		[16]byte{
+			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		}), record.TraceID())
+	require.Equal(t, pcommon.SpanID(
+		[8]byte{
+			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		}), record.SpanID())
+	require.Equal(t, uint32(0x00), uint32(record.Flags()))
+}
+
 func BenchmarkConverter(b *testing.B) {
 	const (
 		entryCount = 1_000_000
@@ -815,6 +836,8 @@ func BenchmarkConverter(b *testing.B) {
 				converter := NewConverter(zap.NewNop())
 				converter.Start()
 				defer converter.Stop()
+
+				b.ReportAllocs()
 				b.ResetTimer()
 
 				go func() {
@@ -847,15 +870,8 @@ func BenchmarkConverter(b *testing.B) {
 						}
 
 						rLogs := pLogs.ResourceLogs()
-						require.Equal(b, 1, rLogs.Len())
-
-						rLog := rLogs.At(0)
-						ills := rLog.ScopeLogs()
-						require.Equal(b, 1, ills.Len())
-
-						sl := ills.At(0)
-
-						n += sl.LogRecords().Len()
+						require.Equal(b, hostsCount, rLogs.Len())
+						n += pLogs.LogRecordCount()
 
 					case <-timeoutTimer.C:
 						break forLoop
@@ -873,6 +889,7 @@ func BenchmarkConverter(b *testing.B) {
 func BenchmarkGetResourceID(b *testing.B) {
 	b.StopTimer()
 	res := getResource()
+	b.ReportAllocs()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -881,6 +898,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]interface{}{}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -891,6 +909,7 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	res := map[string]interface{}{
 		"resource": "value",
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -905,6 +924,7 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 			"three": 4,
 		},
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)

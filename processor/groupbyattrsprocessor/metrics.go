@@ -18,6 +18,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/obsreport"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
 var (
@@ -40,57 +42,57 @@ func MetricViews() []*view.View {
 
 	return []*view.View{
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedSpans.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumGroupedSpans.Name()),
 			Measure:     mNumGroupedSpans,
 			Description: mNumGroupedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedSpans.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumNonGroupedSpans.Name()),
 			Measure:     mNumNonGroupedSpans,
 			Description: mNumNonGroupedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistSpanGroups.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mDistSpanGroups.Name()),
 			Measure:     mDistSpanGroups,
 			Description: mDistSpanGroups.Description(),
 			Aggregation: distributionGroups,
 		},
 
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedLogs.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumGroupedLogs.Name()),
 			Measure:     mNumGroupedLogs,
 			Description: mNumGroupedLogs.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedLogs.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumNonGroupedLogs.Name()),
 			Measure:     mNumNonGroupedLogs,
 			Description: mNumNonGroupedLogs.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistLogGroups.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mDistLogGroups.Name()),
 			Measure:     mDistLogGroups,
 			Description: mDistLogGroups.Description(),
 			Aggregation: distributionGroups,
 		},
 
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedMetrics.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumGroupedMetrics.Name()),
 			Measure:     mNumGroupedMetrics,
 			Description: mNumGroupedMetrics.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedMetrics.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumNonGroupedMetrics.Name()),
 			Measure:     mNumNonGroupedMetrics,
 			Description: mNumNonGroupedMetrics.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistMetricGroups.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mDistMetricGroups.Name()),
 			Measure:     mDistMetricGroups,
 			Description: mDistMetricGroups.Description(),
 			Aggregation: distributionGroups,

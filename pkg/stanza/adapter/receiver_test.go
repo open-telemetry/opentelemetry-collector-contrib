@@ -31,6 +31,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
@@ -80,8 +81,8 @@ func TestHandleStartError(t *testing.T) {
 	require.Error(t, err, "receiver fails to start under rare circumstances")
 }
 
-func TestHandleConsumeError(t *testing.T) {
-	mockConsumer := &mockLogsRejecter{}
+func TestHandleConsume(t *testing.T) {
+	mockConsumer := &consumertest.LogsSink{}
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), factory.CreateDefaultConfig(), mockConsumer)
@@ -99,6 +100,30 @@ func TestHandleConsumeError(t *testing.T) {
 			return mockConsumer.LogRecordCount() == 1
 		},
 		10*time.Second, 5*time.Millisecond, "one log entry expected",
+	)
+	require.NoError(t, logsReceiver.Shutdown(context.Background()))
+}
+
+func TestHandleConsumeRetry(t *testing.T) {
+	mockConsumer := consumerretry.NewMockLogsRejecter(2)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
+
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*TestConfig).BaseConfig.RetryOnFailure.Enabled = true
+	cfg.(*TestConfig).BaseConfig.RetryOnFailure.InitialInterval = 10 * time.Millisecond
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mockConsumer)
+	require.NoError(t, err, "receiver should successfully build")
+
+	require.NoError(t, logsReceiver.Start(context.Background(), componenttest.NewNopHost()))
+
+	stanzaReceiver := logsReceiver.(*receiver)
+	stanzaReceiver.emitter.logChan <- []*entry.Entry{entry.New()}
+
+	require.Eventually(t,
+		func() bool {
+			return mockConsumer.LogRecordCount() == 1
+		},
+		1*time.Second, 5*time.Millisecond, "one log entry expected",
 	)
 	require.NoError(t, logsReceiver.Shutdown(context.Background()))
 }

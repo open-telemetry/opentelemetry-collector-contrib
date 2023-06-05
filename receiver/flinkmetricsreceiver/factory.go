@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	typeStr   = "flinkmetrics"
-	stability = component.StabilityLevelAlpha
+	typeStr = "flinkmetrics"
 )
 
 var errConfigNotflinkmetrics = errors.New("config was not a flinkmetrics receiver config")
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 

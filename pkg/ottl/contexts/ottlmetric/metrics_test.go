@@ -154,8 +154,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "cache access",
 			path: []ottl.Field{
 				{
-					Name:   "cache",
-					MapKey: ottltest.Strp("temp"),
+					Name: "cache",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("temp"),
+						},
+					},
 				},
 			},
 			orig:   nil,

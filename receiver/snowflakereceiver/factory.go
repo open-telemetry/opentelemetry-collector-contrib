@@ -46,7 +46,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func NewFactory() component.Factory {
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,

@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver/internal/metadata"
 )
 
 func containerJSON(t *testing.T) dtypes.ContainerJSON {
@@ -104,7 +105,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
-	extAllSettings := loadConfig(t, component.NewIDWithName(typeStr, "all_settings"))
+	extAllSettings := loadConfig(t, component.NewIDWithName(metadata.Type, "all_settings"))
 	ext, err := newObserver(zap.NewNop(), extAllSettings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -141,7 +142,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
-	extUseHostname := loadConfig(t, component.NewIDWithName(typeStr, "use_hostname_if_present"))
+	extUseHostname := loadConfig(t, component.NewIDWithName(metadata.Type, "use_hostname_if_present"))
 	ext, err := newObserver(zap.NewNop(), extUseHostname)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -178,7 +179,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostBindings(t *testing.T) {
-	extHostBindings := loadConfig(t, component.NewIDWithName(typeStr, "use_host_bindings"))
+	extHostBindings := loadConfig(t, component.NewIDWithName(metadata.Type, "use_host_bindings"))
 	ext, err := newObserver(zap.NewNop(), extHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -215,7 +216,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 }
 
 func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
-	extIgnoreHostBindings := loadConfig(t, component.NewIDWithName(typeStr, "ignore_non_host_bindings"))
+	extIgnoreHostBindings := loadConfig(t, component.NewIDWithName(metadata.Type, "ignore_non_host_bindings"))
 	ext, err := newObserver(zap.NewNop(), extIgnoreHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)

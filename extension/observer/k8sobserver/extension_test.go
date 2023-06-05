@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	framework "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -56,7 +57,7 @@ func TestExtensionObservePods(t *testing.T) {
 	mockServiceHost(t, config)
 
 	set := extensiontest.NewNopCreateSettings()
-	set.ID = component.NewID(typeStr)
+	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -138,7 +139,7 @@ func TestExtensionObserveNodes(t *testing.T) {
 	mockServiceHost(t, config)
 
 	set := extensiontest.NewNopCreateSettings()
-	set.ID = component.NewID(typeStr)
+	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
 	require.NotNil(t, ext)

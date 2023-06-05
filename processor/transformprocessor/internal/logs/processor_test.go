@@ -210,7 +210,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]") == true`,
+			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
 			},

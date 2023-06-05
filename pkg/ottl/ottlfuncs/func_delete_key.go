@@ -16,11 +16,31 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func DeleteKey[K any](target ottl.PMapGetter[K], key string) (ottl.ExprFunc[K], error) {
+type DeleteKeyArguments[K any] struct {
+	Target ottl.PMapGetter[K] `ottlarg:"0"`
+	Key    string             `ottlarg:"1"`
+}
+
+func NewDeleteKeyFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("delete_key", &DeleteKeyArguments[K]{}, createDeleteKeyFunction[K])
+}
+
+func createDeleteKeyFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*DeleteKeyArguments[K])
+
+	if !ok {
+		return nil, fmt.Errorf("DeleteKeysFactory args must be of type *DeleteKeyArguments[K]")
+	}
+
+	return deleteKey(args.Target, args.Key), nil
+}
+
+func deleteKey[K any](target ottl.PMapGetter[K], key string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -28,5 +48,5 @@ func DeleteKey[K any](target ottl.PMapGetter[K], key string) (ottl.ExprFunc[K], 
 		}
 		val.Remove(key)
 		return nil, nil
-	}, nil
+	}
 }

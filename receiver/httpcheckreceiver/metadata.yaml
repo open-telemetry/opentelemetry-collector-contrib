@@ -1,9 +1,9 @@
-name: httpcheckreceiver
+type: httpcheckreceiver
 
 status:
-  type: receiver
-  stability: development
-  pipelines: [metrics]
+  class: receiver
+  stability:
+    development: [metrics]
   distributions: [contrib]
   warnings: []
 

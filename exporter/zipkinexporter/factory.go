@@ -28,9 +28,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "zipkin"
-
 	defaultTimeout = time.Second * 5
 
 	defaultFormat = "json"
@@ -41,9 +38,9 @@ const (
 // NewFactory creates a factory for Zipkin exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.Stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {

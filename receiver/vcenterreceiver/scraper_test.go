@@ -32,6 +32,7 @@ import (
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
 	mockServer := mock.MockServer(t, false)
+	defer mockServer.Close()
 
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -46,6 +47,7 @@ func TestScrape(t *testing.T) {
 func TestScrape_TLS(t *testing.T) {
 	ctx := context.Background()
 	mockServer := mock.MockServer(t, true)
+	defer mockServer.Close()
 
 	cfg := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

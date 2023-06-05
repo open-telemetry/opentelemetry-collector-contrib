@@ -23,14 +23,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
 
 const (
-	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr component.Type = "groupbytrace"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
-
 	defaultWaitDuration   = time.Second
 	defaultNumTraces      = 1_000_000
 	defaultNumWorkers     = 1
@@ -49,9 +46,9 @@ func NewFactory() processor.Factory {
 	_ = view.Register(MetricViews()...)
 
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.

@@ -207,6 +207,10 @@ func TestDefaultExtensions(t *testing.T) {
 			skipLifecycle: true, // Requires a K8s api to interfact with and validate
 		},
 		{
+			extension:     "docker_observer",
+			skipLifecycle: true, // Requires a docker api to interface and validate.
+		},
+		{
 			extension: "headers_setter",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["headers_setter"].CreateDefaultConfig().(*headerssetterextension.Config)

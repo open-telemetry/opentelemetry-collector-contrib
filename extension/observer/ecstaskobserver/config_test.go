@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,11 +37,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "with-endpoint"),
+			id: component.NewIDWithName(metadata.Type, "with-endpoint"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://a.valid.url:1234/path",
@@ -49,14 +51,14 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "with-port-labels"),
+			id: component.NewIDWithName(metadata.Type, "with-port-labels"),
 			expected: &Config{
 				PortLabels:      []string{"A_PORT_LABEL", "ANOTHER_PORT_LABEL"},
 				RefreshInterval: 30 * time.Second,
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalid"),
+			id:          component.NewIDWithName(metadata.Type, "invalid"),
 			expectedErr: `failed to parse ecs task metadata endpoint "_:invalid": parse "_:invalid": first path segment in URL cannot contain colon`,
 		},
 	}

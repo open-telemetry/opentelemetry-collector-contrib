@@ -37,9 +37,11 @@ body:
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/carbon
+      - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
       - exporter/datadog
+      - exporter/dataset
       - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/f5cloud
@@ -152,6 +154,7 @@ body:
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
+      - receiver/azuremonitor
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
@@ -165,6 +168,7 @@ body:
       - receiver/expvar
       - receiver/file
       - receiver/filelog
+      - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/googlecloudpubsub

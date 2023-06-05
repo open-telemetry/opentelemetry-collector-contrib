@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"StatefulSet":             {gvk.StatefulSet},
 		"Job":                     {gvk.Job},
 		"CronJob":                 {gvk.CronJob, gvk.CronJobBeta},
-		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
+		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler, gvk.HorizontalPodAutoscalerBeta},
 	}
 
 	for kind, gvks := range supportedKinds {
@@ -197,6 +197,8 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 	case gvk.CronJobBeta:
 		rw.setupInformer(kind, factory.Batch().V1beta1().CronJobs().Informer())
 	case gvk.HorizontalPodAutoscaler:
+		rw.setupInformer(kind, factory.Autoscaling().V2().HorizontalPodAutoscalers().Informer())
+	case gvk.HorizontalPodAutoscalerBeta:
 		rw.setupInformer(kind, factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer())
 	default:
 		rw.logger.Error("Could not setup an informer for provided group version kind",

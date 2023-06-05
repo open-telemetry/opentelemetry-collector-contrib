@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 					Namespace: tt.pod.namespace,
 				},
 			}
-			ras := metadata.DefaultResourceAttributesSettings()
+			rac := metadata.DefaultResourceAttributesConfig()
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -197,7 +197,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 
 			volumeResourceMetrics := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(ras, volumeResourceMetrics)
+				op(rac, volumeResourceMetrics)
 			}
 
 			require.Equal(t, tt.want, volumeResourceMetrics.Resource().Attributes().AsRaw())

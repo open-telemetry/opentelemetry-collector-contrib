@@ -230,8 +230,7 @@ func Test_concat(t *testing.T) {
 				getters[i] = val
 			}
 
-			exprFunc, err := Concat(getters, tt.delimiter)
-			assert.NoError(t, err)
+			exprFunc := concat(getters, tt.delimiter)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -245,8 +244,7 @@ func Test_concat_error(t *testing.T) {
 			return make(chan int), nil
 		},
 	}
-	exprFunc, err := Concat[interface{}]([]ottl.StringLikeGetter[interface{}]{target}, "test")
-	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	exprFunc := concat[interface{}]([]ottl.StringLikeGetter[interface{}]{target}, "test")
+	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }

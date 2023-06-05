@@ -32,7 +32,7 @@ The following configuration options are supported:
 * `sending_queue` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
   * `enabled` (default = true)
   * `num_consumers` (default = 10) The number of consumers from the queue
-  * `queue_size` (default = 5000) Maximum number of batches allowed in queue at a given time
+  * `queue_size` (default = 1000) Maximum number of batches allowed in queue at a given time
 * `retry_on_failure` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
   * `enabled` (default = true)
   * `initial_interval` (default = 5s) Time to wait after the first failure before retrying

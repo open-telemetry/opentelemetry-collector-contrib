@@ -1,4 +1,4 @@
-// Copyright  OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import (
 
 const (
 	typeStr              = "mongodbatlas"
-	stability            = component.StabilityLevelBeta
 	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
 	defaultLogsEnabled   = false
@@ -42,8 +41,8 @@ func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, stability),
-		rcvr.WithLogs(createCombinedLogReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		rcvr.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
 
 }
 

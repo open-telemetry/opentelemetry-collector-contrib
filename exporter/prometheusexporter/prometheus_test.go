@@ -51,7 +51,7 @@ func TestPrometheusExporter(t *testing.T) {
 					"code0": "one0",
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":8999",
+					Endpoint: "localhost:8999",
 				},
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
@@ -60,7 +60,7 @@ func TestPrometheusExporter(t *testing.T) {
 		{
 			config: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":88999",
+					Endpoint: "localhost:88999",
 				},
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
@@ -109,7 +109,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "./testdata/certs/server.crt",
@@ -172,10 +172,10 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	_ = rsp.Body.Close()
 
 	want := []string{
-		`# HELP test_counter_int`,
-		`# TYPE test_counter_int counter`,
-		`test_counter_int{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
-		`test_counter_int{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
+		`# HELP test_counter_int_total`,
+		`# TYPE test_counter_int_total counter`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
 	}
 
 	for _, w := range want {
@@ -194,7 +194,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -232,18 +232,18 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+128),
-			`# HELP test_metric_2_this_one_there_where Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+delta),
+			`# HELP test_metric_1_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+128),
+			`# HELP test_metric_2_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8081",job="cpu-exporter",os="linux"} %v`, 100+delta),
 		}
 
 		for _, w := range want {
@@ -276,7 +276,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -312,14 +312,14 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
-			`# HELP test_metric_2_this_one_there_where Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
+			`# HELP test_metric_1_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+128),
+			`# HELP test_metric_2_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code1="one1",foo1="bar1",instance="localhost:8080",job="cpu-exporter",os="linux"} %v`, 100+delta),
 		}
 
 		for _, w := range want {
@@ -352,7 +352,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -389,14 +389,14 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+128, 1543160298100+128000),
-			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+128, 1543160298100),
-			`# HELP test_metric_2_this_one_there_where Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
-			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+delta, 1543160298100),
+			`# HELP test_metric_1_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+128, 1543160298100+128000),
+			fmt.Sprintf(`test_metric_1_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+128, 1543160298100),
+			`# HELP test_metric_2_this_one_there_where_total Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where_total counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
+			fmt.Sprintf(`test_metric_2_this_one_there_where_total{arch="x86",code2="one2",foo2="bar2",instance="localhost:8080",job="node-exporter",os="linux"} %v %v`, 100+delta, 1543160298100),
 		}
 
 		for _, w := range want {
@@ -429,7 +429,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -469,10 +469,10 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	_ = rsp.Body.Close()
 
 	want := []string{
-		`# HELP test_counter_int`,
-		`# TYPE test_counter_int counter`,
-		`test_counter_int{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
-		`test_counter_int{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
+		`# HELP test_counter_int_total`,
+		`# TYPE test_counter_int_total counter`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
+		`test_counter_int_total{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
 	}
 
 	for _, w := range want {

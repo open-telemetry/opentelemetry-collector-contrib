@@ -17,6 +17,7 @@ package fileexporter
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,7 +46,8 @@ func TestLoadConfig(t *testing.T) {
 					MaxBackups:   3,
 					LocalTime:    true,
 				},
-				FormatType: formatTypeJSON,
+				FormatType:    formatTypeJSON,
+				FlushInterval: time.Second,
 			},
 		},
 		{
@@ -58,8 +60,9 @@ func TestLoadConfig(t *testing.T) {
 					MaxBackups:   3,
 					LocalTime:    true,
 				},
-				FormatType:  formatTypeProto,
-				Compression: compressionZSTD,
+				FormatType:    formatTypeProto,
+				Compression:   compressionZSTD,
+				FlushInterval: time.Second,
 			},
 		},
 		{
@@ -70,6 +73,7 @@ func TestLoadConfig(t *testing.T) {
 				Rotation: &Rotation{
 					MaxBackups: defaultMaxBackups,
 				},
+				FlushInterval: time.Second,
 			},
 		},
 		{
@@ -80,7 +84,8 @@ func TestLoadConfig(t *testing.T) {
 					MaxMegabytes: 1234,
 					MaxBackups:   defaultMaxBackups,
 				},
-				FormatType: formatTypeJSON,
+				FormatType:    formatTypeJSON,
+				FlushInterval: time.Second,
 			},
 		},
 		{
@@ -90,6 +95,34 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(typeStr, "format_error"),
 			errorMessage: "format type is not supported",
+		},
+		{
+			id: component.NewIDWithName(typeStr, "flush_interval_5"),
+			expected: &Config{
+				Path:          "./flushed",
+				FlushInterval: 5,
+				FormatType:    formatTypeJSON,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "flush_interval_5s"),
+			expected: &Config{
+				Path:          "./flushed",
+				FlushInterval: 5 * time.Second,
+				FormatType:    formatTypeJSON,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "flush_interval_500ms"),
+			expected: &Config{
+				Path:          "./flushed",
+				FlushInterval: 500 * time.Millisecond,
+				FormatType:    formatTypeJSON,
+			},
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "flush_interval_negative_value"),
+			errorMessage: "flush_interval must be larger than zero",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, ""),

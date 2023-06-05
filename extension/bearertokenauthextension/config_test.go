@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,18 +35,18 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr bool
 	}{
 		{
-			id:          component.NewID(typeStr),
+			id:          component.NewID(metadata.Type),
 			expectedErr: true,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "sometoken"),
+			id: component.NewIDWithName(metadata.Type, "sometoken"),
 			expected: &Config{
 				Scheme:      defaultScheme,
 				BearerToken: "sometoken",
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "withscheme"),
+			id: component.NewIDWithName(metadata.Type, "withscheme"),
 			expected: &Config{
 				Scheme:      "MyScheme",
 				BearerToken: "my-token",

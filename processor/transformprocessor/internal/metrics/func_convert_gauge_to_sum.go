@@ -24,6 +24,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
+type convertGaugeToSumArguments struct {
+	StringAggTemp string `ottlarg:"0"`
+	Monotonic     bool   `ottlarg:"1"`
+}
+
+func newConvertGaugeToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("convert_gauge_to_sum", &convertGaugeToSumArguments{}, createConvertGaugeToSumFunction)
+}
+
+func createConvertGaugeToSumFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	args, ok := oArgs.(*convertGaugeToSumArguments)
+
+	if !ok {
+		return nil, fmt.Errorf("ConvertGaugeToSumFactory args must be of type *ConvertGaugeToSumArguments")
+	}
+
+	return convertGaugeToSum(args.StringAggTemp, args.Monotonic)
+}
+
 func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {

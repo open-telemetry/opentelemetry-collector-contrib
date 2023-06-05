@@ -23,18 +23,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension/internal/metadata"
 )
 
-const (
-	// The value of extension "type" in configuration.
-	typeStr = "asapclient"
-)
-
 // NewFactory creates a factory for asapauthextension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		metadata.Stability,
+		metadata.ExtensionStability,
 	)
 }
 

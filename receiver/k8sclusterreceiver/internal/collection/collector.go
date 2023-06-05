@@ -1,4 +1,4 @@
-// Copyright 2020 OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
@@ -136,8 +137,10 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 		md = ocsToMetrics(cronjob.GetMetrics(o))
 	case *batchv1beta1.CronJob:
 		md = ocsToMetrics(cronjob.GetMetricsBeta(o))
-	case *autoscalingv2beta2.HorizontalPodAutoscaler:
+	case *autoscalingv2.HorizontalPodAutoscaler:
 		md = ocsToMetrics(hpa.GetMetrics(o))
+	case *autoscalingv2beta2.HorizontalPodAutoscaler:
+		md = ocsToMetrics(hpa.GetMetricsBeta(o))
 	case *quotav1.ClusterResourceQuota:
 		md = ocsToMetrics(clusterresourcequota.GetMetrics(o))
 	default:
@@ -175,8 +178,10 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[experimentalmetricmet
 		km = cronjob.GetMetadata(o)
 	case *batchv1beta1.CronJob:
 		km = cronjob.GetMetadataBeta(o)
-	case *autoscalingv2beta2.HorizontalPodAutoscaler:
+	case *autoscalingv2.HorizontalPodAutoscaler:
 		km = hpa.GetMetadata(o)
+	case *autoscalingv2beta2.HorizontalPodAutoscaler:
+		km = hpa.GetMetadataBeta(o)
 	}
 
 	return km

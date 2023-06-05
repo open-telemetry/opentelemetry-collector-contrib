@@ -39,7 +39,7 @@ func NewFactory() extension.Factory {
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		metadata.Stability)
+		metadata.ExtensionStability)
 }
 
 func createDefaultConfig() component.Config {

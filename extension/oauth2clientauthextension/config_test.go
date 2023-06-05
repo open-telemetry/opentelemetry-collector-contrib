@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewID(typeStr),
+			id: component.NewID(metadata.Type),
 			expected: &Config{
 				ClientSecret:   "someclientsecret",
 				ClientID:       "someclientid",
@@ -47,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "withtls"),
+			id: component.NewIDWithName(metadata.Type, "withtls"),
 			expected: &Config{
 				ClientSecret: "someclientsecret2",
 				ClientID:     "someclientid2",
@@ -67,15 +69,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingurl"),
+			id:          component.NewIDWithName(metadata.Type, "missingurl"),
 			expectedErr: errNoTokenURLProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingid"),
+			id:          component.NewIDWithName(metadata.Type, "missingid"),
 			expectedErr: errNoClientIDProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingsecret"),
+			id:          component.NewIDWithName(metadata.Type, "missingsecret"),
 			expectedErr: errNoClientSecretProvided,
 		},
 	}

@@ -137,7 +137,7 @@ func Test_MergeMaps(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := MergeMaps[pcommon.Map](targetGetter, tt.source, tt.strategy)
+			exprFunc, err := mergeMaps[pcommon.Map](targetGetter, tt.source, tt.strategy)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), scenarioMap)
@@ -164,7 +164,7 @@ func Test_MergeMaps_bad_target(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := MergeMaps[interface{}](target, input, "insert")
+	exprFunc, err := mergeMaps[interface{}](target, input, "insert")
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -182,7 +182,7 @@ func Test_MergeMaps_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := MergeMaps[interface{}](target, input, "insert")
+	exprFunc, err := mergeMaps[interface{}](target, input, "insert")
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)

@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -51,18 +52,21 @@ func TestLoadConfig(t *testing.T) {
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				DomainSettings: configgrpc.GRPCClientSettings{
+					Compression: configcompression.Gzip,
+				},
 				Metrics: configgrpc.GRPCClientSettings{
 					Endpoint:        "https://",
-					Compression:     "gzip",
+					Compression:     configcompression.Gzip,
 					WriteBufferSize: 512 * 1024,
 				},
 				Logs: configgrpc.GRPCClientSettings{
 					Endpoint:    "https://",
-					Compression: "gzip",
+					Compression: configcompression.Gzip,
 				},
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: "gzip",
+					Compression: configcompression.Gzip,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -75,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 					BalancerName:    "",
 				},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "",
+					Endpoint: "https://",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -103,18 +107,21 @@ func TestLoadConfig(t *testing.T) {
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				DomainSettings: configgrpc.GRPCClientSettings{
+					Compression: configcompression.Gzip,
+				},
 				Metrics: configgrpc.GRPCClientSettings{
 					Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression:     "gzip",
+					Compression:     configcompression.Gzip,
 					WriteBufferSize: 512 * 1024,
 				},
 				Logs: configgrpc.GRPCClientSettings{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: "gzip",
+					Compression: configcompression.Gzip,
 				},
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: "gzip",
+					Compression: configcompression.Gzip,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -129,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 				AppNameAttributes:   []string{"service.namespace"},
 				SubSystemAttributes: []string{"service.name"},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Endpoint: "",
+					Endpoint: "https://",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -217,4 +224,58 @@ func TestLogsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create logs exporter")
 	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestDomainWithAllExporters(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "domain").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	params := exportertest.NewNopCreateSettings()
+	te, err := newTracesExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+
+	me, err := newMetricsExporter(cfg, params)
+	require.NoError(t, err)
+	require.NotNil(t, me, "failed to create metrics exporter")
+	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+
+	le, err := newLogsExporter(cfg, params)
+	require.NoError(t, err)
+	require.NotNil(t, le, "failed to create logs exporter")
+	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "domain_endoints").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	params := exportertest.NewNopCreateSettings()
+	te, err := newTracesExporter(cfg, params)
+	assert.NoError(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+
+	me, err := newMetricsExporter(cfg, params)
+	require.NoError(t, err)
+	require.NotNil(t, me, "failed to create metrics exporter")
+	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+
+	le, err := newLogsExporter(cfg, params)
+	require.NoError(t, err)
+	require.NotNil(t, le, "failed to create logs exporter")
+	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
 }

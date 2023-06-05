@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,11 +37,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:13",
@@ -57,15 +59,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingendpoint"),
+			id:          component.NewIDWithName(metadata.Type, "missingendpoint"),
 			expectedErr: errNoEndpointProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalidthreshold"),
+			id:          component.NewIDWithName(metadata.Type, "invalidthreshold"),
 			expectedErr: errInvalidExporterFailureThresholdProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "invalidpath"),
+			id:          component.NewIDWithName(metadata.Type, "invalidpath"),
 			expectedErr: errInvalidPath,
 		},
 	}

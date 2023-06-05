@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,29 +70,26 @@ func (e *metricsExporter) shutdown(ctx context.Context) error {
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	metricsMap := internal.NewMetricsModel(e.cfg.MetricsTableName)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		metaData := internal.MetricsMetaData{}
 		metrics := md.ResourceMetrics().At(i)
-		res := metrics.Resource()
-		metaData.ResAttr = attributesToMap(res.Attributes())
-		metaData.ResURL = metrics.SchemaUrl()
+		resAttr := attributesToMap(metrics.Resource().Attributes())
 		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
 			rs := metrics.ScopeMetrics().At(j).Metrics()
-			metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
-			metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
+			scopeInstr := metrics.ScopeMetrics().At(j).Scope()
+			scopeURL := metrics.ScopeMetrics().At(j).SchemaUrl()
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				var errs error
 				switch r.Type() {
 				case pmetric.MetricTypeGauge:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Gauge(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSum:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSum].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Sum(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeHistogram:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Histogram(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeExponentialHistogram:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.ExponentialHistogram(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSummary:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSummary].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Summary(), r.Name(), r.Description(), r.Unit()))
 				default:
 					return fmt.Errorf("unsupported metrics type")
 				}

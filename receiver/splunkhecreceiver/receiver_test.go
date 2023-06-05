@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1042,12 +1042,12 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 		assert.NoError(t, r.Shutdown(context.Background()))
 	}()
 	w := httptest.NewRecorder()
-	r.handleHealthReq(w, httptest.NewRequest("POST", "http://localhost/services/collector/health", nil))
+	r.handleHealthReq(w, httptest.NewRequest("GET", "http://localhost/services/collector/health", nil))
 
 	resp := w.Result()
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
-	assert.Len(t, respBytes, 0)
+	assert.Equal(t, string(respBytes), responseHecHealthy)
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
@@ -1266,5 +1266,76 @@ func BenchmarkHandleReq(b *testing.B) {
 		resp := w.Result()
 		_, err = io.ReadAll(resp.Body)
 		assert.NoError(b, err)
+	}
+}
+
+func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+
+	tests := []struct {
+		name           string
+		req            *http.Request
+		assertResponse func(t *testing.T, status int, body string)
+	}{
+		{
+			name: "correct_healthcheck",
+			req: func() *http.Request {
+				req := httptest.NewRequest("GET", "http://localhost:0/services/collector/health", nil)
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseHecHealthy, body)
+			},
+		},
+		{
+			name: "correct_healthcheck_v1",
+			req: func() *http.Request {
+				req := httptest.NewRequest("GET", "http://localhost:0/services/collector/health/1.0", nil)
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseHecHealthy, body)
+			},
+		},
+		{
+			name: "incorrect_healthcheck_methods_v1",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost:0/services/collector/health/1.0", nil)
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseNoData, body)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sink := new(consumertest.LogsSink)
+			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			assert.NoError(t, err)
+
+			r := rcv.(*splunkReceiver)
+			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
+
+			w := httptest.NewRecorder()
+			r.server.Handler.ServeHTTP(w, tt.req)
+			resp := w.Result()
+			respBytes, err := io.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			var bodyStr string
+			if err := json.Unmarshal(respBytes, &bodyStr); err != nil {
+				bodyStr = string(respBytes)
+			}
+
+			tt.assertResponse(t, resp.StatusCode, bodyStr)
+		})
 	}
 }

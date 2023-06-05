@@ -87,5 +87,6 @@ func TestRiakIntegration(t *testing.T) {
 
 	actualMetrics := consumer.AllMetrics()[0]
 
-	pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues()) //nolint:errcheck
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }

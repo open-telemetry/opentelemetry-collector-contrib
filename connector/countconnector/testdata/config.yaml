@@ -36,58 +36,58 @@
       my.span.count:
         description: My span count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-s") == true
+          - IsMatch(resource.attributes["host.name"], "pod-s")
     spanevents:
       my.spanevent.count:
         description: My span event count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-e") == true
+          - IsMatch(resource.attributes["host.name"], "pod-e")
     metrics:
       my.metric.count:
         description: My metric count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-m") == true
+          - IsMatch(resource.attributes["host.name"], "pod-m")
     datapoints:
       my.datapoint.count:
         description: My data point count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-d") == true
+          - IsMatch(resource.attributes["host.name"], "pod-d")
     logs:
       my.logrecord.count:
         description: My log record count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-l") == true
+          - IsMatch(resource.attributes["host.name"], "pod-l")
   count/multiple_condition:
     spans:
       my.span.count:
         description: My span count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-s") == true
-          - IsMatch(resource.attributes["foo"], "bar-s") == true
+          - IsMatch(resource.attributes["host.name"], "pod-s")
+          - IsMatch(resource.attributes["foo"], "bar-s")
     spanevents:
       my.spanevent.count:
         description: My span event count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-e") == true
-          - IsMatch(resource.attributes["foo"], "bar-e") == true
+          - IsMatch(resource.attributes["host.name"], "pod-e")
+          - IsMatch(resource.attributes["foo"], "bar-e")
     metrics:
       my.metric.count:
         description: My metric count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-m") == true
-          - IsMatch(resource.attributes["foo"], "bar-m") == true
+          - IsMatch(resource.attributes["host.name"], "pod-m")
+          - IsMatch(resource.attributes["foo"], "bar-m")
     datapoints:
       my.datapoint.count:
         description: My data point count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-d") == true
-          - IsMatch(resource.attributes["foo"], "bar-d") == true
+          - IsMatch(resource.attributes["host.name"], "pod-d")
+          - IsMatch(resource.attributes["foo"], "bar-d")
     logs:
       my.logrecord.count:
         description: My log record count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-l") == true
-          - IsMatch(resource.attributes["foo"], "bar-l") == true
+          - IsMatch(resource.attributes["host.name"], "pod-l")
+          - IsMatch(resource.attributes["foo"], "bar-l")
   count/attribute:
     spans:
       my.span.count:
@@ -120,7 +120,7 @@
       limited.span.count:
         description: Limited span count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-s") == true
+          - IsMatch(resource.attributes["host.name"], "pod-s")
         attributes:
           - key: env
           - key: component
@@ -131,7 +131,7 @@
       limited.spanevent.count:
         description: Limited span event count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-e") == true
+          - IsMatch(resource.attributes["host.name"], "pod-e")
         attributes:
           - key: env
           - key: component
@@ -142,14 +142,14 @@
       limited.metric.count:
         description: Limited metric count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-m") == true
+          - IsMatch(resource.attributes["host.name"], "pod-m")
     datapoints:
       my.datapoint.count:
         description: My data point count.
       limited.datapoint.count:
         description: Limited data point count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-d") == true
+          - IsMatch(resource.attributes["host.name"], "pod-d")
         attributes:
           - key: env
           - key: component
@@ -160,7 +160,7 @@
       limited.logrecord.count:
         description: Limited log record count.
         conditions:
-          - IsMatch(resource.attributes["host.name"], "pod-l") == true
+          - IsMatch(resource.attributes["host.name"], "pod-l")
         attributes:
           - key: env
           - key: component
