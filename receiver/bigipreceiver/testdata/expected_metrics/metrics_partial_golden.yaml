@@ -15,6 +15,12 @@ resourceMetrics:
           - description: Availability of the virtual server.
             gauge:
               dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: available
+                  timeUnixNano: "1651783494931319000"
                 - asInt: "1"
                   attributes:
                     - key: status
@@ -26,12 +32,6 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
-                - asInt: "0"
-                  attributes:
-                    - key: status
-                      value:
-                        stringValue: available
                   timeUnixNano: "1651783494931319000"
             name: bigip.virtual_server.availability
             unit: "1"
@@ -126,6 +126,12 @@ resourceMetrics:
           - description: Availability of the virtual server.
             gauge:
               dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: available
+                  timeUnixNano: "1651783494931319000"
                 - asInt: "0"
                   attributes:
                     - key: status
@@ -137,12 +143,6 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
-                - asInt: "1"
-                  attributes:
-                    - key: status
-                      value:
-                        stringValue: available
                   timeUnixNano: "1651783494931319000"
             name: bigip.virtual_server.availability
             unit: "1"
@@ -237,6 +237,12 @@ resourceMetrics:
           - description: Availability of the virtual server.
             gauge:
               dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: available
+                  timeUnixNano: "1651783494931319000"
                 - asInt: "0"
                   attributes:
                     - key: status
@@ -248,12 +254,6 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
-                - asInt: "1"
-                  attributes:
-                    - key: status
-                      value:
-                        stringValue: available
                   timeUnixNano: "1651783494931319000"
             name: bigip.virtual_server.availability
             unit: "1"
@@ -352,6 +352,12 @@ resourceMetrics:
                   attributes:
                     - key: status
                       value:
+                        stringValue: available
+                  timeUnixNano: "1651783494931319000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
                         stringValue: offline
                   timeUnixNano: "1651783494931319000"
                 - asInt: "1"
@@ -359,12 +365,6 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
-                - asInt: "0"
-                  attributes:
-                    - key: status
-                      value:
-                        stringValue: available
                   timeUnixNano: "1651783494931319000"
             name: bigip.virtual_server.availability
             unit: "1"

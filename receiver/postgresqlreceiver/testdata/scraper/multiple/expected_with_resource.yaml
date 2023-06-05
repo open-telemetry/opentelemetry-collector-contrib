@@ -14,6 +14,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "20"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
                 - asInt: "19"
                   attributes:
                     - key: source
@@ -21,11 +28,11 @@ resourceMetrics:
                         stringValue: heap_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "20"
+                - asInt: "22"
                   attributes:
                     - key: source
                       value:
-                        stringValue: heap_hit
+                        stringValue: idx_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "21"
@@ -35,11 +42,18 @@ resourceMetrics:
                         stringValue: idx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "22"
+                - asInt: "26"
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_hit
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "25"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "24"
@@ -56,20 +70,6 @@ resourceMetrics:
                         stringValue: toast_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "25"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
-                - asInt: "26"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_hit
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -77,13 +77,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "39"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "41"
                   attributes:
                     - key: operation
@@ -91,18 +84,25 @@ resourceMetrics:
                         stringValue: del
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "40"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "42"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "39"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "40"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: upd
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
               isMonotonic: true
@@ -164,6 +164,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "28"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
                 - asInt: "27"
                   attributes:
                     - key: source
@@ -171,11 +178,11 @@ resourceMetrics:
                         stringValue: heap_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "28"
+                - asInt: "30"
                   attributes:
                     - key: source
                       value:
-                        stringValue: heap_hit
+                        stringValue: idx_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "29"
@@ -185,11 +192,18 @@ resourceMetrics:
                         stringValue: idx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "30"
+                - asInt: "34"
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_hit
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "33"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "32"
@@ -206,20 +220,6 @@ resourceMetrics:
                         stringValue: toast_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "33"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
-                - asInt: "34"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_hit
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -227,13 +227,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "43"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "45"
                   attributes:
                     - key: operation
@@ -241,18 +234,25 @@ resourceMetrics:
                         stringValue: del
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "44"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "46"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "43"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "44"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: upd
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
               isMonotonic: true
@@ -438,6 +438,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "21"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
                 - asInt: "20"
                   attributes:
                     - key: source
@@ -445,11 +452,11 @@ resourceMetrics:
                         stringValue: heap_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "21"
+                - asInt: "23"
                   attributes:
                     - key: source
                       value:
-                        stringValue: heap_hit
+                        stringValue: idx_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "22"
@@ -459,11 +466,18 @@ resourceMetrics:
                         stringValue: idx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "23"
+                - asInt: "27"
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_hit
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "26"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "25"
@@ -480,20 +494,6 @@ resourceMetrics:
                         stringValue: toast_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "26"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
-                - asInt: "27"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_hit
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -501,13 +501,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "40"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "42"
                   attributes:
                     - key: operation
@@ -515,18 +508,25 @@ resourceMetrics:
                         stringValue: del
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "41"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "43"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "40"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "41"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: upd
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
               isMonotonic: true
@@ -588,6 +588,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "29"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
                 - asInt: "28"
                   attributes:
                     - key: source
@@ -595,11 +602,11 @@ resourceMetrics:
                         stringValue: heap_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "29"
+                - asInt: "31"
                   attributes:
                     - key: source
                       value:
-                        stringValue: heap_hit
+                        stringValue: idx_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "30"
@@ -609,11 +616,18 @@ resourceMetrics:
                         stringValue: idx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "31"
+                - asInt: "35"
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_hit
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "34"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "33"
@@ -630,20 +644,6 @@ resourceMetrics:
                         stringValue: toast_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "34"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
-                - asInt: "35"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_hit
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -651,13 +651,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "44"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "46"
                   attributes:
                     - key: operation
@@ -665,18 +658,25 @@ resourceMetrics:
                         stringValue: del
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "45"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "47"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "44"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "45"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: upd
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
               isMonotonic: true
@@ -862,6 +862,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "22"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
                 - asInt: "21"
                   attributes:
                     - key: source
@@ -869,11 +876,11 @@ resourceMetrics:
                         stringValue: heap_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "22"
+                - asInt: "24"
                   attributes:
                     - key: source
                       value:
-                        stringValue: heap_hit
+                        stringValue: idx_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "23"
@@ -883,11 +890,18 @@ resourceMetrics:
                         stringValue: idx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "24"
+                - asInt: "28"
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_hit
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "27"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "26"
@@ -904,20 +918,6 @@ resourceMetrics:
                         stringValue: toast_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "27"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
-                - asInt: "28"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_hit
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -925,13 +925,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "41"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "43"
                   attributes:
                     - key: operation
@@ -939,18 +932,25 @@ resourceMetrics:
                         stringValue: del
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "42"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "44"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "41"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "42"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: upd
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
               isMonotonic: true
@@ -1012,6 +1012,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "30"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
                 - asInt: "29"
                   attributes:
                     - key: source
@@ -1019,11 +1026,11 @@ resourceMetrics:
                         stringValue: heap_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "30"
+                - asInt: "32"
                   attributes:
                     - key: source
                       value:
-                        stringValue: heap_hit
+                        stringValue: idx_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "31"
@@ -1033,11 +1040,18 @@ resourceMetrics:
                         stringValue: idx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "32"
+                - asInt: "36"
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_hit
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "35"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
                 - asInt: "34"
@@ -1054,20 +1068,6 @@ resourceMetrics:
                         stringValue: toast_hit
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "35"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_read
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
-                - asInt: "36"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: tidx_hit
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -1075,13 +1075,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "45"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: ins
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "47"
                   attributes:
                     - key: operation
@@ -1089,18 +1082,25 @@ resourceMetrics:
                         stringValue: del
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "46"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: upd
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "48"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "45"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "46"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: upd
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
               isMonotonic: true
@@ -1289,13 +1289,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "5"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: bgwriter
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "7"
                   attributes:
                     - key: source
@@ -1303,18 +1296,25 @@ resourceMetrics:
                         stringValue: backend
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "9"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: checkpoints
-                  startTimeUnixNano: "1660755376404913000"
-                  timeUnixNano: "1660755376405089000"
                 - asInt: "8"
                   attributes:
                     - key: source
                       value:
                         stringValue: backend_fsync
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "5"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: bgwriter
+                  startTimeUnixNano: "1660755376404913000"
+                  timeUnixNano: "1660755376405089000"
+                - asInt: "9"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: checkpoints
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
               isMonotonic: true
@@ -1410,11 +1410,11 @@ resourceMetrics:
           - description: Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
             gauge:
               dataPoints:
-                - asInt: "800"
+                - asInt: "600"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: write
+                        stringValue: flush
                     - key: replication_client
                       value:
                         stringValue: unix
@@ -1430,11 +1430,11 @@ resourceMetrics:
                         stringValue: unix
                   startTimeUnixNano: "1660755376404913000"
                   timeUnixNano: "1660755376405089000"
-                - asInt: "600"
+                - asInt: "800"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: flush
+                        stringValue: write
                     - key: replication_client
                       value:
                         stringValue: unix

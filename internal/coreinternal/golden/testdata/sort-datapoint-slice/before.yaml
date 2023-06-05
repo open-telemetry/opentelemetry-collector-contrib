@@ -1,18 +1,5 @@
-ResourceMetrics:
+resourceMetrics:
   - resource:
-      attributes:
-        - key: device.id
-          value:
-            stringValue: vmnic0
-        - key: nsxt.node.name
-          value:
-            stringValue: esxi-18938.cf5e88ac.australia-southeast1.gve.goog
-        - key: nsxt.node.type
-          value:
-            stringValue: TransportNode
-        - key: nsxt.node.id
-          value:
-            stringValue: 0e7bd3f2-bd49-4fa2-b650-9e9bfcdad827
     scopeMetrics:
       - metrics:
           - description: The number of bytes which have flowed through the network interface.
@@ -22,39 +9,39 @@ ResourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: direction
+                    - key: a
                       value:
-                        stringValue: b
-                  startTimeUnixNano: "3333333333333333333"
-                  timeUnixNano: "2222222222222222222"
-                - asInt: "4161088074"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: a
+                        stringValue: AAAA
                   startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "5555555555555555555"
-                - asInt: "32"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: c
-                  startTimeUnixNano: "1924857624581089658"
-                  timeUnixNano: "2222222222222222222"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: c
-                  startTimeUnixNano: "1924857624581089658"
                   timeUnixNano: "1111111111111111111"
                 - asInt: "0"
                   attributes:
-                    - key: direction
+                    - key: d
                       value:
-                        stringValue: d
-                  startTimeUnixNano: "1924857624581089658"
-                  timeUnixNano: "5555555555555591029"
+                        stringValue: DDDD
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: c
+                      value:
+                        stringValue: CCCC
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: BBBBFirst
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: BBBBSecond
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
               isMonotonic: true
             unit: By
         scope:

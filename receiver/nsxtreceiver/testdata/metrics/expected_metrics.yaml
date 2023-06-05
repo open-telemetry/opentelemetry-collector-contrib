@@ -254,14 +254,14 @@ resourceMetrics:
                   attributes:
                     - key: state
                       value:
-                        stringValue: used
+                        stringValue: available
                   startTimeUnixNano: "1652365826688352000"
                   timeUnixNano: "1652365826697632000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
-                        stringValue: available
+                        stringValue: used
                   startTimeUnixNano: "1652365826688352000"
                   timeUnixNano: "1652365826697632000"
             unit: By
@@ -549,14 +549,14 @@ resourceMetrics:
                   attributes:
                     - key: state
                       value:
-                        stringValue: used
+                        stringValue: available
                   startTimeUnixNano: "1652365826688352000"
                   timeUnixNano: "1652365826697632000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
-                        stringValue: available
+                        stringValue: used
                   startTimeUnixNano: "1652365826688352000"
                   timeUnixNano: "1652365826697632000"
             unit: By
@@ -840,18 +840,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "26168032"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
                 - asInt: "237014124"
                   attributes:
                     - key: state
                       value:
                         stringValue: available
+                  startTimeUnixNano: "1652365826688352000"
+                  timeUnixNano: "1652365826697632000"
+                - asInt: "26168032"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
                   startTimeUnixNano: "1652365826688352000"
                   timeUnixNano: "1652365826697632000"
             unit: By

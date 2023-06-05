@@ -46,11 +46,13 @@ func TestSortAttributes(t *testing.T) {
 }
 
 func TestSortMetricDatapointSlice(t *testing.T) {
-	dir := filepath.Join("testdata", "sort-datapoint-slice")
-	before, err := ReadMetrics(filepath.Join(dir, "before.yaml"))
+	beforePath := filepath.Join("testdata", "sort-datapoint-slice", "before.yaml")
+	afterPath := filepath.Join("testdata", "sort-datapoint-slice", "after.yaml")
+	before, err := ReadMetrics(beforePath)
 	require.NoError(t, err)
-	after, err := ReadMetrics(filepath.Join(dir, "after.yaml"))
+	after, err := ReadMetrics(afterPath)
 	require.NoError(t, err)
-
+	sortMetricDataPointSlices(before)
 	require.Equal(t, before, after)
+
 }
