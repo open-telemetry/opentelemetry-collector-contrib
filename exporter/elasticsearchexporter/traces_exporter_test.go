@@ -41,9 +41,8 @@ func TestTracesExporter_New(t *testing.T) {
 	}
 	successWithInternalModel := func(expectedModel *encodeModel) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-			require.Nil(t, err)
-			require.NotNil(t, exporter)
-			require.EqualValues(t, expectedModel, exporter.model)
+			assert.Nil(t, err)
+			assert.EqualValues(t, expectedModel, exporter.model)
 		}
 	}
 
