@@ -44,17 +44,19 @@ type ec2Metadata struct {
 	region           string
 	instanceIDReadyC chan bool
 	instanceIPReadyC chan bool
+	localMode        bool
 }
 
 type ec2MetadataOption func(*ec2Metadata)
 
 func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
-	instanceIDReadyC chan bool, instanceIPReadyC chan bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
+	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
 	emd := &ec2Metadata{
 		client:           awsec2metadata.New(session),
 		refreshInterval:  refreshInterval,
 		instanceIDReadyC: instanceIDReadyC,
 		instanceIPReadyC: instanceIPReadyC,
+		localMode:        localMode,
 		logger:           logger,
 	}
 
@@ -73,6 +75,10 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 }
 
 func (emd *ec2Metadata) refresh(ctx context.Context) {
+	if emd.localMode {
+		emd.logger.Debug("Running EC2MetadataProvider in local mode.  Skipping EC2 metadata fetch")
+		return
+	}
 	emd.logger.Info("Fetch instance id and type from ec2 metadata")
 
 	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(ctx)
