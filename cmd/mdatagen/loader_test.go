@@ -20,7 +20,7 @@ func Test_loadMetadata(t *testing.T) {
 		{
 			name: "metadata.yaml",
 			want: metadata{
-				Type:           "test",
+				Type:           "file",
 				SemConvVersion: "1.9.0",
 				Status: &Status{
 					Class: "receiver",
