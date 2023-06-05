@@ -7,12 +7,12 @@ status:
   class: <receiver|processor|exporter|connector|extension>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
   stability:
-    development: [<metrics|traces|logs>]
-    alpha: [<metrics|traces|logs>]
-    beta: [<metrics|traces|logs>]
-    stable: [<metrics|traces|logs>]
-    deprecated: [<metrics|traces|logs>]
-    unmaintained: [<metrics|traces|logs>]
+    development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
+    alpha: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
+    beta: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
+    stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
+    deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
+    unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
   # Optional: The distributions that this component is bundled with (For example core or contrib). See statusdata.go for a list of common distros.
   distributions: []string
   # Optional: A list of warnings that should be brought to the attention of users looking to use this component
