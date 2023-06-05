@@ -27,18 +27,23 @@ func TestIntegration(t *testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
-					Dockerfile: "Dockerfile.mysql",
-				},
+				Image:        "mysql:8.0.33",
 				ExposedPorts: []string{mysqlPort},
 				WaitingFor: wait.ForListeningPort(mysqlPort).
 					WithStartupTimeout(2 * time.Minute),
-				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
-					PostStarts: []testcontainers.ContainerHook{
-						scraperinttest.RunScript([]string{"/setup.sh"}),
+				Env: map[string]string{
+					"MYSQL_ROOT_PASSWORD": "otel",
+					"MYSQL_DATABASE":      "otel",
+					"MYSQL_USER":          "otel",
+					"MYSQL_PASSWORD":      "otel",
+				},
+				Files: []testcontainers.ContainerFile{
+					{
+						HostFilePath:      filepath.Join("testdata", "integration", "init.sh"),
+						ContainerFilePath: "/docker-entrypoint-initdb.d/init.sh",
+						FileMode:          700,
 					},
-				}},
+				},
 			}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
