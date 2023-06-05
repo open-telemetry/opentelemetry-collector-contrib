@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.84
 	github.com/DataDog/datadog-agent/pkg/trace v0.46.0-rc.1
-	github.com/DataDog/datadog-api-client-go/v2 v2.12.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.13.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.2.3
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.2.3
