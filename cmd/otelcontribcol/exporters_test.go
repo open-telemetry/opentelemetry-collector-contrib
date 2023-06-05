@@ -51,7 +51,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -134,14 +133,6 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
 				}
-				return cfg
-			},
-		},
-		{
-			exporter: "opensearch",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["opensearch"].CreateDefaultConfig().(*opensearchexporter.Config)
-				cfg.Endpoints = []string{"http://" + endpoint}
 				return cfg
 			},
 		},

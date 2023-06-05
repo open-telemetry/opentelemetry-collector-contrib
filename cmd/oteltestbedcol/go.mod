@@ -8,7 +8,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.78.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.78.0
@@ -80,7 +79,6 @@ require (
 	github.com/docker/docker v24.0.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/elastic/go-structform v0.0.10 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/envoyproxy/go-control-plane v0.11.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.10.0 // indirect
@@ -181,7 +179,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.78.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
-	github.com/opensearch-project/opensearch-go/v2 v2.2.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.1 // indirect
 	github.com/ovh/go-ovh v1.3.0 // indirect
@@ -338,8 +335,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../../exporter/opencensusexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
