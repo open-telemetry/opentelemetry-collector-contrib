@@ -41,6 +41,7 @@ func TestNewFactory(t *testing.T) {
 				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 60 * time.Second,
+						InitialDelay:       time.Second,
 					},
 					HTTPClientSettings:   httpSettings,
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
