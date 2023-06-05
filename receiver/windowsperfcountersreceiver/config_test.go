@@ -163,7 +163,6 @@ func TestLoadConfig(t *testing.T) {
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
 					InitialDelay:       time.Second,
-					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
