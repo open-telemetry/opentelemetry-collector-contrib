@@ -23,7 +23,7 @@ Currently, only HS256 is supported. We enrich the client context field `Auth` wi
 <td> Simple </td> <td> With attributesprocessor</td>
 </tr>
 <tr>
-<td valign="top">
+<td>
 
 ```yaml
 extensions:
@@ -55,7 +55,7 @@ service:
       exporters: [logging]
 ```
 
-</td><td valign="top">
+</td><td>
 
 ```yaml
 extensions:
