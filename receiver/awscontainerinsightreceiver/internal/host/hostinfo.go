@@ -47,7 +47,7 @@ type Info struct {
 
 	awsSessionCreator   func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error)
 	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
-	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
+	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
 	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
 	ec2TagsCreator      func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
@@ -98,7 +98,7 @@ func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrato
 	}
 	mInfo.awsSession = session
 
-	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, session, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, logger)
+	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, session, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, awsSessionSettings.LocalMode, logger)
 
 	go mInfo.lazyInitEBSVolume(ctx)
 	go mInfo.lazyInitEC2Tags(ctx)

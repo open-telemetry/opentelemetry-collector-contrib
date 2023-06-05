@@ -52,7 +52,7 @@ func TestEC2Metadata(t *testing.T) {
 	clientOption := func(e *ec2Metadata) {
 		e.client = &mockMetadataClient{}
 	}
-	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, instanceIPReadyP, zap.NewNop(), clientOption)
+	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, instanceIPReadyP, false, zap.NewNop(), clientOption)
 	assert.NotNil(t, e)
 
 	<-instanceIDReadyC

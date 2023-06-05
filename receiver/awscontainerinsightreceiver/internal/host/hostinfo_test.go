@@ -114,7 +114,7 @@ func TestInfo(t *testing.T) {
 		}
 	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger,
+		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, *zap.Logger,
 			...ec2MetadataOption) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
@@ -196,7 +196,7 @@ func TestInfoForECS(t *testing.T) {
 		}
 	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger,
+		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, *zap.Logger,
 			...ec2MetadataOption) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
