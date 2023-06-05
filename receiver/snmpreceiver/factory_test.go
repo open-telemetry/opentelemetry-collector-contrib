@@ -6,7 +6,6 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -37,7 +36,6 @@ func TestNewFactory(t *testing.T) {
 				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: defaultCollectionInterval,
-						InitialDelay:       time.Second,
 					},
 					Endpoint:      defaultEndpoint,
 					Version:       defaultVersion,
