@@ -37,6 +37,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			Username: "otel",
 			Password: "otel",
