@@ -112,6 +112,13 @@ const (
 	StatusTerminated                  = "status_terminated"
 	StatusWaiting                     = "status_waiting"
 	StatusWaitingReasonCrashed        = "status_waiting_reason_crashed"
+	StatusPending                     = "status_pending"
+	StatusSucceeded                   = "status_succeeded"
+	StatusFailed                      = "status_failed"
+	StatusUnknown                     = "status_unknown"
+	StatusReady                       = "status_ready"
+	StatusScheduled                   = "status_scheduled"
+	StatusInitialized                 = "status_initialized"
 
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
