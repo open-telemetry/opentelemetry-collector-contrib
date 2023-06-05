@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
@@ -128,7 +117,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(memoryUtilizationMetricsLen, fmt.Errorf("error reading memory utilization for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil && !s.config.MuteProcessIOError {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -183,13 +172,22 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
 
-		executable, err := getProcessExecutable(handle)
+		exe, err := getProcessExecutable(handle)
+		if err != nil {
+			if !s.config.MuteProcessExeError {
+				errs.AddPartial(1, fmt.Errorf("error reading process executable for pid %v: %w", pid, err))
+			}
+		}
+
+		name, err := getProcessName(handle, exe)
 		if err != nil {
 			if !s.config.MuteProcessNameError {
 				errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
 			}
 			continue
 		}
+
+		executable := &executableMetadata{name: name, path: exe}
 
 		// filter processes by name
 		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||
@@ -294,6 +292,9 @@ func (s *scraper) scrapeAndAppendDiskMetrics(now pcommon.Timestamp, handle proce
 
 	io, err := handle.IOCounters()
 	if err != nil {
+		if s.config.MuteProcessIOError {
+			return nil
+		}
 		return err
 	}
 

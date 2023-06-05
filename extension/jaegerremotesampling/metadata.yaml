@@ -1,0 +1,7 @@
+type: jaegerremotesampling
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib, sumo]

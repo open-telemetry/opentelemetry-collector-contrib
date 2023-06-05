@@ -54,12 +54,12 @@ GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
-GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
+GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
+GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
-RUNNING_ON_GITHUB_ACTION=$(GITHUB_ACTIONS)
 
 ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sort)
 
@@ -91,34 +91,27 @@ all-pkg-dirs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense lint misspell
+common: lint
 
 .PHONY: test
 test:
-	if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
-		$(GOTEST) $(GOTEST_OPT) -v ./... 2>&1 | tee -a ./foresight-test-report.txt; \
-	else \
-		$(GOTEST) $(GOTEST_OPT) ./...; \
-	fi
-	
+	$(GOTEST) $(GOTEST_OPT) ./...
+
+.PHONY: test-with-cover
+test-with-cover:
+	mkdir -p $(PWD)/coverage/unit
+	$(GOTEST) -cover ./... -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
+
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
-	@if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
-		$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) -v ./... 2>&1 | tee -a ./foresight-test-report-unit-tests-with-cover.txt; \
-	else \
-		$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...; \
-	fi
+	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover:
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
-	@if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
-		$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) -v ./... 2>&1 | tee -a ./foresight-test-report-integration-tests-with-cover.txt; \
-	else \
-		$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...; \
-	fi
+	$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
 	@if [ -e integration-coverage.txt ]; then \
   		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
@@ -129,7 +122,7 @@ benchmark:
 
 .PHONY: addlicense
 addlicense: $(ADDLICENCESE)
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -s=only -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
@@ -140,15 +133,14 @@ addlicense: $(ADDLICENCESE)
 
 .PHONY: checklicense
 checklicense: $(ADDLICENCESE)
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
-			echo "Use 'make addlicense' to fix this."; \
-			exit 1; \
-		else \
-			echo "Check License finished successfully"; \
-		fi
+	@licRes=$$(for f in $$(find . -type f \( -iname '*.go' -o -iname '*.sh' \) ! -path '**/third_party/*') ; do \
+	           awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
+			   awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
+	   done); \
+	   if [ -n "$${licRes}" ]; then \
+	           echo "license header checking failed:"; echo "$${licRes}"; \
+	           exit 1; \
+	   fi
 
 .PHONY: checklinks
 checklinks:
@@ -164,6 +156,10 @@ fmt: $(GOIMPORTS)
 .PHONY: lint
 lint: $(LINT) checklicense misspell
 	$(LINT) run --allow-parallel-runners --build-tags integration
+
+.PHONY: govulncheck
+govulncheck: $(GOVULNCHECK)
+	$(GOVULNCHECK) ./...
 
 .PHONY: tidy
 tidy:

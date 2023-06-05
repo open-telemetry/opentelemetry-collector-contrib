@@ -1,4 +1,4 @@
-name: hostmetricsreceiver/cpu
+type: hostmetricsreceiver/cpu
 
 sem_conv_version: 1.9.0
 

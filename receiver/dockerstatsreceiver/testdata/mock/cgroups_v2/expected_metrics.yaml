@@ -1,0 +1,365 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: container.hostname
+          value:
+            stringValue: f97ed5bca0a5
+        - key: container.id
+          value:
+            stringValue: f97ed5bca0a5a0b85bfd52c4144b96174e825c92a138bc0458f0e196f2c7c1b4
+        - key: container.image.name
+          value:
+            stringValue: alpine
+        - key: container.name
+          value:
+            stringValue: compassionate_mcnulty
+        - key: container.runtime
+          value:
+            stringValue: docker
+    schemaUrl: https://opentelemetry.io/schemas/1.6.1
+    scopeMetrics:
+      - metrics:
+          - description: Number of bytes transferred to/from the disk by the group and descendant groups.
+            name: container.blockio.io_service_bytes_recursive
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "167936"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "8"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "8"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: By
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
+            gauge:
+              dataPoints:
+                - asDouble: 0.041326615629205886
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            name: container.cpu.percent
+            unit: "1"
+          - description: Number of periods with throttling active.
+            name: container.cpu.throttling_data.periods
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{periods}'
+          - description: Number of periods when the container hits its throttling limit.
+            name: container.cpu.throttling_data.throttled_periods
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{periods}'
+          - description: Aggregate time the container was throttled.
+            name: container.cpu.throttling_data.throttled_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: ns
+          - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
+            name: container.cpu.usage.kernelmode
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "970974000"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: ns
+          - description: System CPU usage, as reported by docker.
+            name: container.cpu.usage.system
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4836970000000"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: ns
+          - description: Total CPU time consumed.
+            name: container.cpu.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "999478000"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: ns
+          - description: Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
+            name: container.cpu.usage.usermode
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "28503000"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: ns
+          - description: The amount of anonymous memory that has been identified as active by the kernel.
+            name: container.memory.active_anon
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4096"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: Cache memory that has been identified as active by the kernel.
+            name: container.memory.active_file
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: The amount of anonymous memory that has been identified as inactive by the kernel.
+            name: container.memory.inactive_anon
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "233906176"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: Cache memory that has been identified as inactive by the kernel.
+            name: container.memory.inactive_file
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: Percentage of memory used.
+            gauge:
+              dataPoints:
+                - asDouble: 87.41302490234375
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            name: container.memory.percent
+            unit: "1"
+          - description: Indicate the number of times that a process of the cgroup triggered a page fault.
+            name: container.memory.pgfault
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9458"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{faults}'
+          - description: Indicate the number of times that a process of the cgroup triggered a major fault.
+            name: container.memory.pgmajfault
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{faults}'
+          - description: The amount of memory that cannot be reclaimed.
+            name: container.memory.unevictable
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: Memory limit of the container.
+            name: container.memory.usage.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "268435456"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: Maximum memory usage.
+            name: container.memory.usage.max
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: Memory usage of the container. This excludes the cache.
+            name: container.memory.usage.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "234647552"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: By
+          - description: Bytes received by the container.
+            name: container.network.io.usage.rx_bytes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1296"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: By
+          - description: Incoming packets dropped.
+            name: container.network.io.usage.rx_dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: Received errors.
+            name: container.network.io.usage.rx_errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Packets received.
+            name: container.network.io.usage.rx_packets
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "16"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: Bytes sent.
+            name: container.network.io.usage.tx_bytes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: By
+          - description: Outgoing packets dropped.
+            name: container.network.io.usage.tx_dropped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: Sent errors.
+            name: container.network.io.usage.tx_errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Packets sent.
+            name: container.network.io.usage.tx_packets
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+              isMonotonic: true
+            unit: '{packets}'
+          - description: Number of pids in the container's cgroup.
+            name: container.pids.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: '{pids}'
+          - description: Maximum number of pids in the container's cgroup.
+            name: container.pids.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4694"
+                  startTimeUnixNano: "1682426015940992000"
+                  timeUnixNano: "1682426015943175000"
+            unit: '{pids}'
+        scope:
+          name: otelcol/dockerstatsreceiver
+          version: latest

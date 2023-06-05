@@ -1,0 +1,8 @@
+type: purefa
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib, sumo]
+  

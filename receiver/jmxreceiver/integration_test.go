@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
 // +build integration
@@ -23,9 +12,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -33,15 +24,17 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var jmxJarReleases = map[string]string{
-	"1.0.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/1.0.0-alpha/opentelemetry-java-contrib-jmx-metrics-1.0.0-alpha.jar",
-	"1.4.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.4.0-alpha/opentelemetry-jmx-metrics-1.4.0-alpha.jar",
+	"1.26.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.26.0-alpha/opentelemetry-jmx-metrics-1.26.0-alpha.jar",
+	"1.10.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
 }
 
 type JMXIntegrationSuite struct {
@@ -49,6 +42,8 @@ type JMXIntegrationSuite struct {
 	VersionToJar map[string]string
 }
 
+// It is recommended that this test be run locally with a longer timeout than the default 30s
+// go test -timeout 60s -run ^TestJMXIntegration$ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 func TestJMXIntegration(t *testing.T) {
 	suite.Run(t, new(JMXIntegrationSuite))
 }
@@ -132,19 +127,12 @@ func getLogsOnFailure(t *testing.T, logObserver *observer.ObservedLogs) {
 	}
 }
 
-// Workaround to avoid unused errors
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 	for version, jar := range suite.VersionToJar {
 		t := suite.T()
 		// Run one test per JMX receiver version we're integrating with.
 		t.Run(version, func(t *testing.T) {
-			skip(t, "https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5874")
-
 			cassandra := cassandraContainer(t)
 			defer func() {
 				require.NoError(t, cassandra.Terminate(context.Background()))
@@ -160,7 +148,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 			params.Logger = logger
 
 			cfg := &Config{
-				CollectionInterval: 100 * time.Millisecond,
+				CollectionInterval: 3 * time.Second,
 				Endpoint:           fmt.Sprintf("%v:7199", hostname),
 				JARPath:            jar,
 				TargetSystem:       "cassandra",
@@ -191,55 +179,23 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 			require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
 
+			// Wait for multiple collections, in case the first represents partially started system
 			require.Eventually(t, func() bool {
-				found := consumer.DataPointCount() > 0
-				if !found {
-					return false
-				}
-
-				metric := consumer.AllMetrics()[0]
-				require.Equal(t, 1, metric.DataPointCount())
-
-				rm := metric.ResourceMetrics().At(0)
-				resource := rm.Resource()
-				attributes := resource.Attributes()
-				lang, ok := attributes.Get("telemetry.sdk.language")
-				require.True(t, ok)
-				require.Equal(t, "java", lang.Str())
-
-				sdkName, ok := attributes.Get("telemetry.sdk.name")
-				require.True(t, ok)
-				require.Equal(t, "opentelemetry", sdkName.Str())
-
-				version, ok := attributes.Get("telemetry.sdk.version")
-				require.True(t, ok)
-				require.NotEmpty(t, version.Str())
-
-				customAttr, ok := attributes.Get("myattr")
-				require.True(t, ok)
-				require.Equal(t, "myvalue", customAttr.Str())
-
-				anotherCustomAttr, ok := attributes.Get("myotherattr")
-				require.True(t, ok)
-				require.Equal(t, "myothervalue", anotherCustomAttr.Str())
-
-				ilm := rm.ScopeMetrics().At(0)
-				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.Scope().Name())
-				require.Equal(t, "1.0.0-alpha", ilm.Scope().Version())
-
-				met := ilm.Metrics().At(0)
-
-				require.Equal(t, "cassandra.storage.load", met.Name())
-				require.Equal(t, "Size, in bytes, of the on disk data size this node manages", met.Description())
-				require.Equal(t, "By", met.Unit())
-
-				// otel-java only uses int sum w/ non-monotonic for up down counters instead of gauge
-				require.Equal(t, pmetric.MetricTypeSum, met.Type())
-				sum := met.Sum()
-				require.False(t, sum.IsMonotonic())
-
-				return true
+				return len(consumer.AllMetrics()) > 1
 			}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
+
+			metric := consumer.AllMetrics()[1]
+
+			// golden.WriteMetrics(t, filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", version)), metric)
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.yaml", version)))
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, metric,
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricValues(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder()))
 		})
 	}
 }

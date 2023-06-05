@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
@@ -25,16 +14,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
 // This file implements factory for Splunk HEC receiver.
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "splunk_hec"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelBeta
-
 	// Default endpoints to bind to.
 	defaultEndpoint = ":8088"
 )
@@ -42,10 +27,10 @@ const (
 // NewFactory creates a factory for Splunk HEC receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
-		receiver.WithLogs(createLogsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
@@ -63,6 +48,7 @@ func createDefaultConfig() component.Config {
 		},
 		RawPath:    splunk.DefaultRawPath,
 		HealthPath: splunk.DefaultHealthPath,
+		Splitting:  SplittingStrategyLine,
 	}
 }
 
@@ -83,6 +69,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
+	r.Unwrap().(*splunkReceiver).metricsConsumer = consumer
 	return r, nil
 }
 
@@ -103,6 +90,7 @@ func createLogsReceiver(
 	if err != nil {
 		return nil, err
 	}
+	r.Unwrap().(*splunkReceiver).logsConsumer = consumer
 	return r, nil
 }
 

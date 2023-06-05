@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 
@@ -32,9 +21,10 @@ import (
 // NewBoolExprForSpan creates a BoolExpr[ottlspan.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlspan.TransformContext.
 // If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
-func NewBoolExprForSpan(conditions []string, functions map[string]interface{}, errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlspan.TransformContext], error) {
-	if _, ok := functions["drop"]; !ok {
-		functions["drop"] = drop[ottlspan.TransformContext]
+func NewBoolExprForSpan(conditions []string, functions map[string]ottl.Factory[ottlspan.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlspan.TransformContext], error) {
+	drop := newDropFactory[ottlspan.TransformContext]()
+	if _, ok := functions[drop.Name()]; !ok {
+		functions[drop.Name()] = drop
 	}
 	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottlspan.NewParser(functions, set)
@@ -52,9 +42,10 @@ func NewBoolExprForSpan(conditions []string, functions map[string]interface{}, e
 // NewBoolExprForSpanEvent creates a BoolExpr[ottlspanevent.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlspanevent.TransformContext.
 // If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
-func NewBoolExprForSpanEvent(conditions []string, functions map[string]interface{}, errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlspanevent.TransformContext], error) {
-	if _, ok := functions["drop"]; !ok {
-		functions["drop"] = drop[ottlspanevent.TransformContext]
+func NewBoolExprForSpanEvent(conditions []string, functions map[string]ottl.Factory[ottlspanevent.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlspanevent.TransformContext], error) {
+	drop := newDropFactory[ottlspanevent.TransformContext]()
+	if _, ok := functions[drop.Name()]; !ok {
+		functions[drop.Name()] = drop
 	}
 	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottlspanevent.NewParser(functions, set)
@@ -72,9 +63,10 @@ func NewBoolExprForSpanEvent(conditions []string, functions map[string]interface
 // NewBoolExprForMetric creates a BoolExpr[ottlmetric.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottlmetric.TransformContext.
 // If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
-func NewBoolExprForMetric(conditions []string, functions map[string]interface{}, errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlmetric.TransformContext], error) {
-	if _, ok := functions["drop"]; !ok {
-		functions["drop"] = drop[ottlmetric.TransformContext]
+func NewBoolExprForMetric(conditions []string, functions map[string]ottl.Factory[ottlmetric.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottlmetric.TransformContext], error) {
+	drop := newDropFactory[ottlmetric.TransformContext]()
+	if _, ok := functions[drop.Name()]; !ok {
+		functions[drop.Name()] = drop
 	}
 	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottlmetric.NewParser(functions, set)
@@ -92,9 +84,10 @@ func NewBoolExprForMetric(conditions []string, functions map[string]interface{},
 // NewBoolExprForDataPoint creates a BoolExpr[ottldatapoint.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottldatapoint.TransformContext.
 // If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
-func NewBoolExprForDataPoint(conditions []string, functions map[string]interface{}, errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottldatapoint.TransformContext], error) {
-	if _, ok := functions["drop"]; !ok {
-		functions["drop"] = drop[ottldatapoint.TransformContext]
+func NewBoolExprForDataPoint(conditions []string, functions map[string]ottl.Factory[ottldatapoint.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottldatapoint.TransformContext], error) {
+	drop := newDropFactory[ottldatapoint.TransformContext]()
+	if _, ok := functions[drop.Name()]; !ok {
+		functions[drop.Name()] = drop
 	}
 	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottldatapoint.NewParser(functions, set)
@@ -112,9 +105,10 @@ func NewBoolExprForDataPoint(conditions []string, functions map[string]interface
 // NewBoolExprForLog creates a BoolExpr[ottllog.TransformContext] that will return true if any of the given OTTL conditions evaluate to true.
 // The passed in functions should use the ottllog.TransformContext.
 // If a function named `drop` is not present in the function map it will be added automatically so that parsing works as expected
-func NewBoolExprForLog(conditions []string, functions map[string]interface{}, errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottllog.TransformContext], error) {
-	if _, ok := functions["drop"]; !ok {
-		functions["drop"] = drop[ottllog.TransformContext]
+func NewBoolExprForLog(conditions []string, functions map[string]ottl.Factory[ottllog.TransformContext], errorMode ottl.ErrorMode, set component.TelemetrySettings) (expr.BoolExpr[ottllog.TransformContext], error) {
+	drop := newDropFactory[ottllog.TransformContext]()
+	if _, ok := functions[drop.Name()]; !ok {
+		functions[drop.Name()] = drop
 	}
 	statmentsStr := conditionsToStatements(conditions)
 	parser, err := ottllog.NewParser(functions, set)
@@ -137,41 +131,52 @@ func conditionsToStatements(conditions []string) []string {
 	return statements
 }
 
-func StandardSpanFuncs() map[string]interface{} {
+func StandardSpanFuncs() map[string]ottl.Factory[ottlspan.TransformContext] {
 	return standardFuncs[ottlspan.TransformContext]()
 }
 
-func StandardSpanEventFuncs() map[string]interface{} {
+func StandardSpanEventFuncs() map[string]ottl.Factory[ottlspanevent.TransformContext] {
 	return standardFuncs[ottlspanevent.TransformContext]()
 }
 
-func StandardMetricFuncs() map[string]interface{} {
+func StandardMetricFuncs() map[string]ottl.Factory[ottlmetric.TransformContext] {
 	return standardFuncs[ottlmetric.TransformContext]()
 }
 
-func StandardDataPointFuncs() map[string]interface{} {
+func StandardDataPointFuncs() map[string]ottl.Factory[ottldatapoint.TransformContext] {
 	return standardFuncs[ottldatapoint.TransformContext]()
 }
 
-func StandardLogFuncs() map[string]interface{} {
+func StandardLogFuncs() map[string]ottl.Factory[ottllog.TransformContext] {
 	return standardFuncs[ottllog.TransformContext]()
 }
 
-func standardFuncs[K any]() map[string]interface{} {
-	return map[string]interface{}{
-		"TraceID":     ottlfuncs.TraceID[K],
-		"SpanID":      ottlfuncs.SpanID[K],
-		"IsMatch":     ottlfuncs.IsMatch[K],
-		"Concat":      ottlfuncs.Concat[K],
-		"Split":       ottlfuncs.Split[K],
-		"Int":         ottlfuncs.Int[K],
-		"ConvertCase": ottlfuncs.ConvertCase[K],
-		"Substring":   ottlfuncs.Substring[K],
-		"drop":        drop[K],
-	}
+func standardFuncs[K any]() map[string]ottl.Factory[K] {
+	return ottl.CreateFactoryMap(
+		ottlfuncs.NewTraceIDFactory[K](),
+		ottlfuncs.NewSpanIDFactory[K](),
+		ottlfuncs.NewIsMatchFactory[K](),
+		ottlfuncs.NewConcatFactory[K](),
+		ottlfuncs.NewSplitFactory[K](),
+		ottlfuncs.NewIntFactory[K](),
+		ottlfuncs.NewConvertCaseFactory[K](),
+		ottlfuncs.NewSubstringFactory[K](),
+		ottlfuncs.NewLogFactory[K](),
+		ottlfuncs.NewUUIDFactory[K](),
+		ottlfuncs.NewParseJSONFactory[K](),
+		newDropFactory[K](),
+	)
 }
 
-func drop[K any]() (ottl.ExprFunc[K], error) {
+func newDropFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("drop", nil, createDropFunction[K])
+}
+
+func createDropFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return dropFn[K]()
+}
+
+func dropFn[K any]() (ottl.ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		return true, nil
 	}, nil

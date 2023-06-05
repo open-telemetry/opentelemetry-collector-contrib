@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Measures the duration of SSH connection.
+            gauge:
+              dataPoints:
+                - asInt: "33"
+                  startTimeUnixNano: "1674675480191775000"
+                  timeUnixNano: "1674675480191785000"
+            name: sshcheck.duration
+            unit: ms
+          - description: 1 if the SSH client successfully connected, otherwise 0.
+            name: sshcheck.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1674675480191775000"
+                  timeUnixNano: "1674675480191785000"
+            unit: "1"
+        scope:
+          name: otelcol/sshcheckreceiver
+          version: latest

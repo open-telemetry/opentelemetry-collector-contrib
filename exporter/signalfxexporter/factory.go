@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
@@ -27,29 +16,30 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "signalfx"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
-
 	defaultHTTPTimeout = time.Second * 5
+	defaultMaxConns    = 100
 
-	defaultMaxConns = 100
+	defaultDimMaxBuffered         = 10000
+	defaultDimSendDelay           = 10 * time.Second
+	defaultDimMaxConnsPerHost     = 20
+	defaultDimMaxIdleConns        = 20
+	defaultDimMaxIdleConnsPerHost = 20
 )
 
 // NewFactory creates a factory for SignalFx exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithMetrics(createMetricsExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
@@ -72,6 +62,14 @@ func createDefaultConfig() component.Config {
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
+		DimensionClient: DimensionClientConfig{
+			SendDelay:           defaultDimSendDelay,
+			MaxBuffered:         defaultDimMaxBuffered,
+			MaxConnsPerHost:     defaultDimMaxConnsPerHost,
+			MaxIdleConns:        defaultDimMaxIdleConns,
+			MaxIdleConnsPerHost: defaultDimMaxIdleConnsPerHost,
+			IdleConnTimeout:     idleConnTimeout,
+		},
 	}
 }
 

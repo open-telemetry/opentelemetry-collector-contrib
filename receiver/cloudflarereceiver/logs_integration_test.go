@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
 
@@ -23,7 +12,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -35,10 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
@@ -120,28 +108,12 @@ func TestReceiverTLS(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			expectedLogs, err := readLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
 			require.NoError(t, err)
 
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
-}
-
-func readLogs(path string) (plog.Logs, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return plog.Logs{}, err
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return plog.Logs{}, err
-	}
-
-	unmarshaler := plog.JSONUnmarshaler{}
-	return unmarshaler.UnmarshalLogs(b)
 }
 
 func clientWithCert(path string) (*http.Client, error) {

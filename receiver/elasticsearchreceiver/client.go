@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
@@ -25,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -53,6 +43,7 @@ type defaultElasticsearchClient struct {
 	endpoint   *url.URL
 	authHeader string
 	logger     *zap.Logger
+	version    *version.Version
 }
 
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
@@ -75,29 +66,45 @@ func newElasticsearchClient(settings component.TelemetrySettings, c Config, h co
 		authHeader = fmt.Sprintf("Basic %s", authb64)
 	}
 
-	return &defaultElasticsearchClient{
+	esClient := defaultElasticsearchClient{
 		client:     client,
 		authHeader: authHeader,
 		endpoint:   endpoint,
 		logger:     settings.Logger,
-	}, nil
+	}
+
+	// Try update es version
+	_, _ = esClient.ClusterMetadata(context.Background())
+	return &esClient, nil
 }
 
-// nodeStatsMetrics is a comma separated list of metrics that will be gathered from NodeStats.
-// The available metrics are documented here for Elasticsearch 7.9:
-// https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-stats.html#cluster-nodes-stats-api-path-params
-const nodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http,fs,indexing_pressure,ingest,indices,adaptive_selection,discovery,script,os"
+var (
+	es7_9 = func() *version.Version {
+		v, _ := version.NewVersion("7.9")
+		return v
+	}()
+)
 
-// nodesMetrics is a comma separated list of metrics that will be gathered from Nodes.
-// The available metrics are documented here for Elasticsearch 7.9:
-// https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-info.html
-// Note: This constant should remain empty as the receiver will only retrieve metadata from the /_nodes endpoint, not metrics.
-const nodesMetrics = ""
+const (
+	// A comma separated list of metrics that will be gathered from NodeStats.
+	// https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-stats.html#cluster-nodes-stats-api-path-params
+	defaultNodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http,fs,ingest,indices,adaptive_selection,discovery,script,os"
 
-// nodeStatsIndexMetrics is a comma separated list of index metrics that will be gathered from NodeStats.
-const nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata,translog"
+	// Extra NodeStats Metrics that are only supported on and after 7.9
+	nodeStatsMetricsAfter7_9 = ",indexing_pressure"
 
-const indexStatsMetrics = "_all"
+	// A comma separated list of metrics that will be gathered from Nodes.
+	// The available metrics are documented here for Elasticsearch 7.9:
+	// https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-info.html
+	// Note: This constant should remain empty as the receiver will only retrieve metadata from the /_nodes endpoint, not metrics.
+	nodesMetrics = ""
+
+	// A comma separated list of index metrics that will be gathered from NodeStats.
+	nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata,translog"
+
+	// A comma separated list of metrics that will be gathered from IndexStats.
+	indexStatsMetrics = "_all"
+)
 
 func (c defaultElasticsearchClient) Nodes(ctx context.Context, nodeIds []string) (*model.Nodes, error) {
 	var nodeSpec string
@@ -127,6 +134,10 @@ func (c defaultElasticsearchClient) NodeStats(ctx context.Context, nodes []strin
 		nodeSpec = "_all"
 	}
 
+	nodeStatsMetrics := defaultNodeStatsMetrics
+	if c.version != nil && c.version.GreaterThanOrEqual(es7_9) {
+		nodeStatsMetrics += nodeStatsMetricsAfter7_9
+	}
 	nodeStatsPath := fmt.Sprintf("_nodes/%s/stats/%s/%s", nodeSpec, nodeStatsMetrics, nodeStatsIndexMetrics)
 
 	body, err := c.doRequest(ctx, nodeStatsPath)
@@ -171,7 +182,7 @@ func (c defaultElasticsearchClient) IndexStats(ctx context.Context, indices []st
 	return &indexStats, err
 }
 
-func (c defaultElasticsearchClient) ClusterMetadata(ctx context.Context) (*model.ClusterMetadataResponse, error) {
+func (c *defaultElasticsearchClient) ClusterMetadata(ctx context.Context) (*model.ClusterMetadataResponse, error) {
 	body, err := c.doRequest(ctx, "")
 	if err != nil {
 		return nil, err
@@ -179,6 +190,9 @@ func (c defaultElasticsearchClient) ClusterMetadata(ctx context.Context) (*model
 
 	versionResponse := model.ClusterMetadataResponse{}
 	err = json.Unmarshal(body, &versionResponse)
+	if c.version == nil {
+		c.version, _ = version.NewVersion(versionResponse.Version.Number)
+	}
 	return &versionResponse, err
 }
 

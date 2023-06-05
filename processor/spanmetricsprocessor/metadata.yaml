@@ -1,0 +1,7 @@
+type: spanmetrics
+
+status:
+  class: processor
+  stability:
+    deprecated: [traces]
+  distributions: [contrib, observiq, splunk, sumo]

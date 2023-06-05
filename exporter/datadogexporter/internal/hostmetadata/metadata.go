@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package metadata is responsible for collecting host metadata from different providers
 // such as EC2, ECS, AWS, etc and pushing it to Datadog.
@@ -25,12 +14,10 @@ import (
 	"time"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/azure"
 	ec2Attributes "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/ec2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/gcp"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -107,14 +94,9 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
-	return metadataFromAttributesWithRegistry(HostnamePreviewFeatureGate, attrs)
-}
-
-func metadataFromAttributesWithRegistry(gate *featuregate.Gate, attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	var usePreviewHostnameLogic = gate.IsEnabled()
-	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
+	if src, ok := attributes.SourceFromAttrs(attrs); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier
 	}
@@ -128,12 +110,9 @@ func metadataFromAttributesWithRegistry(gate *featuregate.Gate, attrs pcommon.Ma
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
 	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderGCP:
-		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
+		gcpHostInfo := gcp.HostInfoFromAttrs(attrs)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	case ok && cloudProvider.Str() == conventions.AttributeCloudProviderAzure:
-		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
-		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
 
 	return hm

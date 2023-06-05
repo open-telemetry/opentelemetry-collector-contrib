@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package lokireceiver
 
@@ -25,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "defaults"),
+			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
@@ -54,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "mixed"),
+			id: component.NewIDWithName(metadata.Type, "mixed"),
 			expected: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
@@ -96,7 +87,7 @@ func TestInvalidConfig(t *testing.T) {
 		err string
 	}{
 		{
-			id:  component.NewIDWithName(typeStr, "empty"),
+			id:  component.NewIDWithName(metadata.Type, "empty"),
 			err: "must specify at least one protocol when using the Loki receiver",
 		},
 	}
@@ -111,7 +102,7 @@ func TestInvalidConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			err = component.ValidateConfig(cfg)
-			assert.Contains(t, err.Error(), tt.err)
+			assert.Error(t, err, tt.err)
 		})
 	}
 }
@@ -125,7 +116,7 @@ func TestConfigWithUnknownKeysConfig(t *testing.T) {
 		err string
 	}{
 		{
-			id:  component.NewIDWithName(typeStr, "extra_keys"),
+			id:  component.NewIDWithName(metadata.Type, "extra_keys"),
 			err: "'' has invalid keys: foo",
 		},
 	}

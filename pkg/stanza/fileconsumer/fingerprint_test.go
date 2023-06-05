@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -34,7 +23,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestManager(t, cfg)
+	operator, _ := buildTestManagerWithOptions(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
 
@@ -130,7 +119,7 @@ func TestNewFingerprint(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			operator, _ := buildTestManager(t, cfg)
+			operator, _ := buildTestManagerWithOptions(t, cfg)
 
 			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
 
@@ -165,22 +154,22 @@ func TestFingerprintCopy(t *testing.T) {
 	for _, tc := range cases {
 		fp := &Fingerprint{FirstBytes: []byte(tc)}
 
-		copy := fp.Copy()
+		cp := fp.Copy()
 
 		// Did not change original
 		require.Equal(t, tc, string(fp.FirstBytes))
 
 		// Copy is also good
-		require.Equal(t, tc, string(copy.FirstBytes))
+		require.Equal(t, tc, string(cp.FirstBytes))
 
 		// Modify copy
-		copy.FirstBytes = append(copy.FirstBytes, []byte("also")...)
+		cp.FirstBytes = append(cp.FirstBytes, []byte("also")...)
 
 		// Still did not change original
 		require.Equal(t, tc, string(fp.FirstBytes))
 
 		// Copy is modified
-		require.Equal(t, tc+"also", string(copy.FirstBytes))
+		require.Equal(t, tc+"also", string(cp.FirstBytes))
 	}
 }
 
@@ -237,7 +226,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestManager(t, cfg)
+	operator, _ := buildTestManagerWithOptions(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize *= 10
 

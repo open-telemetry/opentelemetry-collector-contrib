@@ -8,109 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for apachereceiver metrics.
-type MetricsSettings struct {
-	ApacheCPULoad            MetricSettings `mapstructure:"apache.cpu.load"`
-	ApacheCPUTime            MetricSettings `mapstructure:"apache.cpu.time"`
-	ApacheCurrentConnections MetricSettings `mapstructure:"apache.current_connections"`
-	ApacheLoad1              MetricSettings `mapstructure:"apache.load.1"`
-	ApacheLoad15             MetricSettings `mapstructure:"apache.load.15"`
-	ApacheLoad5              MetricSettings `mapstructure:"apache.load.5"`
-	ApacheRequestTime        MetricSettings `mapstructure:"apache.request.time"`
-	ApacheRequests           MetricSettings `mapstructure:"apache.requests"`
-	ApacheScoreboard         MetricSettings `mapstructure:"apache.scoreboard"`
-	ApacheTraffic            MetricSettings `mapstructure:"apache.traffic"`
-	ApacheUptime             MetricSettings `mapstructure:"apache.uptime"`
-	ApacheWorkers            MetricSettings `mapstructure:"apache.workers"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		ApacheCPULoad: MetricSettings{
-			Enabled: true,
-		},
-		ApacheCPUTime: MetricSettings{
-			Enabled: true,
-		},
-		ApacheCurrentConnections: MetricSettings{
-			Enabled: true,
-		},
-		ApacheLoad1: MetricSettings{
-			Enabled: true,
-		},
-		ApacheLoad15: MetricSettings{
-			Enabled: true,
-		},
-		ApacheLoad5: MetricSettings{
-			Enabled: true,
-		},
-		ApacheRequestTime: MetricSettings{
-			Enabled: true,
-		},
-		ApacheRequests: MetricSettings{
-			Enabled: true,
-		},
-		ApacheScoreboard: MetricSettings{
-			Enabled: true,
-		},
-		ApacheTraffic: MetricSettings{
-			Enabled: true,
-		},
-		ApacheUptime: MetricSettings{
-			Enabled: true,
-		},
-		ApacheWorkers: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for apachereceiver metrics.
-type ResourceAttributesSettings struct {
-	ApacheServerName ResourceAttributeSettings `mapstructure:"apache.server.name"`
-	ApacheServerPort ResourceAttributeSettings `mapstructure:"apache.server.port"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		ApacheServerName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		ApacheServerPort: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeCPULevel specifies the a value cpu_level attribute.
 type AttributeCPULevel int
@@ -258,7 +159,7 @@ var MapAttributeWorkersState = map[string]AttributeWorkersState{
 
 type metricApacheCPULoad struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -271,7 +172,7 @@ func (m *metricApacheCPULoad) init() {
 }
 
 func (m *metricApacheCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -289,16 +190,16 @@ func (m *metricApacheCPULoad) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheCPULoad) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheCPULoad(settings MetricSettings) metricApacheCPULoad {
-	m := metricApacheCPULoad{settings: settings}
-	if settings.Enabled {
+func newMetricApacheCPULoad(cfg MetricConfig) metricApacheCPULoad {
+	m := metricApacheCPULoad{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -307,7 +208,7 @@ func newMetricApacheCPULoad(settings MetricSettings) metricApacheCPULoad {
 
 type metricApacheCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -323,7 +224,7 @@ func (m *metricApacheCPUTime) init() {
 }
 
 func (m *metricApacheCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLevelAttributeValue string, cpuModeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -343,16 +244,16 @@ func (m *metricApacheCPUTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheCPUTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheCPUTime(settings MetricSettings) metricApacheCPUTime {
-	m := metricApacheCPUTime{settings: settings}
-	if settings.Enabled {
+func newMetricApacheCPUTime(cfg MetricConfig) metricApacheCPUTime {
+	m := metricApacheCPUTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -361,7 +262,7 @@ func newMetricApacheCPUTime(settings MetricSettings) metricApacheCPUTime {
 
 type metricApacheCurrentConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -376,7 +277,7 @@ func (m *metricApacheCurrentConnections) init() {
 }
 
 func (m *metricApacheCurrentConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -394,16 +295,16 @@ func (m *metricApacheCurrentConnections) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheCurrentConnections) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheCurrentConnections(settings MetricSettings) metricApacheCurrentConnections {
-	m := metricApacheCurrentConnections{settings: settings}
-	if settings.Enabled {
+func newMetricApacheCurrentConnections(cfg MetricConfig) metricApacheCurrentConnections {
+	m := metricApacheCurrentConnections{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -412,7 +313,7 @@ func newMetricApacheCurrentConnections(settings MetricSettings) metricApacheCurr
 
 type metricApacheLoad1 struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -425,7 +326,7 @@ func (m *metricApacheLoad1) init() {
 }
 
 func (m *metricApacheLoad1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -443,16 +344,16 @@ func (m *metricApacheLoad1) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheLoad1) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheLoad1(settings MetricSettings) metricApacheLoad1 {
-	m := metricApacheLoad1{settings: settings}
-	if settings.Enabled {
+func newMetricApacheLoad1(cfg MetricConfig) metricApacheLoad1 {
+	m := metricApacheLoad1{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -461,7 +362,7 @@ func newMetricApacheLoad1(settings MetricSettings) metricApacheLoad1 {
 
 type metricApacheLoad15 struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -474,7 +375,7 @@ func (m *metricApacheLoad15) init() {
 }
 
 func (m *metricApacheLoad15) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -492,16 +393,16 @@ func (m *metricApacheLoad15) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheLoad15) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheLoad15(settings MetricSettings) metricApacheLoad15 {
-	m := metricApacheLoad15{settings: settings}
-	if settings.Enabled {
+func newMetricApacheLoad15(cfg MetricConfig) metricApacheLoad15 {
+	m := metricApacheLoad15{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -510,7 +411,7 @@ func newMetricApacheLoad15(settings MetricSettings) metricApacheLoad15 {
 
 type metricApacheLoad5 struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -523,7 +424,7 @@ func (m *metricApacheLoad5) init() {
 }
 
 func (m *metricApacheLoad5) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -541,16 +442,16 @@ func (m *metricApacheLoad5) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheLoad5) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheLoad5(settings MetricSettings) metricApacheLoad5 {
-	m := metricApacheLoad5{settings: settings}
-	if settings.Enabled {
+func newMetricApacheLoad5(cfg MetricConfig) metricApacheLoad5 {
+	m := metricApacheLoad5{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -559,7 +460,7 @@ func newMetricApacheLoad5(settings MetricSettings) metricApacheLoad5 {
 
 type metricApacheRequestTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -574,7 +475,7 @@ func (m *metricApacheRequestTime) init() {
 }
 
 func (m *metricApacheRequestTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -592,16 +493,16 @@ func (m *metricApacheRequestTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheRequestTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheRequestTime(settings MetricSettings) metricApacheRequestTime {
-	m := metricApacheRequestTime{settings: settings}
-	if settings.Enabled {
+func newMetricApacheRequestTime(cfg MetricConfig) metricApacheRequestTime {
+	m := metricApacheRequestTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -610,7 +511,7 @@ func newMetricApacheRequestTime(settings MetricSettings) metricApacheRequestTime
 
 type metricApacheRequests struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -625,7 +526,7 @@ func (m *metricApacheRequests) init() {
 }
 
 func (m *metricApacheRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -643,16 +544,16 @@ func (m *metricApacheRequests) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheRequests) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheRequests(settings MetricSettings) metricApacheRequests {
-	m := metricApacheRequests{settings: settings}
-	if settings.Enabled {
+func newMetricApacheRequests(cfg MetricConfig) metricApacheRequests {
+	m := metricApacheRequests{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -661,7 +562,7 @@ func newMetricApacheRequests(settings MetricSettings) metricApacheRequests {
 
 type metricApacheScoreboard struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -677,7 +578,7 @@ func (m *metricApacheScoreboard) init() {
 }
 
 func (m *metricApacheScoreboard) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, scoreboardStateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -696,16 +597,16 @@ func (m *metricApacheScoreboard) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheScoreboard) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheScoreboard(settings MetricSettings) metricApacheScoreboard {
-	m := metricApacheScoreboard{settings: settings}
-	if settings.Enabled {
+func newMetricApacheScoreboard(cfg MetricConfig) metricApacheScoreboard {
+	m := metricApacheScoreboard{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -714,7 +615,7 @@ func newMetricApacheScoreboard(settings MetricSettings) metricApacheScoreboard {
 
 type metricApacheTraffic struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -729,7 +630,7 @@ func (m *metricApacheTraffic) init() {
 }
 
 func (m *metricApacheTraffic) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -747,16 +648,16 @@ func (m *metricApacheTraffic) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheTraffic) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheTraffic(settings MetricSettings) metricApacheTraffic {
-	m := metricApacheTraffic{settings: settings}
-	if settings.Enabled {
+func newMetricApacheTraffic(cfg MetricConfig) metricApacheTraffic {
+	m := metricApacheTraffic{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -765,7 +666,7 @@ func newMetricApacheTraffic(settings MetricSettings) metricApacheTraffic {
 
 type metricApacheUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -780,7 +681,7 @@ func (m *metricApacheUptime) init() {
 }
 
 func (m *metricApacheUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -798,16 +699,16 @@ func (m *metricApacheUptime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheUptime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheUptime(settings MetricSettings) metricApacheUptime {
-	m := metricApacheUptime{settings: settings}
-	if settings.Enabled {
+func newMetricApacheUptime(cfg MetricConfig) metricApacheUptime {
+	m := metricApacheUptime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -816,7 +717,7 @@ func newMetricApacheUptime(settings MetricSettings) metricApacheUptime {
 
 type metricApacheWorkers struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -832,7 +733,7 @@ func (m *metricApacheWorkers) init() {
 }
 
 func (m *metricApacheWorkers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, workersStateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -851,37 +752,31 @@ func (m *metricApacheWorkers) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricApacheWorkers) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricApacheWorkers(settings MetricSettings) metricApacheWorkers {
-	m := metricApacheWorkers{settings: settings}
-	if settings.Enabled {
+func newMetricApacheWorkers(cfg MetricConfig) metricApacheWorkers {
+	m := metricApacheWorkers{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                      pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                int                 // maximum observed number of metrics per resource.
 	resourceCapacity               int                 // maximum observed number of resource attributes.
 	metricsBuffer                  pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo // contains version information
-	resourceAttributesSettings     ResourceAttributesSettings
+	resourceAttributesConfig       ResourceAttributesConfig
 	metricApacheCPULoad            metricApacheCPULoad
 	metricApacheCPUTime            metricApacheCPUTime
 	metricApacheCurrentConnections metricApacheCurrentConnections
@@ -906,26 +801,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
-		resourceAttributesSettings:     mbc.ResourceAttributes,
+		resourceAttributesConfig:       mbc.ResourceAttributes,
 		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
 		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
 		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mbc.Metrics.ApacheCurrentConnections),
@@ -956,12 +837,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithApacheServerName sets provided value as "apache.server.name" attribute for current resource.
 func WithApacheServerName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.ApacheServerName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ApacheServerName.Enabled {
 			rm.Resource().Attributes().PutStr("apache.server.name", val)
 		}
 	}
@@ -969,8 +850,8 @@ func WithApacheServerName(val string) ResourceMetricsOption {
 
 // WithApacheServerPort sets provided value as "apache.server.port" attribute for current resource.
 func WithApacheServerPort(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.ApacheServerPort.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ApacheServerPort.Enabled {
 			rm.Resource().Attributes().PutStr("apache.server.port", val)
 		}
 	}
@@ -979,7 +860,7 @@ func WithApacheServerPort(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1022,7 +903,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricApacheWorkers.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1032,7 +913,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer
