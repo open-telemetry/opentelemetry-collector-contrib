@@ -61,7 +61,7 @@ metrics:
     attributes: [broker]
   kafka.brokers.request_latency:
     enabled: true
-    description: Request latency Average in ms
+    description: Average request latency in ms
     unit: "ms"
     gauge:
       value_type: double
