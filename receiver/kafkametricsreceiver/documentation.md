@@ -16,9 +16,9 @@ metrics:
 
 Number of brokers in the cluster.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {brokers} | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {brokers} | Sum | Int | Delta | false |
 
 ### kafka.consumer_group.lag
 
