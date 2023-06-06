@@ -1,10 +1,10 @@
 # OpenSearch Exporter
 
-| Status                   |             |
-| ------------------------ |-------------|
-| Stability                | [beta]      |
-| Supported pipeline types | traces      |
-| Distributions            | [contrib]   |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [development] |
+| Supported pipeline types | traces        |
+| Distributions            | [contrib]     |
 
 This exporter supports sending OpenTelemetry signals to [OpenSearch](https://www.opensearch.org).
 
