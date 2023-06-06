@@ -96,7 +96,12 @@ common: lint
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) ./...
-	
+
+.PHONY: test-with-cover
+test-with-cover:
+	mkdir -p $(PWD)/coverage/unit
+	$(GOTEST) $(GOTEST_OPT) -cover ./... -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
+
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"

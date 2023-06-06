@@ -90,7 +90,7 @@ func (r *dnsResolver) start(ctx context.Context) error {
 	return nil
 }
 
-func (r *dnsResolver) shutdown(ctx context.Context) error {
+func (r *dnsResolver) shutdown(_ context.Context) error {
 	r.changeCallbackLock.Lock()
 	r.onChangeCallbacks = nil
 	r.changeCallbackLock.Unlock()

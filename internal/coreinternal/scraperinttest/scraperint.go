@@ -10,6 +10,7 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode"
@@ -23,25 +24,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func EqualsLatestMetrics(expected pmetric.Metrics, sink *consumertest.MetricsSink, compareOpts []pmetrictest.CompareMetricsOption) func() bool {
-	return func() bool {
-		allMetrics := sink.AllMetrics()
-		return len(allMetrics) > 0 && nil == pmetrictest.CompareMetrics(expected, allMetrics[len(allMetrics)-1], compareOpts...)
-	}
-}
-
-func NewIntegrationTest(f receiver.Factory, cr testcontainers.ContainerRequest, opts ...TestOption) *IntegrationTest {
+func NewIntegrationTest(f receiver.Factory, opts ...TestOption) *IntegrationTest {
 	it := &IntegrationTest{
-		factory:          f,
-		containerRequest: cr,
-		customConfig:     func(component.Config, string, MappedPortFunc) {},
-		expectedFile:     filepath.Join("testdata", "integration", "expected.yaml"),
-		compareTimeout:   time.Minute,
+		factory:                f,
+		createContainerTimeout: 5 * time.Minute,
+		customConfig:           func(*testing.T, component.Config, *ContainerInfo) {},
+		expectedFile:           filepath.Join("testdata", "integration", "expected.yaml"),
+		compareTimeout:         time.Minute,
 	}
 	for _, opt := range opts {
 		opt(it)
@@ -50,7 +47,9 @@ func NewIntegrationTest(f receiver.Factory, cr testcontainers.ContainerRequest, 
 }
 
 type IntegrationTest struct {
-	containerRequest testcontainers.ContainerRequest
+	networkRequest         *testcontainers.NetworkRequest
+	containerRequests      []testcontainers.ContainerRequest
+	createContainerTimeout time.Duration
 
 	factory      receiver.Factory
 	customConfig customConfigFunc
@@ -58,48 +57,63 @@ type IntegrationTest struct {
 	expectedFile   string
 	compareOptions []pmetrictest.CompareMetricsOption
 	compareTimeout time.Duration
+
+	failOnErrorLogs bool
+	writeExpected   bool
 }
 
 func (it *IntegrationTest) Run(t *testing.T) {
-	ctx := context.Background()
-	require.NoError(t, it.containerRequest.Validate())
+	it.validate(t)
 
-	var container testcontainers.Container
-	var err error
-	require.Eventually(t, func() bool {
-		container, err = testcontainers.GenericContainer(ctx,
-			testcontainers.GenericContainerRequest{
-				ContainerRequest: it.containerRequest,
-				Started:          true,
-			})
-		return err == nil
-	}, 5*time.Minute, time.Second)
-	defer func() {
-		require.NoError(t, container.Terminate(ctx))
-	}()
+	if it.networkRequest != nil {
+		network := it.createNetwork(t)
+		defer func() {
+			require.NoError(t, network.Remove(context.Background()))
+		}()
+	}
+
+	ci := it.createContainers(t)
+	defer ci.terminate(t)
 
 	cfg := it.factory.CreateDefaultConfig()
-	host, mappedPort := containerInfo(ctx, t, container)
-	it.customConfig(cfg, host, mappedPort)
-
+	it.customConfig(t, cfg, ci)
 	sink := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopCreateSettings()
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings.Logger = zap.New(observedZapCore)
 
-	rcvr, err := it.factory.CreateMetricsReceiver(ctx, settings, cfg, sink)
+	rcvr, err := it.factory.CreateMetricsReceiver(context.Background(), settings, cfg, sink)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, rcvr.Shutdown(ctx))
+		require.NoError(t, rcvr.Shutdown(context.Background()))
 	}()
 
-	expected, err := golden.ReadMetrics(it.expectedFile)
-	require.NoError(t, err)
+	var expected pmetric.Metrics
+	if !it.writeExpected {
+		expected, err = golden.ReadMetrics(it.expectedFile)
+		require.NoError(t, err)
+	}
 
 	// Defined outside of Eventually so it can be printed if the test fails
 	var validateErr error
 	defer func() {
-		if t.Failed() {
+		if t.Failed() && validateErr != nil {
 			t.Error(validateErr.Error())
+
+			logs := strings.Builder{}
+			for _, e := range observedLogs.All() {
+				logs.WriteString(e.Message + "\n")
+			}
+			t.Errorf("full log:\n%s", logs.String())
+
+			if len(sink.AllMetrics()) == 0 {
+				t.Error("no data emitted by scraper")
+				return
+			}
+			metricBytes, err := golden.MarshalMetricsYAML(sink.AllMetrics()[len(sink.AllMetrics())-1])
+			require.NoError(t, err)
+			t.Errorf("latest result:\n%s", metricBytes)
 		}
 	}()
 
@@ -109,13 +123,108 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			if len(allMetrics) == 0 {
 				return false
 			}
+			if it.failOnErrorLogs && len(observedLogs.All()) > 0 {
+				logs := strings.Builder{}
+				for _, e := range observedLogs.All() {
+					logs.WriteString(e.Message + "\n")
+				}
+				t.Errorf("full log:\n%s", logs.String())
+			}
+
+			if it.writeExpected {
+				require.NoError(t, golden.WriteMetrics(t, it.expectedFile, allMetrics[0]))
+				return true
+			}
 			validateErr = pmetrictest.CompareMetrics(expected, allMetrics[len(allMetrics)-1], it.compareOptions...)
 			return validateErr == nil
 		},
 		it.compareTimeout, it.compareTimeout/20)
 }
 
+func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
+	var errs error
+
+	var network testcontainers.Network
+	var err error
+	require.Eventuallyf(t, func() bool {
+		network, err = testcontainers.GenericNetwork(
+			context.Background(),
+			testcontainers.GenericNetworkRequest{
+				NetworkRequest: *it.networkRequest,
+			})
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			return false
+		}
+		return true
+	}, it.createContainerTimeout, time.Second, "create network timeout: %v", errs)
+	return network
+}
+
+func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
+	var wg sync.WaitGroup
+	ci := &ContainerInfo{
+		containers: make(map[string]testcontainers.Container, len(it.containerRequests)),
+	}
+	wg.Add(len(it.containerRequests))
+	for _, cr := range it.containerRequests {
+		go func(req testcontainers.ContainerRequest) {
+			var errs error
+			require.Eventuallyf(t, func() bool {
+				c, err := testcontainers.GenericContainer(
+					context.Background(),
+					testcontainers.GenericContainerRequest{
+						ContainerRequest: req,
+						Started:          true,
+					})
+				if err != nil {
+					errs = multierr.Append(errs, fmt.Errorf("execute container request: %w", err))
+					return false
+				}
+				ci.add(req.Name, c)
+				return true
+			}, it.createContainerTimeout, time.Second, "create container timeout: %v", errs)
+			wg.Done()
+		}(cr)
+	}
+	wg.Wait()
+	return ci
+}
+
+func (it *IntegrationTest) validate(t *testing.T) {
+	containerNames := make(map[string]bool, len(it.containerRequests))
+	for _, cr := range it.containerRequests {
+		if _, ok := containerNames[cr.Name]; ok {
+			require.False(t, ok, "duplicate container name: %q", cr.Name)
+		} else {
+			containerNames[cr.Name] = true
+		}
+		for _, port := range cr.ExposedPorts {
+			require.False(t, strings.ContainsRune(port, ':'), "exposed port hardcoded to host port: %q", port)
+		}
+		require.NoError(t, cr.Validate())
+	}
+}
+
 type TestOption func(*IntegrationTest)
+
+func WithNetworkRequest(nr testcontainers.NetworkRequest) TestOption {
+	return func(it *IntegrationTest) {
+		it.networkRequest = &nr
+	}
+}
+
+func WithContainerRequest(cr testcontainers.ContainerRequest) TestOption {
+	return func(it *IntegrationTest) {
+		it.containerRequests = append(it.containerRequests, cr)
+	}
+}
+
+func WithCreateContainerTimeout(t time.Duration) TestOption {
+	return func(it *IntegrationTest) {
+		it.createContainerTimeout = t
+	}
+}
 
 func WithCustomConfig(c customConfigFunc) TestOption {
 	return func(it *IntegrationTest) {
@@ -126,6 +235,21 @@ func WithCustomConfig(c customConfigFunc) TestOption {
 func WithExpectedFile(f string) TestOption {
 	return func(it *IntegrationTest) {
 		it.expectedFile = f
+	}
+}
+
+// This option is useful for debugging scrapers but should not be used permanently
+// because the logs do not correlate to a single scrape interval. In other words,
+// when a retryable failure occurs, this setting will likely force a failure anyways.
+func FailOnErrorLogs() TestOption {
+	return func(it *IntegrationTest) {
+		it.failOnErrorLogs = true
+	}
+}
+
+func WriteExpected() TestOption {
+	return func(it *IntegrationTest) {
+		it.writeExpected = true
 	}
 }
 
@@ -141,19 +265,53 @@ func WithCompareTimeout(t time.Duration) TestOption {
 	}
 }
 
-type customConfigFunc func(cfg component.Config, host string, mappedPort MappedPortFunc)
+type customConfigFunc func(*testing.T, component.Config, *ContainerInfo)
 
-func containerInfo(ctx context.Context, t *testing.T, container testcontainers.Container) (string, MappedPortFunc) {
-	h, err := container.Host(ctx)
-	require.NoError(t, err)
-	return h, func(port string) string {
-		p, err := container.MappedPort(ctx, nat.Port(port))
-		require.NoError(t, err)
-		return p.Port()
-	}
+type ContainerInfo struct {
+	sync.Mutex
+	containers map[string]testcontainers.Container
 }
 
-type MappedPortFunc func(port string) string
+func (ci *ContainerInfo) Host(t *testing.T) string {
+	return ci.HostForNamedContainer(t, "")
+}
+
+func (ci *ContainerInfo) HostForNamedContainer(t *testing.T, containerName string) string {
+	c := ci.container(t, containerName)
+	h, err := c.Host(context.Background())
+	require.NoErrorf(t, err, "get host for container %q: %v", containerName, err)
+	return h
+}
+
+func (ci *ContainerInfo) MappedPort(t *testing.T, port string) string {
+	return ci.MappedPortForNamedContainer(t, "", port)
+}
+
+func (ci *ContainerInfo) MappedPortForNamedContainer(t *testing.T, containerName string, port string) string {
+	c := ci.container(t, containerName)
+	p, err := c.MappedPort(context.Background(), nat.Port(port))
+	require.NoErrorf(t, err, "get port %q for container %q: %v", port, containerName, err)
+	return p.Port()
+}
+
+func (ci *ContainerInfo) container(t *testing.T, name string) testcontainers.Container {
+	require.NotZero(t, len(ci.containers), "no containers in use")
+	c, ok := ci.containers[name]
+	require.True(t, ok, "container with name %q not found", name)
+	return c
+}
+
+func (ci *ContainerInfo) add(name string, c testcontainers.Container) {
+	ci.Lock()
+	defer ci.Unlock()
+	ci.containers[name] = c
+}
+
+func (ci *ContainerInfo) terminate(t *testing.T) {
+	for name, c := range ci.containers {
+		require.NoError(t, c.Terminate(context.Background()), "terminate container %q", name)
+	}
+}
 
 func RunScript(script []string) testcontainers.ContainerHook {
 	return func(ctx context.Context, container testcontainers.Container) error {

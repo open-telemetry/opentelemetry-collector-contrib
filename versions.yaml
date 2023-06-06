@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.77.0
+    version: v0.79.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -142,6 +142,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver

@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 go 1.19
 
 require (
-	github.com/docker/docker v23.0.6+incompatible
+	github.com/docker/docker v24.0.2+incompatible
 	github.com/gobwas/glob v0.2.3
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	go.uber.org/zap v1.24.0
 )
 

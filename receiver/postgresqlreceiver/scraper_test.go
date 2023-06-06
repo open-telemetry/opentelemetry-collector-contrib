@@ -24,8 +24,6 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg.Endpoint = "fake:11111"
 
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &defaultClientFactory{})
-	scraper.emitMetricsWithResourceAttributes = false
-	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
@@ -40,8 +38,6 @@ func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
-	scraper.emitMetricsWithResourceAttributes = false
-	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -60,8 +56,6 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
-	scraper.emitMetricsWithResourceAttributes = false
-	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -80,8 +74,6 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
-	scraper.emitMetricsWithResourceAttributes = false
-	scraper.emitMetricsWithoutResourceAttributes = true
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -195,7 +187,7 @@ func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockClientFactory) getClient(c *Config, database string) (client, error) {
+func (m *mockClientFactory) getClient(_ *Config, database string) (client, error) {
 	args := m.Called(database)
 	return args.Get(0).(client), args.Error(1)
 }

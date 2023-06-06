@@ -59,7 +59,7 @@ func newReceiver(
 	}, nil
 }
 
-func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
+func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
 
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")

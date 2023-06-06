@@ -23,7 +23,7 @@ func (f *FakeBuilder) Build(_ *zap.SugaredLogger) (Operator, error) {
 }
 func (f *FakeBuilder) ID() string     { return "operator" }
 func (f *FakeBuilder) Type() string   { return "operator" }
-func (f *FakeBuilder) SetID(s string) {}
+func (f *FakeBuilder) SetID(_ string) {}
 
 func TestUnmarshalJSONErrors(t *testing.T) {
 	t.Cleanup(func() {

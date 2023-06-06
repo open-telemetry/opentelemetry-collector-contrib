@@ -13,3 +13,5 @@ zipkin/2:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
+  tls:
+    insecure_skip_verify: true

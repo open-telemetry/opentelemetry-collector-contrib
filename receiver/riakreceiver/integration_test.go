@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -23,23 +24,26 @@ import (
 
 const riakPort = "8098"
 
-func TestRiakIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("Incompatible with arm64")
+	}
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    filepath.Join("testdata", "integration"),
-				Dockerfile: "Dockerfile.riak",
-			},
-			ExposedPorts: []string{riakPort},
-			WaitingFor:   wait.ForListeningPort(riakPort),
-		},
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
+					Context:    filepath.Join("testdata", "integration"),
+					Dockerfile: "Dockerfile.riak",
+				},
+				ExposedPorts: []string{riakPort},
+				WaitingFor:   wait.ForListeningPort(riakPort),
+			}),
 		scraperinttest.WithCustomConfig(
-			func(cfg component.Config, host string, mappedPort scraperinttest.MappedPortFunc) {
-				port := mappedPort(riakPort)
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
-				rCfg.Endpoint = fmt.Sprintf("http://%s", net.JoinHostPort(host, port))
+				rCfg.Endpoint = fmt.Sprintf("http://%s", net.JoinHostPort(ci.Host(t), ci.MappedPort(t, riakPort)))
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),

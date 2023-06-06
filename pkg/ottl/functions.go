@@ -9,8 +9,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
@@ -156,6 +154,18 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "IntGetter"):
+		arg, err := buildSlice[IntGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "IntLikeGetter"):
+		arg, err := buildSlice[IntLikeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
 		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
 	}
@@ -187,7 +197,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, string]{Getter: arg.Get}, nil
+		return StandardStringGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "StringLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -199,7 +209,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, float64]{Getter: arg.Get}, nil
+		return StandardFloatGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "FloatLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -211,13 +221,19 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, int64]{Getter: arg.Get}, nil
+		return StandardIntGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "IntLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardIntLikeGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "PMapGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, pcommon.Map]{Getter: arg.Get}, nil
+		return StandardPMapGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
 		arg, err := p.enumParser(argVal.Enum)
 		if err != nil {

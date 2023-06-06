@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -23,7 +25,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Rules: []Rule{
 					{
@@ -46,31 +48,31 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_new_metric"),
+			id:           component.NewIDWithName(metadata.Type, "missing_new_metric"),
 			errorMessage: fmt.Sprintf("missing required field %q", nameFieldName),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_type"),
+			id:           component.NewIDWithName(metadata.Type, "missing_type"),
 			errorMessage: fmt.Sprintf("missing required field %q", typeFieldName),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_generation_type"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_generation_type"),
 			errorMessage: fmt.Sprintf("%q must be in %q", typeFieldName, generationTypeKeys()),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_operand1"),
+			id:           component.NewIDWithName(metadata.Type, "missing_operand1"),
 			errorMessage: fmt.Sprintf("missing required field %q", metric1FieldName),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_operand2"),
+			id:           component.NewIDWithName(metadata.Type, "missing_operand2"),
 			errorMessage: fmt.Sprintf("missing required field %q for generation type %q", metric2FieldName, calculate),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "missing_scale_by"),
+			id:           component.NewIDWithName(metadata.Type, "missing_scale_by"),
 			errorMessage: fmt.Sprintf("field %q required to be greater than 0 for generation type %q", scaleByFieldName, scale),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_operation"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_operation"),
 			errorMessage: fmt.Sprintf("%q must be in %q", operationFieldName, operationTypeKeys()),
 		},
 	}

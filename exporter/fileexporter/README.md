@@ -4,11 +4,12 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
-| Distributions | [core], [contrib], [observiq], [splunk], [sumo] |
+| Distributions | [core], [contrib], [aws], [observiq], [splunk], [sumo] |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[aws]: https://github.com/aws-observability/aws-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
@@ -45,7 +46,8 @@ The following settings are optional:
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
-- `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats. NOTE: a value without unit is in nanoseconds.
+- `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats. 
+NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and writes are not buffered if `rotation` is set.
 
 ## File Rotation
 Telemetry data is exported to a single file by default.

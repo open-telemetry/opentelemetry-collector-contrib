@@ -41,6 +41,8 @@ This receiver supports NSX-T Datacenter versions:
 
 - `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+
 - `timeout`: (default = `1m`) The timeout of running commands against the NSX REST API.
 
 - `metrics` (default: see DefaultMetricsSettings [here])(./internal/metadata/generated_metrics.go): Allows enabling and disabling specific metrics from being collected in this receiver.

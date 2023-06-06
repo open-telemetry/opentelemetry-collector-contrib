@@ -221,15 +221,11 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
@@ -240,15 +236,10 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client key file "./testdata/dummy-tls-key-file" specified without client cert file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of cert or cert_file must be configured when a client key is configured")
+	}
 }
 
 func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
@@ -259,15 +250,11 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
@@ -281,12 +268,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.NoError(t, err)
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
@@ -300,10 +282,19 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
+	require.NoError(t, err)
+}
 
-	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`
+func TestFileSDConfigWithoutSDFile(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "non-existent-prometheus-sd-file-config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
 }

@@ -272,8 +272,11 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		DatasetURL: server.URL,
 		APIKey:     "key-lib",
 		BufferSettings: BufferSettings{
-			MaxLifetime: time.Millisecond,
-			GroupBy:     []string{"attributes.container_id"},
+			MaxLifetime:          time.Millisecond,
+			GroupBy:              []string{"attributes.container_id"},
+			RetryInitialInterval: time.Second,
+			RetryMaxInterval:     time.Minute,
+			RetryMaxElapsedTime:  time.Hour,
 		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

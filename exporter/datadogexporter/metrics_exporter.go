@@ -186,7 +186,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	} else {
 		consumer = metrics.NewZorkianConsumer()
 	}
-	err := exp.tr.MapMetrics(ctx, md, consumer)
+	_, err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}

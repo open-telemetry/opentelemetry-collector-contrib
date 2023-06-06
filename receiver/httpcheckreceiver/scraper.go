@@ -30,7 +30,7 @@ type httpcheckScraper struct {
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
-func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err error) {
+func (h *httpcheckScraper) start(_ context.Context, host component.Host) (err error) {
 	h.client, err = h.cfg.ToClient(host, h.settings)
 	return
 }

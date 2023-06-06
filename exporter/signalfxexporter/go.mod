@@ -6,23 +6,23 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.77.0
-	github.com/shirou/gopsutil/v3 v3.23.4
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.79.0
+	github.com/shirou/gopsutil/v3 v3.23.5
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1
-	github.com/stretchr/testify v1.8.2
-	go.opentelemetry.io/collector v0.77.0
-	go.opentelemetry.io/collector/component v0.77.0
-	go.opentelemetry.io/collector/confmap v0.77.0
-	go.opentelemetry.io/collector/consumer v0.77.0
-	go.opentelemetry.io/collector/exporter v0.77.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0011
-	go.opentelemetry.io/collector/semconv v0.77.0
+	github.com/stretchr/testify v1.8.4
+	go.opentelemetry.io/collector v0.79.0
+	go.opentelemetry.io/collector/component v0.79.0
+	go.opentelemetry.io/collector/confmap v0.79.0
+	go.opentelemetry.io/collector/consumer v0.79.0
+	go.opentelemetry.io/collector/exporter v0.79.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
+	go.opentelemetry.io/collector/semconv v0.79.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sys v0.8.0
@@ -56,7 +56,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rs/cors v1.9.0 // indirect
-	github.com/shoenig/go-m1cpu v0.1.5 // indirect
+	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.47 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
@@ -64,18 +64,18 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.77.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.77.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.41.1 // indirect
-	go.opentelemetry.io/otel v1.15.1 // indirect
-	go.opentelemetry.io/otel/metric v0.38.1 // indirect
-	go.opentelemetry.io/otel/trace v1.15.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/receiver v0.79.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
+	go.opentelemetry.io/otel v1.16.0 // indirect
+	go.opentelemetry.io/otel/metric v1.16.0 // indirect
+	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )

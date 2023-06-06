@@ -33,6 +33,7 @@ The following configuration settings are optional:
 
 - `method` (default: `GET`): The method used to call the endpoint.
 - `collection_interval` (default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 ### Example Configuration
 

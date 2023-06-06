@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/scalyr/dataset-go/pkg/buffer"
 	"github.com/scalyr/dataset-go/pkg/buffer_config"
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
@@ -111,12 +112,14 @@ func (c *Config) convert() (*ExporterConfig, error) {
 				Endpoint: c.DatasetURL,
 				Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
 				BufferSettings: buffer_config.DataSetBufferSettings{
-					MaxLifetime:          c.BufferSettings.MaxLifetime,
-					MaxSize:              buffer.LimitBufferSize,
-					GroupBy:              c.BufferSettings.GroupBy,
-					RetryInitialInterval: c.BufferSettings.RetryInitialInterval,
-					RetryMaxInterval:     c.BufferSettings.RetryMaxInterval,
-					RetryMaxElapsedTime:  c.BufferSettings.RetryMaxElapsedTime,
+					MaxLifetime:              c.BufferSettings.MaxLifetime,
+					MaxSize:                  buffer.LimitBufferSize,
+					GroupBy:                  c.BufferSettings.GroupBy,
+					RetryInitialInterval:     c.BufferSettings.RetryInitialInterval,
+					RetryMaxInterval:         c.BufferSettings.RetryMaxInterval,
+					RetryMaxElapsedTime:      c.BufferSettings.RetryMaxElapsedTime,
+					RetryMultiplier:          backoff.DefaultMultiplier,
+					RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
 				},
 			},
 			tracesSettings: c.TracesSettings,

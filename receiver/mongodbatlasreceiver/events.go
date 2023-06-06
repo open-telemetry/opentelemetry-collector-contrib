@@ -83,7 +83,7 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 	return r
 }
 
-func (er *eventsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
+func (er *eventsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
 	er.logger.Debug("Starting up events receiver")
 	cancelCtx, cancel := context.WithCancel(ctx)
 	er.cancel = cancel

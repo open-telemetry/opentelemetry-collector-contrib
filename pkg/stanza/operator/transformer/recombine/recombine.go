@@ -4,9 +4,9 @@
 package recombine // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -114,13 +114,21 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		maxSources:          c.MaxSources,
 		overwriteWithOldest: overwriteWithOldest,
 		batchMap:            make(map[string]*sourceBatch),
-		combineField:        c.CombineField,
-		combineWith:         c.CombineWith,
-		forceFlushTimeout:   c.ForceFlushTimeout,
-		ticker:              time.NewTicker(c.ForceFlushTimeout),
-		chClose:             make(chan struct{}),
-		sourceIdentifier:    c.SourceIdentifier,
-		maxLogSize:          int64(c.MaxLogSize),
+		batchPool: sync.Pool{
+			New: func() interface{} {
+				return &sourceBatch{
+					entries:    []*entry.Entry{},
+					recombined: &bytes.Buffer{},
+				}
+			},
+		},
+		combineField:      c.CombineField,
+		combineWith:       c.CombineWith,
+		forceFlushTimeout: c.ForceFlushTimeout,
+		ticker:            time.NewTicker(c.ForceFlushTimeout),
+		chClose:           make(chan struct{}),
+		sourceIdentifier:  c.SourceIdentifier,
+		maxLogSize:        int64(c.MaxLogSize),
 	}, nil
 }
 
@@ -141,6 +149,7 @@ type Transformer struct {
 	sourceIdentifier    entry.Field
 
 	sync.Mutex
+	batchPool  sync.Pool
 	batchMap   map[string]*sourceBatch
 	maxLogSize int64
 }
@@ -148,7 +157,7 @@ type Transformer struct {
 // sourceBatch contains the status info of a batch
 type sourceBatch struct {
 	entries                []*entry.Entry
-	recombined             strings.Builder
+	recombined             *bytes.Buffer
 	firstEntryObservedTime time.Time
 }
 
@@ -267,12 +276,7 @@ func (r *Transformer) matchIndicatesLast() bool {
 func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source string) {
 	batch, ok := r.batchMap[source]
 	if !ok {
-		batch = &sourceBatch{
-			entries:                []*entry.Entry{e},
-			recombined:             strings.Builder{},
-			firstEntryObservedTime: e.ObservedTimestamp,
-		}
-		r.batchMap[source] = batch
+		batch = r.addNewBatch(source, e)
 		if len(r.batchMap) >= r.maxSources {
 			r.Error("Batched source exceeds max source size. Flushing all batched logs. Consider increasing max_sources parameter")
 			r.flushUncombined(context.Background())
@@ -316,8 +320,8 @@ func (r *Transformer) flushUncombined(ctx context.Context) {
 		for _, entry := range r.batchMap[source].entries {
 			r.Write(ctx, entry)
 		}
+		r.removeBatch(source)
 	}
-	r.batchMap = make(map[string]*sourceBatch)
 	r.ticker.Reset(r.forceFlushTimeout)
 }
 
@@ -331,7 +335,7 @@ func (r *Transformer) flushSource(source string, deleteSource bool) error {
 	}
 
 	if len(batch.entries) == 0 {
-		delete(r.batchMap, source)
+		r.removeBatch(source)
 		return nil
 	}
 
@@ -353,11 +357,28 @@ func (r *Transformer) flushSource(source string, deleteSource bool) error {
 
 	r.Write(context.Background(), base)
 	if deleteSource {
-		delete(r.batchMap, source)
+		r.removeBatch(source)
 	} else {
 		batch.entries = batch.entries[:0]
 		batch.recombined.Reset()
 	}
 
 	return nil
+}
+
+// addNewBatch creates a new batch for the given source and adds the entry to it.
+func (r *Transformer) addNewBatch(source string, e *entry.Entry) *sourceBatch {
+	batch := r.batchPool.Get().(*sourceBatch)
+	batch.entries = append(batch.entries[:0], e)
+	batch.recombined.Reset()
+	batch.firstEntryObservedTime = e.ObservedTimestamp
+	r.batchMap[source] = batch
+	return batch
+}
+
+// removeBatch removes the batch for the given source.
+func (r *Transformer) removeBatch(source string) {
+	batch := r.batchMap[source]
+	delete(r.batchMap, source)
+	r.batchPool.Put(batch)
 }

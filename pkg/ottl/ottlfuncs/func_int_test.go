@@ -17,6 +17,7 @@ func Test_Int(t *testing.T) {
 		name     string
 		value    interface{}
 		expected interface{}
+		err      bool
 	}{
 		{
 			name:     "string",
@@ -67,17 +68,22 @@ func Test_Int(t *testing.T) {
 			name:     "some struct",
 			value:    struct{}{},
 			expected: nil,
+			err:      true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := intFunc[interface{}](&ottl.StandardGetSetter[interface{}]{
+			exprFunc := intFunc[interface{}](&ottl.StandardIntLikeGetter[interface{}]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
 			})
 			result, err := exprFunc(nil, nil)
-			assert.NoError(t, err)
+			if tt.err {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expected, result)
 		})
 	}

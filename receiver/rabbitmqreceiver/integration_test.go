@@ -22,29 +22,31 @@ import (
 
 const rabbitmqPort = "15672"
 
-func TestRabbitmqIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    filepath.Join("testdata", "integration"),
-				Dockerfile: "Dockerfile.rabbitmq",
-			},
-			ExposedPorts: []string{rabbitmqPort},
-			WaitingFor:   wait.ForListeningPort(rabbitmqPort).WithStartupTimeout(time.Minute),
-			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
-				PostStarts: []testcontainers.ContainerHook{
-					scraperinttest.RunScript([]string{"./setup.sh"}),
-				},
-			}},
-		},
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				Image: "rabbitmq:3.11-management",
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "setup.sh"),
+					ContainerFilePath: "/setup.sh",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{rabbitmqPort},
+				WaitingFor:   wait.ForListeningPort(rabbitmqPort).WithStartupTimeout(time.Minute),
+				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+					PostStarts: []testcontainers.ContainerHook{
+						scraperinttest.RunScript([]string{"./setup.sh"}),
+					},
+				}},
+			}),
 		scraperinttest.WithCustomConfig(
-			func(cfg component.Config, host string, mappedPort scraperinttest.MappedPortFunc) {
-				port := mappedPort(rabbitmqPort)
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
+				rCfg.Endpoint = fmt.Sprintf("http://%s:%s", ci.Host(t), ci.MappedPort(t, rabbitmqPort))
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
-				rCfg.Endpoint = fmt.Sprintf("http://%s:%s", host, port)
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreResourceAttributeValue("rabbitmq.node.name"),

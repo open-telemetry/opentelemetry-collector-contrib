@@ -9,11 +9,6 @@ import (
 	"fmt"
 )
 
-const (
-	// TypeStr is the type and ingest format of this receiver
-	TypeStr = "awsxray"
-)
-
 type CauseType int
 
 const (

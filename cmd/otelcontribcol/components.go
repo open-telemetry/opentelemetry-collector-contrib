@@ -84,6 +84,7 @@ import (
 	oidcauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	sigv4authextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+	dbstorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	attributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	cumulativetodeltaprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
@@ -218,6 +219,7 @@ func components() (otelcol.Factories, error) {
 		pprofextension.NewFactory(),
 		sigv4authextension.NewFactory(),
 		filestorage.NewFactory(),
+		dbstorage.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

@@ -5,7 +5,6 @@ package haproxyreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -25,10 +24,8 @@ func NewFactory() receiver.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 1 * time.Minute,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

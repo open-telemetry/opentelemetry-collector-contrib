@@ -25,7 +25,7 @@ var gopsutilEnvVars = map[string]string{
 // through env vars, so it must be consistent across the process.
 var globalRootPath string
 
-func validateRootPath(rootPath string, env environment) error {
+func validateRootPath(rootPath string, _ environment) error {
 	if rootPath == "" || rootPath == "/" {
 		return nil
 	}

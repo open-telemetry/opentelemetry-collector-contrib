@@ -123,12 +123,12 @@ func (s *ObjStore) ListKeys() []string {
 }
 
 // Get implements the Get method of the store interface.
-func (s *ObjStore) Get(obj interface{}) (item interface{}, exists bool, err error) {
+func (s *ObjStore) Get(_ interface{}) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 
 // GetByKey implements the GetByKey method of the store interface.
-func (s *ObjStore) GetByKey(key string) (item interface{}, exists bool, err error) {
+func (s *ObjStore) GetByKey(_ string) (item interface{}, exists bool, err error) {
 	return nil, false, nil
 }
 

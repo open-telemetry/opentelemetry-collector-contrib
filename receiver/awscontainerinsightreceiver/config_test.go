@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -25,11 +27,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "collection_interval_settings"),
+			id: component.NewIDWithName(metadata.Type, "collection_interval_settings"),
 			expected: &Config{
 				CollectionInterval:    60 * time.Second,
 				ContainerOrchestrator: "eks",

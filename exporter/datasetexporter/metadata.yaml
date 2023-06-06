@@ -3,5 +3,5 @@ type: dataset
 status:
   class: exporter
   stability:
-    development: [logs, traces]
+    alpha: [logs, traces]
   distributions: []

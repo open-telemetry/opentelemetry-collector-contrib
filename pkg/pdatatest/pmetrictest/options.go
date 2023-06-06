@@ -222,6 +222,10 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 			switch attribute.Type() {
 			case pcommon.ValueTypeStr:
 				attribute.SetStr("")
+			case pcommon.ValueTypeBool:
+				attribute.SetBool(false)
+			case pcommon.ValueTypeInt:
+				attribute.SetInt(0)
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}
