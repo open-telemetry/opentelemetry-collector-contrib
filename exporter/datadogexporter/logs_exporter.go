@@ -9,6 +9,7 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	logsmapping "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -96,7 +97,7 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 			// iterate over Logs
 			for k := 0; k < lsl.Len(); k++ {
 				log := lsl.At(k)
-				payload = append(payload, logs.Transform(log, res, exp.params.Logger))
+				payload = append(payload, logsmapping.Transform(log, res, exp.params.Logger))
 			}
 		}
 	}
