@@ -135,8 +135,10 @@ func sortExponentialHistogramDataPointSlice(ehdps pmetric.ExponentialHistogramDa
 	})
 }
 
-// assumes the parameters have been pre-sorted
 func compareMaps(a, b pcommon.Map) int {
+	sortAttributeMap(a)
+	sortAttributeMap(b)
+
 	if a.Len() != b.Len() {
 		return a.Len() - b.Len()
 	}

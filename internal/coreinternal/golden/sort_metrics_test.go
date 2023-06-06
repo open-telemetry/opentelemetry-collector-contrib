@@ -52,7 +52,7 @@ func TestSortMetricDatapointSlice(t *testing.T) {
 	require.NoError(t, err)
 	after, err := ReadMetrics(afterPath)
 	require.NoError(t, err)
-	sortMetrics(before)
+	sortMetricDataPointSlices(before)
 	require.Equal(t, before, after)
 
 }

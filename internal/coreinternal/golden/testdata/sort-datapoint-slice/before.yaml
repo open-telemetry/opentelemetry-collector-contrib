@@ -16,9 +16,12 @@ resourceMetrics:
                   timeUnixNano: "1111111111111111111"
                 - asInt: "0"
                   attributes:
-                    - key: d
+                    - key: z
                       value:
                         stringValue: DDDD
+                    - key: x
+                      value:
+                        stringValue: InnerAttributeSort
                   startTimeUnixNano: "1111111111111111111"
                   timeUnixNano: "1111111111111111111"
                 - asInt: "0"
