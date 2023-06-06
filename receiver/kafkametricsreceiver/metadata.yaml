@@ -39,68 +39,86 @@ metrics:
     warnings:
       if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.consumer_fetch_rate:
-    enabled: true
+    enabled: false
     description: Average consumer fetch Rate
     unit: "{fetches}/s"
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.incoming_byte_rate:
-    enabled: true
+    enabled: false
     description: Average tncoming Byte Rate in bytes/second
     unit: 1
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.outgoing_byte_rate:
-    enabled: true
+    enabled: false
     description: Average outgoing Byte Rate in bytes/second.
     unit: 1
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.request_latency:
-    enabled: true
+    enabled: false
     description: Average request latency in ms
     unit: "ms"
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.response_rate:
-    enabled: true
+    enabled: false
     description: Average response rate per second
     unit: "{response}/s"
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.response_size:
-    enabled: true
+    enabled: false
     description: Average response size in bytes
     unit: "By"
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.request_rate:
-    enabled: true
+    enabled: false
     description: Average request rate per second.
     unit: "{requests}/s"
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.request_size:
-    enabled: true
+    enabled: false
     description: Average request size in bytes
     unit: "By"
     gauge:
       value_type: double
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.requests_in_flight:
-    enabled: true
+    enabled: false
     description: Requests in flight
     unit: "{requests}"
     gauge:
       value_type: int
     attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
 #  topics scraper
   kafka.topic.partitions:
     enabled: true
