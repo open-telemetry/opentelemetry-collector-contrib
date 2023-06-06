@@ -60,33 +60,33 @@ func (s *flinkmetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, erro
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var scraperErrors scrapererror.ScrapeErrors
 
-	jobmanagerMetrics, err := s.client.GetJobmanagerMetrics(ctx)
-	if err != nil {
+	if jobmanagerMetrics, err := s.client.GetJobmanagerMetrics(ctx); err == nil {
+		s.processJobmanagerMetrics(now, jobmanagerMetrics)
+	} else {
 		s.settings.Logger.Error(jobmanagerFailedFetch, zap.Error(err))
 		scraperErrors.AddPartial(1, fmt.Errorf("%s %w", jobmanagerFailedFetch, err))
 	}
 
-	taskmanagersMetrics, err := s.client.GetTaskmanagersMetrics(ctx)
-	if err != nil {
+	if taskmanagersMetrics, err := s.client.GetTaskmanagersMetrics(ctx); err == nil {
+		s.processTaskmanagerMetrics(now, taskmanagersMetrics)
+	} else {
 		s.settings.Logger.Error(taskmanagerFailedFetch, zap.Error(err))
 		scraperErrors.AddPartial(1, fmt.Errorf("%s %w", taskmanagerFailedFetch, err))
 	}
 
-	jobsMetrics, err := s.client.GetJobsMetrics(ctx)
-	if err != nil {
+	if jobsMetrics, err := s.client.GetJobsMetrics(ctx); err == nil {
+		s.processJobsMetrics(now, jobsMetrics)
+	} else {
 		s.settings.Logger.Error(jobsFailedFetch, zap.Error(err))
 		scraperErrors.AddPartial(1, fmt.Errorf("%s %w", jobsFailedFetch, err))
 	}
-	subtasksMetrics, err := s.client.GetSubtasksMetrics(ctx)
-	if err != nil {
+
+	if subtasksMetrics, err := s.client.GetSubtasksMetrics(ctx); err == nil {
+		s.processSubtaskMetrics(now, subtasksMetrics)
+	} else {
 		s.settings.Logger.Error(subtasksFailedFetch, zap.Error(err))
 		scraperErrors.AddPartial(1, fmt.Errorf("%s %w", subtasksFailedFetch, err))
 	}
-
-	s.processJobmanagerMetrics(now, jobmanagerMetrics)
-	s.processTaskmanagerMetrics(now, taskmanagersMetrics)
-	s.processJobsMetrics(now, jobsMetrics)
-	s.processSubtaskMetrics(now, subtasksMetrics)
 
 	return s.mb.Emit(), scraperErrors.Combine()
 }
