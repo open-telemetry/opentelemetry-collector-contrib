@@ -57,12 +57,12 @@ func (c *Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeTy
 func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo, metadata metrics.RuntimeMetricsTelemetry) (series []datadogV2.MetricSeries) {
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo, "")
+		runningMetric := DefaultMetrics("metrics", host, timestamp, TagsFromBuildInfo(buildInfo))
 		series = append(series, runningMetric...)
 	}
 
 	for tag := range c.seenTags {
-		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildInfo, "")
+		runningMetrics := DefaultMetrics("metrics", "", timestamp, TagsFromBuildInfo(buildInfo))
 		for i := range runningMetrics {
 			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
 		}
@@ -70,7 +70,8 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	}
 
 	for _, lang := range metadata.LanguageTags {
-		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, buildInfo, lang)
+		tags := append(TagsFromBuildInfo(buildInfo), "language:"+lang)
+		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
 		series = append(series, runningMetric...)
 	}
 
