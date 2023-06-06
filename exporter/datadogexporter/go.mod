@@ -5,11 +5,12 @@ go 1.19
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.84
 	github.com/DataDog/datadog-agent/pkg/trace v0.46.0-rc.1
-	github.com/DataDog/datadog-api-client-go/v2 v2.12.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.13.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.2.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.2.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.3.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.3.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.3.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.3.0
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
 	github.com/aws/aws-sdk-go v1.44.274
@@ -24,17 +25,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.78.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/component v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/confmap v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/consumer v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/exporter v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/processor/batchprocessor v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/receiver v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/semconv v0.78.3-0.20230601234953-deffd4892002
+	go.opentelemetry.io/collector v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/component v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/confmap v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/consumer v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/exporter v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230605162713-2fbdd031c2f5
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230605162713-2fbdd031c2f5
+	go.opentelemetry.io/collector/processor/batchprocessor v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/receiver v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/semconv v0.78.3-0.20230605151302-371fc4517197
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.30.0

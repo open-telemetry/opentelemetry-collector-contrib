@@ -58,7 +58,8 @@ type IntegrationTest struct {
 	compareOptions []pmetrictest.CompareMetricsOption
 	compareTimeout time.Duration
 
-	writeExpected bool
+	failOnErrorLogs bool
+	writeExpected   bool
 }
 
 func (it *IntegrationTest) Run(t *testing.T) {
@@ -122,6 +123,14 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			if len(allMetrics) == 0 {
 				return false
 			}
+			if it.failOnErrorLogs && len(observedLogs.All()) > 0 {
+				logs := strings.Builder{}
+				for _, e := range observedLogs.All() {
+					logs.WriteString(e.Message + "\n")
+				}
+				t.Errorf("full log:\n%s", logs.String())
+			}
+
 			if it.writeExpected {
 				require.NoError(t, golden.WriteMetrics(t, it.expectedFile, allMetrics[0]))
 				return true
@@ -226,6 +235,15 @@ func WithCustomConfig(c customConfigFunc) TestOption {
 func WithExpectedFile(f string) TestOption {
 	return func(it *IntegrationTest) {
 		it.expectedFile = f
+	}
+}
+
+// This option is useful for debugging scrapers but should not be used permanently
+// because the logs do not correlate to a single scrape interval. In other words,
+// when a retryable failure occurs, this setting will likely force a failure anyways.
+func FailOnErrorLogs() TestOption {
+	return func(it *IntegrationTest) {
+		it.failOnErrorLogs = true
 	}
 }
 
