@@ -3,16 +3,16 @@
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type:
+change_type: 'new_component'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component:
+component: 'timeconverter'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: "allow strings with time and time format to be converted to a golang time object"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [22007]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
