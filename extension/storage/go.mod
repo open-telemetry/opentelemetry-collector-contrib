@@ -7,9 +7,9 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/stretchr/testify v1.8.4
 	go.etcd.io/bbolt v1.3.7
-	go.opentelemetry.io/collector v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/component v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/confmap v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector v0.79.0
+	go.opentelemetry.io/collector/component v0.79.0
+	go.opentelemetry.io/collector/confmap v0.79.0
 	go.uber.org/zap v1.24.0
 )
 
