@@ -137,7 +137,10 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Counters: []CounterConfig{{Name: "Invalid Counter", MetricRep: MetricRep{Name: "invalid"}}},
 					},
 				},
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: time.Minute
+					InitialDelay:       time.Second,
+				},
 			},
 			startMessage: "some performance counters could not be initialized",
 			startErr:     "failed to create perf counter with path \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
