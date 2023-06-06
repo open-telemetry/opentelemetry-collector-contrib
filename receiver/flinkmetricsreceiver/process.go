@@ -13,6 +13,9 @@ import (
 )
 
 func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jobmanagerMetrics *models.JobmanagerMetrics) {
+	if jobmanagerMetrics == nil {
+		return
+	}
 	for _, metric := range jobmanagerMetrics.Metrics {
 		switch metric.ID {
 		case "Status.JVM.CPU.Load":
