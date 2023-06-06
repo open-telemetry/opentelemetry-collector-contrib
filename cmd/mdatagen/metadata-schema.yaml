@@ -14,9 +14,9 @@ status:
     deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
     unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
   # Optional: The distributions that this component is bundled with (For example core or contrib). See statusdata.go for a list of common distros.
-  distributions: []string
+  distributions: [string]
   # Optional: A list of warnings that should be brought to the attention of users looking to use this component
-  warnings: []string
+  warnings: [string]
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
@@ -30,7 +30,7 @@ resource_attributes:
     # Required: description of the attribute.
     description:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
-    enum: []string
+    enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
 
@@ -44,7 +44,7 @@ attributes:
     # Required: description of the attribute.
     description:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
-    enum: []string
+    enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
 
@@ -81,4 +81,4 @@ metrics:
       # (cumulative) or not (delta).
       aggregation: <delta|cumulative>
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
-    attributes: []string
+    attributes: [string]
