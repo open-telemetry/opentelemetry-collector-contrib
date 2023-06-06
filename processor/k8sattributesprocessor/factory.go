@@ -141,13 +141,20 @@ func createKubernetesProcessor(
 	options ...option,
 ) (*kubernetesprocessor, error) {
 	kp := &kubernetesprocessor{logger: params.Logger}
+	pCfg := cfg.(*Config)
 
-	err := errWrongKeyConfig(cfg)
+	err := errWrongKeyConfig(pCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	allOptions := append(createProcessorOpts(cfg), options...)
+	if len(pCfg.Extract.Metadata) == 0 {
+		kp.logger.Warn("Default metadata extraction rules will be changed in future releases, " +
+			"please specify the extraction rules explicitly in `processors::k8sattributes::extract::metadata` field. " +
+			"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23136 for more details.")
+	}
+
+	allOptions := append(createProcessorOpts(pCfg), options...)
 
 	for _, opt := range allOptions {
 		if err := opt(kp); err != nil {
@@ -166,40 +173,36 @@ func createKubernetesProcessor(
 	return kp, nil
 }
 
-func createProcessorOpts(cfg component.Config) []option {
-	oCfg := cfg.(*Config)
+func createProcessorOpts(cfg *Config) []option {
 	var opts []option
-	if oCfg.Passthrough {
+	if cfg.Passthrough {
 		opts = append(opts, withPassthrough())
 	}
 
 	// extraction rules
-	opts = append(opts, withExtractMetadata(oCfg.Extract.Metadata...))
-	opts = append(opts, withExtractLabels(oCfg.Extract.Labels...))
-	opts = append(opts, withExtractAnnotations(oCfg.Extract.Annotations...))
+	opts = append(opts, withExtractMetadata(cfg.Extract.Metadata...))
+	opts = append(opts, withExtractLabels(cfg.Extract.Labels...))
+	opts = append(opts, withExtractAnnotations(cfg.Extract.Annotations...))
 
 	// filters
-	opts = append(opts, withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))
-	opts = append(opts, withFilterNamespace(oCfg.Filter.Namespace))
-	opts = append(opts, withFilterLabels(oCfg.Filter.Labels...))
-	opts = append(opts, withFilterFields(oCfg.Filter.Fields...))
-	opts = append(opts, withAPIConfig(oCfg.APIConfig))
+	opts = append(opts, withFilterNode(cfg.Filter.Node, cfg.Filter.NodeFromEnvVar))
+	opts = append(opts, withFilterNamespace(cfg.Filter.Namespace))
+	opts = append(opts, withFilterLabels(cfg.Filter.Labels...))
+	opts = append(opts, withFilterFields(cfg.Filter.Fields...))
+	opts = append(opts, withAPIConfig(cfg.APIConfig))
 
-	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
+	opts = append(opts, withExtractPodAssociations(cfg.Association...))
 
-	opts = append(opts, withExcludes(oCfg.Exclude))
+	opts = append(opts, withExcludes(cfg.Exclude))
 
 	return opts
 }
 
-func errWrongKeyConfig(cfg component.Config) error {
-	oCfg := cfg.(*Config)
-
-	for _, r := range append(oCfg.Extract.Labels, oCfg.Extract.Annotations...) {
+func errWrongKeyConfig(cfg *Config) error {
+	for _, r := range append(cfg.Extract.Labels, cfg.Extract.Annotations...) {
 		if r.Key != "" && r.KeyRegex != "" {
 			return fmt.Errorf("Out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", r.Key, r.KeyRegex)
 		}
 	}
-
 	return nil
 }
