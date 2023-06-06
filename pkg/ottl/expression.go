@@ -133,6 +133,12 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return evaluated, nil
 }
 
+type TypeError string
+
+func (t TypeError) Error() string {
+	return string(t)
+}
+
 // StringGetter is a Getter that must return a string.
 type StringGetter[K any] interface {
 	// Get retrieves a string value.  If the value is not a string, an error is returned.
@@ -149,7 +155,7 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error
 		return "", err
 	}
 	if val == nil {
-		return "", fmt.Errorf("expected string but got nil")
+		return "", TypeError("expected string but got nil")
 	}
 	switch v := val.(type) {
 	case string:
@@ -158,9 +164,9 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error
 		if v.Type() == pcommon.ValueTypeStr {
 			return v.Str(), nil
 		}
-		return "", fmt.Errorf("expected string but got %v", v.Type())
+		return "", TypeError(fmt.Sprintf("expected string but got %v", v.Type()))
 	default:
-		return "", fmt.Errorf("expected string but got %T", val)
+		return "", TypeError(fmt.Sprintf("expected string but got %T", val))
 	}
 }
 
@@ -178,7 +184,7 @@ func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
 		return 0, err
 	}
 	if val == nil {
-		return 0, fmt.Errorf("expected int64 but got nil")
+		return 0, TypeError("expected int64 but got nil")
 	}
 	switch v := val.(type) {
 	case int64:
@@ -187,9 +193,9 @@ func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
 		if v.Type() == pcommon.ValueTypeInt {
 			return v.Int(), nil
 		}
-		return 0, fmt.Errorf("expected int64 but got %v", v.Type())
+		return 0, TypeError(fmt.Sprintf("expected int64 but got %v", v.Type()))
 	default:
-		return 0, fmt.Errorf("expected int64 but got %T", val)
+		return 0, TypeError(fmt.Sprintf("expected int64 but got %T", val))
 	}
 }
 
@@ -207,7 +213,7 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 		return 0, err
 	}
 	if val == nil {
-		return 0, fmt.Errorf("expected float64 but got nil")
+		return 0, TypeError("expected float64 but got nil")
 	}
 	switch v := val.(type) {
 	case float64:
@@ -216,9 +222,9 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 		if v.Type() == pcommon.ValueTypeDouble {
 			return v.Double(), nil
 		}
-		return 0, fmt.Errorf("expected float64 but got %v", v.Type())
+		return 0, TypeError(fmt.Sprintf("expected float64 but got %v", v.Type()))
 	default:
-		return 0, fmt.Errorf("expected float64 but got %T", val)
+		return 0, TypeError(fmt.Sprintf("expected float64 but got %T", val))
 	}
 }
 
@@ -236,7 +242,7 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 		return pcommon.Map{}, err
 	}
 	if val == nil {
-		return pcommon.Map{}, fmt.Errorf("expected pcommon.Map but got nil")
+		return pcommon.Map{}, TypeError("expected pcommon.Map but got nil")
 	}
 	switch v := val.(type) {
 	case pcommon.Map:
@@ -245,7 +251,7 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 		if v.Type() == pcommon.ValueTypeMap {
 			return v.Map(), nil
 		}
-		return pcommon.Map{}, fmt.Errorf("expected pcommon.Map but got %v", v.Type())
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %v", v.Type()))
 	case map[string]any:
 		m := pcommon.NewMap()
 		err = m.FromRaw(v)
@@ -254,7 +260,7 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 		}
 		return m, nil
 	default:
-		return pcommon.Map{}, fmt.Errorf("expected pcommon.Map but got %T", val)
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %T", val))
 	}
 }
 

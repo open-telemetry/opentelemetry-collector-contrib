@@ -47,7 +47,7 @@ func Test_IsString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := isStringFunc[any](&ottl.StandardGetSetter[any]{
+			exprFunc := isStringFunc[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},

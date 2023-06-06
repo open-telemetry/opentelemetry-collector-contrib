@@ -47,7 +47,7 @@ func Test_IsMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := isMap[any](&ottl.StandardGetSetter[any]{
+			exprFunc := isMap[any](&ottl.StandardPMapGetter[any]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},

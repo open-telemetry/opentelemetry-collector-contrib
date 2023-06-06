@@ -7,13 +7,11 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type IsMapArguments[K any] struct {
-	Target ottl.Getter[K] `ottlarg:"0"`
+	Target ottl.PMapGetter[K] `ottlarg:"0"`
 }
 
 func NewIsMapFactory[K any]() ottl.Factory[K] {
@@ -30,20 +28,16 @@ func createIsMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	return isMap(args.Target), nil
 }
 
-func isMap[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
+func isMap[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
-		value, err := target.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
-		if value == nil {
+		_, err := target.Get(ctx, tCtx)
+		switch err.(type) {
+		case ottl.TypeError:
 			return false, nil
+		case nil:
+			return true, nil
+		default:
+			return false, err
 		}
-		val, ok := value.(pcommon.Value)
-		if ok {
-			return val.Type() == pcommon.ValueTypeMap, nil
-		}
-		_, ok = value.(map[string]any)
-		return ok, nil
 	}
 }
