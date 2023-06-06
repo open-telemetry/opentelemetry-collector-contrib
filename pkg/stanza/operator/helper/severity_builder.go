@@ -117,7 +117,7 @@ type SeverityConfig struct {
 }
 
 // Build builds a SeverityParser from a SeverityConfig
-func (c *SeverityConfig) Build(logger *zap.SugaredLogger) (SeverityParser, error) {
+func (c *SeverityConfig) Build(_ *zap.SugaredLogger) (SeverityParser, error) {
 	operatorMapping := getBuiltinMapping(c.Preset)
 
 	for severity, unknown := range c.Mapping {

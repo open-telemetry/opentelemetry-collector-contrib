@@ -15,15 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
 )
 
-const (
-	// The value of extension "type" in configuration.
-	typeStr = "jaegerremotesampling"
-)
-
 // NewFactory creates a factory for the OIDC Authenticator extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		metadata.ExtensionStability,

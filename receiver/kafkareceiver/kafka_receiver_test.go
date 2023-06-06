@@ -1056,7 +1056,7 @@ func (t *testConsumerGroup) Close() error {
 	return nil
 }
 
-func (t *testConsumerGroup) Pause(partitions map[string][]int32) {
+func (t *testConsumerGroup) Pause(_ map[string][]int32) {
 	panic("implement me")
 }
 
@@ -1064,7 +1064,7 @@ func (t *testConsumerGroup) PauseAll() {
 	panic("implement me")
 }
 
-func (t *testConsumerGroup) Resume(topicPartitions map[string][]int32) {
+func (t *testConsumerGroup) Resume(_ map[string][]int32) {
 	panic("implement me")
 }
 

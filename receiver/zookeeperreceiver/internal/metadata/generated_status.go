@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "zookeeperreceiver"
+	Type             = "zookeeper"
 	MetricsStability = component.StabilityLevelDevelopment
 )

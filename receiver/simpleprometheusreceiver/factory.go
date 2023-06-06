@@ -52,5 +52,5 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
-	return new(params, rCfg, nextConsumer), nil
+	return newPrometheusReceiverWrapper(params, rCfg, nextConsumer), nil
 }

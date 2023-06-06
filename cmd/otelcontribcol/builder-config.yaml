@@ -27,6 +27,8 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.78.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.78.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.78.0
+    import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.78.3-0.20230525165144-87dd85a6c034

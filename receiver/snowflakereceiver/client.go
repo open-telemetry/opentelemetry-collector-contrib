@@ -72,8 +72,7 @@ func newDefaultClient(settings component.TelemetrySettings, c Config) (*snowflak
 func (c snowflakeClient) readDB(ctx context.Context, q string) (*sql.Rows, error) {
 	rows, err := c.client.QueryContext(ctx, q)
 	if err != nil {
-		error := fmt.Sprintf("Query failed with %v", err)
-		c.logger.Error(error)
+		c.logger.Error(fmt.Sprintf("Query failed with %v", err))
 		return nil, err
 	}
 

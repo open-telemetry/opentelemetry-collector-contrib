@@ -102,7 +102,7 @@ type armClientMock struct {
 	pages   []armresources.ClientListResponse
 }
 
-func (acm *armClientMock) NewListPager(options *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
+func (acm *armClientMock) NewListPager(_ *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armresources.ClientListResponse]{
 		More: func(page armresources.ClientListResponse) bool {
 			return acm.current < len(acm.pages)
@@ -120,7 +120,7 @@ type metricsDefinitionsClientMock struct {
 	pages   map[string][]armmonitor.MetricDefinitionsClientListResponse
 }
 
-func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
+func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armmonitor.MetricDefinitionsClientListResponse]{
 		More: func(page armmonitor.MetricDefinitionsClientListResponse) bool {
 			return mdcm.current[resourceURI] < len(mdcm.pages[resourceURI])
@@ -137,7 +137,7 @@ type metricsValuesClientMock struct {
 	lists map[string]map[string]armmonitor.MetricsClientListResponse
 }
 
-func (mvcm metricsValuesClientMock) List(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
+func (mvcm metricsValuesClientMock) List(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
 	return mvcm.lists[resourceURI][*options.Metricnames], nil
 }
 

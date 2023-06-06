@@ -16,6 +16,9 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: sleepy1
+        - key: container.runtime
+          value:
+            stringValue: docker
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:
@@ -112,7 +115,7 @@ resourceMetrics:
                   timeUnixNano: "1683723781130612000"
             name: container.cpu.limit
             unit: "{cpus}"
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0

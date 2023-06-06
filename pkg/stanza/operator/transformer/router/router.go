@@ -174,7 +174,7 @@ func (p *Transformer) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will do nothing.
-func (p *Transformer) SetOutputIDs(opIDs []string) {}
+func (p *Transformer) SetOutputIDs(_ []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (p *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {

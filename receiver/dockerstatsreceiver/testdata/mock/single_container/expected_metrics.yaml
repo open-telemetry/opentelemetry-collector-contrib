@@ -1,9 +1,15 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: container.runtime
+        - key: container-metric-label
           value:
-            stringValue: docker
+            stringValue: container-label
+        - key: container-metric-label-2
+          value:
+            stringValue: container-label-2
+        - key: container.hostname
+          value:
+            stringValue: 10b703fb312b
         - key: container.id
           value:
             stringValue: 10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326
@@ -13,9 +19,9 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: bold_sinoussi
-        - key: container.hostname
+        - key: container.runtime
           value:
-            stringValue: 10b703fb312b
+            stringValue: docker
         - key: env-var-metric-label
           value:
             stringValue: env-var
@@ -208,7 +214,7 @@ resourceMetrics:
                   timeUnixNano: "1657771705535206000"
             name: container.cpu.limit
             unit: "{cpus}"
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0.0002888012543185477

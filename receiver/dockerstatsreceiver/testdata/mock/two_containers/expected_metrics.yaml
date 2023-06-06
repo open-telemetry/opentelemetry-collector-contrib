@@ -1,9 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: container.runtime
+        - key: container-metric-label
           value:
-            stringValue: docker
+            stringValue: container-label
+        - key: container.hostname
+          value:
+            stringValue: a359c0fc87c5
         - key: container.id
           value:
             stringValue: a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce
@@ -13,9 +16,9 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: pensive_aryabhata
-        - key: container.hostname
+        - key: container.runtime
           value:
-            stringValue: a359c0fc87c5
+            stringValue: docker
         - key: env-var-metric-label
           value:
             stringValue: env-var
@@ -202,7 +205,7 @@ resourceMetrics:
                   timeUnixNano: "1657771832637112000"
             name: container.cpu.limit
             unit: "{cpus}"
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -715,9 +718,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: container.runtime
+        - key: container-metric-label
           value:
-            stringValue: docker
+            stringValue: container-label2
+        - key: container.hostname
+          value:
+            stringValue: 89d28931fd8b
         - key: container.id
           value:
             stringValue: 89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7
@@ -727,9 +733,9 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: loving_torvalds
-        - key: container.hostname
+        - key: container.runtime
           value:
-            stringValue: 89d28931fd8b
+            stringValue: docker
         - key: env-var-metric-label
           value:
             stringValue: env-var2
@@ -916,7 +922,7 @@ resourceMetrics:
                   timeUnixNano: "1657771832637093000"
             name: container.cpu.limit
             unit: "{cpus}"
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0

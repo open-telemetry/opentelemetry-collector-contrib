@@ -63,7 +63,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+func (b *BearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	if b.filename == "" {
 		return nil
 	}
@@ -135,7 +135,7 @@ func (b *BearerTokenAuth) refreshToken() {
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
-func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
+func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 	if b.filename == "" {
 		return nil
 	}

@@ -17,14 +17,13 @@ import (
 )
 
 const (
-	typeStr                   = "zookeeper"
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
@@ -58,7 +57,7 @@ func createMetricsReceiver(
 	}
 
 	scrp, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		zms.scrape,
 		scraperhelper.WithShutdown(zms.shutdown),
 	)

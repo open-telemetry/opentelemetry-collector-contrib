@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -25,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewID(typeStr),
+			id: component.NewID(metadata.Type),
 			expected: &Config{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
 				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
@@ -40,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
 				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{

@@ -44,6 +44,7 @@ type MetricsConfig struct {
 	ContainerCPUUsageSystem                    MetricConfig `mapstructure:"container.cpu.usage.system"`
 	ContainerCPUUsageTotal                     MetricConfig `mapstructure:"container.cpu.usage.total"`
 	ContainerCPUUsageUsermode                  MetricConfig `mapstructure:"container.cpu.usage.usermode"`
+	ContainerCPUUtilization                    MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerMemoryActiveAnon                  MetricConfig `mapstructure:"container.memory.active_anon"`
 	ContainerMemoryActiveFile                  MetricConfig `mapstructure:"container.memory.active_file"`
 	ContainerMemoryCache                       MetricConfig `mapstructure:"container.memory.cache"`
@@ -151,6 +152,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ContainerCPUUsageUsermode: MetricConfig{
 			Enabled: true,
+		},
+		ContainerCPUUtilization: MetricConfig{
+			Enabled: false,
 		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,

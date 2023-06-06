@@ -9,6 +9,7 @@ package sqlqueryreceiver
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -134,6 +135,9 @@ func TestPostgresqlIntegration(t *testing.T) {
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
 // test the receiver itself.
 func TestOracleDBIntegration(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("Incompatible with arm64")
+	}
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -153,7 +157,7 @@ func TestOracleDBIntegration(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = "oracle"
-				rCfg.DataSource = fmt.Sprintf("oracle://otel:password@%s:%s/XE",
+				rCfg.DataSource = fmt.Sprintf("oracle://otel:p@ssw%%25rd@%s:%s/XE",
 					ci.Host(t), ci.MappedPort(t, oraclePort))
 				rCfg.Queries = []Query{
 					{

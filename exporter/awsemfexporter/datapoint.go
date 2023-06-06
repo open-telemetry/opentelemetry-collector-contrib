@@ -26,7 +26,7 @@ var (
 	summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
 )
 
-func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, timestampMs time.Time) (interface{}, bool) {
+func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
 	metricEntry := val.(summaryMetricEntry)
 	summaryDelta := metricEntry.sum
 	countDelta := metricEntry.count
@@ -98,7 +98,7 @@ type summaryMetricEntry struct {
 }
 
 // CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
+func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool) ([]dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
@@ -138,7 +138,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 }
 
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
-func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
+func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationScopeName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())

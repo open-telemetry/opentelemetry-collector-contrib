@@ -209,9 +209,9 @@ type mockHost struct {
 	Exporters map[component.DataType]map[component.ID]component.Component
 }
 
-func (m *mockHost) ReportFatalError(err error) {}
+func (m *mockHost) ReportFatalError(_ error) {}
 
-func (m *mockHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+func (m *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }
 

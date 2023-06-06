@@ -1,10 +1,10 @@
-type: zookeeperreceiver
+type: zookeeper
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib,observiq, sumo]
+  distributions: [contrib, observiq, sumo]
 
 resource_attributes:
   server.state:

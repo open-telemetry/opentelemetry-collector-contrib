@@ -465,7 +465,7 @@ func (p *processHandleMock) NumFDs() (int32, error) {
 	return args.Get(0).(int32), args.Error(1)
 }
 
-func (p *processHandleMock) RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error) {
+func (p *processHandleMock) RlimitUsage(_ bool) ([]process.RlimitStat, error) {
 	args := p.MethodCalled("RlimitUsage")
 	return args.Get(0).([]process.RlimitStat), args.Error(1)
 }

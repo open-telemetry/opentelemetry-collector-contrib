@@ -73,7 +73,7 @@ func (p *Provider) Source(context.Context) (source.Source, error) {
 	return source.Source{Kind: source.HostnameKind, Identifier: fmt.Sprintf("%s.%s", name, cloudAccount)}, nil
 }
 
-func (p *Provider) ClusterName(ctx context.Context) (string, error) {
+func (p *Provider) ClusterName(_ context.Context) (string, error) {
 	return p.detector.GKEClusterName()
 }
 

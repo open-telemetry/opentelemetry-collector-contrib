@@ -32,7 +32,7 @@ Number of bytes transferred to/from the disk by the group and descendant groups.
 
 ### container.cpu.percent
 
-Percent of CPU used by the container.
+Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -349,6 +349,14 @@ Note this is the usage for the system, not the container.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
+
+### container.cpu.utilization
+
+Percent of CPU used by the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### container.memory.active_anon
 
