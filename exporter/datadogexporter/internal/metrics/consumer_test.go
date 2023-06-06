@@ -123,9 +123,8 @@ func TestTagsMetrics(t *testing.T) {
 }
 
 func TestConsumeAPMStats(t *testing.T) {
-	metadata := metrics.RuntimeMetricsTelemetry{
-		HasRuntimeMetrics: false,
-		LanguageTags:      nil,
+	metadata := metrics.Metadata{
+		Languages: nil,
 	}
 	c := NewConsumer()
 	for _, sp := range testutil.StatsPayloads {
