@@ -31,18 +31,18 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.78.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.78.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/component v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/exporter v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/extension/ballastextension v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/extension/zpagesextension v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/processor/batchprocessor v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/receiver v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector v0.79.0
+	go.opentelemetry.io/collector/component v0.79.0
+	go.opentelemetry.io/collector/exporter v0.79.0
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.79.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.79.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.79.0
+	go.opentelemetry.io/collector/extension/ballastextension v0.79.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.79.0
+	go.opentelemetry.io/collector/processor/batchprocessor v0.79.0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.79.0
+	go.opentelemetry.io/collector/receiver v0.79.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.79.0
 	golang.org/x/sys v0.8.0
 )
 
@@ -214,11 +214,11 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.78.3-0.20230605151302-371fc4517197 // indirect
-	go.opentelemetry.io/collector/consumer v0.78.3-0.20230605151302-371fc4517197 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230605162713-2fbdd031c2f5 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230605162713-2fbdd031c2f5 // indirect
-	go.opentelemetry.io/collector/semconv v0.78.3-0.20230605151302-371fc4517197 // indirect
+	go.opentelemetry.io/collector/confmap v0.79.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.79.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/semconv v0.79.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0 // indirect
