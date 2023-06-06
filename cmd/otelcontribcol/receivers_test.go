@@ -187,7 +187,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "filestats",
 		},
 		{
-			receiver: "flinkmetrics",
+			receiver:      "flinkmetrics",
+			skipLifecycle: true, // Requires connecting to a running flink cluster
 		},
 		{
 			receiver: "fluentforward",
