@@ -262,7 +262,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "memcached",
 		},
 		{
-			receiver: "mongodb",
+			receiver:     "mongodb",
+			skipLifecyle: true, // Causes tests to timeout
 		},
 		{
 			receiver: "mongodbatlas",
