@@ -100,7 +100,7 @@ test:
 .PHONY: test-with-cover
 test-with-cover:
 	mkdir -p $(PWD)/coverage/unit
-	$(GOTEST) -cover ./... -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
+	$(GOTEST) $(GOTEST_OPT) -v -cover ./... -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
