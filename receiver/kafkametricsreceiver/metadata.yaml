@@ -31,11 +31,13 @@ metrics:
     warnings:
       if_enabled: The metric is deprecated and will be removed. Use `kafka.brokers.count`
   kafka.brokers.count:
-    enabled: true
+    enabled: false
     description: Number of brokers in the cluster.
     unit: "{brokers}"
     gauge:
       value_type: int
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
   kafka.brokers.consumer_fetch_rate:
     enabled: true
     description: Average consumer fetch Rate
