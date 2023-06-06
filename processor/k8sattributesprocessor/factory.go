@@ -150,7 +150,7 @@ func createKubernetesProcessor(
 
 	if len(pCfg.Extract.Metadata) == 0 {
 		kp.logger.Warn("Default metadata extraction rules will be changed in future releases, " +
-			"please specify the extraction rules explicitly in `processors::k8sattributes::extract::metadata` field. " +
+			"please specify the extraction rules explicitly in the `processors::k8sattributes::extract::metadata` field. " +
 			"See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23136 for more details.")
 	}
 
