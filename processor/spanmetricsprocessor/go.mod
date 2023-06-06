@@ -10,7 +10,7 @@ require (
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/component v0.78.3-0.20230605151302-371fc4517197
-	go.opentelemetry.io/collector/confmap v0.78.3-0.20230605151302-371fc4517197
+	go.opentelemetry.io/collector/confmap v0.79.0
 	go.opentelemetry.io/collector/consumer v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/exporter v0.78.3-0.20230605151302-371fc4517197
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.78.3-0.20230605151302-371fc4517197
