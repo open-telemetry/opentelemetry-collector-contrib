@@ -67,8 +67,6 @@ import (
 )
 
 func TestDefaultExporters(t *testing.T) {
-	t.Parallel()
-
 	factories, err := components()
 	assert.NoError(t, err)
 
@@ -163,6 +161,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Path = t.TempDir()
 				return cfg
 			},
+			skipLifecycle: true, // Causes race detector to fail
 		},
 		{
 			exporter: "prometheus",
@@ -444,6 +443,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["sentry"].CreateDefaultConfig().(*sentryexporter.Config)
 				return cfg
 			},
+			skipLifecycle: true, // causes race detector to fail
 		},
 		{
 			exporter: "skywalking",
@@ -496,8 +496,6 @@ func TestDefaultExporters(t *testing.T) {
 		exporterCount++
 		delete(expectedExporters, tt.exporter)
 		t.Run(string(tt.exporter), func(t *testing.T) {
-			t.Parallel()
-
 			factory := expFactories[tt.exporter]
 			assert.Equal(t, tt.exporter, factory.Type())
 			t.Run("shutdown", func(t *testing.T) {

@@ -41,8 +41,6 @@ import (
 )
 
 func TestDefaultReceivers(t *testing.T) {
-	t.Parallel()
-
 	allFactories, err := components()
 	assert.NoError(t, err)
 
@@ -460,8 +458,6 @@ func TestDefaultReceivers(t *testing.T) {
 		tt := tt
 		receiverCount++
 		t.Run(string(tt.receiver), func(t *testing.T) {
-			t.Parallel()
-
 			factory := rcvrFactories[tt.receiver]
 			assert.Equal(t, tt.receiver, factory.Type())
 
