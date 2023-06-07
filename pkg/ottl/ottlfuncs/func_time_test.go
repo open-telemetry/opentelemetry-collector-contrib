@@ -15,11 +15,15 @@ import (
 )
 
 func Test_Time(t *testing.T) {
+	// Hawaiian Standard Time
+	hst, err := time.LoadLocation("HST")
+	require.NoError(t, err)
+
 	tests := []struct {
 		name     string
 		time     ottl.StringGetter[interface{}]
 		format   ottl.StringGetter[interface{}]
-		expected interface{}
+		expected time.Time
 	}{
 		{
 			name: "simple short form",
@@ -151,7 +155,7 @@ func Test_Time(t *testing.T) {
 			name: "timestamp with time zone offset",
 			time: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "2023-05-26 12:34:56 MST", nil
+					return "2023-05-26 12:34:56 HST", nil
 				},
 			},
 			format: &ottl.StandardStringGetter[interface{}]{
@@ -159,7 +163,7 @@ func Test_Time(t *testing.T) {
 					return "%Y-%m-%d %H:%M:%S %Z", nil
 				},
 			},
-			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, time.FixedZone("MST", 0*60*60)),
+			expected: time.Date(2023, 5, 26, 2, 34, 56, 0, hst),
 		},
 		{
 			name: "short date with timestamp without time zone offset",
@@ -187,7 +191,7 @@ func Test_Time(t *testing.T) {
 					return "%Y-%m-%dT%H:%M:%S%z", nil
 				},
 			},
-			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.FixedZone("", 0*60*60)),
+			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.UTC),
 		},
 		{
 			name: "RFC 3339 in custom format",
@@ -210,7 +214,7 @@ func Test_Time(t *testing.T) {
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			assert.True(t, tt.expected.Equal(result.(time.Time)))
 		})
 	}
 }
