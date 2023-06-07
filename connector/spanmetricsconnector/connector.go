@@ -387,10 +387,18 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
 func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
-	concatDimensionValue(p.keyBuf, serviceName, false)
-	concatDimensionValue(p.keyBuf, span.Name(), true)
-	concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
-	concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+		concatDimensionValue(p.keyBuf, serviceName, false)
+	}
+	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+		concatDimensionValue(p.keyBuf, span.Name(), true)
+	}
+	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
+	}
+	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
+		concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	}
 
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {

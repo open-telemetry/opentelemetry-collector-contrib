@@ -390,6 +390,32 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	assert.Equal(t, metrics.Key("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
 }
 
+func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ExcludeDimensions = []string{"span.kind", "service.name", "span.name", "status.code"}
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	span0 := ptrace.NewSpan()
+	span0.SetName("spanName")
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	assert.Equal(t, metrics.Key(""), k0)
+}
+
+func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ExcludeDimensions = []string{"span.kind", "service.name.wrong.name", "span.name", "status.code"}
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	span0 := ptrace.NewSpan()
+	span0.SetName("spanName")
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	assert.Equal(t, metrics.Key("serviceName"), k0)
+}
+
 func TestBuildKeyWithDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
