@@ -4,7 +4,7 @@
 //go:build windows
 // +build windows
 
-package handles
+package handles // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handles"
 
 import (
 	"errors"
