@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitmetricsreceiver/internal/metadata"
+    "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitmetricsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -15,15 +15,13 @@ const (
     scrapersKey = "scrapers"
 )
 
-// Configuration that is exposed to this github receiver through the OTEL config.yaml
+// Config that is exposed to this github receiver through the OTEL config.yaml
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
     Scrapers map[string]internal.Config `mapstructure:"scrapers"`
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	//confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	//Interval                      string `mapstructure:"interval"`
-	//GitHubOrg                     string `mapstructure:"github_org"`
-	//Endpoint           string `mapstructure:"endpoint"`
+    // GitHubOrg is the name of the GitHub organization to srape (github scraper only)
+    GitHubOrg string `mapstructure:"github_org"`
 }
 
 var _ component.Config = (*Config)(nil)

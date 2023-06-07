@@ -1,5 +1,7 @@
 type: gitmetricsreceiver
 
+sem_conv_version: 1.9.0
+
 status:
   class: receiver
   stability:
@@ -12,6 +14,12 @@ resource_attributes:
     enabled: true
     description: "Git Organization or Project Name"
     type: string
+  git.vendor.name:
+    enabled: true
+    description:
+    type: string
+
+      # github, gitlab, bitbucket, gittea
 
 attributes:
   repository.name:
@@ -43,6 +51,8 @@ metrics:
     gauge:
       value_type: int
     attributes: [repository.name]
+
+  ## Remove this metrics as it shouldn't be used. 
   git.repository.branch.commit.count:
     enabled: true
     description: "The total number of commits on a given branch"

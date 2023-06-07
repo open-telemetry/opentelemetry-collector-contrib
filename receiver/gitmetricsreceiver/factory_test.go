@@ -27,9 +27,17 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
+	assert.Nil(t, tReceiver)
+
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mReceiver)
+
+	tLogs, err := factory.CreateLogsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
+	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
+	assert.Nil(t, tLogs)
 }
 
 func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {

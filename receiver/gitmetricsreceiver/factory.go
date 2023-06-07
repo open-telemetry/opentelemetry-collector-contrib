@@ -55,6 +55,9 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 func createDefaultConfig() component.Config {
 	return &Config{
         ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+        // TODO: metrics builder configuration may need to be in each sub scraper,
+        // TODO: for right now setting here because the metrics in this receiver will apply to all 
+        // TODO: scrapers defined as a common set of gitmetrics
 		MetricsBuilderConfig: internal.DefaultMetricsBuilderConfig(),
 	}
 }
@@ -96,7 +99,7 @@ func createAddScraperOpts(
     scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(cfg.Scrapers))
 
     for key, cfg := range cfg.Scrapers {
-        gitMetricsScraper, ok, err := createGitMetricsScraper(ctx, params, cfg, factories)
+        gitMetricsScraper, ok, err := createGitMetricsScraper(ctx, params, key, cfg, factories)
         if err != nil {
             return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
         }
