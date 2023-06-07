@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.19
 
 require (
-	github.com/DataDog/datadog-agent/pkg/trace v0.46.0-rc.2
+	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-devel
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.2.1
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/stretchr/testify v1.8.4
