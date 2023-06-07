@@ -26,14 +26,14 @@ func Test_MetricPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []ottl.field
 		orig     interface{}
 		newVal   interface{}
 		modified func(metric pmetric.Metric)
 	}{
 		{
 			name: "metric name",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "name",
 				},
@@ -46,7 +46,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "description",
 				},
@@ -59,7 +59,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "unit",
 				},
@@ -72,7 +72,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "type",
 				},
@@ -84,7 +84,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "aggregation_temporality",
 				},
@@ -97,7 +97,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "is_monotonic",
 				},
@@ -110,7 +110,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "data_points",
 				},

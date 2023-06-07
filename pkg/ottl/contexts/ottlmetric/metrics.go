@@ -87,7 +87,7 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 
 var symbolTable = internal.MetricSymbolTable
 
-func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
+func parseEnum(val *ottl.enumSymbol) (*ottl.Enum, error) {
 	if val != nil {
 		if enum, ok := symbolTable[*val]; ok {
 			return &enum, nil
@@ -97,14 +97,14 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
+func parsePath(val *ottl.path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
+func newPathGetSetter(path []ottl.field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
 	case "cache":
 		mapKey := path[0].Keys
@@ -135,7 +135,7 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(keys []ottl.key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
 			return internal.GetMapValue(tCtx.getCache(), keys)

@@ -17,17 +17,17 @@ import (
 func Test_GetSliceValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys []ottl.Key
+		keys []ottl.key
 		err  error
 	}{
 		{
 			name: "no keys",
-			keys: []ottl.Key{},
+			keys: []ottl.key{},
 			err:  fmt.Errorf("cannot get slice value without key"),
 		},
 		{
 			name: "first key not an integer",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("key"),
 				},
@@ -36,7 +36,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too large",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(1),
 				},
@@ -45,7 +45,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too small",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(-1),
 				},
@@ -54,7 +54,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "invalid type",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(0),
 				},
@@ -80,17 +80,17 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 func Test_SetSliceValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys []ottl.Key
+		keys []ottl.key
 		err  error
 	}{
 		{
 			name: "no keys",
-			keys: []ottl.Key{},
+			keys: []ottl.key{},
 			err:  fmt.Errorf("cannot set slice value without key"),
 		},
 		{
 			name: "first key not an integer",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("key"),
 				},
@@ -99,7 +99,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too large",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(1),
 				},
@@ -108,7 +108,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too small",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(-1),
 				},
@@ -117,7 +117,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "invalid type",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(0),
 				},

@@ -16,7 +16,7 @@ type ResourceContext interface {
 	GetResource() pcommon.Resource
 }
 
-func ResourcePathGetSetter[K ResourceContext](path []ottl.Field) (ottl.GetSetter[K], error) {
+func ResourcePathGetSetter[K ResourceContext](path []ottl.field) (ottl.GetSetter[K], error) {
 	if len(path) == 0 {
 		return accessResource[K](), nil
 	}
@@ -62,7 +62,7 @@ func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessResourceAttributesKey[K ResourceContext](keys []ottl.Key) ottl.StandardGetSetter[K] {
+func accessResourceAttributesKey[K ResourceContext](keys []ottl.key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
 			return GetMapValue(tCtx.GetResource().Attributes(), keys)

@@ -26,8 +26,8 @@ func valueFor(x any) value {
 		case v == "NAME":
 			// if the string is NAME construct a path of "name".
 			val.Literal = &mathExprLiteral{
-				Path: &Path{
-					Fields: []Field{
+				Path: &path{
+					Fields: []field{
 						{
 							Name: "name",
 						},
@@ -35,8 +35,8 @@ func valueFor(x any) value {
 				},
 			}
 		case strings.Contains(v, "ENUM"):
-			// if the string contains ENUM construct an EnumSymbol from it.
-			val.Enum = (*EnumSymbol)(ottltest.Strp(v))
+			// if the string contains ENUM construct an enumSymbol from it.
+			val.Enum = (*enumSymbol)(ottltest.Strp(v))
 		default:
 			val.String = ottltest.Strp(v)
 		}
@@ -132,10 +132,10 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 		comparison *comparison
 	}{
 		{
-			name: "unknown Path",
+			name: "unknown path",
 			comparison: &comparison{
 				Left: value{
-					Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+					Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 				},
 				Op: EQ,
 				Right: value{

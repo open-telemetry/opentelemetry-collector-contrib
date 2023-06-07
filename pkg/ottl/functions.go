@@ -11,9 +11,9 @@ import (
 	"strings"
 )
 
-type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
+type PathExpressionParser[K any] func(*path) (GetSetter[K], error)
 
-type EnumParser func(*EnumSymbol) (*Enum, error)
+type EnumParser func(*enumSymbol) (*Enum, error)
 
 type Enum int64
 
@@ -179,7 +179,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
-			return nil, fmt.Errorf("must be a Path")
+			return nil, fmt.Errorf("must be a path")
 		}
 		arg, err := p.pathParser(argVal.Literal.Path)
 		if err != nil {

@@ -51,7 +51,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []ottl.field
 		orig     interface{}
 		newVal   interface{}
 		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
@@ -59,7 +59,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	}{
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -72,7 +72,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "observed_time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "observed_time_unix_nano",
 				},
@@ -85,7 +85,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_number",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "severity_number",
 				},
@@ -98,7 +98,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_text",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "severity_text",
 				},
@@ -111,7 +111,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "body",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "body",
 				},
@@ -124,7 +124,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "map body",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "body",
 				},
@@ -141,10 +141,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "map body index",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "body",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("key"),
 						},
@@ -160,7 +160,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "slice body",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "body",
 				},
@@ -180,10 +180,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "slice body index",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "body",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							Int: ottltest.Intp(0),
 						},
@@ -199,7 +199,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "body string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "body",
 				},
@@ -216,7 +216,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "flags",
 				},
@@ -229,7 +229,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "trace_id",
 				},
@@ -242,7 +242,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "span_id",
 				},
@@ -255,7 +255,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "trace_id",
 				},
@@ -271,7 +271,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "span_id",
 				},
@@ -287,7 +287,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "cache",
 				},
@@ -300,10 +300,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "cache",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("temp"),
 						},
@@ -318,7 +318,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
 				},
@@ -331,10 +331,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("str"),
 						},
@@ -349,10 +349,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bool"),
 						},
@@ -367,10 +367,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("int"),
 						},
@@ -385,10 +385,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("double"),
 						},
@@ -403,10 +403,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bytes"),
 						},
@@ -421,10 +421,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_str"),
 						},
@@ -442,10 +442,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bool"),
 						},
@@ -463,10 +463,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_int"),
 						},
@@ -484,10 +484,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_float"),
 						},
@@ -505,10 +505,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bytes"),
 						},
@@ -526,10 +526,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("pMap"),
 						},
@@ -549,10 +549,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]interface{}",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("map"),
 						},
@@ -572,10 +572,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("slice"),
 						},
@@ -600,10 +600,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("new"),
 						},
@@ -629,7 +629,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "dropped_attributes_count",
 				},
@@ -642,7 +642,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "instrumentation_scope",
 				},
@@ -655,7 +655,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "resource",
 				},
@@ -767,10 +767,10 @@ func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationSc
 }
 
 func Test_InvalidBodyIndexing(t *testing.T) {
-	path := []ottl.Field{
+	path := []ottl.field{
 		{
 			Name: "body",
-			Keys: []ottl.Key{
+			Keys: []ottl.key{
 				{
 					String: ottltest.Strp("key"),
 				},
@@ -900,7 +900,7 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
+			actual, err := parseEnum((*ottl.enumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
 			assert.Equal(t, *actual, tt.want)
 		})
@@ -910,11 +910,11 @@ func Test_ParseEnum(t *testing.T) {
 func Test_ParseEnum_False(t *testing.T) {
 	tests := []struct {
 		name       string
-		enumSymbol *ottl.EnumSymbol
+		enumSymbol *ottl.enumSymbol
 	}{
 		{
 			name:       "unknown enum symbol",
-			enumSymbol: (*ottl.EnumSymbol)(ottltest.Strp("not an enum")),
+			enumSymbol: (*ottl.enumSymbol)(ottltest.Strp("not an enum")),
 		},
 		{
 			name:       "nil enum symbol",

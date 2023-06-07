@@ -22,7 +22,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		path      []ottl.Field
+		path      []ottl.field
 		orig      interface{}
 		newVal    interface{}
 		modified  func(cache pcommon.Map)
@@ -31,7 +31,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 		{
 			name: "cache",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "cache",
 				},
@@ -44,10 +44,10 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "cache",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("temp"),
 						},
@@ -101,7 +101,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		path      []ottl.Field
+		path      []ottl.field
 		orig      interface{}
 		newVal    interface{}
 		modified  func(pmetric.NumberDataPoint)
@@ -109,7 +109,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -122,7 +122,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -135,7 +135,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "value_double",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "value_double",
 				},
@@ -149,7 +149,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "value_int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "value_int",
 				},
@@ -162,7 +162,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "flags",
 				},
@@ -175,7 +175,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "exemplars",
 				},
@@ -188,7 +188,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
 				},
@@ -201,10 +201,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("str"),
 						},
@@ -219,10 +219,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bool"),
 						},
@@ -237,10 +237,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("int"),
 						},
@@ -255,10 +255,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("double"),
 						},
@@ -273,10 +273,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bytes"),
 						},
@@ -291,10 +291,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_str"),
 						},
@@ -312,10 +312,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bool"),
 						},
@@ -333,10 +333,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_int"),
 						},
@@ -354,10 +354,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_float"),
 						},
@@ -375,10 +375,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bytes"),
 						},
@@ -396,10 +396,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("pMap"),
 						},
@@ -419,10 +419,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]interface{}",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("map"),
 						},
@@ -442,10 +442,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("slice"),
 						},
@@ -470,10 +470,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("new"),
 						},
@@ -556,14 +556,14 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []ottl.field
 		orig     interface{}
 		newVal   interface{}
 		modified func(pmetric.HistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -576,7 +576,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -589,7 +589,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "flags",
 				},
@@ -602,7 +602,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "count",
 				},
@@ -615,7 +615,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "sum",
 				},
@@ -628,7 +628,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "bucket_counts",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "bucket_counts",
 				},
@@ -641,7 +641,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "explicit_bounds",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "explicit_bounds",
 				},
@@ -654,7 +654,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "exemplars",
 				},
@@ -667,7 +667,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
 				},
@@ -680,10 +680,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("str"),
 						},
@@ -698,10 +698,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bool"),
 						},
@@ -716,10 +716,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("int"),
 						},
@@ -734,10 +734,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("double"),
 						},
@@ -752,10 +752,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bytes"),
 						},
@@ -770,10 +770,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_str"),
 						},
@@ -791,10 +791,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bool"),
 						},
@@ -812,10 +812,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_int"),
 						},
@@ -833,10 +833,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_float"),
 						},
@@ -854,10 +854,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bytes"),
 						},
@@ -875,10 +875,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("pMap"),
 						},
@@ -898,10 +898,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]interface{}",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("map"),
 						},
@@ -921,10 +921,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("slice"),
 						},
@@ -949,10 +949,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("new"),
 						},
@@ -1041,14 +1041,14 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []ottl.field
 		orig     interface{}
 		newVal   interface{}
 		modified func(pmetric.ExponentialHistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -1061,7 +1061,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -1074,7 +1074,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "flags",
 				},
@@ -1087,7 +1087,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "count",
 				},
@@ -1100,7 +1100,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "sum",
 				},
@@ -1113,7 +1113,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "scale",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "scale",
 				},
@@ -1126,7 +1126,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "zero_count",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "zero_count",
 				},
@@ -1139,7 +1139,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "positive",
 				},
@@ -1152,7 +1152,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive offset",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "positive",
 				},
@@ -1168,7 +1168,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive bucket_counts",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "positive",
 				},
@@ -1184,7 +1184,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "negative",
 				},
@@ -1197,7 +1197,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative offset",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "negative",
 				},
@@ -1213,7 +1213,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative bucket_counts",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "negative",
 				},
@@ -1229,7 +1229,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "exemplars",
 				},
@@ -1242,7 +1242,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
 				},
@@ -1255,10 +1255,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("str"),
 						},
@@ -1273,10 +1273,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bool"),
 						},
@@ -1291,10 +1291,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("int"),
 						},
@@ -1309,10 +1309,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("double"),
 						},
@@ -1327,10 +1327,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bytes"),
 						},
@@ -1345,10 +1345,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_str"),
 						},
@@ -1366,10 +1366,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bool"),
 						},
@@ -1387,10 +1387,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_int"),
 						},
@@ -1408,10 +1408,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_float"),
 						},
@@ -1429,10 +1429,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bytes"),
 						},
@@ -1450,10 +1450,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("pMap"),
 						},
@@ -1473,10 +1473,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]interface{}",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("map"),
 						},
@@ -1496,10 +1496,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("slice"),
 						},
@@ -1524,10 +1524,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("new"),
 						},
@@ -1617,14 +1617,14 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []ottl.field
 		orig     interface{}
 		newVal   interface{}
 		modified func(pmetric.SummaryDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -1637,7 +1637,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -1650,7 +1650,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "flags",
 				},
@@ -1663,7 +1663,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "count",
 				},
@@ -1676,7 +1676,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "sum",
 				},
@@ -1689,7 +1689,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "quantile_values",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "quantile_values",
 				},
@@ -1702,7 +1702,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
 				},
@@ -1715,10 +1715,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("str"),
 						},
@@ -1733,10 +1733,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bool"),
 						},
@@ -1751,10 +1751,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("int"),
 						},
@@ -1769,10 +1769,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("double"),
 						},
@@ -1787,10 +1787,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("bytes"),
 						},
@@ -1805,10 +1805,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_str"),
 						},
@@ -1826,10 +1826,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bool"),
 						},
@@ -1847,10 +1847,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_int"),
 						},
@@ -1868,10 +1868,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_float"),
 						},
@@ -1889,10 +1889,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("arr_bytes"),
 						},
@@ -1910,10 +1910,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("pMap"),
 						},
@@ -1933,10 +1933,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]interface{}",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("map"),
 						},
@@ -1956,10 +1956,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("slice"),
 						},
@@ -1984,10 +1984,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "attributes",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("new"),
 						},
@@ -2095,14 +2095,14 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []ottl.field
 		orig     interface{}
 		newVal   interface{}
 		modified func(metric pmetric.Metric)
 	}{
 		{
 			name: "metric",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "metric",
 				},
@@ -2115,7 +2115,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric name",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "metric",
 				},
@@ -2131,7 +2131,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "metric",
 				},
@@ -2147,7 +2147,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "metric",
 				},
@@ -2163,7 +2163,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "metric",
 				},
@@ -2178,7 +2178,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "metric",
 				},
@@ -2194,7 +2194,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "metric",
 				},
@@ -2305,7 +2305,7 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
+			actual, err := parseEnum((*ottl.enumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
 			assert.Equal(t, *actual, tt.want)
 		})
@@ -2315,11 +2315,11 @@ func Test_ParseEnum(t *testing.T) {
 func Test_ParseEnum_False(t *testing.T) {
 	tests := []struct {
 		name       string
-		enumSymbol *ottl.EnumSymbol
+		enumSymbol *ottl.enumSymbol
 	}{
 		{
 			name:       "unknown enum symbol",
-			enumSymbol: (*ottl.EnumSymbol)(ottltest.Strp("not an enum")),
+			enumSymbol: (*ottl.enumSymbol)(ottltest.Strp("not an enum")),
 		},
 		{
 			name:       "nil enum symbol",

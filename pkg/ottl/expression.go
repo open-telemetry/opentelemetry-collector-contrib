@@ -61,7 +61,7 @@ func (l literal[K]) Get(context.Context, K) (interface{}, error) {
 
 type exprGetter[K any] struct {
 	expr Expr[K]
-	keys []Key
+	keys []key
 }
 
 func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {

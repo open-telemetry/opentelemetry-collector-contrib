@@ -141,8 +141,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -163,8 +163,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -306,7 +306,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_enum",
 				Arguments: []value{
 					{
-						Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+						Enum: (*enumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
 					},
 				},
 			},
@@ -518,8 +518,8 @@ func Test_NewFunctionCall(t *testing.T) {
 							Values: []value{
 								{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -544,7 +544,7 @@ func Test_NewFunctionCall(t *testing.T) {
 									Bool: (*boolean)(ottltest.Boolp(true)),
 								},
 								{
-									Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+									Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 								},
 								{
 									List: &list{
@@ -595,8 +595,8 @@ func Test_NewFunctionCall(t *testing.T) {
 											Arguments: []value{
 												{
 													Literal: &mathExprLiteral{
-														Path: &Path{
-															Fields: []Field{
+														Path: &path{
+															Fields: []field{
 																{
 																	Name: "name",
 																},
@@ -694,8 +694,8 @@ func Test_NewFunctionCall(t *testing.T) {
 							Values: []value{
 								{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -705,8 +705,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -797,8 +797,8 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -817,8 +817,8 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -837,8 +837,8 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -891,8 +891,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Path: &Path{
-											Fields: []Field{
+										Path: &path{
+											Fields: []field{
 												{
 													Name: "name",
 												},
@@ -907,8 +907,8 @@ func Test_NewFunctionCall(t *testing.T) {
 											Arguments: []value{
 												{
 													Literal: &mathExprLiteral{
-														Path: &Path{
-															Fields: []Field{
+														Path: &path{
+															Fields: []field{
 																{
 																	Name: "name",
 																},
@@ -1010,8 +1010,8 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -1094,8 +1094,8 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Path: &Path{
-								Fields: []Field{
+							Path: &path{
+								Fields: []field{
 									{
 										Name: "name",
 									},
@@ -1126,7 +1126,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_enum",
 				Arguments: []value{
 					{
-						Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
+						Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM")),
 					},
 				},
 			},

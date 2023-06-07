@@ -11,7 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
+func GetMapValue(m pcommon.Map, keys []ottl.key) (interface{}, error) {
 	if len(keys) == 0 {
 		return nil, fmt.Errorf("cannot get map value without key")
 	}
@@ -26,7 +26,7 @@ func GetMapValue(m pcommon.Map, keys []ottl.Key) (interface{}, error) {
 	return getIndexableValue(val, keys[1:])
 }
 
-func SetMapValue(m pcommon.Map, keys []ottl.Key, val interface{}) error {
+func SetMapValue(m pcommon.Map, keys []ottl.key, val interface{}) error {
 	if len(keys) == 0 {
 		return fmt.Errorf("cannot set map value without key")
 	}

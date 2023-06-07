@@ -21,7 +21,7 @@ type SpanContext interface {
 	GetSpan() ptrace.Span
 }
 
-var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
+var SpanSymbolTable = map[ottl.enumSymbol]ottl.Enum{
 	"SPAN_KIND_UNSPECIFIED": ottl.Enum(ptrace.SpanKindUnspecified),
 	"SPAN_KIND_INTERNAL":    ottl.Enum(ptrace.SpanKindInternal),
 	"SPAN_KIND_SERVER":      ottl.Enum(ptrace.SpanKindServer),
@@ -33,7 +33,7 @@ var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
 }
 
-func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], error) {
+func SpanPathGetSetter[K SpanContext](path []ottl.field) (ottl.GetSetter[K], error) {
 	if len(path) == 0 {
 		return accessSpan[K](), nil
 	}
@@ -207,7 +207,7 @@ func accessTraceState[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessTraceStateKey[K SpanContext](keys []ottl.Key) (ottl.StandardGetSetter[K], error) {
+func accessTraceStateKey[K SpanContext](keys []ottl.key) (ottl.StandardGetSetter[K], error) {
 	if len(keys) != 1 {
 		return ottl.StandardGetSetter[K]{}, fmt.Errorf("must provide exactly 1 key when accessing trace_state")
 	}
@@ -402,7 +402,7 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K SpanContext](keys []ottl.Key) ottl.StandardGetSetter[K] {
+func accessAttributesKey[K SpanContext](keys []ottl.key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
 			return GetMapValue(tCtx.GetSpan().Attributes(), keys)

@@ -16,7 +16,7 @@ type InstrumentationScopeContext interface {
 	GetInstrumentationScope() pcommon.InstrumentationScope
 }
 
-func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.Field) (ottl.GetSetter[K], error) {
+func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.field) (ottl.GetSetter[K], error) {
 	if len(path) == 0 {
 		return accessInstrumentationScope[K](), nil
 	}
@@ -67,7 +67,7 @@ func accessInstrumentationScopeAttributes[K InstrumentationScopeContext]() ottl.
 	}
 }
 
-func accessInstrumentationScopeAttributesKey[K InstrumentationScopeContext](keys []ottl.Key) ottl.StandardGetSetter[K] {
+func accessInstrumentationScopeAttributesKey[K InstrumentationScopeContext](keys []ottl.key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
 			return GetMapValue(tCtx.GetInstrumentationScope().Attributes(), keys)

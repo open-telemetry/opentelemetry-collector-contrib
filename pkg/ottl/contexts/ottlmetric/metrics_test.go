@@ -31,14 +31,14 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     []ottl.field
 		orig     interface{}
 		newVal   interface{}
 		modified func(metric pmetric.Metric, cache pcommon.Map)
 	}{
 		{
 			name: "metric name",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "name",
 				},
@@ -51,7 +51,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "description",
 				},
@@ -64,7 +64,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "unit",
 				},
@@ -77,7 +77,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "type",
 				},
@@ -89,7 +89,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "aggregation_temporality",
 				},
@@ -102,7 +102,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "is_monotonic",
 				},
@@ -115,7 +115,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "data_points",
 				},
@@ -128,7 +128,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "cache",
 				},
@@ -141,10 +141,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: []ottl.Field{
+			path: []ottl.field{
 				{
 					Name: "cache",
-					Keys: []ottl.Key{
+					Keys: []ottl.key{
 						{
 							String: ottltest.Strp("temp"),
 						},
@@ -238,7 +238,7 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
+			actual, err := parseEnum((*ottl.enumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
 			assert.Equal(t, *actual, tt.want)
 		})
@@ -248,11 +248,11 @@ func Test_ParseEnum(t *testing.T) {
 func Test_ParseEnum_False(t *testing.T) {
 	tests := []struct {
 		name       string
-		enumSymbol *ottl.EnumSymbol
+		enumSymbol *ottl.enumSymbol
 	}{
 		{
 			name:       "unknown enum symbol",
-			enumSymbol: (*ottl.EnumSymbol)(ottltest.Strp("not an enum")),
+			enumSymbol: (*ottl.enumSymbol)(ottltest.Strp("not an enum")),
 		},
 		{
 			name:       "nil enum symbol",

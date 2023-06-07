@@ -17,17 +17,17 @@ import (
 func Test_GetMapValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys []ottl.Key
+		keys []ottl.key
 		err  error
 	}{
 		{
 			name: "no keys",
-			keys: []ottl.Key{},
+			keys: []ottl.key{},
 			err:  fmt.Errorf("cannot get map value without key"),
 		},
 		{
 			name: "first key not a string",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(0),
 				},
@@ -36,7 +36,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index map with int",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("map"),
 				},
@@ -48,7 +48,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index slice with string",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("slice"),
 				},
@@ -60,7 +60,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too large",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("slice"),
 				},
@@ -72,7 +72,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index too small",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("slice"),
 				},
@@ -84,7 +84,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "invalid type",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("string"),
 				},
@@ -114,7 +114,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 func Test_GetMapValue_MissingKey(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutEmptyMap("map2")
-	keys := []ottl.Key{
+	keys := []ottl.key{
 		{
 			String: ottltest.Strp("map1"),
 		},
@@ -130,17 +130,17 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 func Test_SetMapValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys []ottl.Key
+		keys []ottl.key
 		err  error
 	}{
 		{
 			name: "no keys",
-			keys: []ottl.Key{},
+			keys: []ottl.key{},
 			err:  fmt.Errorf("cannot set map value without key"),
 		},
 		{
 			name: "first key not a string",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					Int: ottltest.Intp(0),
 				},
@@ -149,7 +149,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index map with int",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("map"),
 				},
@@ -161,7 +161,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "index slice with string",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("slice"),
 				},
@@ -173,7 +173,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "slice index too large",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("slice"),
 				},
@@ -185,7 +185,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "slice index too small",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("slice"),
 				},
@@ -197,7 +197,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		},
 		{
 			name: "slice index too small",
-			keys: []ottl.Key{
+			keys: []ottl.key{
 				{
 					String: ottltest.Strp("string"),
 				},
@@ -227,7 +227,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutStr("test", "test")
-	keys := []ottl.Key{
+	keys := []ottl.key{
 		{
 			String: ottltest.Strp("map1"),
 		},
@@ -251,7 +251,7 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 
 func Test_SetMapValue_EmptyMap(t *testing.T) {
 	m := pcommon.NewMap()
-	keys := []ottl.Key{
+	keys := []ottl.key{
 		{
 			String: ottltest.Strp("map1"),
 		},

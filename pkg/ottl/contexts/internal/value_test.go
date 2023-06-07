@@ -13,7 +13,7 @@ import (
 )
 
 func Test_SetIndexableValue_EmptyValueNoIndex(t *testing.T) {
-	keys := []ottl.Key{
+	keys := []ottl.key{
 		{},
 	}
 	err := setIndexableValue(pcommon.NewValueEmpty(), nil, keys)

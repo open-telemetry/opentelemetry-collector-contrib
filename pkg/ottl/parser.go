@@ -77,7 +77,7 @@ func NewParser[K any](
 	p := Parser[K]{
 		functions:  functions,
 		pathParser: pathParser,
-		enumParser: func(*EnumSymbol) (*Enum, error) {
+		enumParser: func(*enumSymbol) (*Enum, error) {
 			return nil, fmt.Errorf("enums aren't supported for the current context: %T", new(K))
 		},
 		telemetrySettings: settings,

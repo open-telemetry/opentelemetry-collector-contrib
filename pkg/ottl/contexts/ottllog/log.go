@@ -87,7 +87,7 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
+var symbolTable = map[ottl.enumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUnspecified),
 	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),
 	"SEVERITY_NUMBER_TRACE2":      ottl.Enum(plog.SeverityNumberTrace2),
@@ -115,7 +115,7 @@ var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_FATAL4":      ottl.Enum(plog.SeverityNumberFatal4),
 }
 
-func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
+func parseEnum(val *ottl.enumSymbol) (*ottl.Enum, error) {
 	if val != nil {
 		if enum, ok := symbolTable[*val]; ok {
 			return &enum, nil
@@ -125,14 +125,14 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
+func parsePath(val *ottl.path) (ottl.GetSetter[TransformContext], error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
+func newPathGetSetter(path []ottl.field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
 	case "cache":
 		mapKey := path[0].Keys
@@ -206,7 +206,7 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(keys []ottl.key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
 			return internal.GetMapValue(tCtx.getCache(), keys)
@@ -284,7 +284,7 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessBodyKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
+func accessBodyKey(keys []ottl.key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
 			body := tCtx.GetLogRecord().Body()
@@ -339,7 +339,7 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessAttributesKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
+func accessAttributesKey(keys []ottl.key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
 			return internal.GetMapValue(tCtx.GetLogRecord().Attributes(), keys)

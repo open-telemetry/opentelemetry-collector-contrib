@@ -11,7 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func GetSliceValue(s pcommon.Slice, keys []ottl.Key) (interface{}, error) {
+func GetSliceValue(s pcommon.Slice, keys []ottl.key) (interface{}, error) {
 	if len(keys) == 0 {
 		return nil, fmt.Errorf("cannot get slice value without key")
 	}
@@ -27,7 +27,7 @@ func GetSliceValue(s pcommon.Slice, keys []ottl.Key) (interface{}, error) {
 	return getIndexableValue(s.At(int(*keys[0].Int)), keys[1:])
 }
 
-func SetSliceValue(s pcommon.Slice, keys []ottl.Key, val interface{}) error {
+func SetSliceValue(s pcommon.Slice, keys []ottl.key, val interface{}) error {
 	if len(keys) == 0 {
 		return fmt.Errorf("cannot set slice value without key")
 	}

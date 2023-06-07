@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func mathParsePath(val *Path) (GetSetter[interface{}], error) {
+func mathParsePath(val *path) (GetSetter[interface{}], error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "one" {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(context.Context, interface{}) (interface{}, error) {
