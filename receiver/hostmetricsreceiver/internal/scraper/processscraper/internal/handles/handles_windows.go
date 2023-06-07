@@ -14,8 +14,7 @@ import (
 )
 
 func NewManager() Manager {
-	// return &handleCountManager{processInfoGetter: &ntQuerySystemInfoGetter{}}
-	return &wmiHandleCountManager{}
+	return &handleCountManager{queryer: wmiHandleCountQueryer{}}
 }
 
 var (
@@ -23,30 +22,25 @@ var (
 	ErrNoHandleCountForProcess = errors.New("no handle count for process")
 )
 
-type wmiHandleCountManager struct {
+type handleCountQueryer interface {
+	queryProcessHandleCounts() (map[int64]uint32, error)
+}
+
+type handleCountManager struct {
+	queryer      handleCountQueryer
 	handleCounts map[int64]uint32
 }
 
-type Win32_Process struct {
-	ProcessID   int64
-	HandleCount uint32
-}
-
-func (m *wmiHandleCountManager) Refresh() error {
-	handleCounts, err := queryProcessHandleCounts()
+func (m *handleCountManager) Refresh() error {
+	handleCounts, err := m.queryer.queryProcessHandleCounts()
 	if err != nil {
 		return err
 	}
-
-	newHandleCounts := make(map[int64]uint32, len(handleCounts))
-	for _, p := range handleCounts {
-		newHandleCounts[p.ProcessID] = p.HandleCount
-	}
-	m.handleCounts = newHandleCounts
+	m.handleCounts = handleCounts
 	return nil
 }
 
-func (m *wmiHandleCountManager) GetProcessHandleCount(pid int64) (uint32, error) {
+func (m *handleCountManager) GetProcessHandleCount(pid int64) (uint32, error) {
 	if len(m.handleCounts) == 0 {
 		return 0, ErrNoHandleCounts
 	}
@@ -57,11 +51,26 @@ func (m *wmiHandleCountManager) GetProcessHandleCount(pid int64) (uint32, error)
 	return handleCount, nil
 }
 
-func queryProcessHandleCounts() ([]Win32_Process, error) {
+type wmiHandleCountQueryer struct{}
+
+type Win32_Process struct {
+	ProcessID   int64
+	HandleCount uint32
+}
+
+func (wmiHandleCountQueryer) queryProcessHandleCounts() (map[int64]uint32, error) {
 	handleCounts := []Win32_Process{}
 	// Creates query `get-wmiobject -query "select ProcessId, HandleCount from Win32_Process"`
 	// based on reflection of Win32_Process type.
 	q := wmi.CreateQuery(&handleCounts, "")
 	err := wmi.Query(q, &handleCounts)
-	return handleCounts, err
+	if err != nil {
+		return nil, err
+	}
+
+	newHandleCounts := make(map[int64]uint32, len(handleCounts))
+	for _, p := range handleCounts {
+		newHandleCounts[p.ProcessID] = p.HandleCount
+	}
+	return newHandleCounts, nil
 }

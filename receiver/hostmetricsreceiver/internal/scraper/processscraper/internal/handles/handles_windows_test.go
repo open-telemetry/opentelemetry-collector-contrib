@@ -12,21 +12,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/sys/windows"
 )
 
 func TestHandleCountManager(t *testing.T) {
-	testInfos := []*windows.SYSTEM_PROCESS_INFORMATION{
-		{
-			UniqueProcessID: 1,
-			HandleCount:     3,
-		},
-		{
-			UniqueProcessID: 2,
-			HandleCount:     5,
-		},
+	testInfos := map[int64]uint32{
+		1: 3,
+		2: 5,
 	}
-
 	m := deterministicManagerWithInfo(testInfos)
 
 	m.Refresh()
@@ -44,16 +36,16 @@ func TestHandleCountManager(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "3"))
 }
 
-type mockSyscaller struct {
-	info []*windows.SYSTEM_PROCESS_INFORMATION
+type mockQueryer struct {
+	info map[int64]uint32
 }
 
-func (s *mockSyscaller) getSystemProcessInformation() ([]*windows.SYSTEM_PROCESS_INFORMATION, error) {
+func (s mockQueryer) queryProcessHandleCounts() (map[int64]uint32, error) {
 	return s.info, nil
 }
 
-func deterministicManagerWithInfo(info []*windows.SYSTEM_PROCESS_INFORMATION) *handleCountManager {
+func deterministicManagerWithInfo(info map[int64]uint32) *handleCountManager {
 	return &handleCountManager{
-		processInfoGetter: &mockSyscaller{info: info},
+		queryer: mockQueryer{info: info},
 	}
 }
