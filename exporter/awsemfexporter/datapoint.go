@@ -165,12 +165,11 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 }
 
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
-func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
-	metric := dps.ExponentialHistogramDataPointSlice.At(i)
+func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, instrumentationScopeName string, detailedMetrics bool) ([]dataPoint, bool) {
+	metric := dps.ExponentialHistogramDataPointSlice.At(idx)
 
 	scale := metric.Scale()
 	base := math.Pow(2, math.Pow(2, float64(-scale)))
-	datapoints := []dataPoint{}
 	arrayValues := []float64{}
 	arrayCounts := []float64{}
 	var bucketBegin float64
@@ -232,9 +231,8 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(i int, in
 		}
 	}
 
-	MetricName := dps.metricName
-	datapoints = append(datapoints, dataPoint{
-		name: MetricName,
+	return []dataPoint{{
+		name: dps.metricName,
 		value: &cWMetricHistogram{
 			Values: arrayValues,
 			Counts: arrayCounts,
@@ -245,9 +243,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(i int, in
 		},
 		labels:      createLabels(metric.Attributes(), instrumentationScopeName),
 		timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
-	})
-
-	return datapoints, true
+	}}, true
 }
 
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
