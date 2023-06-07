@@ -313,9 +313,6 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 		"container_memory_utilization":                      0.16909561488772057,
 		"container_memory_utilization_over_container_limit": 13.560546875,
 		"container_memory_working_set":                      int64(28438528),
-		"container_processes":                               int64(5),
-		"container_processes_threads":                       int64(10),
-		"container_processes_file_descriptors":              int64(15),
 	}
 	expectedUnits = map[string]string{
 		"container_cpu_limit":                               "",
@@ -342,9 +339,6 @@ func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {
 		"container_memory_utilization":                      UnitPercent,
 		"container_memory_utilization_over_container_limit": UnitPercent,
 		"container_memory_working_set":                      UnitBytes,
-		"container_processes":                               UnitCount,
-		"container_processes_threads":                       UnitCount,
-		"container_processes_file_descriptors":              UnitCount,
 	}
 	tags = map[string]string{
 		"AutoScalingGroupName": "eks-a6bb9db9-267c-401c-db55-df8ef645b06f",

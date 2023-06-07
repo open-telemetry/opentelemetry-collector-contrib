@@ -40,7 +40,6 @@
             "has_filesystem": true,
             "has_diskio": true,
             "has_custom_metrics": false,
-            "has_processes": true,
             "image": "ubuntu@sha256:017eef0b616011647b269b5c65826e2e2ebddbe5d1f8c1e56b3599fb14fabec8"
         },
         "stats": [
@@ -190,11 +189,6 @@
                     "nr_stopped": 0,
                     "nr_uninterruptible": 0,
                     "nr_io_wait": 0
-                },
-                "processes": {
-                    "process_count": 10,
-                    "threads_current": 20,
-                    "fd_count": 30
                 }
             }
         ]

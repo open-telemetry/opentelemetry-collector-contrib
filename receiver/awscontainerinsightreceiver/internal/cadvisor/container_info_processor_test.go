@@ -68,7 +68,6 @@ func TestProcessContainers(t *testing.T) {
 	metricsExtractors = append(metricsExtractors, extractors.NewDiskIOMetricExtractor(zap.NewNop()))
 	metricsExtractors = append(metricsExtractors, extractors.NewNetMetricExtractor(zap.NewNop()))
 	metricsExtractors = append(metricsExtractors, extractors.NewFileSystemMetricExtractor(zap.NewNop()))
-	metricsExtractors = append(metricsExtractors, extractors.NewProcessesMetricExtractor(zap.NewNop()))
 
 	containerInfos := testutils.LoadContainerInfo(t, "./extractors/testdata/CurInfoContainer.json")
 	podInfos := testutils.LoadContainerInfo(t, "./extractors/testdata/InfoPod.json")

@@ -366,7 +366,6 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 		cadvisormetrics.DiskIOMetrics:       struct{}{},
 		cadvisormetrics.NetworkUsageMetrics: struct{}{},
 		cadvisormetrics.DiskUsageMetrics:    struct{}{},
-		cadvisormetrics.ProcessMetrics:      struct{}{},
 	}
 	var cgroupRoots []string
 	if c.containerOrchestrator == ci.EKS {
@@ -400,7 +399,6 @@ func (c *Cadvisor) initManager(createManager createCadvisorManager) error {
 	metricsExtractors = append(metricsExtractors, extractors.NewDiskIOMetricExtractor(c.logger))
 	metricsExtractors = append(metricsExtractors, extractors.NewNetMetricExtractor(c.logger))
 	metricsExtractors = append(metricsExtractors, extractors.NewFileSystemMetricExtractor(c.logger))
-	metricsExtractors = append(metricsExtractors, extractors.NewProcessesMetricExtractor(c.logger))
 
 	return nil
 }

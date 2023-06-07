@@ -758,9 +758,6 @@ kubectl apply -f config.yaml
 | container_status_terminated                       | Count        |
 | container_status_waiting                          | Count        |
 | container_status_waiting_reason_crashed           | Count        |
-| container_processes                               | Count        |
-| container_processes_threads                       | Count        |
-| container_processes_file_descriptors              | Count        |
 
 <br/><br/> 
 
