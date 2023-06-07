@@ -33,6 +33,8 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 - `traces`:
   - `aggregate` (default = false): Count the number of spans and errors belonging to a trace.
   - `max_wait` (default = 5s): The maximum waiting for all spans from single trace to arrive; ignored if `aggregate` is false.
+- `logs`:
+  - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)

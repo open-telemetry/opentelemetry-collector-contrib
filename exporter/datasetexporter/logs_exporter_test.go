@@ -158,21 +158,20 @@ var testLEventRaw = &add_events.Event{
 	Sev:    9,
 	Ts:     "1581452773000000789",
 	Attrs: map[string]interface{}{
-		"attributes.app":                    "server",
-		"attributes.instance_num":           int64(1),
-		"body.str":                          "This is a log message",
-		"body.type":                         "Str",
-		"dropped_attributes_count":          uint32(1),
-		"flag.is_sampled":                   false,
-		"flags":                             plog.LogRecordFlags(0),
-		"message":                           "OtelExporter - Log - This is a log message",
-		"resource.attributes.resource-attr": "resource-attr-val-1",
-		"scope.name":                        "",
-		"severity.number":                   plog.SeverityNumberInfo,
-		"severity.text":                     "Info",
-		"span_id":                           "0102040800000000",
-		"timestamp":                         "2020-02-11 20:26:13.000000789 +0000 UTC",
-		"trace_id":                          "08040201000000000000000000000000",
+		"attributes.app":           "server",
+		"attributes.instance_num":  int64(1),
+		"body.str":                 "This is a log message",
+		"body.type":                "Str",
+		"dropped_attributes_count": uint32(1),
+		"flag.is_sampled":          false,
+		"flags":                    plog.LogRecordFlags(0),
+		"message":                  "OtelExporter - Log - This is a log message",
+		"scope.name":               "",
+		"severity.number":          plog.SeverityNumberInfo,
+		"severity.text":            "Info",
+		"span_id":                  "0102040800000000",
+		"timestamp":                "2020-02-11 20:26:13.000000789 +0000 UTC",
+		"trace_id":                 "08040201000000000000000000000000",
 	},
 }
 
@@ -182,22 +181,21 @@ var testLEventReq = &add_events.Event{
 	Sev:    testLEventRaw.Sev,
 	Ts:     testLEventRaw.Ts,
 	Attrs: map[string]interface{}{
-		"attributes.app":                    "server",
-		"attributes.instance_num":           float64(1),
-		"body.str":                          "This is a log message",
-		"body.type":                         "Str",
-		"dropped_attributes_count":          float64(1),
-		"flag.is_sampled":                   false,
-		"flags":                             float64(plog.LogRecordFlags(0)),
-		"message":                           "OtelExporter - Log - This is a log message",
-		"resource.attributes.resource-attr": "resource-attr-val-1",
-		"scope.name":                        "",
-		"severity.number":                   float64(plog.SeverityNumberInfo),
-		"severity.text":                     "Info",
-		"span_id":                           "0102040800000000",
-		"timestamp":                         "2020-02-11 20:26:13.000000789 +0000 UTC",
-		"trace_id":                          "08040201000000000000000000000000",
-		"bundle_key":                        "d41d8cd98f00b204e9800998ecf8427e",
+		"attributes.app":           "server",
+		"attributes.instance_num":  float64(1),
+		"body.str":                 "This is a log message",
+		"body.type":                "Str",
+		"dropped_attributes_count": float64(1),
+		"flag.is_sampled":          false,
+		"flags":                    float64(plog.LogRecordFlags(0)),
+		"message":                  "OtelExporter - Log - This is a log message",
+		"scope.name":               "",
+		"severity.number":          float64(plog.SeverityNumberInfo),
+		"severity.text":            "Info",
+		"span_id":                  "0102040800000000",
+		"timestamp":                "2020-02-11 20:26:13.000000789 +0000 UTC",
+		"trace_id":                 "08040201000000000000000000000000",
+		"bundle_key":               "d41d8cd98f00b204e9800998ecf8427e",
 	},
 }
 
@@ -224,6 +222,37 @@ func TestBuildEventFromLog(t *testing.T) {
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		newDefaultLogsSettings(),
+	)
+
+	assert.Equal(t, expected, was)
+}
+
+func TestBuildEventFromLogExportResources(t *testing.T) {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	defaultAttrs := testLEventRaw.Attrs
+	defaultAttrs["resource.attributes.resource-attr"] = "resource-attr-val-1"
+
+	expected := &add_events.EventBundle{
+		Event: &add_events.Event{
+			Thread: testLEventRaw.Thread,
+			Log:    testLEventRaw.Log,
+			Sev:    testLEventRaw.Sev,
+			Ts:     testLEventRaw.Ts,
+			Attrs:  defaultAttrs,
+		},
+		Thread: testLThread,
+		Log:    testLLog,
+	}
+	was := buildEventFromLog(
+		ld,
+		lr.ResourceLogs().At(0).Resource(),
+		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		LogsSettings{
+			ExportResourceInfo: true,
+		},
 	)
 
 	assert.Equal(t, expected, was)
