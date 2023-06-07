@@ -186,7 +186,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
-`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
@@ -200,7 +200,7 @@ Examples:
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
-`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
