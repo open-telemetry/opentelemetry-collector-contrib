@@ -16,5 +16,5 @@ issues: [ 21097 ]
 subtext: |
   Metric `container.memory.file` was added to fulfil the lack of `container.memory.total_cache` metric in case that the
   cgroup version mounted in the host is v2 instead of v1.
-  
+
   Now there is documentation of which metrics are available depending cgroups version being used on the host.
