@@ -3,13 +3,13 @@
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: 'new_component'
+change_type: 'enhancement'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: 'timeconverter'
+component: 'pkg/ottl'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "allow strings with time and time format to be converted to a golang time object"
+note: "Adds new `Time` converter to convert a string to a Golang time struct based on a supplied format"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [22007]
