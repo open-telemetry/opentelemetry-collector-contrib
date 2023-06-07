@@ -11,34 +11,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func GetSliceValue(s pcommon.Slice, keys []ottl.key) (interface{}, error) {
-	if len(keys) == 0 {
-		return nil, fmt.Errorf("cannot get slice value without key")
-	}
-	if keys[0].Int == nil {
+func GetSliceValue(s pcommon.Slice, keys ottl.Key) (interface{}, error) {
+	if keys.Int() == nil {
 		return nil, fmt.Errorf("non-integer indexing is not supported")
 	}
-	idx := int(*keys[0].Int)
+	idx := int(*keys.Int())
 
 	if idx < 0 || idx >= s.Len() {
 		return nil, fmt.Errorf("index %d out of bounds", idx)
 	}
 
-	return getIndexableValue(s.At(int(*keys[0].Int)), keys[1:])
+	return getIndexableValue(s.At(int(*keys.Int())), keys)
 }
 
-func SetSliceValue(s pcommon.Slice, keys []ottl.key, val interface{}) error {
-	if len(keys) == 0 {
-		return fmt.Errorf("cannot set slice value without key")
-	}
-	if keys[0].Int == nil {
+func SetSliceValue(s pcommon.Slice, keys ottl.Key, val interface{}) error {
+	if keys.Int() == nil {
 		return fmt.Errorf("non-integer indexing is not supported")
 	}
-	idx := int(*keys[0].Int)
+	idx := int(*keys.Int())
 
 	if idx < 0 || idx >= s.Len() {
 		return fmt.Errorf("index %d out of bounds", idx)
 	}
 
-	return setIndexableValue(s.At(int(*keys[0].Int)), val, keys[1:])
+	return setIndexableValue(s.At(int(*keys.Int())), val, keys)
 }

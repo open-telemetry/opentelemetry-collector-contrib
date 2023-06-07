@@ -70,34 +70,37 @@ func SetValue(value pcommon.Value, val interface{}) error {
 	return err
 }
 
-func getIndexableValue(value pcommon.Value, keys []ottl.key) (any, error) {
+func getIndexableValue(value pcommon.Value, keys ottl.Key) (any, error) {
 	val, ok := value, false
-	for i := 0; i < len(keys); i++ {
+
+	currentKey, ok := keys.Next()
+	for ok {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
-			if keys[i].String == nil {
+			if currentKey.String() == nil {
 				return nil, fmt.Errorf("map must be indexed by a string")
 			}
-			val, ok = val.Map().Get(*keys[i].String)
+			val, ok = val.Map().Get(*currentKey.String())
 			if !ok {
 				return nil, nil
 			}
 		case pcommon.ValueTypeSlice:
-			if keys[i].Int == nil {
+			if currentKey.Int() == nil {
 				return nil, fmt.Errorf("slice must be indexed by an int")
 			}
-			if int(*keys[i].Int) >= val.Slice().Len() || int(*keys[i].Int) < 0 {
-				return nil, fmt.Errorf("index %v out of bounds", *keys[i].Int)
+			if int(*currentKey.Int()) >= val.Slice().Len() || int(*currentKey.Int()) < 0 {
+				return nil, fmt.Errorf("index %v out of bounds", *currentKey.Int())
 			}
-			val = val.Slice().At(int(*keys[i].Int))
+			val = val.Slice().At(int(*currentKey.Int()))
 		default:
 			return nil, fmt.Errorf("type %v does not support string indexing", val.Type())
 		}
+		currentKey, ok = currentKey.Next()
 	}
 	return ottlcommon.GetValue(val), nil
 }
 
-func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.key) error {
+func setIndexableValue(currentValue pcommon.Value, val any, keys ottl.Key) error {
 	var newValue pcommon.Value
 	switch val.(type) {
 	case []string, []bool, []int64, []float64, [][]byte, []any:
@@ -110,33 +113,35 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.key) err
 		return err
 	}
 
-	for i := 0; i < len(keys); i++ {
+	currentKey := keys
+	ok := true
+	for ok {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
-			if keys[i].String == nil {
+			if currentKey.String() == nil {
 				return errors.New("map must be indexed by a string")
 			}
-			potentialValue, ok := currentValue.Map().Get(*keys[i].String)
+			potentialValue, ok := currentValue.Map().Get(*currentKey.String())
 			if !ok {
-				currentValue = currentValue.Map().PutEmpty(*keys[i].String)
+				currentValue = currentValue.Map().PutEmpty(*currentKey.String())
 			} else {
 				currentValue = potentialValue
 			}
 		case pcommon.ValueTypeSlice:
-			if keys[i].Int == nil {
+			if currentKey.Int() == nil {
 				return errors.New("slice must be indexed by an int")
 			}
-			if int(*keys[i].Int) >= currentValue.Slice().Len() || int(*keys[i].Int) < 0 {
-				return fmt.Errorf("index %v out of bounds", *keys[i].Int)
+			if int(*currentKey.Int()) >= currentValue.Slice().Len() || int(*currentKey.Int()) < 0 {
+				return fmt.Errorf("index %v out of bounds", *currentKey.Int())
 			}
-			currentValue = currentValue.Slice().At(int(*keys[i].Int))
+			currentValue = currentValue.Slice().At(int(*currentKey.Int()))
 		case pcommon.ValueTypeEmpty:
 			switch {
-			case keys[i].String != nil:
-				currentValue = currentValue.SetEmptyMap().PutEmpty(*keys[i].String)
-			case keys[i].Int != nil:
+			case currentKey.String() != nil:
+				currentValue = currentValue.SetEmptyMap().PutEmpty(*currentKey.String())
+			case currentKey.Int() != nil:
 				currentValue.SetEmptySlice()
-				for k := 0; k < int(*keys[i].Int); k++ {
+				for k := 0; k < int(*currentKey.Int()); k++ {
 					currentValue.Slice().AppendEmpty()
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
@@ -146,6 +151,7 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.key) err
 		default:
 			return fmt.Errorf("type %v does not support string indexing", currentValue.Type())
 		}
+		currentKey, ok = currentKey.Next()
 	}
 	newValue.CopyTo(currentValue)
 	return nil

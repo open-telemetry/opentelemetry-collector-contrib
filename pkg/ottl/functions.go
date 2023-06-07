@@ -11,11 +11,66 @@ import (
 	"strings"
 )
 
-type PathExpressionParser[K any] func(*path) (GetSetter[K], error)
+type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
 
 type EnumParser func(*enumSymbol) (*Enum, error)
 
 type Enum int64
+
+type Path struct {
+	name  string
+	key   *Key
+	paths []Path
+}
+
+func (p *Path) Name() string {
+	return p.name
+}
+
+func (p *Path) Next() (Path, bool) {
+	if len(p.paths) == 0 {
+		return Path{}, false
+	}
+	return p.paths[0], len(p.paths[0].paths) > 0
+}
+
+func (p *Path) Keys() *Key {
+	return p.key
+}
+
+type Key struct {
+	// keys is for internal tracking of path objects.
+	keys []Key
+	s    *string
+	i    *int64
+
+	//// String gets a string key, or nil if this isn't a string key.
+	//String() *string
+	//
+	//// Int gets an int key, or nil if this isn't an int key.
+	//Int() *int
+	//
+	//// Next gets the next Key. The second value returns whether
+	//// there is another Key available.
+	//// Next gets the Next key by returning keys[0], which has
+	//// keys[1:] as its internal slice.
+	//Next() (Key, bool)
+}
+
+func (k *Key) String() *string {
+	return k.s
+}
+
+func (k *Key) Int() *int64 {
+	return k.i
+}
+
+func (k *Key) Next() (Key, bool) {
+	if len(k.keys) == 0 {
+		return Key{}, false
+	}
+	return k.keys[0], len(k.keys[0].keys) > 0
+}
 
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]

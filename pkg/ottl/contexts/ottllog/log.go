@@ -125,15 +125,15 @@ func parseEnum(val *ottl.enumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func parsePath(val *ottl.path) (ottl.GetSetter[TransformContext], error) {
-	if val != nil && len(val.Fields) > 0 {
-		return newPathGetSetter(val.Fields)
+func parsePath(path *ottl.Path) (ottl.GetSetter[TransformContext], error) {
+	if path != nil {
+		return newPathGetSetter(*path)
 	}
-	return nil, fmt.Errorf("bad path %v", val)
+	return nil, fmt.Errorf("bad path %v", path)
 }
 
-func newPathGetSetter(path []ottl.field) (ottl.GetSetter[TransformContext], error) {
-	switch path[0].Name {
+func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) {
+	switch path.Name() {
 	case "cache":
 		mapKey := path[0].Keys
 		if mapKey == nil {
@@ -153,15 +153,15 @@ func newPathGetSetter(path []ottl.field) (ottl.GetSetter[TransformContext], erro
 	case "severity_text":
 		return accessSeverityText(), nil
 	case "body":
-		if len(path) == 1 {
-			keys := path[0].Keys
+		nextPath, ok := path.Next()
+		if ok && nextPath.Name() == "string" {
+			return accessStringBody(), nil
+		} else {
+			keys := path.Keys()
 			if keys == nil {
 				return accessBody(), nil
 			}
 			return accessBodyKey(keys), nil
-		}
-		if path[1].Name == "string" {
-			return accessStringBody(), nil
 		}
 	case "attributes":
 		mapKey := path[0].Keys
@@ -284,7 +284,7 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessBodyKey(keys []ottl.key) ottl.StandardGetSetter[TransformContext] {
+func accessBodyKey(keys ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
 			body := tCtx.GetLogRecord().Body()
