@@ -62,6 +62,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules:
+// cloud.google.com/go v0.34.0
+// cloud.google.com/go/compute/metadata v0.2.3
+replace cloud.google.com/go => cloud.google.com/go v0.110.2
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
