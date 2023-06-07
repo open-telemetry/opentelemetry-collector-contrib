@@ -20,6 +20,6 @@ func (m *unsupportedManager) Refresh() error {
 	return ErrHandlesPlatformSupport
 }
 
-func (m *unsupportedManager) GetProcessHandleCount(pid int64) (uint32, error) {
+func (m *unsupportedManager) GetProcessHandleCount(_ int64) (uint32, error) {
 	return 0, ErrHandlesPlatformSupport
 }
