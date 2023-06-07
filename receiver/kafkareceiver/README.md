@@ -87,7 +87,7 @@ The following settings can be optionally configured:
   - `on_error`: (default = false) If false, only the successfully processed messages are marked
     **Note: this can block the entire partition in case a message processing returns a permanent error**
 - `avro`
-  - `schema_url`: Required if encoding set to `avro`, file path to a AVRO schema, prefixed with `file:`
+  - `schema`: Required if encoding set to `avro`, AVRO schema definition
   - `mapping`: Required if encoding set to `avro`, mapping from AVRO fields to log record
     Supported target fields: body, timestamp, severityText, severityNumber
     Other fields can be mapped to either resource attributes or log record attributes
@@ -115,7 +115,8 @@ receivers:
   kafka:
     encoding: avro
     avro:
-      schema_url: "file:folder/example.avro"
+      schema: |
+        {"type":"record","name":"test","fields":[]}
       mapping:
         timestamp: timestamp
         properties: resource.attributes.properties

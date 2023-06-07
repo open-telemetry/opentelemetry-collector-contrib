@@ -95,11 +95,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "avroLogs"),
 			expected: &Config{
-				Topic:    "avroLogs",
-				Encoding: "avro",
-				Brokers:  []string{"coffee:123", "foobar:456"},
-				ClientID: "otel-collector",
-				GroupID:  "otel-collector",
+				Topic:         "avroLogs",
+				Encoding:      "avro",
+				Brokers:       []string{"coffee:123", "foobar:456"},
+				ClientID:      "otel-collector",
+				GroupID:       "otel-collector",
+				InitialOffset: "latest",
 				Authentication: kafkaexporter.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -121,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 					Interval: 1 * time.Second,
 				},
 				Avro: Avro{
-					SchemaURL: "file:testdata/avro/schema.avro",
+					Schema: "{\"type\":\"record\",\"name\":\"test\",\"fields\":[]}\n",
 					Mapping: map[string]string{
 						"hostname":   "resource.attributes.hostname",
 						"properties": "resource.attributes.properties",

@@ -1,24 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io"
 	"strings"
 	"time"
 
@@ -39,8 +27,8 @@ const (
 )
 
 var (
-	errNoAvroMapping   = errors.New("no avro field mapping provided")
-	errNoAvroSchemaURL = errors.New("no avro url provided")
+	errFailedToReadAvroSchema = errors.New("failed to read avro schema")
+	errNoAvroMapping          = errors.New("no avro field mapping provided")
 )
 
 type avroLogsUnmarshaler struct {
@@ -56,7 +44,29 @@ func (a *avroLogsUnmarshaler) Encoding() string {
 	return avroEncoding
 }
 
+func (a *avroLogsUnmarshaler) WithSchema(mapping map[string]string, schemaReader io.Reader) (*avroLogsUnmarshaler, error) {
+	if mapping == nil {
+		return nil, errNoAvroMapping
+	}
+
+	a.mapping = mapping
+
+	schema, err := io.ReadAll(schemaReader)
+	if err != nil {
+		return nil, errFailedToReadAvroSchema
+	}
+
+	deserializer, err := newAVROStaticSchemaDeserializer(string(schema))
+	a.deserializer = deserializer
+
+	return a, err
+}
+
 func (a *avroLogsUnmarshaler) Unmarshal(data []byte) (plog.Logs, error) {
+	if a.deserializer == nil {
+		return plog.Logs{}, errors.New("avro deserializer not set")
+	}
+
 	avroLog, err := a.deserializer.Deserialize(data)
 	if err != nil {
 		return plog.NewLogs(), fmt.Errorf("failed to deserialize avro log: %w", err)
@@ -120,61 +130,26 @@ func setAttribute(attributes *pcommon.Map, key string, value interface{}) {
 	_ = attribute.FromRaw(value)
 }
 
-func (a *avroLogsUnmarshaler) Init(schemaURL string, mapping map[string]string) error {
-	a.mapping = mapping
-
-	var schemaDeserializer avroDeserializer
-	var err error
-
-	if strings.HasPrefix(schemaURL, avroSchemaPrefixFile) {
-		schemaFilePath := strings.TrimPrefix(schemaURL, avroSchemaPrefixFile)
-		schemaFilePath = filepath.Clean(schemaFilePath)
-		schemaDeserializer, err = newAVROFileSchemaDeserializer(schemaFilePath)
-	} else {
-		// TODO: schema registry deserializer
-		err = fmt.Errorf("unimplemented schema url prefix")
-	}
-
-	a.deserializer = schemaDeserializer
-
-	return err
-}
-
 type avroDeserializer interface {
 	Deserialize([]byte) (map[string]interface{}, error)
 }
 
-type avroFileSchemaDeserializer struct {
+type avroStaticSchemaDeserializer struct {
 	codec *goavro.Codec
 }
 
-func newAVROFileSchemaDeserializer(path string) (avroDeserializer, error) {
-	schema, err := loadAVROSchemaFromFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read avro schema from file: %w", err)
-	}
-
+func newAVROStaticSchemaDeserializer(schema string) (avroDeserializer, error) {
 	codec, err := goavro.NewCodec(schema)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create avro codec: %w", err)
 	}
 
-	return &avroFileSchemaDeserializer{
+	return &avroStaticSchemaDeserializer{
 		codec: codec,
 	}, nil
 }
 
-func loadAVROSchemaFromFile(path string) (string, error) {
-	cleanedPath := filepath.Clean(path)
-	schema, err := os.ReadFile(cleanedPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read schema from file: %w", err)
-	}
-
-	return string(schema), nil
-}
-
-func (d *avroFileSchemaDeserializer) Deserialize(data []byte) (map[string]interface{}, error) {
+func (d *avroStaticSchemaDeserializer) Deserialize(data []byte) (map[string]interface{}, error) {
 	native, _, err := d.codec.NativeFromBinary(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize avro record: %w", err)

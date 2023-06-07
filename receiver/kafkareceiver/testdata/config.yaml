@@ -50,7 +50,8 @@ kafka/avroLogs:
       max: 10
       backoff: 5s
   avro:
-    schema_url: "file:testdata/avro/schema.avro"
+    schema: |
+      {"type":"record","name":"test","fields":[]}
     mapping:
       hostname: resource.attributes.hostname
       properties: resource.attributes.properties

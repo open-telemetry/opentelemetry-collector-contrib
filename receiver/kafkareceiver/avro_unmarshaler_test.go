@@ -1,21 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkareceiver
 
 import (
+	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -30,14 +22,12 @@ func TestNewAvroLogsUnmarshaler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read avro schema file: %q", err.Error())
 	}
-	codec, err := goavro.NewCodec(schema)
+	codec, err := goavro.NewCodec(string(schema))
 	if err != nil {
 		t.Fatalf("Failed to create avro code from schema: %q", err.Error())
 	}
 
-	unmarshaler := newAVROLogsUnmarshaler()
-	if err = unmarshaler.Init(
-		"file:testdata/avro/schema1.avro",
+	unmarshaler, err := newAVROLogsUnmarshaler().WithSchema(
 		map[string]string{
 			"timestamp":    "timestamp",
 			"properties":   "resource.attributes.properties",
@@ -49,7 +39,8 @@ func TestNewAvroLogsUnmarshaler(t *testing.T) {
 			"severity":     "severityNumber",
 			"doesnotexist": "attributes.doesnotexist",
 		},
-	); err != nil {
+		bytes.NewReader(schema))
+	if err != nil {
 		t.Errorf("Did not expect an error, got %q", err.Error())
 	}
 
@@ -111,4 +102,14 @@ func encodeAVROLogTestData(codec *goavro.Codec, data string) []byte {
 	}
 
 	return binary
+}
+
+func loadAVROSchemaFromFile(path string) ([]byte, error) {
+	cleanedPath := filepath.Clean(path)
+	schema, err := os.ReadFile(cleanedPath)
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to read schema from file: %w", err)
+	}
+
+	return schema, nil
 }

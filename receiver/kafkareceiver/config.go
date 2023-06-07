@@ -32,8 +32,8 @@ type MessageMarking struct {
 }
 
 type Avro struct {
-	// Local file path 'file:' or schema registry url to load schema from
-	SchemaURL string `mapstructure:"schema_url"`
+	// AVRO schema used to decode messages
+	Schema string `mapstructure:"schema"`
 	// Mapping definition from AVRO fields to otel logs fields and attributes
 	Mapping map[string]string `mapstructure:"mapping"`
 }

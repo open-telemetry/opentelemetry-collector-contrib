@@ -273,7 +273,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	} else {
 		return nil, err
 	}
-	unmarshaler, err := getLogsUnmarshaler(config.Encoding, unmarshalers)
+	unmarshaler, err := getLogsUnmarshaler(&config, unmarshalers)
 	if err != nil {
 		return nil, err
 	}
@@ -303,11 +303,11 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	}, nil
 }
 
-func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
+func getLogsUnmarshaler(config *Config, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
 	var enc string
-	unmarshaler, ok := unmarshalers[encoding]
+	unmarshaler, ok := unmarshalers[config.Encoding]
 	if !ok {
-		split := strings.SplitN(encoding, "_", 2)
+		split := strings.SplitN(config.Encoding, "_", 2)
 		prefix := split[0]
 		if len(split) > 1 {
 			enc = split[1]
@@ -321,6 +321,14 @@ func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler
 	if unmarshalerWithEnc, ok := unmarshaler.(LogsUnmarshalerWithEnc); ok {
 		// This should be called even when enc is an empty string to initialize the encoding.
 		unmarshaler, err := unmarshalerWithEnc.WithEnc(enc)
+		if err != nil {
+			return nil, err
+		}
+		return unmarshaler, nil
+	}
+
+	if avroUnmarshaler, ok := unmarshaler.(*avroLogsUnmarshaler); ok {
+		unmarshaler, err := avroUnmarshaler.WithSchema(config.Avro.Mapping, strings.NewReader(config.Avro.Schema))
 		if err != nil {
 			return nil, err
 		}
