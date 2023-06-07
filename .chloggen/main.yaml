@@ -6,7 +6,7 @@
 change_type: 'enhancement'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: 'timeconverter'
+component: 'pkg/ottl'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "allow strings with time and time format to be converted to a golang time object"
