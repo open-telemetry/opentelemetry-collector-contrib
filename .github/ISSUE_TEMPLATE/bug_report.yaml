@@ -60,6 +60,7 @@ body:
       - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
+      - exporter/opensearch
       - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
