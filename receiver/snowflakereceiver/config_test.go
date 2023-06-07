@@ -119,6 +119,7 @@ func TestLoadConfig(t *testing.T) {
 		Warehouse: "metricWarehouse",
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 18 * time.Minute,
+			InitialDelay:       time.Second,
 		},
 		Role:                 "customMonitoringRole",
 		Database:             "SNOWFLAKE",

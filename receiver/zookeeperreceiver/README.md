@@ -35,3 +35,6 @@ receivers:
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
+## Limitations
+
+This receiver does not support scraping metrics from Zookeeper's [New Metric System](https://zookeeper.apache.org/doc/r3.6.3/zookeeperMonitor.html#Metrics-System).
