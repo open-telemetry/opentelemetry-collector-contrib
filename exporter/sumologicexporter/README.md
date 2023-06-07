@@ -14,38 +14,93 @@ This exporter supports sending logs and metrics data to [Sumo Logic](https://www
 Traces are exported using native otlphttp exporter as described
 [here](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing)
 
-The following configuration options are supported:
+Configuration is specified via the yaml in the following structure:
 
-- `endpoint` (required): Unique URL generated for your HTTP Metrics Source. This is the address to send metrics to.
-- `compress_encoding` (optional): Compression encoding format, either empty string (`""`), `gzip` or `deflate` (default `gzip`).
-Empty string means no compression
-- `max_request_body_size` (optional): Max HTTP request body size in bytes before compression (if applied). By default `1_048_576` (1MB) is used.
-- `metadata_attributes` (optional): List of regexes for attributes which should be send as metadata
-- `log_format` (optional) (logs only): Format to use when sending logs to Sumo. (default `json`) (possible values: `json`, `text`)
-- `metric_format` (optional) (metrics only): Format of the metrics to be sent (default is `prometheus`) (possible values: `carbon2`, `graphite`, `prometheus`).
-- `graphite_template` (default=`%{_metric_}`) (optional) (metrics only): Template for Graphite format.
-[Source templates](#source-templates) are going to be applied.
-Applied only if `metric_format` is set to `graphite`.
-- `source_category` (optional): Desired source category. Useful if you want to override the source category configured for the source.
-[Source templates](#source-templates) are going to be applied.
-- `source_name` (optional): Desired source name. Useful if you want to override the source name configured for the source.
-[Source templates](#source-templates) are going to be applied.
-- `source_host` (optional): Desired host name. Useful if you want to override the source host configured for the source.
-[Source templates](#source-templates) are going to be applied.
-- `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
-Maximum connection timeout is 55s.
-- `retry_on_failure`
-  - `enabled` (default = true)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
-- `sending_queue`
-  - `enabled` (default = false)
-  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
-  User should calculate this as `num_seconds * requests_per_second` where:
-    - `num_seconds` is the number of seconds to buffer in case of a backend outage
-    - `requests_per_second` is the average number of requests per seconds.
+```yaml
+exporters:
+  # ...
+  sumologic:
+    # unique URL generated for your HTTP Source, this is the address to send data to
+    endpoint: <HTTP_Source_URL>
+    # Compression encoding format, empty string means no compression, default = gzip
+    compress_encoding: {gzip, deflate, ""}
+    # max HTTP request body size in bytes before compression (if applied),
+    # default = 1_048_576 (1MB)
+    max_request_body_size: <max_request_body_size>
+
+    # List of regexes for attributes which should be send as metadata
+    # default = []
+    metadata_attributes: [<regex>]
+
+    # format to use when sending logs to Sumo Logic, default = json,
+    log_format: {json, text}
+
+    # format to use when sending metrics to Sumo Logic, default = prometheus,
+    metric_format: {carbon2, graphite, prometheus}
+
+    # Template for Graphite format.
+    # this option affects graphite format only
+    # By default this is "%{_metric_}".
+    #
+    # Please regfer to Source temmplates for formatting explanation:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
+    graphite_template: <template>
+
+    # Desired source category. Useful if you want to override the source category configured for the source.
+    #
+    # Please regfer to Source temmplates for formatting explanation:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
+    source_category: <template>
+
+    # Desired source name. Useful if you want to override the source name configured for the source.
+    #
+    # Please regfer to Source temmplates for formatting explanation:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
+    source_name: <template>
+
+    # Desired source host. Useful if you want to override the source hosy configured for the source.
+    #
+    # Please regfer to Source temmplates for formatting explanation:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
+    source_host: <template>
+
+    # timeout is the timeout for every attempt to send data to the backend,
+    # maximum connection timeout is 55s, default = 5s
+    timeout: <timeout>
+
+    # for below described queueing and retry related configuration please refer to:
+    # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration
+
+    retry_on_failure:
+      # default = true
+      enabled: {true, false}
+      # time to wait after the first failure before retrying;
+      # ignored if enabled is false, default = 5s
+      initial_interval: <initial_interval>
+      # is the upper bound on backoff; ignored if enabled is false, default = 30s
+      max_interval: <max_interval>
+      # is the maximum amount of time spent trying to send a batch;
+      # ignored if enabled is false, default = 120s
+      max_elapsed_time: <max_elapsed_time>
+
+    sending_queue:
+      # default = false
+      enabled: {true, false}
+      # number of consumers that dequeue batches; ignored if enabled is false,
+      # default = 10
+      num_consumers: <num_consumers>
+      # when set, enables persistence and uses the component specified as a storage extension for the persistent queue
+      # make sure to configure and add a `file_storage` extension in `service.extensions`.
+      # default = None
+      storage: <storage_name>
+      # maximum number of batches kept in memory before data;
+      # ignored if enabled is false, default = 1000
+      #
+      # user should calculate this as num_seconds * requests_per_second where:
+      # num_seconds is the number of seconds to buffer in case of a backend outage,
+      # requests_per_second is the average number of requests per seconds.
+      queue_size: <queue_size>
+```
 
 ## Source Templates
 
