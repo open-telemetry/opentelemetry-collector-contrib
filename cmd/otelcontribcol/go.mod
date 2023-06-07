@@ -248,7 +248,7 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.84 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.46.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.46.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.46.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.46.0-rc.2 // indirect
@@ -430,9 +430,9 @@ require (
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.4.2 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.4.2 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.4.2 // indirect
+	github.com/influxdata/influxdb-observability/common v0.4.3 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.4.3 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.4.3 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.4 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -588,7 +588,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.672 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.673 // indirect
 	github.com/tg123/go-htpasswd v1.2.1 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
