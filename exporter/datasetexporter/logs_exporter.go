@@ -109,7 +109,7 @@ func buildEventFromLog(
 	attrs["flags"] = log.Flags()
 	attrs["flag.is_sampled"] = log.Flags().IsSampled()
 
-	if settings.ExportResourceInfo == true {
+	if settings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
 	attrs["scope.name"] = scope.Name()
