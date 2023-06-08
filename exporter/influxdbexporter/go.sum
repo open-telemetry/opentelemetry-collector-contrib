@@ -158,10 +158,10 @@ github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKe
 github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2cs=
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
-github.com/influxdata/influxdb-observability/common v0.4.3 h1:7EBqIVJC9rFNohuOIvtpftkXFgNv8xkXd5JueqgHFO8=
-github.com/influxdata/influxdb-observability/common v0.4.3/go.mod h1:4iLh+a678292K5J4pMh8wf2ZplteKfyGCfjHevgiUl0=
-github.com/influxdata/influxdb-observability/otel2influx v0.4.3 h1:W+bAZlCzDlXmGIzInoE97YFhqR/tLzXluTT1WqY34Ew=
-github.com/influxdata/influxdb-observability/otel2influx v0.4.3/go.mod h1:Y+EnAd3n/u7a2+rMCh8FfcrxHbE7H7DrXFKVvM7YuWw=
+github.com/influxdata/influxdb-observability/common v0.5.0 h1:Fo7AEfBzxkdjlP2R5390AeVo6Tr+lTSR+YX5qB0jxUc=
+github.com/influxdata/influxdb-observability/common v0.5.0/go.mod h1:4iLh+a678292K5J4pMh8wf2ZplteKfyGCfjHevgiUl0=
+github.com/influxdata/influxdb-observability/otel2influx v0.5.0 h1:nURLtW0mWp5q6xtfD7SFeoV6Ik0Cdk4Kgog83vZ6/qE=
+github.com/influxdata/influxdb-observability/otel2influx v0.5.0/go.mod h1:e95xRYLB1aIR1IRC0/Iq4pSrR4txuQHu9PGtHbiVGAE=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210519164801-ca6fa5da0184/go.mod h1:03nmhxzZ7Xk2pdG+lmMd7mHDfeVOYFyhOgwO61qWU98=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210922080147-aa28ccfb8937 h1:MHJNQ+p99hFATQm6ORoLmpUCF7ovjwEFshs/NHzAbig=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210922080147-aa28ccfb8937/go.mod h1:BKR9c0uHSmRgM/se9JhFHtTT7JTO67X23MtKMHtZcpo=
@@ -354,6 +354,8 @@ golang.org/x/crypto v0.0.0-20190923035154-9ee001bba392/go.mod h1:/lpIB1dKB+9EgE3
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/exp v0.0.0-20190121172915-509febef88a4/go.mod h1:CJ0aWSM057203Lf6IL+f9T1iT9GByDxfZKAQTCR3kQA=
+golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 h1:k/i9J1pBpvlfR+9QsetwPyERsqu1GIbi967PQMq3Ivc=
+golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1/go.mod h1:V1LtkGg67GoY2N1AnLN78QLrzxkLyJw7RJb1gzOOz9w=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
 golang.org/x/lint v0.0.0-20190227174305-5b3e6a55c961/go.mod h1:wehouNa3lNwaWXcvxsM5YxQ5yQlVC4a0KAMCusXpPoU=
 golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3/go.mod h1:6SW0HCj/g11FgYtHlgUYUwCkIfeOF89ocIRzGO/8vkc=
