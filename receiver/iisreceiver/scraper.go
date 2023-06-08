@@ -39,6 +39,7 @@ type iisReceiver struct {
 	// for mocking
 	newWatcher         func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
 	newWatcherFromPath func(string) (winperfcounters.PerfCounterWatcher, error)
+	expandWildcardPath func(string) ([]string, error)
 }
 
 // watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
@@ -47,6 +48,7 @@ type watcherRecorder struct {
 	recorder recordFunc
 }
 
+// instanceWatcher is a struct containing a perf counter watcher, along with the single instance the watcher records.
 type instanceWatcher struct {
 	watcher  winperfcounters.PerfCounterWatcher
 	instance string
@@ -61,6 +63,7 @@ func newIisReceiver(settings receiver.CreateSettings, cfg *Config, consumer cons
 		metricBuilder:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		newWatcher:         winperfcounters.NewWatcher,
 		newWatcherFromPath: winperfcounters.NewWatcherFromPath,
+		expandWildcardPath: winperfcounters.ExpandWildCardPath,
 	}
 }
 
@@ -169,7 +172,7 @@ func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]va
 
 		var value float64
 		switch {
-		case strings.HasSuffix(err.Error(), negativeDenominatorError):
+		case err != nil && strings.HasSuffix(err.Error(), negativeDenominatorError):
 			// This error occurs when there are no items in the queue;
 			// in this case, we would like to emit a 0 instead of logging an error (this is an expected scenario).
 			value = 0
@@ -220,10 +223,13 @@ func (rcvr *iisReceiver) buildWatcherRecorders(confs []perfCounterRecorderConf, 
 
 var maxQueueItemAgeInstanceRegex = regexp.MustCompile(`\\HTTP Service Request Queues\((?P<instance>[^)]+)\)\\MaxQueueItemAge$`)
 
+// buildMaxQueueItemAgeWatchers builds a watcher for each individual instance of the MaxQueueItemAge counter.
+// This is done in order to capture the error when scraping each individual instance, because we want to ignore
+// negative denominator errors.
 func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror.ScrapeErrors) []instanceWatcher {
 	wrs := []instanceWatcher{}
 
-	paths, err := winperfcounters.ExpandWildCardPath(`\HTTP Service Request Queues(*)\MaxQueueItemAge`)
+	paths, err := rcvr.expandWildcardPath(`\HTTP Service Request Queues(*)\MaxQueueItemAge`)
 	if err != nil {
 		scrapeErrors.AddPartial(1, fmt.Errorf("failed to expand wildcard path for MaxQueueItemAge: %w", err))
 		return wrs
@@ -236,7 +242,9 @@ func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror
 			continue
 		}
 
-		if matches[1] == "_Total" {
+		instanceName := matches[1]
+
+		if instanceName == "_Total" {
 			// skip total instance
 			continue
 		}
@@ -248,7 +256,7 @@ func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror
 		}
 
 		wrs = append(wrs, instanceWatcher{
-			instance: matches[1],
+			instance: instanceName,
 			watcher:  watcher,
 		})
 	}
