@@ -161,6 +161,14 @@ resourceMetrics:
             stringValue: '---1'
     scopeMetrics:
       - metrics:
+          - description: Age of oldest request in the queue.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1686199451535881700"
+                  timeUnixNano: "1686199511675213400"
+            name: iis.request.queue.age.max
+            unit: ms
           - description: Current number of requests in the queue.
             name: iis.request.queue.count
             sum:
@@ -190,6 +198,14 @@ resourceMetrics:
             stringValue: DefaultAppPool
     scopeMetrics:
       - metrics:
+          - description: Age of oldest request in the queue.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1686199451535881700"
+                  timeUnixNano: "1686199511675213400"
+            name: iis.request.queue.age.max
+            unit: ms
           - description: Current number of requests in the queue.
             name: iis.request.queue.count
             sum:

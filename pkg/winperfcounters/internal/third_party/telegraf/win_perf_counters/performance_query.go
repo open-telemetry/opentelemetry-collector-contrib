@@ -25,7 +25,6 @@ type PerformanceQuery interface {
 	AddCounterToQuery(counterPath string) (PDH_HCOUNTER, error)
 	AddEnglishCounterToQuery(counterPath string) (PDH_HCOUNTER, error)
 	GetCounterPath(counterHandle PDH_HCOUNTER) (string, error)
-	ExpandWildCardPath(counterPath string) ([]string, error)
 	GetFormattedCounterValueDouble(hCounter PDH_HCOUNTER) (float64, error)
 	GetFormattedCounterArrayDouble(hCounter PDH_HCOUNTER) ([]CounterValue, error)
 	CollectData() error

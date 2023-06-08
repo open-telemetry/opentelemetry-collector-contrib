@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -70,6 +71,7 @@ func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 	rcvr.totalWatcherRecorders = rcvr.buildWatcherRecorders(totalPerfCounterRecorders, errs)
 	rcvr.siteWatcherRecorders = rcvr.buildWatcherRecorders(sitePerfCounterRecorders, errs)
 	rcvr.appPoolWatcherRecorders = rcvr.buildWatcherRecorders(appPoolPerfCounterRecorders, errs)
+	rcvr.queueMaxAgeWatchers = rcvr.buildMaxQueueItemAgeWatchers(errs)
 
 	return errs.Combine()
 }
@@ -122,7 +124,6 @@ type valRecorder struct {
 }
 
 func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceToRecorders map[string][]valRecorder) {
-
 	for _, wr := range wrs {
 		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
@@ -160,24 +161,31 @@ func (rcvr *iisReceiver) emitInstanceMap(now pcommon.Timestamp, instanceToRecord
 	}
 }
 
+var negativeDenominatorError = "A counter with a negative denominator value was detected.\r\n"
+
 func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
 	for _, wr := range rcvr.queueMaxAgeWatchers {
 		counterValues, err := wr.watcher.ScrapeData()
-		// TODO: Compare error, record 0 if specific error
-		if err != nil {
+
+		var value float64
+		switch {
+		case strings.HasSuffix(err.Error(), negativeDenominatorError):
+			// This error occurs when there are no items in the queue;
+			// in this case, we would like to emit a 0 instead of logging an error (this is an expected scenario).
+			value = 0
+		case err != nil:
 			rcvr.params.Logger.Warn("some performance counters could not be scraped; ", zap.Error(err))
 			continue
-		}
-
-		if len(counterValues) == 0 {
+		case len(counterValues) == 0:
+			// No counters scraped
 			continue
+		default:
+			value = counterValues[0].Value
 		}
 
-		cv := counterValues[0]
-
-		appToRecorders[cv.InstanceName] = append(appToRecorders[cv.InstanceName],
+		appToRecorders[wr.instance] = append(appToRecorders[wr.instance],
 			valRecorder{
-				val:    counterValues[0].Value,
+				val:    value,
 				record: recordMaxQueueItemAge,
 			})
 	}
@@ -210,7 +218,7 @@ func (rcvr *iisReceiver) buildWatcherRecorders(confs []perfCounterRecorderConf, 
 	return wrs
 }
 
-var pathRegex = regexp.MustCompile(`^\\HTTP Service Request Queues\\((?P<instance>[^)]+\))\\MaxQueueItemAge$`)
+var maxQueueItemAgeInstanceRegex = regexp.MustCompile(`\\HTTP Service Request Queues\((?P<instance>[^)]+)\)\\MaxQueueItemAge$`)
 
 func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror.ScrapeErrors) []instanceWatcher {
 	wrs := []instanceWatcher{}
@@ -222,9 +230,9 @@ func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror
 	}
 
 	for _, path := range paths {
-		matches := pathRegex.FindStringSubmatch(path)
+		matches := maxQueueItemAgeInstanceRegex.FindStringSubmatch(path)
 		if len(matches) != 2 {
-			scrapeErrors.AddPartial(1, fmt.Errorf("failed to extract instance from %q: %w", path, err))
+			scrapeErrors.AddPartial(1, fmt.Errorf("failed to extract instance from %q", path))
 			continue
 		}
 
@@ -239,7 +247,7 @@ func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror
 			continue
 		}
 
-		rcvr.queueMaxAgeWatchers = append(rcvr.queueMaxAgeWatchers, instanceWatcher{
+		wrs = append(wrs, instanceWatcher{
 			instance: matches[1],
 			watcher:  watcher,
 		})
