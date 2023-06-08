@@ -21,6 +21,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
@@ -63,7 +64,7 @@ type API struct {
 func NewAPI(cfg *Config, logger *zap.Logger, host component.Host, settings component.TelemetrySettings, ret TargetRetriever) (*API, error) {
 	api := &API{retriever: ret, logger: logger.Named("api")}
 	mux := http.NewServeMux()
-	mux.HandleFunc("/targets", api.targets)
+	mux.HandleFunc("/targets", api.handle(api.targets))
 	var err error
 	api.listener, err = cfg.ServerConfig.ToListener()
 	if err != nil {
@@ -75,6 +76,25 @@ func NewAPI(cfg *Config, logger *zap.Logger, host component.Host, settings compo
 	if err != nil {
 		logger.Error("failure creating API server", zap.Error(err))
 		return nil, err
+	}
+
+	if cfg.ExternalURL != "" {
+		externalURL, err := url.Parse(cfg.ExternalURL)
+		if err != nil {
+			logger.Error("unable to parse external URL", zap.Error(err))
+			return nil, err
+		}
+		api.externalURL = externalURL
+	} else {
+		host, err := os.Hostname()
+		if err != nil {
+			logger.Error("unable to get hostname", zap.Error(err))
+			return nil, err
+		}
+		api.externalURL = &url.URL{
+			Scheme: "http",
+			Host:   host,
+		}
 	}
 
 	return api, nil
@@ -166,7 +186,7 @@ func (a *API) getGlobalURL(u *url.URL) (*url.URL, error) {
 
 // borrowed from https://github.com/prometheus/prometheus/blob/344c8ff97ce261dbaaf2720f1e5164a8fee19184/web/api/v1/api.go#L950
 // with adaptations as required
-func (a *API) targets(w http.ResponseWriter, req *http.Request) {
+func (a *API) targets(req *http.Request) response {
 	sortKeys := func(targets map[string][]*scrape.Target) ([]string, int) {
 		var n int
 		keys := make([]string, 0, len(targets))
@@ -248,7 +268,10 @@ func (a *API) targets(w http.ResponseWriter, req *http.Request) {
 		res.DroppedTargets = []*promapi.DroppedTarget{}
 	}
 
-	a.respond(w, res)
+	return response{
+		Status: "success",
+		Data:   res,
+	}
 }
 
 // borrowed from https://github.com/prometheus/prometheus/blob/344c8ff97ce261dbaaf2720f1e5164a8fee19184/web/api/v1/api.go#L1630
@@ -266,5 +289,12 @@ func (a *API) respond(w http.ResponseWriter, data any) {
 	w.WriteHeader(http.StatusOK)
 	if n, err := w.Write(res); err != nil {
 		a.logger.Error("error writing response", zap.Error(err), zap.Int("bytesWritten", n))
+	}
+}
+
+func (a *API) handle(f func(r *http.Request) response) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		res := f(req)
+		a.respond(w, res.Data)
 	}
 }
