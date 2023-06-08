@@ -85,13 +85,13 @@ func TestE2E(t *testing.T) {
 		name     string
 		dataType component.DataType
 		service  string
-		attrs    map[string]*k8stest.ExpectedValue
+		attrs    map[string]*expectedValue
 	}{
 		{
 			name:     "traces-job",
 			dataType: component.DataTypeTraces,
 			service:  "test-traces-job",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-traces-job-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -112,7 +112,7 @@ func TestE2E(t *testing.T) {
 			name:     "traces-statefulset",
 			dataType: component.DataTypeTraces,
 			service:  "test-traces-statefulset",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(equal, "telemetrygen-"+testID+"-traces-statefulset-0"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -133,7 +133,7 @@ func TestE2E(t *testing.T) {
 			name:     "traces-deployment",
 			dataType: component.DataTypeTraces,
 			service:  "test-traces-deployment",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -156,7 +156,7 @@ func TestE2E(t *testing.T) {
 			name:     "traces-daemonset",
 			dataType: component.DataTypeTraces,
 			service:  "test-traces-daemonset",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-traces-daemonset-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -177,7 +177,7 @@ func TestE2E(t *testing.T) {
 			name:     "metrics-job",
 			dataType: component.DataTypeMetrics,
 			service:  "test-metrics-job",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-job-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -198,7 +198,7 @@ func TestE2E(t *testing.T) {
 			name:     "metrics-statefulset",
 			dataType: component.DataTypeMetrics,
 			service:  "test-metrics-statefulset",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-statefulset-0"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -219,7 +219,7 @@ func TestE2E(t *testing.T) {
 			name:     "metrics-deployment",
 			dataType: component.DataTypeMetrics,
 			service:  "test-metrics-deployment",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -242,7 +242,7 @@ func TestE2E(t *testing.T) {
 			name:     "metrics-daemonset",
 			dataType: component.DataTypeMetrics,
 			service:  "test-metrics-daemonset",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-daemonset-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -263,7 +263,7 @@ func TestE2E(t *testing.T) {
 			name:     "logs-job",
 			dataType: component.DataTypeLogs,
 			service:  "test-logs-job",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-logs-job-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -284,7 +284,7 @@ func TestE2E(t *testing.T) {
 			name:     "logs-statefulset",
 			dataType: component.DataTypeLogs,
 			service:  "test-logs-statefulset",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(equal, "telemetrygen-"+testID+"-logs-statefulset-0"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -305,7 +305,7 @@ func TestE2E(t *testing.T) {
 			name:     "logs-deployment",
 			dataType: component.DataTypeLogs,
 			service:  "test-logs-deployment",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
@@ -328,7 +328,7 @@ func TestE2E(t *testing.T) {
 			name:     "logs-daemonset",
 			dataType: component.DataTypeLogs,
 			service:  "test-logs-daemonset",
-			attrs: map[string]*k8stest.ExpectedValue{
+			attrs: map[string]*expectedValue{
 				"k8s.pod.name":             newExpectedValue(regex, "telemetrygen-"+testID+"-logs-daemonset-[a-z0-9]*"),
 				"k8s.pod.ip":               newExpectedValue(exist, ""),
 				"k8s.pod.uid":              newExpectedValue(exist, ""),
