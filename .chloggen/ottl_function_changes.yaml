@@ -9,7 +9,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Changed replacement_pattern (replacement) string to be a path expression to a string telemetry field or a literal string
+note: Change replacement functions to accept a path expression as a replacement
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [22787]
@@ -17,4 +17,9 @@ issues: [22787]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  The following replacement functions now accept a path expression as a replacement:
+  - replace_match
+  - replace_pattern
+  - replace_all_matches
+  - replace_all_patterns

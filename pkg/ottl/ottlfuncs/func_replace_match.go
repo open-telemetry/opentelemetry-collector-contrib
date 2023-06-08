@@ -39,12 +39,12 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement o
 	}
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
-		replacementVal, errRepl := replacement.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if errRepl != nil {
-			return nil, errRepl
+		replacementVal, err := replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
 		}
 		if val == nil {
 			return nil, nil
