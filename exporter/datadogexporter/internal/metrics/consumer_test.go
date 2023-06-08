@@ -123,18 +123,16 @@ func TestTagsMetrics(t *testing.T) {
 }
 
 func TestConsumeAPMStats(t *testing.T) {
-	metadata := metrics.Metadata{
-		Languages: nil,
-	}
+	var md metrics.Metadata
 	c := NewConsumer()
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
 	}
 	require.Len(t, c.as, len(testutil.StatsPayloads))
 	require.ElementsMatch(t, c.as, testutil.StatsPayloads)
-	_, _, out := c.All(0, component.BuildInfo{}, []string{}, metadata)
+	_, _, out := c.All(0, component.BuildInfo{}, []string{}, md)
 	require.ElementsMatch(t, out, testutil.StatsPayloads)
-	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"}, metadata)
+	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"}, md)
 	var copies []pb.ClientStatsPayload
 	for _, sp := range testutil.StatsPayloads {
 		sp.Tags = append(sp.Tags, "extra:key")

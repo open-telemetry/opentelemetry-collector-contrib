@@ -115,14 +115,15 @@ func (exp *traceExporter) consumeTraces(
 
 func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
+	buildTags := metrics.TagsFromBuildInfo(exp.params.BuildInfo)
 	var err error
 	if isMetricExportV2Enabled() {
 		series := make([]datadogV2.MetricSeries, 0, len(hosts)+len(tags))
 		for host := range hosts {
-			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), metrics.TagsFromBuildInfo(exp.params.BuildInfo))...)
+			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), buildTags)...)
 		}
 		for tag := range tags {
-			ms := metrics.DefaultMetrics("traces", "", uint64(now), metrics.TagsFromBuildInfo(exp.params.BuildInfo))
+			ms := metrics.DefaultMetrics("traces", "", uint64(now), buildTags)
 			for i := range ms {
 				ms[i].Tags = append(ms[i].Tags, tag)
 			}
