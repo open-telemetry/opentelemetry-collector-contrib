@@ -19,6 +19,6 @@ func TestReadComments(t *testing.T) {
 		}
 	}
 
-	require.Equal(t, "LogDataEnabled can be used to disable sending logs by the exporter.", field.Comment)
+	require.Equal(t, "LogDataEnabled can be used to disable sending logs by the exporter.", field.Comment[0])
 	require.Equal(t, "log_data_enabled", field.Tag)
 }

@@ -254,7 +254,7 @@ Some info about a component
 			expected, err := os.ReadFile(filepath.Join("testdata", tt.outputFile))
 			require.NoError(t, err)
 			expected = bytes.ReplaceAll(expected, []byte("\r\n"), []byte("\n"))
-			require.Equal(t, string(expected), string(got), "got: %s\nexpected: %s", string(got), string(expected))
+			require.Equal(t, expected, got, "got: %s\nexpected: %s", got, expected)
 		})
 	}
 }

@@ -20,6 +20,7 @@
 
 * @open-telemetry/collector-contrib-approvers
 
+cmd/configgen/                                           @open-telemetry/collector-contrib-approvers @atoulme
 cmd/configschema/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dmitryax @pmcollins
 cmd/mdatagen/                                            @open-telemetry/collector-contrib-approvers @dmitryax
 cmd/otelcontribcol/                                      @open-telemetry/collector-contrib-approvers
