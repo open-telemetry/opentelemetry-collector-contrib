@@ -1,10 +1,12 @@
 // Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 //
+// Copyright 2016 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +18,16 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
-	"time"
 
+	jsoniter "github.com/json-iterator/go"
+	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/scrape"
+	promapi "github.com/prometheus/prometheus/web/api/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
@@ -36,57 +40,38 @@ type TargetRetriever interface {
 	TargetsDropped() map[string][]*scrape.Target
 }
 
-// Target has the information for one target.
-type Target struct {
-	// Labels before any processing.
-	DiscoveredLabels map[string]string `json:"discoveredLabels"`
-	// Any labels that are added to this target and its metrics.
-	Labels map[string]string `json:"labels"`
-
-	ScrapePool string `json:"scrapePool"`
-	ScrapeURL  string `json:"scrapeUrl"`
-	GlobalURL  string `json:"globalUrl"`
-
-	LastError          string              `json:"lastError"`
-	LastScrape         time.Time           `json:"lastScrape"`
-	LastScrapeDuration float64             `json:"lastScrapeDuration"`
-	Health             scrape.TargetHealth `json:"health"`
-
-	ScrapeInterval string `json:"scrapeInterval"`
-	ScrapeTimeout  string `json:"scrapeTimeout"`
+type Config struct {
+	ServerConfig *confighttp.HTTPServerSettings `mapstructure:"server"`
+	// ExternalURL is used to construct externally-accessible scrape URLs
+	// for targets on localhost
+	ExternalURL string `mapstructure:"external_url"`
 }
 
-// DroppedTarget has the information for one target that was dropped during relabelling.
-type DroppedTarget struct {
-	// Labels before any processing.
-	DiscoveredLabels map[string]string `json:"discoveredLabels"`
-}
-
-// TargetDiscovery has all the active targets.
-type TargetDiscovery struct {
-	ActiveTargets  []*Target        `json:"activeTargets"`
-	DroppedTargets []*DroppedTarget `json:"droppedTargets"`
+type response struct {
+	Status string `json:"status"`
+	Data   any    `json:"data,omitempty"`
 }
 
 type API struct {
-	retriever TargetRetriever
-	listener  net.Listener
-	server    *http.Server
-	done      chan struct{}
+	retriever   TargetRetriever
+	listener    net.Listener
+	server      *http.Server
+	logger      *zap.Logger
+	externalURL *url.URL
 }
 
-func NewAPI(cfg *confighttp.HTTPServerSettings, logger *zap.Logger, host component.Host, settings component.TelemetrySettings, ret TargetRetriever) (*API, error) {
-	api := &API{retriever: ret, done: make(chan struct{})}
+func NewAPI(cfg *Config, logger *zap.Logger, host component.Host, settings component.TelemetrySettings, ret TargetRetriever) (*API, error) {
+	api := &API{retriever: ret, logger: logger.Named("api")}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/targets", api.targets)
 	var err error
-	api.listener, err = cfg.ToListener()
+	api.listener, err = cfg.ServerConfig.ToListener()
 	if err != nil {
 		logger.Error("failure creating API listener", zap.Error(err))
 		return nil, err
 	}
 
-	api.server, err = cfg.ToServer(host, settings, mux)
+	api.server, err = cfg.ServerConfig.ToServer(host, settings, mux)
 	if err != nil {
 		logger.Error("failure creating API server", zap.Error(err))
 		return nil, err
@@ -96,15 +81,91 @@ func NewAPI(cfg *confighttp.HTTPServerSettings, logger *zap.Logger, host compone
 }
 
 func (a *API) Run() {
+	if a.server == nil {
+		a.logger.Error("no API server configured")
+		return
+	}
 	go func() {
-		a.server.Serve(a.listener)
+		err := a.server.Serve(a.listener)
+		if err != nil {
+			a.logger.Error("error serving API", zap.Error(err))
+		}
 	}()
 }
 
 func (a *API) Shutdown(ctx context.Context) error {
+	if a.server == nil {
+		return nil
+	}
 	return a.server.Shutdown(ctx)
 }
 
+// sanitizeSplitHostPort acts like net.SplitHostPort.
+// Additionally, if there is no port in the host passed as input, we return the
+// original host, making sure that IPv6 addresses are not surrounded by square
+// brackets.
+//
+// borrowed from https://github.com/prometheus/prometheus/blob/344c8ff97ce261dbaaf2720f1e5164a8fee19184/web/api/v1/api.go#L887
+func sanitizeSplitHostPort(input string) (string, string, error) {
+	host, port, err := net.SplitHostPort(input)
+	if err != nil && strings.HasSuffix(err.Error(), "missing port in address") {
+		var errWithPort error
+		host, _, errWithPort = net.SplitHostPort(input + ":80")
+		if errWithPort == nil {
+			err = nil
+		}
+	}
+	return host, port, err
+}
+
+// borrowed from https://github.com/prometheus/prometheus/blob/344c8ff97ce261dbaaf2720f1e5164a8fee19184/web/api/v1/api.go#L899
+// with adaptations as required
+func (a *API) getGlobalURL(u *url.URL) (*url.URL, error) {
+	host, port, err := sanitizeSplitHostPort(u.Host)
+	if err != nil {
+		return u, err
+	}
+
+	for _, lhr := range promapi.LocalhostRepresentations {
+		if host == lhr {
+			_, ownPort, err := net.SplitHostPort(a.listener.Addr().String())
+			if err != nil {
+				return u, err
+			}
+
+			if port == ownPort {
+				// Only in the case where the target is on localhost and its port is
+				// the same as the one we're listening on, we know for sure that
+				// we're monitoring our own process and that we need to change the
+				// scheme, hostname, and port to the externally reachable ones as
+				// well. We shouldn't need to touch the path at all, since if a
+				// path prefix is defined, the path under which we scrape ourselves
+				// should already contain the prefix.
+				u.Scheme = a.externalURL.Scheme
+				u.Host = a.externalURL.Host
+			} else {
+				// Otherwise, we only know that localhost is not reachable
+				// externally, so we replace only the hostname by the one in the
+				// external URL. It could be the wrong hostname for the service on
+				// this port, but it's still the best possible guess.
+				host, _, err := sanitizeSplitHostPort(a.externalURL.Host)
+				if err != nil {
+					return u, err
+				}
+				u.Host = host
+				if port != "" {
+					u.Host = net.JoinHostPort(u.Host, port)
+				}
+			}
+			break
+		}
+	}
+
+	return u, nil
+}
+
+// borrowed from https://github.com/prometheus/prometheus/blob/344c8ff97ce261dbaaf2720f1e5164a8fee19184/web/api/v1/api.go#L950
+// with adaptations as required
 func (a *API) targets(w http.ResponseWriter, req *http.Request) {
 	sortKeys := func(targets map[string][]*scrape.Target) ([]string, int) {
 		var n int
@@ -121,12 +182,12 @@ func (a *API) targets(w http.ResponseWriter, req *http.Request) {
 	state := strings.ToLower(req.URL.Query().Get("state"))
 	showActive := state == "" || state == "any" || state == "active"
 	showDropped := state == "" || state == "any" || state == "dropped"
-	res := &TargetDiscovery{}
+	res := &promapi.TargetDiscovery{}
 
 	if showActive {
 		targetsActive := a.retriever.TargetsActive()
 		activeKeys, numTargets := sortKeys(targetsActive)
-		res.ActiveTargets = make([]*Target, 0, numTargets)
+		res.ActiveTargets = make([]*promapi.Target, 0, numTargets)
 
 		for _, key := range activeKeys {
 			if scrapePool != "" && key != scrapePool {
@@ -139,12 +200,24 @@ func (a *API) targets(w http.ResponseWriter, req *http.Request) {
 					lastErrStr = lastErr.Error()
 				}
 
-				res.ActiveTargets = append(res.ActiveTargets, &Target{
-					DiscoveredLabels:   target.DiscoveredLabels().Map(),
-					Labels:             target.Labels().Map(),
-					ScrapePool:         key,
-					ScrapeURL:          target.URL().String(),
-					LastError:          lastErrStr,
+				globalURL, err := a.getGlobalURL(target.URL())
+
+				res.ActiveTargets = append(res.ActiveTargets, &promapi.Target{
+					DiscoveredLabels: target.DiscoveredLabels().Map(),
+					Labels:           target.Labels().Map(),
+					ScrapePool:       key,
+					ScrapeURL:        target.URL().String(),
+					GlobalURL:        globalURL.String(),
+					LastError: func() string {
+						switch {
+						case err == nil && lastErrStr == "":
+							return ""
+						case err != nil:
+							return errors.Wrapf(err, lastErrStr).Error()
+						default:
+							return lastErrStr
+						}
+					}(),
 					LastScrape:         target.LastScrape(),
 					LastScrapeDuration: target.LastScrapeDuration().Seconds(),
 					Health:             target.Health(),
@@ -154,30 +227,44 @@ func (a *API) targets(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 	} else {
-		res.ActiveTargets = []*Target{}
+		res.ActiveTargets = []*promapi.Target{}
 	}
+
 	if showDropped {
 		targetsDropped := a.retriever.TargetsDropped()
 		droppedKeys, numTargets := sortKeys(targetsDropped)
-		res.DroppedTargets = make([]*DroppedTarget, 0, numTargets)
+		res.DroppedTargets = make([]*promapi.DroppedTarget, 0, numTargets)
 		for _, key := range droppedKeys {
 			if scrapePool != "" && key != scrapePool {
 				continue
 			}
 			for _, target := range targetsDropped[key] {
-				res.DroppedTargets = append(res.DroppedTargets, &DroppedTarget{
+				res.DroppedTargets = append(res.DroppedTargets, &promapi.DroppedTarget{
 					DiscoveredLabels: target.DiscoveredLabels().Map(),
 				})
 			}
 		}
 	} else {
-		res.DroppedTargets = []*DroppedTarget{}
+		res.DroppedTargets = []*promapi.DroppedTarget{}
 	}
-	b, err := json.Marshal(res)
+
+	a.respond(w, res)
+}
+
+// borrowed from https://github.com/prometheus/prometheus/blob/344c8ff97ce261dbaaf2720f1e5164a8fee19184/web/api/v1/api.go#L1630
+// with adaptations as required
+func (a *API) respond(w http.ResponseWriter, data any) {
+	json := jsoniter.ConfigCompatibleWithStandardLibrary
+	res, err := json.Marshal(&response{Status: "success", Data: data})
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		a.logger.Error("error marshaling JSON response", zap.Error(err))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("content-type", "application/json")
-	w.Write(b)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if n, err := w.Write(res); err != nil {
+		a.logger.Error("error writing response", zap.Error(err), zap.Int("bytesWritten", n))
+	}
 }

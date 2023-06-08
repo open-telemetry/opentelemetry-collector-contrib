@@ -17,7 +17,6 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/api"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
@@ -32,6 +31,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/api"
 )
 
 const (
@@ -103,7 +103,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	if apiConf != nil {
 		a, err := api.NewAPI(apiConf, r.settings.Logger, host, r.settings.TelemetrySettings, r.scrapeManager)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to create API handler: %w", err)
 		}
 		r.api = a
 		r.api.Run()

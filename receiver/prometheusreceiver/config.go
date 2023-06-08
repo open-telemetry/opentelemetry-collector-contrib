@@ -17,9 +17,10 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/api"
 )
 
 const (
@@ -45,8 +46,8 @@ type Config struct {
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
-	TargetAllocator *targetAllocator               `mapstructure:"target_allocator"`
-	APIConfig       *confighttp.HTTPServerSettings `mapstructure:"api"`
+	TargetAllocator *targetAllocator `mapstructure:"target_allocator"`
+	APIConfig       *api.Config      `mapstructure:"api"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
