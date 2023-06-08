@@ -1,0 +1,15 @@
+# HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 3.7743e-05
+go_gc_duration_seconds{quantile="0.25"} 6.0311e-05
+go_gc_duration_seconds{quantile="0.5"} 8.5667e-05
+go_gc_duration_seconds{quantile="0.75"} 0.000104831
+go_gc_duration_seconds{quantile="1"} 0.000112094
+go_gc_duration_seconds_sum 0.000486284
+go_gc_duration_seconds_count 6
+# HELP purefa_array_performance_average_bytes FlashArray array average operations size
+# TYPE purefa_array_performance_average_bytes gauge
+purefa_array_performance_average_bytes{dimension="bytes_per_mirrored_write"} 0
+purefa_array_performance_average_bytes{dimension="bytes_per_op"} 88064
+purefa_array_performance_average_bytes{dimension="bytes_per_read"} 0
+purefa_array_performance_average_bytes{dimension="bytes_per_mirrored_write}

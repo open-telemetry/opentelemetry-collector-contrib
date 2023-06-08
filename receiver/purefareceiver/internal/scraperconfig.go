@@ -7,5 +7,5 @@ import "go.opentelemetry.io/collector/config/configauth"
 
 type ScraperConfig struct {
 	Address string                    `mapstructure:"address"`
-	Auth    configauth.Authentication `mapstructure:"auth"`
+	Auth    *configauth.Authentication `mapstructure:"auth"`
 }
