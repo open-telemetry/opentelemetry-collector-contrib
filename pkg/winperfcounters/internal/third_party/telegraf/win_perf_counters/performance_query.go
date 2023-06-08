@@ -191,7 +191,7 @@ func (m *PerformanceQueryImpl) IsVistaOrNewer() bool {
 	return PdhAddEnglishCounterSupported()
 }
 
-// ExpandWildCardPath  examines local computer and returns those counter paths that match the given counter path which contains wildcard characters.
+// ExpandWildCardPath examines local computer and returns those counter paths that match the given counter path which contains wildcard characters.
 func ExpandWildCardPath(counterPath string) ([]string, error) {
 	var bufSize uint32
 	var buff []uint16

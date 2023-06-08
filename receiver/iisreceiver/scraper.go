@@ -85,7 +85,7 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// Maintain maps of site -> {val, recordFunc} and app -> {val, recordFunc}
-	// so that we can emit all metrics for a particular instance (site, app_pool) at once,
+	// so that we can emit all metrics for a particular instance (site or app_pool) at once,
 	// keeping them in a single resource metric.
 
 	siteToRecorders := map[string][]valRecorder{}
@@ -153,17 +153,6 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 
 }
 
-func (rcvr *iisReceiver) emitInstanceMap(now pcommon.Timestamp, instanceToRecorders map[string][]valRecorder, resourceOption func(string) metadata.ResourceMetricsOption) {
-	// record all metrics for each instance, then emit them all as a single resource metric
-	for instanceName, recorders := range instanceToRecorders {
-		for _, recorder := range recorders {
-			recorder.record(rcvr.metricBuilder, now, recorder.val)
-		}
-
-		rcvr.metricBuilder.EmitForResource(resourceOption(instanceName))
-	}
-}
-
 var negativeDenominatorError = "A counter with a negative denominator value was detected.\r\n"
 
 func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
@@ -191,6 +180,17 @@ func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]va
 				val:    value,
 				record: recordMaxQueueItemAge,
 			})
+	}
+}
+
+// emitInstanceMap records all metrics for each instance, then emits them all as a single resource metric
+func (rcvr *iisReceiver) emitInstanceMap(now pcommon.Timestamp, instanceToRecorders map[string][]valRecorder, resourceOption func(string) metadata.ResourceMetricsOption) {
+	for instanceName, recorders := range instanceToRecorders {
+		for _, recorder := range recorders {
+			recorder.record(rcvr.metricBuilder, now, recorder.val)
+		}
+
+		rcvr.metricBuilder.EmitForResource(resourceOption(instanceName))
 	}
 }
 
