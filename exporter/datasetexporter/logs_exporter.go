@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+var now = time.Now
+
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
 	e, err := newDatasetExporter("logs", cfg, set.Logger)
@@ -67,13 +69,13 @@ func buildEventFromLog(log plog.LogRecord, resource pcommon.Resource, scope pcom
 	attrs := make(map[string]interface{})
 	event := add_events.Event{}
 
+	observedTs := log.ObservedTimestamp().AsTime()
 	if sevNum := log.SeverityNumber(); sevNum > 0 {
 		attrs["severity.number"] = sevNum
 		event.Sev = int(sevNum)
 	}
 
 	if timestamp := log.Timestamp().AsTime(); !timestamp.Equal(time.Unix(0, 0)) {
-		attrs["timestamp"] = timestamp.String()
 		event.Ts = strconv.FormatInt(timestamp.UnixNano(), 10)
 	}
 
@@ -86,8 +88,8 @@ func buildEventFromLog(log plog.LogRecord, resource pcommon.Resource, scope pcom
 	if dropped := log.DroppedAttributesCount(); dropped > 0 {
 		attrs["dropped_attributes_count"] = dropped
 	}
-	if observed := log.ObservedTimestamp().AsTime(); !observed.Equal(time.Unix(0, 0)) {
-		attrs["observed.timestamp"] = observed.String()
+	if !observedTs.Equal(time.Unix(0, 0)) {
+		attrs["observed.timestamp"] = observedTs.String()
 	}
 	if sevText := log.SeverityText(); sevText != "" {
 		attrs["severity.text"] = sevText
@@ -98,6 +100,23 @@ func buildEventFromLog(log plog.LogRecord, resource pcommon.Resource, scope pcom
 
 	if trace := log.TraceID().String(); trace != "" {
 		attrs["trace_id"] = trace
+	}
+
+	// Event needs to always have timestamp set otherwise it will get set to unix epoch start time
+	if event.Ts == "" {
+		fmt.Printf("laaa")
+		// ObservedTimestamp should always be set, but in case if it's not, we fall back to
+		// current time
+		// TODO: We should probably also do a rate limited log message here since this
+		// could indicate an issue with the current setup in case most events don't contain
+		// a timestamp.
+		if !observedTs.Equal(time.Unix(0, 0)) {
+			fmt.Printf("observed")
+			event.Ts = strconv.FormatInt(observedTs.UnixNano(), 10)
+		} else {
+			fmt.Printf("now")
+			event.Ts = strconv.FormatInt(now().UnixNano(), 10)
+		}
 	}
 
 	updateWithPrefixedValues(attrs, "attributes.", ".", log.Attributes().AsRaw(), 0)
