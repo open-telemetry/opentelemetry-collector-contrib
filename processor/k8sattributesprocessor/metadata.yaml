@@ -61,7 +61,7 @@ resource_attributes:
     type: string
     enabled: false
   k8s.container.name:
-    description: The name of the Container in a Pod template.
+    description: The name of the Container in a Pod template. Requires container.id.
     type: string
     enabled: false
   k8s.job.name:
@@ -81,14 +81,14 @@ resource_attributes:
     type: string
     enabled: true
   container.id:
-    description: Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated.
+    description: Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count.
     type: string
     enabled: false
   container.image.name:
-    description: Name of the image the container was built on.
+    description: Name of the image the container was built on. Requires container.id or k8s.container.name.
     type: string
     enabled: false
   container.image.tag:
-    description: Container image tag.
+    description: Container image tag. Requires container.id or k8s.container.name.
     type: string
     enabled: false
