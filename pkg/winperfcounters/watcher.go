@@ -45,6 +45,15 @@ func NewWatcher(object, instance, counterName string) (PerfCounterWatcher, error
 	return counter, nil
 }
 
+// NewWatcherFromPath creates new PerfCounterWatcher by provided path.
+func NewWatcherFromPath(path string) (PerfCounterWatcher, error) {
+	counter, err := newPerfCounter(path, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
+	}
+	return counter, nil
+}
+
 func counterPath(object, instance, counterName string) string {
 	if instance != "" {
 		instance = fmt.Sprintf("(%s)", instance)
@@ -116,6 +125,11 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 
 	vals = removeTotalIfMultipleValues(vals)
 	return vals, nil
+}
+
+// ExpandWildCardPath examines local computer and returns those counter paths that match the given counter path which contains wildcard characters.
+func ExpandWildCardPath(counterPath string) ([]string, error) {
+	return win_perf_counters.ExpandWildCardPath(counterPath)
 }
 
 func removeTotalIfMultipleValues(vals []CounterValue) []CounterValue {

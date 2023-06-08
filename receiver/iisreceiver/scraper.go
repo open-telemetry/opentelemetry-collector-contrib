@@ -8,6 +8,8 @@ package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -30,10 +32,12 @@ type iisReceiver struct {
 	totalWatcherRecorders   []watcherRecorder
 	siteWatcherRecorders    []watcherRecorder
 	appPoolWatcherRecorders []watcherRecorder
+	queueMaxAgeWatchers     []instanceWatcher
 	metricBuilder           *metadata.MetricsBuilder
 
 	// for mocking
-	newWatcher func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+	newWatcher         func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
+	newWatcherFromPath func(string) (winperfcounters.PerfCounterWatcher, error)
 }
 
 // watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
@@ -42,14 +46,20 @@ type watcherRecorder struct {
 	recorder recordFunc
 }
 
+type instanceWatcher struct {
+	watcher  winperfcounters.PerfCounterWatcher
+	instance string
+}
+
 // newIisReceiver returns an iisReceiver
 func newIisReceiver(settings receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
 	return &iisReceiver{
-		params:        settings.TelemetrySettings,
-		config:        cfg,
-		consumer:      consumer,
-		metricBuilder: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
-		newWatcher:    winperfcounters.NewWatcher,
+		params:             settings.TelemetrySettings,
+		config:             cfg,
+		consumer:           consumer,
+		metricBuilder:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		newWatcher:         winperfcounters.NewWatcher,
+		newWatcherFromPath: winperfcounters.NewWatcherFromPath,
 	}
 }
 
@@ -69,8 +79,19 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	rcvr.scrapeInstanceMetrics(now, rcvr.siteWatcherRecorders, metadata.WithIisSite)
-	rcvr.scrapeInstanceMetrics(now, rcvr.appPoolWatcherRecorders, metadata.WithIisApplicationPool)
+	// Maintain maps of site -> {val, recordFunc} and app -> {val, recordFunc}
+	// so that we can emit all metrics for a particular instance (site, app_pool) at once,
+	// keeping them in a single resource metric.
+
+	siteToRecorders := map[string][]valRecorder{}
+	rcvr.scrapeInstanceMetrics(rcvr.siteWatcherRecorders, siteToRecorders)
+	rcvr.emitInstanceMap(now, siteToRecorders, metadata.WithIisSite)
+
+	appToRecorders := map[string][]valRecorder{}
+	rcvr.scrapeInstanceMetrics(rcvr.appPoolWatcherRecorders, appToRecorders)
+	rcvr.scrapeMaxQueueAgeMetrics(appToRecorders)
+	rcvr.emitInstanceMap(now, appToRecorders, metadata.WithIisApplicationPool)
+
 	rcvr.scrapeTotalMetrics(now)
 
 	return rcvr.metricBuilder.Emit(), errs
@@ -100,11 +121,7 @@ type valRecorder struct {
 	record recordFunc
 }
 
-func (rcvr *iisReceiver) scrapeInstanceMetrics(now pcommon.Timestamp, wrs []watcherRecorder, resourceOption func(string) metadata.ResourceMetricsOption) {
-	// Maintain a map of instance -> {val, recordFunc}
-	// so that we can emit all metrics for a particular instance (site, app_pool) at once,
-	// keeping them in a single resource metric.
-	instanceToRecorders := map[string][]valRecorder{}
+func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceToRecorders map[string][]valRecorder) {
 
 	for _, wr := range wrs {
 		counterValues, err := wr.watcher.ScrapeData()
@@ -130,6 +147,9 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(now pcommon.Timestamp, wrs []watc
 		}
 	}
 
+}
+
+func (rcvr *iisReceiver) emitInstanceMap(now pcommon.Timestamp, instanceToRecorders map[string][]valRecorder, resourceOption func(string) metadata.ResourceMetricsOption) {
 	// record all metrics for each instance, then emit them all as a single resource metric
 	for instanceName, recorders := range instanceToRecorders {
 		for _, recorder := range recorders {
@@ -140,12 +160,36 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(now pcommon.Timestamp, wrs []watc
 	}
 }
 
+func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
+	for _, wr := range rcvr.queueMaxAgeWatchers {
+		counterValues, err := wr.watcher.ScrapeData()
+		// TODO: Compare error, record 0 if specific error
+		if err != nil {
+			rcvr.params.Logger.Warn("some performance counters could not be scraped; ", zap.Error(err))
+			continue
+		}
+
+		if len(counterValues) == 0 {
+			continue
+		}
+
+		cv := counterValues[0]
+
+		appToRecorders[cv.InstanceName] = append(appToRecorders[cv.InstanceName],
+			valRecorder{
+				val:    counterValues[0].Value,
+				record: recordMaxQueueItemAge,
+			})
+	}
+}
+
 // shutdown closes the watchers
 func (rcvr iisReceiver) shutdown(ctx context.Context) error {
 	var errs error
 	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.totalWatcherRecorders))
 	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.siteWatcherRecorders))
 	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.appPoolWatcherRecorders))
+	errs = multierr.Append(errs, closeInstanceWatchers(rcvr.queueMaxAgeWatchers))
 	return errs
 }
 
@@ -166,7 +210,56 @@ func (rcvr *iisReceiver) buildWatcherRecorders(confs []perfCounterRecorderConf, 
 	return wrs
 }
 
+var pathRegex = regexp.MustCompile(`^\\HTTP Service Request Queues\\((?P<instance>[^)]+\))\\MaxQueueItemAge$`)
+
+func (rcvr *iisReceiver) buildMaxQueueItemAgeWatchers(scrapeErrors *scrapererror.ScrapeErrors) []instanceWatcher {
+	wrs := []instanceWatcher{}
+
+	paths, err := winperfcounters.ExpandWildCardPath(`\HTTP Service Request Queues(*)\MaxQueueItemAge`)
+	if err != nil {
+		scrapeErrors.AddPartial(1, fmt.Errorf("failed to expand wildcard path for MaxQueueItemAge: %w", err))
+		return wrs
+	}
+
+	for _, path := range paths {
+		matches := pathRegex.FindStringSubmatch(path)
+		if len(matches) != 2 {
+			scrapeErrors.AddPartial(1, fmt.Errorf("failed to extract instance from %q: %w", path, err))
+			continue
+		}
+
+		if matches[1] == "_Total" {
+			// skip total instance
+			continue
+		}
+
+		watcher, err := rcvr.newWatcherFromPath(path)
+		if err != nil {
+			scrapeErrors.AddPartial(1, fmt.Errorf("failed to create watcher from %q: %w", path, err))
+			continue
+		}
+
+		rcvr.queueMaxAgeWatchers = append(rcvr.queueMaxAgeWatchers, instanceWatcher{
+			instance: matches[1],
+			watcher:  watcher,
+		})
+	}
+
+	return wrs
+}
+
 func closeWatcherRecorders(wrs []watcherRecorder) error {
+	var errs error
+	for _, wr := range wrs {
+		err := wr.watcher.Close()
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	return errs
+}
+
+func closeInstanceWatchers(wrs []instanceWatcher) error {
 	var errs error
 	for _, wr := range wrs {
 		err := wr.watcher.Close()

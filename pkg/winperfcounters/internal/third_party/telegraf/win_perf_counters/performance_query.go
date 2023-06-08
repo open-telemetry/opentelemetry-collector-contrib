@@ -125,24 +125,6 @@ func (m *PerformanceQueryImpl) GetCounterPath(counterHandle PDH_HCOUNTER) (strin
 	return "", NewPdhError(ret)
 }
 
-// ExpandWildCardPath  examines local computer and returns those counter paths that match the given counter path which contains wildcard characters.
-func (m *PerformanceQueryImpl) ExpandWildCardPath(counterPath string) ([]string, error) {
-	var bufSize uint32
-	var buff []uint16
-	var ret uint32
-
-	if ret = PdhExpandWildCardPath(counterPath, nil, &bufSize); ret == PDH_MORE_DATA {
-		buff = make([]uint16, bufSize)
-		bufSize = uint32(len(buff))
-		ret = PdhExpandWildCardPath(counterPath, &buff[0], &bufSize)
-		if ret == ERROR_SUCCESS {
-			list := UTF16ToStringArray(buff)
-			return list, nil
-		}
-	}
-	return nil, NewPdhError(ret)
-}
-
 // GetFormattedCounterValueDouble computes a displayable value for the specified counter
 func (m *PerformanceQueryImpl) GetFormattedCounterValueDouble(hCounter PDH_HCOUNTER) (float64, error) {
 	var counterType uint32
@@ -208,6 +190,24 @@ func (m *PerformanceQueryImpl) CollectDataWithTime() (time.Time, error) {
 
 func (m *PerformanceQueryImpl) IsVistaOrNewer() bool {
 	return PdhAddEnglishCounterSupported()
+}
+
+// ExpandWildCardPath  examines local computer and returns those counter paths that match the given counter path which contains wildcard characters.
+func ExpandWildCardPath(counterPath string) ([]string, error) {
+	var bufSize uint32
+	var buff []uint16
+	var ret uint32
+
+	if ret = PdhExpandWildCardPath(counterPath, nil, &bufSize); ret == PDH_MORE_DATA {
+		buff = make([]uint16, bufSize)
+		bufSize = uint32(len(buff))
+		ret = PdhExpandWildCardPath(counterPath, &buff[0], &bufSize)
+		if ret == ERROR_SUCCESS {
+			list := UTF16ToStringArray(buff)
+			return list, nil
+		}
+	}
+	return nil, NewPdhError(ret)
 }
 
 // UTF16PtrToString converts Windows API LPTSTR (pointer to string) to go string
