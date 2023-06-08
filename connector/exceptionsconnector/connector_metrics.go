@@ -163,7 +163,7 @@ func (c *metricsConnector) exportMetrics(ctx context.Context) error {
 // collectExceptions collects the exception metrics data and writes it into the metrics object.
 func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName("exceptions_total")
+	mCalls.SetName("exceptions")
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dps := mCalls.Sum().DataPoints()
