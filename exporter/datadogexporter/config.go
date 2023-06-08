@@ -234,6 +234,17 @@ type TracesConfig struct {
 	// The default value is `false`.
 	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
 
+	// If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
+	// If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
+	// NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+	ComputeStatsBySpanKind bool `mapstructure:"compute_stats_by_span_kind"`
+
+	// If set to true, enables `peer.service` aggregation in the agent. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
+	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
+	// If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
+
 	// flushInterval defines the interval in seconds at which the writer flushes traces
 	// to the intake; used in tests.
 	flushInterval float64
