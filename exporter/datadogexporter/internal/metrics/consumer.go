@@ -71,7 +71,7 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	}
 
 	for _, lang := range metadata.Languages {
-		tags := append(buildTags, "language:"+lang)
+		tags := append(buildTags, "language:"+lang) // nolint
 		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
 		series = append(series, runningMetric...)
 	}
