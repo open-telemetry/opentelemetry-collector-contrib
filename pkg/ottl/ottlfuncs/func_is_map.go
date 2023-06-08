@@ -5,7 +5,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -32,13 +31,13 @@ func createIsMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 func isMap[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		_, err := target.Get(ctx, tCtx)
-		if err == nil {
-			return true, nil
-		}
-		var typeError *ottl.TypeError
-		if errors.As(err, &typeError) {
+		switch err.(type) {
+		case ottl.TypeError:
 			return false, nil
+		case nil:
+			return true, nil
+		default:
+			return false, err
 		}
-		return false, err
 	}
 }
