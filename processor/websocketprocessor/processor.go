@@ -32,11 +32,14 @@ type wsprocessor struct {
 	tracesSink        consumer.Traces
 	server            *http.Server
 	shutdownWG        sync.WaitGroup
-	connections       map[string]chan []byte
-	connLock          sync.RWMutex
+	cs                *channelSet
 }
 
 var processors = map[*Config]*wsprocessor{}
+
+var logMarshaler = &plog.JSONMarshaler{}
+var metricMarshaler = &pmetric.JSONMarshaler{}
+var traceMarshaler = &ptrace.JSONMarshaler{}
 
 func newProcessor(settings processor.CreateSettings, config *Config) (*wsprocessor, error) {
 	if p, ok := processors[config]; ok {
@@ -49,12 +52,11 @@ func newProcessor(settings processor.CreateSettings, config *Config) (*wsprocess
 	if err != nil {
 		return nil, err
 	}
-	conns := make(map[string]chan []byte)
 	p := &wsprocessor{
 		config:            config,
 		obsproc:           obsproc,
 		telemetrySettings: settings.TelemetrySettings,
-		connections:       conns,
+		cs:                newChannelSet(),
 	}
 	processors[config] = p
 
@@ -88,35 +90,21 @@ func (w *wsprocessor) handleConn(conn *websocket.Conn) {
 		w.telemetrySettings.Logger.Debug("Error setting deadline", zap.Error(err))
 		return
 	}
-	sendChan := make(chan []byte)
-	key := conn.Request().RequestURI
-	w.connLock.Lock()
-	w.connections[key] = sendChan
-	w.connLock.Unlock()
-	for {
-		msg := <-sendChan
-		if len(msg) == 0 {
-			break
-		}
-		_, err := conn.Write(msg)
+	ch := make(chan []byte)
+	idx := w.cs.add(ch)
+	for bytes := range ch {
+		_, err := conn.Write(bytes)
 		if err != nil {
+			w.telemetrySettings.Logger.Debug("websocket write error: %w", zap.Error(err))
+			w.cs.closeAndRemove(idx)
 			break
 		}
 	}
-	w.connLock.Lock()
-	delete(w.connections, key)
-	w.connLock.Unlock()
 }
 
-func (w *wsprocessor) Shutdown(_ context.Context) error {
+func (w *wsprocessor) Shutdown(ctx context.Context) error {
 	if w.server != nil {
-		w.connLock.RLock()
-		defer w.connLock.RUnlock()
-		for _, c := range w.connections {
-			close(c)
-		}
-		err := w.server.Close()
-		w.shutdownWG.Wait()
+		err := w.server.Shutdown(ctx)
 		return err
 	}
 	return nil
@@ -129,47 +117,31 @@ func (w *wsprocessor) Capabilities() consumer.Capabilities {
 }
 
 func (w *wsprocessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	go func() {
-		b, err := (&pmetric.JSONMarshaler{}).MarshalMetrics(md)
-		if err != nil {
-			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-		} else {
-			w.sendToConnections(b)
-		}
-	}()
+	b, err := metricMarshaler.MarshalMetrics(md)
+	if err != nil {
+		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+	} else {
+		w.cs.writeBytes(b)
+	}
 	return w.metricsSink.ConsumeMetrics(ctx, md)
 }
 
 func (w *wsprocessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	go func() {
-		b, err := (&plog.JSONMarshaler{}).MarshalLogs(ld)
-		if err != nil {
-			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-		} else {
-			w.sendToConnections(b)
-		}
-	}()
+	b, err := logMarshaler.MarshalLogs(ld)
+	if err != nil {
+		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+	} else {
+		w.cs.writeBytes(b)
+	}
 	return w.logsSink.ConsumeLogs(ctx, ld)
 }
 
 func (w *wsprocessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-
-	go func() {
-		b, err := (&ptrace.JSONMarshaler{}).MarshalTraces(td)
-		if err != nil {
-			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-		} else {
-			w.sendToConnections(b)
-		}
-
-	}()
-	return w.tracesSink.ConsumeTraces(ctx, td)
-}
-
-func (w *wsprocessor) sendToConnections(payload []byte) {
-	w.connLock.RLock()
-	defer w.connLock.RUnlock()
-	for _, c := range w.connections {
-		c <- payload
+	b, err := traceMarshaler.MarshalTraces(td)
+	if err != nil {
+		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+	} else {
+		w.cs.writeBytes(b)
 	}
+	return w.tracesSink.ConsumeTraces(ctx, td)
 }
