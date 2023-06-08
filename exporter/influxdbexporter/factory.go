@@ -7,9 +7,11 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/influxdata/influxdb-observability/common"
+	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -19,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter/internal/metadata"
 )
 
-// NewFactory creates a factory for Jaeger Thrift over HTTP exporter.
+// NewFactory creates a factory for InfluxDB exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
@@ -27,64 +29,6 @@ func NewFactory() exporter.Factory {
 		exporter.WithTraces(createTraceExporter, metadata.TracesStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-	)
-}
-
-func createTraceExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
-	cfg := config.(*Config)
-
-	exporter, err := newTracesExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
-
-	return exporterhelper.NewTracesExporter(
-		ctx,
-		set,
-		cfg,
-		exporter.pushTraces,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
-	)
-}
-
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
-	cfg := config.(*Config)
-
-	exporter, err := newMetricsExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
-
-	return exporterhelper.NewMetricsExporter(
-		ctx,
-		set,
-		cfg,
-		exporter.pushMetrics,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithStart(exporter.Start),
-	)
-}
-
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
-	cfg := config.(*Config)
-
-	exporter, err := newLogsExporter(cfg, set)
-	if err != nil {
-		return nil, err
-	}
-
-	return exporterhelper.NewLogsExporter(
-		ctx,
-		set,
-		cfg,
-		exporter.pushLogs,
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithStart(exporter.Start),
 	)
 }
 
@@ -96,8 +40,107 @@ func createDefaultConfig() component.Config {
 				"User-Agent": "OpenTelemetry -> Influx",
 			},
 		},
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		MetricsSchema: common.MetricsSchemaTelegrafPrometheusV1.String(),
+		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		MetricsSchema:  common.MetricsSchemaTelegrafPrometheusV1.String(),
+		SpanDimensions: otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,
 	}
+}
+
+func createTraceExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Traces, error) {
+	cfg := config.(*Config)
+
+	logger := newZapInfluxLogger(set.Logger)
+
+	writer, err := newInfluxHTTPWriter(logger, cfg, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	expConfig := otel2influx.DefaultOtelTracesToLineProtocolConfig()
+	expConfig.Logger = logger
+	expConfig.Writer = writer
+	expConfig.SpanDimensions = cfg.SpanDimensions
+	exp, err := otel2influx.NewOtelTracesToLineProtocol(expConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		exp.WriteTraces,
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithStart(writer.Start),
+	)
+}
+
+func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
+	cfg := config.(*Config)
+
+	logger := newZapInfluxLogger(set.Logger)
+
+	writer, err := newInfluxHTTPWriter(logger, cfg, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	schema, found := common.MetricsSchemata[cfg.MetricsSchema]
+	if !found {
+		return nil, fmt.Errorf("schema '%s' not recognized", cfg.MetricsSchema)
+	}
+
+	expConfig := otel2influx.DefaultOtelMetricsToLineProtocolConfig()
+	expConfig.Logger = logger
+	expConfig.Writer = writer
+	expConfig.Schema = schema
+	exp, err := otel2influx.NewOtelMetricsToLineProtocol(expConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		exp.WriteMetrics,
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithStart(writer.Start),
+	)
+}
+
+func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
+	cfg := config.(*Config)
+
+	logger := newZapInfluxLogger(set.Logger)
+
+	writer, err := newInfluxHTTPWriter(logger, cfg, set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+
+	expConfig := otel2influx.DefaultOtelLogsToLineProtocolConfig()
+	expConfig.Logger = logger
+	expConfig.Writer = writer
+	exp, err := otel2influx.NewOtelLogsToLineProtocol(expConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewLogsExporter(
+		ctx,
+		set,
+		cfg,
+		exp.WriteLogs,
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithStart(writer.Start),
+	)
 }
