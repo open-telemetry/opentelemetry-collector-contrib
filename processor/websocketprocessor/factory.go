@@ -9,9 +9,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor/internal/metadata"
 )
+
+var processors = sharedcomponent.NewSharedComponents()
 
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
@@ -23,32 +27,47 @@ func NewFactory() processor.Factory {
 	)
 }
 
-func createMetricsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, consumer consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Metrics) (processor.Metrics, error) {
 	rCfg := cfg.(*Config)
-	p, err := newProcessor(params, rCfg)
-	if err != nil {
-		return nil, err
-	}
-	p.metricsSink = consumer
-	return p, nil
+	p := processors.GetOrAdd(cfg, func() component.Component {
+		return newProcessor(params, rCfg)
+	})
+	fn := p.Unwrap().(*wsprocessor).ConsumeMetrics
+	return processorhelper.NewMetricsProcessor(ctx, params, cfg, c,
+		fn,
+		processorhelper.WithCapabilities(consumer.Capabilities{
+			MutatesData: false,
+		}),
+		processorhelper.WithStart(p.Start),
+		processorhelper.WithShutdown(p.Shutdown))
 }
 
-func createLogsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, consumer consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Logs) (processor.Logs, error) {
 	rCfg := cfg.(*Config)
-	p, err := newProcessor(params, rCfg)
-	if err != nil {
-		return nil, err
-	}
-	p.logsSink = consumer
-	return p, nil
+	p := processors.GetOrAdd(cfg, func() component.Component {
+		return newProcessor(params, rCfg)
+	})
+	fn := p.Unwrap().(*wsprocessor).ConsumeLogs
+	return processorhelper.NewLogsProcessor(ctx, params, cfg, c,
+		fn,
+		processorhelper.WithCapabilities(consumer.Capabilities{
+			MutatesData: false,
+		}),
+		processorhelper.WithStart(p.Start),
+		processorhelper.WithShutdown(p.Shutdown))
 }
 
-func createTraceProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, consumer consumer.Traces) (processor.Traces, error) {
+func createTraceProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Traces) (processor.Traces, error) {
 	rCfg := cfg.(*Config)
-	p, err := newProcessor(params, rCfg)
-	if err != nil {
-		return nil, err
-	}
-	p.tracesSink = consumer
-	return p, nil
+	p := processors.GetOrAdd(cfg, func() component.Component {
+		return newProcessor(params, rCfg)
+	})
+	fn := p.Unwrap().(*wsprocessor).ConsumeTraces
+	return processorhelper.NewTracesProcessor(ctx, params, cfg, c,
+		fn,
+		processorhelper.WithCapabilities(consumer.Capabilities{
+			MutatesData: false,
+		}),
+		processorhelper.WithStart(p.Start),
+		processorhelper.WithShutdown(p.Shutdown))
 }

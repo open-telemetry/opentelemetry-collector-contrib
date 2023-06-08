@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -26,41 +24,21 @@ import (
 type wsprocessor struct {
 	config            *Config
 	telemetrySettings component.TelemetrySettings
-	obsproc           *obsreport.Processor
-	logsSink          consumer.Logs
-	metricsSink       consumer.Metrics
-	tracesSink        consumer.Traces
 	server            *http.Server
 	shutdownWG        sync.WaitGroup
 	cs                *channelSet
 }
 
-var processors = map[*Config]*wsprocessor{}
-
 var logMarshaler = &plog.JSONMarshaler{}
 var metricMarshaler = &pmetric.JSONMarshaler{}
 var traceMarshaler = &ptrace.JSONMarshaler{}
 
-func newProcessor(settings processor.CreateSettings, config *Config) (*wsprocessor, error) {
-	if p, ok := processors[config]; ok {
-		return p, nil
-	}
-	obsproc, err := obsreport.NewProcessor(obsreport.ProcessorSettings{
-		ProcessorID:             settings.ID,
-		ProcessorCreateSettings: settings,
-	})
-	if err != nil {
-		return nil, err
-	}
-	p := &wsprocessor{
+func newProcessor(settings processor.CreateSettings, config *Config) *wsprocessor {
+	return &wsprocessor{
 		config:            config,
-		obsproc:           obsproc,
 		telemetrySettings: settings.TelemetrySettings,
 		cs:                newChannelSet(),
 	}
-	processors[config] = p
-
-	return p, nil
 }
 
 func (w *wsprocessor) Start(_ context.Context, host component.Host) error {
@@ -110,38 +88,32 @@ func (w *wsprocessor) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (w *wsprocessor) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{
-		MutatesData: false,
-	}
-}
-
-func (w *wsprocessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (w *wsprocessor) ConsumeMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	b, err := metricMarshaler.MarshalMetrics(md)
 	if err != nil {
 		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
 	} else {
 		w.cs.writeBytes(b)
 	}
-	return w.metricsSink.ConsumeMetrics(ctx, md)
+	return md, nil
 }
 
-func (w *wsprocessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (w *wsprocessor) ConsumeLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
 	b, err := logMarshaler.MarshalLogs(ld)
 	if err != nil {
 		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
 	} else {
 		w.cs.writeBytes(b)
 	}
-	return w.logsSink.ConsumeLogs(ctx, ld)
+	return ld, nil
 }
 
-func (w *wsprocessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (w *wsprocessor) ConsumeTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	b, err := traceMarshaler.MarshalTraces(td)
 	if err != nil {
 		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
 	} else {
 		w.cs.writeBytes(b)
 	}
-	return w.tracesSink.ConsumeTraces(ctx, td)
+	return td, nil
 }
