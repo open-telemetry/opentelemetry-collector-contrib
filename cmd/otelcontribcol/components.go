@@ -188,6 +188,7 @@ import (
 	udplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	vcenterreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 	wavefrontreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
+	webhookeventreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 	windowseventlogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	windowsperfcountersreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 	zipkinreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
@@ -309,6 +310,7 @@ func components() (otelcol.Factories, error) {
 		vcenterreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 		snmpreceiver.NewFactory(),
+        webhookeventreceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),

@@ -162,6 +162,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.79.0
@@ -434,6 +435,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
@@ -1050,6 +1052,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcent
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ./receiver/wavefrontreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ./receiver/windowseventlogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver => ./receiver/webhookeventreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ./receiver/windowsperfcountersreceiver
 
