@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
+var _ otel2influx.InfluxWriter = (*influxHTTPWriter)(nil)
+
 type influxHTTPWriter struct {
 	encoderPool sync.Pool
 	httpClient  *http.Client
@@ -100,6 +102,7 @@ func composeWriteURL(config *Config) (string, error) {
 	return writeURL.String(), nil
 }
 
+// Start implements component.StartFunc
 func (w *influxHTTPWriter) Start(_ context.Context, host component.Host) error {
 	httpClient, err := w.httpClientSettings.ToClient(host, w.telemetrySettings)
 	if err != nil {
@@ -113,6 +116,8 @@ func (w *influxHTTPWriter) NewBatch() otel2influx.InfluxWriterBatch {
 	return newInfluxHTTPWriterBatch(w)
 }
 
+var _ otel2influx.InfluxWriterBatch = (*influxHTTPWriterBatch)(nil)
+
 type influxHTTPWriterBatch struct {
 	*influxHTTPWriter
 	encoder *lineprotocol.Encoder
@@ -125,9 +130,10 @@ func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
 	}
 }
 
-// WritePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
-// to the internal line protocol buffer. This method implements otel2influx.InfluxWriter.
-func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
+// EnqueuePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
+// to the internal line protocol buffer.
+// Errors are always "permanent".
+func (b *influxHTTPWriterBatch) EnqueuePoint(measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.optimizeTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)
@@ -146,7 +152,8 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 	return nil
 }
 
-func (b *influxHTTPWriterBatch) FlushBatch(ctx context.Context) error {
+// WriteBatch sends the internal line protocol buffer to InfluxDB.
+func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	defer func() {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
