@@ -17,7 +17,7 @@ func StrptimeToGo(layout string) (string, error) {
 
 func GetLocation(location *string, layout *string) (*time.Location, error) {
 	if location != nil && *location != "" {
-		// If "location" is specified, it must be in the local timezone database
+		// If location is specified, it must be in the local timezone database
 		loc, err := time.LoadLocation(*location)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load location %s: %w", *location, err)
@@ -26,7 +26,7 @@ func GetLocation(location *string, layout *string) (*time.Location, error) {
 	}
 
 	if layout != nil && strings.HasSuffix(*layout, "Z") {
-		// If a timestamp ends with 'Z', it should be interpretted at Zulu (UTC) time
+		// If a timestamp ends with 'Z', it should be interpreted at Zulu (UTC) time
 		return time.UTC, nil
 	}
 
@@ -86,8 +86,10 @@ func SetTimestampYear(t time.Time) time.Time {
 	}
 	n := Now()
 	d := time.Date(n.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
-	// If the timestamp would be more than 7 days in the future using this year,
-	// assume it's from last year.
+	// Assume the timestamp is from last year if its month and day are
+	// more than 7 days past the current date.
+	// i.e. If today is January 1, but the timestamp is February 1, it's safe
+	// to assume the timestamp is from last year.
 	if d.After(n.AddDate(0, 0, 7)) {
 		d = d.AddDate(-1, 0, 0)
 	}
