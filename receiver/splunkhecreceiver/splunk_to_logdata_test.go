@@ -4,7 +4,6 @@
 package splunkhecreceiver
 
 import (
-	"bufio"
 	"bytes"
 	"io"
 	"testing"
@@ -352,15 +351,16 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 	}
 	tests := []struct {
 		name           string
-		sc             *bufio.Scanner
+		sc             io.Reader
 		query          map[string][]string
 		assertResource func(t *testing.T, got plog.Logs, slLen int)
+		config         *Config
 	}{
 		{
 			name: "all_mapping",
-			sc: func() *bufio.Scanner {
+			sc: func() io.Reader {
 				reader := io.NopCloser(bytes.NewReader([]byte("test")))
-				return bufio.NewScanner(reader)
+				return reader
 			}(),
 			query: func() map[string][]string {
 				m := make(map[string][]string)
@@ -396,12 +396,13 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 					assert.Fail(t, "index is not added to attributes")
 				}
 			},
+			config: hecConfig,
 		},
 		{
 			name: "some_mapping",
-			sc: func() *bufio.Scanner {
+			sc: func() io.Reader {
 				reader := io.NopCloser(bytes.NewReader([]byte("test")))
-				return bufio.NewScanner(reader)
+				return reader
 			}(),
 			query: func() map[string][]string {
 				m := make(map[string][]string)
@@ -425,12 +426,48 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 					assert.Fail(t, "sourcetype is not added to attributes")
 				}
 			},
+			config: hecConfig,
+		},
+		{
+			name: "no splitting",
+			sc: func() io.Reader {
+				reader := io.NopCloser(bytes.NewReader([]byte("test\nfoo\r\nbar")))
+				return reader
+			}(),
+			query: func() map[string][]string {
+				return map[string][]string{}
+			}(),
+			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
+				assert.Equal(t, 1, got.LogRecordCount())
+			},
+			config: func() *Config {
+				return &Config{
+					Splitting: SplittingStrategyNone,
+				}
+			}(),
+		},
+		{
+			name: "line splitting",
+			sc: func() io.Reader {
+				reader := io.NopCloser(bytes.NewReader([]byte("test\nfoo\r\nbar")))
+				return reader
+			}(),
+			query: func() map[string][]string {
+				return map[string][]string{}
+			}(),
+			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
+				assert.Equal(t, 3, got.LogRecordCount())
+			},
+			config: func() *Config {
+				return &Config{}
+			}(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, slLen := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, hecConfig)
+			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, tt.config)
+			require.NoError(t, err)
 			tt.assertResource(t, result, slLen)
 		})
 	}

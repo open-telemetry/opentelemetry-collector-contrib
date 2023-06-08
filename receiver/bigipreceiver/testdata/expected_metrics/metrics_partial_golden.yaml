@@ -1,15 +1,15 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
-          value:
-            stringValue: /Common/test-virtual-server1
-        - key: bigip.virtual_server.destination
-          value:
-            stringValue: 10.1.10.100:80
         - key: bigip.pool.name
           value:
             stringValue: /Common/dev
+        - key: bigip.virtual_server.destination
+          value:
+            stringValue: 10.1.10.100:80
+        - key: bigip.virtual_server.name
+          value:
+            stringValue: /Common/test-virtual-server1
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.
@@ -112,15 +112,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
+        - key: bigip.pool.name
           value:
-            stringValue: /Common/test-virtual-server2
+            stringValue: /Common/test-pool-1
         - key: bigip.virtual_server.destination
           value:
             stringValue: 10.1.10.100:21
-        - key: bigip.pool.name
+        - key: bigip.virtual_server.name
           value:
-            stringValue: /Common/test-pool-1
+            stringValue: /Common/test-virtual-server2
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.
@@ -223,15 +223,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
+        - key: bigip.pool.name
           value:
-            stringValue: /Common/test-virtual-server3
+            stringValue: /Common/test-pool-1
         - key: bigip.virtual_server.destination
           value:
             stringValue: 10.1.10.101:80
-        - key: bigip.pool.name
+        - key: bigip.virtual_server.name
           value:
-            stringValue: /Common/test-pool-1
+            stringValue: /Common/test-virtual-server3
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.
@@ -334,15 +334,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: bigip.virtual_server.name
-          value:
-            stringValue: /stage/stage
-        - key: bigip.virtual_server.destination
-          value:
-            stringValue: 10.1.2.1:21
         - key: bigip.pool.name
           value:
             stringValue: ""
+        - key: bigip.virtual_server.destination
+          value:
+            stringValue: 10.1.2.1:21
+        - key: bigip.virtual_server.name
+          value:
+            stringValue: /stage/stage
     scopeMetrics:
       - metrics:
           - description: Availability of the virtual server.

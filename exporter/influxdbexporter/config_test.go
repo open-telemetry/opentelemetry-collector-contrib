@@ -31,11 +31,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(metadata.Type, ""),
+			id:       component.NewIDWithName(metadata.Type, "default-config"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "withsettings"),
+			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
@@ -55,10 +55,11 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				Org:           "my-org",
-				Bucket:        "my-bucket",
-				Token:         "my-token",
-				MetricsSchema: "telegraf-prometheus-v2",
+				Org:            "my-org",
+				Bucket:         "my-bucket",
+				Token:          "my-token",
+				SpanDimensions: []string{"service.name", "span.name"},
+				MetricsSchema:  "telegraf-prometheus-v1",
 			},
 		},
 	}

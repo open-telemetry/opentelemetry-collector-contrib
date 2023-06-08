@@ -270,8 +270,8 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 func traceChunksFromSpans(spans []pb.Span) []*pb.TraceChunk {
 	traceChunks := []*pb.TraceChunk{}
 	byID := make(map[uint64][]*pb.Span)
-	for i, s := range spans {
-		byID[s.TraceID] = append(byID[s.TraceID], &spans[i])
+	for i := range spans {
+		byID[spans[i].TraceID] = append(byID[spans[i].TraceID], &spans[i])
 	}
 	for _, t := range byID {
 		traceChunks = append(traceChunks, &pb.TraceChunk{

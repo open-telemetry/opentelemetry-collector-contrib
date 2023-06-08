@@ -134,9 +134,19 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return false
 				},
-				"stringsJoin": strings.Join,
-				"casesTitle":  cases.Title(language.English).String,
-				"inc":         func(i int) int { return i + 1 },
+				"stringsJoin":  strings.Join,
+				"stringsSplit": strings.Split,
+				"casesTitle":   cases.Title(language.English).String,
+				"toCamelCase": func(s string) string {
+					caser := cases.Title(language.English).String
+					parts := strings.Split(s, "_")
+					result := ""
+					for _, part := range parts {
+						result += caser(part)
+					}
+					return result
+				},
+				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
 				},

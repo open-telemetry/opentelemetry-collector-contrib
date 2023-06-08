@@ -211,8 +211,8 @@ func (m *Manager) makeReader(path string) *Reader {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
 			m.Errorf("problem closing file %s", file.Name())
-			return nil
 		}
+		return nil
 	}
 
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files

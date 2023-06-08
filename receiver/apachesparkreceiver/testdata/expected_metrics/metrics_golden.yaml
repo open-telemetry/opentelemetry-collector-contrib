@@ -638,10 +638,10 @@ resourceMetrics:
                     - key: complete
                       value:
                         boolValue: true
-                    - key: pending
+                    - key: failed
                       value:
                         boolValue: false
-                    - key: failed
+                    - key: pending
                       value:
                         boolValue: false
                   startTimeUnixNano: "1684779501751836000"
@@ -928,10 +928,10 @@ resourceMetrics:
                     - key: complete
                       value:
                         boolValue: true
-                    - key: pending
+                    - key: failed
                       value:
                         boolValue: false
-                    - key: failed
+                    - key: pending
                       value:
                         boolValue: false
                   startTimeUnixNano: "1684779501751836000"

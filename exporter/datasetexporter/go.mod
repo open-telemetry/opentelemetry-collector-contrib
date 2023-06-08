@@ -5,13 +5,13 @@ go 1.19
 require (
 	github.com/google/uuid v1.3.0
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.78.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.79.0
 	github.com/scalyr/dataset-go v0.0.8
-	github.com/stretchr/testify v1.8.3
-	go.opentelemetry.io/collector/component v0.78.3-0.20230525165144-87dd85a6c034
-	go.opentelemetry.io/collector/confmap v0.78.3-0.20230525165144-87dd85a6c034
-	go.opentelemetry.io/collector/exporter v0.78.3-0.20230525165144-87dd85a6c034
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230525165144-87dd85a6c034
+	github.com/stretchr/testify v1.8.4
+	go.opentelemetry.io/collector/component v0.79.0
+	go.opentelemetry.io/collector/confmap v0.79.0
+	go.opentelemetry.io/collector/exporter v0.79.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
 	go.uber.org/zap v1.24.0
 	golang.org/x/time v0.3.0
 
@@ -19,7 +19,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	go.opentelemetry.io/collector v0.78.3-0.20230525165144-87dd85a6c034
+	go.opentelemetry.io/collector v0.79.0
 )
 
 require (
@@ -37,9 +37,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.78.3-0.20230525165144-87dd85a6c034 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230525165144-87dd85a6c034 // indirect
-	go.opentelemetry.io/collector/receiver v0.78.3-0.20230525165144-87dd85a6c034 // indirect
+	go.opentelemetry.io/collector/consumer v0.79.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/receiver v0.79.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect

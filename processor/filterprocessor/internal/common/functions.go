@@ -33,7 +33,7 @@ func newHasAttributeOnDatapointFactory() ottl.Factory[ottlmetric.TransformContex
 	return ottl.NewFactory("HasAttrOnDatapoint", &hasAttributeOnDatapointArguments{}, createHasAttributeOnDatapointFunction)
 }
 
-func createHasAttributeOnDatapointFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createHasAttributeOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*hasAttributeOnDatapointArguments)
 
 	if !ok {
@@ -57,7 +57,7 @@ func newHasAttributeKeyOnDatapointFactory() ottl.Factory[ottlmetric.TransformCon
 	return ottl.NewFactory("HasAttrKeyOnDatapoint", &hasAttributeKeyOnDatapointArguments{}, createHasAttributeKeyOnDatapointFunction)
 }
 
-func createHasAttributeKeyOnDatapointFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func createHasAttributeKeyOnDatapointFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*hasAttributeKeyOnDatapointArguments)
 
 	if !ok {

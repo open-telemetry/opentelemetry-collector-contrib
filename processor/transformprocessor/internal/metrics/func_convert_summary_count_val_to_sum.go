@@ -22,7 +22,7 @@ func newConvertSummaryCountValToSumFactory() ottl.Factory[ottldatapoint.Transfor
 	return ottl.NewFactory("convert_summary_count_val_to_sum", &convertSummaryCountValToSumArguments{}, createConvertSummaryCountValToSumFunction)
 }
 
-func createConvertSummaryCountValToSumFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func createConvertSummaryCountValToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	args, ok := oArgs.(*convertSummaryCountValToSumArguments)
 
 	if !ok {

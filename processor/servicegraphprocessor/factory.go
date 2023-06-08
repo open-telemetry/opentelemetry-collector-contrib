@@ -19,7 +19,6 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "servicegraph"
 	// The stability level of the processor.
-	stability                             = component.StabilityLevelAlpha
 	connectorStability                    = component.StabilityLevelDevelopment
 	virtualNodeFeatureGateID              = "processor.servicegraph.virtualNode"
 	legacyLatencyMetricNamesFeatureGateID = "processor.servicegraph.legacyLatencyMetricNames"
@@ -51,20 +50,21 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithTraces(createTracesProcessor, connectorStability),
 	)
 }
 
-// NewConnectorFactory creates a factory for the servicegraph connector.
-func NewConnectorFactory() connector.Factory {
-	// TODO: Handle this err
-	_ = view.Register(serviceGraphProcessorViews()...)
-
-	return connector.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, connectorStability),
-	)
+// NewConnectorFactoryFunc creates a function that returns a factory for the servicegraph connector.
+func NewConnectorFactoryFunc(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) func() connector.Factory {
+	return func() connector.Factory {
+		// TODO: Handle this err
+		_ = view.Register(serviceGraphProcessorViews()...)
+		return connector.NewFactory(
+			cfgType,
+			createDefaultConfig,
+			connector.WithTracesToMetrics(createTracesToMetricsConnector, tracesToMetricsStability),
+		)
+	}
 }
 
 func createDefaultConfig() component.Config {

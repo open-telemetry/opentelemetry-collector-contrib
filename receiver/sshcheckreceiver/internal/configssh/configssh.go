@@ -73,7 +73,7 @@ type SFTPClient struct {
 }
 
 // ToClient creates an SSHClient.
-func (scs *SSHClientSettings) ToClient(host component.Host, settings component.TelemetrySettings) (*Client, error) {
+func (scs *SSHClientSettings) ToClient(_ component.Host, _ component.TelemetrySettings) (*Client, error) {
 	var (
 		auth ssh.AuthMethod
 		hkc  ssh.HostKeyCallback

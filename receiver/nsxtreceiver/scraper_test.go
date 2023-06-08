@@ -128,7 +128,7 @@ func TestStartBadUrl(t *testing.T) {
 	require.Nil(t, scraper.client)
 }
 
-func TestScraperRecordNoStat(t *testing.T) {
+func TestScraperRecordNoStat(_ *testing.T) {
 	scraper := newScraper(
 		&Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{

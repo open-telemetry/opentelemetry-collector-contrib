@@ -4,4 +4,4 @@ status:
   class: processor
   stability:
     development: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib, sumo, aws]

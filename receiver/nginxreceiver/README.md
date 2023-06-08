@@ -40,6 +40,7 @@ next consumer. The `collection_interval` configuration option tells this
 receiver the duration between runs. This value must be a string readable by
 Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 Example:
 
