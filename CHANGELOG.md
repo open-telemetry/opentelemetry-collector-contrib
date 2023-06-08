@@ -4,6 +4,111 @@
 
 <!-- next version -->
 
+## v0.79.0
+
+### 🛑 Breaking changes 🛑
+
+- `attributesprocessor`: Enable SHA-256 as hashing algorithm by default for attributesprocessor hashing action (#4759)
+- `windowseventlogreceiver`: Emit raw Windows events as strings instead of byte arrays (#22704)
+- `receiver/httpcheck`: Removed the default `endpoint` value of `http://localhost:80`. The `endpoint` property is now required. (#22995)
+- `pkg/ottl`: Removes `StandardTypeGetter` in favor of `StandardStringGetter`, `StandardIntGetter`, `StandardFloatGetter`, and `StandardPMapGetter`, which handle converting pcommon.Values of the proper type. (#22763)
+  This is only a breaking change for users using OTTL in custom components. For all Contrib components this is an enhancement.
+- `postgresqlreceiver`: Remove resource attribute feature gates (#22479)
+
+### 🚩 Deprecations 🚩
+
+- `dockerstatsreceiver`: cpu.container.percent metric will be deprecated in v0.79.0 in favor of container.cpu.utilization (#21807)
+  This starts the process of phasing out incorrect metric name:
+  - `container.cpu.utilization`
+  and replacing it with the names adhering to the semantic conventions:
+  - `container.cpu.percent`
+  At this stage, the new metric is added, but is disabled by default.
+  See the "Deprecations" section of the Docker Stats receiver's README for details.
+  
+
+### 💡 Enhancements 💡
+
+- `receiver/azuremonitorreceiver`: Retrieve metric values with all dimension keys in filter (#21715)
+- `apachesparkreceiver`: Changes required to move the Apache Spark receiver to Alpha stability (#21046)
+- `journaldreceiver`: add support for grep (#20295)
+- `mysqlreceiver`: add mysql.uptime metric (#14138)
+- `googlecloudspannerreceiver`: Adding a new config option to allow truncation of query text to 1024 characters. (#22072)
+- `vcenterreceiver`: Adds VM memory utilisation metric (#20917)
+- `receivers`: Adding `initial_delay` to receivers to control when scraping interval starts (#23030)
+  The updated receivers are:
+  - `active_directory_ds`
+  - `aerospike`
+  - `apache`
+  - `apachespark`
+  - `azuremonitor`
+  - `couchdb`
+  - `chrony`
+  - `docker_stats`
+  - `elasticsearch`
+  - `expvar`
+  - `filestats`
+  - `flinkmetrics`
+  - `googlecloudspanner`
+  - `haproxy`
+  - `httpcheck`
+  - `iis`
+  - `memcached`
+  - `mongodb`
+  - `mysql`
+  - `nginx`
+  - `oracledb`
+  - `podman_stats`
+  - `postgresql`
+  - `rabbitmq`
+  - `riak`
+  - `snowflake`
+  - `sqlquery`
+  - `sqlserver`
+  - `sshcheck`
+  - `vcenter`
+  - `windowsperfcounters`
+  - `zookeeper`
+- `oracledbreceiver`: Add a simpler alternative configuration option (#22087)
+- `exporter/datadog`: Upgrade opentelemetry-mapping-go to v0.3.0 and use pkg/otlp/logs for logs translation (#23137)
+- `pkg/ottl`: Add `body.string` accessor to ottllog (#22786)
+- `pkg/ottl`: Allow indexing map and slice log bodies (#17396, #22068)
+- `pkg/ottl`: Add hash converters/functions for OTTL (#22725)
+- `solacereceiver`: Updated solacereceiver to handle new features of Solace PubSub+ 10.4.1 (#22809)
+- `splunkhecreceiver`: Support different strategies for splitting payloads when receiving a request with the Splunk HEC receiver. (#22788)
+- `exporter/splunk_hec`: Apply compression to Splunk HEC payload unconditionally if it's enabled in the config. (#22969, #22018)
+  The compression used to be enabled only if the payload size was greater than 1.5KB which significantly
+  complicated the logic and made it hard to test. This change makes the compression unconditionally applied to 
+  the payload if it's enabled in the config. The benchmarking shows improvements in the throughput and CPU usage for 
+  large payloads and expected degradation for small payloads which is acceptable given that it's not a common case.
+  
+- `awsxrayexporter`: Support 2 new aws service name attributes for populating X-Ray segment name (#22835)
+
+### 🧰 Bug fixes 🧰
+
+- `jmxreceiver`: Fixed the issue where the JMX receiver's subprocess wasn't canceled upon shutdown, resulting in a rogue java process. (#23051)
+- `internal/filter/filterlog`: fix filtering non-string body by bodies property (#22736)
+  Affects `filterprocessor` and `attributesprocessor`.
+- `prometheusreceiver`: Remove sd_file validations from config.go in Prometheus Receiver to avoid failing Collector with error as this behaviour is incompatible with the Prometheus. (#21509)
+- `filelogreceiver`: Fix issue where empty files would not be skipped, resulting in extraneous errors. (#22815)
+- `servicegraphprocessor`: consume traces even metric count is equal to 0 (#23028)
+- `fileexporter`: Fixes broken lines when rotation is set. (#22747)
+- `receiver/purefareceiver`: Ensure that all endpoints beyond volumes and hosts are beeing scraped. (#14886)
+- `exporter/datadog`: `tls::insecure_skip_verify` is now honored when exporting traces. (#22772)
+- `exporter/splunk_hec`: Make sure the `max_event_size` option is used to drop events larger than `max_event_size` instead of using it for batch size. (#18066)
+- `httpcheckreceiver`: Update default collection interval to match documented value (#23019)
+- `azuredataexplorerexporter`: Update underlying SDK to perform retries on init on machines with flaky networks. (#22771)
+- `flink metrics receiver`: Fixed error when failing to read job manager metrics (#23143)
+- `apache receiver`: reverted default collection time back to 10s from 1m (#23030)
+- `postgresqlreceiver`: Fix race condition when capturing errors from multiple requests simultaneously (#23026)
+- `prometheusreceiver`: The prometheus receiver now sets a full, versioned user agent. (#21910)
+- `awscloudwatchreceiver`: Fixes a bug where the AWS CloudWatch receiver does the log stream filtering (using prefix) incorrectly. (#22123)
+  An additional request was being made with a single log stream prefix definition.
+  This request was made with the stream name set to "".
+  This results in logs collection from all log streams in the log group.
+  
+- `spanmetricsconnector`: Fix initialization of the default histogram buckets when the `seconds` unit is provided. (#21797)
+- `splunkhecreceiver`: Fix reusing the same splunkhecreiver between logs and metrics (#22848)
+
 ## v0.78.0
 
 ### 🛑 Breaking changes 🛑

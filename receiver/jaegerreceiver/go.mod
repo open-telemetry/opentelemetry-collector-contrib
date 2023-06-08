@@ -6,16 +6,16 @@ require (
 	github.com/apache/thrift v0.18.1
 	github.com/gorilla/mux v1.8.0
 	github.com/jaegertracing/jaeger v1.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.78.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.78.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.79.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/component v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/confmap v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/consumer v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/receiver v0.78.3-0.20230601234953-deffd4892002
-	go.opentelemetry.io/collector/semconv v0.78.3-0.20230601234953-deffd4892002
+	go.opentelemetry.io/collector v0.79.0
+	go.opentelemetry.io/collector/component v0.79.0
+	go.opentelemetry.io/collector/confmap v0.79.0
+	go.opentelemetry.io/collector/consumer v0.79.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
+	go.opentelemetry.io/collector/receiver v0.79.0
+	go.opentelemetry.io/collector/semconv v0.79.0
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.55.0
 )
@@ -39,15 +39,15 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.18 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.78.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.79.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.78.3-0.20230601234953-deffd4892002 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230601234953-deffd4892002 // indirect
+	go.opentelemetry.io/collector/exporter v0.79.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
@@ -62,12 +62,6 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules:
-//         cloud.google.com/go/compute v1.10.0 (/Users/alex.boten/workspace/lightstep/go/pkg/mod/cloud.google.com/go/compute@v1.10.0/metadata)
-//         cloud.google.com/go/compute/metadata v0.2.1 (/Users/alex.boten/workspace/lightstep/go/pkg/mod/cloud.google.com/go/compute/metadata@v0.2.1)
-// Force cloud.google.com/go/compute to be at least v1.12.1.
-replace cloud.google.com/go/compute => cloud.google.com/go/compute v1.12.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
