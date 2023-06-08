@@ -153,6 +153,7 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		if err != nil {
 			return err
 		}
+		// timeutils.ParseGoTime calls timeutils.SetTimestampYear before returning the timeValue
 		entry.Timestamp = timeValue
 	case EpochKey:
 		timeValue, err := t.parseEpochTime(value)
