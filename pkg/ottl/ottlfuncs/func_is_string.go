@@ -28,9 +28,11 @@ func createIsStringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return isStringFunc(args.Target), nil
 }
 
+// nolint:errorlint
 func isStringFunc[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		_, err := target.Get(ctx, tCtx)
+		// Use type assertion because we don't want to check wrapped errors
 		switch err.(type) {
 		case ottl.TypeError:
 			return false, nil

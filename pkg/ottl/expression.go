@@ -133,6 +133,7 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return evaluated, nil
 }
 
+// TypeError represents that a value was not an expected type.
 type TypeError string
 
 func (t TypeError) Error() string {
@@ -141,18 +142,22 @@ func (t TypeError) Error() string {
 
 // StringGetter is a Getter that must return a string.
 type StringGetter[K any] interface {
-	// Get retrieves a string value.  If the value is not a string, an error is returned.
+	// Get retrieves a string value.
 	Get(ctx context.Context, tCtx K) (string, error)
 }
 
+// StandardStringGetter is a basic implementation of StringGetter
 type StandardStringGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
+// Get retrieves a string value.
+// If the value is not a string a new TypeError is returned.
+// If there is an error getting the value it will be returned.
 func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return "", TypeError("expected string but got nil")
@@ -170,18 +175,24 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error
 	}
 }
 
+// IntGetter is a Getter that must return an int64.
 type IntGetter[K any] interface {
+	// Get retrieves an int64 value.
 	Get(ctx context.Context, tCtx K) (int64, error)
 }
 
+// StandardIntGetter is a basic implementation of IntGetter
 type StandardIntGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
+// Get retrieves an int64 value.
+// If the value is not an int64 a new TypeError is returned.
+// If there is an error getting the value it will be returned.
 func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return 0, TypeError("expected int64 but got nil")
@@ -199,18 +210,24 @@ func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
 	}
 }
 
+// FloatGetter is a Getter that must return a float64.
 type FloatGetter[K any] interface {
+	// Get retrieves a float64 value.
 	Get(ctx context.Context, tCtx K) (float64, error)
 }
 
+// StandardFloatGetter is a basic implementation of FloatGetter
 type StandardFloatGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
+// Get retrieves a float64 value.
+// If the value is not a float64 a new TypeError is returned.
+// If there is an error getting the value it will be returned.
 func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return 0, TypeError("expected float64 but got nil")
@@ -228,18 +245,24 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 	}
 }
 
+// PMapGetter is a Getter that must return a pcommon.Map.
 type PMapGetter[K any] interface {
+	// Get retrieves a pcommon.Map value.
 	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
 }
 
+// StandardPMapGetter is a basic implementation of PMapGetter
 type StandardPMapGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
+// Get retrieves a pcommon.Map value.
+// If the value is not a pcommon.Map a new TypeError is returned.
+// If there is an error getting the value it will be returned.
 func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return pcommon.Map{}, err
+		return pcommon.Map{}, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return pcommon.Map{}, TypeError("expected pcommon.Map but got nil")
