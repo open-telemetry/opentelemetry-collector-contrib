@@ -11,8 +11,12 @@ import (
 	strptime "github.com/observiq/ctimefmt"
 )
 
-func StrptimeToGo(layout string) (string, error) {
-	return strptime.ToNative(layout)
+func ParseStrptime(layout string, value any, location *time.Location) (time.Time, error) {
+	goLayout, err := strptime.ToNative(layout)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return ParseGotime(goLayout, value, location)
 }
 
 func GetLocation(location *string, layout *string) (*time.Location, error) {
@@ -33,7 +37,7 @@ func GetLocation(location *string, layout *string) (*time.Location, error) {
 	return time.Local, nil
 }
 
-func ParseGoTime(layout string, value any, location *time.Location) (time.Time, error) {
+func ParseGotime(layout string, value any, location *time.Location) (time.Time, error) {
 	timeValue, err := parseGotime(layout, value, location)
 	if err != nil {
 		return time.Time{}, err
