@@ -238,6 +238,7 @@ docker-telemetrygen:
 .PHONY: generate
 generate:
 	cd cmd/mdatagen && $(GOCMD) install .
+	cd cmd/configgen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
 .PHONY: mdatagen-test
