@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,7 +26,6 @@ import (
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/scrape"
 	promapi "github.com/prometheus/prometheus/web/api/v1"
@@ -233,7 +233,7 @@ func (a *API) targets(req *http.Request) response {
 						case err == nil && lastErrStr == "":
 							return ""
 						case err != nil:
-							return errors.Wrapf(err, lastErrStr).Error()
+							return fmt.Sprintf("%s: %s", lastErrStr, err.Error())
 						default:
 							return lastErrStr
 						}
