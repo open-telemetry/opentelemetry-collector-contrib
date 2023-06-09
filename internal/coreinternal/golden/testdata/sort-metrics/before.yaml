@@ -16,8 +16,6 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
                 - asInt: "0"
                   attributes:
                     - key: z
@@ -26,29 +24,43 @@ resourceMetrics:
                     - key: x
                       value:
                         stringValue: InnerAttributeSort
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
                 - asInt: "0"
                   attributes:
                     - key: c
                       value:
                         stringValue: CCCC
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
+                    - key: q
+                      value:
+                        stringValue: DDDD
                 - asInt: "0"
                   attributes:
                     - key: b
                       value:
                         stringValue: BBBBFirst
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
                 - asInt: "0"
                   attributes:
                     - key: b
                       value:
                         stringValue: BBBBSecond
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: q
+                      value:
+                        stringValue: BBBB
+                    - key: c
+                      value:
+                        stringValue: CCCC
+                - asInt: "0"
+                  attributes:
+                    - key: q
+                      value:
+                        stringValue: DDDD
+                    - key: c
+                      value:
+                        stringValue: CCCC
+                    - key: z
+                      value:
+                        stringValue: last
               isMonotonic: true
             unit: By
         scope:
@@ -69,8 +81,6 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
               isMonotonic: false
             unit: "1"
         scope:
@@ -91,8 +101,6 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
               isMonotonic: false
             unit: "1"
         scope:
@@ -119,8 +127,6 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
               isMonotonic: false
             unit: "1"
         scope:
@@ -147,8 +153,6 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
-                  startTimeUnixNano: "1111111111111111111"
-                  timeUnixNano: "1111111111111111111"
               isMonotonic: false
             unit: "1"
         scope:
