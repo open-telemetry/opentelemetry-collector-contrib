@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	awsmock "github.com/aws/aws-sdk-go/awstesting/mock"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -79,19 +79,19 @@ func TestRotateRace(t *testing.T) {
 
 func TestIncludeMetadata(t *testing.T) {
 	cfg := Config{IncludeMetadata: false}
-	sess := awsmock.Session
+	awsConfig, _ := awsConfig.LoadDefaultConfig(context.Background())
 	set := &awsutil.AWSSessionSettings{ResourceARN: "session_arn"}
-	opts := ToOptions(cfg, sess, set)
+	opts := ToOptions(cfg, awsConfig, set, nil)
 	assert.Empty(t, opts)
 	cfg.IncludeMetadata = true
-	opts = ToOptions(cfg, sess, set)
+	opts = ToOptions(cfg, awsConfig, set, nil)
 	sender := newSender(&mockClient{}, opts...)
 	assert.Equal(t, "", sender.hostname)
 	assert.Equal(t, "", sender.instanceID)
 	assert.Equal(t, "session_arn", sender.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
-	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
+	opts = ToOptions(cfg, awsConfig, &awsutil.AWSSessionSettings{}, nil)
 	sender = newSender(&mockClient{}, opts...)
 	assert.Equal(t, "env_hostname", sender.hostname)
 	assert.Equal(t, "env_instance_id", sender.instanceID)
@@ -99,7 +99,7 @@ func TestIncludeMetadata(t *testing.T) {
 	cfg.Hostname = "cfg_hostname"
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
-	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
+	opts = ToOptions(cfg, awsConfig, &awsutil.AWSSessionSettings{}, nil)
 	sender = newSender(&mockClient{}, opts...)
 	assert.Equal(t, "cfg_hostname", sender.hostname)
 	assert.Equal(t, "cfg_instance_id", sender.instanceID)

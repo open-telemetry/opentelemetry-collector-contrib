@@ -52,10 +52,14 @@ func newTracesExporter(
 	if err != nil {
 		return nil, err
 	}
+	awsSDKV2Config, err := awsutil.GetAWSConfig(logger, cn, &cfg.AWSSessionSettings)
+	if err != nil {
+		return nil, err
+	}
 	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
 	sender := telemetry.NewNopSender()
 	if cfg.TelemetryConfig.Enabled {
-		opts := telemetry.ToOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
+		opts := telemetry.ToOptions(cfg.TelemetryConfig, *awsSDKV2Config, &cfg.AWSSessionSettings, logger)
 		opts = append(opts, telemetry.WithLogger(set.Logger))
 		sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
 	}

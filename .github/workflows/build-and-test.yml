@@ -62,6 +62,7 @@ jobs:
         run: ./.github/workflows/scripts/check-codeowners.sh check_entries_in_allowlist
   lint-matrix:
     strategy:
+      fail-fast: false
       matrix:
         group:
           - receiver-0

@@ -16,12 +16,32 @@ package ec2
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/awstesting/mock"
+	"github.com/aws/smithy-go/middleware"
 	"github.com/stretchr/testify/assert"
 )
+
+var _ Provider = (*MetadataClient)(nil)
+
+type MockedIMDSAPI struct {
+}
+
+func (m *MockedIMDSAPI) GetInstanceIdentityDocument(ctx context.Context, params *imds.GetInstanceIdentityDocumentInput, optFns ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
+	return nil, errors.New("any error")
+}
+
+func (m *MockedIMDSAPI) GetMetadata(ctx context.Context, params *imds.GetMetadataInput, optFns ...func(*imds.Options)) (*imds.GetMetadataOutput, error) {
+	return &imds.GetMetadataOutput{
+		Content:        nil,
+		ResultMetadata: middleware.Metadata{},
+	}, nil
+}
 
 func TestMetadataProviderGetError(t *testing.T) {
 	type args struct {
@@ -42,7 +62,10 @@ func TestMetadataProviderGetError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewProvider(tt.args.sess)
+			cfg, _ := config.LoadDefaultConfig(context.Background())
+			c := NewProvider(cfg)
+			c.GetMetadataClient().clientIMDSV2Only = &MockedIMDSAPI{}
+			c.GetMetadataClient().clientIMDSV1Fallback = &MockedIMDSAPI{}
 			_, err := c.Get(tt.args.ctx)
 			assert.Error(t, err)
 		})
@@ -71,8 +94,11 @@ func TestMetadataProvider_available(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewProvider(tt.args.sess)
-			_, err := c.InstanceID(tt.args.ctx)
+			cfg, _ := config.LoadDefaultConfig(context.Background())
+			c := NewProvider(cfg)
+			c.GetMetadataClient().clientIMDSV1Fallback = &MockedIMDSAPI{}
+			c.GetMetadataClient().clientIMDSV1Fallback = &MockedIMDSAPI{}
+			_, err := c.Hostname(tt.args.ctx)
 			assert.ErrorIs(t, err, tt.want)
 		})
 	}

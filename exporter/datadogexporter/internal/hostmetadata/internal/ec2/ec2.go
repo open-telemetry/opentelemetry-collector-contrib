@@ -22,8 +22,8 @@ import (
 	"sync"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.uber.org/zap"
@@ -55,28 +55,22 @@ func isDefaultHostname(hostname string) bool {
 
 // GetHostInfo gets the hostname info from EC2 metadata
 func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
-	sess, err := session.NewSession()
 	hostInfo = &HostInfo{}
 
+	cfg, err := awsConfig.LoadDefaultConfig(context.Background())
 	if err != nil {
-		logger.Warn("Failed to build AWS session", zap.Error(err))
+		logger.Warn("Failed to build AWS config", zap.Error(err))
 		return
 	}
+	ec2Metadata := ec2provider.NewProvider(cfg)
 
-	meta := ec2metadata.New(sess)
-
-	if !meta.Available() {
-		logger.Debug("EC2 Metadata not available")
-		return
-	}
-
-	if idDoc, err := meta.GetInstanceIdentityDocument(); err == nil {
-		hostInfo.InstanceID = idDoc.InstanceID
+	if instanceID, err := ec2Metadata.InstanceID(context.Background()); err == nil {
+		hostInfo.InstanceID = instanceID
 	} else {
 		logger.Warn("Failed to get EC2 instance id document", zap.Error(err))
 	}
 
-	if ec2Hostname, err := meta.GetMetadata("hostname"); err == nil {
+	if ec2Hostname, err := ec2Metadata.Hostname(context.Background()); err == nil {
 		hostInfo.EC2Hostname = ec2Hostname
 	} else {
 		logger.Warn("Failed to get EC2 hostname", zap.Error(err))
@@ -105,13 +99,13 @@ type Provider struct {
 }
 
 func NewProvider(logger *zap.Logger) (*Provider, error) {
-	sess, err := session.NewSession()
+	cfg, err := awsConfig.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	return &Provider{
 		logger:   logger,
-		detector: ec2provider.NewProvider(sess),
+		detector: ec2provider.NewProvider(cfg),
 	}, nil
 }
 
