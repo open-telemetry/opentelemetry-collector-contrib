@@ -6,8 +6,6 @@ package protocol // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"fmt"
 	"strings"
-
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
 // PlaintextConfig holds the configuration for the plaintext parser.
@@ -55,8 +53,7 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 	}
 
 	tags := strings.Split(parts[1], ";")
-	keys := make([]*metricspb.LabelKey, 0, len(tags))
-	values := make([]*metricspb.LabelValue, 0, len(tags))
+	attributes := map[string]any{}
 	for _, tag := range tags {
 		idx := strings.IndexByte(tag, '=')
 		if idx < 1 {
@@ -64,17 +61,11 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 		}
 
 		key := tag[:idx]
-		keys = append(keys, &metricspb.LabelKey{Key: key})
-
 		value := tag[idx+1:] // If value is empty, ie.: tag == "k=", this will return "".
-		values = append(values, &metricspb.LabelValue{
-			Value:    value,
-			HasValue: true,
-		})
+		attributes[key] = value
 	}
+	parsedPath.Attributes = attributes
 
-	parsedPath.LabelKeys = keys
-	parsedPath.LabelValues = values
 	return nil
 }
 

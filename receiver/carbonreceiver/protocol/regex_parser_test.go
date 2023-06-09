@@ -6,7 +6,6 @@ package protocol
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -112,8 +111,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 		name           string
 		path           string
 		wantName       string
-		wantKeys       []*metricspb.LabelKey
-		wantValues     []*metricspb.LabelValue
+		wantAttributes map[string]any
 		wantMetricType TargetMetricType
 		wantErr        bool
 	}{
@@ -123,46 +121,23 @@ func Test_regexParser_parsePath(t *testing.T) {
 			wantName: "service_name.host01.rpc.duration.seconds",
 		},
 		{
-			name:     "match_rule0",
-			path:     "service_name.host00.cpu.seconds",
-			wantName: "cpu_seconds",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "svc"},
-				{Key: "host"},
-				{Key: "k"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "service_name", HasValue: true},
-				{Value: "host00", HasValue: true},
-				{Value: "v", HasValue: true},
-			},
+			name:           "match_rule0",
+			path:           "service_name.host00.cpu.seconds",
+			wantName:       "cpu_seconds",
+			wantAttributes: map[string]any{"svc": "service_name", "host": "host00", "k": "v"},
 		},
 		{
-			name:     "match_rule1",
-			path:     "service_name.host01.rpc.count",
-			wantName: "rpc",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "svc"},
-				{Key: "host"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "service_name", HasValue: true},
-				{Value: "host01", HasValue: true},
-			},
+			name:           "match_rule1",
+			path:           "service_name.host01.rpc.count",
+			wantName:       "rpc",
+			wantAttributes: map[string]any{"svc": "service_name", "host": "host01"},
 			wantMetricType: CumulativeMetricType,
 		},
 		{
-			name:     "match_rule2",
-			path:     "svc_02.host02.avg.duration",
-			wantName: "avgduration",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "svc"},
-				{Key: "host"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "svc_02", HasValue: true},
-				{Value: "host02", HasValue: true},
-			},
+			name:           "match_rule2",
+			path:           "svc_02.host02.avg.duration",
+			wantName:       "avgduration",
+			wantAttributes: map[string]any{"svc": "svc_02", "host": "host02"},
 			wantMetricType: GaugeMetricType,
 		},
 	}
@@ -177,8 +152,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.wantName, got.MetricName)
-			assert.Equal(t, tt.wantKeys, got.LabelKeys)
-			assert.Equal(t, tt.wantValues, got.LabelValues)
+			assert.Equal(t, tt.wantAttributes, got.Attributes)
 			assert.Equal(t, tt.wantMetricType, got.MetricType)
 		})
 	}
@@ -186,8 +160,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 
 var res struct {
 	name       string
-	keys       []*metricspb.LabelKey
-	values     []*metricspb.LabelValue
+	attributes map[string]any
 	metricType TargetMetricType
 	err        error
 }
@@ -226,8 +199,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	got := ParsedPath{}
 	err := rp.ParsePath(tests[0], &got)
 	res.name = got.MetricName
-	res.keys = got.LabelKeys
-	res.values = got.LabelValues
+	res.attributes = got.Attributes
 	res.metricType = got.MetricType
 	res.err = err
 
@@ -238,8 +210,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	}
 
 	res.name = got.MetricName
-	res.keys = got.LabelKeys
-	res.values = got.LabelValues
+	res.attributes = got.Attributes
 	res.metricType = got.MetricType
 	res.err = err
 }

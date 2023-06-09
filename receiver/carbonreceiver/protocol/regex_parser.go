@@ -9,8 +9,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
 const (
@@ -165,27 +163,18 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			ms := rule.compRegexp.FindStringSubmatch(path)
 			nms := rule.compRegexp.SubexpNames() // regexp pre-computes this slice.
 			metricNameLookup := map[string]string{}
+			attributes := make(map[string]any, len(nms)+len(rule.Labels))
 
-			keys := make([]*metricspb.LabelKey, 0, len(nms)+len(rule.Labels))
-			values := make([]*metricspb.LabelValue, 0, len(nms)+len(rule.Labels))
 			for i := 1; i < len(ms); i++ {
 				if strings.HasPrefix(nms[i], metricNameCapturePrefix) {
 					metricNameLookup[nms[i]] = ms[i]
 				} else {
-					keys = append(keys, &metricspb.LabelKey{Key: nms[i][len(keyCapturePrefix):]})
-					values = append(values, &metricspb.LabelValue{
-						Value:    ms[i],
-						HasValue: true,
-					})
+					attributes[nms[i][len(keyCapturePrefix):]] = ms[i]
 				}
 			}
 
 			for k, v := range rule.Labels {
-				keys = append(keys, &metricspb.LabelKey{Key: k})
-				values = append(values, &metricspb.LabelValue{
-					Value:    v,
-					HasValue: true,
-				})
+				attributes[k] = v
 			}
 
 			var actualMetricName string
@@ -206,8 +195,7 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			}
 
 			parsedPath.MetricName = actualMetricName
-			parsedPath.LabelKeys = keys
-			parsedPath.LabelValues = values
+			parsedPath.Attributes = attributes
 			parsedPath.MetricType = TargetMetricType(rule.MetricType)
 			return nil
 		}
