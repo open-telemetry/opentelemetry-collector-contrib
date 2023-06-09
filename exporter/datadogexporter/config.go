@@ -239,7 +239,7 @@ type TracesConfig struct {
 	// NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
 	ComputeStatsBySpanKind bool `mapstructure:"compute_stats_by_span_kind"`
 
-	// If set to true, enables `peer.service` aggregation in the agent. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
+	// If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
 	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
 	// If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
 	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
