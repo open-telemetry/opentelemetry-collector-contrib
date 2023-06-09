@@ -28,6 +28,32 @@ resourceMetrics:
                   attributes:
                     - key: device_major
                       value:
+                        stringValue: "7"
+                    - key: device_minor
+                      value:
+                        stringValue: "2"
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1683723781127718000"
+                  timeUnixNano: "1683723781130612000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "7"
+                    - key: device_minor
+                      value:
+                        stringValue: "2"
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1683723781127718000"
+                  timeUnixNano: "1683723781130612000"
+                - asInt: "1998848"
+                  attributes:
+                    - key: device_major
+                      value:
                         stringValue: "253"
                     - key: device_minor
                       value:
@@ -68,32 +94,6 @@ resourceMetrics:
                     - key: device_major
                       value:
                         stringValue: "253"
-                    - key: device_minor
-                      value:
-                        stringValue: "2"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1683723781127718000"
-                  timeUnixNano: "1683723781130612000"
-                - asInt: "1998848"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "7"
-                    - key: device_minor
-                      value:
-                        stringValue: "2"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1683723781127718000"
-                  timeUnixNano: "1683723781130612000"
-                - asInt: "0"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "7"
                     - key: device_minor
                       value:
                         stringValue: "2"

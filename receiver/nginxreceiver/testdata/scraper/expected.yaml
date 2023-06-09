@@ -26,17 +26,17 @@ resourceMetrics:
                       value:
                         stringValue: reading
                   timeUnixNano: "1638471548185885000"
-                - asInt: "106"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: waiting
-                  timeUnixNano: "1638471548185885000"
                 - asInt: "179"
                   attributes:
                     - key: state
                       value:
                         stringValue: writing
+                  timeUnixNano: "1638471548185885000"
+                - asInt: "106"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: waiting
                   timeUnixNano: "1638471548185885000"
             name: nginx.connections_current
             unit: connections

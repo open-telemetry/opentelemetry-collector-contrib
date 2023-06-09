@@ -4,183 +4,6 @@ resourceMetrics:
         - key: db.system
           value:
             stringValue: saphana
-    scopeMetrics:
-      - metrics:
-          - description: Number of current alerts.
-            name: saphana.alert.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "123"
-                  attributes:
-                    - key: rating
-                      value:
-                        stringValue: "1"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "1"
-                  attributes:
-                    - key: rating
-                      value:
-                        stringValue: "2"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "1000"
-                  attributes:
-                    - key: rating
-                      value:
-                        stringValue: "4"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            unit: '{alerts}'
-          - description: The age of the latest backup by start time.
-            gauge:
-              dataPoints:
-                - asInt: "13"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            name: saphana.backup.latest
-            unit: s
-          - description: The amount of time remaining before license expiration.
-            gauge:
-              dataPoints:
-                - asInt: "1238128"
-                  attributes:
-                    - key: product
-                      value:
-                        stringValue: HANA
-                    - key: system
-                      value:
-                        stringValue: PPE
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            name: saphana.license.expiration.time
-            unit: s
-          - description: The allowed product usage as specified by the license (for example, main memory).
-            name: saphana.license.limit
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "128"
-                  attributes:
-                    - key: product
-                      value:
-                        stringValue: HANA
-                    - key: system
-                      value:
-                        stringValue: PPE
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "128"
-                  attributes:
-                    - key: product
-                      value:
-                        stringValue: HANA
-                    - key: system
-                      value:
-                        stringValue: PPT
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            unit: '{licenses}'
-          - description: The peak product usage value during last 13 months, measured periodically.
-            name: saphana.license.peak
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "33"
-                  attributes:
-                    - key: product
-                      value:
-                        stringValue: HANA
-                    - key: system
-                      value:
-                        stringValue: PPE
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "33"
-                  attributes:
-                    - key: product
-                      value:
-                        stringValue: HANA
-                    - key: system
-                      value:
-                        stringValue: PPT
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            unit: '{licenses}'
-          - description: The average amount of time consumed replicating a log.
-            gauge:
-              dataPoints:
-                - asDouble: 11.23
-                  attributes:
-                    - key: mode
-                      value:
-                        stringValue: SHIPPING
-                    - key: port
-                      value:
-                        stringValue: "123"
-                    - key: primary
-                      value:
-                        stringValue: host1
-                    - key: secondary
-                      value:
-                        stringValue: host2
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            name: saphana.replication.average_time
-            unit: us
-          - description: The current replication backlog size.
-            name: saphana.replication.backlog.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: mode
-                      value:
-                        stringValue: SHIPPING
-                    - key: port
-                      value:
-                        stringValue: "123"
-                    - key: primary
-                      value:
-                        stringValue: host1
-                    - key: secondary
-                      value:
-                        stringValue: host2
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            unit: By
-          - description: The current replication backlog.
-            name: saphana.replication.backlog.time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: mode
-                      value:
-                        stringValue: SHIPPING
-                    - key: port
-                      value:
-                        stringValue: "123"
-                    - key: primary
-                      value:
-                        stringValue: host1
-                    - key: secondary
-                      value:
-                        stringValue: host2
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
-            unit: us
-        scope:
-          name: otelcol/saphanareceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: db.system
-          value:
-            stringValue: saphana
         - key: saphana.host
           value:
             stringValue: host1
@@ -191,16 +14,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "16"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: data
-                    - key: type
-                      value:
-                        stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "12"
                   attributes:
                     - key: subtype
@@ -211,16 +24,6 @@ resourceMetrics:
                         stringValue: main
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "17"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: dict
-                    - key: type
-                      value:
-                        stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "13"
                   attributes:
                     - key: subtype
@@ -229,16 +32,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "18"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: index
-                    - key: type
-                      value:
-                        stringValue: delta
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "14"
@@ -251,16 +44,6 @@ resourceMetrics:
                         stringValue: main
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "19"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: misc
-                    - key: type
-                      value:
-                        stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "15"
                   attributes:
                     - key: subtype
@@ -269,6 +52,46 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "16"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: data
+                    - key: type
+                      value:
+                        stringValue: delta
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "17"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: dict
+                    - key: type
+                      value:
+                        stringValue: delta
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "18"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: index
+                    - key: type
+                      value:
+                        stringValue: delta
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "19"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: misc
+                    - key: type
+                      value:
+                        stringValue: delta
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
             unit: By
@@ -290,18 +113,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "4"
-                  attributes:
-                    - key: status
-                      value:
-                        stringValue: idle
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "15"
                   attributes:
                     - key: status
                       value:
                         stringValue: running
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "4"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: idle
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
             unit: '{connections}'
@@ -310,18 +133,11 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "23"
+                - asInt: "82"
                   attributes:
                     - key: type
                       value:
-                        stringValue: idle
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "8674"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: io_wait
+                        stringValue: user
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "82828"
@@ -331,11 +147,18 @@ resourceMetrics:
                         stringValue: system
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "82"
+                - asInt: "8674"
                   attributes:
                     - key: type
                       value:
-                        stringValue: user
+                        stringValue: io_wait
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "23"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: idle
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
               isMonotonic: true
@@ -345,19 +168,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2233"
-                  attributes:
-                    - key: path
-                      value:
-                        stringValue: /a/b/c
-                    - key: state
-                      value:
-                        stringValue: free
-                    - key: usage_type
-                      value:
-                        stringValue: DATA
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "123"
                   attributes:
                     - key: path
@@ -371,19 +181,6 @@ resourceMetrics:
                         stringValue: LOG
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "33"
-                  attributes:
-                    - key: path
-                      value:
-                        stringValue: /a/b/c
-                    - key: state
-                      value:
-                        stringValue: used
-                    - key: usage_type
-                      value:
-                        stringValue: DATA
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "456"
                   attributes:
                     - key: path
@@ -395,6 +192,32 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "2233"
+                  attributes:
+                    - key: path
+                      value:
+                        stringValue: /a/b/c
+                    - key: state
+                      value:
+                        stringValue: free
+                    - key: usage_type
+                      value:
+                        stringValue: DATA
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "33"
+                  attributes:
+                    - key: path
+                      value:
+                        stringValue: /a/b/c
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: usage_type
+                      value:
+                        stringValue: DATA
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
             unit: By
@@ -452,18 +275,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "5"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: free
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "62727"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "5"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: free
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
             unit: By
@@ -559,6 +382,16 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "123123"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: SYS
+                    - key: type
+                      value:
+                        stringValue: main
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
                 - asInt: "23"
                   attributes:
                     - key: schema
@@ -567,16 +400,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "7777"
-                  attributes:
-                    - key: schema
-                      value:
-                        stringValue: SYS
-                    - key: type
-                      value:
-                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "43434"
@@ -589,14 +412,14 @@ resourceMetrics:
                         stringValue: history_main
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "123123"
+                - asInt: "7777"
                   attributes:
                     - key: schema
                       value:
                         stringValue: SYS
                     - key: type
                       value:
-                        stringValue: main
+                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
             unit: By
@@ -618,16 +441,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "4444"
-                  attributes:
-                    - key: schema
-                      value:
-                        stringValue: SYS
-                    - key: type
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "123"
                   attributes:
                     - key: schema
@@ -646,6 +459,16 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: write
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "4444"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: SYS
+                    - key: type
+                      value:
+                        stringValue: merge
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
               isMonotonic: true
@@ -668,6 +491,16 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "1234"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: SYS
+                    - key: type
+                      value:
+                        stringValue: main
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
                 - asInt: "30000"
                   attributes:
                     - key: schema
@@ -676,16 +509,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "878743"
-                  attributes:
-                    - key: schema
-                      value:
-                        stringValue: SYS
-                    - key: type
-                      value:
-                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "34843"
@@ -698,14 +521,14 @@ resourceMetrics:
                         stringValue: history_main
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "1234"
+                - asInt: "878743"
                   attributes:
                     - key: schema
                       value:
                         stringValue: SYS
                     - key: type
                       value:
-                        stringValue: main
+                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
             unit: '{records}'
@@ -919,6 +742,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "100"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: update
+                  startTimeUnixNano: "1655998954206841000"
+                  timeUnixNano: "1655998954206724000"
                 - asInt: "0"
                   attributes:
                     - key: type
@@ -931,13 +761,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: rollback
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "100"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: update
                   startTimeUnixNano: "1655998954206841000"
                   timeUnixNano: "1655998954206724000"
               isMonotonic: true
@@ -1075,16 +898,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "96"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: data
-                    - key: type
-                      value:
-                        stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "100"
                   attributes:
                     - key: subtype
@@ -1093,16 +906,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "95"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: dict
-                    - key: type
-                      value:
-                        stringValue: delta
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "99"
@@ -1115,16 +918,6 @@ resourceMetrics:
                         stringValue: main
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "94"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: index
-                    - key: type
-                      value:
-                        stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "98"
                   attributes:
                     - key: subtype
@@ -1135,16 +928,6 @@ resourceMetrics:
                         stringValue: main
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "93"
-                  attributes:
-                    - key: subtype
-                      value:
-                        stringValue: misc
-                    - key: type
-                      value:
-                        stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "97"
                   attributes:
                     - key: subtype
@@ -1153,6 +936,46 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "96"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: data
+                    - key: type
+                      value:
+                        stringValue: delta
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "95"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: dict
+                    - key: type
+                      value:
+                        stringValue: delta
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "94"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: index
+                    - key: type
+                      value:
+                        stringValue: delta
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "93"
+                  attributes:
+                    - key: subtype
+                      value:
+                        stringValue: misc
+                    - key: type
+                      value:
+                        stringValue: delta
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
             unit: By
@@ -1187,18 +1010,11 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "7456"
+                - asInt: "412"
                   attributes:
                     - key: type
                       value:
-                        stringValue: idle
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "884"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: io_wait
+                        stringValue: user
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "774"
@@ -1208,11 +1024,18 @@ resourceMetrics:
                         stringValue: system
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "412"
+                - asInt: "884"
                   attributes:
                     - key: type
                       value:
-                        stringValue: user
+                        stringValue: io_wait
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "7456"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: idle
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
               isMonotonic: true
@@ -1303,18 +1126,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "34"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: free
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "451"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "34"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: free
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
             unit: By
@@ -1410,6 +1233,16 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: MON
+                    - key: type
+                      value:
+                        stringValue: main
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
                 - asInt: "7888888"
                   attributes:
                     - key: schema
@@ -1418,16 +1251,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "8265"
-                  attributes:
-                    - key: schema
-                      value:
-                        stringValue: MON
-                    - key: type
-                      value:
-                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "2456"
@@ -1440,14 +1263,14 @@ resourceMetrics:
                         stringValue: history_main
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "2"
+                - asInt: "8265"
                   attributes:
                     - key: schema
                       value:
                         stringValue: MON
                     - key: type
                       value:
-                        stringValue: main
+                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
             unit: By
@@ -1469,16 +1292,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "62"
-                  attributes:
-                    - key: schema
-                      value:
-                        stringValue: MON
-                    - key: type
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
                 - asInt: "76578"
                   attributes:
                     - key: schema
@@ -1497,6 +1310,16 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: write
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "62"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: MON
+                    - key: type
+                      value:
+                        stringValue: merge
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
               isMonotonic: true
@@ -1519,6 +1342,16 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "654"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: MON
+                    - key: type
+                      value:
+                        stringValue: main
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
                 - asInt: "625662"
                   attributes:
                     - key: schema
@@ -1527,16 +1360,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "85"
-                  attributes:
-                    - key: schema
-                      value:
-                        stringValue: MON
-                    - key: type
-                      value:
-                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
                 - asInt: "8888"
@@ -1549,14 +1372,14 @@ resourceMetrics:
                         stringValue: history_main
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
-                - asInt: "654"
+                - asInt: "85"
                   attributes:
                     - key: schema
                       value:
                         stringValue: MON
                     - key: type
                       value:
-                        stringValue: main
+                        stringValue: history_delta
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
             unit: '{records}'
@@ -1770,6 +1593,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: update
+                  startTimeUnixNano: "1655998954206896000"
+                  timeUnixNano: "1655998954206724000"
                 - asInt: "123"
                   attributes:
                     - key: type
@@ -1782,13 +1612,6 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: rollback
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
-                - asInt: "0"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: update
                   startTimeUnixNano: "1655998954206896000"
                   timeUnixNano: "1655998954206724000"
               isMonotonic: true
@@ -1892,6 +1715,183 @@ resourceMetrics:
                   timeUnixNano: "1655998954206724000"
               isMonotonic: true
             unit: ms
+        scope:
+          name: otelcol/saphanareceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: db.system
+          value:
+            stringValue: saphana
+    scopeMetrics:
+      - metrics:
+          - description: Number of current alerts.
+            name: saphana.alert.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "123"
+                  attributes:
+                    - key: rating
+                      value:
+                        stringValue: "1"
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "1"
+                  attributes:
+                    - key: rating
+                      value:
+                        stringValue: "2"
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "1000"
+                  attributes:
+                    - key: rating
+                      value:
+                        stringValue: "4"
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            unit: '{alerts}'
+          - description: The age of the latest backup by start time.
+            gauge:
+              dataPoints:
+                - asInt: "13"
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            name: saphana.backup.latest
+            unit: s
+          - description: The amount of time remaining before license expiration.
+            gauge:
+              dataPoints:
+                - asInt: "1238128"
+                  attributes:
+                    - key: product
+                      value:
+                        stringValue: HANA
+                    - key: system
+                      value:
+                        stringValue: PPE
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            name: saphana.license.expiration.time
+            unit: s
+          - description: The allowed product usage as specified by the license (for example, main memory).
+            name: saphana.license.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "128"
+                  attributes:
+                    - key: product
+                      value:
+                        stringValue: HANA
+                    - key: system
+                      value:
+                        stringValue: PPE
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "128"
+                  attributes:
+                    - key: product
+                      value:
+                        stringValue: HANA
+                    - key: system
+                      value:
+                        stringValue: PPT
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            unit: '{licenses}'
+          - description: The peak product usage value during last 13 months, measured periodically.
+            name: saphana.license.peak
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "33"
+                  attributes:
+                    - key: product
+                      value:
+                        stringValue: HANA
+                    - key: system
+                      value:
+                        stringValue: PPE
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+                - asInt: "33"
+                  attributes:
+                    - key: product
+                      value:
+                        stringValue: HANA
+                    - key: system
+                      value:
+                        stringValue: PPT
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            unit: '{licenses}'
+          - description: The average amount of time consumed replicating a log.
+            gauge:
+              dataPoints:
+                - asDouble: 11.23
+                  attributes:
+                    - key: mode
+                      value:
+                        stringValue: SHIPPING
+                    - key: port
+                      value:
+                        stringValue: "123"
+                    - key: primary
+                      value:
+                        stringValue: host1
+                    - key: secondary
+                      value:
+                        stringValue: host2
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            name: saphana.replication.average_time
+            unit: us
+          - description: The current replication backlog size.
+            name: saphana.replication.backlog.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: mode
+                      value:
+                        stringValue: SHIPPING
+                    - key: port
+                      value:
+                        stringValue: "123"
+                    - key: primary
+                      value:
+                        stringValue: host1
+                    - key: secondary
+                      value:
+                        stringValue: host2
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            unit: By
+          - description: The current replication backlog.
+            name: saphana.replication.backlog.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: mode
+                      value:
+                        stringValue: SHIPPING
+                    - key: port
+                      value:
+                        stringValue: "123"
+                    - key: primary
+                      value:
+                        stringValue: host1
+                    - key: secondary
+                      value:
+                        stringValue: host2
+                  startTimeUnixNano: "1655998954207635000"
+                  timeUnixNano: "1655998954206724000"
+            unit: us
         scope:
           name: otelcol/saphanareceiver
           version: latest

@@ -30,7 +30,17 @@ resourceMetrics:
                         stringValue: off_heap
                     - key: state
                       value:
-                        stringValue: free
+                        stringValue: used
+                  startTimeUnixNano: "1684779200175972000"
+                  timeUnixNano: "1684779200176934000"
+                - asInt: "0"
+                  attributes:
+                    - key: location
+                      value:
+                        stringValue: on_heap
+                    - key: state
+                      value:
+                        stringValue: used
                   startTimeUnixNano: "1684779200175972000"
                   timeUnixNano: "1684779200176934000"
                 - asInt: "0"
@@ -40,7 +50,7 @@ resourceMetrics:
                         stringValue: off_heap
                     - key: state
                       value:
-                        stringValue: used
+                        stringValue: free
                   startTimeUnixNano: "1684779200175972000"
                   timeUnixNano: "1684779200176934000"
                 - asInt: "434"
@@ -51,16 +61,6 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1684779200175972000"
-                  timeUnixNano: "1684779200176934000"
-                - asInt: "0"
-                  attributes:
-                    - key: location
-                      value:
-                        stringValue: on_heap
-                    - key: state
-                      value:
-                        stringValue: used
                   startTimeUnixNano: "1684779200175972000"
                   timeUnixNano: "1684779200176934000"
             unit: mb
@@ -190,18 +190,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: gc_type
-                      value:
-                        stringValue: major
-                  startTimeUnixNano: "1684779200175972000"
-                  timeUnixNano: "1684779200176934000"
                 - asInt: "33"
                   attributes:
                     - key: gc_type
                       value:
                         stringValue: minor
+                  startTimeUnixNano: "1684779200175972000"
+                  timeUnixNano: "1684779200176934000"
+                - asInt: "0"
+                  attributes:
+                    - key: gc_type
+                      value:
+                        stringValue: major
                   startTimeUnixNano: "1684779200175972000"
                   timeUnixNano: "1684779200176934000"
               isMonotonic: true
@@ -211,18 +211,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: gc_type
-                      value:
-                        stringValue: major
-                  startTimeUnixNano: "1684779200175972000"
-                  timeUnixNano: "1684779200176934000"
                 - asInt: "97"
                   attributes:
                     - key: gc_type
                       value:
                         stringValue: minor
+                  startTimeUnixNano: "1684779200175972000"
+                  timeUnixNano: "1684779200176934000"
+                - asInt: "0"
+                  attributes:
+                    - key: gc_type
+                      value:
+                        stringValue: major
                   startTimeUnixNano: "1684779200175972000"
                   timeUnixNano: "1684779200176934000"
               isMonotonic: true

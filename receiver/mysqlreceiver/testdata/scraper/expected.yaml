@@ -11,18 +11,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: status
-                      value:
-                        stringValue: clean
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "228"
                   attributes:
                     - key: status
                       value:
                         stringValue: dirty
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "2"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: clean
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
             unit: "1"
@@ -40,34 +40,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "237"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: read_ahead
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "238"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: read_ahead_evicted
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "236"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: read_ahead_rnd
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "239"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: read_requests
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "240"
                   attributes:
                     - key: operation
@@ -82,11 +54,39 @@ resourceMetrics:
                         stringValue: wait_free
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
+                - asInt: "238"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_ahead_evicted
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "239"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_requests
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
                 - asInt: "242"
                   attributes:
                     - key: operation
                       value:
                         stringValue: write_requests
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "237"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_ahead
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "236"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_ahead_rnd
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
@@ -106,6 +106,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "234"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: misc
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
                 - asInt: "230"
                   attributes:
                     - key: kind
@@ -120,31 +127,24 @@ resourceMetrics:
                         stringValue: free
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "234"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: misc
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
             unit: "1"
           - description: The number of bytes in the InnoDB buffer pool.
             name: mysql.buffer_pool.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: status
-                      value:
-                        stringValue: clean
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "229"
                   attributes:
                     - key: status
                       value:
                         stringValue: dirty
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "2"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: clean
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
             unit: By
@@ -289,25 +289,11 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "200"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: commit
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "211"
                   attributes:
                     - key: kind
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "212"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: discover
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
                 - asInt: "213"
@@ -317,67 +303,18 @@ resourceMetrics:
                         stringValue: external_lock
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "214"
+                - asInt: "225"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: mrr_init
+                        stringValue: savepoint_rollback
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "215"
+                - asInt: "200"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: prepare
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "216"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: read_first
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "217"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: read_key
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "218"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: read_last
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "219"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: read_next
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "220"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: read_prev
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "221"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: read_rnd
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "222"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: read_rnd_next
+                        stringValue: commit
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
                 - asInt: "223"
@@ -387,18 +324,39 @@ resourceMetrics:
                         stringValue: rollback
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "224"
+                - asInt: "212"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: savepoint
+                        stringValue: discover
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "225"
+                - asInt: "214"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: savepoint_rollback
+                        stringValue: mrr_init
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "217"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_key
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "222"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_rnd_next
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "219"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_next
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
                 - asInt: "226"
@@ -408,11 +366,53 @@ resourceMetrics:
                         stringValue: update
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
+                - asInt: "216"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_first
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "224"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: savepoint
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "215"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: prepare
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "220"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_prev
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
                 - asInt: "227"
                   attributes:
                     - key: kind
                       value:
                         stringValue: write
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "218"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_last
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "221"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_rnd
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
@@ -616,18 +616,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "440"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: immediate
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "441"
                   attributes:
                     - key: kind
                       value:
                         stringValue: waited
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "440"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: immediate
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
@@ -637,11 +637,11 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "253"
+                - asInt: "255"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: waits
+                        stringValue: writes
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
                 - asInt: "254"
@@ -651,11 +651,11 @@ resourceMetrics:
                         stringValue: write_requests
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "255"
+                - asInt: "253"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: writes
+                        stringValue: waits
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
@@ -693,18 +693,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "364"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: active
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "363"
                   attributes:
                     - key: kind
                       value:
                         stringValue: available
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "364"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: active
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
             unit: "1"
@@ -720,18 +720,18 @@ resourceMetrics:
                         stringValue: file
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "373"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: table
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "372"
                   attributes:
                     - key: kind
                       value:
                         stringValue: table_definition
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "373"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: table
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
@@ -741,18 +741,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "243"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: fsyncs
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "248"
                   attributes:
                     - key: operation
                       value:
                         stringValue: reads
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "243"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
                 - asInt: "249"
@@ -769,6 +769,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "263"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: written
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
                 - asInt: "261"
                   attributes:
                     - key: operation
@@ -783,13 +790,6 @@ resourceMetrics:
                         stringValue: read
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "263"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: written
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
               isMonotonic: true
             unit: "1"
           - description: The number of times each type of prepared statement command has been issued.
@@ -797,11 +797,32 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "165"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: prepare
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
                 - asInt: "163"
                   attributes:
                     - key: command
                       value:
                         stringValue: close
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "167"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: send_long_data
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "166"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: reset
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
                 - asInt: "162"
@@ -816,27 +837,6 @@ resourceMetrics:
                     - key: command
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "165"
-                  attributes:
-                    - key: command
-                      value:
-                        stringValue: prepare
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "166"
-                  attributes:
-                    - key: command
-                      value:
-                        stringValue: reset
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "167"
-                  attributes:
-                    - key: command
-                      value:
-                        stringValue: send_long_data
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
@@ -922,11 +922,11 @@ resourceMetrics:
                         stringValue: deleted
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "271"
+                - asInt: "273"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: inserted
+                        stringValue: updated
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
                 - asInt: "272"
@@ -936,11 +936,11 @@ resourceMetrics:
                         stringValue: read
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "273"
+                - asInt: "271"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: updated
+                        stringValue: inserted
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
               isMonotonic: true
@@ -1288,11 +1288,24 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "4"
+                - asInt: "0"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: external
+                        stringValue: normal
+                    - key: schema
+                      value:
+                        stringValue: otel
+                    - key: table
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "1"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: with_shared_locks
                     - key: schema
                       value:
                         stringValue: otel
@@ -1327,24 +1340,11 @@ resourceMetrics:
                         stringValue: otel
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "0"
+                - asInt: "4"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: normal
-                    - key: schema
-                      value:
-                        stringValue: otel
-                    - key: table
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "1"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: with_shared_locks
+                        stringValue: external
                     - key: schema
                       value:
                         stringValue: otel
@@ -1359,11 +1359,24 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "14"
+                - asInt: "10"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: external
+                        stringValue: normal
+                    - key: schema
+                      value:
+                        stringValue: otel
+                    - key: table
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "11"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: with_shared_locks
                     - key: schema
                       value:
                         stringValue: otel
@@ -1398,24 +1411,11 @@ resourceMetrics:
                         stringValue: otel
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "10"
+                - asInt: "14"
                   attributes:
                     - key: kind
                       value:
-                        stringValue: normal
-                    - key: schema
-                      value:
-                        stringValue: otel
-                    - key: table
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "11"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: with_shared_locks
+                        stringValue: external
                     - key: schema
                       value:
                         stringValue: otel
@@ -1456,19 +1456,6 @@ resourceMetrics:
                         stringValue: otel
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "9"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: external
-                    - key: schema
-                      value:
-                        stringValue: otel
-                    - key: table
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "7"
                   attributes:
                     - key: kind
@@ -1487,6 +1474,19 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: normal
+                    - key: schema
+                      value:
+                        stringValue: otel
+                    - key: table
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "9"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: external
                     - key: schema
                       value:
                         stringValue: otel
@@ -1527,19 +1527,6 @@ resourceMetrics:
                         stringValue: otel
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
-                - asInt: "19"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: external
-                    - key: schema
-                      value:
-                        stringValue: otel
-                    - key: table
-                      value:
-                        stringValue: otel
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "17"
                   attributes:
                     - key: kind
@@ -1558,6 +1545,19 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: normal
+                    - key: schema
+                      value:
+                        stringValue: otel
+                    - key: table
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "19"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: external
                     - key: schema
                       value:
                         stringValue: otel
@@ -1600,20 +1600,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "448"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: cached
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
-                - asInt: "449"
-                  attributes:
-                    - key: kind
-                      value:
-                        stringValue: connected
-                  startTimeUnixNano: "1644862687825728000"
-                  timeUnixNano: "1644862687825772000"
                 - asInt: "450"
                   attributes:
                     - key: kind
@@ -1626,6 +1612,20 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: running
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "449"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: connected
+                  startTimeUnixNano: "1644862687825728000"
+                  timeUnixNano: "1644862687825772000"
+                - asInt: "448"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: cached
                   startTimeUnixNano: "1644862687825728000"
                   timeUnixNano: "1644862687825772000"
             unit: "1"

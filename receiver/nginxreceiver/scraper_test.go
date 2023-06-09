@@ -42,8 +42,6 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreTimestamp()))
 }
 
@@ -71,8 +69,6 @@ func TestScraperWithConnectionsAsSum(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricsOrder()))
 }
 

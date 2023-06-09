@@ -253,7 +253,6 @@ func TestScrapeV2(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}

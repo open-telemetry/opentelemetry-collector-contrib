@@ -30,14 +30,14 @@ resourceMetrics:
                   attributes:
                     - key: state
                       value:
-                        stringValue: ready
+                        stringValue: unacknowledged
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
-                        stringValue: unacknowledged
+                        stringValue: ready
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
             unit: '{messages}'
@@ -85,14 +85,14 @@ resourceMetrics:
                   attributes:
                     - key: state
                       value:
-                        stringValue: ready
+                        stringValue: unacknowledged
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
                 - asInt: "1"
                   attributes:
                     - key: state
                       value:
-                        stringValue: unacknowledged
+                        stringValue: ready
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
             unit: '{messages}'
