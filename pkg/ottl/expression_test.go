@@ -676,6 +676,7 @@ func Test_StandardStringGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardStringGetter_WrappedError(t *testing.T) {
 	getter := StandardStringGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -822,6 +823,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardStringLikeGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -898,6 +900,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardFloatGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -1074,6 +1077,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatLikeGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -1150,6 +1154,7 @@ func Test_StandardIntGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardIntGetter_WrappedError(t *testing.T) {
 	getter := StandardIntGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -1326,6 +1331,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardIntLikeGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
@@ -1412,6 +1418,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 	}
 }
 
+// nolint:errorlint
 func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	getter := StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
