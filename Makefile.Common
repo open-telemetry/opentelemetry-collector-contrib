@@ -1,11 +1,11 @@
 # In order to ensure make instructions fail if there is command that fails a pipe (ie: `go test ... | tee -a ./test_results.txt`)
 # the value `-o pipefail` (or `set -o pipefail`) is added to each shell command that make runs
-# otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause 
+# otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause
 # test to pass in CI when they should not.
 SHELL = /bin/bash
 ifeq ($(shell uname -s),Windows)
 	.SHELLFLAGS = /o pipefile /c
-else 
+else
 	.SHELLFLAGS = -o pipefail -c
 endif
 
@@ -155,7 +155,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --timeout 5m --build-tags integration
+	$(LINT) run --allow-parallel-runners --timeout 15m --build-tags integration
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
