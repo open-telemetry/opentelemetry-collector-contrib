@@ -155,7 +155,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --build-tags integration
+	$(LINT) run --allow-parallel-runners --timeout 5m --build-tags integration
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
