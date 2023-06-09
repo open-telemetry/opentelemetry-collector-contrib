@@ -4,6 +4,7 @@
 package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// sorts all Resource Metrics attributes and Datapoint Slice metric attributes and all Datapoint slices
+// sorts all Resource Metrics attributes and Datapoint Slice metric attributes and all Resource, Scope, and Datapoint Slices
 func sortMetrics(ms pmetric.Metrics) {
 	rms := ms.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -52,6 +53,9 @@ func sortMetrics(ms pmetric.Metrics) {
 			}
 		}
 	}
+
+	sortResources(ms)
+	sortScopes(ms)
 	sortMetricDataPointSlices(ms)
 }
 
@@ -111,6 +115,21 @@ func sortMetricDataPointSlices(ms pmetric.Metrics) {
 	}
 }
 
+func sortResources(ms pmetric.Metrics) {
+	ms.ResourceMetrics().Sort(func(a, b pmetric.ResourceMetrics) bool {
+		return compareMaps(a.Resource().Attributes(), b.Resource().Attributes()) < 0
+	})
+}
+
+func sortScopes(ms pmetric.Metrics) {
+	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
+		rm := ms.ResourceMetrics().At(i)
+		rm.ScopeMetrics().Sort(func(a, b pmetric.ScopeMetrics) bool {
+			return compareMaps(a.Scope().Attributes(), b.Scope().Attributes()) < 0
+		})
+	}
+}
+
 func sortNumberDataPointSlice(ndps pmetric.NumberDataPointSlice) {
 	ndps.Sort(func(a, b pmetric.NumberDataPoint) bool {
 		return compareMaps(a.Attributes(), b.Attributes()) < 0
@@ -144,12 +163,12 @@ func compareMaps(a, b pcommon.Map) int {
 	}
 
 	var aKeys, bKeys []string
-	a.Range(func(k string, _ pcommon.Value) bool {
-		aKeys = append(aKeys, k)
+	a.Range(func(k string, v pcommon.Value) bool {
+		aKeys = append(aKeys, fmt.Sprintf("%s: %v", k, v.AsString()))
 		return true
 	})
-	b.Range(func(k string, _ pcommon.Value) bool {
-		bKeys = append(bKeys, k)
+	b.Range(func(k string, v pcommon.Value) bool {
+		bKeys = append(bKeys, fmt.Sprintf("%s: %v", k, v.AsString()))
 		return true
 	})
 

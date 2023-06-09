@@ -1,0 +1,156 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: a
+          value:
+            stringValue: AAAA
+    scopeMetrics:
+      - metrics:
+          - description: This also isn't a real metric
+            name: storage.amplitude
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+            unit: "1"
+        scope:
+          attributes:
+            - key: a
+              value:
+                stringValue: CCCC
+          name: otelcol/anotherfakereceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: a
+          value:
+            stringValue: BBBB
+    scopeMetrics:
+      - metrics:
+          - description: This isn't a real metric
+            name: vm.cpu.affinity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+            unit: "1"
+        scope:
+          attributes:
+            - key: a
+              value:
+                stringValue: AAAA
+          name: otelcol/fakereceiver
+          version: latest
+      - metrics:
+          - description: The number of bytes which have flowed through the network interface.
+            name: nsxt.node.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: BBBBFirst
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: BBBBSecond
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: c
+                      value:
+                        stringValue: CCCC
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: x
+                      value:
+                        stringValue: InnerAttributeSort
+                    - key: z
+                      value:
+                        stringValue: DDDD
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+              isMonotonic: true
+            unit: By
+        scope:
+          attributes:
+            - key: a
+              value:
+                stringValue: BBBB
+          name: otelcol/nsxtreceiver
+          version: latest
+      - metrics:
+          - description: This also isn't a real metric
+            name: storage.amplitude
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+            unit: "1"
+        scope:
+          attributes:
+            - key: a
+              value:
+                stringValue: CCCC
+          name: otelcol/anotherfakereceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: a
+          value:
+            stringValue: DDDD
+    scopeMetrics:
+      - metrics:
+          - description: This is another fake metric
+            name: network.exuberance
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "11"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "1111111111111111111"
+            unit: "1"
+        scope:
+          attributes:
+            - key: a
+              value:
+                stringValue: AAAA
+          name: otelcol/questionablyfakereceiver
+          version: latest
