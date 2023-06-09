@@ -25,11 +25,11 @@ func createIsStringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, fmt.Errorf("IsStringFactory args must be of type *IsStringArguments[K]")
 	}
 
-	return isStringFunc(args.Target), nil
+	return isString(args.Target), nil
 }
 
 // nolint:errorlint
-func isStringFunc[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func isString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		_, err := target.Get(ctx, tCtx)
 		// Use type assertion because we don't want to check wrapped errors

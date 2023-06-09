@@ -676,6 +676,18 @@ func Test_StandardStringGetter(t *testing.T) {
 	}
 }
 
+func Test_StandardStringGetter_WrappedError(t *testing.T) {
+	getter := StandardStringGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", TypeError(""))
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardStringLikeGetter(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -810,6 +822,18 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 	}
 }
 
+func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardStringLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", TypeError(""))
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardFloatGetter(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -872,6 +896,18 @@ func Test_StandardFloatGetter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_StandardFloatGetter_WrappedError(t *testing.T) {
+	getter := StandardFloatGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", TypeError(""))
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardFloatLikeGetter(t *testing.T) {
@@ -1038,6 +1074,18 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 	}
 }
 
+func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardFloatLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", TypeError(""))
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardIntGetter(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -1100,6 +1148,18 @@ func Test_StandardIntGetter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_StandardIntGetter_WrappedError(t *testing.T) {
+	getter := StandardIntGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", TypeError(""))
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardIntLikeGetter(t *testing.T) {
@@ -1266,6 +1326,18 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 	}
 }
 
+func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardIntLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", TypeError(""))
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardPMapGetter(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -1338,4 +1410,16 @@ func Test_StandardPMapGetter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_StandardPMapGetter_WrappedError(t *testing.T) {
+	getter := StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", TypeError(""))
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }

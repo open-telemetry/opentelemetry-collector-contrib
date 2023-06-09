@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +48,7 @@ func Test_IsString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := isStringFunc[any](&ottl.StandardStringGetter[any]{
+			exprFunc := isString[any](&ottl.StandardStringGetter[any]{
 				Getter: func(context.Context, interface{}) (interface{}, error) {
 					return tt.value, nil
 				},
@@ -57,4 +58,16 @@ func Test_IsString(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func Test_IsString_Error(t *testing.T) {
+	exprFunc := isString[any](&ottl.StandardStringGetter[any]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return nil, fmt.Errorf("not a TypeError: %w", ottl.TypeError(""))
+		},
+	})
+	_, err := exprFunc(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(ottl.TypeError)
+	assert.False(t, ok)
 }
