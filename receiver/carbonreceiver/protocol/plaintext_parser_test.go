@@ -26,7 +26,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 			want: buildIntMetric(
 				GaugeMetricType,
 				"tst.int",
-				nil,
+				pcommon.NewMap(),
 				1582230020,
 				1,
 			),
@@ -46,7 +46,13 @@ func Test_plaintextParser_Parse(t *testing.T) {
 			want: buildIntMetric(
 				GaugeMetricType,
 				"tst.int.3tags",
-				map[string]any{"k0": "v_0", "k1": "v_1", "k2": "v_2"},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("k0", "v_0")
+					m.PutStr("k1", "v_1")
+					m.PutStr("k2", "v_2")
+					return m
+				}(),
 				1582230020,
 				128,
 			),
@@ -93,7 +99,7 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 		name           string
 		path           string
 		wantName       string
-		wantAttributes map[string]any
+		wantAttributes pcommon.Map
 		wantErr        bool
 	}{
 		{
@@ -102,35 +108,50 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:     "no_tags_but_delim",
-			path:     "no.tags;",
-			wantName: "no.tags",
+			name:           "no_tags_but_delim",
+			path:           "no.tags;",
+			wantName:       "no.tags",
+			wantAttributes: pcommon.NewMap(),
 		},
 		{
 			name:           "void_tags",
 			path:           "void.tags;;;",
 			wantName:       "void.tags",
-			wantAttributes: map[string]any{},
+			wantAttributes: pcommon.NewMap(),
 			wantErr:        true,
 		},
 		{
-			name:           "invalid_tag",
-			path:           "invalid.tag;k0=v0;k1_v1",
-			wantName:       "invalid.tag",
-			wantAttributes: map[string]any{"k0": "v0"},
-			wantErr:        true,
+			name:     "invalid_tag",
+			path:     "invalid.tag;k0=v0;k1_v1",
+			wantName: "invalid.tag",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("k0", "v0")
+				return m
+			}(),
+			wantErr: true,
 		},
 		{
-			name:           "empty_tag_value_middle",
-			path:           "empty.tag.value.middle;k0=;k1=v1",
-			wantName:       "empty.tag.value.middle",
-			wantAttributes: map[string]any{"k0": "", "k1": "v1"},
+			name:     "empty_tag_value_middle",
+			path:     "empty.tag.value.middle;k0=;k1=v1",
+			wantName: "empty.tag.value.middle",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("k0", "")
+				m.PutStr("k1", "v1")
+				return m
+			}(),
 		},
 		{
-			name:           "empty_tag_value_end",
-			path:           "empty.tag.value.end;k0=v0;k1=",
-			wantName:       "empty.tag.value.end",
-			wantAttributes: map[string]any{"k0": "v0", "k1": ""},
+			name:     "empty_tag_value_end",
+			path:     "empty.tag.value.end;k0=v0;k1=",
+			wantName: "empty.tag.value.end",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("k0", "v0")
+				m.PutStr("k1", "")
+				return m
+			}(),
 		},
 	}
 	for _, tt := range tests {
@@ -153,7 +174,7 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 func buildIntMetric(
 	typ TargetMetricType,
 	name string,
-	attributes map[string]any,
+	attributes pcommon.Map,
 	timestamp int64,
 	value int64,
 ) pmetric.Metric {
@@ -164,13 +185,13 @@ func buildIntMetric(
 		sum.SetIsMonotonic(true)
 		dp := sum.DataPoints().AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
-		_ = dp.Attributes().FromRaw(attributes)
+		attributes.CopyTo(dp.Attributes())
 		dp.SetIntValue(value)
 	} else {
 		g := m.SetEmptyGauge()
 		dp := g.DataPoints().AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
-		_ = dp.Attributes().FromRaw(attributes)
+		attributes.CopyTo(dp.Attributes())
 		dp.SetIntValue(value)
 	}
 	return m

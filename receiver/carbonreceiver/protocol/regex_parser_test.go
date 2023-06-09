@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestRegexParserConfigBuildParser(t *testing.T) {
@@ -111,33 +112,50 @@ func Test_regexParser_parsePath(t *testing.T) {
 		name           string
 		path           string
 		wantName       string
-		wantAttributes map[string]any
+		wantAttributes pcommon.Map
 		wantMetricType TargetMetricType
 		wantErr        bool
 	}{
 		{
-			name:     "no_rule_match",
-			path:     "service_name.host01.rpc.duration.seconds",
-			wantName: "service_name.host01.rpc.duration.seconds",
+			name:           "no_rule_match",
+			path:           "service_name.host01.rpc.duration.seconds",
+			wantName:       "service_name.host01.rpc.duration.seconds",
+			wantAttributes: pcommon.NewMap(),
 		},
 		{
-			name:           "match_rule0",
-			path:           "service_name.host00.cpu.seconds",
-			wantName:       "cpu_seconds",
-			wantAttributes: map[string]any{"svc": "service_name", "host": "host00", "k": "v"},
+			name:     "match_rule0",
+			path:     "service_name.host00.cpu.seconds",
+			wantName: "cpu_seconds",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host00")
+				m.PutStr("k", "v")
+				return m
+			}(),
 		},
 		{
-			name:           "match_rule1",
-			path:           "service_name.host01.rpc.count",
-			wantName:       "rpc",
-			wantAttributes: map[string]any{"svc": "service_name", "host": "host01"},
+			name:     "match_rule1",
+			path:     "service_name.host01.rpc.count",
+			wantName: "rpc",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "service_name")
+				m.PutStr("host", "host01")
+				return m
+			}(),
 			wantMetricType: CumulativeMetricType,
 		},
 		{
-			name:           "match_rule2",
-			path:           "svc_02.host02.avg.duration",
-			wantName:       "avgduration",
-			wantAttributes: map[string]any{"svc": "svc_02", "host": "host02"},
+			name:     "match_rule2",
+			path:     "svc_02.host02.avg.duration",
+			wantName: "avgduration",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("svc", "svc_02")
+				m.PutStr("host", "host02")
+				return m
+			}(),
 			wantMetricType: GaugeMetricType,
 		},
 	}
@@ -160,7 +178,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 
 var res struct {
 	name       string
-	attributes map[string]any
+	attributes pcommon.Map
 	metricType TargetMetricType
 	err        error
 }

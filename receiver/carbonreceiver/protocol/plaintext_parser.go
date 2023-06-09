@@ -6,6 +6,8 @@ package protocol // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"fmt"
 	"strings"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // PlaintextConfig holds the configuration for the plaintext parser.
@@ -42,6 +44,7 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 	}
 
 	parsedPath.MetricName = parts[0]
+	parsedPath.Attributes = pcommon.NewMap()
 	if len(parts) == 1 {
 		// No tags, no more work here.
 		return nil
@@ -53,7 +56,6 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 	}
 
 	tags := strings.Split(parts[1], ";")
-	attributes := map[string]any{}
 	for _, tag := range tags {
 		idx := strings.IndexByte(tag, '=')
 		if idx < 1 {
@@ -62,9 +64,8 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 
 		key := tag[:idx]
 		value := tag[idx+1:] // If value is empty, ie.: tag == "k=", this will return "".
-		attributes[key] = value
+		parsedPath.Attributes.PutStr(key, value)
 	}
-	parsedPath.Attributes = attributes
 
 	return nil
 }

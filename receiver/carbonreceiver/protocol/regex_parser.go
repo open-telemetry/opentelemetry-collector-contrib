@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -163,18 +165,18 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			ms := rule.compRegexp.FindStringSubmatch(path)
 			nms := rule.compRegexp.SubexpNames() // regexp pre-computes this slice.
 			metricNameLookup := map[string]string{}
-			attributes := make(map[string]any, len(nms)+len(rule.Labels))
+			attributes := pcommon.NewMap()
 
 			for i := 1; i < len(ms); i++ {
 				if strings.HasPrefix(nms[i], metricNameCapturePrefix) {
 					metricNameLookup[nms[i]] = ms[i]
 				} else {
-					attributes[nms[i][len(keyCapturePrefix):]] = ms[i]
+					attributes.PutStr(nms[i][len(keyCapturePrefix):], ms[i])
 				}
 			}
 
 			for k, v := range rule.Labels {
-				attributes[k] = v
+				attributes.PutStr(k, v)
 			}
 
 			var actualMetricName string
