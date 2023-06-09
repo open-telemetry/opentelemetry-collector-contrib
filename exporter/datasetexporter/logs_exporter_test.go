@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -170,7 +171,6 @@ var testLEventRaw = &add_events.Event{
 		"severity.number":          plog.SeverityNumberInfo,
 		"severity.text":            "Info",
 		"span_id":                  "0102040800000000",
-		"timestamp":                "2020-02-11 20:26:13.000000789 +0000 UTC",
 		"trace_id":                 "08040201000000000000000000000000",
 	},
 }
@@ -193,7 +193,6 @@ var testLEventReq = &add_events.Event{
 		"severity.number":          float64(plog.SeverityNumberInfo),
 		"severity.text":            "Info",
 		"span_id":                  "0102040800000000",
-		"timestamp":                "2020-02-11 20:26:13.000000789 +0000 UTC",
 		"trace_id":                 "08040201000000000000000000000000",
 		"bundle_key":               "d41d8cd98f00b204e9800998ecf8427e",
 	},
@@ -253,6 +252,71 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 		LogsSettings{
 			ExportResourceInfo: true,
 		},
+	)
+
+	assert.Equal(t, expected, was)
+}
+
+func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
+	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
+	// ObservedTimestamp should be used
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	ld.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+	ld.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(1686235113, 0)))
+
+	testLEventRaw.Ts = "1686235113000000000"
+	testLEventRaw.Attrs["observed.timestamp"] = "2023-06-08 14:38:33 +0000 UTC"
+	delete(testLEventRaw.Attrs, "timestamp")
+	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
+
+	expected := &add_events.EventBundle{
+		Event:  testLEventRaw,
+		Thread: testLThread,
+		Log:    testLLog,
+	}
+	was := buildEventFromLog(
+		ld,
+		lr.ResourceLogs().At(0).Resource(),
+		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		newDefaultLogsSettings(),
+	)
+
+	assert.Equal(t, expected, was)
+}
+
+func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurrentTimestamp(t *testing.T) {
+	// When LogRecord doesn't have timestampa and ObservedTimestamp set, current timestamp
+	// should be used
+	// We mock current time to ensure stability across runs
+
+	now = func() time.Time { return time.Unix(123456789, 0) }
+	currentTime := now()
+	assert.Equal(t, currentTime, time.Unix(123456789, 0))
+	assert.Equal(t, strconv.FormatInt(currentTime.UnixNano(), 10), "123456789000000000")
+
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	ld.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+	ld.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
+
+	testLEventRaw.Ts = strconv.FormatInt(currentTime.UnixNano(), 10)
+	delete(testLEventRaw.Attrs, "timestamp")
+	delete(testLEventRaw.Attrs, "observed.timestamp")
+	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
+
+	expected := &add_events.EventBundle{
+		Event:  testLEventRaw,
+		Thread: testLThread,
+		Log:    testLLog,
+	}
+	was := buildEventFromLog(
+		ld,
+		lr.ResourceLogs().At(0).Resource(),
+		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		newDefaultLogsSettings(),
 	)
 
 	assert.Equal(t, expected, was)
