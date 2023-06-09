@@ -63,7 +63,12 @@ func buildBody(attrs map[string]interface{}, value pcommon.Value) string {
 	return message
 }
 
-func buildEventFromLog(log plog.LogRecord, resource pcommon.Resource, scope pcommon.InstrumentationScope) *add_events.EventBundle {
+func buildEventFromLog(
+	log plog.LogRecord,
+	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
+	settings LogsSettings,
+) *add_events.EventBundle {
 	attrs := make(map[string]interface{})
 	event := add_events.Event{}
 
@@ -104,7 +109,9 @@ func buildEventFromLog(log plog.LogRecord, resource pcommon.Resource, scope pcom
 	attrs["flags"] = log.Flags()
 	attrs["flag.is_sampled"] = log.Flags().IsSampled()
 
-	updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
+	if settings.ExportResourceInfo {
+		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
+	}
 	attrs["scope.name"] = scope.Name()
 	updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
 
@@ -130,7 +137,7 @@ func (e *DatasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				logRecord := logRecords.At(k)
-				events = append(events, buildEventFromLog(logRecord, resource, scope))
+				events = append(events, buildEventFromLog(logRecord, resource, scope, e.exporterCfg.logsSettings))
 			}
 		}
 	}
