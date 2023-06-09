@@ -172,8 +172,10 @@ metrics:
     description: Number of handles held by the process.
     extended_documentation: This metric is only available on Windows.
     unit: '{count}'
-    gauge:
+    sum:
       value_type: int
+      aggregation: cumulative
+      monotonic: false
   
   process.context_switches:
     enabled: false

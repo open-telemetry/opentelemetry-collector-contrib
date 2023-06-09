@@ -394,14 +394,16 @@ func (m *metricProcessHandles) init() {
 	m.data.SetName("process.handles")
 	m.data.SetDescription("Number of handles held by the process.")
 	m.data.SetUnit("{count}")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricProcessHandles) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -409,14 +411,14 @@ func (m *metricProcessHandles) recordDataPoint(start pcommon.Timestamp, ts pcomm
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricProcessHandles) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricProcessHandles) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()

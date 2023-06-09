@@ -257,11 +257,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "process.handles":
 					assert.False(t, validatedMetrics["process.handles"], "Found a duplicate in the metrics slice: process.handles")
 					validatedMetrics["process.handles"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of handles held by the process.", ms.At(i).Description())
 					assert.Equal(t, "{count}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

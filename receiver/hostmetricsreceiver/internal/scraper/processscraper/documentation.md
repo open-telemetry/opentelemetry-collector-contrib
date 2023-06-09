@@ -118,9 +118,9 @@ Number of handles held by the process.
 
 This metric is only available on Windows.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {count} | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {count} | Sum | Int | Cumulative | false |
 
 ### process.memory.utilization
 
