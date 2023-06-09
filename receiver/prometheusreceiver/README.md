@@ -120,5 +120,26 @@ This receiver accepts exemplars coming in Prometheus format and converts it to O
 3. Labels with key `span_id` in prometheus exemplars are set as OTLP `span id` and labels with key `trace_id` are set as `trace id`
 4. Rest of the labels are copied as it is to OTLP format
 
+## Target Info API
+
+To enable retrieving scrape target information available from the Prometheus 
+server API provide configuration for the API service:
+
+```yaml
+receivers:
+  prometheus:
+    config:
+      ...
+    api:
+      service:
+        endpoint: "localhost:9999"
+      external_url: "http://example.com/"
+```
+
+The `api::service` member accepts [`confighttp` server configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration).
+The `api::external_url` member accepts a 
+URL that will be used to provide an externally-accessible `globalUrl` field 
+in the target info response for targets at `localhost`, `127.0.0.1`, or `::1`.
+
 [sc]: https://github.com/prometheus/prometheus/blob/v2.28.1/docs/configuration/configuration.md#scrape_config
 
