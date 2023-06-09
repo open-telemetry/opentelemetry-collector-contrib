@@ -186,7 +186,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	} else {
 		consumer = metrics.NewZorkianConsumer()
 	}
-	_, err := exp.tr.MapMetrics(ctx, md, consumer)
+	metadata, err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
@@ -203,7 +203,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	var sp []pb.ClientStatsPayload
 	if isMetricExportV2Enabled() {
 		var ms []datadogV2.MetricSeries
-		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
+		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)
 		ms = metrics.PrepareSystemMetrics(ms)
 		ms = metrics.PrepareContainerMetrics(ms)
 
