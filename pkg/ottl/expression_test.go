@@ -669,6 +669,7 @@ func Test_StandardStringGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -802,6 +803,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -865,6 +867,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1028,6 +1031,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1091,6 +1095,7 @@ func Test_StandardIntGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1254,6 +1259,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1327,6 +1333,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})

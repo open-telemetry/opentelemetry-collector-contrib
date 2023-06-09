@@ -329,7 +329,7 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	default:
 		result, err = jsoniter.MarshalToString(v)
 		if err != nil {
-			return nil, fmt.Errorf("unsupported type: %T", v)
+			return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 		}
 	}
 	return &result, nil
@@ -391,10 +391,10 @@ func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, 
 				result = float64(0)
 			}
 		default:
-			return nil, fmt.Errorf("unsupported value type: %v", v.Type())
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
 		}
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", v)
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 	}
 	return &result, nil
 }
@@ -455,10 +455,10 @@ func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, erro
 				result = int64(0)
 			}
 		default:
-			return nil, fmt.Errorf("unsupported value type: %v", v.Type())
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
 		}
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", v)
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 	}
 	return &result, nil
 }
