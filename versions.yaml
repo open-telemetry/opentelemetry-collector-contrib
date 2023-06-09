@@ -6,6 +6,7 @@ module-sets:
     version: v0.79.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
