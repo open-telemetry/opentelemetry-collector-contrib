@@ -403,11 +403,11 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "webhookevent",
-            getConfigFn: func() component.Config {
-                cfg := rcvrFactories["webhookevent"].CreateDefaultConfig().(*webhookeventreceiver.Config)
-                cfg.Endpoint = "127.0.0.1:8088"
-                return cfg
-            },
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["webhookevent"].CreateDefaultConfig().(*webhookeventreceiver.Config)
+				cfg.Endpoint = "127.0.0.1:8088"
+				return cfg
+			},
 		},
 		{
 			receiver:     "windowseventlog",
