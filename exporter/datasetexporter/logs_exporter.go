@@ -109,17 +109,14 @@ func buildEventFromLog(
 
 	// Event needs to always have timestamp set otherwise it will get set to unix epoch start time
 	if event.Ts == "" {
-		fmt.Printf("laaa")
 		// ObservedTimestamp should always be set, but in case if it's not, we fall back to
 		// current time
 		// TODO: We should probably also do a rate limited log message here since this
 		// could indicate an issue with the current setup in case most events don't contain
 		// a timestamp.
 		if !observedTs.Equal(time.Unix(0, 0)) {
-			fmt.Printf("observed")
 			event.Ts = strconv.FormatInt(observedTs.UnixNano(), 10)
 		} else {
-			fmt.Printf("now")
 			event.Ts = strconv.FormatInt(now().UnixNano(), 10)
 		}
 	}
