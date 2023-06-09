@@ -303,7 +303,7 @@ type StandardStringLikeGetter[K any] struct {
 func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return nil, nil
@@ -351,7 +351,7 @@ type StandardFloatLikeGetter[K any] struct {
 func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return nil, nil
@@ -415,7 +415,7 @@ type StandardIntLikeGetter[K any] struct {
 func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return nil, nil
