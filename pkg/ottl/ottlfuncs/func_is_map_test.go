@@ -5,7 +5,6 @@ package ottlfuncs
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,7 +62,7 @@ func Test_IsMap(t *testing.T) {
 func Test_IsMap_Error(t *testing.T) {
 	exprFunc := isMap[any](&ottl.StandardPMapGetter[any]{
 		Getter: func(context.Context, interface{}) (interface{}, error) {
-			return nil, fmt.Errorf("not a TypeError: %w", ottl.TypeError(""))
+			return nil, ottl.TypeError("")
 		},
 	})
 	_, err := exprFunc(context.Background(), nil)
