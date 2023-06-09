@@ -30,17 +30,7 @@ resourceMetrics:
                         stringValue: off_heap
                     - key: state
                       value:
-                        stringValue: used
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: location
-                      value:
-                        stringValue: on_heap
-                    - key: state
-                      value:
-                        stringValue: used
+                        stringValue: free
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
                 - asInt: "0"
@@ -50,7 +40,7 @@ resourceMetrics:
                         stringValue: off_heap
                     - key: state
                       value:
-                        stringValue: free
+                        stringValue: used
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
                 - asInt: "434"
@@ -61,6 +51,16 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: location
+                      value:
+                        stringValue: on_heap
+                    - key: state
+                      value:
+                        stringValue: used
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
             unit: mb
@@ -190,18 +190,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "33"
-                  attributes:
-                    - key: gc_type
-                      value:
-                        stringValue: minor
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
                 - asInt: "0"
                   attributes:
                     - key: gc_type
                       value:
                         stringValue: major
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "33"
+                  attributes:
+                    - key: gc_type
+                      value:
+                        stringValue: minor
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
@@ -211,18 +211,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "97"
-                  attributes:
-                    - key: gc_type
-                      value:
-                        stringValue: minor
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
                 - asInt: "0"
                   attributes:
                     - key: gc_type
                       value:
                         stringValue: major
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "97"
+                  attributes:
+                    - key: gc_type
+                      value:
+                        stringValue: minor
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
@@ -415,13 +415,32 @@ resourceMetrics:
         - key: spark.application.name
           value:
             stringValue: streaming-example
-        - key: spark.stage.id
+        - key: spark.executor.id
           value:
-            intValue: "1"
+            stringValue: driver
     scopeMetrics:
       - metrics:
-          - description: The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.
-            name: spark.stage.disk.spilled
+          - description: Disk space used by this executor for RDD storage.
+            name: spark.executor.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+            unit: bytes
+          - description: Elapsed time the JVM spent in garbage collection in this executor.
+            name: spark.executor.gc_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "221"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: ms
+          - description: Amount of data input for this executor.
+            name: spark.executor.input_size
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -430,49 +449,17 @@ resourceMetrics:
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
             unit: bytes
-          - description: CPU time spent by the executor in this stage.
-            name: spark.stage.executor.cpu_time
+          - description: Storage memory used by this executor.
+            name: spark.executor.memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "8516746000"
+                - asInt: "100596"
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: ns
-          - description: Amount of time spent by the executor in this stage.
-            name: spark.stage.executor.run_time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "96205"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: ms
-          - description: Number of records written and read in this stage.
-            name: spark.stage.io.records
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: in
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: out
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: '{ record }'
-          - description: Amount of data written and read at this stage.
-            name: spark.stage.io.size
+            unit: bytes
+          - description: Amount of data written and read during shuffle operations for this executor.
+            name: spark.executor.shuffle.io.size
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -492,163 +479,54 @@ resourceMetrics:
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
             unit: bytes
-          - description: The amount of time the JVM spent on garbage collection in this stage.
-            name: spark.stage.jvm_gc_time
+          - description: The executor's storage memory usage.
+            name: spark.executor.storage_memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1370"
+                - asInt: "0"
+                  attributes:
+                    - key: location
+                      value:
+                        stringValue: off_heap
+                    - key: state
+                      value:
+                        stringValue: free
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: ms
-          - description: Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.
-            name: spark.stage.memory.peak
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "157286400"
+                - asInt: "0"
+                  attributes:
+                    - key: location
+                      value:
+                        stringValue: off_heap
+                    - key: state
+                      value:
+                        stringValue: used
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
-              isMonotonic: true
+                - asInt: "0"
+                  attributes:
+                    - key: location
+                      value:
+                        stringValue: on_heap
+                    - key: state
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: location
+                      value:
+                        stringValue: on_heap
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
             unit: bytes
-          - description: The amount of memory moved to disk due to size constraints (spilled) in this stage.
-            name: spark.stage.memory.spilled
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: bytes
-          - description: Number of blocks fetched in shuffle operations in this stage.
-            name: spark.stage.shuffle.blocks_fetched
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: remote
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: local
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: '{ block }'
-          - description: Time spent in this stage waiting for remote shuffle blocks.
-            name: spark.stage.shuffle.fetch_wait_time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: ms
-          - description: Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).
-            name: spark.stage.shuffle.io.disk
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: bytes
-          - description: Amount of data read in shuffle operations in this stage.
-            name: spark.stage.shuffle.io.read.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: local
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: source
-                      value:
-                        stringValue: remote
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: bytes
-          - description: Number of records written or read in shuffle operations in this stage.
-            name: spark.stage.shuffle.io.records
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: in
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: out
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: '{ record }'
-          - description: Amount of data written in shuffle operations in this stage.
-            name: spark.stage.shuffle.io.write.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: bytes
-          - description: Time spent blocking on writes to disk or buffer cache in this stage.
-            name: spark.stage.shuffle.write_time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: ns
-          - description: A one-hot encoding representing the status of this stage.
-            name: spark.stage.status
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: active
-                      value:
-                        boolValue: false
-                    - key: complete
-                      value:
-                        boolValue: true
-                    - key: failed
-                      value:
-                        boolValue: false
-                    - key: pending
-                      value:
-                        boolValue: false
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-            unit: '{ status }'
-          - description: Number of active tasks in this stage.
-            name: spark.stage.task.active
+          - description: Number of tasks currently running in this executor.
+            name: spark.executor.task.active
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -656,12 +534,77 @@ resourceMetrics:
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
             unit: '{ task }'
-          - description: Number of tasks with a specific result in this stage.
-            name: spark.stage.task.result
+          - description: Maximum number of tasks that can run concurrently in this executor.
+            name: spark.executor.task.limit
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "200"
+                - asInt: "12"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+            unit: '{ task }'
+          - description: Number of tasks with a specific result in this executor.
+            name: spark.executor.task.result
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "212"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: completed
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: failed
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: '{ task }'
+          - description: Elapsed time the JVM spent executing tasks in this executor.
+            name: spark.executor.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "149891"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: ms
+        scope:
+          name: otelcol/apachesparkreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: spark.application.id
+          value:
+            stringValue: local-1682603253681
+        - key: spark.application.name
+          value:
+            stringValue: streaming-example
+        - key: spark.job.id
+          value:
+            intValue: "0"
+    scopeMetrics:
+      - metrics:
+          - description: Number of active stages in this job.
+            name: spark.job.stage.active
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+            unit: '{ task }'
+          - description: Number of stages with a specific result in this job.
+            name: spark.job.stage.result
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
                   attributes:
                     - key: result
                       value:
@@ -679,21 +622,48 @@ resourceMetrics:
                   attributes:
                     - key: result
                       value:
-                        stringValue: killed
+                        stringValue: skipped
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
             unit: '{ task }'
-          - description: The amount of data transmitted back to the driver by all the tasks in this stage.
-            name: spark.stage.task.result_size
+          - description: Number of active tasks in this job.
+            name: spark.job.task.active
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1478081"
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+            unit: '{ task }'
+          - description: Number of tasks with a specific result in this job.
+            name: spark.job.task.result
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "212"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: completed
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: failed
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: skipped
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
-            unit: bytes
+            unit: '{ task }'
         scope:
           name: otelcol/apachesparkreceiver
           version: latest
@@ -821,14 +791,14 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: remote
+                        stringValue: local
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
-                        stringValue: local
+                        stringValue: remote
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
@@ -995,51 +965,64 @@ resourceMetrics:
         - key: spark.application.name
           value:
             stringValue: streaming-example
-        - key: spark.executor.id
+        - key: spark.stage.id
           value:
-            stringValue: driver
+            intValue: "1"
     scopeMetrics:
       - metrics:
-          - description: Disk space used by this executor for RDD storage.
-            name: spark.executor.disk.usage
+          - description: The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.
+            name: spark.stage.disk.spilled
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
+              isMonotonic: true
             unit: bytes
-          - description: Elapsed time the JVM spent in garbage collection in this executor.
-            name: spark.executor.gc_time
+          - description: CPU time spent by the executor in this stage.
+            name: spark.stage.executor.cpu_time
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "221"
+                - asInt: "8516746000"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: ns
+          - description: Amount of time spent by the executor in this stage.
+            name: spark.stage.executor.run_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "96205"
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
             unit: ms
-          - description: Amount of data input for this executor.
-            name: spark.executor.input_size
+          - description: Number of records written and read in this stage.
+            name: spark.stage.io.records
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: in
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: out
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
-            unit: bytes
-          - description: Storage memory used by this executor.
-            name: spark.executor.memory.usage
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "100596"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-            unit: bytes
-          - description: Amount of data written and read during shuffle operations for this executor.
-            name: spark.executor.shuffle.io.size
+            unit: '{ record }'
+          - description: Amount of data written and read at this stage.
+            name: spark.stage.io.size
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -1059,119 +1042,163 @@ resourceMetrics:
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
             unit: bytes
-          - description: The executor's storage memory usage.
-            name: spark.executor.storage_memory.usage
+          - description: The amount of time the JVM spent on garbage collection in this stage.
+            name: spark.stage.jvm_gc_time
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: location
-                      value:
-                        stringValue: on_heap
-                    - key: state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: location
-                      value:
-                        stringValue: on_heap
-                    - key: state
-                      value:
-                        stringValue: free
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: location
-                      value:
-                        stringValue: off_heap
-                    - key: state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: location
-                      value:
-                        stringValue: off_heap
-                    - key: state
-                      value:
-                        stringValue: free
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-            unit: bytes
-          - description: Number of tasks currently running in this executor.
-            name: spark.executor.task.active
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-            unit: '{ task }'
-          - description: Maximum number of tasks that can run concurrently in this executor.
-            name: spark.executor.task.limit
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "12"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-            unit: '{ task }'
-          - description: Number of tasks with a specific result in this executor.
-            name: spark.executor.task.result
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: result
-                      value:
-                        stringValue: failed
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "212"
-                  attributes:
-                    - key: result
-                      value:
-                        stringValue: completed
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-              isMonotonic: true
-            unit: '{ task }'
-          - description: Elapsed time the JVM spent executing tasks in this executor.
-            name: spark.executor.time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "149891"
+                - asInt: "1370"
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
             unit: ms
-        scope:
-          name: otelcol/apachesparkreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: spark.application.id
-          value:
-            stringValue: local-1682603253681
-        - key: spark.application.name
-          value:
-            stringValue: streaming-example
-        - key: spark.job.id
-          value:
-            intValue: "0"
-    scopeMetrics:
-      - metrics:
-          - description: Number of active stages in this job.
-            name: spark.job.stage.active
+          - description: Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.
+            name: spark.stage.memory.peak
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "157286400"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: bytes
+          - description: The amount of memory moved to disk due to size constraints (spilled) in this stage.
+            name: spark.stage.memory.spilled
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: bytes
+          - description: Number of blocks fetched in shuffle operations in this stage.
+            name: spark.stage.shuffle.blocks_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: local
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: remote
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: '{ block }'
+          - description: Time spent in this stage waiting for remote shuffle blocks.
+            name: spark.stage.shuffle.fetch_wait_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: ms
+          - description: Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).
+            name: spark.stage.shuffle.io.disk
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: bytes
+          - description: Amount of data read in shuffle operations in this stage.
+            name: spark.stage.shuffle.io.read.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: local
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: remote
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: bytes
+          - description: Number of records written or read in shuffle operations in this stage.
+            name: spark.stage.shuffle.io.records
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: in
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: out
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: '{ record }'
+          - description: Amount of data written in shuffle operations in this stage.
+            name: spark.stage.shuffle.io.write.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: bytes
+          - description: Time spent blocking on writes to disk or buffer cache in this stage.
+            name: spark.stage.shuffle.write_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+              isMonotonic: true
+            unit: ns
+          - description: A one-hot encoding representing the status of this stage.
+            name: spark.stage.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: active
+                      value:
+                        boolValue: false
+                    - key: complete
+                      value:
+                        boolValue: true
+                    - key: failed
+                      value:
+                        boolValue: false
+                    - key: pending
+                      value:
+                        boolValue: false
+                  startTimeUnixNano: "1684779501751836000"
+                  timeUnixNano: "1684779501753732000"
+            unit: '{ status }'
+          - description: Number of active tasks in this stage.
+            name: spark.stage.task.active
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -1179,12 +1206,12 @@ resourceMetrics:
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
             unit: '{ task }'
-          - description: Number of stages with a specific result in this job.
-            name: spark.job.stage.result
+          - description: Number of tasks with a specific result in this stage.
+            name: spark.stage.task.result
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2"
+                - asInt: "200"
                   attributes:
                     - key: result
                       value:
@@ -1195,55 +1222,28 @@ resourceMetrics:
                   attributes:
                     - key: result
                       value:
-                        stringValue: skipped
+                        stringValue: failed
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
                 - asInt: "0"
                   attributes:
                     - key: result
                       value:
-                        stringValue: failed
+                        stringValue: killed
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
             unit: '{ task }'
-          - description: Number of active tasks in this job.
-            name: spark.job.task.active
+          - description: The amount of data transmitted back to the driver by all the tasks in this stage.
+            name: spark.stage.task.result_size
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-            unit: '{ task }'
-          - description: Number of tasks with a specific result in this job.
-            name: spark.job.task.result
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "212"
-                  attributes:
-                    - key: result
-                      value:
-                        stringValue: completed
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: result
-                      value:
-                        stringValue: skipped
-                  startTimeUnixNano: "1684779501751836000"
-                  timeUnixNano: "1684779501753732000"
-                - asInt: "0"
-                  attributes:
-                    - key: result
-                      value:
-                        stringValue: failed
+                - asInt: "1478081"
                   startTimeUnixNano: "1684779501751836000"
                   timeUnixNano: "1684779501753732000"
               isMonotonic: true
-            unit: '{ task }'
+            unit: bytes
         scope:
           name: otelcol/apachesparkreceiver
           version: latest
