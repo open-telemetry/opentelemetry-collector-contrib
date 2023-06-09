@@ -5,10 +5,11 @@ go 1.19
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jaegertracing/jaeger v1.41.0
+	github.com/klauspost/compress v1.16.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.79.0
-	github.com/signalfx/sapm-proto v0.12.0
+	github.com/signalfx/sapm-proto v0.13.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.79.0
 	go.opentelemetry.io/collector/component v0.79.0
@@ -31,7 +32,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

@@ -102,6 +102,12 @@ func TestInvalidConfig(t *testing.T) {
 	require.Error(t, invalidURLErr)
 
 	invalid = Config{
+		Endpoint:    "http://localhost",
+		Compression: "nosuchcompression",
+	}
+	assert.Error(t, invalid.Validate())
+
+	invalid = Config{
 		Endpoint: "abcd1234",
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:   true,
