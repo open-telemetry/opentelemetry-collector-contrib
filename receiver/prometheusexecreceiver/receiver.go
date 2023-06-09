@@ -125,7 +125,7 @@ func getSubprocessConfig(cfg *Config) *subprocessmanager.SubprocessConfig {
 }
 
 // Start creates the configs and calls the function that handles the prometheus_exec receiver
-func (per *prometheusExecReceiver) Start(ctx context.Context, host component.Host) error {
+func (per *prometheusExecReceiver) Start(_ context.Context, host component.Host) error {
 	// shutdown channel
 	per.shutdownCh = make(chan struct{})
 
@@ -290,7 +290,7 @@ func getDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crash
 }
 
 // Shutdown stops the underlying Prometheus receiver.
-func (per *prometheusExecReceiver) Shutdown(ctx context.Context) error {
+func (per *prometheusExecReceiver) Shutdown(_ context.Context) error {
 	if per.shutdownCh == nil {
 		return nil
 	}

@@ -58,7 +58,7 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 	}, nil
 }
 
-func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
+func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
 	kr.setting.Logger.Info("Object Receiver started")
 
 	for _, object := range kr.objects {

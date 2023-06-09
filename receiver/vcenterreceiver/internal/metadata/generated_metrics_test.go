@@ -194,6 +194,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
@@ -778,6 +781,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.memory.utilization":
+					assert.False(t, validatedMetrics["vcenter.vm.memory.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.memory.utilization")
+					validatedMetrics["vcenter.vm.memory.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The memory utilization of the VM.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "vcenter.vm.network.packet.count":
 					assert.False(t, validatedMetrics["vcenter.vm.network.packet.count"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.count")
 					validatedMetrics["vcenter.vm.network.packet.count"] = true

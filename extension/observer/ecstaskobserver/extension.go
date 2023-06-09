@@ -31,7 +31,7 @@ type ecsTaskObserver struct {
 	telemetry        component.TelemetrySettings
 }
 
-func (e *ecsTaskObserver) Shutdown(ctx context.Context) error {
+func (e *ecsTaskObserver) Shutdown(_ context.Context) error {
 	e.StopListAndWatch()
 	return nil
 }
@@ -96,12 +96,14 @@ func (e *ecsTaskObserver) endpointsFromTaskMetadata(taskMetadata *ecsutil.TaskMe
 func (e *ecsTaskObserver) portFromLabels(labels map[string]string) uint16 {
 	for _, portLabel := range e.config.PortLabels {
 		if p, ok := labels[portLabel]; ok {
-			if port, err := strconv.ParseUint(p, 10, 16); err != nil {
+			port, err := strconv.ParseUint(p, 10, 16)
+
+			if err != nil {
 				e.telemetry.Logger.Warn("failed parsing port label", zap.String("label", portLabel), zap.Error(err))
 				continue
-			} else {
-				return uint16(port)
 			}
+
+			return uint16(port)
 		}
 	}
 	return 0

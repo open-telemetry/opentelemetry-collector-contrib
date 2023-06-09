@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type          = "generic_webhook"
+	Type          = "webhookevent"
 	LogsStability = component.StabilityLevelDevelopment
 )

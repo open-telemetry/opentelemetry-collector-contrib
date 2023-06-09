@@ -93,6 +93,10 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
 
+	groupRequests := alertRcvr.groupRequests
+	require.Len(t, groupRequests, 1)
+	require.Equal(t, groupRequests[0].groupName(), "test-log-group-name")
+
 	err = alertRcvr.Shutdown(context.Background())
 	require.NoError(t, err)
 

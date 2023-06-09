@@ -1,12 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: rabbitmq.queue.name
-          value:
-            stringValue: test2
         - key: rabbitmq.node.name
           value:
             stringValue: rabbit@66a063ecff83
+        - key: rabbitmq.queue.name
+          value:
+            stringValue: test2
         - key: rabbitmq.vhost.name
           value:
             stringValue: dev
@@ -46,12 +46,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: rabbitmq.queue.name
-          value:
-            stringValue: webq1
         - key: rabbitmq.node.name
           value:
             stringValue: rabbit@66a063ecff83
+        - key: rabbitmq.queue.name
+          value:
+            stringValue: webq1
         - key: rabbitmq.vhost.name
           value:
             stringValue: dev

@@ -81,7 +81,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %w", streamErr)
 	}
 
-	innerCtx, cancel := context.WithCancel(context.Background())
+	innerCtx, cancel := context.WithCancel(ctx)
 	cfr.cancel = cancel
 
 	cfr.goroutines.Add(1)

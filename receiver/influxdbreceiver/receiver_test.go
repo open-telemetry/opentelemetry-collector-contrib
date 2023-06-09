@@ -94,7 +94,7 @@ func (m *mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (m *mockConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	m.lastMetricsConsumed = pmetric.NewMetrics()
 	md.CopyTo(m.lastMetricsConsumed)
 	return nil

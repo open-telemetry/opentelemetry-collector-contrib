@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
-func TestSnmpReceiverIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	testCases := []struct {
 		desc                    string
 		configFilename          string

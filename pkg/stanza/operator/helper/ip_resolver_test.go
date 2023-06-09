@@ -47,7 +47,7 @@ func TestIPResolver100Hits(t *testing.T) {
 	}
 }
 
-func TestIPResolverWithMultipleStops(t *testing.T) {
+func TestIPResolverWithMultipleStops(_ *testing.T) {
 	resolver := NewIPResolver()
 
 	resolver.Stop()

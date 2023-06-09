@@ -98,7 +98,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 	go func() {
-		for range jmx.subprocess.Stdout {
+		for range jmx.subprocess.Stdout { // nolint
 			// ensure stdout/stderr buffer is read from.
 			// these messages are already debug logged when captured.
 		}

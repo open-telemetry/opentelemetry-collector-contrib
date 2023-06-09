@@ -1585,7 +1585,7 @@ type mockHistogramDataPointConsumer struct {
 }
 
 func (m *mockHistogramDataPointConsumer) Consume(
-	mi metricInfo, point bucketHistogramDataPoint, errs *[]error, reporting *histogramReporting) {
+	mi metricInfo, point bucketHistogramDataPoint, _ *[]error, _ *histogramReporting) {
 	m.names = append(m.names, mi.Name())
 	m.counts = append(m.counts, len(point.AsCumulative()))
 }

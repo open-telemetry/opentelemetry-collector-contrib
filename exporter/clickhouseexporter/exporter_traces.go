@@ -46,10 +46,7 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	if err := createTracesTable(ctx, e.cfg, e.client); err != nil {
-		return err
-	}
-	return nil
+	return createTracesTable(ctx, e.cfg, e.client)
 }
 
 // shutdown will shut down the exporter.
@@ -123,7 +120,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert traces", zap.Int("records", td.SpanCount()),
+	e.logger.Debug("insert traces", zap.Int("records", td.SpanCount()),
 		zap.String("cost", duration.String()))
 	return err
 }

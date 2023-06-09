@@ -20,6 +20,7 @@ const (
 	defaultTopMetricsQueryMaxRows            = 100
 	defaultBackfillEnabled                   = false
 	defaultHideTopnLockstatsRowrangestartkey = false
+	defaultTruncateText                      = false
 )
 
 func NewFactory() receiver.Factory {
@@ -31,12 +32,11 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
-		},
+		ScraperControllerSettings:         scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		TopMetricsQueryMaxRows:            defaultTopMetricsQueryMaxRows,
 		BackfillEnabled:                   defaultBackfillEnabled,
 		HideTopnLockstatsRowrangestartkey: defaultHideTopnLockstatsRowrangestartkey,
+		TruncateText:                      defaultTruncateText,
 	}
 }
 

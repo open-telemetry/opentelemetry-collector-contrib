@@ -66,6 +66,8 @@ The following types are supported for single-value parameters in OTTL functions:
 - `FloatLikeGetter`
 - `StringGetter`
 - `StringLikeGetter`
+- `IntGetter`
+- `IntLikeGetter`
 - `Enum`
 - `string`
 - `float64`
@@ -80,6 +82,8 @@ For slice parameters, the following types are supported:
 - `FloatLikeGetter`
 - `StringGetter`
 - `StringLikeGetter`
+- `IntGetter`
+- `IntLikeGetter`
 - `string`
 - `float64`
 - `int64`

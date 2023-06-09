@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for chrony receiver metrics.
+// MetricsConfig provides config for chrony metrics.
 type MetricsConfig struct {
 	NtpFrequencyOffset MetricConfig `mapstructure:"ntp.frequency.offset"`
 	NtpSkew            MetricConfig `mapstructure:"ntp.skew"`
@@ -60,7 +60,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for chrony receiver metrics builder.
+// MetricsBuilderConfig is a configuration for chrony metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

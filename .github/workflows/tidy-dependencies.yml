@@ -1,15 +1,18 @@
 name: "Project: Tidy"
 on:
   pull_request_target:
-    types: [labeled]
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
 
 jobs:
   setup-environment:
+    # disabling until permission issues is resolved
+    # see: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22953
+    if: ${{ false }}
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    if: ${{ github.event.label.name == 'dependencies' }}
+    # if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
     steps:
       - uses: actions/checkout@v3
         with:

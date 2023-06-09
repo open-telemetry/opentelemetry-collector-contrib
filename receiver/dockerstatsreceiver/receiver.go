@@ -174,8 +174,6 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 		"total_pgpgin":              r.mb.RecordContainerMemoryTotalPgpginDataPoint,
 		"pgpgout":                   r.mb.RecordContainerMemoryPgpgoutDataPoint,
 		"total_pgpgout":             r.mb.RecordContainerMemoryTotalPgpgoutDataPoint,
-		"swap":                      r.mb.RecordContainerMemorySwapDataPoint,
-		"total_swap":                r.mb.RecordContainerMemoryTotalSwapDataPoint,
 		"pgfault":                   r.mb.RecordContainerMemoryPgfaultDataPoint,
 		"total_pgfault":             r.mb.RecordContainerMemoryTotalPgfaultDataPoint,
 		"pgmajfault":                r.mb.RecordContainerMemoryPgmajfaultDataPoint,
@@ -250,6 +248,7 @@ func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUS
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
+	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
 	r.mb.RecordContainerCPUPercentDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {

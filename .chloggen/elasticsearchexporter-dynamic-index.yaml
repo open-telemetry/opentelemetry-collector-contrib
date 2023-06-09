@@ -1,4 +1,0 @@
-change_type: enhancement
-component: elasticsearchexporter
-note: Add dynamic indexing option to elasticsearchexporter
-issues: [5854]

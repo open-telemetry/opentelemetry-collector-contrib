@@ -6,9 +6,12 @@ package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"database/sql"
+	"net"
 	"net/url"
+	"strconv"
 	"time"
 
+	go_ora "github.com/sijms/go-ora/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -28,11 +31,12 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: cfg,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -48,9 +52,14 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		sqlCfg := cfg.(*Config)
 		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsBuilderConfig, settings)
 
+		instanceName, err := getInstanceName(getDataSource(*sqlCfg))
+		if err != nil {
+			return nil, err
+		}
+
 		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
-			return sqlOpenerFunc(sqlCfg.DataSource)
-		}, clientProviderFunc, getInstanceName(sqlCfg.DataSource))
+			return sqlOpenerFunc(getDataSource(*sqlCfg))
+		}, clientProviderFunc, instanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -65,8 +74,24 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 	}
 }
 
-func getInstanceName(datasource string) string {
-	datasourceURL, _ := url.Parse(datasource)
+func getDataSource(cfg Config) string {
+	if cfg.DataSource != "" {
+		return cfg.DataSource
+	}
+
+	// Don't need to worry about errors here as config validation already checked.
+	host, portStr, _ := net.SplitHostPort(cfg.Endpoint)
+	port, _ := strconv.ParseInt(portStr, 10, 32)
+
+	return go_ora.BuildUrl(host, int(port), cfg.Service, cfg.Username, cfg.Password, nil)
+}
+
+func getInstanceName(datasource string) (string, error) {
+	datasourceURL, err := url.Parse(datasource)
+	if err != nil {
+		return "", err
+	}
+
 	instanceName := datasourceURL.Host + datasourceURL.Path
-	return instanceName
+	return instanceName, nil
 }

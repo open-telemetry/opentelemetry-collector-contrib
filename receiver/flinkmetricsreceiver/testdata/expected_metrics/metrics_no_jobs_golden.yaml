@@ -1,12 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
         - key: flink.resource.type
           value:
             stringValue: jobmanager
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -228,15 +228,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
-        - key: flink.taskmanager.id
-          value:
-            stringValue: mock-taskmanager-id
         - key: flink.resource.type
           value:
             stringValue: taskmanager
+        - key: flink.taskmanager.id
+          value:
+            stringValue: mock-taskmanager-id
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -458,15 +458,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host2
-        - key: flink.taskmanager.id
-          value:
-            stringValue: mock-taskmanager-id2
         - key: flink.resource.type
           value:
             stringValue: taskmanager
+        - key: flink.taskmanager.id
+          value:
+            stringValue: mock-taskmanager-id2
+        - key: host.name
+          value:
+            stringValue: mock-host2
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.

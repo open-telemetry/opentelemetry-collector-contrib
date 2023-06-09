@@ -9,6 +9,7 @@ package sqlqueryreceiver
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -27,15 +28,22 @@ const (
 	mysqlPort      = "3306"
 )
 
-func TestPostgresIntegration(t *testing.T) {
+func TestPostgresqlIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
-					Dockerfile: "Dockerfile.postgresql",
+				Image: "postgres:9.6.24",
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
 				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "postgresql", "init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
+					FileMode:          700,
+				}},
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(nat.Port(postgresqlPort)).
 					WithStartupTimeout(2 * time.Minute),
@@ -123,7 +131,7 @@ func TestPostgresIntegration(t *testing.T) {
 				}
 			}),
 		scraperinttest.WithExpectedFile(
-			filepath.Join("testdata", "integration", "expected_postgresql.yaml"),
+			filepath.Join("testdata", "integration", "postgresql", "expected.yaml"),
 		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
@@ -134,27 +142,29 @@ func TestPostgresIntegration(t *testing.T) {
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
 // test the receiver itself.
 func TestOracleDBIntegration(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("Incompatible with arm64")
+	}
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithDumpActualOnFailure(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
+					Context:    filepath.Join("testdata", "integration", "oracle"),
 					Dockerfile: "Dockerfile.oracledb",
 				},
 				ExposedPorts: []string{oraclePort},
 				// The Oracle DB container takes close to 10 minutes on a local machine
 				// to do the default setup, so the best way to account for startup time
 				// is to wait for the container to be healthy before continuing test.
-				WaitingFor: wait.NewHealthStrategy().WithStartupTimeout(15 * time.Minute),
+				WaitingFor: wait.NewHealthStrategy().WithStartupTimeout(30 * time.Minute),
 			}),
-		scraperinttest.WithCreateContainerTimeout(15*time.Minute),
+		scraperinttest.WithCreateContainerTimeout(30*time.Minute),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = "oracle"
-				rCfg.DataSource = fmt.Sprintf("oracle://otel:password@%s:%s/XE",
+				rCfg.DataSource = fmt.Sprintf("oracle://otel:p@ssw%%25rd@%s:%s/XE",
 					ci.Host(t), ci.MappedPort(t, oraclePort))
 				rCfg.Queries = []Query{
 					{
@@ -179,7 +189,7 @@ func TestOracleDBIntegration(t *testing.T) {
 				}
 			}),
 		scraperinttest.WithExpectedFile(
-			filepath.Join("testdata", "integration", "expected_oracledb.yaml"),
+			filepath.Join("testdata", "integration", "oracle", "expected.yaml"),
 		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
@@ -192,10 +202,18 @@ func TestMysqlIntegration(t *testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
-					Dockerfile: "Dockerfile.mysql",
+				Image: "mysql:8.0.33",
+				Env: map[string]string{
+					"MYSQL_USER":          "otel",
+					"MYSQL_PASSWORD":      "otel",
+					"MYSQL_ROOT_PASSWORD": "otel",
+					"MYSQL_DATABASE":      "otel",
 				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "mysql", "init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
+					FileMode:          700,
+				}},
 				ExposedPorts: []string{mysqlPort},
 				WaitingFor:   wait.ForListeningPort(nat.Port(mysqlPort)).WithStartupTimeout(2 * time.Minute),
 			}),
@@ -276,7 +294,7 @@ func TestMysqlIntegration(t *testing.T) {
 				}
 			}),
 		scraperinttest.WithExpectedFile(
-			filepath.Join("testdata", "integration", "expected_mysql.yaml"),
+			filepath.Join("testdata", "integration", "mysql", "expected.yaml"),
 		),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),

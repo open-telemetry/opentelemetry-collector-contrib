@@ -104,7 +104,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 1, true, true)
+			mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 1, AttributeSchedulerStatus(1))
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -553,12 +553,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("waiting")
+					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
-					attrVal, ok = dp.Attributes().Get("running")
-					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
+					assert.Equal(t, "waiting", attrVal.Str())
 				case "spark.driver.dag_scheduler.stage.failed":
 					assert.False(t, validatedMetrics["spark.driver.dag_scheduler.stage.failed"], "Found a duplicate in the metrics slice: spark.driver.dag_scheduler.stage.failed")
 					validatedMetrics["spark.driver.dag_scheduler.stage.failed"] = true

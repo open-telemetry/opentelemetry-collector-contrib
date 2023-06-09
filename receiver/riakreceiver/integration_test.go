@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -23,7 +24,10 @@ import (
 
 const riakPort = "8098"
 
-func TestRiakIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("Incompatible with arm64")
+	}
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
@@ -46,7 +50,5 @@ func TestRiakIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17556
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run(t)
 }

@@ -12,16 +12,16 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
 // NewFactory creates a factory for AWS receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		awsxray.TypeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, component.StabilityLevelBeta))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -40,7 +40,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Traces) (receiver.Traces, error) {

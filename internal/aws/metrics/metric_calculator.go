@@ -23,7 +23,7 @@ func NewFloat64DeltaCalculator() MetricCalculator {
 	return NewMetricCalculator(calculateDelta)
 }
 
-func calculateDelta(prev *MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
+func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
 	var deltaValue float64
 	if prev != nil {
 		deltaValue = val.(float64) - prev.RawValue.(float64)

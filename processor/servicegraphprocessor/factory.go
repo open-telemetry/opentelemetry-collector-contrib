@@ -47,16 +47,18 @@ func NewFactory() processor.Factory {
 	)
 }
 
-// NewConnectorFactory creates a factory for the servicegraph connector.
-func NewConnectorFactory() connector.Factory {
-	// TODO: Handle this err
-	_ = view.Register(serviceGraphProcessorViews()...)
+// NewConnectorFactoryFunc creates a function that returns a factory for the servicegraph connector.
+func NewConnectorFactoryFunc(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) func() connector.Factory {
+	return func() connector.Factory {
+		// TODO: Handle this err
+		_ = view.Register(serviceGraphProcessorViews()...)
 
-	return connector.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, connectorStability),
-	)
+		return connector.NewFactory(
+			cfgType,
+			createDefaultConfig,
+			connector.WithTracesToMetrics(createTracesToMetricsConnector, tracesToMetricsStability),
+		)
+	}
 }
 
 func createDefaultConfig() component.Config {

@@ -25,10 +25,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
+		ScraperControllerSettings: cfg,
 		SSHClientSettings: configssh.SSHClientSettings{
 			Timeout: 10 * time.Second,
 		},
@@ -36,7 +37,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(ctx context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	// return error if sshcheckreceiver on Windows
 	if !supportedOS() {
 		return nil, errWindowsUnsupported

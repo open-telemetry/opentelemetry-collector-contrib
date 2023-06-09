@@ -9,6 +9,8 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 // Variables related to metrics specific to tail sampling.
@@ -28,14 +30,14 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 
 	sampledTagKeys := []tag.Key{tagPolicyKey, tagSampledKey}
 	countTracesSampledView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statCountTracesSampled.Name()),
+		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statCountTracesSampled.Name()),
 		Measure:     statCountTracesSampled,
 		Description: statCountTracesSampled.Description(),
 		TagKeys:     sampledTagKeys,
 		Aggregation: view.Sum(),
 	}
 	countLogsSampledView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(typeStr, statCountLogsSampled.Name()),
+		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statCountLogsSampled.Name()),
 		Measure:     statCountLogsSampled,
 		Description: statCountLogsSampled.Description(),
 		TagKeys:     sampledTagKeys,

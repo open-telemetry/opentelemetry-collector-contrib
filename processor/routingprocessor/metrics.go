@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 var _ processor.Metrics = (*metricsProcessor)(nil)
@@ -44,7 +45,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "metrics")
 	nonRoutedMetricPointsCounter, err := meter.Int64Counter(
-		typeStr+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
+		metadata.Type+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were not routed to some or all exporters."),
 	)
 	if err != nil {
@@ -66,7 +67,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 }
 
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics]) //nolint:staticcheck
 	if err != nil {
 		return err
 	}

@@ -22,15 +22,17 @@ import (
 
 const rabbitmqPort = "15672"
 
-func TestRabbitmqIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
-					Dockerfile: "Dockerfile.rabbitmq",
-				},
+				Image: "rabbitmq:3.11-management",
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "setup.sh"),
+					ContainerFilePath: "/setup.sh",
+					FileMode:          700,
+				}},
 				ExposedPorts: []string{rabbitmqPort},
 				WaitingFor:   wait.ForListeningPort(rabbitmqPort).WithStartupTimeout(time.Minute),
 				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
@@ -52,7 +54,5 @@ func TestRabbitmqIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(),
 		),
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201
-		scraperinttest.WithDumpActualOnFailure(),
 	).Run(t)
 }
