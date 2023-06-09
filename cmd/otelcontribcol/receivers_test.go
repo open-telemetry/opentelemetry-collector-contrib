@@ -400,8 +400,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver:     "wavefront",
 			skipLifecyle: true, // Depends on carbon receiver to be running correctly
 		},
-        {
-			receiver:     "webhookeventreceiver",
+		{
+			receiver: "webhookeventreceiver",
 		},
 		{
 			receiver:     "windowseventlog",

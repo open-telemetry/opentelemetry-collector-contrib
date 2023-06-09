@@ -310,7 +310,7 @@ func components() (otelcol.Factories, error) {
 		vcenterreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 		snmpreceiver.NewFactory(),
-        webhookeventreceiver.NewFactory(),
+		webhookeventreceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
