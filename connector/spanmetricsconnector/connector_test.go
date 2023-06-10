@@ -75,6 +75,24 @@ type span struct {
 	spanID     [8]byte
 }
 
+// verifyDisabledHistogram expects that histograms are disabled.
+func verifyDisabledHistogram(t testing.TB, input pmetric.Metrics) bool {
+	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+		rm := input.ResourceMetrics().At(i)
+		ilm := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ilm.Len(); ilmC++ {
+			m := ilm.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				assert.NotEqual(t, metric.Type(), pmetric.MetricTypeExponentialHistogram)
+				assert.NotEqual(t, metric.Type(), pmetric.MetricTypeHistogram)
+			}
+		}
+	}
+	return true
+}
+
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
 	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
@@ -370,6 +388,12 @@ func exponentialHistogramsConfig() HistogramConfig {
 		},
 	}
 }
+func disabledHistogramsConfig() HistogramConfig {
+	return HistogramConfig{
+		Unit:    defaultUnit,
+		Disable: true,
+	}
+}
 
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	factory := NewFactory()
@@ -627,6 +651,14 @@ func TestConsumeTraces(t *testing.T) {
 		verifier               func(t testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
 	}{
+		// disabling histogram
+		{
+			name:                   "Test histogram metrics are disabled",
+			aggregationTemporality: cumulative,
+			histogramConfig:        disabledHistogramsConfig,
+			verifier:               verifyDisabledHistogram,
+			traces:                 []ptrace.Traces{buildSampleTrace()},
+		},
 		// exponential buckets histogram
 		{
 			name:                   "Test single consumption, three spans (Cumulative), using exp. histogram",
@@ -795,10 +827,57 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker) *connectorImp {
+func TestExcludeDimensionsConsumeTraces(t *testing.T) {
+	mcon := &mocks.MetricsConsumer{}
+	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(t), nil, excludeDimensions...)
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	p.ConsumeTraces(ctx, traces)
+	metrics := p.buildMetrics()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ilm := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ilm.Len(); ilmC++ {
+			m := ilm.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				// We check only sum and histogram metrics here, because for now only they are present in this module.
+
+				if metric.Type() == pmetric.MetricTypeExponentialHistogram || metric.Type() == pmetric.MetricTypeHistogram {
+					dp := metric.Histogram().DataPoints()
+					for dpi := 0; dpi < dp.Len(); dpi++ {
+						for attributeKey, _ := range dp.At(dpi).Attributes().AsRaw() {
+							assert.NotContains(t, excludeDimensions, attributeKey)
+						}
+
+					}
+				} else {
+					dp := metric.Sum().DataPoints()
+					for dpi := 0; dpi < dp.Len(); dpi++ {
+						for attributeKey, _ := range dp.At(dpi).Attributes().AsRaw() {
+							assert.NotContains(t, excludeDimensions, attributeKey)
+						}
+					}
+				}
+
+			}
+		}
+	}
+
+}
+
+func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker, excludedDimensions ...string) *connectorImp {
 	cfg := &Config{
 		AggregationTemporality: temporality,
 		Histogram:              histogramConfig(),
+		ExcludeDimensions:      excludedDimensions,
 		DimensionsCacheSize:    DimensionsCacheSize,
 		Dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
