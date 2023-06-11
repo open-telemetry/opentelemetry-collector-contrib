@@ -69,9 +69,6 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 			return nil, err
 		}
 
-		httpConfig := configutil.HTTPClientConfig{}
-		httpConfig.BearerToken = configutil.Secret(bearerToken)
-
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
