@@ -3,6 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filere
 go 1.19
 
 require (
+	github.com/klauspost/compress v1.16.5
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.79.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.79.0
 	go.opentelemetry.io/collector/confmap v0.79.0
@@ -27,28 +29,17 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-<<<<<<< HEAD
 	go.opentelemetry.io/collector v0.79.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
-=======
-	go.opentelemetry.io/collector v0.78.2 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
-	go.opentelemetry.io/otel v1.15.1 // indirect
-	go.opentelemetry.io/otel/metric v0.38.1 // indirect
-	go.opentelemetry.io/otel/trace v1.15.1 // indirect
->>>>>>> c584ece6aa (use fileconsumer positional scanner)
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
-<<<<<<< HEAD
-=======
 	gonum.org/v1/gonum v0.13.0 // indirect
->>>>>>> c584ece6aa (use fileconsumer positional scanner)
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
