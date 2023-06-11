@@ -61,12 +61,13 @@ func TestFileReader_Cancellation(t *testing.T) {
 		consumer: consumerType{
 			metricsConsumer: consumertest.NewNop(),
 		},
-		stringReader: blockingStringReader{},
 	}
+	f, err := os.Open(filepath.Join("testdata", "metrics.json"))
+	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
 	errs := make(chan error)
 	go func() {
-		errs <- fr.readAllLines(ctx)
+		errs <- fr.readAllLines(ctx, f)
 	}()
 	cancel()
 	require.Equal(t, 0, len(errs))
@@ -85,7 +86,7 @@ func TestFileReader_ReadAll(t *testing.T) {
 		sleepFunc: sleeper.fakeSleep,
 	}
 	fr := newFileReader(cons, f, rt, "json", "")
-	err = fr.readAllLines(context.Background())
+	err = fr.readAllLines(context.Background(), f)
 	require.NoError(t, err)
 	const expectedSleeps = 10
 	assert.Len(t, sleeper.durations, expectedSleeps)
@@ -111,7 +112,7 @@ func TestFileReader_ReadAllChunks(t *testing.T) {
 		sleepFunc: sleeper.fakeSleep,
 	}
 	fr := newFileReader(cons, f, rt, "proto", "")
-	err = fr.readAllChunks(context.Background())
+	err = fr.readAllChunks(context.Background(), f)
 	require.NoError(t, err)
 	const expectedSleeps = 10
 	assert.Len(t, sleeper.durations, expectedSleeps)

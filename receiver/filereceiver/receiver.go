@@ -39,12 +39,13 @@ func (r *fileReceiver) Start(ctx context.Context, _ component.Host) error {
 	}
 
 	fr := newFileReader(r.consumer, file, newReplayTimer(r.throttle), r.format, r.compression)
+
 	go func() {
 		var err error
 		if r.format == formatTypeProto {
-			err = fr.readAllChunks(ctx)
+			err = fr.readAllChunks(ctx, file)
 		} else {
-			err = fr.readAllLines(ctx)
+			err = fr.readAllLines(ctx, file)
 		}
 		if err != nil {
 			if errors.Is(err, io.EOF) {

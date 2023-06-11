@@ -17,14 +17,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 )
 
-// stringReader is the only function we use from *bufio.Reader. We define it
-// so that it can be swapped out for testing.
-type stringReader interface {
-	ReadString(delim byte) (string, error)
-	Read(buf []byte) (int, error)
-}
+var needNewScanner = errors.New("buffer limit exceeded")
 
 type unmarshaler struct {
 	metricsUnm pmetric.Unmarshaler
@@ -34,10 +31,27 @@ type unmarshaler struct {
 
 // fileReader
 type fileReader struct {
-	stringReader stringReader
+	scanner      *fileconsumer.PositionalScanner
+	baseReader   io.Reader
 	unmarshaler  unmarshaler
 	consumer     consumerType
 	timer        *replayTimer
+}
+
+func ScanChunks(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	sz := binary.BigEndian.Uint32(data[0:4])
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if len(data) < int(sz) {
+		return 0, nil, needNewScanner
+	}
+	return 4+int(sz), data[4:4+sz], nil
 }
 
 func newFileReader(consumer consumerType, file *os.File, timer *replayTimer, format string, compression string) fileReader {
@@ -48,9 +62,20 @@ func newFileReader(consumer consumerType, file *os.File, timer *replayTimer, for
 
 	if compression == compressionTypeZSTD {
 		cr, _ := zstd.NewReader(file)
-		fr.stringReader = bufio.NewReader(cr)
+		fr.baseReader = cr
+		if format == formatTypeProto {
+			fr.scanner = fileconsumer.NewPositionalScanner(cr, 10 * 1024, int64(0), ScanChunks)
+		} else {
+			fr.scanner = fileconsumer.NewPositionalScanner(cr, 10 * 1024, int64(0), bufio.ScanLines)
+		}
 	} else { // no compression
-		fr.stringReader = bufio.NewReader(file)
+		fr.baseReader = file
+		if format == formatTypeProto {
+			fr.scanner = fileconsumer.NewPositionalScanner(file, 10 * 1024, int64(0), ScanChunks)
+
+		} else {
+			fr.scanner = fileconsumer.NewPositionalScanner(file, 10 * 1024, int64(0), bufio.ScanLines)
+		}
 	}
 
 	if format == formatTypeProto {
@@ -78,7 +103,7 @@ func newFileReader(consumer consumerType, file *os.File, timer *replayTimer, for
 
 // readAllLines calls readline for each line in the file until all lines have been
 // read or the context is cancelled.
-func (fr fileReader) readAllLines(ctx context.Context) error {
+func (fr fileReader) readAllLines(ctx context.Context, file *os.File) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -97,8 +122,14 @@ func (fr fileReader) readAllLines(ctx context.Context) error {
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					return nil
+				} else if errors.Is(err, needNewScanner) {
+					if _, err := file.Seek(fr.scanner.Pos(), 0); err != nil {
+						return err
+					}
+					fr.scanner = fileconsumer.NewPositionalScanner(fr.baseReader, 10 * 1024, 0, bufio.ScanLines)
+				} else {
+					return err
 				}
-				return err
 			}
 		}
 	}
@@ -107,10 +138,14 @@ func (fr fileReader) readAllLines(ctx context.Context) error {
 // readLogLine reads the next line in the file, converting it into logs and
 // passing it to the the consumer member.
 func (fr fileReader) readLogLine(ctx context.Context) error {
-	line, err := fr.stringReader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read line from input file: %w", err)
+	if foundToken := fr.scanner.Scan(); !foundToken {
+		if fr.scanner.Err() == nil {
+			return io.EOF
+		} else {
+			return fmt.Errorf("failed to read line from input file: %w", fr.scanner.Err())
+		}
 	}
+	line := fr.scanner.Text()
 	logs, err := fr.unmarshaler.logsUnm.UnmarshalLogs([]byte(line))
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal logs: %w", err)
@@ -125,10 +160,14 @@ func (fr fileReader) readLogLine(ctx context.Context) error {
 // readTraceLine reads the next line in the file, converting it into traces and
 // passing it to the the consumer member.
 func (fr fileReader) readTraceLine(ctx context.Context) error {
-	line, err := fr.stringReader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read line from input file: %w", err)
+	if foundToken := fr.scanner.Scan(); !foundToken {
+		if fr.scanner.Err() == nil {
+			return io.EOF
+		} else {
+			return fmt.Errorf("failed to read line from input file: %w", fr.scanner.Err())
+		}
 	}
+	line := fr.scanner.Text()
 	traces, err := fr.unmarshaler.tracesUnm.UnmarshalTraces([]byte(line))
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal traces: %w", err)
@@ -143,10 +182,14 @@ func (fr fileReader) readTraceLine(ctx context.Context) error {
 // readMetricLine reads the next line in the file, converting it into metrics and
 // passing it to the the consumer member.
 func (fr fileReader) readMetricLine(ctx context.Context) error {
-	line, err := fr.stringReader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read line from input file: %w", err)
+	if foundToken := fr.scanner.Scan(); !foundToken {
+		if fr.scanner.Err() == nil {
+			return io.EOF
+		} else {
+			return fmt.Errorf("failed to read line from input file: %w", fr.scanner.Err())
+		}
 	}
+	line := fr.scanner.Text()
 	metrics, err := fr.unmarshaler.metricsUnm.UnmarshalMetrics([]byte(line))
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal metrics: %w", err)
@@ -160,7 +203,7 @@ func (fr fileReader) readMetricLine(ctx context.Context) error {
 
 // readAllChunks reads the next chunk of data where each chunk is prefixed with
 // the size of the data chunk.
-func (fr fileReader) readAllChunks(ctx context.Context) error {
+func (fr fileReader) readAllChunks(ctx context.Context, file *os.File) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -179,24 +222,29 @@ func (fr fileReader) readAllChunks(ctx context.Context) error {
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					return nil
+				} else if errors.Is(err, needNewScanner) {
+					// move the start of the file so scanner can read more bytes
+					if _, err := file.Seek(fr.scanner.Pos(), 0); err != nil {
+						return err
+					}
+					fr.scanner = fileconsumer.NewPositionalScanner(fr.baseReader, 10 * 1024, 0, ScanChunks)
+				} else {
+					return err
 				}
-				return err
 			}
 		}
 	}
 }
 
 func (fr fileReader) readMetricChunk(ctx context.Context) error {
-	var sz int32
-	err := binary.Read(fr.stringReader, binary.BigEndian, &sz)
-	if err != nil {
-		return err
+	if foundToken := fr.scanner.Scan(); !foundToken {
+		if fr.scanner.Err() == nil {
+			return io.EOF
+		} else {
+			return fr.scanner.Err()
+		}
 	}
-	dataBuffer := make([]byte, sz)
-	err = binary.Read(fr.stringReader, binary.BigEndian, &dataBuffer)
-	if err != nil {
-		return fmt.Errorf("failed to read line from input file: %w", err)
-	}
+	dataBuffer := fr.scanner.Bytes()
 	metrics, err := fr.unmarshaler.metricsUnm.UnmarshalMetrics(dataBuffer)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal metrics: %w", err)
@@ -209,17 +257,14 @@ func (fr fileReader) readMetricChunk(ctx context.Context) error {
 }
 
 func (fr fileReader) readTraceChunk(ctx context.Context) error {
-	var sz int32
-	err := binary.Read(fr.stringReader, binary.BigEndian, &sz)
-	if err != nil {
-		return err
+	if foundToken := fr.scanner.Scan(); !foundToken {
+		if fr.scanner.Err() == nil {
+			return io.EOF
+		} else {
+			return fmt.Errorf("failed to read chunk from input file: %w", fr.scanner.Err())
+		}
 	}
-
-	dataBuffer := make([]byte, sz)
-	err = binary.Read(fr.stringReader, binary.BigEndian, &dataBuffer)
-	if err != nil {
-		return fmt.Errorf("failed to read line from input file: %w", err)
-	}
+	dataBuffer := fr.scanner.Bytes()
 
 	traces, err := fr.unmarshaler.tracesUnm.UnmarshalTraces(dataBuffer)
 	if err != nil {
@@ -233,17 +278,14 @@ func (fr fileReader) readTraceChunk(ctx context.Context) error {
 }
 
 func (fr fileReader) readLogChunk(ctx context.Context) error {
-	var sz int32
-	err := binary.Read(fr.stringReader, binary.BigEndian, &sz)
-	if err != nil {
-		return err
+	if foundToken := fr.scanner.Scan(); !foundToken {
+		if fr.scanner.Err() == nil {
+			return io.EOF
+		} else {
+			return fmt.Errorf("failed to read chunk from input file: %w", fr.scanner.Err())
+		}
 	}
-
-	dataBuffer := make([]byte, sz)
-	err = binary.Read(fr.stringReader, binary.BigEndian, &dataBuffer)
-	if err != nil {
-		return fmt.Errorf("failed to read line from input file: %w", err)
-	}
+	dataBuffer := fr.scanner.Bytes()
 
 	logs, err := fr.unmarshaler.logsUnm.UnmarshalLogs(dataBuffer)
 	if err != nil {
