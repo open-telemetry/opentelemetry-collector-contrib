@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/fatih/structtag v1.2.0
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.79.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.79.0
@@ -450,6 +450,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
@@ -513,6 +514,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.79.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.79.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver v0.79.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver v0.79.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
@@ -1043,6 +1045,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver => ../../receiver/vcenterreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ../../receiver/wavefrontreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver => ../../receiver/webhookeventreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ../../receiver/windowseventlogreceiver
 
