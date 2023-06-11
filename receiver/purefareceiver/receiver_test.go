@@ -13,12 +13,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
 func TestReceiverArray(t *testing.T) {
@@ -68,8 +69,8 @@ func TestReceiverArray(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	//assert.Greater(t, len(sink.AllMetrics()), 0, "expected to have received more than 0 metrics")
-	//require.Equal(t, len(sink.AllMetrics()), 0)
+	// assert.Greater(t, len(sink.AllMetrics()), 0, "expected to have received more than 0 metrics")
+	// require.Equal(t, len(sink.AllMetrics()), 0)
 	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
 	}, 10*time.Second, 10*time.Millisecond)

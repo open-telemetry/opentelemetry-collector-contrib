@@ -99,7 +99,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 	return scrapeCfgs, nil
 }
 
-func getHTTPConfig(scCfgs ScraperConfig, host component.Host) (configutil.HTTPClientConfig, error){
+func getHTTPConfig(scCfgs ScraperConfig, host component.Host) (configutil.HTTPClientConfig, error) {
 	ret := configutil.HTTPClientConfig{}
 	if scCfgs.Auth != nil {
 		bearerToken, err := RetrieveBearerToken(*scCfgs.Auth, host.GetExtensions())
