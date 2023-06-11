@@ -125,17 +125,6 @@ func TestFileReader_ReadAllChunks(t *testing.T) {
 	}
 }
 
-type blockingStringReader struct {
-}
-
-func (sr blockingStringReader) ReadString(byte) (string, error) {
-	select {}
-}
-
-func (sr blockingStringReader) Read([]byte) (int, error) {
-	return 0, nil
-}
-
 func metricsByName(pm pmetric.Metrics) map[string]pmetric.Metric {
 	out := map[string]pmetric.Metric{}
 	for i := 0; i < pm.ResourceMetrics().Len(); i++ {
