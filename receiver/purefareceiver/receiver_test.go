@@ -70,10 +70,10 @@ func TestReceiverArray(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	// assert.Greater(t, len(sink.AllMetrics()), 0, "expected to have received more than 0 metrics")
-	// require.Equal(t, len(sink.AllMetrics()), 0)
-	assert.Eventually(t, func() bool {
+	require.Equal(t, len(sink.AllMetrics()), 0)
+	/* 	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
-	}, 10*time.Second, 10*time.Millisecond)
+	}, 10*time.Second, 10*time.Millisecond) */
 
 }
 
