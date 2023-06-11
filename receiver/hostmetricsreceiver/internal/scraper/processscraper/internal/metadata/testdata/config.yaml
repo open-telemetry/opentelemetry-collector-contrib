@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    process.all.cpu.time:
+      enabled: true
     process.context_switches:
       enabled: true
     process.cpu.time:
@@ -10,6 +12,8 @@ all_set:
     process.disk.io:
       enabled: true
     process.disk.operations:
+      enabled: true
+    process.memory.physical:
       enabled: true
     process.memory.usage:
       enabled: true
@@ -29,6 +33,8 @@ all_set:
     process.command:
       enabled: true
     process.command_line:
+      enabled: true
+    process.executable.cwd:
       enabled: true
     process.executable.name:
       enabled: true
@@ -42,6 +48,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    process.all.cpu.time:
+      enabled: false
     process.context_switches:
       enabled: false
     process.cpu.time:
@@ -51,6 +59,8 @@ none_set:
     process.disk.io:
       enabled: false
     process.disk.operations:
+      enabled: false
+    process.memory.physical:
       enabled: false
     process.memory.usage:
       enabled: false
@@ -70,6 +80,8 @@ none_set:
     process.command:
       enabled: false
     process.command_line:
+      enabled: false
+    process.executable.cwd:
       enabled: false
     process.executable.name:
       enabled: false

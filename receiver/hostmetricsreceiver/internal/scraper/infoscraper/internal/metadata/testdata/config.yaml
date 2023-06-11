@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    info.now:
+      enabled: true
+none_set:
+  metrics:
+    info.now:
+      enabled: false

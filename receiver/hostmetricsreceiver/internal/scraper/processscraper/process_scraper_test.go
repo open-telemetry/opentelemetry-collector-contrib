@@ -385,6 +385,12 @@ type processHandleMock struct {
 	mock.Mock
 }
 
+// Cwd implements processHandle.
+func (p *processHandleMock) Cwd() (string, error) {
+	args := p.MethodCalled("Cwd")
+	return args.String(0), args.Error(1)
+}
+
 func (p *processHandleMock) Name() (ret string, err error) {
 	args := p.MethodCalled("Name")
 	return args.String(0), args.Error(1)
@@ -474,6 +480,8 @@ func (p *processHandleMock) RlimitUsage(_ bool) ([]process.RlimitStat, error) {
 	args := p.MethodCalled("RlimitUsage")
 	return args.Get(0).([]process.RlimitStat), args.Error(1)
 }
+
+var _ processHandle = (*processHandleMock)(nil)
 
 func newDefaultHandleMock() *processHandleMock {
 	handleMock := &processHandleMock{}
@@ -601,6 +609,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				handleMock := newDefaultHandleMock()
 				handleMock.On("Name").Return(name, nil)
 				handleMock.On("Exe").Return(name, nil)
+				handleMock.On("Cwd").Return(name, nil)
 				handleMock.On("CreateTime").Return(time.Now().UnixMilli()-test.upTimeMs[i], nil)
 				handles = append(handles, handleMock)
 			}
@@ -639,6 +648,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		osFilter            string
 		nameError           error
 		exeError            error
+		cwdError            error
 		usernameError       error
 		cmdlineError        error
 		timesError          error
@@ -673,6 +683,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				}
 				return `error reading process executable for pid 1: err1`
 			}(),
+		},
+		{
+			name:          "Cwd Error",
+			osFilter:      "darwin",
+			cwdError:      errors.New("err1"),
+			expectedError: `error reading process cwd for pid 1: err1`,
 		},
 		{
 			name:          "Cmdline Error",
@@ -814,6 +830,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock := &processHandleMock{}
 			handleMock.On("Name").Return("test", test.nameError)
 			handleMock.On("Exe").Return("test", test.exeError)
+			handleMock.On("Cwd").Return("test", test.cwdError)
 			handleMock.On("Username").Return(username, test.usernameError)
 			handleMock.On("Cmdline").Return("cmdline", test.cmdlineError)
 			handleMock.On("CmdlineSlice").Return([]string{"cmdline"}, test.cmdlineError)
@@ -1061,10 +1078,12 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 	metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
 
 	metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessAllCPUTime.Enabled = false
 	metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
 	metricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled = false
 	metricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled = false
 	metricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessMemoryPhysical.Enabled = false
 
 	t.Run("Metrics don't log errors when disabled", func(t *testing.T) {
 		config := &Config{MetricsBuilderConfig: metricsBuilderConfig}
@@ -1077,6 +1096,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		handleMock := newErroringHandleMock()
 		handleMock.On("Name").Return("test", nil)
 		handleMock.On("Exe").Return("test", nil)
+		handleMock.On("Cwd").Return("test", nil)
 		handleMock.On("CreateTime").Return(time.Now().UnixMilli(), nil)
 		handleMock.On("Ppid").Return(int32(2), nil)
 

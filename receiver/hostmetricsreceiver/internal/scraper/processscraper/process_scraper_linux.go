@@ -35,6 +35,15 @@ func getProcessName(proc processHandle, _ string) (string, error) {
 	return name, err
 }
 
+func getProcessCwd(proc processHandle) (string, error) {
+	cwd, err := proc.Cwd()
+	if err != nil {
+		return "", err
+	}
+
+	return cwd, nil
+}
+
 func getProcessExecutable(proc processHandle) (string, error) {
 	exe, err := proc.Exe()
 	if err != nil {

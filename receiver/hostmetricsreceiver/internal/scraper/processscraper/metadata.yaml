@@ -18,6 +18,10 @@ resource_attributes:
       GetProcessImageFileNameW.
     enabled: true
     type: string
+  process.executable.cwd:
+    description: The cwd of the process executable.
+    enabled: true
+    type: string  
   process.executable.path:
     description: >-
       The full path to the process executable. On Linux based systems, can be set to
@@ -68,7 +72,42 @@ attributes:
     type: string
     enum: [involuntary, voluntary]
 
+  pid:
+    description: Process identifier (PID).
+    type: int
+
+  pname:
+    description: >-
+      The name of the process executable. On Linux based systems, can be set to the
+      Name in proc/[pid]/status. On Windows, can be set to the base name of
+      GetProcessImageFileNameW.
+    type: string
+
+  cwd:
+    description: The cwd of the process executable.
+    type: string
+    
 metrics:
+  process.all.cpu.time:
+    enabled: true
+    description: Total CPU seconds contains different states.
+    unit: s
+    sum:
+      value_type: double
+      aggregation: cumulative
+      monotonic: true
+    attributes: [pid,pname,cwd]
+
+  process.memory.physical:
+    enabled: true
+    description: The amount of physical memory in use.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: [pid,pname,cwd]
+
   process.cpu.time:
     enabled: true
     description: Total CPU seconds broken down by different states.

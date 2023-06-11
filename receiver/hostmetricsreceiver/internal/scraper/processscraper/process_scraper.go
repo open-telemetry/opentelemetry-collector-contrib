@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,8 +24,8 @@ import (
 )
 
 const (
-	cpuMetricsLen               = 1
-	memoryMetricsLen            = 2
+	cpuMetricsLen               = 2
+	memoryMetricsLen            = 3
 	memoryUtilizationMetricsLen = 1
 	diskMetricsLen              = 1
 	pagingMetricsLen            = 1
@@ -38,11 +39,14 @@ const (
 
 // scraper for Process Metrics
 type scraper struct {
-	settings           receiver.CreateSettings
-	config             *Config
-	mb                 *metadata.MetricsBuilder
-	includeFS          filterset.FilterSet
-	excludeFS          filterset.FilterSet
+	settings   receiver.CreateSettings
+	config     *Config
+	mb         *metadata.MetricsBuilder
+	includeFS  filterset.FilterSet
+	excludeFS  filterset.FilterSet
+	includeCwd filterset.FilterSet
+	excludeCwd filterset.FilterSet
+
 	scrapeProcessDelay time.Duration
 	ucals              map[int32]*ucal.CPUUtilizationCalculator
 	// for mocking
@@ -77,6 +81,20 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 		}
 	}
 
+	if len(cfg.Include.Cwds) > 0 {
+		scraper.includeCwd, err = filterset.CreateFilterSet(cfg.Include.Cwds, &cfg.Include.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating process include filters: %w", err)
+		}
+	}
+
+	if len(cfg.Exclude.Cwds) > 0 {
+		scraper.excludeCwd, err = filterset.CreateFilterSet(cfg.Exclude.Cwds, &cfg.Exclude.Config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
+		}
+	}
+
 	return scraper, nil
 }
 
@@ -105,11 +123,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		now := pcommon.NewTimestampFromTime(time.Now())
 
-		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle, md.pid); err != nil {
+		if err = s.scrapeAndAppendCPUTimeMetric(now, md); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md); err != nil {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -187,11 +205,25 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 
-		executable := &executableMetadata{name: name, path: exe}
+		cwd, err := getProcessCwd(handle)
+		if err != nil {
+			if !s.config.MuteProcessCwdError {
+				errs.AddPartial(1, fmt.Errorf("error reading process cwd for pid %v: %w", pid, err))
+			}
+			continue
+		}
+
+		executable := &executableMetadata{name: name, path: exe, cwd: cwd}
 
 		// filter processes by name
 		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||
 			(s.excludeFS != nil && s.excludeFS.Matches(executable.name)) {
+			continue
+		}
+
+		// filter processes by cwd
+		if (s.includeCwd != nil && !s.includeCwd.Matches(executable.cwd)) ||
+			(s.excludeCwd != nil && s.excludeCwd.Matches(executable.cwd)) {
 			continue
 		}
 
@@ -211,7 +243,12 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			// set the start time to now to avoid including this when a scrape_process_delay is set
 			createTime = time.Now().UnixMilli()
 		}
-		if s.scrapeProcessDelay.Milliseconds() > (time.Now().UnixMilli() - createTime) {
+		upDuration := time.Now().UnixMilli() - createTime
+		// 兼容优维自家服务器奇怪现象，进程创建时间居然在未来...
+		if upDuration < 0 {
+			upDuration = s.scrapeProcessDelay.Milliseconds()
+		}
+		if s.scrapeProcessDelay.Milliseconds() > upDuration {
 			continue
 		}
 
@@ -236,8 +273,9 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return data, errs.Combine()
 }
 
-func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle, pid int32) error {
-	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
+func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, md *processMetadata) error {
+	pid, handle := md.pid, md.handle
+	if !(s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessAllCPUTime.Enabled) {
 		return nil
 	}
 
@@ -247,6 +285,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 	}
 
 	s.recordCPUTimeMetric(now, times)
+	s.recordAllCPUTimeMetric(now, times, int64(pid), md.executable.name, md.executable.cwd)
 	if _, ok := s.ucals[pid]; !ok {
 		s.ucals[pid] = &ucal.CPUUtilizationCalculator{}
 	}
@@ -255,8 +294,22 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 	return err
 }
 
-func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !(s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled) {
+func (s *scraper) recordAllCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat, pid int64, pname string, cwd string) {
+	s.mb.RecordProcessAllCPUTimeDataPoint(now, getCPUTimeTotal(cpuTime), pid, pname, cwd)
+}
+
+func getCPUTimeTotal(c *cpu.TimesStat) float64 {
+	total := c.User + c.System + c.Idle + c.Nice + c.Iowait + c.Irq +
+		c.Softirq + c.Steal + c.Guest + c.GuestNice
+
+	return total
+}
+
+func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, md *processMetadata) error {
+	handle := md.handle
+	if !(s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled ||
+		s.config.MetricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled ||
+		s.config.MetricsBuilderConfig.Metrics.ProcessMemoryPhysical.Enabled) {
 		return nil
 	}
 
@@ -265,8 +318,10 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handl
 		return err
 	}
 
+	pid, pname, cwd := md.pid, md.executable.name, md.executable.cwd
 	s.mb.RecordProcessMemoryUsageDataPoint(now, int64(mem.RSS))
 	s.mb.RecordProcessMemoryVirtualDataPoint(now, int64(mem.VMS))
+	s.mb.RecordProcessMemoryPhysicalDataPoint(now, int64(mem.RSS), int64(pid), pname, cwd)
 	return nil
 }
 

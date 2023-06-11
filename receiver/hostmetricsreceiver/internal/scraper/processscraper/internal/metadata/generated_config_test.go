@@ -26,11 +26,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					ProcessAllCPUTime:          MetricConfig{Enabled: true},
 					ProcessContextSwitches:     MetricConfig{Enabled: true},
 					ProcessCPUTime:             MetricConfig{Enabled: true},
 					ProcessCPUUtilization:      MetricConfig{Enabled: true},
 					ProcessDiskIo:              MetricConfig{Enabled: true},
 					ProcessDiskOperations:      MetricConfig{Enabled: true},
+					ProcessMemoryPhysical:      MetricConfig{Enabled: true},
 					ProcessMemoryUsage:         MetricConfig{Enabled: true},
 					ProcessMemoryUtilization:   MetricConfig{Enabled: true},
 					ProcessMemoryVirtual:       MetricConfig{Enabled: true},
@@ -42,6 +44,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCommand:        ResourceAttributeConfig{Enabled: true},
 					ProcessCommandLine:    ResourceAttributeConfig{Enabled: true},
+					ProcessExecutableCwd:  ResourceAttributeConfig{Enabled: true},
 					ProcessExecutableName: ResourceAttributeConfig{Enabled: true},
 					ProcessExecutablePath: ResourceAttributeConfig{Enabled: true},
 					ProcessOwner:          ResourceAttributeConfig{Enabled: true},
@@ -54,11 +57,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					ProcessAllCPUTime:          MetricConfig{Enabled: false},
 					ProcessContextSwitches:     MetricConfig{Enabled: false},
 					ProcessCPUTime:             MetricConfig{Enabled: false},
 					ProcessCPUUtilization:      MetricConfig{Enabled: false},
 					ProcessDiskIo:              MetricConfig{Enabled: false},
 					ProcessDiskOperations:      MetricConfig{Enabled: false},
+					ProcessMemoryPhysical:      MetricConfig{Enabled: false},
 					ProcessMemoryUsage:         MetricConfig{Enabled: false},
 					ProcessMemoryUtilization:   MetricConfig{Enabled: false},
 					ProcessMemoryVirtual:       MetricConfig{Enabled: false},
@@ -70,6 +75,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					ProcessCommand:        ResourceAttributeConfig{Enabled: false},
 					ProcessCommandLine:    ResourceAttributeConfig{Enabled: false},
+					ProcessExecutableCwd:  ResourceAttributeConfig{Enabled: false},
 					ProcessExecutableName: ResourceAttributeConfig{Enabled: false},
 					ProcessExecutablePath: ResourceAttributeConfig{Enabled: false},
 					ProcessOwner:          ResourceAttributeConfig{Enabled: false},

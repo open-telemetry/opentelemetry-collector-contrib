@@ -1,0 +1,25 @@
+type: hostmetricsreceiver/info
+
+sem_conv_version: 1.9.0
+
+attributes:
+  org:
+    description: org
+    type: string
+  hostname:
+    description: hostname.
+    type: string
+  cpu.num:  
+    description: cpu num.
+    type: int
+
+metrics:
+  info.now:
+    enabled: true
+    description: unix timestamp.
+    unit: 1
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: [org, hostname, cpu.num]

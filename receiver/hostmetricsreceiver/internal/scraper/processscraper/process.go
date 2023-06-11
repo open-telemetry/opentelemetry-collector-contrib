@@ -31,6 +31,7 @@ type processMetadata struct {
 type executableMetadata struct {
 	name string
 	path string
+	cwd  string
 }
 
 type commandMetadata struct {
@@ -46,6 +47,7 @@ func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
 		metadata.WithProcessParentPid(int64(m.parentPid)),
 		metadata.WithProcessExecutableName(m.executable.name),
 		metadata.WithProcessExecutablePath(m.executable.path),
+		metadata.WithProcessExecutableCwd(m.executable.cwd),
 	)
 	if m.command != nil {
 		opts = append(opts, metadata.WithProcessCommand(m.command.command))
@@ -75,6 +77,7 @@ type processHandles interface {
 type processHandle interface {
 	Name() (string, error)
 	Exe() (string, error)
+	Cwd() (string, error)
 	Username() (string, error)
 	Cmdline() (string, error)
 	CmdlineSlice() ([]string, error)

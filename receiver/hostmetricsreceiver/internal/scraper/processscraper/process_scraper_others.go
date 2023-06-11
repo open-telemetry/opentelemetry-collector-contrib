@@ -21,6 +21,10 @@ func getProcessName(processHandle, string) (string, error) {
 	return nil, nil
 }
 
+func getProcessCwd(proc processHandle) (string, error) {
+	return nil, nil
+}
+
 func getProcessExecutable(processHandle) (string, error) {
 	return nil, nil
 }

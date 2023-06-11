@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/infoscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
@@ -30,6 +31,7 @@ import (
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
 		cpuscraper.TypeStr:        &cpuscraper.Factory{},
+		infoscraper.TypeStr:       &infoscraper.Factory{},
 		diskscraper.TypeStr:       &diskscraper.Factory{},
 		loadscraper.TypeStr:       &loadscraper.Factory{},
 		filesystemscraper.TypeStr: &filesystemscraper.Factory{},

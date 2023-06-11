@@ -35,6 +35,8 @@ type Config struct {
 	// the collector does not have permission to read it's executable path (Linux)
 	MuteProcessExeError bool `mapstructure:"mute_process_exe_error,omitempty"`
 
+	MuteProcessCwdError bool `mapstructure:"mute_process_cwd_error,omitempty"`
+
 	// ScrapeProcessDelay is used to indicate the minimum amount of time a process must be running
 	// before metrics are scraped for it.  The default value is 0 seconds (0s)
 	ScrapeProcessDelay time.Duration `mapstructure:"scrape_process_delay"`
@@ -44,4 +46,5 @@ type MatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
 
 	Names []string `mapstructure:"names"`
+	Cwds  []string `mapstructure:"cwds"`
 }

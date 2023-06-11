@@ -12,6 +12,22 @@ metrics:
     enabled: false
 ```
 
+### process.all.cpu.time
+
+Total CPU seconds contains different states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| pid | Process identifier (PID). | Any Int |
+| pname | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Any Str |
+| cwd | The cwd of the process executable. | Any Str |
+
 ### process.cpu.time
 
 Total CPU seconds broken down by different states.
@@ -39,6 +55,22 @@ Disk bytes transferred.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
+
+### process.memory.physical
+
+The amount of physical memory in use.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| pid | Process identifier (PID). | Any Int |
+| pname | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Any Str |
+| cwd | The cwd of the process executable. | Any Str |
 
 ### process.memory.usage
 
@@ -168,6 +200,7 @@ Process threads count.
 | ---- | ----------- | ------ | ------- |
 | process.command | The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can be set to the first parameter extracted from GetCommandLineW. | Any Str | true |
 | process.command_line | The full command used to launch the process as a single string representing the full command. On Windows, can be set to the result of GetCommandLineW. Do not set this if you have to assemble it just for monitoring; use process.command_args instead. | Any Str | true |
+| process.executable.cwd | The cwd of the process executable. | Any Str | true |
 | process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Any Str | true |
 | process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | Any Str | true |
 | process.owner | The username of the user that owns the process. | Any Str | true |

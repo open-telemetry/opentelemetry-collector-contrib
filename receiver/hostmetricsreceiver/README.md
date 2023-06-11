@@ -39,6 +39,7 @@ The available scrapers are:
 | Scraper      | Supported OSs                | Description                                            |
 | ------------ | ---------------------------- | ------------------------------------------------------ |
 | [cpu]        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
+| [info]       | All                          | easyops host info                                      |
 | [disk]       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
 | [load]       | All                          | CPU load metrics                                       |
 | [filesystem] | All                          | File System utilization metrics                        |
@@ -49,6 +50,7 @@ The available scrapers are:
 | [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
+[info]: ./internal/scraper/infoscraper/documentation.md
 [disk]: ./internal/scraper/diskscraper/documentation.md
 [filesystem]: ./internal/scraper/filesystemscraper/documentation.md
 [load]: ./internal/scraper/loadscraper/documentation.md
