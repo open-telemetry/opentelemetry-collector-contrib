@@ -129,6 +129,7 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
+    - exhaustive
     - gci
     - gocritic
     - gofmt
@@ -153,3 +154,220 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    # Following exclude-rules are used to exclude the existing components which do not pass exhaustive lint,
+    # in order to enable the exhaustive lint check.
+    # We should not add more exclude-rules.
+    # The progress of solving existing exclude-rules will be tracked in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23266
+    - path: awscontainerinsightreceiver
+      linters:
+        - exhaustive
+    - path: azureeventhubreceiver
+      linters:
+        - exhaustive
+    - path: filereceiver
+      linters:
+        - exhaustive
+    - path: fluentforwardreceiver
+      linters:
+        - exhaustive
+    - path: googlecloudpubsubreceiver
+      linters:
+        - exhaustive
+    - path: googlecloudspannerreceiver
+      linters:
+        - exhaustive
+    - path: k8sclusterreceiver
+      linters:
+        - exhaustive
+    - path: kubeletstatsreceiver
+      linters:
+        - exhaustive
+    - path: nsxtreceiver
+      linters:
+        - exhaustive
+    - path: podmanreceiver
+      linters:
+        - exhaustive
+    - path: prometheusreceiver
+      linters:
+        - exhaustive
+    - path: receivercreator
+      linters:
+        - exhaustive
+    - path: snmpreceiver
+      linters:
+        - exhaustive
+    - path: statsdreceiver
+      linters:
+        - exhaustive
+    - path: attributesprocessor
+      linters:
+        - exhaustive
+    - path: cumulativetodeltaprocessor
+      linters:
+        - exhaustive
+    - path: deltatorateprocessor
+      linters:
+        - exhaustive
+    - path: groupbyattrsprocessor
+      linters:
+        - exhaustive
+    - path: filterprocessor
+      linters:
+        - exhaustive
+    - path: metricsgenerationprocessor
+      linters:
+        - exhaustive
+    - path: metricstransformprocessor
+      linters:
+        - exhaustive
+    - path: probabilisticsamplerprocessor
+      linters:
+        - exhaustive
+    - path: servicegraphprocessor
+      linters:
+        - exhaustive
+    - path: spanprocessor
+      linters:
+        - exhaustive
+    - path: resourcedetectionprocessor
+      linters:
+        - exhaustive
+    - path: tailsamplingprocessor
+      linters:
+        - exhaustive
+    - path: transformprocessor
+      linters:
+        - exhaustive
+    - path: alibabacloudlogserviceexporter
+      linters:
+        - exhaustive
+    - path: awsemfexporter
+      linters:
+        - exhaustive
+    - path: awsxrayexporter
+      linters:
+        - exhaustive
+    - path: azuremonitorexporter
+      linters:
+        - exhaustive
+    - path: azuredataexplorerexporter
+      linters:
+        - exhaustive
+    - path: carbonexporter
+      linters:
+        - exhaustive
+    - path: coralogixexporter
+      linters:
+        - exhaustive
+    - path: clickhouseexporter
+      linters:
+        - exhaustive
+    - path: datasetexporter
+      linters:
+        - exhaustive
+    - path: dynatraceexporter
+      linters:
+        - exhaustive
+    - path: elasticsearchexporter
+      linters:
+        - exhaustive
+    - path: datadogexporter
+      linters:
+        - exhaustive
+    - path: googlecloudpubsubexporter
+      linters:
+        - exhaustive
+    - path: instanaexporter
+      linters:
+        - exhaustive
+    - path: jaegerthrifthttpexporter
+      linters:
+        - exhaustive
+    - path: logzioexporter
+      linters:
+        - exhaustive
+    - path: sentryexporter
+      linters:
+        - exhaustive
+    - path: prometheusexporter
+      linters:
+        - exhaustive
+    - path: prometheusremotewriteexporter
+      linters:
+        - exhaustive
+    - path: sumologicexporter
+      linters:
+        - exhaustive
+    - path: skywalkingexporter
+      linters:
+        - exhaustive
+    - path: splunkhecexporter
+      linters:
+        - exhaustive
+    - path: signalfxexporter
+      linters:
+        - exhaustive
+    - path: tanzuobservabilityexporter
+      linters:
+        - exhaustive
+    - path: k8sobserver
+      linters:
+        - exhaustive
+    - path: countconnector
+      linters:
+        - exhaustive
+    - path: storage
+      linters:
+        - exhaustive
+    - path: containerinsight
+      linters:
+        - exhaustive
+    - path: filter
+      linters:
+        - exhaustive
+    - path: coreinternal
+      linters:
+        - exhaustive
+    - path: k8sconfig
+      linters:
+        - exhaustive
+    - path: pdatatest
+      linters:
+        - exhaustive
+    - path: ottl
+      linters:
+        - exhaustive
+    - path: stanza
+      linters:
+        - exhaustive
+    - path: resourcetotelemetry
+      linters:
+        - exhaustive
+    - path: jaeger
+      linters:
+        - exhaustive
+    - path: prometheus
+      linters:
+        - exhaustive
+    - path: loki
+      linters:
+        - exhaustive
+    - path: opencensus
+      linters:
+        - exhaustive
+    - path: signalfx
+      linters:
+        - exhaustive
+    - path: zipkin
+      linters:
+        - exhaustive
+    - path: mdatagen
+      linters:
+        - exhaustive
+    - path: configschema
+      linters:
+        - exhaustive
+    - path: testbed
+      linters:
+        - exhaustive
