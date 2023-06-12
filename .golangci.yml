@@ -308,12 +308,6 @@ issues:
     - path: k8sobserver
       linters:
         - exhaustive
-    - path: countconnector
-      linters:
-        - exhaustive
-    - path: storage
-      linters:
-        - exhaustive
     - path: containerinsight
       linters:
         - exhaustive
@@ -330,9 +324,6 @@ issues:
       linters:
         - exhaustive
     - path: ottl
-      linters:
-        - exhaustive
-    - path: stanza
       linters:
         - exhaustive
     - path: resourcetotelemetry
