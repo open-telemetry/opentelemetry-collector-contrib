@@ -56,6 +56,10 @@ func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 	}
 	m.sqlclient = sqlclient
 
+	if m.config.MetricsBuilderConfig.Metrics.MysqlLockedConnects.Enabled {
+		m.logger.Warn("`mysql.locked_connects` is deprecated and is going to be set as optional in `v0.81.0` and removed in `v0.82.0`. Please use `mysql.connection.errors` instead")
+	}
+
 	return nil
 }
 

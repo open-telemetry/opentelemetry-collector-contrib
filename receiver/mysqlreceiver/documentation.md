@@ -148,7 +148,7 @@ The total time of I/O wait events for an index.
 
 ### mysql.locked_connects
 
-The number of attempts to connect to locked user accounts.
+[DEPRECATED] The number of attempts to connect to locked user accounts.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
