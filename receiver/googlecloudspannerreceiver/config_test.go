@@ -35,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 120 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			TopMetricsQueryMaxRows:            10,
 			BackfillEnabled:                   true,

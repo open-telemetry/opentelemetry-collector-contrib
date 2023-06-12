@@ -152,20 +152,10 @@ func StandardLogFuncs() map[string]ottl.Factory[ottllog.TransformContext] {
 }
 
 func standardFuncs[K any]() map[string]ottl.Factory[K] {
-	return ottl.CreateFactoryMap(
-		ottlfuncs.NewTraceIDFactory[K](),
-		ottlfuncs.NewSpanIDFactory[K](),
-		ottlfuncs.NewIsMatchFactory[K](),
-		ottlfuncs.NewConcatFactory[K](),
-		ottlfuncs.NewSplitFactory[K](),
-		ottlfuncs.NewIntFactory[K](),
-		ottlfuncs.NewConvertCaseFactory[K](),
-		ottlfuncs.NewSubstringFactory[K](),
-		ottlfuncs.NewLogFactory[K](),
-		ottlfuncs.NewUUIDFactory[K](),
-		ottlfuncs.NewParseJSONFactory[K](),
-		newDropFactory[K](),
-	)
+	m := ottlfuncs.StandardConverters[K]()
+	f := newDropFactory[K]()
+	m[f.Name()] = f
+	return m
 }
 
 func newDropFactory[K any]() ottl.Factory[K] {

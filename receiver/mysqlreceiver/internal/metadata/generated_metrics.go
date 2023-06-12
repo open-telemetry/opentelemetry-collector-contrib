@@ -190,6 +190,9 @@ const (
 	AttributeConnectionErrorPeerAddress
 	AttributeConnectionErrorSelect
 	AttributeConnectionErrorTcpwrap
+	AttributeConnectionErrorAborted
+	AttributeConnectionErrorAbortedClients
+	AttributeConnectionErrorLocked
 )
 
 // String returns the string representation of the AttributeConnectionError.
@@ -207,6 +210,12 @@ func (av AttributeConnectionError) String() string {
 		return "select"
 	case AttributeConnectionErrorTcpwrap:
 		return "tcpwrap"
+	case AttributeConnectionErrorAborted:
+		return "aborted"
+	case AttributeConnectionErrorAbortedClients:
+		return "aborted_clients"
+	case AttributeConnectionErrorLocked:
+		return "locked"
 	}
 	return ""
 }
@@ -219,6 +228,9 @@ var MapAttributeConnectionError = map[string]AttributeConnectionError{
 	"peer_address":    AttributeConnectionErrorPeerAddress,
 	"select":          AttributeConnectionErrorSelect,
 	"tcpwrap":         AttributeConnectionErrorTcpwrap,
+	"aborted":         AttributeConnectionErrorAborted,
+	"aborted_clients": AttributeConnectionErrorAbortedClients,
+	"locked":          AttributeConnectionErrorLocked,
 }
 
 // AttributeConnectionStatus specifies the a value connection_status attribute.
