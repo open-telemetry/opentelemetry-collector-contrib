@@ -148,7 +148,7 @@ Examples:
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -162,7 +162,7 @@ Examples:
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 `mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
@@ -186,7 +186,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
-`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
@@ -200,7 +200,7 @@ Examples:
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
-`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
