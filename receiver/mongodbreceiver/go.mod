@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.79.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.20.1
-	go.mongodb.org/mongo-driver v1.11.4
+	go.mongodb.org/mongo-driver v1.11.7
 	go.opentelemetry.io/collector v0.79.0
 	go.opentelemetry.io/collector/component v0.79.0
 	go.opentelemetry.io/collector/confmap v0.79.0
