@@ -98,7 +98,7 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []component.ID) error {
 
 	consumer, err := r.consumerProvider(pipelineIDs...)
 	if err != nil {
-		return fmt.Errorf("%w: %s", errPipelineNotFound, err)
+		return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 	}
 
 	r.defaultConsumer = consumer
@@ -122,7 +122,7 @@ func (r *router[C]) registerRouteConsumers() error {
 
 		consumer, err := r.consumerProvider(item.Pipelines...)
 		if err != nil {
-			return fmt.Errorf("%w: %s", errPipelineNotFound, err)
+			return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 		}
 		route.consumer = consumer
 
