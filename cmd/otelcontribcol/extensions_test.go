@@ -236,11 +236,15 @@ func TestDefaultExtensions(t *testing.T) {
 			factory := extFactories[tt.extension]
 			assert.Equal(t, tt.extension, factory.Type())
 
-			verifyExtensionShutdown(t, factory, tt.getConfigFn)
-
-			if !tt.skipLifecycle {
+			t.Run("shutdown", func(t *testing.T) {
+				verifyExtensionShutdown(t, factory, tt.getConfigFn)
+			})
+			t.Run("lifecycle", func(t *testing.T) {
+				if tt.skipLifecycle {
+					t.SkipNow()
+				}
 				verifyExtensionLifecycle(t, factory, tt.getConfigFn)
-			}
+			})
 
 		})
 	}
