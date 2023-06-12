@@ -142,13 +142,13 @@ func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
 		}
 		return newBufferedWriteCloser(f), nil
 	}
-	return newBufferedWriteCloser(&lumberjack.Logger{
+	return &lumberjack.Logger{
 		Filename:   cfg.Path,
 		MaxSize:    cfg.Rotation.MaxMegabytes,
 		MaxAge:     cfg.Rotation.MaxDays,
 		MaxBackups: cfg.Rotation.MaxBackups,
 		LocalTime:  cfg.Rotation.LocalTime,
-	}), nil
+	}, nil
 }
 
 // This is the map of already created File exporters for particular configurations.

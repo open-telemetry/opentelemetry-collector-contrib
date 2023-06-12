@@ -285,7 +285,7 @@ func TestConnectionStateChange(t *testing.T) {
 	assert.Equal(t, connectivity.Ready, state)
 }
 
-func TestConnectionReporterEndsOnStopped(t *testing.T) {
+func TestConnectionReporterEndsOnStopped(_ *testing.T) {
 	sr := &mockStateReporter{
 		state: connectivity.Connecting,
 	}

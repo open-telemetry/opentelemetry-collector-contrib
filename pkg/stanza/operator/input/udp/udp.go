@@ -125,7 +125,7 @@ type Input struct {
 }
 
 // Start will start listening for messages on a socket.
-func (u *Input) Start(persister operator.Persister) error {
+func (u *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	u.cancel = cancel
 
@@ -211,7 +211,7 @@ func (u *Input) readMessage() ([]byte, net.Addr, error) {
 	}
 
 	// Remove trailing characters and NULs
-	for ; (n > 0) && (u.buffer[n-1] < 32); n-- {
+	for ; (n > 0) && (u.buffer[n-1] < 32); n-- { // nolint
 	}
 
 	return u.buffer[:n], addr, nil

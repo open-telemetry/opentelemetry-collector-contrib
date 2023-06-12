@@ -29,20 +29,20 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
-	cfg.CollectionInterval = 10 * time.Second
+	cfg.CollectionInterval = 60 * time.Second
+
+	httpSettings := confighttp.NewDefaultHTTPClientSettings()
+	httpSettings.Timeout = 10 * time.Second
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		Method:               "GET",
+		HTTPClientSettings:        httpSettings,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		Method:                    "GET",
 	}
 }
 
-func createMetricsReceiver(ctx context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotHTTPCheck

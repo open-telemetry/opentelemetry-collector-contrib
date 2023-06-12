@@ -25,6 +25,11 @@ The scraping collection interval can be configured.
 
 Default: 1 minute
 
+### Initial delay settings (optional)
+defines how long this receiver waits before starting.
+
+Default: `1s` 
+
 ### Example configuration
 
 ```yaml

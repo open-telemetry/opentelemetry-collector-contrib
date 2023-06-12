@@ -74,7 +74,7 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 	return
 }
 
-func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
+func (hi *HostInfo) GetHostname(_ *zap.Logger) string {
 	if isDefaultHostname(hi.EC2Hostname) {
 		return hi.InstanceID
 	}
@@ -108,7 +108,7 @@ func (p *Provider) fillHostInfo() {
 	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
 }
 
-func (p *Provider) Source(ctx context.Context) (source.Source, error) {
+func (p *Provider) Source(_ context.Context) (source.Source, error) {
 	p.fillHostInfo()
 	if p.hostInfo.InstanceID == "" {
 		return source.Source{}, fmt.Errorf("instance ID is unavailable")

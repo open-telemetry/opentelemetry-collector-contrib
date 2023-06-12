@@ -40,7 +40,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Traces) (receiver.Traces, error) {

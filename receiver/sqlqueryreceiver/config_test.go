@@ -32,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				Driver:     "mydriver",
 				DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
@@ -110,6 +111,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				Driver:     "mydriver",
 				DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",

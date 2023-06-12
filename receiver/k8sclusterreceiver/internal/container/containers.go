@@ -90,13 +90,13 @@ func GetSpecMetrics(c corev1.Container) []*metricspb.Metric {
 		{
 			"request",
 			"Resource requested for the container. " +
-				"See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#resourcerequirements-v1-core for details",
+				"See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details",
 			c.Resources.Requests,
 		},
 		{
 			"limit",
 			"Maximum resource limit set for the container. " +
-				"See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#resourcerequirements-v1-core for details",
+				"See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details",
 			c.Resources.Limits,
 		},
 	} {

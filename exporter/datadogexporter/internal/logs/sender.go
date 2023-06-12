@@ -70,10 +70,7 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		batch = []datadogV2.HTTPLogItem{p}
 		prevtags = tags
 	}
-	if err := s.handleSubmitLog(ctx, batch, tags); err != nil {
-		return err
-	}
-	return nil
+	return s.handleSubmitLog(ctx, batch, tags)
 }
 
 func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogItem, tags string) error {

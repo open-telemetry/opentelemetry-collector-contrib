@@ -232,10 +232,7 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
 		r.settings.Logger.Info("Scrape job added", zap.String("jobName", scrapeConfig.JobName))
 	}
-	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
-		return err
-	}
-	return nil
+	return r.discoveryManager.ApplyConfig(discoveryCfg)
 }
 
 func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component.Host, logger log.Logger) error {

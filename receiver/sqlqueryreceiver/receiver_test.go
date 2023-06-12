@@ -52,6 +52,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			Driver:     "mydriver",
 			DataSource: "my-datasource",

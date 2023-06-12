@@ -88,7 +88,7 @@ func (s *solaceTracesReceiver) Start(_ context.Context, _ component.Host) error 
 }
 
 // Shutdown implements component.Receiver::Shutdown
-func (s *solaceTracesReceiver) Shutdown(ctx context.Context) error {
+func (s *solaceTracesReceiver) Shutdown(_ context.Context) error {
 	s.terminating.Store(true)
 	s.metrics.recordReceiverStatus(receiverStateTerminating)
 	s.settings.Logger.Info("Shutdown waiting for all components to complete")
@@ -247,7 +247,7 @@ flowControlLoop:
 			}
 		} else {
 			// no forward error
-			s.metrics.recordReportedSpans()
+			s.metrics.recordReportedSpans(int64(traces.SpanCount()))
 			break flowControlLoop
 		}
 	}

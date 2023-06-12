@@ -314,5 +314,5 @@ func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error { /
 	return nil
 }
 
-func (queryReceiver *logsQueryReceiver) shutdown(ctx context.Context) {
+func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) {
 }

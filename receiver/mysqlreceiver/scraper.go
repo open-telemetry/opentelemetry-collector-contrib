@@ -47,7 +47,7 @@ func newMySQLScraper(
 }
 
 // start starts the scraper by initializing the db client connection.
-func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
+func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 	sqlclient := newMySQLClient(m.config)
 
 	err := sqlclient.Connect()
@@ -102,7 +102,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeGlobalStats(now, errs)
 
 	// colect replicas status metrics.
-	m.scrapeReplicaStatusStats(now, errs)
+	m.scrapeReplicaStatusStats(now)
 
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
@@ -395,6 +395,10 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlMysqlxConnectionsDataPoint(now, v, metadata.AttributeConnectionStatusClosed))
 		case "Mysqlx_connections_rejected":
 			addPartialIfError(errs, m.mb.RecordMysqlMysqlxConnectionsDataPoint(now, v, metadata.AttributeConnectionStatusRejected))
+
+		// uptime
+		case "Uptime":
+			addPartialIfError(errs, m.mb.RecordMysqlUptimeDataPoint(now, v))
 		}
 	}
 }
@@ -528,11 +532,10 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 	}
 }
 
-func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
 	if err != nil {
-		m.logger.Error("Failed to fetch replica status stats", zap.Error(err))
-		errs.AddPartial(8, err)
+		m.logger.Info("Failed to fetch replica status stats", zap.Error(err))
 		return
 	}
 

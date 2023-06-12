@@ -52,6 +52,7 @@ type opencensusMetrics struct {
 		flowControlRecentRetries       *stats.Int64Measure
 		flowControlTotal               *stats.Int64Measure
 		flowControlSingleSuccess       *stats.Int64Measure
+		droppedEgressSpans             *stats.Int64Measure
 	}
 	views struct {
 		failedReconnections            *view.View
@@ -66,6 +67,7 @@ type opencensusMetrics struct {
 		flowControlRecentRetries       *view.View
 		flowControlTotal               *view.View
 		flowControlSingleSuccess       *view.View
+		droppedEgressSpans             *view.View
 	}
 }
 
@@ -91,6 +93,8 @@ func newOpenCensusMetrics(instanceName string) (*opencensusMetrics, error) {
 	m.stats.flowControlTotal = stats.Int64(prefix+"receiver_flow_control_total", "Number of times the receiver instance became flow controlled", stats.UnitDimensionless)
 	m.stats.flowControlSingleSuccess = stats.Int64(prefix+"receiver_flow_control_with_single_successful_retry", "Number of times the receiver instance became flow controlled and resolved situations after the first retry", stats.UnitDimensionless)
 
+	m.stats.droppedEgressSpans = stats.Int64(prefix+"dropped_egress_spans", "Number of dropped egress spans", stats.UnitDimensionless)
+
 	m.views.failedReconnections = fromMeasure(m.stats.failedReconnections, view.Count())
 	m.views.recoverableUnmarshallingErrors = fromMeasure(m.stats.recoverableUnmarshallingErrors, view.Count())
 	m.views.fatalUnmarshallingErrors = fromMeasure(m.stats.fatalUnmarshallingErrors, view.Count())
@@ -105,6 +109,8 @@ func newOpenCensusMetrics(instanceName string) (*opencensusMetrics, error) {
 	m.views.flowControlTotal = fromMeasure(m.stats.flowControlTotal, view.Count())
 	m.views.flowControlSingleSuccess = fromMeasure(m.stats.flowControlSingleSuccess, view.Count())
 
+	m.views.droppedEgressSpans = fromMeasure(m.stats.droppedEgressSpans, view.Count())
+
 	err := view.Register(
 		m.views.failedReconnections,
 		m.views.recoverableUnmarshallingErrors,
@@ -118,6 +124,7 @@ func newOpenCensusMetrics(instanceName string) (*opencensusMetrics, error) {
 		m.views.flowControlRecentRetries,
 		m.views.flowControlTotal,
 		m.views.flowControlSingleSuccess,
+		m.views.droppedEgressSpans,
 	)
 	if err != nil {
 		return nil, err
@@ -164,8 +171,8 @@ func (m *opencensusMetrics) recordReceivedSpanMessages() {
 }
 
 // recordReportedSpans increments the metric that records the number of spans reported to the next consumer
-func (m *opencensusMetrics) recordReportedSpans() {
-	stats.Record(context.Background(), m.stats.reportedSpans.M(1))
+func (m *opencensusMetrics) recordReportedSpans(amount int64) {
+	stats.Record(context.Background(), m.stats.reportedSpans.M(amount))
 }
 
 // recordReceiverStatus sets the metric that records the current state of the receiver to the given state
@@ -192,4 +199,8 @@ func (m *opencensusMetrics) recordFlowControlTotal() {
 
 func (m *opencensusMetrics) recordFlowControlSingleSuccess() {
 	stats.Record(context.Background(), m.stats.flowControlSingleSuccess.M(1))
+}
+
+func (m *opencensusMetrics) recordDroppedEgressSpan() {
+	stats.Record(context.Background(), m.stats.droppedEgressSpans.M(1))
 }

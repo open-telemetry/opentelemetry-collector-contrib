@@ -31,6 +31,7 @@ The following configuration options are supported:
   * `db` (required if enabled) Name of the InfluxDB database to which signals will be written
   * `username` (optional) Basic auth username for authenticating with InfluxDB v1.x
   * `password` (optional) Basic auth password for authenticating with InfluxDB v1.x
+* `span_dimensions` (default = service.name, span.name) Span attributes to use as dimensions (InfluxDB tags)
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
   * `telegraf-prometheus-v1`
   * `telegraf-prometheus-v2`
@@ -55,6 +56,9 @@ exporters:
     org: my-org
     bucket: my-bucket
     token: my-token
+    span_dimensions:
+    - service.name
+    - span.name
     metrics_schema: telegraf-prometheus-v1
 
     sending_queue:

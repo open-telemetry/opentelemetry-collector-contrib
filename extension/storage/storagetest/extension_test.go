@@ -84,9 +84,9 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 	// Perform some additional operations
 	set := storage.SetOperation("foo3", []byte("bar3"))
 	get := storage.GetOperation("foo3")
-	delete := storage.DeleteOperation("foo3")
+	deleteOp := storage.DeleteOperation("foo3")
 	getNil := storage.GetOperation("foo3")
-	require.NoError(t, clientTwo.Batch(ctx, set, get, delete, getNil))
+	require.NoError(t, clientTwo.Batch(ctx, set, get, deleteOp, getNil))
 	require.Equal(t, get.Value, []byte("bar3"))
 	require.Nil(t, getNil.Value)
 

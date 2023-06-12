@@ -45,18 +45,18 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 	if cfg.TLS != nil {
 		tlsCfg, err = cfg.TLS.LoadTLSConfig()
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err)
+			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error())
 		}
 	}
 
 	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err)
+		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err.Error())
 	}
 
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errBadPort, err)
+		return nil, fmt.Errorf("%w: %s", errBadPort, err.Error())
 	}
 
 	ashost := as.NewHost(host, int(port))
@@ -109,7 +109,7 @@ func (r *aerospikeReceiver) shutdown(_ context.Context) error {
 
 // scrape scrapes both Node and Namespace metrics from the provided Aerospike node.
 // If CollectClusterMetrics is true, it then scrapes every discovered node
-func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (r *aerospikeReceiver) scrape(_ context.Context) (pmetric.Metrics, error) {
 	r.logger.Debug("beginning scrape")
 	errs := &scrapererror.ScrapeErrors{}
 

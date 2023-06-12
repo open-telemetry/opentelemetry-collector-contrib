@@ -22,24 +22,24 @@ type mockExporter struct {
 	rms []*metricdata.ResourceMetrics
 }
 
-func (m *mockExporter) Temporality(kind sdkmetric.InstrumentKind) metricdata.Temporality {
+func (m *mockExporter) Temporality(_ sdkmetric.InstrumentKind) metricdata.Temporality {
 	return metricdata.DeltaTemporality
 }
 
-func (m *mockExporter) Aggregation(kind sdkmetric.InstrumentKind) aggregation.Aggregation {
+func (m *mockExporter) Aggregation(_ sdkmetric.InstrumentKind) aggregation.Aggregation {
 	return aggregation.Default{}
 }
 
-func (m *mockExporter) Export(ctx context.Context, metrics *metricdata.ResourceMetrics) error {
+func (m *mockExporter) Export(_ context.Context, metrics *metricdata.ResourceMetrics) error {
 	m.rms = append(m.rms, metrics)
 	return nil
 }
 
-func (m *mockExporter) ForceFlush(ctx context.Context) error {
+func (m *mockExporter) ForceFlush(_ context.Context) error {
 	return nil
 }
 
-func (m *mockExporter) Shutdown(ctx context.Context) error {
+func (m *mockExporter) Shutdown(_ context.Context) error {
 	return nil
 }
 

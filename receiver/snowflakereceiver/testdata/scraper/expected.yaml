@@ -11,24 +11,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 8
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -41,24 +41,24 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -83,24 +83,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 10
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -113,24 +113,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 9
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -143,24 +143,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 7
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -185,24 +185,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 6
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -239,24 +239,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 2
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -269,24 +269,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 4
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -299,24 +299,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 3
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g
@@ -345,24 +345,24 @@ resourceMetrics:
               dataPoints:
                 - asDouble: 5
                   attributes:
-                    - key: schema_name
-                      value:
-                        stringValue: a
-                    - key: execution_status
-                      value:
-                        stringValue: b
-                    - key: error_message
-                      value:
-                        stringValue: c
-                    - key: query_type
-                      value:
-                        stringValue: d
-                    - key: warehouse_name
-                      value:
-                        stringValue: e
                     - key: database_name
                       value:
                         stringValue: f
+                    - key: error_message
+                      value:
+                        stringValue: c
+                    - key: execution_status
+                      value:
+                        stringValue: b
+                    - key: query_type
+                      value:
+                        stringValue: d
+                    - key: schema_name
+                      value:
+                        stringValue: a
+                    - key: warehouse_name
+                      value:
+                        stringValue: e
                     - key: warehouse_size
                       value:
                         stringValue: g

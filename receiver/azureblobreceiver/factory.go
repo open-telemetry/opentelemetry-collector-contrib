@@ -50,7 +50,7 @@ func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 }
 
 func (f *blobReceiverFactory) createLogsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
@@ -69,7 +69,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 }
 
 func (f *blobReceiverFactory) createTracesReceiver(
-	ctx context.Context,
+	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
