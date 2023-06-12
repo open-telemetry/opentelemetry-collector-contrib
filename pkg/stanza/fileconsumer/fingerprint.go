@@ -11,16 +11,23 @@ import (
 	"os"
 )
 
+// Deprecated: This will be made internal in a future release.
 const DefaultFingerprintSize = 1000 // bytes
-const MinFingerprintSize = 16       // bytes
+
+// Deprecated: This will be made internal in a future release.
+const MinFingerprintSize = 16 // bytes
 
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
+//
+// Deprecated: This will be made internal in a future release.
 type Fingerprint struct {
 	FirstBytes []byte
 }
 
 // NewFingerprint creates a new fingerprint from an open file
+//
+// Deprecated: This will be made internal in a future release.
 func NewFingerprint(file *os.File, size int) (*Fingerprint, error) {
 	buf := make([]byte, size)
 

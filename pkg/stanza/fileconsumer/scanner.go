@@ -14,12 +14,16 @@ import (
 const defaultBufSize = 16 * 1024
 
 // PositionalScanner is a scanner that maintains position
+//
+// Deprecated: This will be made internal in a future release.
 type PositionalScanner struct {
 	pos int64
 	*bufio.Scanner
 }
 
 // NewPositionalScanner creates a new positional scanner
+//
+// Deprecated: This will be made internal in a future release.
 func NewPositionalScanner(r io.Reader, maxLogSize int, startOffset int64, splitFunc bufio.SplitFunc) *PositionalScanner {
 	ps := &PositionalScanner{
 		pos:     startOffset,
