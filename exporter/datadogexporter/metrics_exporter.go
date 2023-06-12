@@ -8,11 +8,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/api"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -36,6 +39,7 @@ type metricsExporter struct {
 	ctx            context.Context
 	client         *zorkian.Client
 	metricsAPI     *datadogV2.MetricsApi
+	metricsAPIV1   *datadogV1.MetricsApi
 	tr             *otlpmetrics.Translator
 	scrubber       scrub.Scrubber
 	retrier        *clientutil.Retrier
@@ -113,6 +117,7 @@ func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg
 			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
+		exporter.metricsAPIV1 = datadogV1.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
@@ -204,6 +209,38 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	if isMetricExportV2Enabled() {
 		var ms []datadogV2.MetricSeries
 		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
+		for _, m := range ms {
+			if strings.HasPrefix(m.Metric, "runtime.python") {
+				fmt.Println("SUBMITTING DISTRIBUTION POINTS")
+				var item [][]datadogV1.DistributionPointItem
+				for _, point := range m.Points {
+					ts := float64(*point.Timestamp)
+					item = append(item, []datadogV1.DistributionPointItem{
+						{DistributionPointTimestamp: &ts},
+						{DistributionPointData: &[]float64{
+							*point.Value,
+						}},
+					})
+				}
+				body := datadogV1.DistributionPointsPayload{
+					Series: []datadogV1.DistributionPointsSeries{
+						{
+							Metric: m.Metric + ".test",
+							Points: item,
+						},
+					},
+					UnparsedObject:       nil,
+					AdditionalProperties: nil,
+				}
+				ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+				resp, r, err := exp.metricsAPIV1.SubmitDistributionPoints(ctx, body)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error when calling `MetricsApi.SubmitDistributionPoints`: %v\n", err)
+					fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+				}
+				fmt.Printf("RESPONSE: %v", resp)
+			}
+		}
 		ms = metrics.PrepareSystemMetrics(ms)
 		ms = metrics.PrepareContainerMetrics(ms)
 
