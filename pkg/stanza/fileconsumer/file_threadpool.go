@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ReaderWrapper struct {
+type readerWrapper struct {
 	reader *Reader
 	fp     *Fingerprint
 }
