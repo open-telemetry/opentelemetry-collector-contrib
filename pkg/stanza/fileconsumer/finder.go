@@ -14,7 +14,7 @@ type Finder struct {
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
 //
-// Deprecated: This will be made internal in a future release.
+// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
 func (f Finder) FindFiles() []string {
 	all := make([]string, 0, len(f.Include))
 	for _, include := range f.Include {
