@@ -35,6 +35,15 @@ func (f *fakeJournaldCmd) StdoutPipe() (io.ReadCloser, error) {
 	return io.NopCloser(reader), nil
 }
 
+func (f *fakeJournaldCmd) StderrPipe() (io.ReadCloser, error) {
+	reader := bytes.NewReader([]byte{})
+	return io.NopCloser(reader), nil
+}
+
+func (f *fakeJournaldCmd) Wait() error {
+	return nil
+}
+
 func TestInputJournald(t *testing.T) {
 	cfg := NewConfigWithID("my_journald_input")
 	cfg.OutputIDs = []string{"output"}

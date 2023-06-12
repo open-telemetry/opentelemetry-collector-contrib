@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -190,7 +191,9 @@ type Input struct {
 
 type cmd interface {
 	StdoutPipe() (io.ReadCloser, error)
+	StderrPipe() (io.ReadCloser, error)
 	Start() error
+	Wait() error
 }
 
 var lastReadCursorKey = "lastReadCursor"
@@ -214,10 +217,52 @@ func (operator *Input) Start(persister operator.Persister) error {
 	if err != nil {
 		return fmt.Errorf("failed to get journalctl stdout: %w", err)
 	}
+	stderr, err := journal.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get journalctl stderr: %w", err)
+	}
 	err = journal.Start()
 	if err != nil {
 		return fmt.Errorf("start journalctl: %w", err)
 	}
+
+	stderrChan := make(chan string)
+
+	// Start the wait goroutine
+	operator.wg.Add(1)
+	go func() {
+		defer operator.wg.Done()
+		err := journal.Wait()
+		message := <-stderrChan
+
+		if err != nil {
+			ee := (&exec.ExitError{})
+			if ok := errors.As(err, &ee); ok {
+				operator.Logger().Errorw("journalctl command failed", "error", ee.Error(), "output", message)
+			}
+		}
+	}()
+
+	// Start the stderr reader goroutine
+	operator.wg.Add(1)
+	go func() {
+		defer operator.wg.Done()
+
+		stderrBuf := bufio.NewReader(stderr)
+		messages := []string{}
+
+		for {
+			line, err := stderrBuf.ReadBytes('\n')
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					operator.Errorw("Received error reading from journalctl stderr", zap.Error(err))
+				}
+				stderrChan <- strings.Join(messages, "\n")
+				return
+			}
+			messages = append(messages, string(line))
+		}
+	}()
 
 	// Start the reader goroutine
 	operator.wg.Add(1)
