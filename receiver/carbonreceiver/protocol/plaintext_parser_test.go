@@ -180,20 +180,17 @@ func buildIntMetric(
 ) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName(name)
+	var dp pmetric.NumberDataPoint
 	if typ == CumulativeMetricType {
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		dp := sum.DataPoints().AppendEmpty()
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
-		attributes.CopyTo(dp.Attributes())
-		dp.SetIntValue(value)
+		dp = sum.DataPoints().AppendEmpty()
 	} else {
-		g := m.SetEmptyGauge()
-		dp := g.DataPoints().AppendEmpty()
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
-		attributes.CopyTo(dp.Attributes())
-		dp.SetIntValue(value)
+		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	}
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
+	attributes.CopyTo(dp.Attributes())
+	dp.SetIntValue(value)
 	return m
 }
 
@@ -206,19 +203,16 @@ func buildDoubleMetric(
 ) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName(name)
+	var dp pmetric.NumberDataPoint
 	if typ == CumulativeMetricType {
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		dp := sum.DataPoints().AppendEmpty()
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
-		_ = dp.Attributes().FromRaw(attributes)
-		dp.SetDoubleValue(value)
+		dp = sum.DataPoints().AppendEmpty()
 	} else {
-		g := m.SetEmptyGauge()
-		dp := g.DataPoints().AppendEmpty()
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
-		_ = dp.Attributes().FromRaw(attributes)
-		dp.SetDoubleValue(value)
+		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	}
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
+	_ = dp.Attributes().FromRaw(attributes)
+	dp.SetDoubleValue(value)
 	return m
 }

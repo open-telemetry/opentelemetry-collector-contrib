@@ -120,20 +120,14 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 
 	m := pmetric.NewMetric()
 	m.SetName(parsedPath.MetricName)
+	var dp pmetric.NumberDataPoint
 	if parsedPath.MetricType == CumulativeMetricType {
 		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		dp := sum.DataPoints().AppendEmpty()
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(unixTime, 0)))
-		if errIsFloat != nil {
-			dp.SetDoubleValue(dblVal)
-		} else {
-			dp.SetIntValue(intVal)
-		}
-		parsedPath.Attributes.CopyTo(dp.Attributes())
-		return m, nil
+		dp = sum.DataPoints().AppendEmpty()
+	} else {
+		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	}
-	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(unixTime, 0)))
 	if errIsFloat != nil {
 		dp.SetDoubleValue(dblVal)
