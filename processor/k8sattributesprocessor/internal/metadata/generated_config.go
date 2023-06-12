@@ -38,10 +38,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		ContainerImageName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerImageTag: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: false,

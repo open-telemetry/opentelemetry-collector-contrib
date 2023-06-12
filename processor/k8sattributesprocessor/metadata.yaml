@@ -87,8 +87,8 @@ resource_attributes:
   container.image.name:
     description: Name of the image the container was built on. Requires container.id or k8s.container.name.
     type: string
-    enabled: false
+    enabled: true
   container.image.tag:
     description: Container image tag. Requires container.id or k8s.container.name.
     type: string
-    enabled: false
+    enabled: true
