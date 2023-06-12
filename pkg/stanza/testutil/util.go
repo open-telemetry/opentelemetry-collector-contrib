@@ -26,20 +26,20 @@ type mockPersister struct {
 	dataMux sync.Mutex
 }
 
-func (p *mockPersister) Get(ctx context.Context, k string) ([]byte, error) {
+func (p *mockPersister) Get(_ context.Context, k string) ([]byte, error) {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
 	return p.data[k], nil
 }
 
-func (p *mockPersister) Set(ctx context.Context, k string, v []byte) error {
+func (p *mockPersister) Set(_ context.Context, k string, v []byte) error {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
 	p.data[k] = v
 	return nil
 }
 
-func (p *mockPersister) Delete(ctx context.Context, k string) error {
+func (p *mockPersister) Delete(_ context.Context, k string) error {
 	p.dataMux.Lock()
 	defer p.dataMux.Unlock()
 	delete(p.data, k)

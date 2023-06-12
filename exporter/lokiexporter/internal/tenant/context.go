@@ -17,7 +17,7 @@ type ContextTenantSource struct {
 	Key string
 }
 
-func (ts *ContextTenantSource) GetTenant(ctx context.Context, logs plog.Logs) (string, error) {
+func (ts *ContextTenantSource) GetTenant(ctx context.Context, _ plog.Logs) (string, error) {
 	cl := client.FromContext(ctx)
 	ss := cl.Metadata.Get(ts.Key)
 

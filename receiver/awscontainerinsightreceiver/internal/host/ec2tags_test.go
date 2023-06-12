@@ -28,8 +28,8 @@ type mockEC2TagsClient struct {
 	containerOrchestrator string
 }
 
-func (m *mockEC2TagsClient) DescribeTagsWithContext(ctx context.Context, input *ec2.DescribeTagsInput,
-	opts ...request.Option) (*ec2.DescribeTagsOutput, error) {
+func (m *mockEC2TagsClient) DescribeTagsWithContext(_ context.Context, _ *ec2.DescribeTagsInput,
+	_ ...request.Option) (*ec2.DescribeTagsOutput, error) {
 	m.count++
 	if m.count == 1 {
 		return &ec2.DescribeTagsOutput{}, errors.New("error")

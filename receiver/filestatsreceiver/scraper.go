@@ -25,7 +25,7 @@ type scraper struct {
 	metricsBuilder *metadata.MetricsBuilder
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	matches, err := doublestar.FilepathGlob(s.include)
 	if err != nil {
 		return pmetric.NewMetrics(), err

@@ -91,15 +91,15 @@ func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 type mockEventBroadcaster struct {
 }
 
-func (m *mockEventBroadcaster) StartRecordingToSink(sink record.EventSink) watch.Interface {
+func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) StartLogging(logf func(format string, args ...interface{})) watch.Interface {
+func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...interface{})) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder {
+func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorder {
 	return record.NewFakeRecorder(100)
 }
 

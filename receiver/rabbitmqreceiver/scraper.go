@@ -56,7 +56,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
-func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) (err error) {
+func (r *rabbitmqScraper) start(_ context.Context, host component.Host) (err error) {
 	r.client, err = newClient(r.cfg, host, r.settings, r.logger)
 	return
 }

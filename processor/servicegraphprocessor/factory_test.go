@@ -79,7 +79,7 @@ func TestNewConnector(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			factory := NewConnectorFactory()
+			factory := newConnectorFactory()
 
 			creationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)

@@ -60,7 +60,10 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.yaml"))
 	require.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	)
 	require.NoError(t, err)
 }
 
@@ -128,7 +131,7 @@ func TestStartBadUrl(t *testing.T) {
 	require.Nil(t, scraper.client)
 }
 
-func TestScraperRecordNoStat(t *testing.T) {
+func TestScraperRecordNoStat(_ *testing.T) {
 	scraper := newScraper(
 		&Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{

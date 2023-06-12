@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package countconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 
 import (
@@ -10,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -20,19 +23,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
-const (
-	typeStr   = "count"
-	stability = component.StabilityLevelDevelopment
-)
-
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelDevelopment),
-		connector.WithLogsToMetrics(createLogsToMetrics, component.StabilityLevelDevelopment),
+		connector.WithTracesToMetrics(createTracesToMetrics, metadata.TracesToMetricsStability),
+		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		connector.WithLogsToMetrics(createLogsToMetrics, metadata.LogsToMetricsStability),
 	)
 }
 

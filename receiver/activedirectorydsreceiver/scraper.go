@@ -251,6 +251,6 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	return pmetric.Metrics(a.mb.Emit()), nil
 }
 
-func (a *activeDirectoryDSScraper) shutdown(ctx context.Context) error {
+func (a *activeDirectoryDSScraper) shutdown(_ context.Context) error {
 	return a.w.Close()
 }

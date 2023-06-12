@@ -39,7 +39,7 @@ func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (inter
 	return &detector{logger: set.Logger}, nil
 }
 
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)

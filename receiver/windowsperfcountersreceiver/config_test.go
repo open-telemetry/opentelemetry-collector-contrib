@@ -61,6 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 30 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -99,6 +100,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -113,6 +115,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -134,6 +137,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -158,6 +162,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{

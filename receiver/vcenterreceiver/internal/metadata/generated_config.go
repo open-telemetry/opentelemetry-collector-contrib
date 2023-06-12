@@ -60,6 +60,7 @@ type MetricsConfig struct {
 	VcenterVMMemorySwapped          MetricConfig `mapstructure:"vcenter.vm.memory.swapped"`
 	VcenterVMMemorySwappedSsd       MetricConfig `mapstructure:"vcenter.vm.memory.swapped_ssd"`
 	VcenterVMMemoryUsage            MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
+	VcenterVMMemoryUtilization      MetricConfig `mapstructure:"vcenter.vm.memory.utilization"`
 	VcenterVMNetworkPacketCount     MetricConfig `mapstructure:"vcenter.vm.network.packet.count"`
 	VcenterVMNetworkThroughput      MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage           MetricConfig `mapstructure:"vcenter.vm.network.usage"`
@@ -171,6 +172,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterVMMemoryUsage: MetricConfig{
 			Enabled: true,
+		},
+		VcenterVMMemoryUtilization: MetricConfig{
+			Enabled: false,
 		},
 		VcenterVMNetworkPacketCount: MetricConfig{
 			Enabled: true,

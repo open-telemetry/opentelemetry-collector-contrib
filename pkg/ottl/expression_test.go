@@ -612,17 +612,17 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 	}
 }
 
-func Test_StandardTypeGetter(t *testing.T) {
+func Test_StandardStringGetter(t *testing.T) {
 	tests := []struct {
 		name             string
-		getter           StandardTypeGetter[interface{}, string]
+		getter           StandardStringGetter[interface{}]
 		want             interface{}
 		valid            bool
 		expectedErrorMsg string
 	}{
 		{
-			name: "Correct type",
-			getter: StandardTypeGetter[interface{}, string]{
+			name: "string type",
+			getter: StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "str", nil
 				},
@@ -631,8 +631,18 @@ func Test_StandardTypeGetter(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "ValueTypeString type",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueStr("str"), nil
+				},
+			},
+			want:  "str",
+			valid: true,
+		},
+		{
 			name: "Incorrect type",
-			getter: StandardTypeGetter[interface{}, string]{
+			getter: StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return true, nil
 				},
@@ -642,7 +652,7 @@ func Test_StandardTypeGetter(t *testing.T) {
 		},
 		{
 			name: "nil",
-			getter: StandardTypeGetter[interface{}, string]{
+			getter: StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return nil, nil
 				},
@@ -659,10 +669,24 @@ func Test_StandardTypeGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardStringGetter_WrappedError(t *testing.T) {
+	getter := StandardStringGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardStringLikeGetter(t *testing.T) {
@@ -792,10 +816,101 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardStringLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
+func Test_StandardFloatGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardFloatGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "float64 type",
+			getter: StandardFloatGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1.1, nil
+				},
+			},
+			want:  1.1,
+			valid: true,
+		},
+		{
+			name: "ValueTypeFloat type",
+			getter: StandardFloatGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueDouble(1.1), nil
+				},
+			},
+			want:  1.1,
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardFloatGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected float64 but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardFloatGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected float64 but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardFloatGetter_WrappedError(t *testing.T) {
+	getter := StandardFloatGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardFloatLikeGetter(t *testing.T) {
@@ -955,10 +1070,101 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardFloatLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
+func Test_StandardIntGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardIntGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "int64 type",
+			getter: StandardIntGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return int64(1), nil
+				},
+			},
+			want:  int64(1),
+			valid: true,
+		},
+		{
+			name: "ValueTypeInt type",
+			getter: StandardIntGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueInt(1), nil
+				},
+			},
+			want:  int64(1),
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardIntGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected int64 but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardIntGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected int64 but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardIntGetter_WrappedError(t *testing.T) {
+	getter := StandardIntGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardIntLikeGetter(t *testing.T) {
@@ -1118,8 +1324,109 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardIntLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
+func Test_StandardPMapGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardPMapGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "pcommon.map type",
+			getter: StandardPMapGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewMap(), nil
+				},
+			},
+			want:  pcommon.NewMap(),
+			valid: true,
+		},
+		{
+			name: "map[string]any type",
+			getter: StandardPMapGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return make(map[string]any), nil
+				},
+			},
+			want:  pcommon.NewMap(),
+			valid: true,
+		},
+		{
+			name: "ValueTypeMap type",
+			getter: StandardPMapGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return pcommon.NewValueMap(), nil
+				},
+			},
+			want:  pcommon.NewMap(),
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardPMapGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Map but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardPMapGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected pcommon.Map but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardPMapGetter_WrappedError(t *testing.T) {
+	getter := StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }

@@ -51,7 +51,7 @@ func (c *Config) Validate() error {
 
 	host, portStr, err := net.SplitHostPort(c.Endpoint)
 	if err != nil {
-		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err))
+		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err.Error()))
 	}
 
 	if host == "" {
@@ -60,7 +60,7 @@ func (c *Config) Validate() error {
 
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadPort, err))
+		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadPort, err.Error()))
 	}
 
 	if port < 0 || port > 65535 {
@@ -81,7 +81,7 @@ func (c *Config) Validate() error {
 	if c.TLS != nil {
 		_, err := c.TLS.LoadTLSConfig()
 		if err != nil {
-			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err))
+			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error()))
 		}
 	}
 

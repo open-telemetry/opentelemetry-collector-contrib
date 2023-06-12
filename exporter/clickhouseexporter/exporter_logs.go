@@ -46,10 +46,7 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	if err := createLogsTable(ctx, e.cfg, e.client); err != nil {
-		return err
-	}
-	return nil
+	return createLogsTable(ctx, e.cfg, e.client)
 }
 
 // shutdown will shut down the exporter.
@@ -104,7 +101,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
 }

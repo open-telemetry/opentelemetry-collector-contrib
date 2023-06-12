@@ -29,6 +29,7 @@ The following settings are required:
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `timeout` (default = `5s`): The maximum amount of time to wait for Podman API responses.
 
 Example:
@@ -39,6 +40,7 @@ receivers:
     endpoint: unix://run/podman/podman.sock
     timeout: 10s
     collection_interval: 10s
+    initial_delay: 1s
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
