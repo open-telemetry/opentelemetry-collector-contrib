@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/pr
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.277
+	github.com/aws/aws-sdk-go v1.44.281
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.79.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.79.0
