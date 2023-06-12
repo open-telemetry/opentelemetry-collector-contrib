@@ -65,11 +65,11 @@ func (c *MockCgroupScanner) getMemReserved() int64 {
 	return c.memReserved
 }
 
-func (c *MockCgroupScanner) getCPUReservedInTask(taskID string, clusterName string) int64 {
+func (c *MockCgroupScanner) getCPUReservedInTask(_ string, _ string) int64 {
 	return int64(10)
 }
 
-func (c *MockCgroupScanner) getMEMReservedInTask(taskID string, clusterName string, containers []ECSContainer) int64 {
+func (c *MockCgroupScanner) getMEMReservedInTask(_ string, _ string, _ []ECSContainer) int64 {
 	return int64(512)
 }
 

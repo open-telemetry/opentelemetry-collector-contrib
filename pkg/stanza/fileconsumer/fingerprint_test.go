@@ -23,7 +23,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestManagerWithOptions(t, cfg)
+	operator, _ := buildTestManager(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
 
@@ -119,7 +119,7 @@ func TestNewFingerprint(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			operator, _ := buildTestManagerWithOptions(t, cfg)
+			operator, _ := buildTestManager(t, cfg)
 
 			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
 
@@ -154,22 +154,22 @@ func TestFingerprintCopy(t *testing.T) {
 	for _, tc := range cases {
 		fp := &Fingerprint{FirstBytes: []byte(tc)}
 
-		copy := fp.Copy()
+		cp := fp.Copy()
 
 		// Did not change original
 		require.Equal(t, tc, string(fp.FirstBytes))
 
 		// Copy is also good
-		require.Equal(t, tc, string(copy.FirstBytes))
+		require.Equal(t, tc, string(cp.FirstBytes))
 
 		// Modify copy
-		copy.FirstBytes = append(copy.FirstBytes, []byte("also")...)
+		cp.FirstBytes = append(cp.FirstBytes, []byte("also")...)
 
 		// Still did not change original
 		require.Equal(t, tc, string(fp.FirstBytes))
 
 		// Copy is modified
-		require.Equal(t, tc+"also", string(copy.FirstBytes))
+		require.Equal(t, tc+"also", string(cp.FirstBytes))
 	}
 }
 
@@ -226,7 +226,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestManagerWithOptions(t, cfg)
+	operator, _ := buildTestManager(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize *= 10
 

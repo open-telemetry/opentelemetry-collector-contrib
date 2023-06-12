@@ -165,14 +165,14 @@ type mockingestor struct {
 	records []string
 }
 
-func (m *mockingestor) FromReader(ctx context.Context, reader io.Reader, options ...ingest.FileOption) (*ingest.Result, error) {
+func (m *mockingestor) FromReader(_ context.Context, reader io.Reader, _ ...ingest.FileOption) (*ingest.Result, error) {
 	bufbytes, _ := io.ReadAll(reader)
 	metricjson := string(bufbytes)
 	m.SetRecords(strings.Split(metricjson, "\n"))
 	return &ingest.Result{}, nil
 }
 
-func (m *mockingestor) FromFile(ctx context.Context, fPath string, options ...ingest.FileOption) (*ingest.Result, error) {
+func (m *mockingestor) FromFile(_ context.Context, _ string, _ ...ingest.FileOption) (*ingest.Result, error) {
 	return &ingest.Result{}, nil
 }
 

@@ -4,7 +4,6 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -20,6 +19,15 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
+			desc: "missing endpoint",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{},
+			},
+			expectedErr: multierr.Combine(
+				errMissingEndpoint,
+			),
+		},
+		{
 			desc: "invalid endpoint",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -27,14 +35,14 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: multierr.Combine(
-				fmt.Errorf("%s: %w", errInvalidEndpoint, errors.New(`parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
 		},
 		{
 			desc: "valid config",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: defaultEndpoint,
+					Endpoint: "https://opentelemetry.io",
 				},
 			},
 			expectedErr: nil,

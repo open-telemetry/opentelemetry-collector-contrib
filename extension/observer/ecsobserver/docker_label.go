@@ -78,7 +78,7 @@ func (d *dockerLabelMatcher) matcherType() matcherType {
 // MatchTargets first checks the port label to find the expected port value.
 // Then it checks if that port is specified in container definition.
 // It only returns match target when both conditions are met.
-func (d *dockerLabelMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
+func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	portLabel := d.cfg.PortLabel
 
 	// Only check port label

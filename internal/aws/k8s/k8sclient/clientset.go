@@ -4,6 +4,7 @@
 package k8sclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -65,7 +66,7 @@ type reflectorSyncChecker struct {
 }
 
 func (r *reflectorSyncChecker) Check(reflector cacheReflector, warnMessage string) {
-	if err := wait.Poll(r.pollInterval, r.pollTimeout, func() (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(context.Background(), r.pollInterval, r.pollTimeout, false, func(context.Context) (done bool, err error) {
 		return reflector.LastSyncResourceVersion() != "", nil
 	}); err != nil {
 		r.logger.Warn(warnMessage, zap.Error(err))

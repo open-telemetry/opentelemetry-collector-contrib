@@ -198,7 +198,7 @@ func buildLabels(tags string) (keys []*metricspb.LabelKey, values []*metricspb.L
 		} else {
 			// Skip until space.
 			i := 0
-			for ; i < len(rest) && rest[i] != ' '; i++ {
+			for ; i < len(rest) && rest[i] != ' '; i++ { // nolint
 			}
 			value = rest[:i]
 			tagLen += i

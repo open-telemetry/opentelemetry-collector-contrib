@@ -82,7 +82,7 @@ func parseCreateDatabaseSQL(cfg *Config) string {
 	return fmt.Sprintf(createDatabaseSQL, cfg.Keyspace, cfg.Replication.Class, cfg.Replication.ReplicationFactor)
 }
 
-func (e *tracesExporter) Start(ctx context.Context, host component.Host) error {
+func (e *tracesExporter) Start(_ context.Context, _ component.Host) error {
 	initializeErr := initializeTraceKernel(e.cfg)
 	return initializeErr
 }

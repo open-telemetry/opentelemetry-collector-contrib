@@ -1,9 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build windows
-// +build windows
-
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
@@ -19,7 +16,7 @@ type EventRaw struct {
 	TimeCreated   TimeCreated `xml:"System>TimeCreated"`
 	RenderedLevel string      `xml:"RenderingInfo>Level"`
 	Level         string      `xml:"System>Level"`
-	bytes         []byte
+	Body          string      `xml:"-"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -65,8 +62,8 @@ func (e *EventRaw) parseSeverity() entry.Severity {
 }
 
 // parseBody will parse a body from the event.
-func (e *EventRaw) parseBody() []byte {
-	return e.bytes
+func (e *EventRaw) parseBody() string {
+	return e.Body
 }
 
 // unmarshalEventRaw will unmarshal EventRaw from xml bytes.
@@ -75,6 +72,6 @@ func unmarshalEventRaw(bytes []byte) (EventRaw, error) {
 	if err := xml.Unmarshal(bytes, &eventRaw); err != nil {
 		return EventRaw{}, fmt.Errorf("failed to unmarshal xml bytes into event: %w (%s)", err, string(bytes))
 	}
-	eventRaw.bytes = bytes
+	eventRaw.Body = string(bytes)
 	return eventRaw, nil
 }

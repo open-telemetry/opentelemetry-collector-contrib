@@ -29,8 +29,8 @@ type prometheusReceiverWrapper struct {
 	prometheusRecever receiver.Metrics
 }
 
-// new returns a prometheusReceiverWrapper
-func new(params receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
+// newPrometheusReceiverWrapper returns a prometheusReceiverWrapper
+func newPrometheusReceiverWrapper(params receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
 	return &prometheusReceiverWrapper{params: params, config: cfg, consumer: consumer}
 }
 

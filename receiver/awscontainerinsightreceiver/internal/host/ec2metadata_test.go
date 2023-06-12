@@ -19,7 +19,7 @@ type mockMetadataClient struct {
 	count int
 }
 
-func (m *mockMetadataClient) GetInstanceIdentityDocumentWithContext(ctx context.Context) (awsec2metadata.EC2InstanceIdentityDocument, error) {
+func (m *mockMetadataClient) GetInstanceIdentityDocumentWithContext(_ context.Context) (awsec2metadata.EC2InstanceIdentityDocument, error) {
 	m.count++
 	if m.count == 1 {
 		return awsec2metadata.EC2InstanceIdentityDocument{}, errors.New("error")

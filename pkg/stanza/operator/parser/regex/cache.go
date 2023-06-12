@@ -95,15 +95,15 @@ func (m *memoryCache) add(key string, data interface{}) bool {
 
 // copy returns a deep copy of the cache
 func (m *memoryCache) copy() map[string]interface{} {
-	copy := make(map[string]interface{}, cap(m.keys))
+	cp := make(map[string]interface{}, cap(m.keys))
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
 	for k, v := range m.cache {
-		copy[k] = v
+		cp[k] = v
 	}
-	return copy
+	return cp
 }
 
 // maxSize returns the max size of the cache

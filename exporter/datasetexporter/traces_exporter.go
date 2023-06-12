@@ -245,8 +245,7 @@ func buildEventsFromTraces(ld ptrace.Traces, tracker *spanTracker) []*add_events
 	return events
 }
 
-func (e *DatasetExporter) consumeTraces(ctx context.Context, ld ptrace.Traces) error {
-
+func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
 	return sendBatch(buildEventsFromTraces(ld, e.spanTracker), e.client)
 }
 

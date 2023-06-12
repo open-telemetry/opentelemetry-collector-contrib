@@ -42,14 +42,11 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	internal.SetLogger(e.logger)
-	if err := internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.TTLDays, e.client); err != nil {
-		return err
-	}
-	return nil
+	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.TTLDays, e.client)
 }
 
 // shutdown will shut down the exporter.
-func (e *metricsExporter) shutdown(ctx context.Context) error {
+func (e *metricsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -89,8 +86,5 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		}
 	}
 	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-	if err := internal.InsertMetrics(ctx, e.client, metricsMap); err != nil {
-		return err
-	}
-	return nil
+	return internal.InsertMetrics(ctx, e.client, metricsMap)
 }
