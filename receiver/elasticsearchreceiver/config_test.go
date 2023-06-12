@@ -162,6 +162,7 @@ func TestLoadConfig(t *testing.T) {
 				Indices:            []string{".geoip_databases"},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Minute,
+					InitialDelay:       time.Second,
 				},
 				MetricsBuilderConfig: defaultMetrics,
 				Username:             "otel",

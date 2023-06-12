@@ -99,6 +99,7 @@ body:
       - internal/docker
       - internal/filter
       - internal/k8sconfig
+      - internal/k8stest
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent

@@ -53,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 	expectedConfig := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 30 * time.Second,
+			InitialDelay:       time.Second,
 		},
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:  (&cpuscraper.Factory{}).CreateDefaultConfig(),

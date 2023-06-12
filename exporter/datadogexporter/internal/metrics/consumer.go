@@ -54,28 +54,35 @@ func (c *Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeTy
 }
 
 // runningMetrics gets the running metrics for the exporter.
-func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadogV2.MetricSeries) {
+func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo, metadata metrics.Metadata) (series []datadogV2.MetricSeries) {
+	buildTags := TagsFromBuildInfo(buildInfo)
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
+		runningMetric := DefaultMetrics("metrics", host, timestamp, buildTags)
 		series = append(series, runningMetric...)
 	}
 
 	for tag := range c.seenTags {
-		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildInfo)
+		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildTags)
 		for i := range runningMetrics {
 			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
 		}
 		series = append(series, runningMetrics...)
 	}
 
+	for _, lang := range metadata.Languages {
+		tags := append(buildTags, "language:"+lang) // nolint
+		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
+		series = append(series, runningMetric...)
+	}
+
 	return
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
 	series := c.ms
-	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
+	series = append(series, c.runningMetrics(timestamp, buildInfo, metadata)...)
 	if len(tags) == 0 {
 		return series, c.sl, c.as
 	}

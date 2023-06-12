@@ -30,45 +30,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2502656"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1683723817610618000"
-                  timeUnixNano: "1683723817613281000"
-                - asInt: "0"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1683723817610618000"
-                  timeUnixNano: "1683723817613281000"
-                - asInt: "2502656"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: sync
-                  startTimeUnixNano: "1683723817610618000"
-                  timeUnixNano: "1683723817613281000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -105,7 +66,46 @@ resourceMetrics:
                         stringValue: "0"
                     - key: operation
                       value:
+                        stringValue: read
+                  startTimeUnixNano: "1683723817610618000"
+                  timeUnixNano: "1683723817613281000"
+                - asInt: "2502656"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: sync
+                  startTimeUnixNano: "1683723817610618000"
+                  timeUnixNano: "1683723817613281000"
+                - asInt: "2502656"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
                         stringValue: total
+                  startTimeUnixNano: "1683723817610618000"
+                  timeUnixNano: "1683723817613281000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1683723817610618000"
                   timeUnixNano: "1683723817613281000"
               isMonotonic: true
@@ -115,45 +115,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "99"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1683723817610618000"
-                  timeUnixNano: "1683723817613281000"
-                - asInt: "0"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1683723817610618000"
-                  timeUnixNano: "1683723817613281000"
-                - asInt: "99"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: sync
-                  startTimeUnixNano: "1683723817610618000"
-                  timeUnixNano: "1683723817613281000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -190,7 +151,46 @@ resourceMetrics:
                         stringValue: "0"
                     - key: operation
                       value:
+                        stringValue: read
+                  startTimeUnixNano: "1683723817610618000"
+                  timeUnixNano: "1683723817613281000"
+                - asInt: "99"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: sync
+                  startTimeUnixNano: "1683723817610618000"
+                  timeUnixNano: "1683723817613281000"
+                - asInt: "99"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
                         stringValue: total
+                  startTimeUnixNano: "1683723817610618000"
+                  timeUnixNano: "1683723817613281000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1683723817610618000"
                   timeUnixNano: "1683723817613281000"
               isMonotonic: true

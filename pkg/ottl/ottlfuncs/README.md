@@ -265,7 +265,9 @@ Available Converters:
 - [ConvertCase](#convertcase)
 - [FNV](#fnv)
 - [Int](#int)
+- [IsMap](#ismap)
 - [IsMatch](#ismatch)
+- [IsString](#isstring)
 - [Log](#log)
 - [ParseJSON](#parsejson)
 - [SHA1](#sha1)
@@ -363,6 +365,23 @@ Examples:
 
 - `Int("2.0")`
 
+### IsMap
+
+`IsMap(value)`
+
+The `IsMap` Converter returns true if the given value is a map.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `map[string]any` or a `pcommon.ValueTypeMap` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsMap(body)`
+
+
+- `IsMap(attributes["maybe a map"])`
+
 ### IsMatch
 
 `IsMatch(target, pattern)`
@@ -388,6 +407,22 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+### IsString
+
+`IsString(value)`
+
+The `IsString` Converter returns true if the given value is a string.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `string` or a `pcommon.ValueTypeStr` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsString(body)`
+
+- `IsString(attributes["maybe a string"])`
 
 ### Log
 
