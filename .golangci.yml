@@ -182,9 +182,6 @@ issues:
     - path: kubeletstatsreceiver
       linters:
         - exhaustive
-    - path: nsxtreceiver
-      linters:
-        - exhaustive
     - path: podmanreceiver
       linters:
         - exhaustive
@@ -192,9 +189,6 @@ issues:
       linters:
         - exhaustive
     - path: receivercreator
-      linters:
-        - exhaustive
-    - path: snmpreceiver
       linters:
         - exhaustive
     - path: statsdreceiver
