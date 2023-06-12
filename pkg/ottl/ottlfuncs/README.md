@@ -152,6 +152,9 @@ The `replace_all_matches` function replaces any matching string value with the r
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
 Examples:
 
 - `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
@@ -169,6 +172,10 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -190,6 +197,9 @@ The `replace_match` function allows replacing entire strings if they match a glo
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
 Examples:
 
 - `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
@@ -205,6 +215,10 @@ The `replace_pattern` function allows replacing all string sections that match a
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -401,6 +415,9 @@ If target is not a string, it will be converted to one:
 
 If target is nil, false is always returned.
 
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
@@ -544,6 +561,9 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 `target` is a string. `delimiter` is a string.
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
+
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
