@@ -1102,8 +1102,3 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/tcplogreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
