@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handles"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handlecount"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
@@ -51,7 +51,7 @@ type scraper struct {
 	getProcessCreateTime func(p processHandle) (int64, error)
 	getProcessHandles    func() (processHandles, error)
 
-	handleCountManager handles.Manager
+	handleCountManager handlecount.Manager
 }
 
 // newProcessScraper creates a Process Scraper
@@ -63,7 +63,7 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 		getProcessHandles:    getProcessHandlesInternal,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
-		handleCountManager:   handles.NewManager(),
+		handleCountManager:   handlecount.NewManager(),
 	}
 
 	var err error

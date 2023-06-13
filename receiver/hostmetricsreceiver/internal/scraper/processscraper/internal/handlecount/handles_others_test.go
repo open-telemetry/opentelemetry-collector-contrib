@@ -4,7 +4,7 @@
 //go:build !windows
 // +build !windows
 
-package handles
+package handlecount
 
 import (
 	"testing"
