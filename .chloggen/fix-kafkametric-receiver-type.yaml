@@ -9,7 +9,7 @@ change_type: bug_fix
 component: receiver/kafkametricsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Updates certain metrics in kafkametricsreceiver to function as non-monotonic sums.
+note: Updates certain metrics in kafkametricsreceiver to function as non-monotonic sums (type: delta).
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [4327]
@@ -17,4 +17,4 @@ issues: [4327]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Update the metric type in KafkaMetricsReceiver from "gauge" to "nonmonotonic sum".
+subtext: Update metrics type in KafkaMetricsReceiver from "gauge" to "nonmonotonic sum".
