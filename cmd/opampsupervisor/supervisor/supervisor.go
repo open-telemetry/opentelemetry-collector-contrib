@@ -113,7 +113,14 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", port)
 
-	s.createInstanceID()
+	id, err := s.createInstanceID()
+
+	if err != nil {
+		return nil, err
+	}
+
+	s.instanceID = id
+
 	logger.Debug("Supervisor starting",
 		zap.String("id", s.instanceID.String()), zap.String("type", agentType), zap.String("version", s.agentVersion))
 
@@ -233,11 +240,17 @@ func (s *Supervisor) startOpAMP() error {
 	return nil
 }
 
-func (s *Supervisor) createInstanceID() {
+// TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
+func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(0)), 0)
-	s.instanceID = ulid.MustNew(ulid.Timestamp(time.Now()), entropy)
+	id, err := ulid.New(ulid.Timestamp(time.Now()), entropy)
 
-	// TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
+	if err != nil {
+		return ulid.ULID{}, err
+	}
+
+	return id, nil
+
 }
 
 func keyVal(key, val string) *protobufs.KeyValue {

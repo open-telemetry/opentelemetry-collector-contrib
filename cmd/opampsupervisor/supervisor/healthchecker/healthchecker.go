@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+// TODO: Support more settings
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23344
 type HTTPHealthChecker struct {
 	endpoint string
 }
