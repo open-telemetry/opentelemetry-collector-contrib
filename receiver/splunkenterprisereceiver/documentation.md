@@ -12,6 +12,7 @@ metrics:
     enabled: false
 ```
 
+<<<<<<< HEAD
 ### splunk.data.indexes.extended.bucket.count
 
 Count of buckets per index
@@ -68,7 +69,6 @@ Size (fractional MB) on disk of this index
 | ---- | ----------- | ------ |
 | index.name | The name of the index reporting a specific KPI | Any Str |
 
->>>>>>> make generate
 ### splunk.license.index.usage
 
 Gauge tracking the indexed license usage per index
@@ -82,8 +82,6 @@ Gauge tracking the indexed license usage per index
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | index.name | The name of the index reporting a specific KPI | Any Str |
-<<<<<<< HEAD
-=======
 
 ### splunk.server.introspection.indexer.throughput
 
