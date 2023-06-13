@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    splunk.license.index.usage:
+      enabled: true
+none_set:
+  metrics:
+    splunk.license.index.usage:
+      enabled: false

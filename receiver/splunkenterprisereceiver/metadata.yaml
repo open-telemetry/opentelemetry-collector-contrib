@@ -7,3 +7,19 @@ status:
   distributions:
   codeowners:
     active: [shalper2, MovieStoreGuy]
+
+# resource_attributes:
+
+attributes:
+  index.name:
+    description: The name of the index reporting a specific KPI
+    type: string
+
+metrics:
+  splunk.license.index.usage:
+    enabled: true
+    description: Gauge tracking the indexed license usage per index
+    unit: GBy
+    gauge:
+      value_type: double
+    attributes: [index.name]
