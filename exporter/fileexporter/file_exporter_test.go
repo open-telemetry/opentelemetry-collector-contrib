@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -117,7 +118,7 @@ func TestFileTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			writer, err := buildFileWriter(conf)
+			writer, err := buildFileWriter(conf, zap.NewNop())
 			assert.NoError(t, err)
 			fe := &fileExporter{
 				path:            conf.Path,
@@ -129,7 +130,6 @@ func TestFileTracesExporter(t *testing.T) {
 				flushInterval:   conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
-			fe.exporter = fe.createExporterWriter(conf)
 
 			td := testdata.GenerateTracesTwoSpansSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -140,7 +140,13 @@ func TestFileTracesExporter(t *testing.T) {
 			fi, err := os.Open(fe.path)
 			assert.NoError(t, err)
 			defer fi.Close()
-			br := bufio.NewReader(fi)
+			var br *bufio.Reader
+			if fe.compression == compressionZSTD {
+				cr, _ := zstd.NewReader(fi)
+				br = bufio.NewReader(cr)
+			} else {
+				br = bufio.NewReader(fi)
+			}
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
 					if fe.formatType == formatTypeJSON {
@@ -166,9 +172,6 @@ func TestFileTracesExporterError(t *testing.T) {
 	fe := &fileExporter{
 		file:       mf,
 		formatType: formatTypeJSON,
-		exporter: &lineWriter{
-			file: mf,
-		},
 		tracesMarshaler: tracesMarshalers[formatTypeJSON],
 		compressor:      noneCompress,
 	}
@@ -252,7 +255,7 @@ func TestFileMetricsExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			writer, err := buildFileWriter(conf)
+			writer, err := buildFileWriter(conf, zap.NewNop())
 			assert.NoError(t, err)
 			fe := &fileExporter{
 				path:             conf.Path,
@@ -264,7 +267,6 @@ func TestFileMetricsExporter(t *testing.T) {
 				flushInterval:    conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
-			fe.exporter = fe.createExporterWriter(conf)
 
 			md := testdata.GenerateMetricsTwoMetrics()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -275,11 +277,16 @@ func TestFileMetricsExporter(t *testing.T) {
 			fi, err := os.Open(fe.path)
 			assert.NoError(t, err)
 			defer fi.Close()
-			br := bufio.NewReader(fi)
+			var br *bufio.Reader
+			if fe.compression == compressionZSTD {
+				cr, _ := zstd.NewReader(fi)
+				br = bufio.NewReader(cr)
+			} else {
+				br = bufio.NewReader(fi)
+			}
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON &&
-						fe.compression == "" {
+					if fe.formatType == formatTypeJSON {	
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -303,9 +310,6 @@ func TestFileMetricsExporterError(t *testing.T) {
 	fe := &fileExporter{
 		file:       mf,
 		formatType: formatTypeJSON,
-		exporter: &lineWriter{
-			file: mf,
-		},
 		metricsMarshaler: metricsMarshalers[formatTypeJSON],
 		compressor:       noneCompress,
 	}
@@ -389,7 +393,7 @@ func TestFileLogsExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			writer, err := buildFileWriter(conf)
+			writer, err := buildFileWriter(conf, zap.NewNop())
 			assert.NoError(t, err)
 			fe := &fileExporter{
 				path:          conf.Path,
@@ -401,7 +405,6 @@ func TestFileLogsExporter(t *testing.T) {
 				flushInterval: conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
-			fe.exporter = fe.createExporterWriter(conf)
 
 			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
@@ -412,10 +415,16 @@ func TestFileLogsExporter(t *testing.T) {
 			fi, err := os.Open(fe.path)
 			assert.NoError(t, err)
 			defer fi.Close()
-			br := bufio.NewReader(fi)
+			var br *bufio.Reader
+			if fe.compression == compressionZSTD {
+				cr, _ := zstd.NewReader(fi)
+				br = bufio.NewReader(cr)
+			} else {
+				br = bufio.NewReader(fi)
+			}
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON && fe.compression == "" {
+					if fe.formatType == formatTypeJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -440,9 +449,6 @@ func TestFileLogsExporterErrors(t *testing.T) {
 		file:          mf,
 		formatType:    formatTypeJSON,
 		logsMarshaler: logsMarshalers[formatTypeJSON],
-		exporter: &lineWriter{
-			file: mf,
-		},
 		compressor: noneCompress,
 	}
 	require.NotNil(t, fe)
@@ -453,30 +459,44 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
+type testWriter struct {
+	writer io.WriteCloser
+}
+
+func (tw *testWriter) Write(buf []byte) (int, error) {
+	return tw.writer.Write(buf)
+}
+
+func (tw *testWriter) Close() error {
+	return tw.writer.Close()
+}
+
+func (tw *testWriter) Flush() error {
+	return nil
+}
+
 func TestExportMessageAsBuffer(t *testing.T) {
 	path := tempFileName(t)
+	fw := &lumberjack.Logger{
+		Filename: path,
+		MaxSize:  1,
+	}
 	fe := &fileExporter{
 		path:       path,
 		formatType: formatTypeProto,
-		file: &lumberjack.Logger{
-			Filename: path,
-			MaxSize:  1,
-		},
+		file: &testWriter{writer: fw},
 		logsMarshaler: logsMarshalers[formatTypeProto],
 	}
 	require.NotNil(t, fe)
-	fe.exporter = &fileWriter{
-		file: fe.file,
-	}
-	//
+
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
 	marshaler := &plog.ProtoMarshaler{}
 	buf, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
-	_, err = fe.exporter.Write(buf)
+	_, err = fe.file.Write(buf)
 	assert.Error(t, err)
-	assert.NoError(t, fe.Shutdown(context.Background()))
 	require.NoError(t, os.Remove(path))
+	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
 // tempFileName provides a temporary file name for testing.
@@ -497,6 +517,10 @@ func (e *errorWriter) Write([]byte) (n int, err error) {
 }
 
 func (e *errorWriter) Close() error {
+	return nil
+}
+
+func (e *errorWriter) Flush() error {
 	return nil
 }
 

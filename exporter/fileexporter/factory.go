@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -53,7 +54,7 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	conf := cfg.(*Config)
-	writer, err := buildFileWriter(conf)
+	writer, err := buildFileWriter(conf, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	conf := cfg.(*Config)
-	writer, err := buildFileWriter(conf)
+	writer, err := buildFileWriter(conf, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,7 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	conf := cfg.(*Config)
-	writer, err := buildFileWriter(conf)
+	writer, err := buildFileWriter(conf, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func createLogsExporter(
 	)
 }
 
-func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
+func newFileExporter(conf *Config, writer WriteCloseFlusher) *fileExporter {
 	fe := &fileExporter{
 		path:             conf.Path,
 		formatType:       conf.FormatType,
@@ -131,25 +132,32 @@ func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 		compressor:       buildCompressor(conf.Compression),
 		flushInterval:    conf.FlushInterval,
 	}
-	fe.exporter = fe.createExporterWriter(conf)
 	return fe
 }
 
-func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
+func buildFileWriter(cfg *Config, logger *zap.Logger) (WriteCloseFlusher, error) {
+	var writer io.WriteCloser
+	var err error
 	if cfg.Rotation == nil {
-		f, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		writer, err = os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			return nil, err
 		}
-		return newBufferedWriteCloser(f), nil
+	} else {
+		writer = &lumberjack.Logger{
+			Filename:   cfg.Path,
+			MaxSize:    cfg.Rotation.MaxMegabytes,
+			MaxAge:     cfg.Rotation.MaxDays,
+			MaxBackups: cfg.Rotation.MaxBackups,
+			LocalTime:  cfg.Rotation.LocalTime,
+		}
 	}
-	return &lumberjack.Logger{
-		Filename:   cfg.Path,
-		MaxSize:    cfg.Rotation.MaxMegabytes,
-		MaxAge:     cfg.Rotation.MaxDays,
-		MaxBackups: cfg.Rotation.MaxBackups,
-		LocalTime:  cfg.Rotation.LocalTime,
-	}, nil
+
+	if cfg.FormatType == formatTypeProto {
+		return NewFileWriter(cfg, logger, writer), nil
+	}
+
+	return NewLineWriter(cfg, logger, writer), nil
 }
 
 // This is the map of already created File exporters for particular configurations.

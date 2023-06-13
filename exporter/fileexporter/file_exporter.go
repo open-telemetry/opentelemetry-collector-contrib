@@ -32,10 +32,15 @@ var logsMarshalers = map[string]plog.Marshaler{
 	formatTypeProto: &plog.ProtoMarshaler{},
 }
 
+type WriteCloseFlusher interface {
+	io.WriteCloser
+	Flush() error
+}
+
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
 	path     string
-	file     io.WriteCloser
+	file     WriteCloseFlusher
 	mutex    sync.Mutex
 	logger   *zap.Logger
 
@@ -47,7 +52,6 @@ type fileExporter struct {
 	compressor  compressFunc
 
 	formatType string
-	exporter   io.WriteCloser
 
 	flushInterval time.Duration
 	flushTicker   *time.Ticker
@@ -59,7 +63,7 @@ func (e *fileExporter) consumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
-	_, err = e.exporter.Write(buf)
+	_, err = e.file.Write(buf)
 	return err
 }
 
@@ -68,7 +72,7 @@ func (e *fileExporter) consumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
-	_, err = e.exporter.Write(buf)
+	_, err = e.file.Write(buf)
 	return err
 }
 
@@ -77,37 +81,28 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	if err != nil {
 		return err
 	}
-	_, err = e.exporter.Write(buf)
+	_, err = e.file.Write(buf)
 	return err
 }
 
 type lineWriter struct {
 	mutex sync.Mutex
-	file  io.WriteCloser
+	file  WriteCloseFlusher
 }
 
-func NewLineWriter(cfg *Config, logger *zap.Logger, file io.WriteCloser) io.WriteCloser {
+func NewLineWriter(cfg *Config, logger *zap.Logger, file io.WriteCloser) WriteCloseFlusher {
+	lw := &lineWriter{}
 	if cfg.Compression == "zstd" {
-		if fw, err := zstd.NewWriter(file); err == nil {
-			// flushing the compressed writer every second.
-			go func() {
-				for {
-					time.Sleep(1 * time.Second)
-					if fw.Flush() != nil {
-						return
-					}
-				}
-			}()
-
-			file = fw
+		if cw, err := zstd.NewWriter(file); err == nil {
+			lw.file = cw
+			return lw
 		} else {
 			logger.Debug("Unable to create compressed writer", zap.Error(err))
 		}
 	}
 
-	return &lineWriter{
-		file: file,
-	}
+	lw.file = newBufferedWriteCloser(file)
+	return lw
 }
 
 func (lw *lineWriter) Write(buf []byte) (int, error) {
@@ -129,32 +124,32 @@ func (lw *lineWriter) Close() error {
 	return lw.file.Close()
 }
 
-type fileWriter struct {
-	mutex sync.Mutex
-	file  io.WriteCloser
+func (lw *lineWriter) Flush() error {
+	return lw.file.Flush()
 }
 
-func NewFileWriter(cfg *Config, logger *zap.Logger, file io.WriteCloser) io.WriteCloser {
+func (lw *lineWriter) getFile() io.WriteCloser {
+	return lw.file
+}
+
+type fileWriter struct {
+	mutex sync.Mutex
+	file  WriteCloseFlusher
+}
+
+func NewFileWriter(cfg *Config, logger *zap.Logger, file io.WriteCloser) WriteCloseFlusher {
+	fw := &fileWriter{}
 	if cfg.Compression == "zstd" {
-		if fw, err := zstd.NewWriter(file); err == nil {
-			// flushing the compressed writer every second.
-			go func() {
-				for {
-					time.Sleep(1 * time.Second)
-					if fw.Flush() != nil {
-						return
-					}
-				}
-			}()
-			file = fw
+		if cw, err := zstd.NewWriter(file); err == nil {
+			fw.file = cw
+			return fw
 		} else {
 			logger.Debug("Unable to create compressed writer", zap.Error(err))
 		}
 	}
 
-	return &fileWriter{
-		file: file,
-	}
+	fw.file = newBufferedWriteCloser(file)
+	return fw
 }
 
 func (fw *fileWriter) Write(buf []byte) (int, error) {
@@ -178,16 +173,18 @@ func (fw *fileWriter) Close() error {
 	return fw.file.Close()
 }
 
+func (fw *fileWriter) getFile() io.WriteCloser {
+	return fw.file
+}
+
+func (fw *fileWriter) Flush() error {
+	return fw.file.Flush()
+}
+
 // It does not check the flushInterval
 func (e *fileExporter) startFlusher() {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-
-	ff, ok := e.file.(interface{ flush() error })
-	if !ok {
-		// Just in case.
-		return
-	}
 
 	// Create the stop channel.
 	e.stopTicker = make(chan struct{})
@@ -198,7 +195,7 @@ func (e *fileExporter) startFlusher() {
 			select {
 			case <-e.flushTicker.C:
 				e.mutex.Lock()
-				ff.flush()
+				e.file.Flush()
 				e.mutex.Unlock()
 			case <-e.stopTicker:
 				return
@@ -226,12 +223,5 @@ func (e *fileExporter) Shutdown(context.Context) error {
 		// Stop the go routine.
 		close(e.stopTicker)
 	}
-	return e.exporter.Close()
-}
-
-func (e *fileExporter) createExporterWriter(cfg *Config) io.WriteCloser {
-	if cfg.FormatType == formatTypeProto {
-		return NewFileWriter(cfg, e.logger, e.file)
-	}
-	return NewLineWriter(cfg, e.logger, e.file)
+	return e.file.Close()
 }

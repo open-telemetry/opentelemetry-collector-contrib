@@ -21,7 +21,7 @@ var (
 	_ io.WriteCloser = (*bufferedWriteCloser)(nil)
 )
 
-func newBufferedWriteCloser(f io.WriteCloser) io.WriteCloser {
+func newBufferedWriteCloser(f io.WriteCloser) WriteCloseFlusher {
 	return &bufferedWriteCloser{
 		wrapped:  f,
 		buffered: bufio.NewWriter(f),
@@ -39,6 +39,10 @@ func (bwc *bufferedWriteCloser) Close() error {
 	)
 }
 
-func (bwc *bufferedWriteCloser) flush() error {
+func (bwc *bufferedWriteCloser) getWrapped() io.Closer {
+	return bwc.wrapped
+}
+
+func (bwc *bufferedWriteCloser) Flush() error {
 	return bwc.buffered.Flush()
 }

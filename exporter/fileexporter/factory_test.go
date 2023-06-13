@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -111,8 +112,10 @@ func TestBuildFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, closer io.WriteCloser) {
-				_, ok := closer.(*bufferedWriteCloser)
-				assert.Equal(t, true, ok)
+				fl, ok := closer.(interface{ getFile() io.WriteCloser })
+				assert.True(t, ok)
+				_, ok = fl.getFile().(*bufferedWriteCloser)
+				assert.True(t, ok)
 			},
 		},
 		{
@@ -126,8 +129,12 @@ func TestBuildFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, closer io.WriteCloser) {
-				writer, ok := closer.(*lumberjack.Logger)
-				assert.Equal(t, true, ok)
+				fl, ok := closer.(interface{ getFile() io.WriteCloser })
+				assert.True(t, ok)
+				bc, ok := fl.getFile().(interface{ getWrapped() io.Closer })
+				assert.True(t, ok)
+				writer, ok := bc.getWrapped().(*lumberjack.Logger)
+				assert.True(t, ok)
 				assert.Equal(t, defaultMaxBackups, writer.MaxBackups)
 			},
 		},
@@ -145,18 +152,22 @@ func TestBuildFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, closer io.WriteCloser) {
-				writer, ok := closer.(*lumberjack.Logger)
-				assert.Equal(t, true, ok)
+				fl, ok := closer.(interface{ getFile() io.WriteCloser })
+				assert.True(t, ok)
+				bc, ok := fl.getFile().(interface{ getWrapped() io.Closer })
+				assert.True(t, ok)
+				writer, ok := bc.getWrapped().(*lumberjack.Logger)
+
 				assert.Equal(t, 3, writer.MaxBackups)
 				assert.Equal(t, 30, writer.MaxSize)
 				assert.Equal(t, 100, writer.MaxAge)
-				assert.Equal(t, true, writer.LocalTime)
+				assert.True(t, writer.LocalTime)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildFileWriter(tt.args.cfg)
+			got, err := buildFileWriter(tt.args.cfg, zap.NewNop())
 			assert.NoError(t, err)
 			tt.validate(t, got)
 		})
