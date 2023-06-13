@@ -254,6 +254,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 
 				// Parsing metric record to Splunk event.
 				events := mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)
+
 				tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
 				if c.config.UseMultiMetricFormat {
 					merged, err := mergeEventsToMultiMetricFormat(events)
@@ -295,6 +296,62 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 		}
 	}
 
+	return iterState{done: true}, permanentErrors
+}
+
+func (c *client) fillMetricsBufferMultiMetrics(metrics pmetric.Metrics, buf buffer, is iterState) (iterState, []error) {
+	var permanentErrors []error
+	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
+	defer jsonStreamPool.Put(jsonStream)
+
+	var events []*splunk.Event
+
+	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := is.library; j < rm.ScopeMetrics().Len(); j++ {
+			is.library = 0 // Reset library index for next resource.
+			sm := rm.ScopeMetrics().At(j)
+			for k := is.record; k < sm.Metrics().Len(); k++ {
+				is.record = 0 // Reset record index for next library.
+				metric := sm.Metrics().At(k)
+
+				// Parsing metric record to Splunk event.
+				events = append(events, mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)...)
+			}
+		}
+	}
+
+	merged, err := mergeEventsToMultiMetricFormat(events)
+	if err != nil {
+		permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+			"error merging events: %w", err)))
+	}
+
+	tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
+	for _, event := range merged {
+		// JSON encoding event and writing to buffer.
+		b, jsonErr := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+		if jsonErr != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
+			continue
+		}
+		tempBuf.Write(b)
+	}
+
+	// Continue adding events to buffer up to capacity.
+	b := tempBuf.Bytes()
+	_, err = buf.Write(b)
+	if err == nil {
+		return iterState{done: true}, permanentErrors
+	}
+	if errors.Is(err, errOverCapacity) {
+		permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+			fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
+				" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
+	} else {
+		permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+			"error writing the event: %w", err)))
+	}
 	return iterState{done: true}, permanentErrors
 }
 
@@ -356,7 +413,13 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 
 	for !is.done {
 		buf.Reset()
-		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, buf, is)
+		var latestIterState iterState
+		var batchPermanentErrors []error
+		if c.config.UseMultiMetricFormat {
+			latestIterState, batchPermanentErrors = c.fillMetricsBufferMultiMetrics(md, buf, is)
+		} else {
+			latestIterState, batchPermanentErrors = c.fillMetricsBuffer(md, buf, is)
+		}
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
 			if err := c.postEvents(ctx, buf, headers); err != nil {
