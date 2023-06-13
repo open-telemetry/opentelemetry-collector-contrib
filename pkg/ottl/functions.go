@@ -39,6 +39,12 @@ func newPathHelper(fields []field) *Path {
 	}
 }
 
+func NewEmptyPath() Path {
+	return Path{
+		fetched: true,
+	}
+}
+
 type Path struct {
 	name     string
 	key      *Key
@@ -70,6 +76,21 @@ func (p *Path) isComplete() error {
 		return nil
 	}
 	return p.nextPath.isComplete()
+}
+
+func (k *Path) SetName(n string) {
+	k.name = n
+}
+func (k *Path) SetKeys(keys *Key) {
+	k.key = keys
+}
+
+func (k *Path) SetNext(np *Path) {
+	k.nextPath = np
+}
+
+func (k *Path) SetFetched(f bool) {
+	k.fetched = f
 }
 
 func newKey(keys []key) *Key {
