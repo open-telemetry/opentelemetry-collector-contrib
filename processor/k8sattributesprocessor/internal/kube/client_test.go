@@ -847,10 +847,11 @@ func TestExtractionRules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 
-			// manually call the data removal function here
+			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
-			c.handleReplicaSetAdd(replicaset)
+			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
+			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
@@ -1001,10 +1002,11 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			c.Rules = tc.rules
 			replicaset.OwnerReferences = tc.ownerReferences
 
-			// manually call the data removal function here
+			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
-			c.handleReplicaSetAdd(replicaset)
+			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
+			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)

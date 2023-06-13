@@ -119,6 +119,9 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 			return removeUnnecessaryPodData(originalPod, c.Rules), nil
 		},
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	if c.extractNamespaceLabelsAnnotations() {
 		c.namespaceInformer = newNamespaceInformer(c.kc)
@@ -131,6 +134,19 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 			newReplicaSetInformer = newReplicaSetSharedInformer
 		}
 		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		err = c.replicasetInformer.SetTransform(
+			func(object interface{}) (interface{}, error) {
+				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+
+				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c, err
@@ -844,6 +860,19 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
 	}
 	c.m.Unlock()
+}
+
+// This function removes all data from the ReplicaSet except what is required by extraction rules
+func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
+	transformedReplicaset := apps_v1.ReplicaSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      replicaset.GetName(),
+			Namespace: replicaset.GetNamespace(),
+			UID:       replicaset.GetUID(),
+		},
+	}
+	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
+	return &transformedReplicaset
 }
 
 func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
