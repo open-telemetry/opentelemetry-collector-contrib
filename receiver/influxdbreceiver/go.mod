@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
-	github.com/influxdata/influxdb-observability/common v0.5.0
-	github.com/influxdata/influxdb-observability/influx2otel v0.5.0
+	github.com/influxdata/influxdb-observability/common v0.5.2
+	github.com/influxdata/influxdb-observability/influx2otel v0.5.2
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.79.0
@@ -54,8 +54,8 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
