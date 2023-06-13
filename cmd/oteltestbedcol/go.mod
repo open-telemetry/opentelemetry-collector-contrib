@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.79.0
@@ -340,7 +341,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../../exporter/opencensusexporter
 
-
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
