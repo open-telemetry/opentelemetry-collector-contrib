@@ -11,10 +11,10 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	go.opentelemetry.io/build-tools/checkdoc v0.8.0
 	go.opentelemetry.io/build-tools/chloggen v0.8.0
-	go.opentelemetry.io/build-tools/crosslink v0.7.0
+	go.opentelemetry.io/build-tools/crosslink v0.8.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.8.0
 	go.opentelemetry.io/build-tools/multimod v0.8.0
-	go.opentelemetry.io/collector/cmd/builder v0.78.2
+	go.opentelemetry.io/collector/cmd/builder v0.79.0
 	golang.org/x/tools v0.9.3
 	golang.org/x/vuln v0.1.0
 )
@@ -208,8 +208,8 @@ require (
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sync v0.2.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
