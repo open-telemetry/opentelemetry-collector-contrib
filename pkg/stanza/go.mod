@@ -24,8 +24,8 @@ require (
 	go.opentelemetry.io/collector/receiver v0.79.1-0.20230609201858-ed8547a8e5d6
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/sys v0.8.0
-	golang.org/x/text v0.9.0
+	golang.org/x/sys v0.9.0
+	golang.org/x/text v0.10.0
 	gonum.org/v1/gonum v0.13.0
 	gopkg.in/yaml.v2 v2.4.0
 )
