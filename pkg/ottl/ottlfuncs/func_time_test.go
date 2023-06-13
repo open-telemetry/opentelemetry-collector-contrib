@@ -19,6 +19,10 @@ func Test_Time(t *testing.T) {
 	hst, err := time.LoadLocation("HST")
 	require.NoError(t, err)
 
+	// Mountain Standard Time
+	mst, err := time.LoadLocation("MST")
+	require.NoError(t, err)
+
 	tests := []struct {
 		name     string
 		time     ottl.StringGetter[interface{}]
