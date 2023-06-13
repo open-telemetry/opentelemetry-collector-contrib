@@ -29,6 +29,7 @@ func TestNewReceiver(t *testing.T) {
 		Endpoint: "unix:///run/some.sock",
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 1 * time.Second,
+			InitialDelay:       time.Second,
 		},
 	}
 	nextConsumer := consumertest.NewNop()

@@ -147,12 +147,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
 			expectedLogs: []logMsg{
 				{
-					msg:   "metric computation failed",
-					level: zapcore.DebugLevel,
-				},
-				{
 					msg:   "failed to shutdown connection",
 					level: zapcore.WarnLevel,
+				},
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
 				},
 			},
 			expectedMetricsFilename: "error-closing-connection",

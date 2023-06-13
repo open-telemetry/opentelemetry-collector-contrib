@@ -16,7 +16,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -30,7 +33,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -44,7 +50,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -167,7 +173,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -181,7 +187,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -220,7 +226,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -234,7 +243,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -284,7 +293,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -326,7 +338,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId3
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -340,7 +352,7 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"
@@ -393,7 +405,10 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                    - key: metadata_dimension
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
                       value:
                         stringValue: dimension value
                   startTimeUnixNano: "1681790471654481953"

@@ -34,10 +34,17 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    filepath.Join("testdata", "integration"),
-					Dockerfile: "Dockerfile.postgresql",
+				Image: "postgres:9.6.24",
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
 				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
+					FileMode:          700,
+				}},
 				ExposedPorts: []string{postgresqlPort},
 				WaitingFor: wait.ForListeningPort(postgresqlPort).
 					WithStartupTimeout(2 * time.Minute),
