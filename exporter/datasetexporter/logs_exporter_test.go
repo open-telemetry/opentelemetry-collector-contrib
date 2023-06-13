@@ -287,7 +287,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 }
 
 func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurrentTimestamp(t *testing.T) {
-	// When LogRecord doesn't have timestampa and ObservedTimestamp set, current timestamp
+	// When LogRecord doesn't have timestamp and ObservedTimestamp set, current timestamp
 	// should be used
 	// We mock current time to ensure stability across runs
 
