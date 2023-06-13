@@ -282,11 +282,8 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	var errs error
 	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
-		for i, row := range rows {
-			if err = rowToLog(row, logsConfig, scopeLogs.AppendEmpty()); err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
-				errs = multierr.Append(errs, err)
-			}
+		for _, row := range rows {
+			rowToLog(row, logsConfig, scopeLogs.AppendEmpty())
 			if logsConfigIndex == 0 {
 				errs = multierr.Append(errs, queryReceiver.storeTrackingValue(ctx, row))
 			}
@@ -309,9 +306,8 @@ func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, 
 	return nil
 }
 
-func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) error { //nolint:unparam
+func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) {
 	logRecord.Body().SetStr(row[config.BodyColumn])
-	return nil
 }
 
 func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) {
