@@ -23,7 +23,7 @@ const (
 
 var connectorsAsSumGate = featuregate.GlobalRegistry().MustRegister(
 	connectionsAsSum,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the receiver will emit the 'nginx.connections_current' metric as a nonmonotonic sum, rather than a gauge."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4326"),
 	featuregate.WithRegisterFromVersion("v0.78.0"),

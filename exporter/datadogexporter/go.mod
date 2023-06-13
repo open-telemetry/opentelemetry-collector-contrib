@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.84
-	github.com/DataDog/datadog-agent/pkg/trace v0.46.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-devel
 	github.com/DataDog/datadog-api-client-go/v2 v2.13.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.3.0
@@ -12,8 +12,8 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.3.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.3.0
 	github.com/DataDog/sketches-go v1.4.2
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
-	github.com/aws/aws-sdk-go v1.44.274
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.15.0
+	github.com/aws/aws-sdk-go v1.44.277
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.79.0
@@ -49,17 +49,16 @@ require (
 	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.46.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.46.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.46.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.46.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.46.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.46.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.46.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
-	github.com/Microsoft/go-winio v0.6.0 // indirect
+	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/antonmedv/expr v1.12.5 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
@@ -99,7 +98,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/hashicorp/consul/api v1.20.0 // indirect
+	github.com/hashicorp/consul/api v1.21.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
@@ -140,7 +139,6 @@ require (
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
-	github.com/panta/machineid v1.0.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -245,3 +243,5 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest

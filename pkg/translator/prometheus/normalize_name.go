@@ -73,7 +73,7 @@ var perUnitMap = map[string]string{
 
 var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.NormalizeName",
-	featuregate.StageBeta,
+	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 )

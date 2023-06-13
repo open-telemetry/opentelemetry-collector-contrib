@@ -115,14 +115,15 @@ func (exp *traceExporter) consumeTraces(
 
 func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
+	buildTags := metrics.TagsFromBuildInfo(exp.params.BuildInfo)
 	var err error
 	if isMetricExportV2Enabled() {
 		series := make([]datadogV2.MetricSeries, 0, len(hosts)+len(tags))
 		for host := range hosts {
-			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
+			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), buildTags)...)
 		}
 		for tag := range tags {
-			ms := metrics.DefaultMetrics("traces", "", uint64(now), exp.params.BuildInfo)
+			ms := metrics.DefaultMetrics("traces", "", uint64(now), buildTags)
 			for i := range ms {
 				ms[i].Tags = append(ms[i].Tags, tag)
 			}
@@ -170,6 +171,8 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	acfg.ReceiverPort = 0 // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
 	acfg.SkipSSLValidation = cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify
+	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
+	acfg.PeerServiceAggregation = cfg.Traces.PeerServiceAggregation
 	if v := cfg.Traces.flushInterval; v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}
