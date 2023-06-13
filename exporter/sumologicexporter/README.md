@@ -28,7 +28,7 @@ The following options are deprecated and they won't exist in new version:
 After the new exporter will be moved to this repository:
 
 - `carbon2` and `graphite` are going to be no longer supported and `prometheus` or `otlp` format should be used
-- all resource level attributes are going to be treated as `metadata_attributes`. You can use [Group by Attributes processor](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/processor/groupbyattrsprocessor/) to move attributes from record level to resource level. For example:
+- all resource level attributes are going to be treated as `metadata_attributes`. You can use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) to move attributes from record level to resource level. For example:
 
   ```yaml
   # before switch to new collector
@@ -43,7 +43,7 @@ After the new exporter will be moved to this repository:
         - my_attribute
   ```
 
-- Source templates (`source_category`, `source_name` and `source_host`) are going to be removed from the exporter and sources may be set using `_sourceCategory`, `sourceName` or `_sourceHost` resource attributes. We recommend to use [Transform Processor](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/processor/transformprocessor/). For example:
+- Source templates (`source_category`, `source_name` and `source_host`) are going to be removed from the exporter and sources may be set using `_sourceCategory`, `sourceName` or `_sourceHost` resource attributes. We recommend to use [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/). For example:
 
   ```yaml
   # before switch to new collector
