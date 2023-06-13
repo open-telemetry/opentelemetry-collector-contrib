@@ -171,7 +171,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 }
 
 func (s *Supervisor) startOpAMP() error {
-	s.opampClient = client.NewWebSocket(opAMPLogger{logger: s.logger})
+	s.opampClient = client.NewWebSocket(s.logger.Sugar())
 
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
