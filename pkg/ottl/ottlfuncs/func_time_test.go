@@ -15,18 +15,11 @@ import (
 )
 
 func Test_Time(t *testing.T) {
-	// Hawaiian Standard Time
-	hst, err := time.LoadLocation("HST")
-	require.NoError(t, err)
-
-	// Mountain Standard Time
-	mst, err := time.LoadLocation("MST")
-	require.NoError(t, err)
-
 	tests := []struct {
 		name     string
 		time     ottl.StringGetter[interface{}]
 		format   ottl.StringGetter[interface{}]
+		location ottl.StringGetter[interface{}]
 		expected time.Time
 	}{
 		{
@@ -39,6 +32,11 @@ func Test_Time(t *testing.T) {
 			format: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "%Y-%m-%d", nil
+				},
+			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
 				},
 			},
 			expected: time.Date(2023, 4, 12, 0, 0, 0, 0, time.UTC),
@@ -55,10 +53,15 @@ func Test_Time(t *testing.T) {
 					return "%d/%m/%y", nil
 				},
 			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
+				},
+			},
 			expected: time.Date(2011, 11, 11, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: " month day year",
+			name: "month day year",
 			time: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "02/04/2023", nil
@@ -67,6 +70,11 @@ func Test_Time(t *testing.T) {
 			format: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "%m/%d/%Y", nil
+				},
+			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
 				},
 			},
 			expected: time.Date(2023, 2, 4, 0, 0, 0, 0, time.UTC),
@@ -83,6 +91,11 @@ func Test_Time(t *testing.T) {
 					return "%m/%d/%Y", nil
 				},
 			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
+				},
+			},
 			expected: time.Date(2022, 2, 12, 0, 0, 0, 0, time.UTC),
 		},
 		{
@@ -95,6 +108,11 @@ func Test_Time(t *testing.T) {
 			format: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "%B %d, %Y", nil
+				},
+			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
 				},
 			},
 			expected: time.Date(1993, 7, 31, 0, 0, 0, 0, time.UTC),
@@ -111,6 +129,11 @@ func Test_Time(t *testing.T) {
 					return "%b %d %Y %H:%M:%S", nil
 				},
 			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
+				},
+			},
 			expected: time.Date(2023, 3, 14, 17, 02, 59, 0, time.UTC),
 		},
 		{
@@ -123,6 +146,11 @@ func Test_Time(t *testing.T) {
 			format: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "%A, %B %d, %Y", nil
+				},
+			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
 				},
 			},
 			expected: time.Date(2023, 5, 1, 0, 0, 0, 0, time.UTC),
@@ -139,6 +167,11 @@ func Test_Time(t *testing.T) {
 					return "%a, %b %d, %Y", nil
 				},
 			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
+				},
+			},
 			expected: time.Date(2023, 5, 20, 0, 0, 0, 0, time.UTC),
 		},
 		{
@@ -151,6 +184,11 @@ func Test_Time(t *testing.T) {
 			format: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "%b %d, %Y", nil
+				},
+			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
 				},
 			},
 			expected: time.Date(2023, 2, 15, 0, 0, 0, 0, time.UTC),
@@ -167,7 +205,12 @@ func Test_Time(t *testing.T) {
 					return "%Y-%m-%d %H:%M:%S %Z", nil
 				},
 			},
-			expected: time.Date(2023, 5, 26, 2, 34, 56, 0, hst),
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "HST", nil
+				},
+			},
+			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, time.FixedZone("HST", -10*60*60)),
 		},
 		{
 			name: "short date with timestamp without time zone offset",
@@ -181,7 +224,12 @@ func Test_Time(t *testing.T) {
 					return "%Y-%m-%dT%H:%M:%S", nil
 				},
 			},
-			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, time.UTC),
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "GMT", nil
+				},
+			},
+			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, time.FixedZone("GMT", 0)),
 		},
 		{
 			name: "RFC 3339 in custom format",
@@ -195,10 +243,15 @@ func Test_Time(t *testing.T) {
 					return "%Y-%m-%dT%H:%M:%S%z", nil
 				},
 			},
-			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.UTC),
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "EST", nil
+				},
+			},
+			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.FixedZone("EST", 0)),
 		},
 		{
-			name: "RFC 3339 in custom format",
+			name: "RFC 3339 in custom format before 2000",
 			time: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "1986-10-01T00:17:33", nil
@@ -209,12 +262,36 @@ func Test_Time(t *testing.T) {
 					return "%Y-%m-%dT%H:%M:%S", nil
 				},
 			},
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.UTC),
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "MST", nil
+				},
+			},
+			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+		},
+		{
+			name: "empty location",
+			time: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "2022/01/01", nil
+				},
+			},
+			format: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "%Y/%m/%d", nil
+				},
+			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "", nil
+				},
+			},
+			expected: time.Date(2022, 01, 01, 0, 0, 0, 0, time.UTC),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Time(tt.time, tt.format)
+			exprFunc, err := Time(tt.time, tt.format, tt.location)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -228,6 +305,7 @@ func Test_TimeError(t *testing.T) {
 		name          string
 		time          ottl.StringGetter[interface{}]
 		format        ottl.StringGetter[interface{}]
+		location      ottl.StringGetter[interface{}]
 		expectedError string
 	}{
 		{
@@ -240,6 +318,11 @@ func Test_TimeError(t *testing.T) {
 			format: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "%Y/%m/%d", nil
+				},
+			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "UTC", nil
 				},
 			},
 			expectedError: "cannot parse \"1/11\"",
@@ -256,6 +339,11 @@ func Test_TimeError(t *testing.T) {
 					return "", nil
 				},
 			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "CST", nil
+				},
+			},
 			expectedError: "format cannot be nil",
 		},
 		{
@@ -270,12 +358,17 @@ func Test_TimeError(t *testing.T) {
 					return "%Y-%m-%dT%H:%M:%S", nil
 				},
 			},
+			location: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "GMT", nil
+				},
+			},
 			expectedError: "time cannot be nil",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Time[any](tt.time, tt.format)
+			exprFunc, err := Time[any](tt.time, tt.format, tt.location)
 			require.NoError(t, err)
 			_, err = exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
