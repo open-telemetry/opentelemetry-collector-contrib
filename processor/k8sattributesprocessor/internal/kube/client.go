@@ -119,6 +119,9 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 			return removeUnnecessaryPodData(originalPod, c.Rules), nil
 		},
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	if c.extractNamespaceLabelsAnnotations() {
 		c.namespaceInformer = newNamespaceInformer(c.kc)
@@ -142,7 +145,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 			},
 		)
 		if err != nil {
-			c.logger.Warn("error setting ReplicaSet data transformer, continuing without it", zap.Error(err))
+			return nil, err
 		}
 	}
 
@@ -859,7 +862,7 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 	c.m.Unlock()
 }
 
-// This function removes all data from the Pod except what is required by extraction rules
+// This function removes all data from the ReplicaSet except what is required by extraction rules
 func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
 	transformedReplicaset := apps_v1.ReplicaSet{
 		ObjectMeta: meta_v1.ObjectMeta{
