@@ -31,6 +31,8 @@ In order to collect project events, the requesting API key needs the appropriate
 
 In order to collect organization events, the requesting API key needs the appropriate permission which at minimum is the `Organization Member` role. Organization events are collected across all the projects hosted on Atlas within the organization. These events are not associated with a project.
 
+In order to collect access logs, the requesting API key needs the appropriate permission which requires wither the `Project Owner` or `Organization Owner` role. Access logs are collected per project and per cluster based on configuration.
+
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 
 - `public_key` (required for metrics, logs, or alerts in `poll` mode)
