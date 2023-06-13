@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -23,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			configPath: "config_traces.yaml",
-			id:         component.NewIDWithName(typeStr, ""),
+			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []component.ID{
 					component.NewIDWithName(component.DataTypeTraces, "otlp-all"),
@@ -48,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_metrics.yaml",
-			id:         component.NewIDWithName(typeStr, ""),
+			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []component.ID{
 					component.NewIDWithName(component.DataTypeMetrics, "otlp-all"),
@@ -73,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_logs.yaml",
-			id:         component.NewIDWithName(typeStr, ""),
+			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []component.ID{
 					component.NewIDWithName(component.DataTypeLogs, "otlp-all"),

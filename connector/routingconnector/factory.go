@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package routingconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 
 import (
@@ -10,22 +12,18 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-)
-
-const (
-	typeStr   = "routing"
-	stability = component.StabilityLevelDevelopment
 )
 
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToTraces(createTracesToTraces, stability),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, stability),
-		connector.WithLogsToLogs(createLogsToLogs, stability),
+		connector.WithTracesToTraces(createTracesToTraces, metadata.TracesToTracesStability),
+		connector.WithMetricsToMetrics(createMetricsToMetrics, metadata.MetricsToMetricsStability),
+		connector.WithLogsToLogs(createLogsToLogs, metadata.LogsToLogsStability),
 	)
 }
 
