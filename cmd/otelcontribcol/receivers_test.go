@@ -160,7 +160,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "datadog",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["datadog"].CreateDefaultConfig().(*datadogreceiver.Config)
-				cfg.Endpoint = ":0" // Using a randomly assigned address
+				cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 				return cfg
 			},
 		},
