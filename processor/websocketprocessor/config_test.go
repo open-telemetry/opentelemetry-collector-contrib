@@ -11,6 +11,6 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 12001, cfg.Port)
+	assert.Equal(t, ":12001", cfg.Endpoint)
 	assert.EqualValues(t, 1, cfg.Limit)
 }

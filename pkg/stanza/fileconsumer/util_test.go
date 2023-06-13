@@ -77,7 +77,7 @@ func withEmitChan(emitChan chan *emitParams) testManagerOption {
 	}
 }
 
-func buildTestManagerWithOptions(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
+func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
 	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
 	for _, opt := range opts {
 		opt(tmc)
