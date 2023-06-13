@@ -13,27 +13,32 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func mathParsePath(val *path) (GetSetter[interface{}], error) {
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "one" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
-				return int64(1), nil
-			},
-		}, nil
-	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "two" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
-				return int64(2), nil
-			},
-		}, nil
-	}
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "three" && val.Fields[1].Name == "one" {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(context.Context, interface{}) (interface{}, error) {
-				return 3.1, nil
-			},
-		}, nil
+func mathParsePath(val *Path) (GetSetter[interface{}], error) {
+	if val != nil {
+		switch val.Name() {
+		case "one":
+			return &StandardGetSetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(1), nil
+				},
+			}, nil
+		case "two":
+			return &StandardGetSetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(2), nil
+				},
+			}, nil
+		case "three":
+			p, ok := val.Next()
+			if ok && p.Name() == "one" {
+				return &StandardGetSetter[interface{}]{
+					Getter: func(context.Context, interface{}) (interface{}, error) {
+						return 3.1, nil
+					},
+				}, nil
+			}
+
+		}
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }

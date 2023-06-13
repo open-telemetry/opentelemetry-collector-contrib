@@ -862,17 +862,20 @@ func Test_parse(t *testing.T) {
 	}
 }
 
-func testParsePath(val *path) (GetSetter[interface{}], error) {
-	if val != nil && len(val.Fields) > 0 && (val.Fields[0].Name == "name" || val.Fields[0].Name == "attributes") {
-		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-				return tCtx, nil
-			},
-			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
-				reflect.DeepEqual(tCtx, val)
-				return nil
-			},
-		}, nil
+func testParsePath(val *Path) (GetSetter[interface{}], error) {
+	if val != nil {
+		switch val.Name() {
+		case "name", "attributes":
+			return &StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return tCtx, nil
+				},
+				Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+					reflect.DeepEqual(tCtx, val)
+					return nil
+				},
+			}, nil
+		}
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }

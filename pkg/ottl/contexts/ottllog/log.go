@@ -87,7 +87,7 @@ func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySett
 	return s
 }
 
-var symbolTable = map[ottl.enumSymbol]ottl.Enum{
+var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUnspecified),
 	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),
 	"SEVERITY_NUMBER_TRACE2":      ottl.Enum(plog.SeverityNumberTrace2),
@@ -115,7 +115,7 @@ var symbolTable = map[ottl.enumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_FATAL4":      ottl.Enum(plog.SeverityNumberFatal4),
 }
 
-func parseEnum(val *ottl.enumSymbol) (*ottl.Enum, error) {
+func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
 		if enum, ok := symbolTable[*val]; ok {
 			return &enum, nil
@@ -153,15 +153,16 @@ func newPathGetSetter(path ottl.Path) (ottl.GetSetter[TransformContext], error) 
 	case "severity_text":
 		return accessSeverityText(), nil
 	case "body":
-		nextPath, ok := path.Next()
-		if ok && nextPath.Name() == "string" {
+		nextPath, _ := path.Next()
+		switch nextPath.Name() {
+		case "string":
 			return accessStringBody(), nil
-		} else {
+		case "":
 			keys := path.Keys()
 			if keys == nil {
 				return accessBody(), nil
 			}
-			return accessBodyKey(keys), nil
+			return accessBodyKey(*keys), nil
 		}
 	case "attributes":
 		mapKey := path[0].Keys

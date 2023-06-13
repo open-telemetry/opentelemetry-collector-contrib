@@ -20,18 +20,17 @@ func GetMapValue(m pcommon.Map, keys ottl.Key) (interface{}, error) {
 		return nil, nil
 	}
 
-	return getIndexableValue(val, keys)
+	return getIndexableValue(val, keys.Next())
 }
 
 func SetMapValue(m pcommon.Map, keys ottl.Key, val interface{}) error {
-	if keys.String() == nil {
+	s := keys.String()
+	if s == nil {
 		return fmt.Errorf("non-string indexing is not supported")
 	}
-
-	currentValue, ok := m.Get(*keys.String())
+	currentValue, ok := m.Get(*s)
 	if !ok {
-		currentValue = m.PutEmpty(*keys.String())
+		currentValue = m.PutEmpty(*s)
 	}
-
-	return setIndexableValue(currentValue, val, keys)
+	return setIndexableValue(currentValue, val, keys.Next())
 }

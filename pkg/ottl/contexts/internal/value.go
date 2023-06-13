@@ -64,17 +64,18 @@ func SetValue(value pcommon.Value, val interface{}) error {
 	case map[string]interface{}:
 		value.SetEmptyMap()
 		for mk, mv := range v {
-			err = SetMapValue(value.Map(), []ottl.key{{String: &mk}}, mv)
+			key := ottl.NewEmptyKey()
+			key.SetString(&mk)
+			err = SetMapValue(value.Map(), key, mv)
 		}
 	}
 	return err
 }
 
-func getIndexableValue(value pcommon.Value, keys ottl.Key) (any, error) {
-	val, ok := value, false
-
-	currentKey, ok := keys.Next()
-	for ok {
+func getIndexableValue(value pcommon.Value, keys *ottl.Key) (any, error) {
+	val, currentKey := value, keys
+	var ok bool
+	for currentKey != nil {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
 			if currentKey.String() == nil {
@@ -95,12 +96,12 @@ func getIndexableValue(value pcommon.Value, keys ottl.Key) (any, error) {
 		default:
 			return nil, fmt.Errorf("type %v does not support string indexing", val.Type())
 		}
-		currentKey, ok = currentKey.Next()
+		currentKey = currentKey.Next()
 	}
 	return ottlcommon.GetValue(val), nil
 }
 
-func setIndexableValue(currentValue pcommon.Value, val any, keys ottl.Key) error {
+func setIndexableValue(currentValue pcommon.Value, val any, keys *ottl.Key) error {
 	var newValue pcommon.Value
 	switch val.(type) {
 	case []string, []bool, []int64, []float64, [][]byte, []any:
@@ -114,8 +115,7 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys ottl.Key) error
 	}
 
 	currentKey := keys
-	ok := true
-	for ok {
+	for currentKey != nil {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
 			if currentKey.String() == nil {
@@ -151,7 +151,7 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys ottl.Key) error
 		default:
 			return fmt.Errorf("type %v does not support string indexing", currentValue.Type())
 		}
-		currentKey, ok = currentKey.Next()
+		currentKey = currentKey.Next()
 	}
 	newValue.CopyTo(currentValue)
 	return nil

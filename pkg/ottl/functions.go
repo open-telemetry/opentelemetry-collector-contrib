@@ -13,14 +13,37 @@ import (
 
 type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
 
-type EnumParser func(*enumSymbol) (*Enum, error)
+type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
+type EnumSymbol string
+
+func newPath(fields []field) *Path {
+	p := newPathHelper(fields)
+	if p == nil {
+		return nil
+	}
+	p.fetched = true
+	return p
+}
+
+func newPathHelper(fields []field) *Path {
+	if len(fields) == 0 {
+		return nil
+	}
+	return &Path{
+		name:     fields[0].Name,
+		key:      newKey(fields[0].Keys),
+		nextPath: newPath(fields[1:]),
+	}
+}
+
 type Path struct {
-	name  string
-	key   *Key
-	paths []Path
+	name     string
+	key      *Key
+	nextPath *Path
+	fetched  bool
 }
 
 func (p *Path) Name() string {
@@ -28,33 +51,46 @@ func (p *Path) Name() string {
 }
 
 func (p *Path) Next() (Path, bool) {
-	if len(p.paths) == 0 {
+	if p.nextPath == nil {
 		return Path{}, false
 	}
-	return p.paths[0], len(p.paths[0].paths) > 0
+	p.nextPath.fetched = true
+	return *p.nextPath, true
 }
 
 func (p *Path) Keys() *Key {
 	return p.key
 }
 
-type Key struct {
-	// keys is for internal tracking of path objects.
-	keys []Key
-	s    *string
-	i    *int64
+func (p *Path) isComplete() error {
+	if !p.fetched {
+		return fmt.Errorf("path section '%v' was not fetched", p.name)
+	}
+	if p.nextPath == nil {
+		return nil
+	}
+	return p.nextPath.isComplete()
+}
 
-	//// String gets a string key, or nil if this isn't a string key.
-	//String() *string
-	//
-	//// Int gets an int key, or nil if this isn't an int key.
-	//Int() *int
-	//
-	//// Next gets the next Key. The second value returns whether
-	//// there is another Key available.
-	//// Next gets the Next key by returning keys[0], which has
-	//// keys[1:] as its internal slice.
-	//Next() (Key, bool)
+func newKey(keys []key) *Key {
+	if len(keys) == 0 {
+		return nil
+	}
+	return &Key{
+		s:       keys[0].String,
+		i:       keys[0].Int,
+		nextKey: newKey(keys[1:]),
+	}
+}
+
+func NewEmptyKey() Key {
+	return Key{}
+}
+
+type Key struct {
+	s       *string
+	i       *int64
+	nextKey *Key
 }
 
 func (k *Key) String() *string {
@@ -65,11 +101,23 @@ func (k *Key) Int() *int64 {
 	return k.i
 }
 
-func (k *Key) Next() (Key, bool) {
-	if len(k.keys) == 0 {
-		return Key{}, false
+func (k *Key) Next() *Key {
+	if k.nextKey == nil {
+		return nil
 	}
-	return k.keys[0], len(k.keys[0].keys) > 0
+	return k.nextKey
+}
+
+func (k *Key) SetString(s *string) {
+	k.s = s
+}
+
+func (k *Key) SetInt(i *int64) {
+	k.i = i
+}
+
+func (k *Key) SetNext(nk *Key) {
+	k.nextKey = nk
 }
 
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
@@ -236,11 +284,12 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if argVal.Literal == nil || argVal.Literal.Path == nil {
 			return nil, fmt.Errorf("must be a path")
 		}
-		arg, err := p.pathParser(argVal.Literal.Path)
+		np := newPath(argVal.Literal.Path.Fields)
+		arg, err := p.pathParser(np)
 		if err != nil {
 			return nil, err
 		}
-		return arg, nil
+		return arg, np.isComplete()
 	case strings.HasPrefix(name, "Getter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -290,7 +339,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		}
 		return StandardPMapGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
-		arg, err := p.enumParser(argVal.Enum)
+		arg, err := p.enumParser((*EnumSymbol)(argVal.Enum))
 		if err != nil {
 			return nil, fmt.Errorf("must be an Enum")
 		}

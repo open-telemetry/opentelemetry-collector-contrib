@@ -465,7 +465,12 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return &literal[K]{value: *i}, nil
 		}
 		if eL.Path != nil {
-			return p.pathParser(eL.Path)
+			np := newPath(eL.Path.Fields)
+			g, err := p.pathParser(np)
+			if err != nil {
+				return nil, err
+			}
+			return g, np.isComplete()
 		}
 		if eL.Converter != nil {
 			return p.newGetterFromConverter(*eL.Converter)
