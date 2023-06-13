@@ -23,6 +23,8 @@ type readerConfig struct {
 }
 
 // Reader manages a single file
+//
+// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
 type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
