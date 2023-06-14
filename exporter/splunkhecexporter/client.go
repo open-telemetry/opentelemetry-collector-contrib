@@ -406,10 +406,8 @@ func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.M
 
 	for !is.done {
 		buf.Reset()
-		var latestIterState iterState
-		var batchPermanentErrors []error
 
-		latestIterState, batchPermanentErrors = c.fillMetricsBufferMultiMetrics(merged, buf, is)
+		latestIterState, batchPermanentErrors := c.fillMetricsBufferMultiMetrics(merged, buf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
 			if err := c.postEvents(ctx, buf, headers); err != nil {
@@ -434,9 +432,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 
 	for !is.done {
 		buf.Reset()
-		var latestIterState iterState
-		var batchPermanentErrors []error
-		latestIterState, batchPermanentErrors = c.fillMetricsBuffer(md, buf, is)
+		latestIterState, batchPermanentErrors := c.fillMetricsBuffer(md, buf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
 			if err := c.postEvents(ctx, buf, headers); err != nil {
