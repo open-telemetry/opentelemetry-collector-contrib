@@ -299,8 +299,8 @@ CPU limit set for the container.
 CPU shares set for the container.
 
 | Unit | Metric Type | Value Type |
-| ---- | ----------- |------------|
-| {cpus} | Gauge | Int     |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
 
 ### container.cpu.throttling_data.periods
 
@@ -702,14 +702,6 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
 
-### container.uptime
-
-Time elapsed since container start time.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Double |
-
 ### container.restarts
 
 Number of restarts for the container.
@@ -717,6 +709,14 @@ Number of restarts for the container.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {restarts} | Sum | Int | Cumulative | true |
+
+### container.uptime
+
+Time elapsed since container start time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
 
 ## Resource Attributes
 

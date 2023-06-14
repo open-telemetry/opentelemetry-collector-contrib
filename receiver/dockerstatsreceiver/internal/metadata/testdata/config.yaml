@@ -282,9 +282,9 @@ none_set:
       enabled: false
     container.pids.limit:
       enabled: false
-    container.uptime:
-      enabled: false
     container.restarts:
+      enabled: false
+    container.uptime:
       enabled: false
   resource_attributes:
     container.hostname:

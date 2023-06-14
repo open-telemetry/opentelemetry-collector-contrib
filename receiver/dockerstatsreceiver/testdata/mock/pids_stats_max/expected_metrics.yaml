@@ -431,13 +431,6 @@ resourceMetrics:
                   startTimeUnixNano: "1683723781127718000"
                   timeUnixNano: "1683723781130612000"
             unit: '{pids}'
-          - description: Time elapsed since container start time.
-            name: container.uptime
-            gauge:
-              dataPoints:
-                - asDouble: 0.0002888012543185477
-                  timeUnixNano: "1657771705535206000"
-            unit: 's'
           - description: Number of restarts for the container.
             name: container.restarts
             sum:
@@ -448,6 +441,13 @@ resourceMetrics:
                   timeUnixNano: "1683723781130612000"
               isMonotonic: true
             unit: "{restarts}"
+          - description: Time elapsed since container start time.
+            name: container.uptime
+            gauge:
+              dataPoints:
+                - asDouble: 0.0002888012543185477
+                  timeUnixNano: "1657771705535206000"
+            unit: 's'
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest
