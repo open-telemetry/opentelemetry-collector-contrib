@@ -7,7 +7,9 @@
 | Distributions            | [contrib] |
 
 This exporter supports sending OpenTelemetry signals as documents to [OpenSearch](https://www.opensearch.org).
+
 The documents are sent using [observability catalog](https://github.com/opensearch-project/opensearch-catalog/tree/main/schema/observability) schema.
+
 ## Configuration options
 
 - `endpoints`: List of OpenSearch URLs. If endpoints is missing, the
@@ -24,15 +26,6 @@ The documents are sent using [observability catalog](https://github.com/opensear
   - `max_requests` (default=3): Number of HTTP request retries.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-- `mapping`: OpenTelemetry signals are encoded to JSON. The `mapping` section allows users to
-  additional related options.
-  - `mode` (default=none): Determines the JSON schema and related behaviour. Valid options are `none` or `sso`.
-  - `dedup` (default=true): Applies only when `mode = none`. When `dedup` is `true`, the exporter will try to find and remove duplicate fields/attributes
-    from events before publishing to OpenSearch. Some structured logging
-    libraries can produce duplicate fields (for example zap). OpenSearch
-    will reject documents that have duplicate fields.
-  - `dedot` (default=true): When enabled attributes with `.` will be split into
-    proper json objects.
 
 ### HTTP settings
 
