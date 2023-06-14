@@ -18,7 +18,10 @@
 ##
 
 ## COMMON & SHARED components
+cmd/otelcontribcol
+cmd/oteltestbedcol
 internal/common
+internal/tools
 
 ## DEPRECATED components
 
@@ -26,3 +29,4 @@ internal/common
 exporter/carbonexporter/
 receiver/carbonreceiver/
 receiver/wavefrontreceiver/
+processor/groupbyattrsprocessor/
