@@ -21,7 +21,7 @@ type SpanContext interface {
 	GetSpan() ptrace.Span
 }
 
-var SpanSymbolTable = map[ottl.enumSymbol]ottl.Enum{
+var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"SPAN_KIND_UNSPECIFIED": ottl.Enum(ptrace.SpanKindUnspecified),
 	"SPAN_KIND_INTERNAL":    ottl.Enum(ptrace.SpanKindInternal),
 	"SPAN_KIND_SERVER":      ottl.Enum(ptrace.SpanKindServer),
@@ -33,49 +33,51 @@ var SpanSymbolTable = map[ottl.enumSymbol]ottl.Enum{
 	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
 }
 
-func SpanPathGetSetter[K SpanContext](path []ottl.field) (ottl.GetSetter[K], error) {
-	if len(path) == 0 {
+func SpanPathGetSetter[K SpanContext](path ottl.Path) (ottl.GetSetter[K], error) {
+	switch path.Name() {
+	case "":
 		return accessSpan[K](), nil
-	}
-
-	switch path[0].Name {
 	case "trace_id":
-		if len(path) == 1 {
+		next, ok := path.Next()
+		if !ok {
 			return accessTraceID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if next.Name() == "string" {
 			return accessStringTraceID[K](), nil
 		}
 	case "span_id":
-		if len(path) == 1 {
+		next, ok := path.Next()
+		if !ok {
 			return accessSpanID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if next.Name() == "string" {
 			return accessStringSpanID[K](), nil
 		}
 	case "trace_state":
-		mapKey := path[0].Keys
+		mapKey := path.Keys()
 		if mapKey == nil {
 			return accessTraceState[K](), nil
 		}
-		return accessTraceStateKey[K](mapKey)
+		return accessTraceStateKey[K](*mapKey)
 	case "parent_span_id":
-		if len(path) == 1 {
+		next, ok := path.Next()
+		if !ok {
 			return accessParentSpanID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if next.Name() == "string" {
 			return accessStringParentSpanID[K](), nil
 		}
 	case "name":
 		return accessSpanName[K](), nil
 	case "kind":
-		if len(path) == 1 {
+		next, ok := path.Next()
+		if !ok {
 			return accessKind[K](), nil
 		}
-		if path[1].Name == "string" {
+		switch next.Name() {
+		case "string":
 			return accessStringKind[K](), nil
-		}
-		if path[1].Name == "deprecated_string" {
+		case "deprecated_string":
 			return accessDeprecatedStringKind[K](), nil
 		}
 	case "start_time_unix_nano":
@@ -83,11 +85,11 @@ func SpanPathGetSetter[K SpanContext](path []ottl.field) (ottl.GetSetter[K], err
 	case "end_time_unix_nano":
 		return accessEndTimeUnixNano[K](), nil
 	case "attributes":
-		mapKeys := path[0].Keys
+		mapKeys := path.Keys()
 		if mapKeys == nil {
 			return accessAttributes[K](), nil
 		}
-		return accessAttributesKey[K](mapKeys), nil
+		return accessAttributesKey[K](*mapKeys), nil
 	case "dropped_attributes_count":
 		return accessSpanDroppedAttributesCount[K](), nil
 	case "events":
@@ -99,10 +101,11 @@ func SpanPathGetSetter[K SpanContext](path []ottl.field) (ottl.GetSetter[K], err
 	case "dropped_links_count":
 		return accessDroppedLinksCount[K](), nil
 	case "status":
-		if len(path) == 1 {
+		next, ok := path.Next()
+		if !ok {
 			return accessStatus[K](), nil
 		}
-		switch path[1].Name {
+		switch next.Name() {
 		case "code":
 			return accessStatusCode[K](), nil
 		case "message":
@@ -207,27 +210,27 @@ func accessTraceState[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessTraceStateKey[K SpanContext](keys []ottl.key) (ottl.StandardGetSetter[K], error) {
-	if len(keys) != 1 {
+func accessTraceStateKey[K SpanContext](keys ottl.Key) (ottl.StandardGetSetter[K], error) {
+	if keys.Next() != nil {
 		return ottl.StandardGetSetter[K]{}, fmt.Errorf("must provide exactly 1 key when accessing trace_state")
 	}
-	if keys[0].String == nil {
+	if keys.String() == nil {
 		return ottl.StandardGetSetter[K]{}, fmt.Errorf("trace_state indexing type must be a string")
 	}
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
 			if ts, err := trace.ParseTraceState(tCtx.GetSpan().TraceState().AsRaw()); err == nil {
-				if keys[0].String == nil {
+				if keys.String() == nil {
 					return nil, err
 				}
-				return ts.Get(*keys[0].String), nil
+				return ts.Get(*keys.String()), nil
 			}
 			return nil, nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
 				if ts, err := trace.ParseTraceState(tCtx.GetSpan().TraceState().AsRaw()); err == nil {
-					if updated, err := ts.Insert(*keys[0].String, str); err == nil {
+					if updated, err := ts.Insert(*keys.String(), str); err == nil {
 						tCtx.GetSpan().TraceState().FromRaw(updated.String())
 					}
 				}
@@ -402,7 +405,7 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K SpanContext](keys []ottl.key) ottl.StandardGetSetter[K] {
+func accessAttributesKey[K SpanContext](keys ottl.Key) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
 			return GetMapValue(tCtx.GetSpan().Attributes(), keys)

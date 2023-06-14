@@ -28,9 +28,9 @@ func ResourcePathGetSetter[K ResourceContext](path ottl.Path) (ottl.GetSetter[K]
 		return accessResourceAttributesKey[K](*mapKeys), nil
 	case "dropped_attributes_count":
 		return accessResourceDroppedAttributesCount[K](), nil
+	default:
+		return nil, fmt.Errorf("invalid resource path expression %v", path)
 	}
-
-	return nil, fmt.Errorf("invalid resource path expression %v", path)
 }
 
 func accessResource[K ResourceContext]() ottl.StandardGetSetter[K] {

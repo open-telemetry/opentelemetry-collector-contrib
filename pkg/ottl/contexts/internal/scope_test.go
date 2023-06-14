@@ -21,14 +21,14 @@ func TestScopePathGetSetter(t *testing.T) {
 	newAttrs.PutStr("hello", "world")
 	tests := []struct {
 		name     string
-		path     []ottl.field
+		path     func() ottl.Path
 		orig     interface{}
 		newVal   interface{}
 		modified func(is pcommon.InstrumentationScope)
 	}{
 		{
 			name:   "instrumentation_scope",
-			path:   []ottl.field{},
+			path:   func() ottl.Path { return ottl.NewEmptyPath() },
 			orig:   refIS,
 			newVal: pcommon.NewInstrumentationScope(),
 			modified: func(is pcommon.InstrumentationScope) {
@@ -37,10 +37,10 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope name",
-			path: []ottl.field{
-				{
-					Name: "name",
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("name")
+				return p
 			},
 			orig:   refIS.Name(),
 			newVal: "newname",
@@ -50,10 +50,10 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope version",
-			path: []ottl.field{
-				{
-					Name: "version",
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("version")
+				return p
 			},
 			orig:   refIS.Version(),
 			newVal: "next",
@@ -63,10 +63,10 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				return p
 			},
 			orig:   refIS.Attributes(),
 			newVal: newAttrs,
@@ -76,15 +76,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("str"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("str"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig:   "val",
 			newVal: "newVal",
@@ -94,10 +92,10 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: []ottl.field{
-				{
-					Name: "dropped_attributes_count",
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("dropped_attributes_count")
+				return p
 			},
 			orig:   int64(10),
 			newVal: int64(20),
@@ -107,15 +105,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("bool"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("bool"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig:   true,
 			newVal: false,
@@ -125,15 +121,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("int"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("int"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig:   int64(10),
 			newVal: int64(20),
@@ -143,15 +137,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("double"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("double"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig:   1.2,
 			newVal: 2.4,
@@ -161,15 +153,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("bytes"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
@@ -179,15 +169,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array empty",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("arr_empty"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("arr_empty"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() pcommon.Slice {
 				val, _ := refIS.Attributes().Get("arr_empty")
@@ -200,15 +188,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("arr_str"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() pcommon.Slice {
 				val, _ := refIS.Attributes().Get("arr_str")
@@ -222,15 +208,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("arr_bool"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() pcommon.Slice {
 				val, _ := refIS.Attributes().Get("arr_bool")
@@ -244,15 +228,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("arr_int"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() pcommon.Slice {
 				val, _ := refIS.Attributes().Get("arr_int")
@@ -266,15 +248,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("arr_float"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() pcommon.Slice {
 				val, _ := refIS.Attributes().Get("arr_float")
@@ -288,15 +268,13 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("arr_bytes"))
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() pcommon.Slice {
 				val, _ := refIS.Attributes().Get("arr_bytes")
@@ -310,21 +288,19 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("slice"))
+				k2 := ottl.NewEmptyKey()
+				k2.SetInt(ottltest.Intp(0))
+				k3 := ottl.NewEmptyKey()
+				k3.SetString(ottltest.Strp("map"))
+				k2.SetNext(&k3)
+				k.SetNext(&k2)
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() string {
 				val, _ := refIS.Attributes().Get("slice")
@@ -338,21 +314,19 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.field{
-				{
-					Name: "attributes",
-					Keys: []ottl.key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-					},
-				},
+			path: func() ottl.Path {
+				p := ottl.NewEmptyPath()
+				p.SetName("attributes")
+				k := ottl.NewEmptyKey()
+				k.SetString(ottltest.Strp("new"))
+				k2 := ottl.NewEmptyKey()
+				k2.SetInt(ottltest.Intp(2))
+				k3 := ottl.NewEmptyKey()
+				k3.SetInt(ottltest.Intp(0))
+				k2.SetNext(&k3)
+				k.SetNext(&k2)
+				p.SetKeys(&k)
+				return p
 			},
 			orig: func() interface{} {
 				return nil
@@ -368,7 +342,7 @@ func TestScopePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ScopePathGetSetter[*instrumentationScopeContext](tt.path)
+			accessor, err := ScopePathGetSetter[*instrumentationScopeContext](tt.path())
 			assert.NoError(t, err)
 
 			is := createInstrumentationScope()
