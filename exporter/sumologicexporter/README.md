@@ -86,7 +86,7 @@ exporters:
     # List of regexes for attributes which should be send as metadata
     # default = []
     #
-    # This opion is deprecated:
+    # This option is deprecated:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
     metadata_attributes: [<regex>]
 
@@ -106,7 +106,7 @@ exporters:
     # Please regfer to Source temmplates for formatting explanation:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
     #
-    # This opion is deprecated:
+    # This option is deprecated:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
     graphite_template: <template>
 
@@ -115,7 +115,7 @@ exporters:
     # Please regfer to Source temmplates for formatting explanation:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
     #
-    # This opion is deprecated:
+    # This option is deprecated:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
     source_category: <template>
 
@@ -124,7 +124,7 @@ exporters:
     # Please regfer to Source temmplates for formatting explanation:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
     #
-    # This opion is deprecated:
+    # This option is deprecated:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
     source_name: <template>
 
@@ -133,7 +133,7 @@ exporters:
     # Please regfer to Source temmplates for formatting explanation:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
     #
-    # This opion is deprecated:
+    # This option is deprecated:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
     source_host: <template>
 
