@@ -3,6 +3,6 @@ type: carbon
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib, splunk, observiq, sumo]
 
