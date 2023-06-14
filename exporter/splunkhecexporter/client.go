@@ -417,7 +417,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
 			if err := c.postEvents(ctx, buf, headers); err != nil {
-				return consumererror.NewMetrics(err, subMetrics(md, is))
+				return consumererror.NewMetrics(err, md)
 			}
 		}
 		is = latestIterState
@@ -493,49 +493,6 @@ func subLogs(src plog.Logs, state iterState) plog.Logs {
 			}
 			for ; k < logs.Len(); k++ {
 				logs.At(k).CopyTo(logsSub.AppendEmpty())
-			}
-		}
-	}
-
-	return dst
-}
-
-// subMetrics returns a subset of metrics starting from the state.
-func subMetrics(src pmetric.Metrics, state iterState) pmetric.Metrics {
-	if state.empty() {
-		return src
-	}
-
-	dst := pmetric.NewMetrics()
-	resources := src.ResourceMetrics()
-	resourcesSub := dst.ResourceMetrics()
-
-	for i := state.resource; i < resources.Len(); i++ {
-		newSub := resourcesSub.AppendEmpty()
-		resources.At(i).Resource().CopyTo(newSub.Resource())
-
-		libraries := resources.At(i).ScopeMetrics()
-		librariesSub := newSub.ScopeMetrics()
-
-		j := 0
-		if i == state.resource {
-			j = state.library
-		}
-		for ; j < libraries.Len(); j++ {
-			lib := libraries.At(j)
-
-			newLibSub := librariesSub.AppendEmpty()
-			lib.Scope().CopyTo(newLibSub.Scope())
-
-			metrics := lib.Metrics()
-			metricsSub := newLibSub.Metrics()
-
-			k := 0
-			if i == state.resource && j == state.library {
-				k = state.record
-			}
-			for ; k < metrics.Len(); k++ {
-				metrics.At(k).CopyTo(metricsSub.AppendEmpty())
 			}
 		}
 	}
