@@ -8,5 +8,5 @@ import (
 
 const (
 	Type             = "wavefront"
-	MetricsStability = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelUnmaintained
 )

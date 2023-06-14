@@ -97,6 +97,9 @@ func (c *client) pushMetricsData(
 		}
 	}
 
+	if c.config.UseMultiMetricFormat {
+		return c.pushMultiMetricsDataInBatches(ctx, md, localHeaders)
+	}
 	return c.pushMetricsDataInBatches(ctx, md, localHeaders)
 }
 
@@ -255,15 +258,6 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 				// Parsing metric record to Splunk event.
 				events := mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)
 				tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
-				if c.config.UseMultiMetricFormat {
-					merged, err := mergeEventsToMultiMetricFormat(events)
-					if err != nil {
-						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
-							"error merging events: %w", err)))
-					} else {
-						events = merged
-					}
-				}
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
 					b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
@@ -292,6 +286,43 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 					"error writing the event: %w", err)))
 			}
+		}
+	}
+
+	return iterState{done: true}, permanentErrors
+}
+
+func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffer, is iterState) (iterState, []error) {
+	var permanentErrors []error
+	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
+	defer jsonStreamPool.Put(jsonStream)
+
+	for i := is.record; i < len(events); i++ {
+		event := events[i]
+		// JSON encoding event and writing to buffer.
+		b, jsonErr := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+		if jsonErr != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, jsonErr)))
+			continue
+		}
+		_, err := buf.Write(b)
+		if errors.Is(err, errOverCapacity) {
+			if !buf.Empty() {
+				return iterState{
+					record: i,
+					done:   false,
+				}, permanentErrors
+			}
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
+					" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
+			return iterState{
+				record: i + 1,
+				done:   i+1 != len(events),
+			}, permanentErrors
+		} else if err != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
+				"error writing the event: %w", err)))
 		}
 	}
 
@@ -345,6 +376,51 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 	return iterState{done: true}, permanentErrors
 }
 
+// pushMultiMetricsDataInBatches sends batches of Splunk multi-metric events in JSON format.
+// The batch content length is restricted to MaxContentLengthMetrics.
+// md metrics are parsed to Splunk events.
+func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, headers map[string]string) error {
+	buf := c.bufferPool.get()
+	defer c.bufferPool.put(buf)
+	is := iterState{}
+
+	var permanentErrors []error
+	var events []*splunk.Event
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+
+				// Parsing metric record to Splunk event.
+				events = append(events, mapMetricToSplunkEvent(rm.Resource(), metric, c.config, c.logger)...)
+			}
+		}
+	}
+
+	merged, err := mergeEventsToMultiMetricFormat(events)
+	if err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("error merging events: %w", err))
+	}
+
+	for !is.done {
+		buf.Reset()
+
+		latestIterState, batchPermanentErrors := c.fillMetricsBufferMultiMetrics(merged, buf, is)
+		permanentErrors = append(permanentErrors, batchPermanentErrors...)
+		if !buf.Empty() {
+			if err := c.postEvents(ctx, buf, headers); err != nil {
+				return consumererror.NewMetrics(err, md)
+			}
+		}
+
+		is = latestIterState
+	}
+
+	return multierr.Combine(permanentErrors...)
+}
+
 // pushMetricsDataInBatches sends batches of Splunk events in JSON format.
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
@@ -363,6 +439,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 				return consumererror.NewMetrics(err, subMetrics(md, is))
 			}
 		}
+
 		is = latestIterState
 	}
 
