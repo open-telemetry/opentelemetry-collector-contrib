@@ -173,9 +173,6 @@ service:
 #### Scope Name
 When using the logs exporter with logs originating from instrumentation library (i.e opentelemetry log4j2 appender), the scopeName field will be added (if the field is populated in the original log). 
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-# Logzio Exporter
 
 | Status                   |                       |
 | ------------------------ | --------------------- |
@@ -342,10 +339,3 @@ service:
     logs:
       level: debug #activate debug mode
 ```
-
-#### Scope Name
-When using the logs exporter with logs originating from instrumentation library (i.e opentelemetry log4j2 appender), the scopeName field will be added (if the field is populated in the original log).
-No additional configuration needed.
-
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
