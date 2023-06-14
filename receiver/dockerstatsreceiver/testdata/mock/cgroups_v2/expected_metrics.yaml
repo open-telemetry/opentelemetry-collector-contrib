@@ -72,8 +72,7 @@ resourceMetrics:
             name: container.cpu.percent
             unit: "1"
           - description: CPU shares set for the container.
-            sum:
-              aggregationTemporality: 2
+            gauge:
               dataPoints:
                 - asInt: "0"
                   startTimeUnixNano: "1682426015940992000"

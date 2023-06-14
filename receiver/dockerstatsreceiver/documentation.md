@@ -298,9 +298,9 @@ CPU limit set for the container.
 
 CPU shares set for the container.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- |------------|
+| {cpus} | Gauge | Int     |
 
 ### container.cpu.throttling_data.periods
 

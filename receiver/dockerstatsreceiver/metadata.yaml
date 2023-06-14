@@ -147,10 +147,8 @@ metrics:
     enabled: false
     description: "CPU shares set for the container."
     unit: "1"
-    sum:
+    gauge:
       value_type: int
-      monotonic: false
-      aggregation: cumulative
 
 
   # Memory
