@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -205,7 +206,8 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 				zap.NamedError("reason", err))
 
 		default:
-			logger.Error(fmt.Sprintf("Drop dcos: failed to index: %#v", resp.Error),
+			erroJson, _ := json.Marshal(resp.Error)
+			logger.Error(fmt.Sprintf("Drop docs: failed to index: %s", erroJson),
 				zap.Int("attempt", attempts),
 				zap.Int("status", resp.Status))
 		}
