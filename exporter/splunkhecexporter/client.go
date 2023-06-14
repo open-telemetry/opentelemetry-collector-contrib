@@ -277,8 +277,8 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
 					" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
 			return iterState{
-				record: i,
-				done:   false,
+				record: i + 1,
+				done:   i+1 != len(events),
 			}, permanentErrors
 		} else if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
@@ -336,8 +336,8 @@ func (c *client) fillMetricsBufferMultiMetrics(metrics pmetric.Metrics, buf buff
 				fmt.Errorf("dropped metric event: error: event size %d bytes larger than configured max"+
 					" content length %d bytes", len(b), c.config.MaxContentLengthMetrics)))
 			return iterState{
-				record: i,
-				done:   false,
+				record: i + 1,
+				done:   i+1 != len(merged),
 			}, permanentErrors
 		} else if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
