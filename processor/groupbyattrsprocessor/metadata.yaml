@@ -3,6 +3,6 @@ type: groupbyattrs
 status:
   class: processor
   stability:
-    beta: [traces, metrics, logs]
+    unmaintained: [traces, metrics, logs]
   distributions: [contrib, splunk, observiq, sumo]
   warnings: []
