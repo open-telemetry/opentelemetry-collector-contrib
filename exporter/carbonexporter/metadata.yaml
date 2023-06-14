@@ -3,5 +3,5 @@ type: carbon
 status:
   class: exporter
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib, observiq, sumo]
