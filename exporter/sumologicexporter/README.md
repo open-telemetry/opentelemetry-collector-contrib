@@ -12,7 +12,7 @@
 
 ## Migration to new architecture
 
-**This exporter is subject of major changes now.**
+**This exporter is undergoing major changes right now.**
 
 For some time we have been developing [new Sumo Logic exporter](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/exporter/sumologicexporter#sumo-logic-exporter) and now we are in progress of moving it into this repository.
 
