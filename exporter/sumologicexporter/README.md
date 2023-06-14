@@ -16,7 +16,7 @@
 
 For some time we have been developing [new Sumo Logic exporter](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/exporter/sumologicexporter#sumo-logic-exporter) and now we are in progress of moving it into this repository.
 
-The following options are deprecated and they won't exist in new version:
+The following options are deprecated and they will not exist in the new version:
 
 - `metric_format: {carbon2, graphite}`
 - `metadata_attributes: [<regex>]`
