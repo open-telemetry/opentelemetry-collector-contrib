@@ -230,6 +230,7 @@ func handleMessage(u *Input, ctx context.Context, remoteAddr net.Addr, log []byt
 	u.Write(ctx, entry)
 }
 
+// readMessage will read log messages from the connection.
 func (u *Input) readMessage() ([]byte, net.Addr, error) {
 	n, addr, err := u.connection.ReadFrom(u.buffer)
 	if err != nil {
