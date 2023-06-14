@@ -32,6 +32,22 @@ func newDefaultTracesSettings() TracesSettings {
 	}
 }
 
+const logsExportResourceInfoDefault = false
+
+type LogsSettings struct {
+	// ExportResourceInfo is optional flag to signal that the resource info is being exported to DataSet while exporting Logs.
+	// This is especially useful when reducing DataSet billable log volume.
+	// Default value: false.
+	ExportResourceInfo bool `mapstructure:"export_resource_info_on_event"`
+}
+
+// newDefaultLogsSettings returns the default settings for LogsSettings.
+func newDefaultLogsSettings() LogsSettings {
+	return LogsSettings{
+		ExportResourceInfo: logsExportResourceInfoDefault,
+	}
+}
+
 const bufferMaxLifetime = 5 * time.Second
 const bufferRetryInitialInterval = 5 * time.Second
 const bufferRetryMaxInterval = 30 * time.Second
@@ -61,6 +77,7 @@ type Config struct {
 	APIKey                         configopaque.String `mapstructure:"api_key"`
 	BufferSettings                 `mapstructure:"buffer"`
 	TracesSettings                 `mapstructure:"traces"`
+	LogsSettings                   `mapstructure:"logs"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
@@ -96,7 +113,8 @@ func (c *Config) String() string {
 	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
 	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
-	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
+	s += fmt.Sprintf("%s: %+v; ", "TimeoutSettings", c.TimeoutSettings)
+	s += fmt.Sprintf("%s: %+v", "LogsSettings", c.LogsSettings)
 
 	return s
 }
@@ -123,6 +141,7 @@ func (c *Config) convert() (*ExporterConfig, error) {
 				},
 			},
 			tracesSettings: c.TracesSettings,
+			logsSettings:   c.LogsSettings,
 		},
 		nil
 }
@@ -130,4 +149,5 @@ func (c *Config) convert() (*ExporterConfig, error) {
 type ExporterConfig struct {
 	datasetConfig  *datasetConfig.DataSetConfig
 	tracesSettings TracesSettings
+	logsSettings   LogsSettings
 }
