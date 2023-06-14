@@ -43,14 +43,8 @@ func (m *Manager) worker(ctx context.Context) {
 			return
 		}
 		r, fp := chanData.reader, chanData.fp
-		r.ReadToEnd(ctx)
-		// Delete a file if deleteAfterRead is enabled and we reached the end of the file
-		if m.deleteAfterRead && r.eof {
-			r.Close()
-			if err := os.Remove(r.file.Name()); err != nil {
-				m.Errorf("could not delete %s", r.file.Name())
-			}
-		} else {
+
+		if !m.readToEnd(r, ctx) {
 			// Save off any files that were not fully read or if deleteAfterRead is disabled
 			m.saveCurrentConcurrent(r)
 		}
@@ -124,7 +118,7 @@ func (m *Manager) consumeConcurrent(ctx context.Context, paths []string) {
 			m.trieLock.Lock()
 			m.trie.Put(fp.FirstBytes, true)
 			m.trieLock.Unlock()
-			m.readerChan <- ReaderWrapper{reader: reader, fp: fp}
+			m.readerChan <- readerWrapper{reader: reader, fp: fp}
 		}
 	}
 }

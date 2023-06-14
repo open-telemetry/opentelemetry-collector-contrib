@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+
+	"math/rand"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -37,18 +39,18 @@ import (
 
 func TestMain(m *testing.M) {
 	// Run once with thread pool featuregate disabled
+	// code := m.Run()
+	// if code > 0 {
+	// 	os.Exit(code)
+	// }
+
+	// // Run once with thread pool featuregate enabled
+	featuregate.GlobalRegistry().Set(useThreadPool.ID(), true)
 	code := m.Run()
 	if code > 0 {
 		os.Exit(code)
 	}
-
-	// // Run once with thread pool featuregate enabled
-	featuregate.GlobalRegistry().Set(useThreadPool.ID(), true)
-	code = m.Run()
 	featuregate.GlobalRegistry().Set(useThreadPool.ID(), false)
-	if code > 0 {
-		os.Exit(code)
-	}
 }
 
 func TestCleanStop(t *testing.T) {
@@ -1600,4 +1602,76 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	// be ingested from the beginning
 	waitForTokens(t, emitCalls, [][]byte{[]byte(content), []byte(newContent1), []byte(newContent)})
 	operator.wg.Wait()
+}
+
+func BenchmarkTest(b *testing.B) {
+	ans := time.Duration(0)
+	// logs := []int{
+	// 	// 1000,
+	// 	// 10000,
+	// 	// 20000,
+	// 	// 40000,
+	// 	// 80000,
+	// 	100000,
+	// }
+	if useThreadPool.IsEnabled() {
+		fmt.Println("Enabled")
+	} else {
+		fmt.Println("Disabled")
+
+	}
+	b.Run("Custom", func(b *testing.B) {
+		fmt.Println(b.N)
+		rootDir := b.TempDir()
+		num_files := b.N * 128
+		num_logs := make([]int, 0)
+		num := 0
+		for j := 0; j < num_files; j++ {
+			if rand.Float32() <= 0.3 {
+				num += 100000
+				num_logs = append(num_logs, 100000)
+			} else {
+				num += 10
+				num_logs = append(num_logs, 10)
+			}
+
+		}
+		cfg := NewConfig().includeDir(rootDir)
+		cfg.StartAt = "beginning"
+		cfg.MaxConcurrentFiles = 32
+		emitCalls := make(chan []byte)
+
+		operator, _ := cfg.Build(testutil.Logger(b), emitOnChan(emitCalls))
+		// operator, emitCalls := buildTestManagerWithOptions(b, cfg)
+		b.ResetTimer()
+		operator.Start(testutil.NewMockPersister("test"))
+		defer func() {
+			operator.Stop()
+		}()
+		getMessage := func(f, m int) string { return fmt.Sprintf("round %d,file %d,\n", f, m) }
+
+		var _wg sync.WaitGroup
+		for j := 0; j < num_files; j++ {
+			_wg.Add(1)
+
+			go func(j int) {
+				defer _wg.Done()
+				file, _ := os.OpenFile(filepath.Join(rootDir, fmt.Sprintf("%d.log", j)), os.O_CREATE|os.O_RDWR, 0600)
+				for k := 0; k < num_logs[j]; k++ {
+					file.WriteString(getMessage(j, k))
+					// time.Sleep(time.Millisecond * 2)
+				}
+			}(j)
+		}
+		// tick := time.NewTicke / r(5*time.Second)
+		time1 := time.Now()
+		for i := 0; i < num; i++ {
+			<-emitCalls
+		}
+		s := time.Now().Sub(time1)
+		ans += s
+		fmt.Println(s)
+		_wg.Wait()
+	})
+	fmt.Println(ans)
 }

@@ -55,7 +55,7 @@ type Manager struct {
 	workerWg       sync.WaitGroup
 	knownFilesLock sync.RWMutex
 
-	readerChan chan ReaderWrapper
+	readerChan chan readerWrapper
 	trieLock   sync.RWMutex
 
 	// TRIE - this data structure stores the fingerprint of the files which are currently being consumed
@@ -81,7 +81,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 
 	// If useThreadPool is enabled, kick off the worker threads
 	if useThreadPool.IsEnabled() {
-		m.readerChan = make(chan ReaderWrapper, m.maxBatchFiles*2)
+		m.readerChan = make(chan readerWrapper, m.maxBatchFiles*2)
 		for i := 0; i < m.maxBatchFiles; i++ {
 			m.workerWg.Add(1)
 			go m.worker(ctx)
@@ -97,10 +97,10 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
-	if useThreadPool.IsEnabled() {
+	if useThreadPool.IsEnabled() && m.readerChan != nil {
 		close(m.readerChan)
-		m.workerWg.Wait()
 	}
+	m.workerWg.Wait()
 	// save off any files left
 	m.syncLastPollFiles(m.ctx)
 
@@ -166,6 +166,18 @@ func (m *Manager) poll(ctx context.Context) {
 	m.consume(ctx, matches)
 }
 
+func (m *Manager) readToEnd(r *Reader, ctx context.Context) bool {
+	r.ReadToEnd(ctx)
+	if m.deleteAfterRead && r.eof {
+		r.Close()
+		if err := os.Remove(r.file.Name()); err != nil {
+			m.Errorf("could not delete %s", r.file.Name())
+		}
+		return true
+	}
+	return false
+}
+
 func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files")
 	readers := make([]*Reader, 0, len(paths))
@@ -186,14 +198,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *Reader) {
 			defer wg.Done()
-			r.ReadToEnd(ctx)
-			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
-			if m.deleteAfterRead && r.eof {
-				r.Close()
-				if err := os.Remove(r.file.Name()); err != nil {
-					m.Errorf("could not delete %s", r.file.Name())
-				}
-			}
+			m.readToEnd(r, ctx)
 		}(reader)
 	}
 	wg.Wait()

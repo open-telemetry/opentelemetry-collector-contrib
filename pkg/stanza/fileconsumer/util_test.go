@@ -103,7 +103,7 @@ func buildTestManagerWithOptions(t *testing.T, cfg *Config, opts ...testManagerO
 	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
 	if tmc.initializeChannel {
-		input.readerChan = make(chan ReaderWrapper, cfg.MaxConcurrentFiles/2)
+		input.readerChan = make(chan readerWrapper, cfg.MaxConcurrentFiles/2)
 		ctx, cancel := context.WithCancel(context.Background())
 		input.cancel = cancel
 		input.ctx = ctx
