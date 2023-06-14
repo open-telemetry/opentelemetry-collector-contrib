@@ -85,7 +85,7 @@ func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 			tsUnix := time.Unix(int64(count), int64(count)*time.Millisecond.Nanoseconds())
 			ilm := rm.ScopeMetrics().AppendEmpty()
 			metric := ilm.Metrics().AppendEmpty()
-			metric.SetName("gauge_double_with_dims")
+			metric.SetName(fmt.Sprintf("gauge_double_with_dims_%d", j))
 			doublePt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 			doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 			doublePt.SetDoubleValue(doubleVal)
@@ -1605,6 +1605,148 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 
 	for i := 0; i < b.N; i++ {
 		err := exp.ConsumeLogs(context.Background(), logs)
+		require.NoError(b, err)
+	}
+}
+
+// 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
+func Benchmark_pushMetricData_10_10_1024(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 1024, false, false)
+}
+
+// 10 resources, 10 records, 8Kb max HEC batch: 2 HEC batches
+func Benchmark_pushMetricData_10_10_8K(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 8*1024, false, false)
+}
+
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_10_10_2M(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 2*1024*1024, false, false)
+}
+
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_10_200_2M(b *testing.B) {
+	benchPushMetricData(b, 10, 200, 2*1024*1024, false, false)
+}
+
+// 100 resources, 200 records, 2Mb max HEC batch: 2 HEC batches
+func Benchmark_pushMetricData_100_200_2M(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 2*1024*1024, false, false)
+}
+
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushMetricData_100_200_5M(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 5*1024*1024, false, false)
+}
+
+// 10 resources, 10 records, 1Kb max HEC batch: 2 HEC batches
+func Benchmark_pushMetricData_compressed_10_10_1024(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 1024, true, false)
+}
+
+// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batche
+func Benchmark_pushMetricData_compressed_10_10_8K(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 8*1024, true, false)
+}
+
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_compressed_10_10_2M(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 2*1024*1024, true, false)
+}
+
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_compressed_10_200_2M(b *testing.B) {
+	benchPushMetricData(b, 10, 200, 2*1024*1024, true, false)
+}
+
+// 100 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_compressed_100_200_2M(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 2*1024*1024, true, false)
+}
+
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushMetricData_compressed_100_200_5M(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 5*1024*1024, true, false)
+}
+
+// 10 resources, 10 records, 1Kb max HEC batch: 17 HEC batches
+func Benchmark_pushMetricData_10_10_1024_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 1024, false, true)
+}
+
+// 10 resources, 10 records, 8Kb max HEC batch: 2 HEC batches
+func Benchmark_pushMetricData_10_10_8K_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 8*1024, false, true)
+}
+
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_10_10_2M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 2*1024*1024, false, true)
+}
+
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_10_200_2M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 200, 2*1024*1024, false, true)
+}
+
+// 100 resources, 200 records, 2Mb max HEC batch: 2 HEC batches
+func Benchmark_pushMetricData_100_200_2M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 2*1024*1024, false, true)
+}
+
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushMetricData_100_200_5M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 5*1024*1024, false, true)
+}
+
+// 10 resources, 10 records, 1Kb max HEC batch: 2 HEC batches
+func Benchmark_pushMetricData_compressed_10_10_1024_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 1024, true, true)
+}
+
+// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batche
+func Benchmark_pushMetricData_compressed_10_10_8K_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 8*1024, true, true)
+}
+
+// 10 resources, 10 records, 1Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_compressed_10_10_2M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 10, 2*1024*1024, true, true)
+}
+
+// 10 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_compressed_10_200_2M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 10, 200, 2*1024*1024, true, true)
+}
+
+// 100 resources, 200 records, 2Mb max HEC batch: 1 HEC batch
+func Benchmark_pushMetricData_compressed_100_200_2M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 2*1024*1024, true, true)
+}
+
+// 100 resources, 200 records, 5Mb max HEC batch: 1 HEC batches
+func Benchmark_pushMetricData_compressed_100_200_5M_MultiMetric(b *testing.B) {
+	benchPushMetricData(b, 100, 200, 5*1024*1024, true, true)
+}
+
+func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize uint, compressionEnabled bool, useMultiMetricFormat bool) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.MaxContentLengthMetrics = bufSize
+	config.DisableCompression = !compressionEnabled
+	config.UseMultiMetricFormat = useMultiMetricFormat
+	c := newLogsClient(exportertest.NewNopCreateSettings(), config)
+	c.hecWorker = &mockHecWorker{}
+	exp, err := exporterhelper.NewMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config,
+		c.pushMetricsData)
+	require.NoError(b, err)
+
+	metrics := createMetricsData(numResources, numRecords)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := exp.ConsumeMetrics(context.Background(), metrics)
 		require.NoError(b, err)
 	}
 }
