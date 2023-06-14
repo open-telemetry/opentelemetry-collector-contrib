@@ -28,6 +28,8 @@ type osBulkIndexerCurrent = opensearchutil.BulkIndexer
 type osBulkIndexerItem = opensearchutil.BulkIndexerItem
 type osBulkIndexerResponseItem = opensearchutil.BulkIndexerResponseItem
 
+var retryOnStatus = []int{500, 502, 503, 504, 429}
+
 type clientLogger zap.Logger
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
@@ -131,7 +133,6 @@ func newBulkIndexer(logger *zap.Logger, client *opensearch.Client, config *Confi
 		FlushBytes:    config.Flush.Bytes,
 		FlushInterval: config.Flush.Interval,
 		Client:        client,
-		Pipeline:      config.Pipeline,
 		Timeout:       config.Timeout,
 
 		OnError: func(_ context.Context, err error) {
@@ -175,7 +176,7 @@ func shouldRetryEvent(status int) bool {
 func pushDocuments(ctx context.Context, logger *zap.Logger, index string, document []byte, bulkIndexer osBulkIndexerCurrent, maxAttempts int) error {
 	attempts := 1
 	body := bytes.NewReader(document)
-	item := osBulkIndexerItem{Action: createAction, Index: index, Body: body}
+	item := osBulkIndexerItem{Action: "create", Index: index, Body: body}
 	// Setup error handler. The handler handles the per item response status based on the
 	// selective ACKing in the bulk response.
 	item.OnFailure = func(ctx context.Context, item osBulkIndexerItem, resp osBulkIndexerResponseItem, err error) {

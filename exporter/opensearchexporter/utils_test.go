@@ -39,7 +39,7 @@ type httpTestError struct {
 	cause   error
 }
 
-const opensearchVersion = "8.4.0"
+const opensearchVersion = "2.9.0"
 
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())
@@ -186,7 +186,10 @@ func handleErr(fn func(http.ResponseWriter, *http.Request) error) http.HandlerFu
 
 func (item *itemResponse) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, `{"create": {"status": %v}}`, item.Status)
+	_, err := fmt.Fprintf(&buf, `{"create": {"status": %v}}`, item.Status)
+	if err != nil {
+		return nil, err
+	}
 	return buf.Bytes(), nil
 }
 

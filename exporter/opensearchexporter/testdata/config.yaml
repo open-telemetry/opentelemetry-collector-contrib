@@ -7,43 +7,9 @@ opensearch/trace:
   timeout: 2m
   headers:
     myheader: test
-  traces_index: trace_index
-  pipeline: mypipeline
   user: open
   password: search
   flush:
     bytes: 10485760
   retry:
     max_requests: 5
-opensearch/log:
-  tls:
-    insecure: false
-  endpoints: [http://localhost:9200]
-  logs_index: my_log_index
-  timeout: 2m
-  headers:
-    myheader: test
-  pipeline: mypipeline
-  user: open
-  password: search
-  flush:
-    bytes: 10485760
-  retry:
-    max_requests: 5
-opensearch/bad_mode:
-  tls:
-    insecure: false
-  endpoints: [http://localhost:9200]
-  logs_index: my_log_index
-  timeout: 2m
-  headers:
-    myheader: test
-  pipeline: mypipeline
-  user: open
-  password: search
-  flush:
-    bytes: 10485760
-  retry:
-    max_requests: 5
-  mapping:
-    mode: rando

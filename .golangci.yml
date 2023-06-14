@@ -272,6 +272,9 @@ issues:
     - path: elasticsearchexporter
       linters:
         - exhaustive
+    - path: opensearchexporter
+      linters:
+        - exhaustive
     - path: datadogexporter
       linters:
         - exhaustive

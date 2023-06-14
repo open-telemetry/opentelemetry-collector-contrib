@@ -1,11 +1,10 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package opensearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
+package opensearchexporter // Package opensearchexporter
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -28,20 +27,11 @@ type Config struct {
 	// NumWorkers configures the number of workers publishing bulk requests.
 	NumWorkers int `mapstructure:"num_workers"`
 
-	// This setting is required when logging pipelines used.
-	LogsIndex string `mapstructure:"logs_index"`
-
-	// This setting is required when traces pipelines used.
-	TracesIndex string `mapstructure:"traces_index"`
-
-	// Pipeline ingest node pipeline name that should be used to process the
-	// events.
-	Pipeline string `mapstructure:"pipeline"`
-
 	HTTPClientSettings `mapstructure:",squash"`
-	Retry              RetrySettings    `mapstructure:"retry"`
-	Flush              FlushSettings    `mapstructure:"flush"`
-	Mapping            MappingsSettings `mapstructure:"mapping"`
+	Retry              RetrySettings `mapstructure:"retry"`
+	Flush              FlushSettings `mapstructure:"flush"`
+	Namespace          string        `mapstructure:"namespace"`
+	Dataset            string        `mapstructure:"dataset"`
 }
 
 type HTTPClientSettings struct {
@@ -57,7 +47,7 @@ type HTTPClientSettings struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// Headers allows users to configure optional HTTP headers that
-	// will be send with each HTTP request.
+	// will be sent with each HTTP request.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
 
 	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
@@ -114,16 +104,6 @@ var (
 	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
 )
 
-func isValidMapping(candidate string) bool {
-	switch candidate {
-	case "none":
-	case "no":
-	case "sso":
-		return true
-	}
-	return false
-}
-
 // Validate validates the opensearch server configuration.
 func (cfg *Config) Validate() error {
 	if len(cfg.Endpoints) == 0 {
@@ -136,10 +116,6 @@ func (cfg *Config) Validate() error {
 		if endpoint == "" {
 			return errConfigEmptyEndpoint
 		}
-	}
-
-	if !isValidMapping(cfg.Mapping.Mode) {
-		return fmt.Errorf("unknown mapping mode %v", cfg.Mapping.Mode)
 	}
 
 	return nil

@@ -20,19 +20,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateLogsExporter(t *testing.T) {
-	factory := NewFactory()
-	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"test:9200"}
-	})
-	params := exportertest.NewNopCreateSettings()
-	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, exporter)
-
-	require.NoError(t, exporter.Shutdown(context.TODO()))
-}
-
 func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()

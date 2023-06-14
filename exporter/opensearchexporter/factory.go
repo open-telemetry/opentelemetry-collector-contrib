@@ -15,9 +15,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "opensearch"
-	defaultLogsIndex   = "logs-generic-default"
-	defaultTracesIndex = "traces-generic-default"
+	typeStr = "opensearch"
 	// The stability level of the exporter.
 	stability = component.StabilityLevelDevelopment
 )
@@ -27,7 +25,6 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
 		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
@@ -37,42 +34,15 @@ func createDefaultConfig() component.Config {
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
-		LogsIndex:   defaultLogsIndex,
-		TracesIndex: defaultTracesIndex,
+		Namespace: "",
+		Dataset:   "",
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRequests:     3,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
 		},
-		Mapping: MappingsSettings{
-			Mode:  "sso",
-			Dedup: true,
-			Dedot: true,
-		},
 	}
-}
-
-// createLogsExporter creates a new exporter for logs.
-//
-// Logs are directly indexed into OpenSearch.
-func createLogsExporter(
-	ctx context.Context,
-	set exporter.CreateSettings,
-	cfg component.Config,
-) (exporter.Logs, error) {
-	logsExporter, err := newLogsExporter(set.Logger, cfg.(*Config))
-	if err != nil {
-		return nil, fmt.Errorf("cannot configure OpenSearch logs logsExporter: %w", err)
-	}
-
-	return exporterhelper.NewLogsExporter(
-		ctx,
-		set,
-		cfg,
-		logsExporter.pushLogsData,
-		exporterhelper.WithShutdown(logsExporter.Shutdown),
-	)
 }
 
 func createTracesExporter(ctx context.Context,

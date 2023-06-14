@@ -29,7 +29,7 @@
 // Ingest Node is used. But either way, we try to present only well-formed
 // document to OpenSearch.
 
-package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"
+package objmodel // Package objmodel
 
 import (
 	"encoding/hex"
