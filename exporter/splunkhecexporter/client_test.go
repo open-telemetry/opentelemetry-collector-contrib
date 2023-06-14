@@ -207,7 +207,7 @@ func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(c.statusCode)
 }
 
-func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum int, t *testing.T) ([]receivedRequest, error) {
+func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum int, useMultiMetricsFormat bool, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -216,6 +216,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	factory := NewFactory()
 	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
+	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
 	rr := make(chan receivedRequest)
 	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
@@ -249,7 +250,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 				return requests, nil
 			}
 		case <-time.After(5 * time.Second):
-			if len(requests) == 0 {
+			if len(requests) == 0 && expectedBatchesNum != 0 {
 				err = errors.New("timeout")
 			}
 			return requests, err
@@ -955,7 +956,7 @@ func TestReceiveMetricEvent(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.DisableCompression = true
 
-	actual, err := runMetricsExport(cfg, metrics, 1, t)
+	actual, err := runMetricsExport(cfg, metrics, 1, false, t)
 	assert.Len(t, actual, 1)
 	assert.NoError(t, err)
 
@@ -993,7 +994,7 @@ func TestReceiveMetrics(t *testing.T) {
 	md := createMetricsData(1, 3)
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.DisableCompression = true
-	actual, err := runMetricsExport(cfg, md, 1, t)
+	actual, err := runMetricsExport(cfg, md, 1, false, t)
 	assert.Len(t, actual, 1)
 	assert.NoError(t, err)
 	msg := string(actual[0].body)
@@ -1029,6 +1030,27 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 					{`"k1":"v1"`, `"time":1.001`, `"time":2.002`, `"time":3.003`},
 				},
 				numBatches: 1,
+			},
+		},
+		{
+			name: "one metric event too large to fit in a batch",
+			metrics: func() pmetric.Metrics {
+				m := pmetric.NewMetrics()
+				metric := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				g := metric.SetEmptyGauge()
+				g.DataPoints().AppendEmpty().SetIntValue(32)
+				metric.SetName(repeatableString(256))
+				return m
+			}(),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthMetrics = 20
+				cfg.DisableCompression = true
+				return cfg
+			}(),
+			want: wantType{
+				batches:    [][]string{},
+				numBatches: 0,
 			},
 		},
 		{
@@ -1130,55 +1152,65 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := runMetricsExport(test.conf, test.metrics, test.want.numBatches, t)
+		testFn := func(multiMetric bool) func(*testing.T) {
+			return func(t *testing.T) {
+				got, err := runMetricsExport(test.conf, test.metrics, test.want.numBatches, multiMetric, t)
 
-			require.NoError(t, err)
-			require.Len(t, got, test.want.numBatches)
+				require.NoError(t, err)
+				require.Len(t, got, test.want.numBatches)
 
-			for i, batch := range test.want.batches {
-				require.NotZero(t, got[i])
-				if test.conf.MaxContentLengthMetrics != 0 {
-					require.True(t, int(test.conf.MaxContentLengthMetrics) > len(got[i].body))
-				}
-				if test.want.compressed {
-					validateCompressedContains(t, batch, got[i].body)
-				} else {
-					found := false
-
-					for _, expected := range batch {
-						if strings.Contains(string(got[i].body), expected) {
-							found = true
-							break
-						}
+				for i, batch := range test.want.batches {
+					require.NotZero(t, got[i])
+					if test.conf.MaxContentLengthMetrics != 0 {
+						require.True(t, int(test.conf.MaxContentLengthMetrics) > len(got[i].body))
 					}
-					assert.True(t, found, "%s did not match any expected batch", string(got[i].body))
-				}
-			}
-
-			// ensure all events are sent out
-			for i := 1; i < test.metrics.MetricCount(); i++ {
-				eventFound := false
-				for _, batch := range got {
-					batchBody := batch.body
 					if test.want.compressed {
-						z, err := gzip.NewReader(bytes.NewReader(batchBody))
-						require.NoError(t, err)
-						batchBody, err = io.ReadAll(z)
-						z.Close()
-						require.NoError(t, err)
-					}
-					time := float64(i) + 0.001*float64(i)
-					if strings.Contains(string(batchBody), fmt.Sprintf(`"time":%g`, time)) {
-						if eventFound {
-							t.Errorf("metric event %d found in multiple batches", i)
+						validateCompressedContains(t, batch, got[i].body)
+					} else {
+						found := false
+
+						for _, expected := range batch {
+							if strings.Contains(string(got[i].body), expected) {
+								found = true
+								break
+							}
 						}
-						eventFound = true
+						assert.True(t, found, "%s did not match any expected batch", string(got[i].body))
 					}
 				}
-				assert.Truef(t, eventFound, "metric event %d not found in any batch", i)
+
+				if test.want.numBatches == 0 {
+					assert.Equal(t, 0, len(got))
+					return
+				}
+
+				// ensure all events are sent out
+				for i := 1; i < test.metrics.MetricCount(); i++ {
+					eventFound := false
+					for _, batch := range got {
+						batchBody := batch.body
+						if test.want.compressed {
+							z, err := gzip.NewReader(bytes.NewReader(batchBody))
+							require.NoError(t, err)
+							batchBody, err = io.ReadAll(z)
+							z.Close()
+							require.NoError(t, err)
+						}
+						time := float64(i) + 0.001*float64(i)
+						if strings.Contains(string(batchBody), fmt.Sprintf(`"time":%g`, time)) {
+							if eventFound {
+								t.Errorf("metric event %d found in multiple batches", i)
+							}
+							eventFound = true
+						}
+					}
+					assert.Truef(t, eventFound, "metric event %d not found in any batch", i)
+				}
 			}
-		})
+		}
+		t.Run(test.name, testFn(false))
+		t.Run(test.name+"_MultiMetric", testFn(true))
+
 	}
 }
 
@@ -1192,6 +1224,23 @@ func Test_PushMetricsData_Histogram_NaN_Sum(t *testing.T) {
 	dp.SetSum(math.NaN())
 
 	c := newMetricsClient(exportertest.NewNopCreateSettings(), NewFactory().CreateDefaultConfig().(*Config))
+	c.hecWorker = &mockHecWorker{}
+
+	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
+	assert.NoError(t, permanentErrors)
+}
+
+func Test_PushMetricsData_Histogram_NaN_Sum_MultiMetric(t *testing.T) {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	histogram := ilm.Metrics().AppendEmpty()
+	histogram.SetName("histogram_with_empty_sum")
+	dp := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
+	dp.SetSum(math.NaN())
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.UseMultiMetricFormat = true
+	c := newMetricsClient(exportertest.NewNopCreateSettings(), cfg)
 	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
@@ -1217,7 +1266,7 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 func TestReceiveMetricsWithCompression(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.MaxContentLengthMetrics = 1800
-	request, err := runMetricsExport(cfg, createMetricsData(1, 100), 1, t)
+	request, err := runMetricsExport(cfg, createMetricsData(1, 100), 1, false, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "gzip", request[0].headers.Get("Content-Encoding"))
 	assert.NotEqual(t, "", request)
@@ -1280,7 +1329,13 @@ func TestInvalidLogs(t *testing.T) {
 
 func TestInvalidMetrics(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	_, err := runMetricsExport(cfg, pmetric.NewMetrics(), 1, t)
+	_, err := runMetricsExport(cfg, pmetric.NewMetrics(), 1, false, t)
+	assert.Error(t, err)
+}
+
+func TestInvalidMetricsMultiMetric(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	_, err := runMetricsExport(cfg, pmetric.NewMetrics(), 1, true, t)
 	assert.Error(t, err)
 }
 
