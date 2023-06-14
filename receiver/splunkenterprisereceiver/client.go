@@ -52,7 +52,7 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
         url, _ := url.JoinPath(c.endpoint.String(), path)
 
         // reader for the response data
-        data := strings.NewReader(sr.Search)
+        data := strings.NewReader(sr.search)
 
         // return the build request, ready to be run by makeRequest
         req, err := http.NewRequest(method, url, data)

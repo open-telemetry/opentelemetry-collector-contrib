@@ -16,7 +16,8 @@ import (
 )
 
 const (
-    defaultInterval = 10 * time.Minute
+    defaultInterval          = 10 * time.Minute
+    defaultMaxSearchWaitTime = 60 * time.Second
 )
 
 func createDefaultConfig() component.Config {
@@ -26,6 +27,7 @@ func createDefaultConfig() component.Config {
     return &Config{
         ScraperControllerSettings: scfg,
         MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+        MaxSearchWaitTime: defaultMaxSearchWaitTime,
     }
 }
 

@@ -6,6 +6,7 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"net/url"
+	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -27,8 +28,10 @@ type Config struct {
     metadata.MetricsBuilderConfig `mapstructure:",squash"`
     // Username and password with associated with an account with
     // permission to access the Splunk deployments REST api
-    Username string `mapstructure:"username"`
-    Password string `mapstructure:"password"`
+    Username          string `mapstructure:"username"`
+    Password          string `mapstructure:"password"`
+    // default is 60s
+    MaxSearchWaitTime time.Duration `mapstructure:"max_search_wait_time"`
 }
 
 func (cfg *Config) Validate() error {
