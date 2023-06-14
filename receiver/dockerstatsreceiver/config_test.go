@@ -35,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Second,
+					InitialDelay:       time.Second,
 				},
 
 				Endpoint:         "http://example.com/",

@@ -148,9 +148,12 @@ Examples:
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -162,13 +165,17 @@ Examples:
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 `mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -186,9 +193,12 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
-`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -200,11 +210,15 @@ Examples:
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
-`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -263,10 +277,15 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [FNV](#fnv)
 - [Int](#int)
+- [IsMap](#ismap)
 - [IsMatch](#ismatch)
+- [IsString](#isstring)
 - [Log](#log)
 - [ParseJSON](#parsejson)
+- [SHA1](#sha1)
+- [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
@@ -316,6 +335,25 @@ Examples:
 
 - `ConvertCase(metric.name, "snake")`
 
+### FNV
+
+`FNV(value)`
+
+The `FNV` Converter converts the `value` to an FNV hash/digest.
+
+The returned type is int64.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `FNV(attributes["device.name"])`
+
+
+- `FNV("name")`
+
 ### Int
 
 `Int(value)`
@@ -341,6 +379,23 @@ Examples:
 
 - `Int("2.0")`
 
+### IsMap
+
+`IsMap(value)`
+
+The `IsMap` Converter returns true if the given value is a map.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `map[string]any` or a `pcommon.ValueTypeMap` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsMap(body)`
+
+
+- `IsMap(attributes["maybe a map"])`
+
 ### IsMatch
 
 `IsMatch(target, pattern)`
@@ -360,12 +415,31 @@ If target is not a string, it will be converted to one:
 
 If target is nil, false is always returned.
 
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
 
 
 - `IsMatch("string", ".*ring")`
+
+### IsString
+
+`IsString(value)`
+
+The `IsString` Converter returns true if the given value is a string.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `string` or a `pcommon.ValueTypeStr` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsString(body)`
+
+- `IsString(attributes["maybe a string"])`
 
 ### Log
 
@@ -424,6 +498,48 @@ Examples:
 
 - `ParseJSON(body)`
 
+### SHA1
+
+`SHA1(value)`
+
+The `SHA1` Converter converts the `value` to a sha1 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `SHA1(attributes["device.name"])`
+
+
+- `SHA1("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
+### SHA256
+
+`SHA256(value)`
+
+The `SHA256` Converter converts the `value` to a sha256 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `SHA256(attributes["device.name"])`
+
+
+- `SHA256("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
 ### SpanID
 
 `SpanID(bytes)`
@@ -445,6 +561,9 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 `target` is a string. `delimiter` is a string.
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
+
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 

@@ -1,5 +1,5 @@
-influxdb:
-influxdb/withsettings:
+influxdb/default-config:
+influxdb/override-config:
   endpoint: http://localhost:8080
   timeout: 500ms
   sending_queue:
@@ -14,4 +14,7 @@ influxdb/withsettings:
   org: my-org
   bucket: my-bucket
   token: my-token
-  metrics_schema: telegraf-prometheus-v2
+  metrics_schema: telegraf-prometheus-v1
+  span_dimensions:
+    - service.name
+    - span.name

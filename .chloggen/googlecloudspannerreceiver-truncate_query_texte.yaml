@@ -1,5 +1,0 @@
-change_type: enhancement
-component: googlecloudspannerreceiver
-note: Adding a new config option to allow truncation of query text to 1024 characters.
-issues: [22072]
-subtext:

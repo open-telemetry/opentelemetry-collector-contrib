@@ -43,6 +43,7 @@ The following options can be customised:
 - timeout (optional) - The total amount of time allowed to read and process the data from chronyd
   - Recommendation: This value should be set above 1s to allow `chronyd` time to respond
 - collection_interval (optional) - how frequent this receiver should poll [chrony]
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - metrics (optional) - Which metrics should be exported, read the [documentation] for complete details
 
 ## Example

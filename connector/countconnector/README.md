@@ -7,7 +7,9 @@
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
+
 ## Supported Pipeline Types
+
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
 | traces | metrics | [development] |

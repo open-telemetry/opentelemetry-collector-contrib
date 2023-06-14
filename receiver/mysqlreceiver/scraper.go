@@ -102,7 +102,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeGlobalStats(now, errs)
 
 	// colect replicas status metrics.
-	m.scrapeReplicaStatusStats(now, errs)
+	m.scrapeReplicaStatusStats(now)
 
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
@@ -122,7 +122,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 	for k, v := range globalStats {
 		switch k {
-
 		// bytes transmission
 		case "Bytes_received":
 			addPartialIfError(errs, m.mb.RecordMysqlClientNetworkIoDataPoint(now, v, metadata.AttributeDirectionReceived))
@@ -186,6 +185,17 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connection_errors_tcpwrap":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorTcpwrap))
+		case "Aborted_clients":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAbortedClients))
+		case "Aborted_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAborted))
+		case "Locked_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorLocked))
+
 		// connection
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
@@ -321,10 +331,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksImmediate))
 		case "Table_locks_waited":
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
-
-		// locked_connects
-		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
 
 		// joins
 		case "Select_full_join":
@@ -532,11 +538,10 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 	}
 }
 
-func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
 	if err != nil {
-		m.logger.Error("Failed to fetch replica status stats", zap.Error(err))
-		errs.AddPartial(8, err)
+		m.logger.Info("Failed to fetch replica status stats", zap.Error(err))
 		return
 	}
 

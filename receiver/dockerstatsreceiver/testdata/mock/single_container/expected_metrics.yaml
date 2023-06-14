@@ -28,12 +28,6 @@ resourceMetrics:
         - key: env-var-metric-label-2
           value:
             stringValue: env-var-2
-        - key: container-metric-label
-          value:
-            stringValue: container-label
-        - key: container-metric-label-2
-          value:
-            stringValue: container-label-2
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:
@@ -42,45 +36,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2502656"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
-                - asInt: "0"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
-                - asInt: "2502656"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: sync
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -117,7 +72,46 @@ resourceMetrics:
                         stringValue: "0"
                     - key: operation
                       value:
+                        stringValue: read
+                  startTimeUnixNano: "1661128093793004000"
+                  timeUnixNano: "1661128093795620000"
+                - asInt: "2502656"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: sync
+                  startTimeUnixNano: "1661128093793004000"
+                  timeUnixNano: "1661128093795620000"
+                - asInt: "2502656"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
                         stringValue: total
+                  startTimeUnixNano: "1661128093793004000"
+                  timeUnixNano: "1661128093795620000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1661128093793004000"
                   timeUnixNano: "1661128093795620000"
               isMonotonic: true
@@ -127,45 +121,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "99"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
-                - asInt: "0"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
-                - asInt: "99"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "254"
-                    - key: device_minor
-                      value:
-                        stringValue: "0"
-                    - key: operation
-                      value:
-                        stringValue: sync
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -202,7 +157,46 @@ resourceMetrics:
                         stringValue: "0"
                     - key: operation
                       value:
+                        stringValue: read
+                  startTimeUnixNano: "1661128093793004000"
+                  timeUnixNano: "1661128093795620000"
+                - asInt: "99"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: sync
+                  startTimeUnixNano: "1661128093793004000"
+                  timeUnixNano: "1661128093795620000"
+                - asInt: "99"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
                         stringValue: total
+                  startTimeUnixNano: "1661128093793004000"
+                  timeUnixNano: "1661128093795620000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "254"
+                    - key: device_minor
+                      value:
+                        stringValue: "0"
+                    - key: operation
+                      value:
+                        stringValue: write
                   startTimeUnixNano: "1661128093793004000"
                   timeUnixNano: "1661128093795620000"
               isMonotonic: true
@@ -753,6 +747,13 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1657771705535206000"
             unit: '{pids}'
+          - description: Time elapsed since container start time.
+            name: container.uptime
+            gauge:
+              dataPoints:
+                - asDouble: 0.0002888012543185477
+                  timeUnixNano: "1657771705535206000"
+            unit: 's'
           - description: Number of restarts for the container.
             name: container.restarts
             sum:

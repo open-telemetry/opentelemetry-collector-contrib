@@ -379,6 +379,13 @@ resourceMetrics:
                   startTimeUnixNano: "1682426015940992000"
                   timeUnixNano: "1682426015943175000"
             unit: '{pids}'
+          - description: Time elapsed since container start time.
+            name: container.uptime
+            gauge:
+              dataPoints:
+                - asDouble: 0.0002888012543185477
+                  timeUnixNano: "1657771705535206000"
+            unit: 's'
           - description: Number of restarts for the container.
             name: container.restarts
             sum:

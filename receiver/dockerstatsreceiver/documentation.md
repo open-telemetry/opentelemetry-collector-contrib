@@ -702,6 +702,14 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
 
+### container.uptime
+
+Time elapsed since container start time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
 ### container.restarts
 
 Number of restarts for the container.

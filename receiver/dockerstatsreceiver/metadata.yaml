@@ -662,6 +662,14 @@ metrics:
       aggregation: cumulative
       monotonic: false
 
+  # Base
+  container.uptime:
+    enabled: false
+    description: "Time elapsed since container start time."
+    unit: s
+    gauge:
+      value_type: double
+
   # Container
   container.restarts:
     enabled: false
