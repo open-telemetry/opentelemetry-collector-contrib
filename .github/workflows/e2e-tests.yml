@@ -45,7 +45,11 @@ jobs:
       - name: Kind load image
         run: |
           kind load docker-image otelcontribcol:latest --name kind
-      - name: run e2e tests
+      - name: run k8sattributesprocessor e2e tests
         run: |    
           cd processor/k8sattributesprocessor
+          go test -v --tags=e2e
+      - name: run k8sclusterreceiver e2e tests
+        run: |
+          cd receiver/k8sclusterreceiver
           go test -v --tags=e2e
