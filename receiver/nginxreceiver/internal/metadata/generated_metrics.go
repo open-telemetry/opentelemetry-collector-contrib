@@ -107,15 +107,17 @@ func (m *metricNginxConnectionsCurrent) init() {
 	m.data.SetName("nginx.connections_current")
 	m.data.SetDescription("The current number of nginx connections by state")
 	m.data.SetUnit("connections")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricNginxConnectionsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -124,14 +126,14 @@ func (m *metricNginxConnectionsCurrent) recordDataPoint(start pcommon.Timestamp,
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricNginxConnectionsCurrent) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricNginxConnectionsCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -258,19 +260,17 @@ type metricTempConnectionsCurrent struct {
 // init fills temp.connections_current metric with initial data.
 func (m *metricTempConnectionsCurrent) init() {
 	m.data.SetName("temp.connections_current")
-	m.data.SetDescription("Temporary placeholder for new version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.")
+	m.data.SetDescription("Temporary placeholder for old version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.")
 	m.data.SetUnit("connections")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
 func (m *metricTempConnectionsCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -279,14 +279,14 @@ func (m *metricTempConnectionsCurrent) recordDataPoint(start pcommon.Timestamp, 
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricTempConnectionsCurrent) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricTempConnectionsCurrent) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()

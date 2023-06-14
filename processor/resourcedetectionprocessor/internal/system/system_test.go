@@ -40,7 +40,7 @@ func (m *mockMetadata) OSType() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) HostID() (string, error) {
+func (m *mockMetadata) HostID(_ context.Context) (string, error) {
 	args := m.MethodCalled("HostID")
 	return args.String(0), args.Error(1)
 }

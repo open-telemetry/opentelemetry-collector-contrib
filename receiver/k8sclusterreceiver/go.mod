@@ -12,13 +12,13 @@ require (
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector v0.79.0
-	go.opentelemetry.io/collector/component v0.79.0
-	go.opentelemetry.io/collector/confmap v0.79.0
-	go.opentelemetry.io/collector/consumer v0.79.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012
-	go.opentelemetry.io/collector/receiver v0.79.0
-	go.opentelemetry.io/collector/semconv v0.79.0
+	go.opentelemetry.io/collector v0.79.1-0.20230609201858-ed8547a8e5d6
+	go.opentelemetry.io/collector/component v0.79.1-0.20230609201858-ed8547a8e5d6
+	go.opentelemetry.io/collector/confmap v0.79.1-0.20230609201858-ed8547a8e5d6
+	go.opentelemetry.io/collector/consumer v0.79.1-0.20230609201858-ed8547a8e5d6
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230609201858-ed8547a8e5d6
+	go.opentelemetry.io/collector/receiver v0.79.1-0.20230609201858-ed8547a8e5d6
+	go.opentelemetry.io/collector/semconv v0.79.1-0.20230609201858-ed8547a8e5d6
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
@@ -69,8 +69,9 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.79.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012 // indirect
+	go.opentelemetry.io/collector/exporter v0.79.1-0.20230609201858-ed8547a8e5d6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230609201858-ed8547a8e5d6 // indirect
+	go.opentelemetry.io/collector/processor v0.0.0-20230609193203-89d1060c7606 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
@@ -81,9 +82,9 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
