@@ -10,25 +10,48 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/websocket"
 )
 
 func TestSocketConnectionLogs(t *testing.T) {
-	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "localhost:12001",
+	var (
+		cfg = &Config{
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: "localhost:12001",
+			},
+		}
+		logSink = &consumertest.LogsSink{}
+		logger  = zaptest.NewLogger(t)
+	)
+	processor, err := NewFactory().CreateLogsProcessor(
+		context.Background(),
+		processor.CreateSettings{
+			TelemetrySettings: component.TelemetrySettings{
+				Logger:         logger,
+				TracerProvider: trace.NewNoopTracerProvider(),
+				MeterProvider:  noop.NewMeterProvider(),
+				MetricsLevel:   configtelemetry.LevelNone,
+				Resource:       pcommon.NewResource(),
+			},
 		},
-	}
-	logSink := &consumertest.LogsSink{}
-	processor, err := NewFactory().CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg,
-		logSink)
+		cfg,
+		logSink,
+	)
 	require.NoError(t, err)
 	err = processor.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -45,7 +68,10 @@ func TestSocketConnectionLogs(t *testing.T) {
 	require.Len(t, logSink.AllLogs(), 1)
 	buf := make([]byte, 1024)
 	require.Eventuallyf(t, func() bool {
-		n, _ := wsConn.Read(buf)
+		n, err := wsConn.Read(buf)
+		if err != nil {
+			logger.Error("Failed to read data from websocket connection", zap.Error(err))
+		}
 		return n == 132
 	}, 1*time.Second, 100*time.Millisecond, "received message")
 	require.Equal(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"},"traceId":"","spanId":""}]}]}]}`, string(buf[0:132]))
