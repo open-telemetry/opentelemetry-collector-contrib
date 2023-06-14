@@ -8,5 +8,5 @@ import (
 
 const (
 	Type             = "carbon"
-	MetricsStability = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelUnmaintained
 )
