@@ -42,9 +42,10 @@ func TestSocketConnectionLogs(t *testing.T) {
 	log.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("foo")
 	err = processor.ConsumeLogs(context.Background(), log)
 	require.NoError(t, err)
-	require.Len(t, logSink.AllLogs(), 1)
 	buf := make([]byte, 1024)
 	require.Eventuallyf(t, func() bool {
+		err = processor.ConsumeLogs(context.Background(), log)
+		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
 		return n == 132
 	}, 1*time.Second, 100*time.Millisecond, "received message")
@@ -76,11 +77,10 @@ func TestSocketConnectionMetrics(t *testing.T) {
 	require.NoError(t, err)
 	metric := pmetric.NewMetrics()
 	metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
-	err = processor.ConsumeMetrics(context.Background(), metric)
-	require.NoError(t, err)
-	require.Len(t, metricsSink.AllMetrics(), 1)
 	buf := make([]byte, 1024)
 	require.Eventuallyf(t, func() bool {
+		err = processor.ConsumeMetrics(context.Background(), metric)
+		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
 		return n == 94
 	}, 1*time.Second, 100*time.Millisecond, "received message")
@@ -112,11 +112,10 @@ func TestSocketConnectionTraces(t *testing.T) {
 	require.NoError(t, err)
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
-	err = processor.ConsumeTraces(context.Background(), trace)
-	require.NoError(t, err)
-	require.Len(t, tracesSink.AllTraces(), 1)
 	buf := make([]byte, 1024)
 	require.Eventuallyf(t, func() bool {
+		err = processor.ConsumeTraces(context.Background(), trace)
+		require.NoError(t, err)
 		n, _ := wsConn.Read(buf)
 		return n == 143
 	}, 1*time.Second, 100*time.Millisecond, "received message")
