@@ -63,22 +63,6 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			},
 		},
 		{
-			name:          "Empty container id skips container resource",
-			metadataStore: &metadata.Store{},
-			resource: testutils.NewPodWithContainer(
-				"0",
-				testutils.NewPodSpecWithContainer("container-name"),
-				testutils.NewPodStatusWithContainer("container-name", ""),
-			),
-			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
-				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
-					ResourceIDKey: "k8s.pod.uid",
-					ResourceID:    "test-pod-0-uid",
-					Metadata:      commonPodMetadata,
-				},
-			},
-		},
-		{
 			name:          "Pod with Owner Reference",
 			metadataStore: &metadata.Store{},
 			resource: testutils.WithOwnerReferences([]v1.OwnerReference{

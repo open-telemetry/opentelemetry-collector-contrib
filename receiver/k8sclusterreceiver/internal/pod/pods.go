@@ -40,6 +40,47 @@ var podPhaseMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
+// Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function when using a new pod fields.
+func Transform(pod *corev1.Pod) *corev1.Pod {
+	newPod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			UID:       pod.ObjectMeta.UID,
+			Name:      pod.ObjectMeta.Name,
+			Namespace: pod.ObjectMeta.Namespace,
+			Labels:    pod.ObjectMeta.Labels,
+		},
+		Spec: corev1.PodSpec{
+			NodeName: pod.Spec.NodeName,
+		},
+		Status: corev1.PodStatus{
+			Phase: pod.Status.Phase,
+		},
+	}
+	for _, cs := range pod.Status.ContainerStatuses {
+		if cs.ContainerID == "" {
+			continue
+		}
+		newPod.Status.ContainerStatuses = append(newPod.Status.ContainerStatuses, corev1.ContainerStatus{
+			Name:         cs.Name,
+			Image:        cs.Image,
+			ContainerID:  cs.ContainerID,
+			RestartCount: cs.RestartCount,
+			Ready:        cs.Ready,
+		})
+	}
+	for _, c := range pod.Spec.Containers {
+		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
+			Name: c.Name,
+			Resources: corev1.ResourceRequirements{
+				Requests: c.Resources.Requests,
+				Limits:   c.Resources.Limits,
+			},
+		})
+	}
+	return newPod
+}
+
 func GetMetrics(pod *corev1.Pod, logger *zap.Logger) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{
@@ -55,10 +96,6 @@ func GetMetrics(pod *corev1.Pod, logger *zap.Logger) []*agentmetricspb.ExportMet
 	containerResByName := map[string]*agentmetricspb.ExportMetricsServiceRequest{}
 
 	for _, cs := range pod.Status.ContainerStatuses {
-		if cs.ContainerID == "" {
-			continue
-		}
-
 		contLabels := container.GetAllLabels(cs, podRes.Labels, logger)
 		containerResByName[cs.Name] = &agentmetricspb.ExportMetricsServiceRequest{Resource: container.GetResource(contLabels)}
 
@@ -265,11 +302,6 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 func getPodContainerProperties(pod *corev1.Pod) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
-		// Skip if container id returned is empty.
-		if cs.ContainerID == "" {
-			continue
-		}
-
 		md := container.GetMetadata(cs)
 		km[md.ResourceID] = md
 	}
