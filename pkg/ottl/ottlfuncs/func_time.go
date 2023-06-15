@@ -1,21 +1,19 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type TimeArguments[K any] struct {
-	Time     ottl.StringGetter[K] `ottlarg:"0"`
-	Format   ottl.StringGetter[K] `ottlarg:"1"`
-	Location ottl.StringGetter[K] `ottlarg:"2"`
+	Time   ottl.StringGetter[K] `ottlarg:"0"`
+	Format string               `ottlarg:"1"`
 }
 
 func NewTimeFactory[K any]() ottl.Factory[K] {
@@ -28,10 +26,18 @@ func createTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, fmt.Errorf("TimeFactory args must be of type *TimeArguments[K]")
 	}
 
-	return Time(args.Time, args.Format, args.Location)
+	return Time(args.Time, args.Format)
 }
 
-func Time[K any](inputTime ottl.StringGetter[K], format ottl.StringGetter[K], location ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func Time[K any](inputTime ottl.StringGetter[K], format string) (ottl.ExprFunc[K], error) {
+	if format == "" {
+		return nil, fmt.Errorf("format cannot be nil")
+	}
+	loc, err := timeutils.GetLocation(nil, &format)
+	if err != nil {
+		return nil, err
+	}
+
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
@@ -40,24 +46,7 @@ func Time[K any](inputTime ottl.StringGetter[K], format ottl.StringGetter[K], lo
 		if t == "" {
 			return nil, fmt.Errorf("time cannot be nil")
 		}
-		f, err := format.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
-		if f == "" {
-			return nil, fmt.Errorf("format cannot be nil")
-		}
-
-		l, err := location.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
-		loc, err := time.LoadLocation(l)
-		if err != nil {
-			return nil, err
-		}
-
-		timestamp, err := timeutils.ParseStrptime(f, t, loc)
+		timestamp, err := timeutils.ParseStrptime(format, t, loc)
 		if err != nil {
 			return nil, err
 		}
