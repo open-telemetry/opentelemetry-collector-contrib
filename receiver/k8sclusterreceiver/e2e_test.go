@@ -1,21 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-// +build e2e
-
 package k8sclusterreceiver
 
 import (
 	"context"
 	"path/filepath"
-	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -26,16 +21,14 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
-const shortenNamesRegex = "([\\D]+)-?.*"
-
-var writeExpected = false
-
-// TestE2E tests the k8s attributes processor with a real k8s cluster.
+// TestE2E tests the k8s cluster receiver with a real k8s cluster.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
 // `/tmp/kube-config-otelcol-e2e-testing`. Run the following command prior to running the test locally:
 //
@@ -63,65 +56,40 @@ func TestE2E(t *testing.T) {
 
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
-	l := len(metricsConsumer.AllMetrics())
-	if !writeExpected {
-		expected, err = golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
-	} else {
-		require.GreaterOrEqual(t, l, 1)
-		err := golden.WriteMetrics(t, expectedFile, metricsConsumer.AllMetrics()[l-1])
-		require.NoError(t, err)
-		expected = metricsConsumer.AllMetrics()[l-1]
-	}
-	r, err := regexp.Compile(shortenNamesRegex)
+	expected, err = golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[l-1],
+	require.NoError(t, err)
+	replaceWithStar := func(string) string { return "*" }
+	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreMetricValues("k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"),
 		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", func(value string) string {
-			matches := r.FindStringSubmatch(value)
-			return matches[1]
+			if strings.HasPrefix(value, "otelcol") {
+				return "otelcol"
+			}
+			return value
 		}),
 		pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", func(value string) string {
-			matches := r.FindStringSubmatch(value)
-			return matches[1]
+			return value[:len(value)-19]
 		}),
 		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", func(value string) string {
-			matches := r.FindStringSubmatch(value)
-			return matches[1]
+			return value[:len(value)-8]
 		}),
-		pmetrictest.IgnoreResourceAttributeValue("k8s.deployment.uid"),
-		pmetrictest.IgnoreResourceAttributeValue("k8s.pod.uid"),
-		pmetrictest.IgnoreResourceAttributeValue("k8s.replicaset.uid"),
-		pmetrictest.IgnoreResourceAttributeValue("container.id"),
-		pmetrictest.IgnoreResourceAttributeValue("container.image.tag"),
-		pmetrictest.IgnoreResourceAttributeValue("k8s.node.uid"),
-		pmetrictest.IgnoreResourceAttributeValue("k8s.namespace.uid"),
-		pmetrictest.IgnoreResourceAttributeValue("k8s.daemonset.uid"),
+		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("container.image.tag", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 	),
 	)
-}
-
-func TestRegex(t *testing.T) {
-	strs := [][]string{
-		{"otelcol-5ffb893c-5459b589fd", "otelcol-"},
-		{"local-path-provisioner-684f458cdd-v726j", "local-path-provisioner-"},
-		{"etcd-kind-control-plane", "etcd-kind-control-plane"},
-		{"local-path-provisioner", "local-path-provisioner"},
-	}
-	for _, str := range strs {
-		t.Run(str[0], func(t *testing.T) {
-			r, err := regexp.Compile(shortenNamesRegex)
-			require.NoError(t, err)
-			matches := r.FindStringSubmatch(str[0])
-			require.Equal(t, str[1], matches[1])
-		})
-	}
 }
 
 func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
