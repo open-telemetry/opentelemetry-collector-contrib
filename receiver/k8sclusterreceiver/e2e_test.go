@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build e2e
+// +build e2e
+
 package k8sclusterreceiver
 
 import (
@@ -78,6 +81,9 @@ func TestE2E(t *testing.T) {
 		}
 		return value
 	}
+	containerImageShorten := func(value string) string {
+		return value[strings.LastIndex(value, "/"):]
+	}
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
@@ -93,6 +99,7 @@ func TestE2E(t *testing.T) {
 		pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
