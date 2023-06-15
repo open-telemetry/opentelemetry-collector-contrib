@@ -84,7 +84,7 @@ func mapToString(m pcommon.Map) string {
 const (
 	SourceCategoryKey = "_sourceCategory"
 	SourceHostKey     = "_sourceHost"
-	SourceNameKey     = "log.file.path_resolved"
+	SourceNameKey     = "_sourceName"
 )
 
 func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
@@ -112,7 +112,7 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 				if !exists {
 					return nil, errors.New("_sourceName attribute does not exists")
 				}
-				logEntry(&buf, "{\"data\": \"%s\",\"sourceName\":\"%s\",\"sourceHost\":\"%s\",\"sourceCategory\":\"%s\",\"fields\":{},\"message\":\"%s\"}",
+				logEntry(&buf, "{\"date\": \"%s\",\"sourceName\":\"%s\",\"sourceHost\":\"%s\",\"sourceCategory\":\"%s\",\"fields\":{},\"message\":\"%s\"}",
 					dateVal, attributeValueToString(sourceName), attributeValueToString(sourceHost), attributeValueToString(sourceCategory), body)
 			}
 		}
