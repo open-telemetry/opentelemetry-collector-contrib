@@ -169,7 +169,7 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	p.logger.Info("Starting spanmetricsprocessor")
-	exporters := host.GetExporters()
+	exporters := host.GetExporters() //nolint:staticcheck
 
 	var availableMetricsExporters []string
 

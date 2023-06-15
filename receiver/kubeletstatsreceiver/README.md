@@ -33,6 +33,7 @@ endpoint will be used if `auth_type` set to any of the following values:
 to authenticate to the kubelet API.
 - `kubeConfig` tells this receiver to use the kubeconfig file (KUBECONFIG env variable or ~/.kube/config)
 to authenticate and use API server proxy to access the kubelet API.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 ### TLS Example
 
@@ -40,6 +41,7 @@ to authenticate and use API server proxy to access the kubelet API.
 receivers:
   kubeletstats:
     collection_interval: 20s
+    initial_delay: 1s
     auth_type: "tls"
     ca_file: "/path/to/ca.crt"
     key_file: "/path/to/apiserver.key"

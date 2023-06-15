@@ -87,6 +87,8 @@ all_set:
       enabled: true
     mysql.tmp_resources:
       enabled: true
+    mysql.uptime:
+      enabled: true
   resource_attributes:
     mysql.instance.endpoint:
       enabled: true
@@ -177,6 +179,8 @@ none_set:
     mysql.threads:
       enabled: false
     mysql.tmp_resources:
+      enabled: false
+    mysql.uptime:
       enabled: false
   resource_attributes:
     mysql.instance.endpoint:

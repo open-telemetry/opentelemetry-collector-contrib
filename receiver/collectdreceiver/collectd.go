@@ -160,14 +160,14 @@ func (r *collectDRecord) newPoint(val *json.Number) (*metricspb.Point, bool, err
 // becomes a dimension.
 func (r *collectDRecord) getReasonableMetricName(index int, attrs map[string]string) (string, bool) {
 	usedDsName := false
-	cap := 0
+	capacity := 0
 	if r.TypeS != nil {
-		cap += len(*r.TypeS)
+		capacity += len(*r.TypeS)
 	}
 	if r.TypeInstance != nil {
-		cap += len(*r.TypeInstance)
+		capacity += len(*r.TypeInstance)
 	}
-	parts := make([]byte, 0, cap)
+	parts := make([]byte, 0, capacity)
 
 	if !isNilOrEmpty(r.TypeS) {
 		parts = append(parts, *r.TypeS...)

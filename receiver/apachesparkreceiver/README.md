@@ -29,6 +29,7 @@ These configuration options are for connecting to an Apache Spark application.
 The following settings are optional:
 
 - `collection_interval`: (default = `60s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `endpoint`: (default = `http://localhost:4040`): Apache Spark endpoint to connect to in the form of `[http][://]{host}[:{port}]`
 - `application_names`: An array of Spark application names for which metrics should be collected. If no application names are specified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
 

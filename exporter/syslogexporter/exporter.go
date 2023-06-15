@@ -79,7 +79,7 @@ func (se *syslogexporter) getTimestamp(record plog.LogRecord) time.Time {
 	return timestamp
 }
 
-func (se *syslogexporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+func (se *syslogexporter) pushLogsData(_ context.Context, ld plog.Logs) error {
 	type droppedResourceRecords struct {
 		resource pcommon.Resource
 		records  []plog.LogRecord

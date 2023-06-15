@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 var errConfigNotSAPHANA = errors.New("config was not an sap hana receiver config")
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,

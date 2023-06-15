@@ -3,12 +3,13 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [alpha]: traces, metrics, logs   |
-| Distributions | [core], [contrib], [observiq], [splunk], [sumo] |
+| Distributions | [core], [contrib], [aws], [observiq], [splunk], [sumo] |
 | Warnings      | [Orphaned Telemetry, Other](#warnings) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[aws]: https://github.com/aws-observability/aws-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector

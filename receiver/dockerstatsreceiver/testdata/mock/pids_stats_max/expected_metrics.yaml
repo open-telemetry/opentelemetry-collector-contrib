@@ -1,9 +1,6 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: container.runtime
-          value:
-            stringValue: docker
         - key: container.hostname
           value:
             stringValue: 78de07328aff
@@ -16,6 +13,9 @@ resourceMetrics:
         - key: container.name
           value:
             stringValue: sleepy1
+        - key: container.runtime
+          value:
+            stringValue: docker
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeMetrics:
       - metrics:
@@ -28,32 +28,6 @@ resourceMetrics:
                   attributes:
                     - key: device_major
                       value:
-                        stringValue: "7"
-                    - key: device_minor
-                      value:
-                        stringValue: "2"
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1683723781127718000"
-                  timeUnixNano: "1683723781130612000"
-                - asInt: "0"
-                  attributes:
-                    - key: device_major
-                      value:
-                        stringValue: "7"
-                    - key: device_minor
-                      value:
-                        stringValue: "2"
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1683723781127718000"
-                  timeUnixNano: "1683723781130612000"
-                - asInt: "1998848"
-                  attributes:
-                    - key: device_major
-                      value:
                         stringValue: "253"
                     - key: device_minor
                       value:
@@ -94,6 +68,32 @@ resourceMetrics:
                     - key: device_major
                       value:
                         stringValue: "253"
+                    - key: device_minor
+                      value:
+                        stringValue: "2"
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1683723781127718000"
+                  timeUnixNano: "1683723781130612000"
+                - asInt: "1998848"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "7"
+                    - key: device_minor
+                      value:
+                        stringValue: "2"
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1683723781127718000"
+                  timeUnixNano: "1683723781130612000"
+                - asInt: "0"
+                  attributes:
+                    - key: device_major
+                      value:
+                        stringValue: "7"
                     - key: device_minor
                       value:
                         stringValue: "2"
@@ -104,7 +104,7 @@ resourceMetrics:
                   timeUnixNano: "1683723781130612000"
               isMonotonic: true
             unit: By
-          - description: Percent of CPU used by the container.
+          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -412,6 +412,13 @@ resourceMetrics:
                   startTimeUnixNano: "1683723781127718000"
                   timeUnixNano: "1683723781130612000"
             unit: '{pids}'
+          - description: Time elapsed since container start time.
+            name: container.uptime
+            gauge:
+              dataPoints:
+                - asDouble: 0.0002888012543185477
+                  timeUnixNano: "1657771705535206000"
+            unit: 's'
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest
