@@ -1,5 +1,7 @@
 type: k8s/deployment
 
+sem_conv_version: 1.18.0
+
 resource_attributes:
   k8s.deployment.uid:
     description: The UID of the Deployment.

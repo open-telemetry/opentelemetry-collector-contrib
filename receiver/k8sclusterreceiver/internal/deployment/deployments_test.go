@@ -4,8 +4,11 @@
 package deployment
 
 import (
+	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -40,4 +43,21 @@ func TestDeploymentMetrics(t *testing.T) {
 	})
 	testutils.AssertMetricInt(t, sms.Metrics().At(0), "k8s.deployment.available", pmetric.MetricTypeGauge, int64(3))
 	testutils.AssertMetricInt(t, sms.Metrics().At(1), "k8s.deployment.desired", pmetric.MetricTypeGauge, int64(10))
+}
+
+func TestGoldenFile(t *testing.T) {
+	dep := testutils.NewDeployment("1")
+	m := GetMetrics(receivertest.NewNopCreateSettings(), dep)
+	expectedFile := filepath.Join("testdata", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	),
+	)
 }
