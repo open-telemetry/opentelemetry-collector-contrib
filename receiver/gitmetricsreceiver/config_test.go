@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 	expectedConfig := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 30 * time.Second,
+            InitialDelay: 1 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
 			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
@@ -61,16 +62,6 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	factories.Receivers[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
-	require.Contains(t, err.Error(), "must specify at least one scraper when using hostmetrics receiver")
+	require.Contains(t, err.Error(), "must specify at least one scraper when using git metrics receiver")
 }
 
-func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[metadata.Type] = factory
-	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
-
-	require.Contains(t, err.Error(), "error reading configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
-}

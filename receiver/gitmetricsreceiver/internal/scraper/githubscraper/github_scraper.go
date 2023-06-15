@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -22,7 +21,7 @@ import (
 )
 
 var (
-	clientNotInitErr = errors.New("http client not initialized")
+	errClientNotInitErr = errors.New("http client not initialized")
 )
 
 type Commit struct {
@@ -59,7 +58,7 @@ type githubScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
+func (ghs *githubScraper) start(_ context.Context, host component.Host) (err error) {
 	ghs.logger.Sugar().Info("Starting the scraper inside scraper.go")
 	// TODO: Fix the ToClient configuration
 	ghs.client, err = ghs.cfg.ToClient(host, ghs.settings)
@@ -67,7 +66,7 @@ func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err e
 }
 
 func newGitHubScraper(
-	ctx context.Context,
+	_ context.Context,
 	settings receiver.CreateSettings,
 	cfg *Config,
 ) *githubScraper {
@@ -130,6 +129,7 @@ func (ghs *githubScraper) getRepoBranchInformation(repo *Repo) {
 	}
 }
 
+// func (ghs *githubScraper) getOldestBranchCommit(repo *Repo, branch *Branch) {
 func (ghs *githubScraper) getOldestBranchCommit(repo *Repo, branch *Branch) {
 	graphqlClient := githubv4.NewClient(ghs.client)
 
@@ -252,7 +252,7 @@ func (ghs *githubScraper) getRepoPullRequestInformation(repo *Repo) {
 func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ghs.logger.Sugar().Debug("checking if client is initialized")
 	if ghs.client == nil {
-		return pmetric.NewMetrics(), clientNotInitErr
+		return pmetric.NewMetrics(), errClientNotInitErr
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -283,22 +283,19 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 		ghs.mb.RecordGitRepositoryBranchCountDataPoint(now, int64(numOfBranches), repoInfo.Name)
 
-		var branchAges []float64
 		for _, branch := range repoInfo.Branches {
 			if branch.Name != repoInfo.DefaultBranch {
+				branch := branch
 				ghs.getOldestBranchCommit(repoInfo, &branch)
-				branchAge := int64(time.Now().Sub(branch.CreatedDate).Hours())
+				branchAge := int64(time.Since(branch.CreatedDate).Hours())
 				ghs.mb.RecordGitRepositoryBranchTimeDataPoint(now, branchAge, branch.Name, repoInfo.Name)
-				branchAges = append(branchAges, time.Now().Sub(branch.CreatedDate).Hours())
 			}
 		}
 
 		ghs.getRepoPullRequestInformation(repoInfo)
 
-		var prAges []float64
 		for _, pr := range repoInfo.PullRequests {
 			ghs.logger.Sugar().Debugf("PR Creation Date: %v PR Closed Date %v", pr.CreatedDate.Format(time.RFC3339), pr.ClosedDate.Format(time.RFC3339))
-			prAges = append(prAges, pr.ClosedDate.Sub(pr.CreatedDate).Hours())
 		}
 	}
 

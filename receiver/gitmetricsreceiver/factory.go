@@ -32,7 +32,7 @@ var (
 		githubscraper.TypeStr: &githubscraper.Factory{},
 	}
 
-	configNotValid = errors.New("configuration is not valid for the git metrics receiver")
+	errConfigNotValid = errors.New("configuration is not valid for the git metrics receiver")
 )
 
 // NewFactory creates a factory for the git metrics receiver
@@ -78,7 +78,7 @@ func createMetricsReceiver(
 	// check that the configuration is valid
 	conf, ok := cfg.(*Config)
 	if !ok {
-		return nil, configNotValid
+		return nil, errConfigNotValid
 	}
 
 	addScraperOpts, err := createAddScraperOpts(ctx, params, conf, scraperFactories)
