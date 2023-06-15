@@ -837,7 +837,8 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
-	p.ConsumeTraces(ctx, traces)
+	err := p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
 	metrics := p.buildMetrics()
 
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -853,7 +854,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 				if metric.Type() == pmetric.MetricTypeExponentialHistogram || metric.Type() == pmetric.MetricTypeHistogram {
 					dp := metric.Histogram().DataPoints()
 					for dpi := 0; dpi < dp.Len(); dpi++ {
-						for attributeKey, _ := range dp.At(dpi).Attributes().AsRaw() {
+						for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
 							assert.NotContains(t, excludeDimensions, attributeKey)
 						}
 
@@ -861,7 +862,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 				} else {
 					dp := metric.Sum().DataPoints()
 					for dpi := 0; dpi < dp.Len(); dpi++ {
-						for attributeKey, _ := range dp.At(dpi).Attributes().AsRaw() {
+						for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
 							assert.NotContains(t, excludeDimensions, attributeKey)
 						}
 					}
