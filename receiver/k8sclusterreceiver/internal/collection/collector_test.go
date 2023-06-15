@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -263,10 +264,11 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		logger := zap.New(observedLogger)
+		set := receivertest.NewNopCreateSettings()
+		set.TelemetrySettings.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &DataCollector{
-				logger:                 logger,
+				settings:               set,
 				metadataStore:          tt.metadataStore,
 				nodeConditionsToReport: []string{},
 			}
