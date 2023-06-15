@@ -60,22 +60,31 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, err)
 	replaceWithStar := func(string) string { return "*" }
+	shortenNames := func(value string) string {
+		if strings.HasPrefix(value, "kube-proxy") {
+			return "kube-proxy"
+		}
+		if strings.HasPrefix(value, "local-path-provisioner") {
+			return "local-path-provisioner"
+		}
+		if strings.HasPrefix(value, "kindnet") {
+			return "kindnet"
+		}
+		if strings.HasPrefix(value, "coredns") {
+			return "coredns"
+		}
+		if strings.HasPrefix(value, "otelcol") {
+			return "otelcol"
+		}
+		return value
+	}
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreMetricValues("k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"),
-		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", func(value string) string {
-			if strings.HasPrefix(value, "otelcol") {
-				return "otelcol"
-			}
-			return value
-		}),
-		pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", func(value string) string {
-			return value[:len(value)-19]
-		}),
-		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", func(value string) string {
-			return value[:len(value)-8]
-		}),
+		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
+		pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
+		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
 		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.uid", replaceWithStar),
