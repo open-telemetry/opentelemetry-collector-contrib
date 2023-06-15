@@ -34,12 +34,13 @@ func logEntry(buf *bytes.Buffer, format string, a ...interface{}) {
 }
 
 func attributeValueToString(v pcommon.Value) string {
-	// TODO: chceck all types and add missing
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		return v.Str()
 	case pcommon.ValueTypeBool:
 		return strconv.FormatBool(v.Bool())
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprint(v.Bytes().AsRaw())
 	case pcommon.ValueTypeDouble:
 		return strconv.FormatFloat(v.Double(), 'f', -1, 64)
 	case pcommon.ValueTypeInt:

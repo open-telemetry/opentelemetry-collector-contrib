@@ -89,3 +89,70 @@ func TestMarshalerOkStructure(t *testing.T) {
 	expectedEntry = expectedEntry + ",\"sourceCategory\":\"testcategory\",\"fields\":{},\"message\":\"entry1\"}\n"
 	assert.Equal(t, string(buf), expectedEntry)
 }
+
+func TestAttributeValueToString(t *testing.T) {
+	testCases := []struct {
+		value  pcommon.Value
+		result string
+		init   func(pcommon.Value)
+	}{
+		{
+			value:  pcommon.NewValueBool(true),
+			result: "true",
+		},
+		{
+			value:  pcommon.NewValueBytes(),
+			result: "[42 33 77 255 0]",
+			init: func(v pcommon.Value) {
+				v.Bytes().Append(42, 33, 77, 255, 0)
+			},
+		},
+		{
+			value:  pcommon.NewValueDouble(1.69),
+			result: "1.69",
+		},
+		{
+			value:  pcommon.NewValueInt(42),
+			result: "42",
+		},
+		{
+			// Format of a map entry:
+			// "     -> <key>: <type>(<value>)\n"
+			// Type names: https://github.com/open-telemetry/opentelemetry-collector/blob/ed8547a8e5d6ed527e6d54136cb2e137b954f888/pdata/pcommon/value.go#L32
+			value: pcommon.NewValueMap(),
+			result: "{\n" +
+				"     -> bool: Bool(false)\n" +
+				"     -> map: Map({})\n" +
+				"     -> string: Str(abc)\n" +
+				"}",
+			init: func(v pcommon.Value) {
+				m := v.Map()
+				m.PutBool("bool", false)
+				m.PutEmptyMap("map")
+				m.PutStr("string", "abc")
+			},
+		},
+		{
+			value:  pcommon.NewValueSlice(),
+			result: "[110.37, [true], [1 2 3], asdfg]",
+			init: func(v pcommon.Value) {
+				s := v.Slice()
+				s.AppendEmpty().SetDouble(110.37)
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetBool(true)
+				s.AppendEmpty().SetEmptyBytes().Append(1, 2, 3)
+				s.AppendEmpty().SetStr("asdfg")
+			},
+		},
+		{
+			value:  pcommon.NewValueStr("qwerty"),
+			result: "qwerty",
+		},
+	}
+
+	for _, testCase := range testCases {
+		if testCase.init != nil {
+			testCase.init(testCase.value)
+		}
+		assert.Equal(t, attributeValueToString(testCase.value), testCase.result)
+	}
+}
