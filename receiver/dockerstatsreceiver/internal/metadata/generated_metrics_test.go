@@ -268,7 +268,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "attr-val")
 
-			metrics := mb.Emit(WithContainerCommand("attr-val"), WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
 			allMetricsCount++
 			mb.RecordContainerPidsCountDataPoint(ts, 1)
 
@@ -278,7 +277,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
+			metrics := mb.Emit(WithContainerCommandLine("attr-val"), WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
