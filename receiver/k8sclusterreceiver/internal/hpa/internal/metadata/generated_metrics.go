@@ -6,100 +6,15 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for k8s/hpa metrics.
-type MetricsSettings struct {
-	K8sHpaCurrentReplicas MetricSettings `mapstructure:"k8s.hpa.current_replicas"`
-	K8sHpaDesiredReplicas MetricSettings `mapstructure:"k8s.hpa.desired_replicas"`
-	K8sHpaMaxReplicas     MetricSettings `mapstructure:"k8s.hpa.max_replicas"`
-	K8sHpaMinReplicas     MetricSettings `mapstructure:"k8s.hpa.min_replicas"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		K8sHpaCurrentReplicas: MetricSettings{
-			Enabled: true,
-		},
-		K8sHpaDesiredReplicas: MetricSettings{
-			Enabled: true,
-		},
-		K8sHpaMaxReplicas: MetricSettings{
-			Enabled: true,
-		},
-		K8sHpaMinReplicas: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// ResourceAttributesSettings provides settings for k8s/hpa metrics.
-type ResourceAttributesSettings struct {
-	K8sHpaName       ResourceAttributeSettings `mapstructure:"k8s.hpa.name"`
-	K8sHpaUID        ResourceAttributeSettings `mapstructure:"k8s.hpa.uid"`
-	K8sNamespaceName ResourceAttributeSettings `mapstructure:"k8s.namespace.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		K8sHpaName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		K8sHpaUID: ResourceAttributeSettings{
-			Enabled: true,
-		},
-		K8sNamespaceName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
-
 type metricK8sHpaCurrentReplicas struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -112,7 +27,7 @@ func (m *metricK8sHpaCurrentReplicas) init() {
 }
 
 func (m *metricK8sHpaCurrentReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -130,16 +45,16 @@ func (m *metricK8sHpaCurrentReplicas) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sHpaCurrentReplicas) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricK8sHpaCurrentReplicas(settings MetricSettings) metricK8sHpaCurrentReplicas {
-	m := metricK8sHpaCurrentReplicas{settings: settings}
-	if settings.Enabled {
+func newMetricK8sHpaCurrentReplicas(cfg MetricConfig) metricK8sHpaCurrentReplicas {
+	m := metricK8sHpaCurrentReplicas{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -148,7 +63,7 @@ func newMetricK8sHpaCurrentReplicas(settings MetricSettings) metricK8sHpaCurrent
 
 type metricK8sHpaDesiredReplicas struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -161,7 +76,7 @@ func (m *metricK8sHpaDesiredReplicas) init() {
 }
 
 func (m *metricK8sHpaDesiredReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -179,16 +94,16 @@ func (m *metricK8sHpaDesiredReplicas) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sHpaDesiredReplicas) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricK8sHpaDesiredReplicas(settings MetricSettings) metricK8sHpaDesiredReplicas {
-	m := metricK8sHpaDesiredReplicas{settings: settings}
-	if settings.Enabled {
+func newMetricK8sHpaDesiredReplicas(cfg MetricConfig) metricK8sHpaDesiredReplicas {
+	m := metricK8sHpaDesiredReplicas{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -197,7 +112,7 @@ func newMetricK8sHpaDesiredReplicas(settings MetricSettings) metricK8sHpaDesired
 
 type metricK8sHpaMaxReplicas struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -210,7 +125,7 @@ func (m *metricK8sHpaMaxReplicas) init() {
 }
 
 func (m *metricK8sHpaMaxReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -228,16 +143,16 @@ func (m *metricK8sHpaMaxReplicas) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sHpaMaxReplicas) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricK8sHpaMaxReplicas(settings MetricSettings) metricK8sHpaMaxReplicas {
-	m := metricK8sHpaMaxReplicas{settings: settings}
-	if settings.Enabled {
+func newMetricK8sHpaMaxReplicas(cfg MetricConfig) metricK8sHpaMaxReplicas {
+	m := metricK8sHpaMaxReplicas{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -246,7 +161,7 @@ func newMetricK8sHpaMaxReplicas(settings MetricSettings) metricK8sHpaMaxReplicas
 
 type metricK8sHpaMinReplicas struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -259,7 +174,7 @@ func (m *metricK8sHpaMinReplicas) init() {
 }
 
 func (m *metricK8sHpaMinReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -277,16 +192,16 @@ func (m *metricK8sHpaMinReplicas) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricK8sHpaMinReplicas) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricK8sHpaMinReplicas(settings MetricSettings) metricK8sHpaMinReplicas {
-	m := metricK8sHpaMinReplicas{settings: settings}
-	if settings.Enabled {
+func newMetricK8sHpaMinReplicas(cfg MetricConfig) metricK8sHpaMinReplicas {
+	m := metricK8sHpaMinReplicas{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -294,14 +209,14 @@ func newMetricK8sHpaMinReplicas(settings MetricSettings) metricK8sHpaMinReplicas
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                   pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity             int                 // maximum observed number of metrics per resource.
 	resourceCapacity            int                 // maximum observed number of resource attributes.
 	metricsBuffer               pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                   component.BuildInfo // contains version information
-	resourceAttributesSettings  ResourceAttributesSettings
+	resourceAttributesConfig    ResourceAttributesConfig
 	metricK8sHpaCurrentReplicas metricK8sHpaCurrentReplicas
 	metricK8sHpaDesiredReplicas metricK8sHpaDesiredReplicas
 	metricK8sHpaMaxReplicas     metricK8sHpaMaxReplicas
@@ -318,23 +233,16 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
-	}
-}
-
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                   pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:               pmetric.NewMetrics(),
 		buildInfo:                   settings.BuildInfo,
-		resourceAttributesSettings:  DefaultResourceAttributesSettings(),
-		metricK8sHpaCurrentReplicas: newMetricK8sHpaCurrentReplicas(ms.K8sHpaCurrentReplicas),
-		metricK8sHpaDesiredReplicas: newMetricK8sHpaDesiredReplicas(ms.K8sHpaDesiredReplicas),
-		metricK8sHpaMaxReplicas:     newMetricK8sHpaMaxReplicas(ms.K8sHpaMaxReplicas),
-		metricK8sHpaMinReplicas:     newMetricK8sHpaMinReplicas(ms.K8sHpaMinReplicas),
+		resourceAttributesConfig:    mbc.ResourceAttributes,
+		metricK8sHpaCurrentReplicas: newMetricK8sHpaCurrentReplicas(mbc.Metrics.K8sHpaCurrentReplicas),
+		metricK8sHpaDesiredReplicas: newMetricK8sHpaDesiredReplicas(mbc.Metrics.K8sHpaDesiredReplicas),
+		metricK8sHpaMaxReplicas:     newMetricK8sHpaMaxReplicas(mbc.Metrics.K8sHpaMaxReplicas),
+		metricK8sHpaMinReplicas:     newMetricK8sHpaMinReplicas(mbc.Metrics.K8sHpaMinReplicas),
 	}
 	for _, op := range options {
 		op(mb)
@@ -353,12 +261,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithK8sHpaName sets provided value as "k8s.hpa.name" attribute for current resource.
 func WithK8sHpaName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.K8sHpaName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.K8sHpaName.Enabled {
 			rm.Resource().Attributes().PutStr("k8s.hpa.name", val)
 		}
 	}
@@ -366,8 +274,8 @@ func WithK8sHpaName(val string) ResourceMetricsOption {
 
 // WithK8sHpaUID sets provided value as "k8s.hpa.uid" attribute for current resource.
 func WithK8sHpaUID(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.K8sHpaUID.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.K8sHpaUID.Enabled {
 			rm.Resource().Attributes().PutStr("k8s.hpa.uid", val)
 		}
 	}
@@ -375,8 +283,8 @@ func WithK8sHpaUID(val string) ResourceMetricsOption {
 
 // WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
 func WithK8sNamespaceName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.K8sNamespaceName.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.K8sNamespaceName.Enabled {
 			rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
 		}
 	}
@@ -385,7 +293,7 @@ func WithK8sNamespaceName(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -412,7 +320,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/k8s/hpa")
+	ils.Scope().SetName("otelcol/k8sclusterreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricK8sHpaCurrentReplicas.emit(ils.Metrics())
@@ -421,7 +329,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sHpaMinReplicas.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -431,11 +339,11 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

@@ -1,4 +1,4 @@
-name: k8s/hpa
+type: k8s/hpa
 
 sem_conv_version: 1.9.0
 
