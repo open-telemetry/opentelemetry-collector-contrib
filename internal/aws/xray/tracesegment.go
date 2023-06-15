@@ -29,12 +29,11 @@ type Segment struct {
 	StartTime *float64 `json:"start_time"`
 
 	// Segment-only optional fields
-	Service     *ServiceData           `json:"service,omitempty"`
-	Origin      *string                `json:"origin,omitempty"`
-	User        *string                `json:"user,omitempty"`
-	ResourceARN *string                `json:"resource_arn,omitempty"`
-	Links       []SpanLinkData         `json:"links,omitempty"`
-	Messaging   map[string]interface{} `json:"messaging,omitempty"`
+	Service     *ServiceData   `json:"service,omitempty"`
+	Origin      *string        `json:"origin,omitempty"`
+	User        *string        `json:"user,omitempty"`
+	ResourceARN *string        `json:"resource_arn,omitempty"`
+	Links       []SpanLinkData `json:"links,omitempty"`
 
 	// Optional fields for both Segment and subsegments
 	TraceID     *string                           `json:"trace_id,omitempty"`
