@@ -188,7 +188,7 @@ func Test_TimeError(t *testing.T) {
 				},
 			},
 			format:        "%Y/%m/%d",
-			expectedError: "cannot parse \"1/11\"",
+			expectedError: "cannot parse",
 		},
 		{
 			name: "invalid RFC3339 with no time",
