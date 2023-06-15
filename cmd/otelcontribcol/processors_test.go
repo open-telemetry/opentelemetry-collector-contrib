@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
 )
 
 func TestDefaultProcessors(t *testing.T) {
@@ -135,6 +136,14 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "redaction",
+		},
+		{
+			processor: "websocket",
+			getConfigFn: func() component.Config {
+				cfg := procFactories["websocket"].CreateDefaultConfig().(*websocketprocessor.Config)
+				cfg.Endpoint = "localhost:0"
+				return cfg
+			},
 		},
 	}
 
