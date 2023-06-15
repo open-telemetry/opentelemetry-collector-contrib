@@ -18,10 +18,7 @@
 ##
 
 ## COMMON & SHARED components
-cmd/otelcontribcol
-cmd/oteltestbedcol
 internal/common
-internal/tools
 
 ## DEPRECATED components
 
