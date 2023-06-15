@@ -14,6 +14,7 @@ body:
       # Start Collector components list
       - cmd/configschema
       - cmd/mdatagen
+      - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
@@ -93,6 +94,7 @@ body:
       - internal/docker
       - internal/filter
       - internal/k8sconfig
+      - internal/k8stest
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
@@ -145,6 +147,7 @@ body:
       - receiver/apache
       - receiver/apachespark
       - receiver/awscloudwatch
+      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
@@ -213,6 +216,7 @@ body:
       - receiver/snmp
       - receiver/snowflake
       - receiver/solace
+      - receiver/splunkenterprise
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver

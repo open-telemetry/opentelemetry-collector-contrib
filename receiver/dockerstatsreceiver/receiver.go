@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 
@@ -22,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	dtypes "github.com/docker/docker/api/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -37,7 +27,7 @@ import (
 const defaultResourcesLen = 5
 
 const (
-	defaultDockerAPIVersion         = 1.22
+	defaultDockerAPIVersion         = 1.23
 	minimalRequiredDockerAPIVersion = 1.22
 )
 
@@ -115,17 +105,24 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		r.recordContainerStats(now, res.stats, res.container)
+		if err := r.recordContainerStats(now, res.stats, res.container); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
 	return r.mb.Emit(), errs
 }
 
-func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) {
+func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) error {
+	var errs error
 	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
+	r.recordPidsMetrics(now, &containerStats.PidsStats)
+	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
+		errs = multierr.Append(errs, err)
+	}
 
 	// Always-present resource attrs + the user-configured resource attrs
 	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
@@ -155,6 +152,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	}
 
 	r.mb.EmitForResource(resourceMetricsOptions...)
+	return errs
 }
 
 func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
@@ -184,8 +182,6 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 		"total_pgpgin":              r.mb.RecordContainerMemoryTotalPgpginDataPoint,
 		"pgpgout":                   r.mb.RecordContainerMemoryPgpgoutDataPoint,
 		"total_pgpgout":             r.mb.RecordContainerMemoryTotalPgpgoutDataPoint,
-		"swap":                      r.mb.RecordContainerMemorySwapDataPoint,
-		"total_swap":                r.mb.RecordContainerMemoryTotalSwapDataPoint,
 		"pgfault":                   r.mb.RecordContainerMemoryPgfaultDataPoint,
 		"total_pgfault":             r.mb.RecordContainerMemoryTotalPgfaultDataPoint,
 		"pgmajfault":                r.mb.RecordContainerMemoryPgmajfaultDataPoint,
@@ -260,9 +256,32 @@ func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUS
 	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
+	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
 	r.mb.RecordContainerCPUPercentDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
 	}
+}
+
+func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.PidsStats) {
+	// pidsStats are available when kernel version is >= 4.3 and pids_cgroup is supported, it is empty otherwise.
+	if pidsStats.Current != 0 {
+		r.mb.RecordContainerPidsCountDataPoint(now, int64(pidsStats.Current))
+		if pidsStats.Limit != 0 {
+			r.mb.RecordContainerPidsLimitDataPoint(now, int64(pidsStats.Limit))
+		}
+	}
+}
+
+func (r *receiver) recordBaseMetrics(now pcommon.Timestamp, base *types.ContainerJSONBase) error {
+	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
+	if err != nil {
+		// value not available or invalid
+		return scrapererror.NewPartialScrapeError(fmt.Errorf("error retrieving container.uptime from Container.State.StartedAt: %w", err), 1)
+	}
+	if v := now.AsTime().Sub(t); v > 0 {
+		r.mb.RecordContainerUptimeDataPoint(now, v.Seconds())
+	}
+	return nil
 }

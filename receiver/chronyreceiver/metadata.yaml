@@ -1,5 +1,11 @@
 ---
-type: chrony receiver
+type: chrony
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
 
 attributes:
   leap.status:

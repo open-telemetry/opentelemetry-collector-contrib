@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver
 
@@ -40,7 +29,9 @@ func TestRecordMetrics(t *testing.T) {
 		{metrics.recordFatalUnmarshallingError, metrics.views.fatalUnmarshallingErrors, metrics.stats.fatalUnmarshallingErrors, 3, 3},
 		{metrics.recordDroppedSpanMessages, metrics.views.droppedSpanMessages, metrics.stats.droppedSpanMessages, 3, 3},
 		{metrics.recordReceivedSpanMessages, metrics.views.receivedSpanMessages, metrics.stats.receivedSpanMessages, 3, 3},
-		{metrics.recordReportedSpans, metrics.views.reportedSpans, metrics.stats.reportedSpans, 3, 3},
+		{func() {
+			metrics.recordReportedSpans(2)
+		}, metrics.views.reportedSpans, metrics.stats.reportedSpans, 3, 6},
 		{func() {
 			metrics.recordReceiverStatus(receiverStateTerminated)
 		}, metrics.views.receiverStatus, metrics.stats.receiverStatus, 3, int(receiverStateTerminated)},
@@ -53,6 +44,7 @@ func TestRecordMetrics(t *testing.T) {
 		}, metrics.views.flowControlRecentRetries, metrics.stats.flowControlRecentRetries, 3, 5},
 		{metrics.recordFlowControlTotal, metrics.views.flowControlTotal, metrics.stats.flowControlTotal, 3, 3},
 		{metrics.recordFlowControlSingleSuccess, metrics.views.flowControlSingleSuccess, metrics.stats.flowControlSingleSuccess, 3, 3},
+		{metrics.recordDroppedEgressSpan, metrics.views.droppedEgressSpans, metrics.stats.droppedEgressSpans, 3, 3},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.m.Name(), func(t *testing.T) {

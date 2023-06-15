@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver"
 
@@ -29,11 +18,6 @@ import (
 
 var errConfigNotSpark = errors.New("config was not a Spark receiver config")
 
-type SparkReceiver struct {
-	component.StartFunc
-	component.ShutdownFunc
-}
-
 // NewFactory creates a new receiver factory for Spark
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -44,13 +28,15 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates a config for Spark with as many default values as possible
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
-		},
+		ScraperControllerSettings: cfg,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -61,10 +47,18 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	_, ok := config.(*Config)
+	sparkConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errConfigNotSpark
 	}
 
-	return SparkReceiver{}, nil
+	sparkScraper := newSparkScraper(params.Logger, sparkConfig, params)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sparkScraper.scrape,
+		scraperhelper.WithStart(sparkScraper.start))
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(&sparkConfig.ScraperControllerSettings, params,
+		consumer, scraperhelper.AddScraper(scraper))
 }

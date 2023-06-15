@@ -4,5 +4,5 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, splunk]
-  
+    development: [logs]
+  distributions: [contrib, splunk, observiq, sumo]

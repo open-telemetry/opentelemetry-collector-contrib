@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
@@ -25,9 +14,9 @@ import (
 )
 
 type ReplaceAllMatchesArguments[K any] struct {
-	Target      ottl.PMapGetter[K] `ottlarg:"0"`
-	Pattern     string             `ottlarg:"1"`
-	Replacement string             `ottlarg:"2"`
+	Target      ottl.PMapGetter[K]   `ottlarg:"0"`
+	Pattern     string               `ottlarg:"1"`
+	Replacement ottl.StringGetter[K] `ottlarg:"2"`
 }
 
 func NewReplaceAllMatchesFactory[K any]() ottl.Factory[K] {
@@ -44,7 +33,7 @@ func createReplaceAllMatchesFunction[K any](_ ottl.FunctionContext, oArgs ottl.A
 	return replaceAllMatches(args.Target, args.Pattern, args.Replacement)
 }
 
-func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replacement string) (ottl.ExprFunc[K], error) {
+func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replacement ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
@@ -54,9 +43,13 @@ func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replace
 		if err != nil {
 			return nil, err
 		}
+		replacementVal, err := replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
 		val.Range(func(key string, value pcommon.Value) bool {
 			if glob.Match(value.Str()) {
-				value.SetStr(replacement)
+				value.SetStr(replacementVal)
 			}
 			return true
 		})

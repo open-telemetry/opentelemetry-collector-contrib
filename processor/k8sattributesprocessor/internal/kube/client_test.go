@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kube
 
@@ -857,8 +846,13 @@ func TestExtractionRules(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
-			c.handleReplicaSetAdd(replicaset)
-			c.handlePodAdd(pod)
+
+			// manually call the data removal functions here
+			// normally the informer does this, but fully emulating the informer in this test is annoying
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
+			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
@@ -1007,8 +1001,13 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			replicaset.OwnerReferences = tc.ownerReferences
-			c.handleReplicaSetAdd(replicaset)
-			c.handlePodAdd(pod)
+
+			// manually call the data removal functions here
+			// normally the informer does this, but fully emulating the informer in this test is annoying
+			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
+			c.handleReplicaSetAdd(transformedReplicaset)
+			c.handlePodAdd(transformedPod)
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
@@ -1473,7 +1472,10 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := WatchClient{Rules: tt.rules}
-			assert.Equal(t, tt.want, c.extractPodContainersAttributes(&tt.pod))
+			// manually call the data removal function here
+			// normally the informer does this, but fully emulating the informer in this test is annoying
+			transformedPod := removeUnnecessaryPodData(&tt.pod, c.Rules)
+			assert.Equal(t, tt.want, c.extractPodContainersAttributes(transformedPod))
 		})
 	}
 }

@@ -1,0 +1,7 @@
+type: awsemf
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics]
+  distributions: [contrib, aws, observiq]

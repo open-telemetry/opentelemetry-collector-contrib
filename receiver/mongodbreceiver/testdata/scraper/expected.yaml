@@ -7,18 +7,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "14"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: miss
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
                 - asInt: "201"
                   attributes:
                     - key: type
                       value:
                         stringValue: hit
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
+                - asInt: "14"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: miss
                   startTimeUnixNano: "1659372940162070000"
                   timeUnixNano: "1659372940162165000"
               isMonotonic: true
@@ -100,6 +100,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "20"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: command
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
                 - asInt: "0"
                   attributes:
                     - key: operation
@@ -112,13 +119,6 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: getmore
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
-                - asInt: "20"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: command
                   startTimeUnixNano: "1659372940162070000"
                   timeUnixNano: "1659372940162165000"
                 - asInt: "0"
@@ -147,6 +147,13 @@ resourceMetrics:
           - description: The latency of operations.
             gauge:
               dataPoints:
+                - asInt: "8631"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: command
+                  startTimeUnixNano: "1670911731284766000"
+                  timeUnixNano: "1670911731288585000"
                 - asInt: "0"
                   attributes:
                     - key: operation
@@ -161,13 +168,6 @@ resourceMetrics:
                         stringValue: write
                   startTimeUnixNano: "1670911731284766000"
                   timeUnixNano: "1670911731288585000"
-                - asInt: "8631"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: command
-                  startTimeUnixNano: "1670911731284766000"
-                  timeUnixNano: "1670911731288585000"
             name: mongodb.operation.latency.time
             unit: us
           - description: The number of replicated operations executed.
@@ -175,6 +175,27 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "27"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: command
+                  startTimeUnixNano: "1670911805821119000"
+                  timeUnixNano: "1670911805825012000"
+                - asInt: "1"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1670911805821119000"
+                  timeUnixNano: "1670911805825012000"
+                - asInt: "2"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: getmore
+                  startTimeUnixNano: "1670911805821119000"
+                  timeUnixNano: "1670911805825012000"
                 - asInt: "3"
                   attributes:
                     - key: operation
@@ -194,27 +215,6 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1670911805821119000"
-                  timeUnixNano: "1670911805825012000"
-                - asInt: "1"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1670911805821119000"
-                  timeUnixNano: "1670911805825012000"
-                - asInt: "2"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: getmore
-                  startTimeUnixNano: "1670911805821119000"
-                  timeUnixNano: "1670911805825012000"
-                - asInt: "27"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: command
                   startTimeUnixNano: "1670911805821119000"
                   timeUnixNano: "1670911805825012000"
               isMonotonic: true
@@ -249,6 +249,27 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "49340"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: command
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
+                - asInt: "3750"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: getmore
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
                 - asInt: "12465"
                   attributes:
                     - key: operation
@@ -270,29 +291,52 @@ resourceMetrics:
                         stringValue: update
                   startTimeUnixNano: "1659372940162070000"
                   timeUnixNano: "1659372940162165000"
-                - asInt: "3750"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
-                - asInt: "0"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: getmore
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
-                - asInt: "49340"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: command
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
               isMonotonic: true
             unit: ms
+        scope:
+          name: otelcol/mongodbreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: products
+                    - key: database
+                      value:
+                        stringValue: fakedatabase
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
+            unit: '{accesses}'
+        scope:
+          name: otelcol/mongodbreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: orders
+                    - key: database
+                      value:
+                        stringValue: fakedatabase
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
+            unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
           version: latest
@@ -370,6 +414,16 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: database
+                      value:
+                        stringValue: fakedatabase
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1659372940162070000"
+                  timeUnixNano: "1659372940162165000"
                 - asInt: "1"
                   attributes:
                     - key: database
@@ -388,16 +442,6 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
-                - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
-                    - key: operation
-                      value:
-                        stringValue: delete
                   startTimeUnixNano: "1659372940162070000"
                   timeUnixNano: "1659372940162165000"
             unit: '{documents}'
@@ -493,50 +537,6 @@ resourceMetrics:
                   timeUnixNano: "1659372940162165000"
               isMonotonic: true
             unit: By
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
-                    - key: collection
-                      value:
-                        stringValue: products
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: fakedatabase
-                    - key: collection
-                      value:
-                        stringValue: orders
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
-            unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
           version: latest

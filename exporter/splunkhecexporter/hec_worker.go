@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -27,7 +16,7 @@ import (
 )
 
 type hecWorker interface {
-	send(context.Context, *bufferState, map[string]string) error
+	send(context.Context, buffer, map[string]string) error
 }
 
 type defaultHecWorker struct {
@@ -36,12 +25,12 @@ type defaultHecWorker struct {
 	headers map[string]string
 }
 
-func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bufferState)
+func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
+	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), buf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	req.ContentLength = int64(bufferState.buf.Len())
+	req.ContentLength = int64(buf.Len())
 
 	// Set the headers configured for the client
 	for k, v := range hec.headers {
@@ -53,7 +42,7 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 		req.Header.Set(k, v)
 	}
 
-	if bufferState.compressionEnabled() {
+	if _, ok := buf.(*cancellableGzipWriter); ok {
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 

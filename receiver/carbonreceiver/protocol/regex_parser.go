@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 
@@ -21,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -176,27 +165,18 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			ms := rule.compRegexp.FindStringSubmatch(path)
 			nms := rule.compRegexp.SubexpNames() // regexp pre-computes this slice.
 			metricNameLookup := map[string]string{}
+			attributes := pcommon.NewMap()
 
-			keys := make([]*metricspb.LabelKey, 0, len(nms)+len(rule.Labels))
-			values := make([]*metricspb.LabelValue, 0, len(nms)+len(rule.Labels))
 			for i := 1; i < len(ms); i++ {
 				if strings.HasPrefix(nms[i], metricNameCapturePrefix) {
 					metricNameLookup[nms[i]] = ms[i]
 				} else {
-					keys = append(keys, &metricspb.LabelKey{Key: nms[i][len(keyCapturePrefix):]})
-					values = append(values, &metricspb.LabelValue{
-						Value:    ms[i],
-						HasValue: true,
-					})
+					attributes.PutStr(nms[i][len(keyCapturePrefix):], ms[i])
 				}
 			}
 
 			for k, v := range rule.Labels {
-				keys = append(keys, &metricspb.LabelKey{Key: k})
-				values = append(values, &metricspb.LabelValue{
-					Value:    v,
-					HasValue: true,
-				})
+				attributes.PutStr(k, v)
 			}
 
 			var actualMetricName string
@@ -217,8 +197,7 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			}
 
 			parsedPath.MetricName = actualMetricName
-			parsedPath.LabelKeys = keys
-			parsedPath.LabelValues = values
+			parsedPath.Attributes = attributes
 			parsedPath.MetricType = TargetMetricType(rule.MetricType)
 			return nil
 		}

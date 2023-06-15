@@ -1,98 +1,97 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datasetexporter
 
 import (
-	"context"
-	"os"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 )
 
-type SuiteFactory struct {
-	suite.Suite
-}
-
-func (s *SuiteFactory) SetupTest() {
-	os.Clearenv()
-}
-
-func TestSuiteFactory(t *testing.T) {
-	suite.Run(t, new(SuiteFactory))
-}
-
-func (s *SuiteFactory) TestCreateDefaultConfig() {
+func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	s.Equal(&Config{
-		MaxDelayMs:      maxDelayMs,
+	assert.Equal(t, &Config{
+		BufferSettings:  newDefaultBufferSettings(),
+		TracesSettings:  newDefaultTracesSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}, cfg, "failed to create default config")
 
-	s.Nil(componenttest.CheckConfigStruct(cfg))
+	assert.Nil(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func (s *SuiteFactory) TestLoadConfig() {
+func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	s.Nil(err)
+	assert.Nil(t, err)
 
 	tests := []struct {
 		id       component.ID
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(CfgTypeStr, "minimal"),
+			id: component.NewIDWithName(metadata.Type, "minimal"),
 			expected: &Config{
 				DatasetURL:      "https://app.scalyr.com",
 				APIKey:          "key-minimal",
-				MaxDelayMs:      maxDelayMs,
+				BufferSettings:  newDefaultBufferSettings(),
+				TracesSettings:  newDefaultTracesSettings(),
+				LogsSettings:    newDefaultLogsSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			},
 		},
 		{
-			id: component.NewIDWithName(CfgTypeStr, "lib"),
+			id: component.NewIDWithName(metadata.Type, "lib"),
 			expected: &Config{
-				DatasetURL:      "https://app.eu.scalyr.com",
-				APIKey:          "key-lib",
-				MaxDelayMs:      "12345",
-				GroupBy:         []string{"attributes.container_id", "attributes.log.file.path"},
+				DatasetURL: "https://app.eu.scalyr.com",
+				APIKey:     "key-lib",
+				BufferSettings: BufferSettings{
+					MaxLifetime:          345 * time.Millisecond,
+					GroupBy:              []string{"attributes.container_id", "attributes.log.file.path"},
+					RetryInitialInterval: bufferRetryInitialInterval,
+					RetryMaxInterval:     bufferRetryMaxInterval,
+					RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
+				},
+				TracesSettings:  newDefaultTracesSettings(),
+				LogsSettings:    newDefaultLogsSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			},
 		},
 		{
-			id: component.NewIDWithName(CfgTypeStr, "full"),
+			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				DatasetURL: "https://app.scalyr.com",
 				APIKey:     "key-full",
-				MaxDelayMs: "3456",
-				GroupBy:    []string{"body.map.kubernetes.pod_id", "body.map.kubernetes.docker_id", "body.map.stream"},
+				BufferSettings: BufferSettings{
+					MaxLifetime:          3456 * time.Millisecond,
+					GroupBy:              []string{"body.map.kubernetes.pod_id", "body.map.kubernetes.docker_id", "body.map.stream"},
+					RetryInitialInterval: 21 * time.Second,
+					RetryMaxInterval:     22 * time.Second,
+					RetryMaxElapsedTime:  23 * time.Second,
+				},
+				TracesSettings: TracesSettings{
+					MaxWait: 3 * time.Second,
+				},
+				LogsSettings: LogsSettings{
+					ExportResourceInfo: true,
+				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             true,
 					InitialInterval:     11 * time.Nanosecond,
@@ -114,15 +113,15 @@ func (s *SuiteFactory) TestLoadConfig() {
 	}
 
 	for _, tt := range tests {
-		s.T().Run(tt.id.Name(), func(*testing.T) {
+		t.Run(tt.id.Name(), func(*testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(tt.id.String())
-			s.Require().Nil(err)
-			s.Require().Nil(component.UnmarshalConfig(sub, cfg))
-			if s.Nil(component.ValidateConfig(cfg)) {
-				s.Equal(tt.expected, cfg)
+			require.Nil(t, err)
+			require.Nil(t, component.UnmarshalConfig(sub, cfg))
+			if assert.Nil(t, component.ValidateConfig(cfg)) {
+				assert.Equal(t, tt.expected, cfg)
 			}
 		})
 	}
@@ -137,57 +136,31 @@ type CreateTest struct {
 func createExporterTests() []CreateTest {
 	return []CreateTest{
 		{
+			name:          "broken",
+			config:        &Config{},
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:false MaxWait:0s}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; LogsSettings: {ExportResourceInfo:false}; config is not valid: api_key is required"),
+		},
+		{
 			name: "valid",
 			config: &Config{
-				DatasetURL:      "https://app.eu.scalyr.com",
-				APIKey:          "key-lib",
-				MaxDelayMs:      "12345",
-				GroupBy:         []string{"attributes.container_id"},
+				DatasetURL: "https://app.eu.scalyr.com",
+				APIKey:     "key-lib",
+				BufferSettings: BufferSettings{
+					MaxLifetime:          12345,
+					GroupBy:              []string{"attributes.container_id"},
+					RetryInitialInterval: time.Second,
+					RetryMaxInterval:     time.Minute,
+					RetryMaxElapsedTime:  time.Hour,
+				},
+				TracesSettings: TracesSettings{
+					Aggregate: true,
+					MaxWait:   5 * time.Second,
+				},
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			},
 			expectedError: nil,
 		},
-	}
-}
-
-func (s *SuiteFactory) TestCreateLogsExporter() {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		s.T().Run(tt.name, func(*testing.T) {
-			exporterInstance = nil
-			logs, err := createLogsExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				s.Nil(tt.expectedError)
-			} else {
-				s.Equal(tt.expectedError.Error(), err.Error())
-				s.Nil(logs)
-			}
-		})
-	}
-}
-
-func (s *SuiteFactory) TestCreateTracesExporter() {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		s.T().Run(tt.name, func(t *testing.T) {
-			exporterInstance = nil
-			logs, err := createTracesExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				s.Nil(tt.expectedError)
-			} else {
-				s.Equal(tt.expectedError.Error(), err.Error())
-				s.Nil(logs)
-			}
-		})
 	}
 }

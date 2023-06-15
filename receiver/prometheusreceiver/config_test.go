@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -232,15 +221,11 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
@@ -251,15 +236,10 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client key file "./testdata/dummy-tls-key-file" specified without client cert file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of cert or cert_file must be configured when a client key is configured")
+	}
 }
 
 func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
@@ -270,15 +250,11 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
@@ -292,12 +268,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.NoError(t, err)
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
@@ -311,10 +282,19 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
+	require.NoError(t, err)
+}
 
-	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`
+func TestFileSDConfigWithoutSDFile(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "non-existent-prometheus-sd-file-config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
 }

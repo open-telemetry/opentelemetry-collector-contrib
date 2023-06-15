@@ -24,9 +24,9 @@ The total number of accepted client connections
 
 The current number of nginx connections by state
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| connections | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| connections | Sum | Int | Cumulative | false |
 
 #### Attributes
 
@@ -52,11 +52,11 @@ Total number of requests made to the server since it started
 
 ### temp.connections_current
 
-Temporary placeholder for new version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.
+Temporary placeholder for old version of nginx.connections_current. See featuregate 'nginx.connections_as_sum'.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| connections | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| connections | Gauge | Int |
 
 #### Attributes
 

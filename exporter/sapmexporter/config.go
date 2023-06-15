@@ -1,21 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sapmexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
@@ -46,8 +36,12 @@ type Config struct {
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
 	MaxConnections uint `mapstructure:"max_connections"`
 
-	// Disable GZip compression.
+	// Disable compression. If set to true then Compression field is ignored.
 	DisableCompression bool `mapstructure:"disable_compression"`
+
+	// Compression method to use (gzip or zstd). Ignored if DisableCompression=true.
+	// If unspecified defaults to gzip.
+	Compression string `mapstructure:"compression"`
 
 	// Log detailed response from trace ingest.
 	LogDetailedResponse bool `mapstructure:"log_detailed_response"`
@@ -67,6 +61,17 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return err
 	}
+
+	switch c.Compression {
+	// Valid compression methods.
+	case "", // no compression
+		string(sapmclient.CompressionMethodGzip),
+		string(sapmclient.CompressionMethodZstd):
+
+	default:
+		return fmt.Errorf("invalid compression %q", c.Compression)
+	}
+
 	return nil
 }
 
@@ -94,6 +99,10 @@ func (c *Config) clientOptions() []sapmclient.Option {
 
 	if c.DisableCompression {
 		opts = append(opts, sapmclient.WithDisabledCompression())
+	}
+
+	if c.Compression != "" {
+		opts = append(opts, sapmclient.WithCompressionMethod(sapmclient.CompressionMethod(c.Compression)))
 	}
 
 	return opts

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 
@@ -20,6 +9,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func AssertResource(t *testing.T, actualResource *resourcepb.Resource,
@@ -35,6 +25,26 @@ func AssertResource(t *testing.T, actualResource *resourcepb.Resource,
 		actualResource.Labels,
 		"mismatching resource labels",
 	)
+}
+
+func AssertMetricInt(t testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType, expectedValue any) {
+	dps := assertMetric(t, m, expectedMetric, expectedType)
+	require.EqualValues(t, expectedValue, dps.At(0).IntValue(), "mismatching metric values")
+}
+
+func assertMetric(t testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType) pmetric.NumberDataPointSlice {
+	require.Equal(t, expectedMetric, m.Name(), "mismatching metric names")
+	require.NotEmpty(t, m.Description(), "empty description on metric")
+	require.Equal(t, expectedType, m.Type(), "mismatching metric types")
+	var dps pmetric.NumberDataPointSlice
+	switch expectedType {
+	case pmetric.MetricTypeGauge:
+		dps = m.Gauge().DataPoints()
+	case pmetric.MetricTypeSum:
+		dps = m.Sum().DataPoints()
+	}
+	require.Equal(t, 1, dps.Len())
+	return dps
 }
 
 func AssertMetricsWithLabels(t *testing.T, actualMetric *metricspb.Metric,

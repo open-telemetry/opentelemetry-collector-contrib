@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
@@ -41,17 +30,12 @@ var (
 		v, _ := version.NewVersion("7.13")
 		return v
 	}()
-)
 
-const (
-	readmeURL = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
-)
-
-var (
-	emitNodeVersionAttr = featuregate.GlobalRegistry().MustRegister(
+	_ = featuregate.GlobalRegistry().MustRegister(
 		"receiver.elasticsearch.emitNodeVersionAttr",
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
+		featuregate.StageStable,
+		featuregate.WithRegisterToVersion("0.82.0"),
+		featuregate.WithRegisterDescription("All node metrics will be enriched with the node version resource attribute."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
 	)
 )
@@ -65,29 +49,17 @@ type elasticsearchScraper struct {
 	mb          *metadata.MetricsBuilder
 	version     *version.Version
 	clusterName string
-
-	// Feature gates
-	emitNodeVersionAttr bool
 }
 
 func newElasticSearchScraper(
 	settings receiver.CreateSettings,
 	cfg *Config,
 ) *elasticsearchScraper {
-	e := &elasticsearchScraper{
-		settings:            settings.TelemetrySettings,
-		cfg:                 cfg,
-		mb:                  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
-		emitNodeVersionAttr: emitNodeVersionAttr.IsEnabled(),
+	return &elasticsearchScraper{
+		settings: settings.TelemetrySettings,
+		cfg:      cfg,
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
-
-	if !e.emitNodeVersionAttr {
-		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitNodeVersionAttr.ID(), readmeURL),
-		)
-	}
-
-	return e
 }
 
 func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (err error) {
@@ -139,15 +111,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		return
 	}
 
-	var nodesInfo *model.Nodes
-	if r.emitNodeVersionAttr {
-		// Certain node metadata is not available from the /_nodes/stats endpoint. Therefore, we need to get this metadata
-		// from the /_nodes endpoint. The metadata may or may not be used depending on feature gates.
-		nodesInfo, err = r.client.Nodes(ctx, r.cfg.Nodes)
-		if err != nil {
-			errs.AddPartial(26, err)
-			return
-		}
+	// Certain node metadata is not available from the /_nodes/stats endpoint. Therefore, we need to get this metadata
+	// from the /_nodes endpoint.
+	nodesInfo, err := r.client.Nodes(ctx, r.cfg.Nodes)
+	if err != nil {
+		errs.AddPartial(26, err)
+		return
 	}
 
 	for id, info := range nodeStats.Nodes {
@@ -357,10 +326,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			metadata.WithElasticsearchNodeName(info.Name),
 		}
 
-		if r.emitNodeVersionAttr {
-			if node, ok := nodesInfo.Nodes[id]; ok {
-				nodeMetadata = append(nodeMetadata, metadata.WithElasticsearchNodeVersion(node.Version))
-			}
+		if node, ok := nodesInfo.Nodes[id]; ok {
+			nodeMetadata = append(nodeMetadata, metadata.WithElasticsearchNodeVersion(node.Version))
 		}
 
 		r.mb.EmitForResource(nodeMetadata...)

@@ -1,32 +1,73 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package websocketprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor/internal/metadata"
 )
 
-const (
-	typeStr   = "websocket"
-	stability = component.StabilityLevelDevelopment
-)
+var processors = sharedcomponent.NewSharedComponents()
 
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
+		processor.WithTraces(createTraceProcessor, metadata.TracesStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
+}
+
+func createMetricsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Metrics) (processor.Metrics, error) {
+	rCfg := cfg.(*Config)
+	p := processors.GetOrAdd(cfg, func() component.Component {
+		return newProcessor(params, rCfg)
+	})
+	fn := p.Unwrap().(*wsprocessor).ConsumeMetrics
+	return processorhelper.NewMetricsProcessor(ctx, params, cfg, c,
+		fn,
+		processorhelper.WithCapabilities(consumer.Capabilities{
+			MutatesData: false,
+		}),
+		processorhelper.WithStart(p.Start),
+		processorhelper.WithShutdown(p.Shutdown))
+}
+
+func createLogsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Logs) (processor.Logs, error) {
+	rCfg := cfg.(*Config)
+	p := processors.GetOrAdd(cfg, func() component.Component {
+		return newProcessor(params, rCfg)
+	})
+	fn := p.Unwrap().(*wsprocessor).ConsumeLogs
+	return processorhelper.NewLogsProcessor(ctx, params, cfg, c,
+		fn,
+		processorhelper.WithCapabilities(consumer.Capabilities{
+			MutatesData: false,
+		}),
+		processorhelper.WithStart(p.Start),
+		processorhelper.WithShutdown(p.Shutdown))
+}
+
+func createTraceProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Traces) (processor.Traces, error) {
+	rCfg := cfg.(*Config)
+	p := processors.GetOrAdd(cfg, func() component.Component {
+		return newProcessor(params, rCfg)
+	})
+	fn := p.Unwrap().(*wsprocessor).ConsumeTraces
+	return processorhelper.NewTracesProcessor(ctx, params, cfg, c,
+		fn,
+		processorhelper.WithCapabilities(consumer.Capabilities{
+			MutatesData: false,
+		}),
+		processorhelper.WithStart(p.Start),
+		processorhelper.WithShutdown(p.Shutdown))
 }

@@ -4,4 +4,4 @@ status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib, splunk]
+  distributions: [contrib, splunk, sumo]

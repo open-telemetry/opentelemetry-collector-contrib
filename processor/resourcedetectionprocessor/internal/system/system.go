@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 
@@ -60,7 +49,7 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	var hostname string
 
 	res := pcommon.NewResource()
@@ -71,7 +60,7 @@ func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		return res, "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	hostID, err := d.provider.HostID()
+	hostID, err := d.provider.HostID(ctx)
 	if err != nil {
 		return res, "", fmt.Errorf("failed getting host ID: %w", err)
 	}

@@ -4,5 +4,5 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [core, contrib, splunk]
-  
+  distributions: [core, contrib, splunk, observiq, sumo, aws]
+

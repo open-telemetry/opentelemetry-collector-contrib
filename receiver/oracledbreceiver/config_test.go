@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oracledbreceiver // import "github.com/open-telemetry/open-telemetry-collector-contrib/receiver/oracledbreceiver"
 
@@ -24,6 +13,97 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
+
+func TestValidateInvalidConfigs(t *testing.T) {
+	testCases := []struct {
+		name     string
+		config   *Config
+		expected error
+	}{
+		{
+			name: "Empty endpoint",
+			config: &Config{
+				Endpoint: "",
+			},
+			expected: errEmptyEndpoint,
+		},
+		{
+			name: "Missing port in endpoint",
+			config: &Config{
+				Endpoint: "localhost",
+			},
+			expected: errBadEndpoint,
+		},
+		{
+			name: "Invalid endpoint format",
+			config: &Config{
+				Endpoint: "x;;ef;s;d:::ss:23423423423423423",
+			},
+			expected: errBadEndpoint,
+		},
+		{
+			name: "Missing host in endpoint",
+			config: &Config{
+				Endpoint: ":3001",
+			},
+			expected: errBadEndpoint,
+		},
+		{
+			name: "Negative port",
+			config: &Config{
+				Endpoint: "localhost:-2",
+			},
+			expected: errBadPort,
+		},
+		{
+			name: "Bad port",
+			config: &Config{
+				Endpoint: "localhost:9999999999999999999",
+			},
+			expected: errBadPort,
+		},
+		{
+			name: "Empty username",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Username: "",
+				Password: "secret",
+			},
+			expected: errEmptyUsername,
+		},
+		{
+			name: "Empty password",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Username: "ro_user",
+			},
+			expected: errEmptyPassword,
+		},
+		{
+			name: "Empty service",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				Password: "password",
+				Username: "ro_user",
+			},
+			expected: errEmptyService,
+		},
+		{
+			name: "Invalid data source",
+			config: &Config{
+				DataSource: "%%%",
+			},
+			expected: errBadDataSource,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.config.Validate()
+			require.ErrorIs(t, err, tc.expected)
+		})
+	}
+}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
@@ -40,6 +120,10 @@ func TestParseConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Equal(t, "oracle://otel:password@localhost:51521/XE", cfg.DataSource)
+	assert.Equal(t, "otel", cfg.Username)
+	assert.Equal(t, "password", cfg.Password)
+	assert.Equal(t, "localhost:51521", cfg.Endpoint)
+	assert.Equal(t, "XE", cfg.Service)
 	settings := cfg.MetricsBuilderConfig.Metrics
 	assert.False(t, settings.OracledbTablespaceSizeUsage.Enabled)
 	assert.False(t, settings.OracledbExchangeDeadlocks.Enabled)

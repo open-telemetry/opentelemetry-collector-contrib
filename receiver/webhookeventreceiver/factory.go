@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 
@@ -18,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -26,12 +14,19 @@ import (
 )
 
 const (
+	// might add this later, for now I wish to require a valid
+	// endpoint to be declared by the user.
 	// Default endpoints to bind to.
-	defaultEndpoint = ":8080"
+	// defaultEndpoint = "localhost:8080"
+	scopeLogName        = "otlp/" + metadata.Type
+	defaultReadTimeout  = "500ms"
+	defaultWriteTimeout = "500ms"
+	defaultPath         = "/events"
+	defaultHealthPath   = "/health_check"
 )
 
 // NewFactory creates a factory for Generic Webhook Receiver.
-func NewFactory() component.Factory {
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -42,9 +37,10 @@ func NewFactory() component.Factory {
 // Default configuration for the generic webhook receiver
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
-		},
+		Path:         defaultPath,
+		HealthPath:   defaultHealthPath,
+		ReadTimeout:  defaultReadTimeout,
+		WriteTimeout: defaultWriteTimeout,
 	}
 }
 
@@ -56,6 +52,5 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	conf := cfg.(*Config)
-
 	return newLogsReceiver(params, *conf, consumer)
 }

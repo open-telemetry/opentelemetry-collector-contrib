@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
@@ -144,42 +133,158 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return evaluated, nil
 }
 
+// TypeError represents that a value was not an expected type.
+type TypeError string
+
+func (t TypeError) Error() string {
+	return string(t)
+}
+
 // StringGetter is a Getter that must return a string.
 type StringGetter[K any] interface {
-	// Get retrieves a string value.  If the value is not a string, an error is returned.
+	// Get retrieves a string value.
 	Get(ctx context.Context, tCtx K) (string, error)
 }
 
-type IntGetter[K any] interface {
-	Get(ctx context.Context, tCtx K) (int64, error)
-}
-
-type FloatGetter[K any] interface {
-	Get(ctx context.Context, tCtx K) (float64, error)
-}
-
-type PMapGetter[K any] interface {
-	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
-}
-
-type StandardTypeGetter[K any, T any] struct {
+// StandardStringGetter is a basic implementation of StringGetter
+type StandardStringGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
-func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (T, error) {
-	var v T
+// Get retrieves a string value.
+// If the value is not a string a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return v, err
+		return "", fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
-		return v, fmt.Errorf("expected %T but got nil", v)
+		return "", TypeError("expected string but got nil")
 	}
-	v, ok := val.(T)
-	if !ok {
-		return v, fmt.Errorf("expected %T but got %T", v, val)
+	switch v := val.(type) {
+	case string:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeStr {
+			return v.Str(), nil
+		}
+		return "", TypeError(fmt.Sprintf("expected string but got %v", v.Type()))
+	default:
+		return "", TypeError(fmt.Sprintf("expected string but got %T", val))
 	}
-	return v, nil
+}
+
+// IntGetter is a Getter that must return an int64.
+type IntGetter[K any] interface {
+	// Get retrieves an int64 value.
+	Get(ctx context.Context, tCtx K) (int64, error)
+}
+
+// StandardIntGetter is a basic implementation of IntGetter
+type StandardIntGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+// Get retrieves an int64 value.
+// If the value is not an int64 a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return 0, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return 0, TypeError("expected int64 but got nil")
+	}
+	switch v := val.(type) {
+	case int64:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeInt {
+			return v.Int(), nil
+		}
+		return 0, TypeError(fmt.Sprintf("expected int64 but got %v", v.Type()))
+	default:
+		return 0, TypeError(fmt.Sprintf("expected int64 but got %T", val))
+	}
+}
+
+// FloatGetter is a Getter that must return a float64.
+type FloatGetter[K any] interface {
+	// Get retrieves a float64 value.
+	Get(ctx context.Context, tCtx K) (float64, error)
+}
+
+// StandardFloatGetter is a basic implementation of FloatGetter
+type StandardFloatGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+// Get retrieves a float64 value.
+// If the value is not a float64 a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return 0, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return 0, TypeError("expected float64 but got nil")
+	}
+	switch v := val.(type) {
+	case float64:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeDouble {
+			return v.Double(), nil
+		}
+		return 0, TypeError(fmt.Sprintf("expected float64 but got %v", v.Type()))
+	default:
+		return 0, TypeError(fmt.Sprintf("expected float64 but got %T", val))
+	}
+}
+
+// PMapGetter is a Getter that must return a pcommon.Map.
+type PMapGetter[K any] interface {
+	// Get retrieves a pcommon.Map value.
+	Get(ctx context.Context, tCtx K) (pcommon.Map, error)
+}
+
+// StandardPMapGetter is a basic implementation of PMapGetter
+type StandardPMapGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+// Get retrieves a pcommon.Map value.
+// If the value is not a pcommon.Map a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return pcommon.Map{}, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return pcommon.Map{}, TypeError("expected pcommon.Map but got nil")
+	}
+	switch v := val.(type) {
+	case pcommon.Map:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeMap {
+			return v.Map(), nil
+		}
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %v", v.Type()))
+	case map[string]any:
+		m := pcommon.NewMap()
+		err = m.FromRaw(v)
+		if err != nil {
+			return pcommon.Map{}, err
+		}
+		return m, nil
+	default:
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %T", val))
+	}
 }
 
 // StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
@@ -198,7 +303,7 @@ type StandardStringLikeGetter[K any] struct {
 func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return nil, nil
@@ -224,7 +329,7 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	default:
 		result, err = jsoniter.MarshalToString(v)
 		if err != nil {
-			return nil, fmt.Errorf("unsupported type: %T", v)
+			return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 		}
 	}
 	return &result, nil
@@ -246,7 +351,7 @@ type StandardFloatLikeGetter[K any] struct {
 func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
 	}
 	if val == nil {
 		return nil, nil
@@ -286,10 +391,74 @@ func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, 
 				result = float64(0)
 			}
 		default:
-			return nil, fmt.Errorf("unsupported value type: %v", v.Type())
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
 		}
 	default:
-		return nil, fmt.Errorf("unsupported type: %T", v)
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
+	}
+	return &result, nil
+}
+
+// IntLikeGetter is a Getter that returns an int by converting the underlying value to an int if necessary.
+type IntLikeGetter[K any] interface {
+	// Get retrieves an int value.
+	// Unlike `IntGetter`, the expectation is that the underlying value is converted to an int if possible.
+	// If the value cannot be converted to an int, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) (*int64, error)
+}
+
+type StandardIntLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result int64
+	switch v := val.(type) {
+	case int64:
+		result = v
+	case string:
+		result, err = strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return nil, nil
+		}
+	case float64:
+		result = int64(v)
+	case bool:
+		if v {
+			result = int64(1)
+		} else {
+			result = int64(0)
+		}
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeInt:
+			result = v.Int()
+		case pcommon.ValueTypeDouble:
+			result = int64(v.Double())
+		case pcommon.ValueTypeStr:
+			result, err = strconv.ParseInt(v.Str(), 10, 64)
+			if err != nil {
+				return nil, nil
+			}
+		case pcommon.ValueTypeBool:
+			if v.Bool() {
+				result = int64(1)
+			} else {
+				result = int64(0)
+			}
+		default:
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
+		}
+	default:
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 	}
 	return &result, nil
 }
@@ -352,7 +521,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 }
 
 func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
-	call, err := p.newFunctionCall(invocation(c))
+	call, err := p.newFunctionCall(editor(c))
 	if err != nil {
 		return nil, err
 	}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 
@@ -27,11 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-const (
-	typeStr   = "docker_stats"
-	stability = component.StabilityLevelAlpha
-)
-
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.dockerstats.useScraperV2",
 	featuregate.StageStable,
@@ -42,13 +26,13 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 
 func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
+	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
 		ScraperControllerSettings: scs,
@@ -68,7 +52,7 @@ func createMetricsReceiver(
 	dockerConfig := config.(*Config)
 	dsr := newReceiver(params, dockerConfig)
 
-	scrp, err := scraperhelper.NewScraper(typeStr, dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
+	scrp, err := scraperhelper.NewScraper(metadata.Type, dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
 	if err != nil {
 		return nil, err
 	}

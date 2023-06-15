@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build e2e
 // +build e2e
@@ -18,20 +7,12 @@
 package k8sattributesprocessor
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
-	"runtime"
-	"strings"
 	"testing"
-	"text/template"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	docker "github.com/docker/docker/client"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,13 +23,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 )
 
 const (
@@ -85,13 +63,17 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, err)
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := createCollectorObjects(t, dynamicClient, testID)
-	telemetryGenObjs := createTelemetryGenObjects(t, dynamicClient, testID)
+	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
+	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, dynamicClient, testID)
 	defer func() {
 		for _, obj := range append(collectorObjs, telemetryGenObjs...) {
-			require.NoErrorf(t, deleteObject(dynamicClient, obj), "failed to delete object %s", obj.GetName())
+			require.NoErrorf(t, k8stest.DeleteObject(dynamicClient, obj), "failed to delete object %s", obj.GetName())
 		}
 	}()
+
+	for _, info := range telemetryGenObjInfos {
+		k8stest.WaitForTelemetryGenToStart(t, dynamicClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
+	}
 
 	metricsConsumer := new(consumertest.MetricsSink)
 	tracesConsumer := new(consumertest.TracesSink)
@@ -481,109 +463,6 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 	return err
 }
 
-func createCollectorObjects(t *testing.T, client *dynamic.DynamicClient, testID string) []*unstructured.Unstructured {
-	manifestsDir := filepath.Join(".", "testdata", "e2e", "collector")
-	manifestFiles, err := os.ReadDir(manifestsDir)
-	require.NoErrorf(t, err, "failed to read collector manifests directory %s", manifestsDir)
-	host := hostEndpoint(t)
-	var podNamespace string
-	var podLabels map[string]any
-	createdObjs := make([]*unstructured.Unstructured, 0, len(manifestFiles))
-	for _, manifestFile := range manifestFiles {
-		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
-		manifest := &bytes.Buffer{}
-		require.NoError(t, tmpl.Execute(manifest, map[string]string{
-			"Name":         "otelcol-" + testID,
-			"HostEndpoint": host,
-		}))
-		obj, err := createObject(client, manifest.Bytes())
-		require.NoErrorf(t, err, "failed to create collector object from manifest %s", manifestFile.Name())
-		if obj.GetKind() == "Deployment" {
-			podNamespace = obj.GetNamespace()
-			selector := obj.Object["spec"].(map[string]any)["selector"]
-			podLabels = selector.(map[string]any)["matchLabels"].(map[string]any)
-		}
-		createdObjs = append(createdObjs, obj)
-	}
-
-	waitForCollectorToStart(t, client, podNamespace, podLabels)
-
-	return createdObjs
-}
-
-func waitForCollectorToStart(t *testing.T, client *dynamic.DynamicClient, podNamespace string, podLabels map[string]any) {
-	podGVR := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
-	listOptions := metav1.ListOptions{LabelSelector: selectorFromMap(podLabels).String()}
-	podTimeoutMinutes := 3
-	var podPhase string
-	require.Eventually(t, func() bool {
-		list, err := client.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
-		require.NoError(t, err, "failed to list collector pods")
-		if len(list.Items) == 0 {
-			return false
-		}
-		podPhase = list.Items[0].Object["status"].(map[string]interface{})["phase"].(string)
-		return podPhase == "Running"
-	}, time.Duration(podTimeoutMinutes)*time.Minute, 50*time.Millisecond,
-		"collector pod haven't started within %d minutes, latest pod phase is %s", podTimeoutMinutes, podPhase)
-}
-
-func selectorFromMap(labelMap map[string]any) labels.Selector {
-	labelStringMap := make(map[string]string)
-	for key, value := range labelMap {
-		labelStringMap[key] = value.(string)
-	}
-	labelSet := labels.Set(labelStringMap)
-	return labelSet.AsSelector()
-}
-
-func createTelemetryGenObjects(t *testing.T, client *dynamic.DynamicClient, testID string) []*unstructured.Unstructured {
-	manifestsDir := filepath.Join(".", "testdata", "e2e", "telemetrygen")
-	manifestFiles, err := os.ReadDir(manifestsDir)
-	require.NoErrorf(t, err, "failed to read telemetrygen manifests directory %s", manifestsDir)
-	createdObjs := make([]*unstructured.Unstructured, 0, len(manifestFiles))
-	for _, manifestFile := range manifestFiles {
-		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
-		for _, dataType := range []string{"metrics", "logs", "traces"} {
-			manifest := &bytes.Buffer{}
-			require.NoError(t, tmpl.Execute(manifest, map[string]string{
-				"Name":         "telemetrygen-" + testID,
-				"DataType":     dataType,
-				"OTLPEndpoint": "otelcol-" + testID + ":4317",
-			}))
-			obj, err := createObject(client, manifest.Bytes())
-			require.NoErrorf(t, err, "failed to create telemetrygen object from manifest %s", manifestFile.Name())
-			createdObjs = append(createdObjs, obj)
-		}
-	}
-	return createdObjs
-}
-
-func createObject(client *dynamic.DynamicClient, manifest []byte) (*unstructured.Unstructured, error) {
-	decoder := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
-	obj := &unstructured.Unstructured{}
-	_, gvk, err := decoder.Decode(manifest, nil, obj)
-	if err != nil {
-		return nil, err
-	}
-	gvr := schema.GroupVersionResource{
-		Group:    gvk.Group,
-		Version:  gvk.Version,
-		Resource: strings.ToLower(gvk.Kind + "s"),
-	}
-	return client.Resource(gvr).Namespace(obj.GetNamespace()).Create(context.Background(), obj, metav1.CreateOptions{})
-}
-
-func deleteObject(client *dynamic.DynamicClient, obj *unstructured.Unstructured) error {
-	gvk := obj.GroupVersionKind()
-	gvr := schema.GroupVersionResource{
-		Group:    gvk.Group,
-		Version:  gvk.Version,
-		Resource: strings.ToLower(gvk.Kind + "s"),
-	}
-	return client.Resource(gvr).Namespace(obj.GetNamespace()).Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{})
-}
-
 func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
@@ -605,23 +484,4 @@ func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc 
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
 		"failed to receive %d entries,  received %d metrics, %d traces, %d logs in %d minutes", entriesNum,
 		len(mc.AllMetrics()), len(tc.AllTraces()), len(lc.AllLogs()), timeoutMinutes)
-}
-
-func hostEndpoint(t *testing.T) string {
-	if runtime.GOOS == "darwin" {
-		return "host.docker.internal"
-	}
-
-	client, err := docker.NewClientWithOpts(docker.FromEnv)
-	require.NoError(t, err)
-	client.NegotiateAPIVersion(context.Background())
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	network, err := client.NetworkInspect(ctx, "kind", types.NetworkInspectOptions{})
-	require.NoError(t, err)
-	for _, ipam := range network.IPAM.Config {
-		return ipam.Gateway
-	}
-	require.Fail(t, "failed to find host endpoint")
-	return ""
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package processscraper
 
@@ -461,6 +450,11 @@ func (p *processHandleMock) Parent() (*process.Process, error) {
 	return args.Get(0).(*process.Process), args.Error(1)
 }
 
+func (p *processHandleMock) Ppid() (int32, error) {
+	args := p.MethodCalled("Ppid")
+	return args.Get(0).(int32), args.Error(1)
+}
+
 func (p *processHandleMock) PageFaults() (*process.PageFaultsStat, error) {
 	args := p.MethodCalled("PageFaults")
 	return args.Get(0).(*process.PageFaultsStat), args.Error(1)
@@ -476,7 +470,7 @@ func (p *processHandleMock) NumFDs() (int32, error) {
 	return args.Get(0).(int32), args.Error(1)
 }
 
-func (p *processHandleMock) RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error) {
+func (p *processHandleMock) RlimitUsage(_ bool) ([]process.RlimitStat, error) {
 	args := p.MethodCalled("RlimitUsage")
 	return args.Get(0).([]process.RlimitStat), args.Error(1)
 }
@@ -491,7 +485,7 @@ func newDefaultHandleMock() *processHandleMock {
 	handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
 	handleMock.On("MemoryPercent").Return(float32(0), nil)
 	handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
-	handleMock.On("Parent").Return(&process.Process{Pid: 2}, nil)
+	handleMock.On("Ppid").Return(int32(2), nil)
 	handleMock.On("NumThreads").Return(int32(0), nil)
 	handleMock.On("PageFaults").Return(&process.PageFaultsStat{}, nil)
 	handleMock.On("NumCtxSwitches").Return(&process.NumCtxSwitchesStat{}, nil)
@@ -829,7 +823,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("MemoryPercent").Return(float32(0), test.memoryPercentError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 			handleMock.On("CreateTime").Return(int64(0), test.createTimeError)
-			handleMock.On("Parent").Return(&process.Process{Pid: 2}, test.parentPidError)
+			handleMock.On("Ppid").Return(int32(2), test.parentPidError)
 			handleMock.On("NumThreads").Return(int32(0), test.numThreadsError)
 			handleMock.On("PageFaults").Return(&process.PageFaultsStat{}, test.pageFaultsError)
 			handleMock.On("NumCtxSwitches").Return(&process.NumCtxSwitchesStat{}, test.numCtxSwitchesError)
@@ -1084,7 +1078,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		handleMock.On("Name").Return("test", nil)
 		handleMock.On("Exe").Return("test", nil)
 		handleMock.On("CreateTime").Return(time.Now().UnixMilli(), nil)
-		handleMock.On("Parent").Return(&process.Process{Pid: 2}, nil)
+		handleMock.On("Ppid").Return(int32(2), nil)
 
 		scraper.getProcessHandles = func() (processHandles, error) {
 			return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
