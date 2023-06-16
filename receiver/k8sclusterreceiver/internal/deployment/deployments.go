@@ -18,6 +18,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
+// Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new deployment fields.
+func Transform(deployment *appsv1.Deployment) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metadata.TransformObjectMeta(deployment.ObjectMeta),
+		Spec: appsv1.DeploymentSpec{
+			Replicas: deployment.Spec.Replicas,
+		},
+		Status: appsv1.DeploymentStatus{
+			AvailableReplicas: deployment.Status.AvailableReplicas,
+		},
+	}
+}
+
 func GetMetrics(set receiver.CreateSettings, dep *appsv1.Deployment) pmetric.Metrics {
 	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
