@@ -65,7 +65,7 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sCronjobName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SCronJobName)
 	}
-	if defaultConfig.K8sCronjobName.Enabled {
+	if defaultConfig.K8sDaemonsetName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SDaemonSetName)
 	}
 	if defaultConfig.K8sDaemonsetUID.Enabled {
