@@ -18,7 +18,7 @@ var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attribut
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedup: true, dedot: false}
 	td := mockResourceSpans()
-	spanByte, err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
+	spanByte, err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSpanBody, string(spanByte))
 }

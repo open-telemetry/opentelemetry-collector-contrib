@@ -47,19 +47,27 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	// TODO: Apply encoding and field mapping settings.
-	model := &encodeModel{dedup: true, dedot: false}
-
-	return &elasticsearchTracesExporter{
-		logger:      logger,
-		client:      client,
-		bulkIndexer: bulkIndexer,
-
+	traceExporter := &elasticsearchTracesExporter{
+		logger:       logger,
+		client:       client,
+		bulkIndexer:  bulkIndexer,
 		index:        cfg.TracesIndex,
 		dynamicIndex: cfg.TracesDynamicIndex.Enabled,
 		maxAttempts:  maxAttempts,
-		model:        model,
-	}, nil
+	}
+
+	if m, ok := mappingModes[cfg.Mapping.Mode]; ok {
+		switch m {
+		case MappingECS:
+			traceExporter.model = &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
+		case MappingJaeger:
+			traceExporter.model = &encodeJaegerModel{}
+		default:
+			traceExporter.model = &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
+		}
+	}
+
+	return traceExporter, nil
 }
 
 func (e *elasticsearchTracesExporter) Shutdown(ctx context.Context) error {
@@ -77,9 +85,10 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
-			spans := scopeSpans.At(j).Spans()
+			ils := scopeSpans.At(j)
+			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				if err := e.pushTraceRecord(ctx, resource, spans.At(k)); err != nil {
+				if err := e.pushTraceRecord(ctx, resource, ils.Scope(), spans.At(k)); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -92,7 +101,7 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 	return multierr.Combine(errs...)
 }
 
-func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span) error {
+func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, span)
@@ -101,7 +110,7 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 	}
 
-	document, err := e.model.encodeSpan(resource, span)
+	document, err := e.model.encodeSpan(resource, scope, span)
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}

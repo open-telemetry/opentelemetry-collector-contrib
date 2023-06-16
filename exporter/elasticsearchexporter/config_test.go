@@ -125,7 +125,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "jaeger",
 					Dedup: true,
 					Dedot: true,
 				},

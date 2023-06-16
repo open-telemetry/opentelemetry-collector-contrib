@@ -45,7 +45,7 @@ func resourceSpansToJaegerProto(rs ptrace.ResourceSpans) *model.Batch {
 	}
 
 	batch := &model.Batch{
-		Process: resourceToJaegerProtoProcess(resource),
+		Process: ResourceToJaegerProtoProcess(resource),
 	}
 
 	if ilss.Len() == 0 {
@@ -61,7 +61,7 @@ func resourceSpansToJaegerProto(rs ptrace.ResourceSpans) *model.Batch {
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			span := spans.At(j)
-			jSpan := spanToJaegerProto(span, ils.Scope())
+			jSpan := SpanToJaegerProto(span, ils.Scope())
 			if jSpan != nil {
 				jSpans = append(jSpans, jSpan)
 			}
@@ -73,7 +73,7 @@ func resourceSpansToJaegerProto(rs ptrace.ResourceSpans) *model.Batch {
 	return batch
 }
 
-func resourceToJaegerProtoProcess(resource pcommon.Resource) *model.Process {
+func ResourceToJaegerProtoProcess(resource pcommon.Resource) *model.Process {
 	process := &model.Process{}
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
@@ -148,7 +148,7 @@ func attributeToJaegerProtoTag(key string, attr pcommon.Value) model.KeyValue {
 	return tag
 }
 
-func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScope) *model.Span {
+func SpanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScope) *model.Span {
 	traceID := traceIDToJaegerProto(span.TraceID())
 	jReferences := makeJaegerProtoReferences(span.Links(), span.ParentSpanID(), traceID)
 
