@@ -14,6 +14,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -32,6 +33,28 @@ var allocatableDesciption = map[string]string{
 	"memory":            "How many bytes of RAM memory remaining that the node can allocate to pods",
 	"ephemeral-storage": "How many bytes of ephemeral storage remaining that the node can allocate to pods",
 	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
+}
+
+// Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function when using a new node fields.
+func Transform(node *corev1.Node) *corev1.Node {
+	newNode := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   node.ObjectMeta.Name,
+			UID:    node.ObjectMeta.UID,
+			Labels: node.ObjectMeta.Labels,
+		},
+		Status: corev1.NodeStatus{
+			Allocatable: node.Status.Allocatable,
+		},
+	}
+	for _, c := range node.Status.Conditions {
+		newNode.Status.Conditions = append(newNode.Status.Conditions, corev1.NodeCondition{
+			Type:   c.Type,
+			Status: c.Status,
+		})
+	}
+	return newNode
 }
 
 func GetMetrics(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*agentmetricspb.ExportMetricsServiceRequest {

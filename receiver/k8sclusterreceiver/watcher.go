@@ -217,7 +217,11 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context, inf share
 
 // setupInformer adds event handlers to informers and setups a metadataStore.
 func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer cache.SharedIndexInformer) {
-	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	err := informer.SetTransform(transformObject)
+	if err != nil {
+		rw.logger.Error("error setting informer transform function", zap.Error(err))
+	}
+	_, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    rw.onAdd,
 		UpdateFunc: rw.onUpdate,
 		DeleteFunc: rw.onDelete,
