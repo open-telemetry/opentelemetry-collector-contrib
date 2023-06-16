@@ -14,7 +14,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
@@ -36,14 +35,10 @@ var allocatableDesciption = map[string]string{
 }
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
-// IMPORTANT: Make sure to update this function when using a new node fields.
+// IMPORTANT: Make sure to update this function before using new node fields.
 func Transform(node *corev1.Node) *corev1.Node {
 	newNode := &corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   node.ObjectMeta.Name,
-			UID:    node.ObjectMeta.UID,
-			Labels: node.ObjectMeta.Labels,
-		},
+		ObjectMeta: metadata.TransformObjectMeta(node.ObjectMeta),
 		Status: corev1.NodeStatus{
 			Allocatable: node.Status.Allocatable,
 		},

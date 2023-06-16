@@ -23,6 +23,22 @@ const (
 	statefulSetUpdateVersion  = "update_revision"
 )
 
+// Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new statefulset fields.
+func Transform(statefulset *appsv1.StatefulSet) *appsv1.StatefulSet {
+	return &appsv1.StatefulSet{
+		ObjectMeta: metadata.TransformObjectMeta(statefulset.ObjectMeta),
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: statefulset.Spec.Replicas,
+		},
+		Status: appsv1.StatefulSetStatus{
+			ReadyReplicas:   statefulset.Status.ReadyReplicas,
+			CurrentReplicas: statefulset.Status.CurrentReplicas,
+			UpdatedReplicas: statefulset.Status.UpdatedReplicas,
+		},
+	}
+}
+
 func GetMetrics(set receiver.CreateSettings, ss *appsv1.StatefulSet) pmetric.Metrics {
 	if ss.Spec.Replicas == nil {
 		return pmetric.NewMetrics()

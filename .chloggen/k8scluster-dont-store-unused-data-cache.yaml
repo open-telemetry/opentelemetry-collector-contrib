@@ -12,4 +12,4 @@ component: receiver/k8s_cluster
 note: Do not store unused data in the k8s API cache to reduce RAM usage
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [23417]
+issues: [23433]

@@ -9,7 +9,6 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	batchv1 "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
@@ -53,15 +52,10 @@ var podsSuccessfulMetric = &metricspb.MetricDescriptor{
 }
 
 // Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.
-// IMPORTANT: Make sure to update this function when using a new job fields.
+// IMPORTANT: Make sure to update this function before using new job fields.
 func Transform(job *batchv1.Job) *batchv1.Job {
 	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      job.ObjectMeta.Name,
-			Namespace: job.ObjectMeta.Namespace,
-			UID:       job.ObjectMeta.UID,
-			Labels:    job.ObjectMeta.Labels,
-		},
+		ObjectMeta: metadata.TransformObjectMeta(job.ObjectMeta),
 		Spec: batchv1.JobSpec{
 			Completions: job.Spec.Completions,
 			Parallelism: job.Spec.Parallelism,
