@@ -223,7 +223,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
-      schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this deployment
@@ -257,7 +257,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
-      schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this deployment
@@ -291,7 +291,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
-      schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this deployment

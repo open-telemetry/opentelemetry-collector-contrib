@@ -315,20 +315,6 @@ func sortResourceMetricsSlice(rms pmetric.ResourceMetricsSlice) {
 	})
 }
 
-func IgnoreResourceSchemaURL() CompareMetricsOption {
-	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
-		maskResourceSchemaURL(expected)
-		maskResourceSchemaURL(actual)
-	})
-}
-
-func maskResourceSchemaURL(metrics pmetric.Metrics) {
-	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		rms.At(i).SetSchemaUrl("")
-	}
-}
-
 func IgnoreScopeVersion() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		maskScopeVersion(expected)
