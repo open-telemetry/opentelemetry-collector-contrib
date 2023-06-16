@@ -9,6 +9,37 @@ on:
   pull_request:
 
 jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.19
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Build Docker Image
+        run: |
+          make docker-otelcontribcol
+      - name: export image to tar
+        run: |
+          docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: otelcontribcol
+          path: /tmp/otelcontribcol.tar
   kubernetes-test:
     env:
       KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
@@ -16,6 +47,7 @@ jobs:
       matrix:
         k8s-version: ["v1.26.0", "v1.25.3", "v1.24.7", "v1.23.13"]
     runs-on: ubuntu-latest
+    needs: docker-build
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
@@ -33,19 +65,29 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
-      - name: Build Docker Image
-        run: |
-            make docker-otelcontribcol
       - name: Create kind cluster
         uses: helm/kind-action@v1.7.0
         with:
           node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}
           cluster_name: kind
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: otelcontribcol
+          path: /tmp
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/otelcontribcol.tar
       - name: Kind load image
         run: |
           kind load docker-image otelcontribcol:latest --name kind
-      - name: run e2e tests
+      - name: run k8sclusterreceiver e2e tests
+        run: |
+          cd receiver/k8sclusterreceiver
+          go test -v --tags=e2e
+      - name: run k8sattributesprocessor e2e tests
         run: |    
           cd processor/k8sattributesprocessor
           go test -v --tags=e2e
+
