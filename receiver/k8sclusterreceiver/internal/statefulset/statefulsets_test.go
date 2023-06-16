@@ -6,45 +6,44 @@ package statefulset
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
-func TestStatefulsettMetrics(t *testing.T) {
+func TestStatefulsetMetrics(t *testing.T) {
 	ss := newStatefulset("1")
 
-	actualResourceMetrics := GetMetrics(ss)
+	actualResourceMetrics := GetMetrics(receivertest.NewNopCreateSettings(), ss)
 
-	require.Equal(t, 1, len(actualResourceMetrics))
-	require.Equal(t, 4, len(actualResourceMetrics[0].Metrics))
+	require.Equal(t, 1, actualResourceMetrics.ResourceMetrics().Len())
+	require.Equal(t, 4, actualResourceMetrics.MetricCount())
 
-	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, rm.Resource, constants.K8sType,
-		map[string]string{
-			"k8s.statefulset.uid":  "test-statefulset-1-uid",
-			"k8s.statefulset.name": "test-statefulset-1",
-			"k8s.namespace.name":   "test-namespace",
-		},
+	rm := actualResourceMetrics.ResourceMetrics().At(0)
+	assert.Equal(t,
+		map[string]interface{}{
+			"k8s.statefulset.uid":     "test-statefulset-1-uid",
+			"k8s.statefulset.name":    "test-statefulset-1",
+			"k8s.namespace.name":      "test-namespace",
+			"opencensus.resourcetype": "k8s",
+		}, rm.Resource().Attributes().AsRaw(),
 	)
 
-	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.statefulset.desired_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 10)
+	m1 := rm.ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "k8s.statefulset.current_pods", m1.Name())
 
-	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.statefulset.ready_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 7)
+	m2 := rm.ScopeMetrics().At(0).Metrics().At(1)
+	assert.Equal(t, "k8s.statefulset.desired_pods", m2.Name())
 
-	testutils.AssertMetricsInt(t, rm.Metrics[2], "k8s.statefulset.current_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 5)
-
-	testutils.AssertMetricsInt(t, rm.Metrics[3], "k8s.statefulset.updated_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+	m3 := rm.ScopeMetrics().At(0).Metrics().At(2)
+	assert.Equal(t, "k8s.statefulset.ready_pods", m3.Name())
+	m4 := rm.ScopeMetrics().At(0).Metrics().At(3)
+	assert.Equal(t, "k8s.statefulset.updated_pods", m4.Name())
 }
 
 func TestStatefulsetMetadata(t *testing.T) {
