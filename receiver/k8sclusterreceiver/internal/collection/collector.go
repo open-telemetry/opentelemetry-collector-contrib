@@ -112,7 +112,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *corev1.ReplicationController:
 		md = ocsToMetrics(replicationcontroller.GetMetrics(o))
 	case *corev1.ResourceQuota:
-		md = ocsToMetrics(resourcequota.GetMetrics(o))
+		md = resourcequota.GetMetrics(dc.settings, o)
 	case *appsv1.Deployment:
 		md = ocsToMetrics(deployment.GetMetrics(o))
 	case *appsv1.ReplicaSet:
