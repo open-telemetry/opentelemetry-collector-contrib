@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for k8s/hpa metrics.
+// MetricsConfig provides config for k8s/resourcequota metrics.
 type MetricsConfig struct {
 	K8sResourceQuotaHardLimit MetricConfig `mapstructure:"k8s.resource_quota.hard_limit"`
 	K8sResourceQuotaUsed      MetricConfig `mapstructure:"k8s.resource_quota.used"`
@@ -45,7 +45,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for k8s/hpa resource attributes.
+// ResourceAttributesConfig provides config for k8s/resourcequota resource attributes.
 type ResourceAttributesConfig struct {
 	K8sNamespaceName       ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sResourcequotaName   ResourceAttributeConfig `mapstructure:"k8s.resourcequota.name"`
@@ -70,7 +70,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for k8s/hpa metrics builder.
+// MetricsBuilderConfig is a configuration for k8s/resourcequota metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

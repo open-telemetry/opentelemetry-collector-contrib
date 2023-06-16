@@ -1,4 +1,4 @@
-type: k8s/hpa
+type: k8s/resourcequota
 
 sem_conv_version: 1.18.0
 
