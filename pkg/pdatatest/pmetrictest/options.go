@@ -329,6 +329,24 @@ func maskResourceSchemaURL(metrics pmetric.Metrics) {
 	}
 }
 
+func IgnoreScopeVersion() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskScopeVersion(expected)
+		maskScopeVersion(actual)
+	})
+}
+
+func maskScopeVersion(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			sm.Scope().SetVersion("")
+		}
+	}
+}
+
 // IgnoreScopeMetricsOrder is a CompareMetricsOption that ignores the order of instrumentation scope traces/metrics/logs.
 func IgnoreScopeMetricsOrder() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
