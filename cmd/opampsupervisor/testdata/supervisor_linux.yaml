@@ -1,0 +1,5 @@
+server:
+  endpoint: ws://127.0.0.1:4320/v1/opamp
+
+agent:
+  executable: ../../bin/otelcontribcol_linux_amd64

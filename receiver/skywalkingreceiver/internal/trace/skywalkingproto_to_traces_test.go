@@ -301,6 +301,41 @@ func Test_segmentIdToSpanId_Unique(t *testing.T) {
 	assert.NotEqual(t, results[0], results[1])
 }
 
+func Test_swSpanToSpan_ParentSpanId(t *testing.T) {
+	type args struct {
+		span *agentV3.SpanObject
+	}
+	tests := []struct {
+		name string
+		args args
+		want pcommon.SpanID
+	}{
+		{
+			name: "mock-sw-span-with-parent-segment",
+			args: args{span: &agentV3.SpanObject{
+				ParentSpanId: -1,
+				Refs: []*agentV3.SegmentReference{{
+					ParentTraceSegmentId: "4f2f27748b8e44ecaf18fe0347194e86.33.16560607369950066",
+					ParentSpanId:         123,
+				}}}},
+			want: [8]byte{233, 196, 85, 168, 37, 66, 48, 106},
+		},
+		{
+			name: "mock-sw-span-without-parent-segment",
+			args: args{span: &agentV3.SpanObject{Refs: []*agentV3.SegmentReference{{
+				ParentSpanId: -1,
+			}}}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dest := ptrace.NewSpan()
+			swSpanToSpan("de5980b8-fce3-4a37-aab9-b4ac3af7eedd", "", tt.args.span, dest)
+			assert.Equal(t, tt.want, dest.ParentSpanID())
+		})
+	}
+}
+
 func generateTracesOneEmptyResourceSpans() ptrace.Span {
 	td := ptrace.NewTraces()
 	resourceSpan := td.ResourceSpans().AppendEmpty()

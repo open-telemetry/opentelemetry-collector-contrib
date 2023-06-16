@@ -189,13 +189,17 @@ func (h *otelMetricHelper) addMetricDataPoint(resourceKey string, metricName str
 		} else {
 			dp.SetIntValue(int64(rawValue))
 		}
-	default:
+	case integerVal:
 		rawValue := data.value.(int64)
 		if valueType == "int" {
 			dp.SetIntValue(rawValue)
 		} else {
 			dp.SetDoubleValue(float64(rawValue))
 		}
+	case stringVal:
+		return nil, fmt.Errorf("cannot create data point for metric %q from string value", metricName)
+	case notSupportedVal:
+		return nil, fmt.Errorf("cannot create data point for metric %q from unsupported value type", metricName)
 	}
 
 	// Add attributes to dp

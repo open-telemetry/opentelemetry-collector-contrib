@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"go.uber.org/multierr"
 )
@@ -30,6 +31,9 @@ func newRowScanner(colTypes []colType) *rowScanner {
 				return "", errNullValueWarning
 			}
 			format := "%v"
+			if t, isTime := v.(time.Time); isTime {
+				return t.Format(time.RFC3339), nil
+			}
 			if reflect.TypeOf(v).Kind() == reflect.Slice {
 				// The Postgres driver returns a []uint8 (ascii string) for decimal and numeric types,
 				// which we want to render as strings. e.g. "4.1" instead of "[52, 46, 49]".
