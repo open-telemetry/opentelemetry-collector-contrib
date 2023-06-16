@@ -4,35 +4,60 @@
 package deployment
 
 import (
+	"path/filepath"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestDeploymentMetrics(t *testing.T) {
 	dep := testutils.NewDeployment("1")
 
-	actualResourceMetrics := GetMetrics(dep)
+	m := GetMetrics(receivertest.NewNopCreateSettings(), dep)
 
-	require.Equal(t, 1, len(actualResourceMetrics))
-	require.Equal(t, 2, len(actualResourceMetrics[0].Metrics))
+	require.Equal(t, 1, m.ResourceMetrics().Len())
+	require.Equal(t, 2, m.MetricCount())
 
-	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, rm.Resource, constants.K8sType,
-		map[string]string{
-			"k8s.deployment.uid":  "test-deployment-1-uid",
-			"k8s.deployment.name": "test-deployment-1",
-			"k8s.namespace.name":  "test-namespace",
+	rm := m.ResourceMetrics().At(0)
+	assert.Equal(t,
+		map[string]interface{}{
+			"k8s.deployment.uid":      "test-deployment-1-uid",
+			"k8s.deployment.name":     "test-deployment-1",
+			"k8s.namespace.name":      "test-namespace",
+			"opencensus.resourcetype": "k8s",
 		},
+		rm.Resource().Attributes().AsRaw(),
 	)
+	require.Equal(t, 1, rm.ScopeMetrics().Len())
+	sms := rm.ScopeMetrics().At(0)
+	require.Equal(t, 2, sms.Metrics().Len())
+	sms.Metrics().Sort(func(a, b pmetric.Metric) bool {
+		return a.Name() < b.Name()
+	})
+	testutils.AssertMetricInt(t, sms.Metrics().At(0), "k8s.deployment.available", pmetric.MetricTypeGauge, int64(3))
+	testutils.AssertMetricInt(t, sms.Metrics().At(1), "k8s.deployment.desired", pmetric.MetricTypeGauge, int64(10))
+}
 
-	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.deployment.desired",
-		metricspb.MetricDescriptor_GAUGE_INT64, 10)
-
-	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.deployment.available",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+func TestGoldenFile(t *testing.T) {
+	dep := testutils.NewDeployment("1")
+	m := GetMetrics(receivertest.NewNopCreateSettings(), dep)
+	expectedFile := filepath.Join("testdata", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	),
+	)
 }
