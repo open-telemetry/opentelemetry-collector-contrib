@@ -120,7 +120,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *appsv1.DaemonSet:
 		md = ocsToMetrics(demonset.GetMetrics(o))
 	case *appsv1.StatefulSet:
-		md = ocsToMetrics(statefulset.GetMetrics(o))
+		md = statefulset.GetMetrics(dc.settings, o)
 	case *batchv1.Job:
 		md = ocsToMetrics(jobs.GetMetrics(o))
 	case *batchv1.CronJob:
