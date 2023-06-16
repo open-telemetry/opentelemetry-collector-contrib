@@ -30,7 +30,6 @@ func TestRequestQuotaMetrics(t *testing.T) {
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
 	),
 	)
 }
