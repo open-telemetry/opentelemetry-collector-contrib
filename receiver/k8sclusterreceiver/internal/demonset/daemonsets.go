@@ -44,6 +44,20 @@ var daemonSetReadyMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
+// Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new daemonset fields.
+func Transform(ds *appsv1.DaemonSet) *appsv1.DaemonSet {
+	return &appsv1.DaemonSet{
+		ObjectMeta: metadata.TransformObjectMeta(ds.ObjectMeta),
+		Status: appsv1.DaemonSetStatus{
+			CurrentNumberScheduled: ds.Status.CurrentNumberScheduled,
+			DesiredNumberScheduled: ds.Status.DesiredNumberScheduled,
+			NumberMisscheduled:     ds.Status.NumberMisscheduled,
+			NumberReady:            ds.Status.NumberReady,
+		},
+	}
+}
+
 func GetMetrics(ds *appsv1.DaemonSet) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{

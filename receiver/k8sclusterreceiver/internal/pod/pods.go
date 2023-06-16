@@ -41,15 +41,10 @@ var podPhaseMetric = &metricspb.MetricDescriptor{
 }
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
-// IMPORTANT: Make sure to update this function when using a new pod fields.
+// IMPORTANT: Make sure to update this function before using new pod fields.
 func Transform(pod *corev1.Pod) *corev1.Pod {
 	newPod := &corev1.Pod{
-		ObjectMeta: v1.ObjectMeta{
-			UID:       pod.ObjectMeta.UID,
-			Name:      pod.ObjectMeta.Name,
-			Namespace: pod.ObjectMeta.Namespace,
-			Labels:    pod.ObjectMeta.Labels,
-		},
+		ObjectMeta: metadata.TransformObjectMeta(pod.ObjectMeta),
 		Spec: corev1.PodSpec{
 			NodeName: pod.Spec.NodeName,
 		},
