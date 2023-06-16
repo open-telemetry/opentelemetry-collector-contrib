@@ -18,6 +18,11 @@ resource_attributes:
     type: string
     enabled: true
 
+  opencensus.resourcetype:
+    description: The OpenCensus resource type.
+    type: string
+    enabled: true
+
 attributes:
   resource:
     description: the name of the resource on which the quota is applied

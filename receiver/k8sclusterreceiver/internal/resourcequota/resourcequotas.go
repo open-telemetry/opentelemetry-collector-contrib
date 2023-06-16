@@ -43,5 +43,5 @@ func GetMetrics(set receiver.CreateSettings, rq *corev1.ResourceQuota) pmetric.M
 		}
 	}
 
-	return mb.Emit(imetadata.WithK8sResourcequotaUID(string(rq.UID)), imetadata.WithK8sResourcequotaName(rq.Name), imetadata.WithK8sNamespaceName(rq.Namespace))
+	return mb.Emit(imetadata.WithK8sResourcequotaUID(string(rq.UID)), imetadata.WithK8sResourcequotaName(rq.Name), imetadata.WithK8sNamespaceName(rq.Namespace), imetadata.WithOpencensusResourcetype("k8s"))
 }

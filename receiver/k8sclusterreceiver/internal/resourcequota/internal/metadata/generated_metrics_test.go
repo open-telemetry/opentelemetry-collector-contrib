@@ -62,7 +62,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "attr-val")
 
-			metrics := mb.Emit(WithK8sNamespaceName("attr-val"), WithK8sResourcequotaName("attr-val"), WithK8sResourcequotaUID("attr-val"))
+			metrics := mb.Emit(WithK8sNamespaceName("attr-val"), WithK8sResourcequotaName("attr-val"), WithK8sResourcequotaUID("attr-val"), WithOpencensusResourcetype("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -94,8 +94,15 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
+			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
+			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 3)
+			assert.Equal(t, attrCount, 4)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

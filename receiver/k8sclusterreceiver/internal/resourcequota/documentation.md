@@ -47,3 +47,4 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 | k8s.namespace.name | The name of the namespace that the pod is running in. | Any Str | true |
 | k8s.resourcequota.name | The k8s resourcequota name. | Any Str | true |
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
+| opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |

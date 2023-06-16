@@ -47,9 +47,10 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for k8s/hpa resource attributes.
 type ResourceAttributesConfig struct {
-	K8sNamespaceName     ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
-	K8sResourcequotaName ResourceAttributeConfig `mapstructure:"k8s.resourcequota.name"`
-	K8sResourcequotaUID  ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
+	K8sNamespaceName       ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
+	K8sResourcequotaName   ResourceAttributeConfig `mapstructure:"k8s.resourcequota.name"`
+	K8sResourcequotaUID    ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
+	OpencensusResourcetype ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -61,6 +62,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sResourcequotaUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OpencensusResourcetype: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}
