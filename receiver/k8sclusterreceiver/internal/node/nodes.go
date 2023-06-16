@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -18,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node/internal/metadata"
 )
@@ -27,13 +25,6 @@ const (
 	// Keys for node metadata.
 	nodeCreationTime = "node.creation_timestamp"
 )
-
-var allocatableDesciption = map[string]string{
-	"cpu":               "How many CPU cores remaining that the node can allocate to pods",
-	"memory":            "How many bytes of RAM memory remaining that the node can allocate to pods",
-	"ephemeral-storage": "How many bytes of ephemeral storage remaining that the node can allocate to pods",
-	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
-}
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
 // IMPORTANT: Make sure to update this function when using a new node fields.
@@ -105,16 +96,6 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 	}
 	return mb.Emit(imetadata.WithK8sNodeUID(string(node.UID)), imetadata.WithK8sNodeName(node.Name), imetadata.WithOpencensusResourcetype("k8s"))
 
-}
-
-func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			conventions.AttributeK8SNodeUID:  string(node.UID),
-			conventions.AttributeK8SNodeName: node.Name,
-		},
-	}
 }
 
 var nodeConditionValues = map[corev1.ConditionStatus]int64{

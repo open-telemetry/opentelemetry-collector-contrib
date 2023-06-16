@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -35,12 +34,6 @@ const (
 	// Keys for pod metadata.
 	podCreationTime = "pod.creation_timestamp"
 )
-
-var podPhaseMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.pod.phase",
-	Description: "Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
 // IMPORTANT: Make sure to update this function when using a new pod fields.

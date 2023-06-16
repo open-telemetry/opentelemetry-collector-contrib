@@ -82,7 +82,11 @@ func TestE2E(t *testing.T) {
 		return value
 	}
 	containerImageShorten := func(value string) string {
-		return value[strings.LastIndex(value, "/"):]
+		index := strings.LastIndex(value, "/")
+		if index == -1 {
+			return value
+		}
+		return value[index:]
 	}
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
