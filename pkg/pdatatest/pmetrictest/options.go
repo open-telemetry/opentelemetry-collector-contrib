@@ -315,6 +315,23 @@ func sortResourceMetricsSlice(rms pmetric.ResourceMetricsSlice) {
 	})
 }
 
+// IgnoreResourceMetricsAndSchemaURLOrder is a CompareMetricsOption that ignores the order of resource
+// traces/metrics/logs, irrespective of the schema URL associated.
+func IgnoreResourceMetricsAndSchemaURLOrder() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		sortResourceMetricsIgnoringSchemaURLSlice(expected.ResourceMetrics())
+		sortResourceMetricsIgnoringSchemaURLSlice(actual.ResourceMetrics())
+	})
+}
+
+func sortResourceMetricsIgnoringSchemaURLSlice(rms pmetric.ResourceMetricsSlice) {
+	rms.Sort(func(a, b pmetric.ResourceMetrics) bool {
+		aAttrs := pdatautil.MapHash(a.Resource().Attributes())
+		bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+		return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
+	})
+}
+
 // IgnoreScopeMetricsOrder is a CompareMetricsOption that ignores the order of instrumentation scope traces/metrics/logs.
 func IgnoreScopeMetricsOrder() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
