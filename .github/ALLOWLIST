@@ -26,4 +26,3 @@ internal/common
 exporter/carbonexporter/
 receiver/carbonreceiver/
 receiver/wavefrontreceiver/
-processor/groupbyattrsprocessor/
