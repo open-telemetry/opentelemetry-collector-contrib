@@ -1,0 +1,69 @@
+type: k8s/node
+
+sem_conv_version: 1.18.0
+
+resource_attributes:
+  k8s.node.uid:
+    description: The k8s node uid.
+    type: string
+    enabled: true
+
+  k8s.node.name:
+    description: The k8s node name.
+    type: string
+    enabled: true
+
+  opencensus.resourcetype:
+    description: The OpenCensus resource type.
+    type: string
+    enabled: true
+
+metrics:
+  k8s.node.condition_ready:
+    enabled: true
+    description: Whether this node is Ready (1), not Ready (0) or in an unknown state (-1)
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.node.condition_memory_pressure:
+    enabled: true
+    description: Whether this node is MemoryPressure (1), not MemoryPressure (0) or in an unknown state (-1)
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.node.condition_disk_pressure:
+    enabled: true
+    description: Whether this node is DiskPressure (1), not DiskPressure (0) or in an unknown state (-1)
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.node.condition_pid_pressure:
+    enabled: true
+    description: Whether this node is PidPressure (1), not PidPressure (0) or in an unknown state (-1)
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.node.condition_network_unavailable:
+    enabled: true
+    description: Whether this node is NetworkUnavailable (1), not NetworkUnavailable (0) or in an unknown state (-1)
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.node.allocatable_cpu:
+    enabled: true
+    description: How many CPU cores remaining that the node can allocate to pods
+    unit: "{cores}"
+    gauge:
+      value_type: double
+  k8s.node.allocatable_memory:
+    enabled: true
+    description: How many bytes of RAM memory remaining that the node can allocate to pods
+    unit: "By"
+    gauge:
+      value_type: int
+  k8s.node.allocatable_ephemeral_storage:
+    enabled: true
+    description: How many bytes of ephemeral storage remaining that the node can allocate to pods
+    unit: "By"
+    gauge:
+      value_type: int

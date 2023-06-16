@@ -1,0 +1,48 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.node.name
+          value:
+            stringValue: test-node-1
+        - key: k8s.node.uid
+          value:
+            stringValue: test-node-1-uid
+        - key: opencensus.resourcetype
+          value:
+            stringValue: k8s
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Whether this node is Ready (1), not Ready (0) or in an unknown state (-1)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+            name: k8s.node.condition_ready
+            unit: "1"
+          - description: Whether this node is MemoryPressure (1), not MemoryPressure (0) or in an unknown state (-1)
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.node.condition_memory_pressure
+            unit: "1"
+          - description: How many CPU cores remaining that the node can allocate to pods
+            gauge:
+              dataPoints:
+                - asDouble: 0.123
+            name: k8s.node.allocatable_cpu
+            unit: "{cores}"
+          - description: How many bytes of RAM memory remaining that the node can allocate to pods
+            gauge:
+              dataPoints:
+                - asInt: "456"
+            name: k8s.node.allocatable_memory
+            unit: "By"
+          - description: How many bytes of ephemeral storage remaining that the node can allocate to pods
+            gauge:
+              dataPoints:
+                - asInt: "1234"
+            name: k8s.node.allocatable_ephemeral_storage
+            unit: "By"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
