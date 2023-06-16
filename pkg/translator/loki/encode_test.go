@@ -141,6 +141,16 @@ func TestSerializeComplexBody(t *testing.T) {
 	}
 }
 
+func TestEncodeWithFlags(t *testing.T) {
+	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","flags":1,"attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
+	log, resource, scope := exampleLog()
+	log.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
+
+	out, err := Encode(log, resource, scope)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
 func TestEncodeLogfmtWithStringBody(t *testing.T) {
 	in := `msg="hello world" traceID=01020304000000000000000000000000 spanID=0506070800000000 severity=error attribute_attr1=1 attribute_attr2=2 resource_host.name=something instrumentation_scope_name=example-logger-name instrumentation_scope_version=v1`
 	log, resource, scope := exampleLog()
@@ -191,6 +201,16 @@ func TestEncodeLogfmtWithComplexAttributes(t *testing.T) {
 	sliceVal.CopyTo(log.Attributes().PutEmpty("aslice"))
 	sliceVal.CopyTo(resource.Attributes().PutEmpty("bslice"))
 
+	out, err := EncodeLogfmt(log, resource, scope)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
+func TestEncodeLogfmtWithFlags(t *testing.T) {
+	in := `msg="hello world" traceID=01020304000000000000000000000000 spanID=0506070800000000 severity=error flags=1 attribute_attr1=1 attribute_attr2=2 resource_host.name=something instrumentation_scope_name=example-logger-name instrumentation_scope_version=v1`
+	log, resource, scope := exampleLog()
+	log.Body().SetStr("msg=\"hello world\"")
+	log.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 	out, err := EncodeLogfmt(log, resource, scope)
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)

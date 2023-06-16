@@ -9,6 +9,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	batchv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
@@ -49,6 +50,28 @@ var podsSuccessfulMetric = &metricspb.MetricDescriptor{
 	Description: "The number of pods which reached phase Succeeded for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+// Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function when using a new job fields.
+func Transform(job *batchv1.Job) *batchv1.Job {
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      job.ObjectMeta.Name,
+			Namespace: job.ObjectMeta.Namespace,
+			UID:       job.ObjectMeta.UID,
+			Labels:    job.ObjectMeta.Labels,
+		},
+		Spec: batchv1.JobSpec{
+			Completions: job.Spec.Completions,
+			Parallelism: job.Spec.Parallelism,
+		},
+		Status: batchv1.JobStatus{
+			Active:    job.Status.Active,
+			Succeeded: job.Status.Succeeded,
+			Failed:    job.Status.Failed,
+		},
+	}
 }
 
 func GetMetrics(j *batchv1.Job) []*agentmetricspb.ExportMetricsServiceRequest {

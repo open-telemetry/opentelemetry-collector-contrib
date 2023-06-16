@@ -7,9 +7,12 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
@@ -139,4 +142,64 @@ func TestNodeConditionValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTransform(t *testing.T) {
+	originalNode := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-node",
+			UID:  "my-node-uid",
+			Labels: map[string]string{
+				"node-role": "worker",
+			},
+		},
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
+				{
+					Type:   corev1.NodeReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+			Capacity: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("8"),
+				corev1.ResourceMemory: resource.MustParse("16Gi"),
+			},
+			Allocatable: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4"),
+				corev1.ResourceMemory: resource.MustParse("8Gi"),
+			},
+			Addresses: []corev1.NodeAddress{
+				{
+					Type:    corev1.NodeHostName,
+					Address: "my-node-hostname",
+				},
+				{
+					Type:    corev1.NodeInternalIP,
+					Address: "192.168.1.100",
+				},
+			},
+		},
+	}
+	wantNode := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-node",
+			UID:  "my-node-uid",
+			Labels: map[string]string{
+				"node-role": "worker",
+			},
+		},
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
+				{
+					Type:   corev1.NodeReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+			Allocatable: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4"),
+				corev1.ResourceMemory: resource.MustParse("8Gi"),
+			},
+		},
+	}
+	assert.Equal(t, wantNode, Transform(originalNode))
 }

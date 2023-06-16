@@ -249,6 +249,20 @@ func maskMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName st
 	}
 }
 
+func ChangeResourceAttributeValue(attributeName string, changeFn func(string) string) CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		changeMetricsResourceAttributeValue(expected, attributeName, changeFn)
+		changeMetricsResourceAttributeValue(actual, attributeName, changeFn)
+	})
+}
+
+func changeMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName string, changeFn func(string) string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
+	}
+}
+
 // IgnoreSubsequentDataPoints is a CompareMetricsOption that ignores data points after the first.
 func IgnoreSubsequentDataPoints(metricNames ...string) CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
