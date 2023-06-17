@@ -60,7 +60,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	return buf.Bytes(), err
 }
 
-func (m *encodeModel) encodeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) ([]byte, error) {
+func (m *encodeModel) encodeSpan(resource pcommon.Resource, _ pcommon.InstrumentationScope, span ptrace.Span) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
