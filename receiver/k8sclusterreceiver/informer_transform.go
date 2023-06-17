@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 )
 
@@ -35,6 +36,8 @@ func transformObject(object interface{}) (interface{}, error) {
 		return demonset.Transform(o), nil
 	case *appsv1.StatefulSet:
 		return statefulset.Transform(o), nil
+	case *corev1.Service:
+		return service.Transform(o), nil
 	}
 	return object, nil
 }
