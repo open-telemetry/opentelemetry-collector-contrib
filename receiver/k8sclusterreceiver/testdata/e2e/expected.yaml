@@ -10,6 +10,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -18,7 +19,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -30,6 +34,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -38,7 +43,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -50,6 +58,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -58,7 +67,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -70,6 +82,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -78,7 +91,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -90,6 +106,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -98,7 +115,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.node.name
