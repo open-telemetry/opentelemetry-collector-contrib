@@ -94,6 +94,25 @@ func TestTransformObject(t *testing.T) {
 			same: false,
 		},
 		{
+			name: "service",
+			object: &corev1.Service{
+				Spec: corev1.ServiceSpec{
+					Selector: map[string]string{
+						"app": "my-app",
+					},
+					Type: corev1.ServiceTypeClusterIP,
+				},
+			},
+			want: &corev1.Service{
+				Spec: corev1.ServiceSpec{
+					Selector: map[string]string{
+						"app": "my-app",
+					},
+				},
+			},
+			same: false,
+		},
+		{
 			// This is a case where we don't transform the object.
 			name:   "hpa",
 			object: testutils.NewHPA("1"),
