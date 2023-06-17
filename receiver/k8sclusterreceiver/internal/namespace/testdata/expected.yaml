@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.namespace.uid
+          value:
+            stringValue: test-namespace-1-uid
+        - key: opencensus.resourcetype
+          value:
+            stringValue: k8s
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The current phase of namespaces (1 for active and 0 for terminating)
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.namespace.phase
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
