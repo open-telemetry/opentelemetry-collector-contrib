@@ -39,7 +39,8 @@ func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
-			Encoding: helper.NewEncodingConfig(),
+			Encoding:    helper.NewEncodingConfig(),
+			TokenizeLog: true,
 			Multiline: helper.MultilineConfig{
 				LineStartPattern: "",
 				LineEndPattern:   ".^", // Use never matching regex to not split data by default
@@ -57,6 +58,7 @@ type Config struct {
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
 	ListenAddress               string                 `mapstructure:"listen_address,omitempty"`
+	TokenizeLog                 bool                   `mapstructure:"tokenize_log,omitempty"`
 	AddAttributes               bool                   `mapstructure:"add_attributes,omitempty"`
 	Encoding                    helper.EncodingConfig  `mapstructure:",squash,omitempty"`
 	Multiline                   helper.MultilineConfig `mapstructure:"multiline,omitempty"`
@@ -104,6 +106,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		encoding:      encoding,
 		splitFunc:     splitFunc,
 		resolver:      resolver,
+		tokenizeLog:   c.TokenizeLog,
 	}
 	return udpInput, nil
 }
@@ -114,6 +117,7 @@ type Input struct {
 	helper.InputOperator
 	address       *net.UDPAddr
 	addAttributes bool
+	tokenizeLog   bool
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -159,48 +163,71 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 				break
 			}
 
+			if !u.tokenizeLog {
+				log := VerifyLog(message)
+				handleMessage(u, ctx, remoteAddr, log)
+				continue
+			}
+
 			scanner := bufio.NewScanner(bytes.NewReader(message))
 			scanner.Buffer(buf, MaxUDPSize)
 
 			scanner.Split(u.splitFunc)
 
 			for scanner.Scan() {
-				decoded, err := u.encoding.Decode(scanner.Bytes())
-				if err != nil {
-					u.Errorw("Failed to decode data", zap.Error(err))
-					continue
-				}
-
-				entry, err := u.NewEntry(string(decoded))
-				if err != nil {
-					u.Errorw("Failed to create entry", zap.Error(err))
-					continue
-				}
-
-				if u.addAttributes {
-					entry.AddAttribute("net.transport", "IP.UDP")
-					if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
-						ip := addr.IP.String()
-						entry.AddAttribute("net.host.ip", addr.IP.String())
-						entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-						entry.AddAttribute("net.host.name", u.resolver.GetHostFromIP(ip))
-					}
-
-					if addr, ok := remoteAddr.(*net.UDPAddr); ok {
-						ip := addr.IP.String()
-						entry.AddAttribute("net.peer.ip", ip)
-						entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-						entry.AddAttribute("net.peer.name", u.resolver.GetHostFromIP(ip))
-					}
-				}
-
-				u.Write(ctx, entry)
+				handleMessage(u, ctx, remoteAddr, scanner.Bytes())
 			}
 			if err := scanner.Err(); err != nil {
 				u.Errorw("Scanner error", zap.Error(err))
 			}
 		}
 	}()
+}
+
+func VerifyLog(data []byte) (token []byte) {
+	dataLength := len(data)
+	if dataLength >= MaxUDPSize {
+		return data[:MaxUDPSize]
+	}
+
+	if dataLength == 0 {
+		return nil
+	}
+
+	return data
+}
+
+func handleMessage(u *Input, ctx context.Context, remoteAddr net.Addr, log []byte) {
+	decoded, err := u.encoding.Decode(log)
+	if err != nil {
+		u.Errorw("Failed to decode data", zap.Error(err))
+		return
+	}
+
+	entry, err := u.NewEntry(string(decoded))
+	if err != nil {
+		u.Errorw("Failed to create entry", zap.Error(err))
+		return
+	}
+
+	if u.addAttributes {
+		entry.AddAttribute("net.transport", "IP.UDP")
+		if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
+			ip := addr.IP.String()
+			entry.AddAttribute("net.host.ip", addr.IP.String())
+			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+			entry.AddAttribute("net.host.name", u.resolver.GetHostFromIP(ip))
+		}
+
+		if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+			ip := addr.IP.String()
+			entry.AddAttribute("net.peer.ip", ip)
+			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+			entry.AddAttribute("net.peer.name", u.resolver.GetHostFromIP(ip))
+		}
+	}
+
+	u.Write(ctx, entry)
 }
 
 // readMessage will read log messages from the connection.
