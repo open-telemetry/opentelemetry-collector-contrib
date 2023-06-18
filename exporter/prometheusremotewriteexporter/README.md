@@ -61,6 +61,9 @@ The following settings can be optionally configured:
   - `enabled` (default = false): If `enabled` is `true`, a `_created` metric is
     exported for Summary, Histogram, and Monotonic Sum metric points if
     `StartTimeUnixNano` is set.
+- `max_batch_byte_size` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of
+  samples to be sent to the remote write endpoint. If the batch size is larger
+  than this value, it will be split into multiple batches.
 
 Example:
 

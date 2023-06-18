@@ -29,18 +29,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
-const maxBatchByteSize = 3000000
-
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	endpointURL     *url.URL
-	client          *http.Client
-	wg              *sync.WaitGroup
-	closeChan       chan struct{}
-	concurrency     int
-	userAgentHeader string
-	clientSettings  *confighttp.HTTPClientSettings
-	settings        component.TelemetrySettings
+	endpointURL      *url.URL
+	client           *http.Client
+	wg               *sync.WaitGroup
+	closeChan        chan struct{}
+	concurrency      int
+	userAgentHeader  string
+	maxBatchByteSize int
+	clientSettings   *confighttp.HTTPClientSettings
+	settings         component.TelemetrySettings
 
 	wal              *prweWAL
 	exporterSettings prometheusremotewrite.Settings
@@ -61,13 +60,14 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	prwe := &prwExporter{
-		endpointURL:     endpointURL,
-		wg:              new(sync.WaitGroup),
-		closeChan:       make(chan struct{}),
-		userAgentHeader: userAgentHeader,
-		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:  &cfg.HTTPClientSettings,
-		settings:        set.TelemetrySettings,
+		endpointURL:      endpointURL,
+		wg:               new(sync.WaitGroup),
+		closeChan:        make(chan struct{}),
+		userAgentHeader:  userAgentHeader,
+		maxBatchByteSize: cfg.maxBatchByteSize,
+		concurrency:      cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:   &cfg.HTTPClientSettings,
+		settings:         set.TelemetrySettings,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -154,7 +154,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchByteSize)
 	if err != nil {
 		return err
 	}

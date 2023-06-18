@@ -69,9 +69,10 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Namespace:       "",
-		ExternalLabels:  map[string]string{},
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		Namespace:        "",
+		ExternalLabels:   map[string]string{},
+		maxBatchByteSize: 3000000,
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:             true,
 			InitialInterval:     50 * time.Millisecond,
