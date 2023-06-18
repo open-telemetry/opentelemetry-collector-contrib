@@ -79,14 +79,14 @@ type span struct {
 func verifyDisabledHistogram(t testing.TB, input pmetric.Metrics) bool {
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
-		ilm := rm.ScopeMetrics()
-		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
-		for ilmC := 0; ilmC < ilm.Len(); ilmC++ {
-			m := ilm.At(ilmC).Metrics()
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
+		for ismC := 0; ismC < ism.Len(); ismC++ {
+			m := ism.At(ismC).Metrics()
 			for mC := 0; mC < m.Len(); mC++ {
 				metric := m.At(mC)
-				assert.NotEqual(t, metric.Type(), pmetric.MetricTypeExponentialHistogram)
-				assert.NotEqual(t, metric.Type(), pmetric.MetricTypeHistogram)
+				assert.NotEqual(t, pmetric.MetricTypeExponentialHistogram, metric.Type())
+				assert.NotEqual(t, pmetric.MetricTypeHistogram, metric.Type())
 			}
 		}
 	}
@@ -388,6 +388,7 @@ func exponentialHistogramsConfig() HistogramConfig {
 		},
 	}
 }
+
 func disabledHistogramsConfig() HistogramConfig {
 	return HistogramConfig{
 		Unit:    defaultUnit,
@@ -843,29 +844,45 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		ilm := rm.ScopeMetrics()
+		ism := rm.ScopeMetrics()
 		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
-		for ilmC := 0; ilmC < ilm.Len(); ilmC++ {
-			m := ilm.At(ilmC).Metrics()
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
 			for mC := 0; mC < m.Len(); mC++ {
 				metric := m.At(mC)
 				// We check only sum and histogram metrics here, because for now only they are present in this module.
 
-				if metric.Type() == pmetric.MetricTypeExponentialHistogram || metric.Type() == pmetric.MetricTypeHistogram {
-					dp := metric.Histogram().DataPoints()
-					for dpi := 0; dpi < dp.Len(); dpi++ {
-						for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-							assert.NotContains(t, excludeDimensions, attributeKey)
-						}
+				switch metric.Type() {
+				case pmetric.MetricTypeExponentialHistogram:
+					{
+						dp := metric.Histogram().DataPoints()
+						for dpi := 0; dpi < dp.Len(); dpi++ {
+							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+								assert.NotContains(t, excludeDimensions, attributeKey)
+							}
 
-					}
-				} else {
-					dp := metric.Sum().DataPoints()
-					for dpi := 0; dpi < dp.Len(); dpi++ {
-						for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-							assert.NotContains(t, excludeDimensions, attributeKey)
 						}
 					}
+				case pmetric.MetricTypeHistogram:
+					{
+						dp := metric.Histogram().DataPoints()
+						for dpi := 0; dpi < dp.Len(); dpi++ {
+							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+								assert.NotContains(t, excludeDimensions, attributeKey)
+							}
+
+						}
+					}
+				default:
+					{
+						dp := metric.Sum().DataPoints()
+						for dpi := 0; dpi < dp.Len(); dpi++ {
+							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+								assert.NotContains(t, excludeDimensions, attributeKey)
+							}
+						}
+					}
+
 				}
 
 			}
