@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.19
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.79.0
@@ -703,6 +704,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metad
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ./internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ./internal/splunk
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter => ./exporter/alertmanagerexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 

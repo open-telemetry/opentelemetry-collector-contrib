@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.79.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.79.0
@@ -873,6 +874,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redis
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension => ../../extension/basicauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ../../exporter/influxdbexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter => ../../exporter/alertmanagerexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ../../exporter/alibabacloudlogserviceexporter
 

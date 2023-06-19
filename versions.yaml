@@ -16,6 +16,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter

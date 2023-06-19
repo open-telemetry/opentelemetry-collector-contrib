@@ -228,6 +228,13 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true,
 		},
 		{
+			exporter: "alertmanager",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["alertmanager"].CreateDefaultConfig().(*alertmanagerexporter.Config)
+				return cfg
+			},
+		},
+		{
 			exporter: "alibabacloud_logservice",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["alibabacloud_logservice"].CreateDefaultConfig().(*alibabacloudlogserviceexporter.Config)
