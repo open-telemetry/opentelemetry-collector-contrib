@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: test-namespace
+            stringValue: test-namespace-1
         - key: k8s.namespace.uid
           value:
             stringValue: test-namespace-1-uid
