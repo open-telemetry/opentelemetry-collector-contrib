@@ -100,8 +100,12 @@ func (cfg *Config) Validate() error {
 			Enabled: false,
 		}
 	}
-	if cfg.MaxBatchByteSize <= 0 {
+	if cfg.MaxBatchByteSize < 0 {
 		return fmt.Errorf("max_batch_byte_size must be greater than 0")
+	}
+	if cfg.MaxBatchByteSize == 0 {
+		// Defaults to ~2.81MB
+		cfg.MaxBatchByteSize = 3000000
 	}
 
 	return nil
