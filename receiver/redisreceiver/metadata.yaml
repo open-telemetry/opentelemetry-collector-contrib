@@ -251,7 +251,7 @@ metrics:
   redis.keyspace.hits:
     enabled: true
     description: Number of successful lookup of keys in the main dictionary
-    unit: "{lookups}"
+    unit: "{hits}"
     sum:
       value_type: int
       monotonic: true
