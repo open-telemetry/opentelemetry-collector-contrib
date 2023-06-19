@@ -3,7 +3,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: kube-system
         - key: k8s.namespace.uid
           value:
             stringValue: 3604b135-20f2-404b-9c1a-175ef649793e
@@ -27,7 +27,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: local-path-storage
         - key: k8s.namespace.uid
           value:
             stringValue: 414da07d-33d0-4043-ae7c-d6b264d134e5
@@ -51,7 +51,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: kube-public
         - key: k8s.namespace.uid
           value:
             stringValue: 7516afba-1597-49e3-8569-9732b7b94865
@@ -75,7 +75,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: kube-node-lease
         - key: k8s.namespace.uid
           value:
             stringValue: 8dd32894-d0ff-4cff-bd75-b818c20fc72b
@@ -99,7 +99,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: default
         - key: k8s.namespace.uid
           value:
             stringValue: caa467a2-d3e8-4e66-8b76-a155464bac79
