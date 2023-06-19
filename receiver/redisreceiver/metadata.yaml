@@ -104,7 +104,7 @@ metrics:
   redis.clients.connected:
     enabled: true
     description: Number of client connections (excluding connections from replicas)
-    unit: "{connections}"
+    unit: "{clients}"
     sum:
       value_type: int
       monotonic: false
