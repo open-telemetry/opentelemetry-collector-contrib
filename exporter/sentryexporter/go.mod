@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentry
 go 1.19
 
 require (
-	github.com/getsentry/sentry-go v0.21.0
+	github.com/getsentry/sentry-go v0.22.0
 	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.79.0
 	github.com/stretchr/testify v1.8.4
