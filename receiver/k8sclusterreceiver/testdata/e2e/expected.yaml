@@ -130,6 +130,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Whether this node is Ready (1), not Ready (0) or in an unknown state (-1)
@@ -138,7 +139,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.node.condition_ready
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.daemonset.name
