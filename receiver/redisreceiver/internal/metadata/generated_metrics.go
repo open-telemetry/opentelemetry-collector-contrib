@@ -191,7 +191,7 @@ type metricRedisClientsMaxInputBuffer struct {
 func (m *metricRedisClientsMaxInputBuffer) init() {
 	m.data.SetName("redis.clients.max_input_buffer")
 	m.data.SetDescription("Biggest input buffer among current client connections")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -240,7 +240,7 @@ type metricRedisClientsMaxOutputBuffer struct {
 func (m *metricRedisClientsMaxOutputBuffer) init() {
 	m.data.SetName("redis.clients.max_output_buffer")
 	m.data.SetDescription("Longest output list among current client connections")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -1503,7 +1503,7 @@ type metricRedisReplicationBacklogFirstByteOffset struct {
 func (m *metricRedisReplicationBacklogFirstByteOffset) init() {
 	m.data.SetName("redis.replication.backlog_first_byte_offset")
 	m.data.SetDescription("The master offset of the replication backlog buffer")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -1552,7 +1552,7 @@ type metricRedisReplicationOffset struct {
 func (m *metricRedisReplicationOffset) init() {
 	m.data.SetName("redis.replication.offset")
 	m.data.SetDescription("The server's current replication offset")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
