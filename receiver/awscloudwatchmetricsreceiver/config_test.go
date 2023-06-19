@@ -4,219 +4,326 @@
 package awscloudwatchmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver"
 
 import (
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidate(t *testing.T) {
+func TestConfigValidation(t *testing.T) {
 	cases := []struct {
 		name        string
 		config      Config
 		expectedErr error
 	}{
 		{
-			name: "Valid config",
+			name:        "No metric key configured",
+			config:      Config{},
+			expectedErr: errNoMetricsConfigured,
+		},
+		{
+			name: "valid autodiscover config",
 			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
+				Region:       "us-west-2",
+				Profile:      "my_profile",
+				PollInterval: defaultPollInterval,
 				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
+					AutoDiscover: &AutoDiscoverConfig{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "Sum",
-						Dimensions: []MetricDimensionsConfig{{
-							Name:  "InstanceId",
-							Value: " i-1234567890abcdef0",
-						}},
-					}},
+						Limit:          20,
+						AwsAggregation: "Average",
+						Period:         time.Second * 60 * 5,
+					},
 				},
 			},
+			expectedErr: nil,
 		},
 		{
-			name: "No metrics defined",
+			name: "valid group config",
 			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
+				Region:       "us-west-2",
+				Profile:      "my_profile",
+				PollInterval: defaultPollInterval,
+				Metrics: &MetricsConfig{
+					Group: []GroupConfig{
+						{
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  "InstanceId",
+											Value: "i-1234567890abcdef0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
-			expectedErr: errNoMetricsConfigured,
+			expectedErr: nil,
 		},
 		{
-			name: "No named config defined",
+			name: "No metric_name configured in group config",
 			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
-				Metrics:      &MetricsConfig{},
-			},
-			expectedErr: errNoMetricsConfigured,
-		},
-		{
-			name: "No namespace defined",
-			config: Config{
-				Region:       "eu-west-1",
+				Region:       "eu-west-2",
 				PollInterval: time.Minute * 5,
 				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace: "",
-					}},
+					Group: []GroupConfig{
+						{
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									AwsAggregation: "Sum",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errNoMetricNameConfigured,
+		},
+		{
+			name: "No namespace configured",
+			config: Config{
+				Region:       "eu-west-2",
+				PollInterval: defaultPollInterval,
+				Metrics: &MetricsConfig{
+					Group: []GroupConfig{
+						{
+							Period: time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  "InstanceId",
+											Value: "i-1234567890abcdef0",
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			expectedErr: errNoNamespaceConfigured,
 		},
 		{
-			name: "No metric name defined",
+			name: "No region configured",
 			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
 				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "",
-						AwsAggregation: "Sum",
-					}},
-				},
-			},
-			expectedErr: errNoMetricsConfigured,
-		},
-		{
-			name: "Bad AWS Aggregation",
-			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
-				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "Last",
-					}},
-				},
-			},
-			expectedErr: errInvalidAwsAggregation,
-		},
-		{
-			name: "P99 AWS Aggregation",
-			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
-				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "p99",
-					}},
-				},
-			},
-		},
-		{
-			name: "TS99 AWS Aggregation",
-			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
-				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "TS99",
-					}},
-				},
-			},
-		},
-		{
-			name: "Multiple Metrics",
-			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
-				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "TS99",
-					},
+					Group: []GroupConfig{
 						{
-							Namespace:      "AWS/EC2",
-							MetricName:     "CPUUtilizaition",
-							Period:         time.Second * 60,
-							AwsAggregation: "TS99"},
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  "InstanceId",
+											Value: "i-1234567890abcdef0",
+										},
+									},
+								},
+							},
+						},
 					},
 				},
-			},
-		},
-		{
-			name: "Invalid region",
-			config: Config{
-				Region: "",
 			},
 			expectedErr: errNoRegion,
 		},
 		{
-			name: "Invalid IMDS endpoint url",
+			name: "Poll interval less than 1 second",
 			config: Config{
-				Region:       "eu-west-1",
-				IMDSEndpoint: "xyz",
-			},
-			expectedErr: errors.New("unable to parse URI for imds_endpoint"),
-		},
-		{
-			name: "Polling Interval < 1s",
-			config: Config{
-				Region:       "eu-west-1",
+				Region:       "us-west-2",
+				Profile:      "my_profile",
 				PollInterval: time.Millisecond * 500,
+				Metrics: &MetricsConfig{
+					Group: []GroupConfig{
+						{
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  "InstanceId",
+											Value: "i-1234567890abcdef0",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			expectedErr: errInvalidPollInterval,
 		},
 		{
-			name: "Invalid dimensions name and value",
+			name: "Auto discover parameter has limit of 0",
 			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
+				Region:       "us-west-2",
+				Profile:      "my_profile",
+				PollInterval: defaultPollInterval,
 				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
+					AutoDiscover: &AutoDiscoverConfig{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "Sum",
-						Dimensions: []MetricDimensionsConfig{{
-							Name:  "",
-							Value: "",
-						}},
-					}},
+						Limit:          -1,
+						AwsAggregation: "Average",
+						Period:         time.Second * 60 * 5,
+						DefaultDimensions: []MetricDimensionsConfig{
+							{
+								Name:  "InstanceId",
+								Value: "i-1234567890abcdef0",
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errInvalidAutodiscoverLimit,
+		},
+		{
+			name: "Both group and auto discover parameters are defined",
+			config: Config{
+				Region:       "us-west-2",
+				Profile:      "my_profile",
+				PollInterval: defaultPollInterval,
+				Metrics: &MetricsConfig{
+					Group: []GroupConfig{
+						{
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  "InstanceId",
+											Value: "i-1234567890abcdef0",
+										},
+									},
+								},
+							},
+						},
+					},
+					AutoDiscover: &AutoDiscoverConfig{
+						Namespace:         "AWS/EC2",
+						Limit:             100,
+						AwsAggregation:    "Average",
+						Period:            time.Second * 60 * 5,
+						DefaultDimensions: []MetricDimensionsConfig{},
+					},
+				},
+			},
+			expectedErr: errAutodiscoverAndNamedConfigured,
+		},
+		{
+			name: "Name parameter in dimension is empty",
+			config: Config{
+				Region:       "us-west-2",
+				Profile:      "my_profile",
+				PollInterval: defaultPollInterval,
+				Metrics: &MetricsConfig{
+					Group: []GroupConfig{
+						{
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  "",
+											Value: "i-1234567890abcdef0",
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			expectedErr: errEmptyDimensions,
 		},
 		{
-			name: "Dimension name begins with colon",
+			name: "Value parameter in dimension is empty",
 			config: Config{
-				Region:       "eu-west-1",
-				PollInterval: time.Minute * 5,
+				Region:       "us-west-2",
+				Profile:      "my_profile",
+				PollInterval: defaultPollInterval,
 				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "Sum",
-						Dimensions: []MetricDimensionsConfig{{
-							Name:  ":BucketName",
-							Value: "open-telemetry",
-						}},
-					}},
+					Group: []GroupConfig{
+						{
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  "InstanceId",
+											Value: "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errEmptyDimensions,
+		},
+		{
+			name: "Name parameter in dimension starts with a colon",
+			config: Config{
+				Region:       "us-west-2",
+				Profile:      "my_profile",
+				PollInterval: defaultPollInterval,
+				Metrics: &MetricsConfig{
+					Group: []GroupConfig{
+						{
+							Namespace: "AWS/EC2",
+							Period:    time.Second * 60 * 5,
+							MetricName: []NamedConfig{
+								{
+									MetricName:     "CPUUtilization",
+									AwsAggregation: "Average",
+									Dimensions: []MetricDimensionsConfig{
+										{
+											Name:  ":InvalidName",
+											Value: "i-1234567890abcdef0",
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 			expectedErr: errDimensionColonPrefix,
 		},
 	}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.config.Validate()
 			if tc.expectedErr != nil {
-				require.ErrorContains(t, err, tc.expectedErr.Error())
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expectedErr.Error())
 			} else {
 				require.NoError(t, err)
 			}
