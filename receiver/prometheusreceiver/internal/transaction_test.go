@@ -1177,13 +1177,26 @@ func TestMetricBuilderHistogram(t *testing.T) {
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{
-						createDataPoint("hist_test_sum", 99, nil),
-						createDataPoint("hist_test_count", 10, nil),
+						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
 					},
 				},
 			},
 			wants: func() []pmetric.Metrics {
-				return []pmetric.Metrics{pmetric.NewMetrics()}
+				md0 := pmetric.NewMetrics()
+				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				hist0 := m0.SetEmptyHistogram()
+				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt0 := hist0.DataPoints().AppendEmpty()
+				pt0.SetCount(10)
+				pt0.SetSum(99)
+				pt0.SetTimestamp(tsNanos)
+				pt0.SetStartTimestamp(startTimestamp)
+				pt0.Attributes().PutStr("foo", "bar")
+
+				return []pmetric.Metrics{md0}
 			},
 		},
 		{

@@ -218,6 +218,27 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name:                "histogram without buckets",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{at: 11, value: 66, metric: "histogram_count"},
+				{at: 11, value: 1004.78, metric: "histogram_sum"},
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(66)
+				point.SetSum(1004.78)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
 	}
 
 	for _, tt := range tests {

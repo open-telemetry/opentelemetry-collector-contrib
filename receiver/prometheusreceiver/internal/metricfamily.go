@@ -87,39 +87,45 @@ func (mg *metricGroup) sortPoints() {
 }
 
 func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
-	if !mg.hasCount || len(mg.complexValue) == 0 {
+	if !mg.hasCount {
+		// Otel histograms are required to have a count
+		// TODO: Decide if we also want to drop data if the sum isn't defined
 		return
 	}
 
-	mg.sortPoints()
-
-	// for OTLP the bounds won't include +inf
-	bounds := make([]float64, len(mg.complexValue)-1)
-	bucketCounts := make([]uint64, len(mg.complexValue))
-
+	point := pmetric.NewHistogramDataPoint()
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 
-	for i := 0; i < len(mg.complexValue); i++ {
-		if i != len(mg.complexValue)-1 {
-			// not need to add +inf as OTLP assumes it
-			bounds[i] = mg.complexValue[i].boundary
-		} else if mg.complexValue[i].boundary != math.Inf(1) {
-			// This histogram is missing the +Inf bucket, and isn't a complete prometheus histogram.
-			return
-		}
-		adjustedCount := mg.complexValue[i].value
-		// Buckets still need to be sent to know to set them as stale,
-		// but a staleness NaN converted to uint64 would be an extremely large number.
-		// Setting to 0 instead.
-		if pointIsStale {
-			adjustedCount = 0
-		} else if i != 0 {
-			adjustedCount -= mg.complexValue[i-1].value
-		}
-		bucketCounts[i] = uint64(adjustedCount)
-	}
+	if len(mg.complexValue) > 0 { // copy over the buckets if we have any
+		mg.sortPoints()
 
-	point := dest.AppendEmpty()
+		// for OTLP the bounds won't include +inf
+		bounds := make([]float64, len(mg.complexValue)-1)
+		bucketCounts := make([]uint64, len(mg.complexValue))
+
+		for i := 0; i < len(mg.complexValue); i++ {
+			if i != len(mg.complexValue)-1 {
+				// not need to add +inf as OTLP assumes it
+				bounds[i] = mg.complexValue[i].boundary
+			} else if mg.complexValue[i].boundary != math.Inf(1) {
+				// This histogram is missing the +Inf bucket, and isn't a complete prometheus histogram.
+				return
+			}
+			adjustedCount := mg.complexValue[i].value
+			// Buckets still need to be sent to know to set them as stale,
+			// but a staleness NaN converted to uint64 would be an extremely large number.
+			// Setting to 0 instead.
+			if pointIsStale {
+				adjustedCount = 0
+			} else if i != 0 {
+				adjustedCount -= mg.complexValue[i-1].value
+			}
+			bucketCounts[i] = uint64(adjustedCount)
+		}
+
+		point.ExplicitBounds().FromRaw(bounds)
+		point.BucketCounts().FromRaw(bucketCounts)
+	}
 
 	if pointIsStale {
 		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
@@ -129,9 +135,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 			point.SetSum(mg.sum)
 		}
 	}
-
-	point.ExplicitBounds().FromRaw(bounds)
-	point.BucketCounts().FromRaw(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
@@ -144,6 +147,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
+	point.CopyTo(dest.AppendEmpty())
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
