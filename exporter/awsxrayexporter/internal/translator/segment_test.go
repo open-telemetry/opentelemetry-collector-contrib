@@ -1002,6 +1002,138 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
+func TestSpanWithAllK8sAttributes(t *testing.T) {
+	spanName := "/testApi"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pcommon.NewResource()
+
+	// validate server spans
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	span.Attributes().PutStr(awsEKSCluster, "eksCluster")
+	span.Attributes().PutStr(awsK8sNamespace, "eksNamespace")
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "eksCluster::eksNamespace::/testApi", *segment.Name)
+
+	// validate client spans
+	span = constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents = constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	span.Attributes().PutStr(awsEKSCluster, "eksCluster")
+	span.Attributes().PutStr(awsK8sNamespace, "eksNamespace")
+	segment, _ = MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "eksCluster::eksNamespace::/testApi", *segment.Name)
+}
+
+func TestSpanWithOnlyK8sClusterAttribute(t *testing.T) {
+	spanName := "/testApi"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pcommon.NewResource()
+
+	// validate server spans
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	span.Attributes().PutStr(awsEKSCluster, "eksCluster")
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "eksCluster::::/testApi", *segment.Name)
+
+	// validate client spans
+	span = constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents = constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	span.Attributes().PutStr(awsEKSCluster, "eksCluster")
+	segment, _ = MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "eksCluster::::/testApi", *segment.Name)
+}
+
+func TestSpanWithOnlyK8sNamespaceAttribute(t *testing.T) {
+	spanName := "/testApi"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pcommon.NewResource()
+
+	// validate server spans
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	span.Attributes().PutStr(awsK8sNamespace, "eksNamespace")
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "::eksNamespace::/testApi", *segment.Name)
+
+	// validate client spans
+	span = constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents = constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	span.Attributes().PutStr(awsK8sNamespace, "eksNamespace")
+	segment, _ = MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "::eksNamespace::/testApi", *segment.Name)
+}
+
+func TestIsK8sSpan(t *testing.T) {
+	spanName := "/testApi"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	// validate k8s spans with both ClusterName and Namespace
+	attributes[awsEKSCluster] = "eksCluster"
+	attributes[awsK8sNamespace] = "eksNamespace"
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	assert.True(t, isK8sSpan(span))
+	// reset attributes
+	for k := range attributes {
+		delete(attributes, k)
+	}
+
+	// validate k8s spans with ClusterName only
+	attributes[awsEKSCluster] = "eksCluster"
+	span = constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents = constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	assert.True(t, isK8sSpan(span))
+	// reset attributes
+	for k := range attributes {
+		delete(attributes, k)
+	}
+
+	// validate k8s spans with EKS Namespace only
+	attributes[awsK8sNamespace] = "eksNamespace"
+	span = constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents = constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	assert.True(t, isK8sSpan(span))
+	// reset attributes
+	for k := range attributes {
+		delete(attributes, k)
+	}
+
+	// validate k8s spans without EKS attributes
+	span = constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents = constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	assert.False(t, isK8sSpan(span))
+}
+
 func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
 	var (
 		traceID        = newTraceID()

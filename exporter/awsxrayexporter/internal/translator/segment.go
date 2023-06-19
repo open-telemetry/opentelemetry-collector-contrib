@@ -37,6 +37,9 @@ const (
 const (
 	awsLocalService  = "aws.local.service"
 	awsRemoteService = "aws.remote.service"
+	// EKS/K8s attributes generated for X-Ray K8s Spans/Segments
+	awsEKSCluster   = "EKS.Cluster"
+	awsK8sNamespace = "K8s.Namespace"
 )
 
 var (
@@ -201,6 +204,10 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		name = fixSegmentName(span.Name())
 	}
 
+	if isK8sSpan(span) {
+		name = fixK8sSegmentName(name, attributes)
+	}
+
 	if namespace == "" && span.Kind() == ptrace.SpanKindClient {
 		namespace = "remote"
 	}
@@ -228,6 +235,34 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		Type:        awsxray.String(segmentType),
 		Links:       spanLinks,
 	}, nil
+}
+
+// fixK8sSegmentName appends EKS/K8s cluster name and namespace to segment name prefix
+// and use '::' as delimiter for the concatenation
+func fixK8sSegmentName(name string, attributes pcommon.Map) string {
+	if namespace, ok := attributes.Get(awsK8sNamespace); ok {
+		name = fmt.Sprintf("%v::%v", namespace.Str(), name)
+	} else {
+		name = fmt.Sprintf("::%v", name)
+	}
+	if clusterName, ok := attributes.Get(awsEKSCluster); ok {
+		name = fmt.Sprintf("%v::%v", clusterName.Str(), name)
+	} else {
+		name = fmt.Sprintf("::%v", name)
+	}
+	return name
+}
+
+// isK8sSpan returns true if any of customized eks/k8s attributes found
+func isK8sSpan(span ptrace.Span) bool {
+	attributes := span.Attributes()
+	k8sAttributes := []string{awsEKSCluster, awsK8sNamespace}
+	for _, attr := range k8sAttributes {
+		if _, ok := attributes.Get(attr); ok {
+			return true
+		}
+	}
+	return false
 }
 
 // newSegmentID generates a new valid X-Ray SegmentID
