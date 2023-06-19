@@ -259,11 +259,13 @@ func (p *connectorImp) resetState() {
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
 		// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
-		if !p.config.Histogram.Disable {
-			for _, m := range p.resourceMetrics {
-				m.histograms.Reset(true)
-			}
+		if p.config.Histogram.Disable {
+			return
 		}
+		for _, m := range p.resourceMetrics {
+			m.histograms.Reset(true)
+		}
+
 	}
 }
 
