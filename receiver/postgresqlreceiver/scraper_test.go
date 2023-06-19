@@ -43,6 +43,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.yaml")
+	golden.WriteMetrics(t, expectedFile, actualMetrics)
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -61,6 +62,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.yaml")
+	golden.WriteMetrics(t, expectedFile, actualMetrics)
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -79,6 +81,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected.yaml")
+	golden.WriteMetrics(t, expectedFile, actualMetrics)
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -97,6 +100,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected_with_resource.yaml")
+	golden.WriteMetrics(t, expectedFile, actualMetrics)
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -115,6 +119,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_with_resource.yaml")
+	golden.WriteMetrics(t, expectedFile, actualMetrics)
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
