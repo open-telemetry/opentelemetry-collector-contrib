@@ -276,7 +276,7 @@ metrics:
   redis.slaves.connected:
     enabled: true
     description: Number of connected replicas
-    unit: "{connections}"
+    unit: "{replicas}"
     sum:
       value_type: int
       monotonic: false
