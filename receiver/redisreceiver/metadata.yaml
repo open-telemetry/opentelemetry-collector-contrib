@@ -260,7 +260,7 @@ metrics:
   redis.keyspace.misses:
     enabled: true
     description: Number of failed lookup of keys in the main dictionary
-    unit: "{lookups}"
+    unit: "{misses}"
     sum:
       value_type: int
       monotonic: true
