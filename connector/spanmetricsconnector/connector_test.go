@@ -853,17 +853,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 				// We check only sum and histogram metrics here, because for now only they are present in this module.
 
 				switch metric.Type() {
-				case pmetric.MetricTypeExponentialHistogram:
-					{
-						dp := metric.Histogram().DataPoints()
-						for dpi := 0; dpi < dp.Len(); dpi++ {
-							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
-								assert.NotContains(t, excludeDimensions, attributeKey)
-							}
-
-						}
-					}
-				case pmetric.MetricTypeHistogram:
+				case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
 					{
 						dp := metric.Histogram().DataPoints()
 						for dpi := 0; dpi < dp.Len(); dpi++ {
