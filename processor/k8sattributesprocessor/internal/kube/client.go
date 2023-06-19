@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
@@ -23,7 +12,9 @@ import (
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -36,16 +27,17 @@ import (
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                 sync.RWMutex
-	deleteMut         sync.Mutex
-	logger            *zap.Logger
-	kc                kubernetes.Interface
-	informer          cache.SharedInformer
-	namespaceInformer cache.SharedInformer
-	replicasetRegex   *regexp.Regexp
-	cronJobRegex      *regexp.Regexp
-	deleteQueue       []deleteRequest
-	stopCh            chan struct{}
+	m                  sync.RWMutex
+	deleteMut          sync.Mutex
+	logger             *zap.Logger
+	kc                 kubernetes.Interface
+	informer           cache.SharedInformer
+	namespaceInformer  cache.SharedInformer
+	replicasetInformer cache.SharedInformer
+	replicasetRegex    *regexp.Regexp
+	cronJobRegex       *regexp.Regexp
+	deleteQueue        []deleteRequest
+	stopCh             chan struct{}
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -58,6 +50,10 @@ type WatchClient struct {
 	// A map containing Namespace related data, used to associate them with resources.
 	// Key is namespace name
 	Namespaces map[string]*Namespace
+
+	// A map containing ReplicaSets related data, used to associate them with resources.
+	// Key is replicaset uid
+	ReplicaSets map[string]*ReplicaSet
 }
 
 // Extract replicaset name from the pod name. Pod name is created using
@@ -69,7 +65,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
 	c := &WatchClient{
 		logger:          logger,
 		Rules:           rules,
@@ -84,6 +80,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 	c.Pods = map[PodIdentifier]*Pod{}
 	c.Namespaces = map[string]*Namespace{}
+	c.ReplicaSets = map[string]*ReplicaSet{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -112,11 +109,46 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	err = c.informer.SetTransform(
+		func(object interface{}) (interface{}, error) {
+			originalPod, success := object.(*api_v1.Pod)
+			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+				return object, nil
+			}
+
+			return removeUnnecessaryPodData(originalPod, c.Rules), nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	if c.extractNamespaceLabelsAnnotations() {
 		c.namespaceInformer = newNamespaceInformer(c.kc)
 	} else {
 		c.namespaceInformer = NewNoOpInformer(c.kc)
 	}
+
+	if rules.DeploymentName || rules.DeploymentUID {
+		if newReplicaSetInformer == nil {
+			newReplicaSetInformer = newReplicaSetSharedInformer
+		}
+		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		err = c.replicasetInformer.SetTransform(
+			func(object interface{}) (interface{}, error) {
+				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+
+				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return c, err
 }
 
@@ -141,6 +173,18 @@ func (c *WatchClient) Start() {
 		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
 	}
 	go c.namespaceInformer.Run(c.stopCh)
+
+	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
+		_, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleReplicaSetAdd,
+			UpdateFunc: c.handleReplicaSetUpdate,
+			DeleteFunc: c.handleReplicaSetDelete,
+		})
+		if err != nil {
+			c.logger.Error("error adding event handler to replicaset informer", zap.Error(err))
+		}
+		go c.replicasetInformer.Run(c.stopCh)
+	}
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
@@ -159,7 +203,7 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handlePodUpdate(old, new interface{}) {
+func (c *WatchClient) handlePodUpdate(_, new interface{}) {
 	observability.RecordPodUpdated()
 	if pod, ok := new.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
@@ -191,7 +235,7 @@ func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleNamespaceUpdate(old, new interface{}) {
+func (c *WatchClient) handleNamespaceUpdate(_, new interface{}) {
 	observability.RecordNamespaceUpdated()
 	if namespace, ok := new.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
@@ -312,7 +356,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		c.Rules.DaemonSetUID || c.Rules.DaemonSetName ||
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
-		c.Rules.Deployment || c.Rules.CronJobName {
+		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
+		c.Rules.CronJobName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -322,11 +367,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.ReplicaSetName {
 					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
-				if c.Rules.Deployment {
-					// format: [deployment-name]-[Random-String-For-ReplicaSet]
-					parts := c.replicasetRegex.FindStringSubmatch(ref.Name)
-					if len(parts) == 2 {
-						tags[conventions.AttributeK8SDeploymentName] = parts[1]
+				if c.Rules.DeploymentName {
+					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+						if replicaset.Deployment.Name != "" {
+							tags[conventions.AttributeK8SDeploymentName] = replicaset.Deployment.Name
+						}
+					}
+				}
+				if c.Rules.DeploymentUID {
+					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+						if replicaset.Deployment.Name != "" {
+							tags[conventions.AttributeK8SDeploymentUID] = replicaset.Deployment.UID
+						}
 					}
 				}
 			case "DaemonSet":
@@ -372,6 +424,100 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
 	return tags
+}
+
+// This function removes all data from the Pod except what is required by extraction rules and pod association
+func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Pod {
+
+	// name, namespace, uid, start time and ip are needed for identifying Pods
+	// there's room to optimize this further, it's kept this way for simplicity
+	transformedPod := api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      pod.GetName(),
+			Namespace: pod.GetNamespace(),
+			UID:       pod.GetUID(),
+		},
+		Status: api_v1.PodStatus{
+			PodIP:     pod.Status.PodIP,
+			StartTime: pod.Status.StartTime,
+		},
+		Spec: api_v1.PodSpec{
+			HostNetwork: pod.Spec.HostNetwork,
+		},
+	}
+
+	if rules.StartTime {
+		transformedPod.SetCreationTimestamp(pod.GetCreationTimestamp())
+	}
+
+	if rules.PodUID {
+		transformedPod.SetUID(pod.GetUID())
+	}
+
+	if rules.Node {
+		transformedPod.Spec.NodeName = pod.Spec.NodeName
+	}
+
+	if rules.PodHostName {
+		transformedPod.Spec.Hostname = pod.Spec.Hostname
+	}
+
+	if needContainerAttributes(rules) {
+		for _, containerStatus := range pod.Status.ContainerStatuses {
+			transformedPod.Status.ContainerStatuses = append(
+				transformedPod.Status.ContainerStatuses,
+				api_v1.ContainerStatus{
+					Name:         containerStatus.Name,
+					ContainerID:  containerStatus.ContainerID,
+					RestartCount: containerStatus.RestartCount,
+				},
+			)
+		}
+		for _, containerStatus := range pod.Status.InitContainerStatuses {
+			transformedPod.Status.InitContainerStatuses = append(
+				transformedPod.Status.InitContainerStatuses,
+				api_v1.ContainerStatus{
+					Name:         containerStatus.Name,
+					ContainerID:  containerStatus.ContainerID,
+					RestartCount: containerStatus.RestartCount,
+				},
+			)
+		}
+
+		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
+			transformedContainer := api_v1.Container{}
+			transformedContainer.Name = c.Name // we always need the name, it's used for identification
+			if rules.ContainerImageName || rules.ContainerImageTag {
+				transformedContainer.Image = c.Image
+			}
+			return transformedContainer
+		}
+
+		for _, container := range pod.Spec.Containers {
+			transformedPod.Spec.Containers = append(
+				transformedPod.Spec.Containers, removeUnnecessaryContainerData(container),
+			)
+		}
+		for _, container := range pod.Spec.InitContainers {
+			transformedPod.Spec.InitContainers = append(
+				transformedPod.Spec.InitContainers, removeUnnecessaryContainerData(container),
+			)
+		}
+	}
+
+	if len(rules.Labels) > 0 {
+		transformedPod.Labels = pod.Labels
+	}
+
+	if len(rules.Annotations) > 0 {
+		transformedPod.Annotations = pod.Annotations
+	}
+
+	if rules.IncludesOwnerMetadata() {
+		transformedPod.SetOwnerReferences(pod.GetOwnerReferences())
+	}
+
+	return &transformedPod
 }
 
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
@@ -660,4 +806,81 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
 		rules.ContainerID
+}
+
+func (c *WatchClient) handleReplicaSetAdd(obj interface{}) {
+	observability.RecordReplicaSetAdded()
+	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
+		c.addOrUpdateReplicaSet(replicaset)
+	} else {
+		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleReplicaSetUpdate(_, new interface{}) {
+	observability.RecordReplicaSetUpdated()
+	if replicaset, ok := new.(*apps_v1.ReplicaSet); ok {
+		c.addOrUpdateReplicaSet(replicaset)
+	} else {
+		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", new))
+	}
+}
+
+func (c *WatchClient) handleReplicaSetDelete(obj interface{}) {
+	observability.RecordReplicaSetDeleted()
+	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
+		c.m.Lock()
+		key := string(replicaset.UID)
+		delete(c.ReplicaSets, key)
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
+	newReplicaSet := &ReplicaSet{
+		Name:      replicaset.Name,
+		Namespace: replicaset.Namespace,
+		UID:       string(replicaset.UID),
+	}
+
+	for _, ownerReference := range replicaset.OwnerReferences {
+		if ownerReference.Kind == "Deployment" && ownerReference.Controller != nil && *ownerReference.Controller {
+			newReplicaSet.Deployment = Deployment{
+				Name: ownerReference.Name,
+				UID:  string(ownerReference.UID),
+			}
+			break
+		}
+	}
+
+	c.m.Lock()
+	if replicaset.UID != "" {
+		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
+	}
+	c.m.Unlock()
+}
+
+// This function removes all data from the ReplicaSet except what is required by extraction rules
+func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
+	transformedReplicaset := apps_v1.ReplicaSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      replicaset.GetName(),
+			Namespace: replicaset.GetNamespace(),
+			UID:       replicaset.GetUID(),
+		},
+	}
+	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
+	return &transformedReplicaset
+}
+
+func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
+	c.m.RLock()
+	replicaset, ok := c.ReplicaSets[uid]
+	c.m.RUnlock()
+	if ok {
+		return replicaset, ok
+	}
+	return nil, false
 }

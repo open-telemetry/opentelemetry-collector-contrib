@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
 //go:build !windows
@@ -36,17 +25,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
 )
 
 func TestDefaultProcessors(t *testing.T) {
+	t.Parallel()
+
 	allFactories, err := components()
 	require.NoError(t, err)
 
 	procFactories := allFactories.Processors
 
 	tests := []struct {
-		processor     component.Type
 		getConfigFn   getProcessorConfigFn
+		processor     component.Type
 		skipLifecycle bool
 	}{
 		{
@@ -145,6 +137,14 @@ func TestDefaultProcessors(t *testing.T) {
 		{
 			processor: "redaction",
 		},
+		{
+			processor: "websocket",
+			getConfigFn: func() component.Config {
+				cfg := procFactories["websocket"].CreateDefaultConfig().(*websocketprocessor.Config)
+				cfg.Endpoint = "localhost:0"
+				return cfg
+			},
+		},
 	}
 
 	processorCount := 0
@@ -159,17 +159,24 @@ func TestDefaultProcessors(t *testing.T) {
 			continue
 		}
 		delete(expectedProcessors, tt.processor)
+
+		tt := tt
 		processorCount++
 		t.Run(string(tt.processor), func(t *testing.T) {
+			t.Parallel()
+
 			factory := procFactories[tt.processor]
 			assert.Equal(t, tt.processor, factory.Type())
 
-			verifyProcessorShutdown(t, factory, tt.getConfigFn)
-
-			if !tt.skipLifecycle {
+			t.Run("shutdown", func(t *testing.T) {
+				verifyProcessorShutdown(t, factory, tt.getConfigFn)
+			})
+			t.Run("lifecycle", func(t *testing.T) {
+				if tt.skipLifecycle {
+					t.SkipNow()
+				}
 				verifyProcessorLifecycle(t, factory, tt.getConfigFn)
-			}
-
+			})
 		})
 	}
 	assert.Len(t, procFactories, processorCount, "All processors must be added to lifecycle tests", expectedProcessors)

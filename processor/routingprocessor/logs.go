@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
@@ -23,12 +12,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 var _ processor.Logs = (*logProcessor)(nil)
@@ -39,12 +31,26 @@ type logProcessor struct {
 
 	extractor extractor
 	router    router[exporter.Logs, ottllog.TransformContext]
+
+	nonRoutedLogRecordsCounter metric.Int64Counter
 }
 
-func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
+func newLogProcessor(settings component.TelemetrySettings, config component.Config) (*logProcessor, error) {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
-	logParser, _ := ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings)
+	logParser, err := ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings)
+	if err != nil {
+		return nil, err
+	}
+
+	meter := settings.MeterProvider.Meter(scopeName + nameSep + "logs")
+	nonRoutedLogRecordsCounter, err := meter.Int64Counter(
+		metadata.Type+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
+		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &logProcessor{
 		logger: settings.Logger,
@@ -55,12 +61,13 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 			settings,
 			logParser,
 		),
-		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
-	}
+		extractor:                  newExtractor(cfg.FromAttribute, settings.Logger),
+		nonRoutedLogRecordsCounter: nonRoutedLogRecordsCounter,
+	}, nil
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs]) //nolint:staticcheck
 	if err != nil {
 		return err
 	}
@@ -111,6 +118,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 					return err
 				}
 				p.group("", groups, p.router.defaultExporters, rlogs)
+				p.recordNonRoutedResourceLogs(ctx, key, rlogs)
 				continue
 			}
 			if !isMatch {
@@ -123,6 +131,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 		if matchCount == 0 {
 			// no route conditions are matched, add resource logs to default exporters group
 			p.group("", groups, p.router.defaultExporters, rlogs)
+			p.recordNonRoutedResourceLogs(ctx, "", rlogs)
 		}
 	}
 	for _, g := range groups {
@@ -148,9 +157,34 @@ func (p *logProcessor) group(
 	groups[key] = group
 }
 
+func (p *logProcessor) recordNonRoutedResourceLogs(ctx context.Context, routingKey string, rlogs plog.ResourceLogs) {
+	logRecordsCount := 0
+	sl := rlogs.ScopeLogs()
+	for j := 0; j < sl.Len(); j++ {
+		logRecordsCount += sl.At(j).LogRecords().Len()
+	}
+
+	p.nonRoutedLogRecordsCounter.Add(
+		ctx,
+		int64(logRecordsCount),
+		metric.WithAttributes(
+			attribute.String("routing_key", routingKey),
+		),
+	)
+}
+
 func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
+	if value == "" { // "" is a  key for default exporters
+		p.nonRoutedLogRecordsCounter.Add(
+			ctx,
+			int64(l.LogRecordCount()),
+			metric.WithAttributes(
+				attribute.String("routing_key", p.extractor.fromAttr),
+			),
+		)
+	}
 
 	var errs error
 	for _, e := range exporters {

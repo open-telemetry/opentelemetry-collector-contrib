@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -41,23 +30,31 @@ func Test_replaceMatch(t *testing.T) {
 		name        string
 		target      ottl.GetSetter[pcommon.Value]
 		pattern     string
-		replacement string
+		replacement ottl.StringGetter[pcommon.Value]
 		want        func(pcommon.Value)
 	}{
 		{
-			name:        "replace match",
-			target:      target,
-			pattern:     "hello*",
-			replacement: "hello {universe}",
+			name:    "replace match",
+			target:  target,
+			pattern: "hello*",
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "hello {universe}", nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello {universe}")
 			},
 		},
 		{
-			name:        "no match",
-			target:      target,
-			pattern:     "goodbye*",
-			replacement: "goodbye {universe}",
+			name:    "no match",
+			target:  target,
+			pattern: "goodbye*",
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "goodbye {universe}", nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello world")
 			},
@@ -67,7 +64,7 @@ func Test_replaceMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
+			exprFunc, err := replaceMatch(tt.target, tt.pattern, tt.replacement)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, scenarioValue)
 			assert.NoError(t, err)
@@ -92,8 +89,13 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 			return nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{replacement}", nil
+		},
+	}
 
-	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{replacement}")
+	exprFunc, err := replaceMatch[interface{}](target, "*", replacement)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -113,8 +115,13 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 			return nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{anything}", nil
+		},
+	}
 
-	exprFunc, err := ReplaceMatch[interface{}](target, "*", "{anything}")
+	exprFunc, err := replaceMatch[interface{}](target, "*", replacement)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)

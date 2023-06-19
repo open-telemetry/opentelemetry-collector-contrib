@@ -2,7 +2,7 @@ type: filter
 
 status:
   class: processor
-  stability: alpha
-  pipelines: [traces, metrics, logs]
-  distributions: [core,contrib]
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [core,contrib, splunk, observiq, sumo, aws]
   warnings: [Orphaned Telemetry, Other]

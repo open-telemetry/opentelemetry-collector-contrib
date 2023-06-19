@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
@@ -21,6 +10,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
@@ -59,7 +49,7 @@ import (
 // an interface to interact with refactored code from SignalFx Agent which is
 // confined to the collection package.
 type DataCollector struct {
-	logger                   *zap.Logger
+	settings                 receiver.CreateSettings
 	metricsStore             *metricsStore
 	metadataStore            *metadata.Store
 	nodeConditionsToReport   []string
@@ -67,9 +57,9 @@ type DataCollector struct {
 }
 
 // NewDataCollector returns a DataCollector.
-func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
+func NewDataCollector(set receiver.CreateSettings, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
 	return &DataCollector{
-		logger: logger,
+		settings: set,
 		metricsStore: &metricsStore{
 			metricsCache: make(map[types.UID]pmetric.Metrics),
 		},
@@ -86,7 +76,7 @@ func (dc *DataCollector) SetupMetadataStore(gvk schema.GroupVersionKind, store c
 
 func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
 	if err := dc.metricsStore.remove(obj.(runtime.Object)); err != nil {
-		dc.logger.Error(
+		dc.settings.TelemetrySettings.Logger.Error(
 			"failed to remove from metric cache",
 			zap.String("obj", reflect.TypeOf(obj).String()),
 			zap.Error(err),
@@ -96,7 +86,7 @@ func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
 
 func (dc *DataCollector) UpdateMetricsStore(obj interface{}, md pmetric.Metrics) {
 	if err := dc.metricsStore.update(obj.(runtime.Object), md); err != nil {
-		dc.logger.Error(
+		dc.settings.TelemetrySettings.Logger.Error(
 			"failed to update metric cache",
 			zap.String("obj", reflect.TypeOf(obj).String()),
 			zap.Error(err),
@@ -114,23 +104,23 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		md = ocsToMetrics(pod.GetMetrics(o, dc.logger))
+		md = ocsToMetrics(pod.GetMetrics(o, dc.settings.TelemetrySettings.Logger))
 	case *corev1.Node:
-		md = ocsToMetrics(node.GetMetrics(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.logger))
+		md = ocsToMetrics(node.GetMetrics(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.settings.TelemetrySettings.Logger))
 	case *corev1.Namespace:
-		md = ocsToMetrics(namespace.GetMetrics(o))
+		md = namespace.GetMetrics(dc.settings, o)
 	case *corev1.ReplicationController:
 		md = ocsToMetrics(replicationcontroller.GetMetrics(o))
 	case *corev1.ResourceQuota:
-		md = ocsToMetrics(resourcequota.GetMetrics(o))
+		md = resourcequota.GetMetrics(dc.settings, o)
 	case *appsv1.Deployment:
-		md = ocsToMetrics(deployment.GetMetrics(o))
+		md = deployment.GetMetrics(dc.settings, o)
 	case *appsv1.ReplicaSet:
 		md = ocsToMetrics(replicaset.GetMetrics(o))
 	case *appsv1.DaemonSet:
 		md = ocsToMetrics(demonset.GetMetrics(o))
 	case *appsv1.StatefulSet:
-		md = ocsToMetrics(statefulset.GetMetrics(o))
+		md = statefulset.GetMetrics(dc.settings, o)
 	case *batchv1.Job:
 		md = ocsToMetrics(jobs.GetMetrics(o))
 	case *batchv1.CronJob:
@@ -138,9 +128,9 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *batchv1beta1.CronJob:
 		md = ocsToMetrics(cronjob.GetMetricsBeta(o))
 	case *autoscalingv2.HorizontalPodAutoscaler:
-		md = ocsToMetrics(hpa.GetMetrics(o))
+		md = hpa.GetMetrics(dc.settings, o)
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		md = ocsToMetrics(hpa.GetMetricsBeta(o))
+		md = hpa.GetMetricsBeta(dc.settings, o)
 	case *quotav1.ClusterResourceQuota:
 		md = ocsToMetrics(clusterresourcequota.GetMetrics(o))
 	default:
@@ -159,7 +149,7 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[experimentalmetricmet
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		km = pod.GetMetadata(o, dc.metadataStore, dc.logger)
+		km = pod.GetMetadata(o, dc.metadataStore, dc.settings.TelemetrySettings.Logger)
 	case *corev1.Node:
 		km = node.GetMetadata(o)
 	case *corev1.ReplicationController:

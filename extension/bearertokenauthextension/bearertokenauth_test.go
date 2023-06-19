@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package bearertokenauthextension
 
@@ -210,4 +199,55 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	authHeaderValue = resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
+}
+
+func TestBearerServerAuthenticateWithScheme(t *testing.T) {
+	const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // #nosec
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = "Bearer"
+	cfg.BearerToken = token
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	ctx := context.Background()
+	assert.Nil(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	_, err := bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + token}})
+	assert.NoError(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + "1234"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"" + token}})
+	assert.Error(t, err)
+
+	assert.Nil(t, bauth.Shutdown(context.Background()))
+}
+
+func TestBearerServerAuthenticate(t *testing.T) {
+	const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // #nosec
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = ""
+	cfg.BearerToken = token
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	ctx := context.Background()
+	assert.Nil(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	_, err := bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + token}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + "1234"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"invalidtoken"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {token}})
+	assert.NoError(t, err)
+
+	assert.Nil(t, bauth.Shutdown(context.Background()))
 }

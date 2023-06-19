@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet
 
@@ -229,9 +218,9 @@ func TestSetExtraLabels(t *testing.T) {
 			ro, err := tt.metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
 
 			r := pmetric.NewResourceMetrics()
-			ras := metadata.DefaultResourceAttributesSettings()
+			rac := metadata.DefaultResourceAttributesConfig()
 			for _, op := range ro {
-				op(ras, r)
+				op(rac, r)
 			}
 
 			if tt.wantError == "" {
@@ -375,7 +364,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			volName := "volume0"
-			ras := metadata.DefaultResourceAttributesSettings()
+			rac := metadata.DefaultResourceAttributesConfig()
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -399,7 +388,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 
 			rm := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(ras, rm)
+				op(rac, rm)
 			}
 
 			assert.Equal(t, tt.want, rm.Resource().Attributes().AsRaw())

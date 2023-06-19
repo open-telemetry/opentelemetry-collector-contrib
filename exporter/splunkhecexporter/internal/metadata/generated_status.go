@@ -7,6 +7,8 @@ import (
 )
 
 const (
-	Type      = "splunkhecexporter"
-	Stability = component.StabilityLevelBeta
+	Type             = "splunk_hec"
+	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

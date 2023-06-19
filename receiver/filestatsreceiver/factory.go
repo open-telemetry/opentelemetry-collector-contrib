@@ -1,23 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
 import (
 	"context"
-	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -27,24 +14,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "filestats"
-)
-
-// NewFactory creates a new HAProxy receiver factory.
+// NewFactory creates a new filestats receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		newDefaultConfig,
-		receiver.WithMetrics(newReceiver, metadata.Stability))
+		receiver.WithMetrics(newReceiver, metadata.MetricsStability))
 }
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 1 * time.Minute,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -54,6 +35,20 @@ func newReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return nil, errors.New("not implemented yet")
+	fileStatsConfig := cfg.(*Config)
+	metricsBuilder := metadata.NewMetricsBuilder(fileStatsConfig.MetricsBuilderConfig, settings)
 
+	mp := newScraper(metricsBuilder, fileStatsConfig, settings.TelemetrySettings.Logger)
+	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
+	if err != nil {
+		return nil, err
+	}
+	opt := scraperhelper.AddScraper(s)
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&fileStatsConfig.ScraperControllerSettings,
+		settings,
+		consumer,
+		opt,
+	)
 }

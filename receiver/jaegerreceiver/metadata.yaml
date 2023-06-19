@@ -1,0 +1,8 @@
+type: jaeger
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+  distributions: [core, contrib, splunk, observiq, sumo, aws]
+

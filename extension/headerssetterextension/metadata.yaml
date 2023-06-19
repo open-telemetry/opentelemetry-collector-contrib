@@ -1,6 +1,7 @@
-type: headerssetterextension
+type: headers_setter
 
 status:
   class: extension
-  stability: alpha
-  distributions: [contrib]
+  stability:
+    alpha: [extension]
+  distributions: [contrib, sumo]

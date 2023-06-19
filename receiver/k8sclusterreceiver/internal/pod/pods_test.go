@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package pod
 
@@ -18,15 +7,18 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -366,4 +358,134 @@ func podWithOwnerReference(kind string) *corev1.Pod {
 			},
 		}, testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{}),
 	).(*corev1.Pod)
+}
+
+func TestTransform(t *testing.T) {
+	originalPod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "my-pod",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":     "my-app",
+				"version": "v1",
+			},
+			Annotations: map[string]string{
+				"example.com/annotation": "some-value",
+			},
+		},
+		Spec: corev1.PodSpec{
+			RestartPolicy: corev1.RestartPolicyAlways,
+			NodeName:      "node-1",
+			HostNetwork:   true,
+			HostIPC:       true,
+			HostPID:       true,
+			DNSPolicy:     corev1.DNSClusterFirst,
+			TerminationGracePeriodSeconds: func() *int64 {
+				gracePeriodSeconds := int64(30)
+				return &gracePeriodSeconds
+			}(),
+			SecurityContext: &corev1.PodSecurityContext{
+				RunAsUser:  func() *int64 { uid := int64(1000); return &uid }(),
+				RunAsGroup: func() *int64 { gid := int64(2000); return &gid }(),
+				FSGroup:    func() *int64 { gid := int64(3000); return &gid }(),
+			},
+			Containers: []corev1.Container{
+				{
+					Name:            "my-container",
+					Image:           "nginx:latest",
+					ImagePullPolicy: corev1.PullAlways,
+					Ports: []corev1.ContainerPort{
+						{
+							Name:          "http",
+							ContainerPort: 80,
+							Protocol:      corev1.ProtocolTCP,
+						},
+						{
+							Name:          "https",
+							ContainerPort: 443,
+							Protocol:      corev1.ProtocolTCP,
+						},
+					},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "MY_ENV",
+							Value: "my-value",
+						},
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						},
+					},
+				},
+			},
+		},
+		Status: corev1.PodStatus{
+			Phase:     corev1.PodRunning,
+			HostIP:    "192.168.1.100",
+			PodIP:     "10.244.0.5",
+			StartTime: &v1.Time{Time: v1.Now().Add(-5 * time.Minute)},
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name:         "invalid-container",
+					Image:        "redis:latest",
+					RestartCount: 1,
+				},
+				{
+					Name:         "my-container",
+					Image:        "nginx:latest",
+					ContainerID:  "abc12345",
+					RestartCount: 2,
+					Ready:        true,
+					State:        corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}},
+				},
+			},
+		},
+	}
+	wantPod := &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "my-pod",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app":     "my-app",
+				"version": "v1",
+			},
+		},
+		Spec: corev1.PodSpec{
+			NodeName: "node-1",
+			Containers: []corev1.Container{
+				{
+					Name: "my-container",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("500m"),
+							corev1.ResourceMemory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU:    resource.MustParse("1"),
+							corev1.ResourceMemory: resource.MustParse("2Gi"),
+						},
+					},
+				},
+			},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name:         "my-container",
+					Image:        "nginx:latest",
+					ContainerID:  "abc12345",
+					RestartCount: 2,
+					Ready:        true,
+				},
+			},
+		},
+	}
+	assert.Equal(t, wantPod, Transform(originalPod))
 }

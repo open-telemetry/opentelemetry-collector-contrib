@@ -1,7 +1,7 @@
-type: signalfxreceiver
+type: signalfx
 
 status:
   class: receiver
-  stability: beta
-  pipelines: [metrics, logs]
-  distributions: [contrib]
+  stability:
+    beta: [metrics, logs]
+  distributions: [contrib, splunk, sumo]

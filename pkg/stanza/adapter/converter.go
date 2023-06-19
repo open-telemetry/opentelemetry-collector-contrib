@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -85,8 +74,24 @@ type Converter struct {
 	logger *zap.Logger
 }
 
-func NewConverter(logger *zap.Logger) *Converter {
-	return &Converter{
+type converterOption interface {
+	apply(*Converter)
+}
+
+func withWorkerCount(workerCount int) converterOption {
+	return workerCountOption{workerCount}
+}
+
+type workerCountOption struct {
+	workerCount int
+}
+
+func (o workerCountOption) apply(c *Converter) {
+	c.workerCount = o.workerCount
+}
+
+func NewConverter(logger *zap.Logger, opts ...converterOption) *Converter {
+	c := &Converter{
 		workerChan:  make(chan []*entry.Entry),
 		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
 		pLogsChan:   make(chan plog.Logs),
@@ -94,6 +99,10 @@ func NewConverter(logger *zap.Logger) *Converter {
 		flushChan:   make(chan plog.Logs),
 		logger:      logger,
 	}
+	for _, opt := range opts {
+		opt.apply(c)
+	}
+	return c
 }
 
 func (c *Converter) Start() {
@@ -138,41 +147,22 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			// Maps to keep track of resource information to allow rebuilding in plog structures
-			resourceEntriesLookup := make(map[uint64][]*entry.Entry)
-			resourceAttrsLookup := make(map[uint64]map[string]interface{})
+			resourceHashToIdx := make(map[uint64]int)
 
-			// Iterate over the entries and populate the resource lookup maps
+			pLogs := plog.NewLogs()
+			var sl plog.ScopeLogs
 			for _, e := range entries {
 				resourceID := HashResource(e.Resource)
-				resourceEntries, ok := resourceEntriesLookup[resourceID]
+				resourceIdx, ok := resourceHashToIdx[resourceID]
 				if !ok {
-					resourceEntries = make([]*entry.Entry, 0)
-					resourceAttrsLookup[resourceID] = e.Resource
+					resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
+					rl := pLogs.ResourceLogs().AppendEmpty()
+					upsertToMap(e.Resource, rl.Resource().Attributes())
+					sl = rl.ScopeLogs().AppendEmpty()
+				} else {
+					sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(0)
 				}
-
-				resourceEntriesLookup[resourceID] = append(resourceEntries, e)
-			}
-
-			// Using the resource lookup maps, build the plog.Logs structure and convert entries into plogs
-			pLogs := plog.NewLogs()
-			for resourceID, resourceEntries := range resourceEntriesLookup {
-				logs := pLogs.ResourceLogs()
-				rls := logs.AppendEmpty()
-				resource := rls.Resource()
-
-				// Create the resource from the attributes
-				resourceAttrs := resourceAttrsLookup[resourceID]
-				upsertToMap(resourceAttrs, resource.Attributes())
-
-				ills := rls.ScopeLogs()
-				sls := ills.AppendEmpty()
-
-				// Convert standard entries into plogs for the resource
-				for _, e := range resourceEntries {
-					lr := sls.LogRecords().AppendEmpty()
-					convertInto(e, lr)
-				}
+				convertInto(e, sl.LogRecords().AppendEmpty())
 			}
 
 			// Send plogs directly to flushChan

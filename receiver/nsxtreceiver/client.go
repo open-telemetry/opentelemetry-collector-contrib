@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 
@@ -106,17 +95,15 @@ func (c *nsxClient) NodeStatus(ctx context.Context, nodeID string, class nodeCla
 		return nil, fmt.Errorf("unable to get a node's status from the REST API: %w", err)
 	}
 
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		var nodeStatus dm.TransportNodeStatus
 		err = json.Unmarshal(body, &nodeStatus)
 		return &nodeStatus.NodeStatus, err
-	default:
-		var nodeStatus dm.NodeStatus
-		err = json.Unmarshal(body, &nodeStatus)
-		return &nodeStatus, err
 	}
 
+	var nodeStatus dm.NodeStatus
+	err = json.Unmarshal(body, &nodeStatus)
+	return &nodeStatus, err
 }
 
 func (c *nsxClient) Interfaces(
@@ -192,28 +179,22 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 }
 
 func (c *nsxClient) nodeStatusEndpoint(class nodeClass, nodeID string) string {
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/status", nodeID)
-	default:
-		return fmt.Sprintf("/api/v1/cluster/nodes/%s/status", nodeID)
 	}
+	return fmt.Sprintf("/api/v1/cluster/nodes/%s/status", nodeID)
 }
 
 func (c *nsxClient) interfacesEndpoint(class nodeClass, nodeID string) string {
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces", nodeID)
-	default:
-		return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", nodeID)
 	}
+	return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", nodeID)
 }
 
 func (c *nsxClient) interfaceStatusEndpoint(class nodeClass, nodeID, interfaceID string) string {
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
-	default:
-		return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
 	}
+	return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
 }

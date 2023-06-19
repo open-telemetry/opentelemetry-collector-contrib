@@ -1,0 +1,7 @@
+type: carbon
+
+status:
+  class: exporter
+  stability:
+    unmaintained: [metrics]
+  distributions: [contrib, observiq, sumo]

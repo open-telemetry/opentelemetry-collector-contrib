@@ -8,5 +8,9 @@ import (
 
 const (
 	Type = "{{ .Type }}"
-	Stability = component.StabilityLevel{{ casesTitle .Status.Stability }}
+	{{- range $stability, $signals := .Status.Stability }}
+	{{- range $signal := $signals }}
+	{{ toCamelCase $signal }}Stability = component.StabilityLevel{{ casesTitle $stability }}
+	{{- end }}
+	{{- end }}
 )

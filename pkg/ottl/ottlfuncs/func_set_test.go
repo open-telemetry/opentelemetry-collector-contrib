@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -69,8 +58,7 @@ func Test_set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := Set(tt.setter, tt.getter)
-			assert.NoError(t, err)
+			exprFunc := set(tt.setter, tt.getter)
 
 			result, err := exprFunc(nil, scenarioValue)
 			assert.NoError(t, err)
@@ -98,8 +86,7 @@ func Test_set_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := Set[interface{}](setter, getter)
-	assert.NoError(t, err)
+	exprFunc := set[interface{}](setter, getter)
 
 	result, err := exprFunc(nil, nil)
 	assert.NoError(t, err)

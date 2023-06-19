@@ -1,22 +1,7 @@
-// Copyright 2022 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
-
-import (
-	"go.uber.org/zap"
-)
 
 // S3UploaderConfig contains aws s3 uploader related config to controls things
 // like bucket, prefix, batching, connections, retries, etc.
@@ -28,15 +13,16 @@ type S3UploaderConfig struct {
 	FilePrefix  string `mapstructure:"file_prefix"`
 }
 
-// Config contains the main configuration options for the awskinesis exporter
+type MarshalerType string
+
+const (
+	OtlpJSON MarshalerType = "otlp_json"
+)
+
+// Config contains the main configuration options for the s3 exporter
 type Config struct {
 	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
-	MarshalerName string           `mapstructure:"marshaler_name"`
+	MarshalerName MarshalerType    `mapstructure:"marshaler"`
 
-	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
-	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
-	// If enabled, all the resource attributes will be converted to metric labels by default.
-	// exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
-
-	logger *zap.Logger
+	FileFormat string `mapstructure:"file_format"`
 }

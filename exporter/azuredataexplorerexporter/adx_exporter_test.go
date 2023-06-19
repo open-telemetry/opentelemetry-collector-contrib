@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -163,8 +152,9 @@ func TestIngestedDataRecordCount(t *testing.T) {
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	rand.Seed(time.Now().UTC().UnixNano())
-	recordstoingest := rand.Intn(20)
+	source := rand.NewSource(time.Now().UTC().UnixNano())
+	genRand := rand.New(source)
+	recordstoingest := genRand.Intn(20)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
 	assert.Equal(t, recordstoingest, len(ingestedrecordsactual), "Number of metrics created should match number of records ingested")
@@ -175,14 +165,14 @@ type mockingestor struct {
 	records []string
 }
 
-func (m *mockingestor) FromReader(ctx context.Context, reader io.Reader, options ...ingest.FileOption) (*ingest.Result, error) {
+func (m *mockingestor) FromReader(_ context.Context, reader io.Reader, _ ...ingest.FileOption) (*ingest.Result, error) {
 	bufbytes, _ := io.ReadAll(reader)
 	metricjson := string(bufbytes)
 	m.SetRecords(strings.Split(metricjson, "\n"))
 	return &ingest.Result{}, nil
 }
 
-func (m *mockingestor) FromFile(ctx context.Context, fPath string, options ...ingest.FileOption) (*ingest.Result, error) {
+func (m *mockingestor) FromFile(_ context.Context, _ string, _ ...ingest.FileOption) (*ingest.Result, error) {
 	return &ingest.Result{}, nil
 }
 

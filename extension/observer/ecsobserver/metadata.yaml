@@ -1,6 +1,7 @@
-type: ecsobserver
+type: ecs_observer
 
 status:
   class: extension
-  stability: beta
-  distributions: [contrib]
+  stability:
+    beta: [extension]
+  distributions: [contrib, aws, splunk, sumo]

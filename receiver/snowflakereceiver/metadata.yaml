@@ -1,4 +1,11 @@
-type: snowflakereceiver
+type: snowflake
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+
 
 # every meter will have these attributes
 resource_attributes:

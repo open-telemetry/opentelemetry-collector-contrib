@@ -110,6 +110,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
@@ -145,6 +146,7 @@ and the rest of contributors.
 - Add the sponsor for your component and yourself to a new line for your component in the
   [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
 - Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml) and use the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
 
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
@@ -270,7 +272,7 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
 | `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
 | `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
-| `needs discussion`   | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
+| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
 | `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work.                                            |
 | `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                            |
 | `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
@@ -292,7 +294,7 @@ The following general labels are supported:
 |----------------------|----------------------|
 | `good first issue`   | `good-first-issue`   |
 | `help wanted`        | `help-wanted`        |
-| `needs discussion`   | `needs-discussion`   |
+| `discussion needed`  | `discussion-needed`  |
 | `needs triage`       | `needs-triage`       |
 | `waiting for author` | `waiting-for-author` |
 

@@ -1,6 +1,7 @@
-type: dockerobserver
+type: docker_observer
 
 status:
   class: extension
-  stability: beta
-  distributions: [contrib]
+  stability:
+    beta: [extension]
+  distributions: [contrib, splunk, sumo]

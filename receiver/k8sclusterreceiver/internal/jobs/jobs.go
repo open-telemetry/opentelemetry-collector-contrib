@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package jobs // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 
@@ -60,6 +49,23 @@ var podsSuccessfulMetric = &metricspb.MetricDescriptor{
 	Description: "The number of pods which reached phase Succeeded for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+// Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new job fields.
+func Transform(job *batchv1.Job) *batchv1.Job {
+	return &batchv1.Job{
+		ObjectMeta: metadata.TransformObjectMeta(job.ObjectMeta),
+		Spec: batchv1.JobSpec{
+			Completions: job.Spec.Completions,
+			Parallelism: job.Spec.Parallelism,
+		},
+		Status: batchv1.JobStatus{
+			Active:    job.Status.Active,
+			Succeeded: job.Status.Succeeded,
+			Failed:    job.Status.Failed,
+		},
+	}
 }
 
 func GetMetrics(j *batchv1.Job) []*agentmetricspb.ExportMetricsServiceRequest {

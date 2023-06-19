@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -117,7 +106,7 @@ type HistogramConfig struct {
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
 	// The default is false.
-	// Deprecated: [v0.75.0] Use `send_aggregations` (HistogramConfig.SendAggregations) instead.
+	// Deprecated: [v0.75.0] Use `send_aggregation_metrics` (HistogramConfig.SendAggregations) instead.
 	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
 
 	// SendAggregations states if the exporter should send .sum, .count, .min and .max metrics for histograms.
@@ -244,6 +233,17 @@ type TracesConfig struct {
 	// If set to false the resource name will be filled with the instrumentation library name + span kind.
 	// The default value is `false`.
 	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
+
+	// If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
+	// If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
+	// NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+	ComputeStatsBySpanKind bool `mapstructure:"compute_stats_by_span_kind"`
+
+	// If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
+	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
+	// If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
 
 	// flushInterval defines the interval in seconds at which the writer flushes traces
 	// to the intake; used in tests.

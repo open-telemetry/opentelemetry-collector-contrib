@@ -15,7 +15,6 @@ all_set:
       enabled: true
     ntp.time.root_delay:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     ntp.frequency.offset:
@@ -32,4 +31,3 @@ none_set:
       enabled: false
     ntp.time.root_delay:
       enabled: false
-  resource_attributes:

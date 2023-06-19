@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package node // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 
@@ -43,6 +32,24 @@ var allocatableDesciption = map[string]string{
 	"memory":            "How many bytes of RAM memory remaining that the node can allocate to pods",
 	"ephemeral-storage": "How many bytes of ephemeral storage remaining that the node can allocate to pods",
 	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
+}
+
+// Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new node fields.
+func Transform(node *corev1.Node) *corev1.Node {
+	newNode := &corev1.Node{
+		ObjectMeta: metadata.TransformObjectMeta(node.ObjectMeta),
+		Status: corev1.NodeStatus{
+			Allocatable: node.Status.Allocatable,
+		},
+	}
+	for _, c := range node.Status.Conditions {
+		newNode.Status.Conditions = append(newNode.Status.Conditions, corev1.NodeCondition{
+			Type:   c.Type,
+			Status: c.Status,
+		})
+	}
+	return newNode
 }
 
 func GetMetrics(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*agentmetricspb.ExportMetricsServiceRequest {

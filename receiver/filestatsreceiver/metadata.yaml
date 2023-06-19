@@ -1,10 +1,10 @@
-type: filestatsreceiver
+type: filestats
 
 status:
   class: receiver
-  stability: development
-  pipelines: [metrics]
-  distributions: [contrib]
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
 
 
 resource_attributes:

@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
@@ -24,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 const (
@@ -57,21 +47,81 @@ func withPassthrough() option {
 	}
 }
 
+// enabledAttributes returns the list of resource attributes enabled by default.
+func enabledAttributes() (attributes []string) {
+	defaultConfig := metadata.DefaultResourceAttributesConfig()
+	if defaultConfig.ContainerID.Enabled {
+		attributes = append(attributes, conventions.AttributeContainerID)
+	}
+	if defaultConfig.ContainerImageName.Enabled {
+		attributes = append(attributes, conventions.AttributeContainerImageName)
+	}
+	if defaultConfig.ContainerImageTag.Enabled {
+		attributes = append(attributes, conventions.AttributeContainerImageTag)
+	}
+	if defaultConfig.K8sContainerName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SContainerName)
+	}
+	if defaultConfig.K8sCronjobName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SCronJobName)
+	}
+	if defaultConfig.K8sDaemonsetName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDaemonSetName)
+	}
+	if defaultConfig.K8sDaemonsetUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDaemonSetUID)
+	}
+	if defaultConfig.K8sDeploymentName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDeploymentName)
+	}
+	if defaultConfig.K8sDeploymentUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDeploymentUID)
+	}
+	if defaultConfig.K8sJobName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SJobName)
+	}
+	if defaultConfig.K8sJobUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SJobUID)
+	}
+	if defaultConfig.K8sNamespaceName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SNamespaceName)
+	}
+	if defaultConfig.K8sNodeName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SNodeName)
+	}
+	if defaultConfig.K8sPodHostname.Enabled {
+		attributes = append(attributes, specPodHostName)
+	}
+	if defaultConfig.K8sPodName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SPodName)
+	}
+	if defaultConfig.K8sPodStartTime.Enabled {
+		attributes = append(attributes, metadataPodStartTime)
+	}
+	if defaultConfig.K8sPodUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SPodUID)
+	}
+	if defaultConfig.K8sReplicasetName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SReplicaSetName)
+	}
+	if defaultConfig.K8sReplicasetUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SReplicaSetUID)
+	}
+	if defaultConfig.K8sStatefulsetName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SStatefulSetName)
+	}
+	if defaultConfig.K8sStatefulsetUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SStatefulSetUID)
+	}
+	return
+}
+
 // withExtractMetadata allows specifying options to control extraction of pod metadata.
-// If no fields explicitly provided, all metadata extracted by default.
+// If no fields explicitly provided, the defaults are pulled from metadata.yaml.
 func withExtractMetadata(fields ...string) option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
-			fields = []string{
-				conventions.AttributeK8SNamespaceName,
-				conventions.AttributeK8SPodName,
-				conventions.AttributeK8SPodUID,
-				metadataPodStartTime,
-				conventions.AttributeK8SDeploymentName,
-				conventions.AttributeK8SNodeName,
-				conventions.AttributeContainerImageName,
-				conventions.AttributeContainerImageTag,
-			}
+			fields = enabledAttributes()
 		}
 		for _, field := range fields {
 			switch field {
@@ -86,7 +136,9 @@ func withExtractMetadata(fields ...string) option {
 			case metadataPodStartTime:
 				p.rules.StartTime = true
 			case conventions.AttributeK8SDeploymentName:
-				p.rules.Deployment = true
+				p.rules.DeploymentName = true
+			case conventions.AttributeK8SDeploymentUID:
+				p.rules.DeploymentUID = true
 			case conventions.AttributeK8SReplicaSetName:
 				p.rules.ReplicaSetName = true
 			case conventions.AttributeK8SReplicaSetUID:
