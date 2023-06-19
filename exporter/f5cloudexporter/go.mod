@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.79.1-0.20230609201858-ed8547a8e5d6
 	go.opentelemetry.io/collector/exporter v0.79.1-0.20230609201858-ed8547a8e5d6
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.79.1-0.20230609201858-ed8547a8e5d6
-	golang.org/x/oauth2 v0.8.0
+	golang.org/x/oauth2 v0.9.0
 	google.golang.org/api v0.127.0
 )
 
@@ -53,8 +53,8 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
