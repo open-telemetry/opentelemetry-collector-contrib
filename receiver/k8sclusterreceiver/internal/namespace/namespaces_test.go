@@ -36,9 +36,8 @@ func TestNamespaceMetrics(t *testing.T) {
 func newNamespace(id string) *corev1.Namespace {
 	return &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-namespace-" + id,
-			Namespace: "test-namespace",
-			UID:       types.UID("test-namespace-" + id + "-uid"),
+			Name: "test-namespace-" + id,
+			UID:  types.UID("test-namespace-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",
