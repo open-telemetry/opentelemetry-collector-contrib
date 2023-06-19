@@ -20,8 +20,8 @@ require (
 	go.opentelemetry.io/collector/semconv v0.79.1-0.20230609201858-ed8547a8e5d6
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	k8s.io/api v0.27.2
-	k8s.io/apimachinery v0.27.2
+	k8s.io/api v0.27.3
+	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v0.27.2
 )
 
