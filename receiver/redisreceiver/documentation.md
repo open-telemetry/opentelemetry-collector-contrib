@@ -178,7 +178,7 @@ Ratio between used_memory_rss and used_memory
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {ratio} | Gauge | Double |
+|  | Gauge | Double |
 
 ### redis.memory.lua
 

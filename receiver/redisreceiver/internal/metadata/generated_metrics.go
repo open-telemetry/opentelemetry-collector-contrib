@@ -1105,7 +1105,7 @@ type metricRedisMemoryFragmentationRatio struct {
 func (m *metricRedisMemoryFragmentationRatio) init() {
 	m.data.SetName("redis.memory.fragmentation_ratio")
 	m.data.SetDescription("Ratio between used_memory_rss and used_memory")
-	m.data.SetUnit("{ratio}")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
