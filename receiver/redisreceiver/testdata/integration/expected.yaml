@@ -12,36 +12,38 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
+            unit: '{clients}'
           - description: Number of client connections (excluding connections from replicas)
             name: redis.clients.connected
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
+            unit: '{clients}'
           - description: Biggest input buffer among current client connections
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.clients.max_input_buffer
           - description: Longest output list among current client connections
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.clients.max_output_buffer
           - description: Number of commands processed per second
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.commands
             unit: '{ops}/s'
           - description: Total number of commands processed by the server
@@ -50,60 +52,63 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
+            unit: '{commands}'
           - description: Total number of connections accepted by the server
             name: redis.connections.received
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
+            unit: '{connections}'
           - description: Number of connections rejected because of maxclients limit
             name: redis.connections.rejected
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
+            unit: '{connections}'
           - description: System CPU consumed by the Redis server in seconds since server start
             name: redis.cpu.time
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 0.028353
+                - asDouble: 0.048068
                   attributes:
                     - key: state
                       value:
                         stringValue: sys
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
-                - asDouble: 0.003908
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
+                - asDouble: 0.002637
                   attributes:
                     - key: state
                       value:
                         stringValue: sys_children
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
-                - asDouble: 0.02064
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
+                - asDouble: 0.037081
                   attributes:
                     - key: state
                       value:
                         stringValue: user
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
-                - asDouble: 0
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
+                - asDouble: 0.002038
                   attributes:
                     - key: state
                       value:
                         stringValue: user_children
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
             unit: s
           - description: Number of evicted keys due to maxmemory limit
@@ -112,81 +117,86 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
+            unit: '{keys}'
           - description: Total number of key expiration events
             name: redis.keys.expired
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
+            unit: '{events}'
           - description: Number of successful lookup of keys in the main dictionary
             name: redis.keyspace.hits
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
+            unit: '{hits}'
           - description: Number of failed lookup of keys in the main dictionary
             name: redis.keyspace.misses
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
+            unit: '{misses}'
           - description: Duration of the latest fork operation in microseconds
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.latest_fork
             unit: us
           - description: Ratio between used_memory_rss and used_memory
             gauge:
               dataPoints:
-                - asDouble: 8.36
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                - asDouble: 9.8
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.memory.fragmentation_ratio
+            unit: "1"
           - description: Number of bytes used by the Lua engine
             gauge:
               dataPoints:
                 - asInt: "37888"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.memory.lua
             unit: By
           - description: Peak memory consumed by Redis (in bytes)
             gauge:
               dataPoints:
-                - asInt: "899120"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                - asInt: "865328"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.memory.peak
             unit: By
           - description: Number of bytes that Redis allocated as seen by the operating system
             gauge:
               dataPoints:
-                - asInt: "6987776"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                - asInt: "7860224"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.memory.rss
             unit: By
           - description: Total number of bytes allocated by Redis using its allocator
             gauge:
               dataPoints:
-                - asInt: "899120"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                - asInt: "865328"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.memory.used
             unit: By
           - description: The total number of bytes read from the network
@@ -195,8 +205,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "23"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
             unit: By
           - description: The total number of bytes written to the network
@@ -205,8 +215,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
             unit: By
           - description: Number of changes since the last dump
@@ -215,21 +225,22 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
+            unit: '{changes}'
           - description: The master offset of the replication backlog buffer
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.replication.backlog_first_byte_offset
           - description: The server's current replication offset
             gauge:
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
             name: redis.replication.offset
           - description: Number of connected replicas
             name: redis.slaves.connected
@@ -237,16 +248,17 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
+            unit: '{replicas}'
           - description: Number of seconds since Redis server start
             name: redis.uptime
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "10"
-                  startTimeUnixNano: "1684788673549655000"
-                  timeUnixNano: "1684788683549655000"
+                - asInt: "1"
+                  startTimeUnixNano: "1687204133525156000"
+                  timeUnixNano: "1687204134525156000"
               isMonotonic: true
             unit: s
         scope:
