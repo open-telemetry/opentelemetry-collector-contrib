@@ -201,7 +201,7 @@ metrics:
   redis.memory.fragmentation_ratio:
     enabled: true
     description: Ratio between used_memory_rss and used_memory
-    unit: ""
+    unit: 1
     gauge:
       value_type: double
 
