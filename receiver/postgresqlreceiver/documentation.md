@@ -82,7 +82,7 @@ Number of times the background writer stopped a cleaning scan because it had wri
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {stoppages} | Sum | Int | Cumulative | true |
 
 ### postgresql.blocks_read
 
@@ -226,7 +226,7 @@ Number of user tables in a database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
+| {tables} | Sum | Int | Cumulative | false |
 
 ### postgresql.table.size
 
