@@ -26,7 +26,7 @@ Number of client connections (excluding connections from replicas)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
+| {clients} | Sum | Int | Cumulative | false |
 
 ### redis.clients.max_input_buffer
 
@@ -34,7 +34,7 @@ Biggest input buffer among current client connections
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+|  | Gauge | Int |
 
 ### redis.clients.max_output_buffer
 
@@ -42,7 +42,7 @@ Longest output list among current client connections
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+|  | Gauge | Int |
 
 ### redis.commands
 
@@ -154,7 +154,7 @@ Number of successful lookup of keys in the main dictionary
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {lookups} | Sum | Int | Cumulative | true |
+| {hits} | Sum | Int | Cumulative | true |
 
 ### redis.keyspace.misses
 
@@ -162,7 +162,7 @@ Number of failed lookup of keys in the main dictionary
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {lookups} | Sum | Int | Cumulative | true |
+| {misses} | Sum | Int | Cumulative | true |
 
 ### redis.latest_fork
 
@@ -242,7 +242,7 @@ The master offset of the replication backlog buffer
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+|  | Gauge | Int |
 
 ### redis.replication.offset
 
@@ -250,7 +250,7 @@ The server's current replication offset
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+|  | Gauge | Int |
 
 ### redis.slaves.connected
 
@@ -258,7 +258,7 @@ Number of connected replicas
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
+| {replicas} | Sum | Int | Cumulative | false |
 
 ### redis.uptime
 

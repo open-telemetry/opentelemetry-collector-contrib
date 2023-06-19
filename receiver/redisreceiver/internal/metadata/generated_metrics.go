@@ -140,7 +140,7 @@ type metricRedisClientsConnected struct {
 func (m *metricRedisClientsConnected) init() {
 	m.data.SetName("redis.clients.connected")
 	m.data.SetDescription("Number of client connections (excluding connections from replicas)")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{clients}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -191,7 +191,7 @@ type metricRedisClientsMaxInputBuffer struct {
 func (m *metricRedisClientsMaxInputBuffer) init() {
 	m.data.SetName("redis.clients.max_input_buffer")
 	m.data.SetDescription("Biggest input buffer among current client connections")
-	m.data.SetUnit("By")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -240,7 +240,7 @@ type metricRedisClientsMaxOutputBuffer struct {
 func (m *metricRedisClientsMaxOutputBuffer) init() {
 	m.data.SetName("redis.clients.max_output_buffer")
 	m.data.SetDescription("Longest output list among current client connections")
-	m.data.SetUnit("By")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -905,7 +905,7 @@ type metricRedisKeyspaceHits struct {
 func (m *metricRedisKeyspaceHits) init() {
 	m.data.SetName("redis.keyspace.hits")
 	m.data.SetDescription("Number of successful lookup of keys in the main dictionary")
-	m.data.SetUnit("{lookups}")
+	m.data.SetUnit("{hits}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -956,7 +956,7 @@ type metricRedisKeyspaceMisses struct {
 func (m *metricRedisKeyspaceMisses) init() {
 	m.data.SetName("redis.keyspace.misses")
 	m.data.SetDescription("Number of failed lookup of keys in the main dictionary")
-	m.data.SetUnit("{lookups}")
+	m.data.SetUnit("{misses}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1503,7 +1503,7 @@ type metricRedisReplicationBacklogFirstByteOffset struct {
 func (m *metricRedisReplicationBacklogFirstByteOffset) init() {
 	m.data.SetName("redis.replication.backlog_first_byte_offset")
 	m.data.SetDescription("The master offset of the replication backlog buffer")
-	m.data.SetUnit("By")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1552,7 +1552,7 @@ type metricRedisReplicationOffset struct {
 func (m *metricRedisReplicationOffset) init() {
 	m.data.SetName("redis.replication.offset")
 	m.data.SetDescription("The server's current replication offset")
-	m.data.SetUnit("By")
+	m.data.SetUnit("")
 	m.data.SetEmptyGauge()
 }
 
@@ -1654,7 +1654,7 @@ type metricRedisSlavesConnected struct {
 func (m *metricRedisSlavesConnected) init() {
 	m.data.SetName("redis.slaves.connected")
 	m.data.SetDescription("Number of connected replicas")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{replicas}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
