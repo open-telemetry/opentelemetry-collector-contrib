@@ -36,7 +36,7 @@ jobs:
         run: |
           docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: otelcontribcol
           path: /tmp/otelcontribcol.tar
