@@ -71,7 +71,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
-		maxBatchByteSize: 3000000,
+		MaxBatchByteSize: 3000000,
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:             true,

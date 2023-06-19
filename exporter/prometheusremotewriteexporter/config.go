@@ -32,7 +32,7 @@ type Config struct {
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// maximum size in bytes of time series batch sent to remote storage
-	maxBatchByteSize int `mapstructure:"max_batch_byte_size"`
+	MaxBatchByteSize int `mapstructure:"max_batch_byte_size"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
@@ -100,7 +100,7 @@ func (cfg *Config) Validate() error {
 			Enabled: false,
 		}
 	}
-	if cfg.maxBatchByteSize <= 0 {
+	if cfg.MaxBatchByteSize <= 0 {
 		return fmt.Errorf("max_batch_byte_size must be greater than 0")
 	}
 

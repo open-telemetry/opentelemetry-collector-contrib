@@ -64,7 +64,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		wg:               new(sync.WaitGroup),
 		closeChan:        make(chan struct{}),
 		userAgentHeader:  userAgentHeader,
-		maxBatchByteSize: cfg.maxBatchByteSize,
+		maxBatchByteSize: cfg.MaxBatchByteSize,
 		concurrency:      cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:   &cfg.HTTPClientSettings,
 		settings:         set.TelemetrySettings,
