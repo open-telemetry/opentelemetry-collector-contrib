@@ -6,9 +6,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.80.0
 	github.com/shirou/gopsutil/v3 v3.23.5
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.79.1-0.20230620160303-6059751e64e0
-	go.opentelemetry.io/collector/confmap v0.79.1-0.20230620160303-6059751e64e0
-	go.opentelemetry.io/collector/extension v0.0.0-20230619144035-25129b794d48
+	go.opentelemetry.io/collector/component v0.80.0
+	go.opentelemetry.io/collector/confmap v0.80.0
+	go.opentelemetry.io/collector/extension v0.80.0
 	go.uber.org/zap v1.24.0
 )
 
@@ -29,9 +29,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-20230619134516-d8100bb80fe1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230619144035-25129b794d48 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230619144035-25129b794d48 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.80.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
