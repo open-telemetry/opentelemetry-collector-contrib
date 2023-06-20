@@ -141,6 +141,7 @@ metrics:
     enabled: true
     description: Number of queries tracked by the system.
     extended_documentation: Number of queries which ran more than query untracked_time (default 1 sec), Aerospike metric query_tracked
+    unit: '{queries}'
     sum:
       value_type: int
       input_type: string
