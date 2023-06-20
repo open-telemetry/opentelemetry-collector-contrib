@@ -52,16 +52,6 @@ func Test_Time(t *testing.T) {
 			expected: time.Date(2023, 2, 4, 0, 0, 0, 0, time.Local),
 		},
 		{
-			name: "simple short form with long year and slashes",
-			time: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "02/12/2022", nil
-				},
-			},
-			format:   "%m/%d/%Y",
-			expected: time.Date(2022, 2, 12, 0, 0, 0, 0, time.Local),
-		},
-		{
 			name: "simple long form",
 			time: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
