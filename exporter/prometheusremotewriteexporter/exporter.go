@@ -115,6 +115,34 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 	return err
 }
 
+func (prwe *prwExporter) createMetadata(md pmetric.Metrics) []prompb.MetricMetadata {
+
+	var metadata []prompb.MetricMetadata
+
+	resourceMetricsSlice := md.ResourceMetrics()
+	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+		resourceMetrics := resourceMetricsSlice.At(i)
+		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
+
+		for j := 0; j < scopeMetricsSlice.Len(); j++ {
+			scopeMetrics := scopeMetricsSlice.At(j)
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+
+				entry := prompb.MetricMetadata{
+					Type:             prompb.MetricMetadata_MetricType(scopeMetrics.Metrics().At(k).Type()),
+					MetricFamilyName: scopeMetrics.Metrics().At(k).Name(),
+					Help:             scopeMetrics.Metrics().At(k).Description(),
+					Unit:             scopeMetrics.Metrics().At(k).Unit(),
+				}
+				metadata = append(metadata, entry)
+			}
+		}
+	}
+
+	return metadata
+
+}
+
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
@@ -126,12 +154,15 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
+
+		m := prometheusremotewrite.CreateMetadata(md)
+
 		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			err = consumererror.NewPermanent(err)
 		}
 		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return multierr.Combine(err, prwe.handleExport(ctx, tsMap))
+		return multierr.Combine(err, prwe.handleExport(ctx, tsMap, m))
 	}
 }
 
@@ -147,14 +178,14 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []prompb.MetricMetadata) error {
 	// There are no metrics to export, so return.
 	if len(tsMap) == 0 {
 		return nil
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
+	requests, err := batchTimeSeries(tsMap, m, maxBatchByteSize)
 	if err != nil {
 		return err
 	}
