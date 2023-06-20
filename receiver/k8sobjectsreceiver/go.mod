@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobj
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.80.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.79.1-0.20230620160303-6059751e64e0
 	go.opentelemetry.io/collector/component v0.79.1-0.20230620160303-6059751e64e0

@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/hashicorp/golang-lru v0.6.0
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.79.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.80.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v0.79.1-0.20230620160303-6059751e64e0
