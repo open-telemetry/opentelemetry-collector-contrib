@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	awsSDKV2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
@@ -103,7 +104,12 @@ func TestInfo(t *testing.T) {
 			return nil, nil, errors.New("error")
 		}
 	}
-	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
+	awsConfigOpt := func(m *Info) {
+		m.awsConfigCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*awsSDKV2.Config, error) {
+			return nil, errors.New("error")
+		}
+	}
+	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt, awsConfigOpt)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 
@@ -113,8 +119,13 @@ func TestInfo(t *testing.T) {
 			return &aws.Config{}, &session.Session{}, nil
 		}
 	}
+	awsConfigOpt = func(m *Info) {
+		m.awsConfigCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*awsSDKV2.Config, error) {
+			return &awsSDKV2.Config{}, nil
+		}
+	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, *zap.Logger,
+		m.ec2MetadataCreator = func(context.Context, *awsSDKV2.Config, time.Duration, chan bool, chan bool, bool, *zap.Logger,
 			...ec2MetadataOption) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
@@ -131,7 +142,7 @@ func TestInfo(t *testing.T) {
 			return &mockEC2Tags{}
 		}
 	}
-	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.EKS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
+	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.EKS, time.Minute, zap.NewNop(), awsSessionCreatorOpt, awsConfigOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
@@ -155,7 +166,7 @@ func TestInfo(t *testing.T) {
 	assert.Equal(t, "asg", m.GetAutoScalingGroupName())
 
 	// Test with cluster name override
-	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.EKS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
+	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.EKS, time.Minute, zap.NewNop(), awsSessionCreatorOpt, awsConfigOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt, WithClusterName("override-cluster"))
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
@@ -185,7 +196,12 @@ func TestInfoForECS(t *testing.T) {
 			return nil, nil, errors.New("error")
 		}
 	}
-	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
+	awsConfigOpt := func(m *Info) {
+		m.awsConfigCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*awsSDKV2.Config, error) {
+			return nil, errors.New("error")
+		}
+	}
+	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt, awsConfigOpt)
 	assert.Nil(t, m)
 	assert.Error(t, err)
 
@@ -195,8 +211,13 @@ func TestInfoForECS(t *testing.T) {
 			return &aws.Config{}, &session.Session{}, nil
 		}
 	}
+	awsConfigOpt = func(m *Info) {
+		m.awsConfigCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*awsSDKV2.Config, error) {
+			return &awsSDKV2.Config{}, nil
+		}
+	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, *zap.Logger,
+		m.ec2MetadataCreator = func(context.Context, *awsSDKV2.Config, time.Duration, chan bool, chan bool, bool, *zap.Logger,
 			...ec2MetadataOption) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
@@ -213,7 +234,7 @@ func TestInfoForECS(t *testing.T) {
 			return &mockEC2Tags{}
 		}
 	}
-	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.ECS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
+	m, err = NewInfo(awsutil.CreateDefaultSessionConfig(), ci.ECS, time.Minute, zap.NewNop(), awsSessionCreatorOpt, awsConfigOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
 	assert.NoError(t, err)
 	assert.NotNil(t, m)

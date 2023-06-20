@@ -15,12 +15,14 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.uber.org/zap"
 
@@ -161,34 +163,47 @@ func (p envMetadataProvider) get() string {
 }
 
 type ec2MetadataProvider struct {
-	client      *ec2metadata.EC2Metadata
-	metadataKey string
+	clientIMDSV2Only     *imds.Client
+	clientIMDSV1Fallback *imds.Client
+	metadataKey          string
+	logger               *zap.Logger
 }
 
 func (p ec2MetadataProvider) get() string {
-	var metadata string
-	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
-		metadata = result
+	result, err := p.clientIMDSV2Only.GetMetadata(context.Background(), &imds.GetMetadataInput{Path: p.metadataKey})
+	p.logger.Warn("failed to get metadata with imdsv2", zap.Any("metadataPath", p.metadataKey))
+	if err != nil {
+		result, err = p.clientIMDSV1Fallback.GetMetadata(context.Background(), &imds.GetMetadataInput{Path: p.metadataKey})
+		if err != nil {
+			p.logger.Warn("failed to get metadata with imdsv1", zap.Any("metadataPath", p.metadataKey))
+			return ""
+		}
 	}
-	return metadata
+	return fmt.Sprintf("%v", result)
 }
 
 // ToOptions returns the metadata options if enabled by the config.
-func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSettings) []Option {
+func ToOptions(cfg Config, config aws.Config, settings *awsutil.AWSSessionSettings, logger *zap.Logger) []Option {
 	if !cfg.IncludeMetadata {
 		return nil
 	}
-	metadataClient := ec2metadata.New(sess)
+	clientIMDSV2Only, clientIMDSV1Fallback := awsutil.CreateIMDSV2AndFallbackClient(config)
 	return []Option{
 		WithHostname(getMetadata(
 			simpleMetadataProvider{metadata: cfg.Hostname},
 			envMetadataProvider{envKey: envAWSHostname},
-			ec2MetadataProvider{client: metadataClient, metadataKey: metadataHostname},
+			ec2MetadataProvider{clientIMDSV2Only: clientIMDSV2Only,
+				clientIMDSV1Fallback: clientIMDSV1Fallback,
+				metadataKey:          metadataHostname,
+				logger:               logger},
 		)),
 		WithInstanceID(getMetadata(
 			simpleMetadataProvider{metadata: cfg.InstanceID},
 			envMetadataProvider{envKey: envAWSInstanceID},
-			ec2MetadataProvider{client: metadataClient, metadataKey: metadataInstanceID},
+			ec2MetadataProvider{clientIMDSV2Only: clientIMDSV2Only,
+				clientIMDSV1Fallback: clientIMDSV1Fallback,
+				metadataKey:          metadataInstanceID,
+				logger:               logger},
 		)),
 		WithResourceARN(getMetadata(
 			simpleMetadataProvider{metadata: cfg.ResourceARN},

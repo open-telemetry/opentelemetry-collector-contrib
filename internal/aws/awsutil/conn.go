@@ -16,6 +16,7 @@
 package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
@@ -23,11 +24,14 @@ import (
 	"os"
 	"time"
 
+	awsSDKV2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -37,14 +41,22 @@ import (
 
 type ConnAttr interface {
 	newAWSSession(logger *zap.Logger, roleArn string, region string, profile string, sharedCredentialsFile []string) (*session.Session, error)
-	getEC2Region(s *session.Session) (string, error)
+	getEC2Region(cfg awsSDKV2.Config) (string, error)
 }
 
 // Conn implements connAttr interface.
 type Conn struct{}
 
-func (c *Conn) getEC2Region(s *session.Session) (string, error) {
-	return ec2metadata.New(s).Region()
+func (c *Conn) getEC2Region(cfg awsSDKV2.Config) (string, error) {
+	clientIMDSV2Only, clientIMDSV1Fallback := CreateIMDSV2AndFallbackClient(cfg)
+	region, err := clientIMDSV2Only.GetRegion(context.Background(), &imds.GetRegionInput{})
+	if err != nil {
+		region, err = clientIMDSV1Fallback.GetRegion(context.Background(), &imds.GetRegionInput{})
+		if err != nil {
+			return "", err
+		}
+	}
+	return region.Region, nil
 }
 
 // AWS STS endpoint constants
@@ -116,45 +128,46 @@ func getProxyURL(finalProxyAddress string) (*url.URL, error) {
 	return proxyURL, err
 }
 
+func GetAWSConfig(logger *zap.Logger, cn ConnAttr, awsSessionSettings *AWSSessionSettings) (*awsSDKV2.Config, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	cfg.Retryer = func() awsSDKV2.Retryer {
+		return retry.NewStandard(func(options *retry.StandardOptions) {
+			options.MaxAttempts = awsSessionSettings.MaxRetries
+		})
+	}
+	httpClient, err := newHTTPClient(logger,
+		awsSessionSettings.NumberOfWorkers,
+		awsSessionSettings.RequestTimeoutSeconds,
+		awsSessionSettings.NoVerifySSL,
+		awsSessionSettings.ProxyAddress)
+	if err != nil {
+		logger.Error("unable to obtain proxy URL", zap.Error(err))
+		return nil, err
+	}
+	cfg.HTTPClient = httpClient
+	region, err := findRegions(logger, cn, awsSessionSettings)
+	cfg.Region = region
+	if err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
 // GetAWSConfigSession returns AWS config and session instances.
 func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (*aws.Config, *session.Session, error) {
 	var s *session.Session
 	var err error
-	var awsRegion string
 	http, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, nil, err
 	}
-	regionEnv := os.Getenv("AWS_REGION")
-
-	switch {
-	case cfg.Region == "" && regionEnv != "":
-		awsRegion = regionEnv
-		logger.Debug("Fetch region from environment variables", zap.String("region", awsRegion))
-	case cfg.Region != "":
-		awsRegion = cfg.Region
-		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
-	case !cfg.NoVerifySSL:
-		var es *session.Session
-		es, err = GetDefaultSession(logger, session.Options{})
-		if err != nil {
-			logger.Error("Unable to retrieve default session", zap.Error(err))
-		} else {
-			awsRegion, err = cn.getEC2Region(es)
-			if err != nil {
-				logger.Error("Unable to retrieve the region from the EC2 instance", zap.Error(err))
-			} else {
-				logger.Debug("Fetch region from ec2 metadata", zap.String("region", awsRegion))
-			}
-		}
-
-	}
-
-	if awsRegion == "" {
-		msg := "Cannot fetch region variable from config file, environment variables and ec2 metadata."
-		logger.Error(msg)
-		return nil, nil, awserr.New("NoAwsRegion", msg, nil)
+	awsRegion, err := findRegions(logger, cn, cfg)
+	if err != nil {
+		return nil, nil, err
 	}
 	s, err = cn.newAWSSession(logger, cfg.RoleARN, awsRegion, cfg.Profile, cfg.SharedCredentialsFile)
 	if err != nil {
@@ -169,6 +182,44 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		HTTPClient:             http,
 	}
 	return config, s, nil
+}
+
+func findRegions(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (string, error) {
+	var awsRegion string
+	regionEnv := os.Getenv("AWS_REGION")
+	switch {
+	case cfg.Region == "" && regionEnv != "":
+		awsRegion = regionEnv
+		logger.Debug("Fetch region from environment variables", zap.String("region", awsRegion))
+	case cfg.Region != "":
+		awsRegion = cfg.Region
+		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
+	case !cfg.NoVerifySSL:
+		awsConfig, err := config.LoadDefaultConfig(context.Background())
+		awsConfig.Retryer = func() awsSDKV2.Retryer {
+			return retry.NewStandard(func(options *retry.StandardOptions) {
+				options.MaxAttempts = cfg.MaxRetries
+			})
+		}
+		if err != nil {
+			logger.Error("Unable to retrieve default session", zap.Error(err))
+		} else {
+			awsRegion, err = cn.getEC2Region(awsConfig)
+			if err != nil {
+				logger.Error("Unable to retrieve the region from the EC2 instance", zap.Error(err))
+			} else {
+				logger.Debug("Fetch region from ec2 metadata", zap.String("region", awsRegion))
+			}
+		}
+
+	}
+
+	if awsRegion == "" {
+		msg := "Cannot fetch region variable from config file, environment variables and ec2 metadata."
+		logger.Error(msg)
+		return "", awserr.New("NoAwsRegion", msg, nil)
+	}
+	return awsRegion, nil
 }
 
 // ProxyServerTransport configures HTTP transport for TCP Proxy Server.
@@ -319,4 +370,16 @@ func GetDefaultSession(logger *zap.Logger, options session.Options) (*session.Se
 func getPartition(region string) string {
 	p, _ := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region)
 	return p.ID()
+}
+
+func CreateIMDSV2AndFallbackClient(cfg awsSDKV2.Config) (*imds.Client, *imds.Client) {
+	optionsIMDSV2Only := func(o *imds.Options) {
+		o.EnableFallback = awsSDKV2.FalseTernary
+	}
+	optionsIMDSV1Fallback := func(o *imds.Options) {
+		o.EnableFallback = awsSDKV2.TrueTernary
+	}
+	clientIMDSV2Only := imds.NewFromConfig(cfg, optionsIMDSV2Only)
+	clientIMDSV1Fallback := imds.NewFromConfig(cfg, optionsIMDSV1Fallback)
+	return clientIMDSV2Only, clientIMDSV1Fallback
 }

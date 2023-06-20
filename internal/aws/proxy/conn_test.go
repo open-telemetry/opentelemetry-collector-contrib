@@ -15,11 +15,14 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"testing"
 
+	awsSDKV2 "github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -35,9 +38,10 @@ var ec2Region = "us-west-2"
 type mock struct {
 	getEC2RegionErr error
 	sn              *session.Session
+	cfg             awsSDKV2.Config
 }
 
-func (m *mock) getEC2Region(s *session.Session) (string, error) {
+func (m *mock) getEC2Region(cfg awsSDKV2.Config) (string, error) {
 	if m.getEC2RegionErr != nil {
 		return "", m.getEC2RegionErr
 	}
@@ -53,18 +57,18 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 	return zap.New(core), recorded
 }
 
-func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
+func setupMock(sess *session.Session, cfg awsSDKV2.Config) (f1 func(cfg awsSDKV2.Config) (string, error),
 	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error)) {
 	f1 = getEC2Region
 	f2 = newAWSSession
-	m := mock{sn: sess}
+	m := mock{sn: sess, cfg: cfg}
 	getEC2Region = m.getEC2Region
 	newAWSSession = m.newAWSSession
 	return
 }
 
 func tearDownMock(
-	f1 func(s *session.Session) (string, error),
+	f1 func(cfg awsSDKV2.Config) (string, error),
 	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
 ) {
 	getEC2Region = f1
@@ -80,7 +84,9 @@ func TestRegionFromEnv(t *testing.T) {
 
 	expectedSession, err := session.NewSession()
 	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCFG, err := awsConfig.LoadDefaultConfig(context.Background())
+	assert.NoError(t, err, "expectedConfig should be created")
+	f1, f2 := setupMock(expectedSession, expectedCFG)
 	defer tearDownMock(f1, f2)
 
 	awsCfg, s, err := getAWSConfigSession(DefaultConfig(), logger)
@@ -101,7 +107,9 @@ func TestRegionFromConfig(t *testing.T) {
 
 	expectedSession, err := session.NewSession()
 	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCFG, err := awsConfig.LoadDefaultConfig(context.Background())
+	assert.NoError(t, err, "expectedConfig should be created")
+	f1, f2 := setupMock(expectedSession, expectedCFG)
 	defer tearDownMock(f1, f2)
 
 	cfgWithRegion := DefaultConfig()
@@ -127,7 +135,9 @@ func TestRegionFromECS(t *testing.T) {
 
 	expectedSession, err := session.NewSession()
 	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCFG, err := awsConfig.LoadDefaultConfig(context.Background())
+	assert.NoError(t, err, "expectedConfig should be created")
+	f1, f2 := setupMock(expectedSession, expectedCFG)
 	defer tearDownMock(f1, f2)
 
 	awsCfg, s, err := getAWSConfigSession(DefaultConfig(), logger)
@@ -150,7 +160,9 @@ func TestRegionFromECSInvalidArn(t *testing.T) {
 
 	expectedSession, err := session.NewSession()
 	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCFG, err := awsConfig.LoadDefaultConfig(context.Background())
+	assert.NoError(t, err, "expectedConfig should be created")
+	f1, f2 := setupMock(expectedSession, expectedCFG)
 	defer tearDownMock(f1, f2)
 
 	_, s, err := getAWSConfigSession(DefaultConfig(), logger)
@@ -174,7 +186,9 @@ func TestRegionFromEC2(t *testing.T) {
 
 	expectedSession, err := session.NewSession()
 	assert.NoError(t, err, "expectedSession should be created")
-	f1, f2 := setupMock(expectedSession)
+	expectedCFG, err := awsConfig.LoadDefaultConfig(context.Background())
+	assert.NoError(t, err, "expectedConfig should be created")
+	f1, f2 := setupMock(expectedSession, expectedCFG)
 	defer tearDownMock(f1, f2)
 
 	awsCfg, s, err := getAWSConfigSession(DefaultConfig(), logger)

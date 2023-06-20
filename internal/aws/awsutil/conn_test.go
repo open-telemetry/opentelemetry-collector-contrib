@@ -15,9 +15,12 @@
 package awsutil
 
 import (
+	"context"
 	"errors"
 	"testing"
 
+	awsSDKV2 "github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +35,7 @@ type mockConn struct {
 	sn *session.Session
 }
 
-func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
+func (c *mockConn) getEC2Region(cfg awsSDKV2.Config) (string, error) {
 	args := c.Called(nil)
 	errorStr := args.String(0)
 	var err error
@@ -86,7 +89,7 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	sessionCfg.NoVerifySSL = false
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	m := new(mockConn)
-	m.On("getEC2Region", nil).Return("").Once()
+	m.On("getEC2Region", nil).Return("fail").Once()
 	var expectedSession *session.Session
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession
@@ -131,8 +134,9 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	se, _ = session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1"),
 	})
+	config, _ := awsConfig.LoadDefaultConfig(context.Background())
 	assert.NotNil(t, se)
-	_, err = conn.getEC2Region(se)
+	_, err = conn.getEC2Region(config)
 	assert.NotNil(t, err)
 }
 
