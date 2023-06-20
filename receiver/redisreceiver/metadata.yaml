@@ -55,6 +55,7 @@ metrics:
   redis.role:
     enabled: false
     description: Redis node's role
+    unit: "{role}"
     sum:
       value_type: int
       monotonic: false
@@ -64,7 +65,7 @@ metrics:
   redis.cmd.calls:
     enabled: false
     description: Total number of calls for a command
-    unit: ""
+    unit: "{calls}"
     sum:
       value_type: int
       monotonic: true
@@ -103,7 +104,7 @@ metrics:
   redis.clients.connected:
     enabled: true
     description: Number of client connections (excluding connections from replicas)
-    unit:
+    unit: "{clients}"
     sum:
       value_type: int
       monotonic: false
@@ -126,7 +127,7 @@ metrics:
   redis.clients.blocked:
     enabled: true
     description: Number of clients pending on a blocking call
-    unit: ""
+    unit: "{clients}"
     sum:
       value_type: int
       monotonic: false
@@ -135,7 +136,7 @@ metrics:
   redis.keys.expired:
     enabled: true
     description: Total number of key expiration events
-    unit: ""
+    unit: "{events}"
     sum:
       value_type: int
       monotonic: true
@@ -145,7 +146,7 @@ metrics:
   redis.keys.evicted:
     enabled: true
     description: Number of evicted keys due to maxmemory limit
-    unit: ""
+    unit: "{keys}"
     sum:
       value_type: int
       monotonic: true
@@ -154,7 +155,7 @@ metrics:
   redis.connections.received:
     enabled: true
     description: Total number of connections accepted by the server
-    unit:
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: true
@@ -163,7 +164,7 @@ metrics:
   redis.connections.rejected:
     enabled: true
     description: Number of connections rejected because of maxclients limit
-    unit:
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: true
@@ -200,14 +201,14 @@ metrics:
   redis.memory.fragmentation_ratio:
     enabled: true
     description: Ratio between used_memory_rss and used_memory
-    unit: ""
+    unit: 1
     gauge:
       value_type: double
 
   redis.rdb.changes_since_last_save:
     enabled: true
     description: Number of changes since the last dump
-    unit: ""
+    unit: "{changes}"
     sum:
       value_type: int
       monotonic: false
@@ -223,7 +224,7 @@ metrics:
   redis.commands.processed:
     enabled: true
     description: Total number of commands processed by the server
-    unit: ""
+    unit: "{commands}"
     sum:
       value_type: int
       monotonic: true
@@ -250,7 +251,7 @@ metrics:
   redis.keyspace.hits:
     enabled: true
     description: Number of successful lookup of keys in the main dictionary
-    unit: ""
+    unit: "{hits}"
     sum:
       value_type: int
       monotonic: true
@@ -259,7 +260,7 @@ metrics:
   redis.keyspace.misses:
     enabled: true
     description: Number of failed lookup of keys in the main dictionary
-    unit: ""
+    unit: "{misses}"
     sum:
       value_type: int
       monotonic: true
@@ -275,7 +276,7 @@ metrics:
   redis.slaves.connected:
     enabled: true
     description: Number of connected replicas
-    unit: ""
+    unit: "{replicas}"
     sum:
       value_type: int
       monotonic: false
@@ -298,7 +299,7 @@ metrics:
   redis.db.keys:
     enabled: true
     description: "Number of keyspace keys"
-    unit: ""
+    unit: "{keys}"
     gauge:
       value_type: int
     attributes: [db]
@@ -306,7 +307,7 @@ metrics:
   redis.db.expires:
     enabled: true
     description: "Number of keyspace keys with an expiration"
-    unit: ""
+    unit: "{keys}"
     gauge:
       value_type: int
     attributes: [db]
