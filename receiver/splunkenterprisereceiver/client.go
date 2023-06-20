@@ -106,7 +106,5 @@ func (c *splunkEntClient) makeRequest(sr *searchResponse) (*searchResponse, erro
     
     err = xml.Unmarshal([]byte(body), &sr)
 
-    fmt.Printf("\nThis is the job id: %s\n", *sr.Jobid)
-
     return sr, nil
 }

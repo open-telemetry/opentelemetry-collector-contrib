@@ -43,6 +43,8 @@ func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunk
 
 // Create a client instance and add to the splunkScraper
 func (s *splunkScraper) start(_ context.Context, _ component.Host) (err error) {
+    c := newSplunkEntClient(s.conf) 
+    s.splunkClient = &c
     return nil 
 }
 
@@ -52,52 +54,78 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
     now := pcommon.NewTimestampFromTime(time.Now())
 
     s.scrapeLicenseUsageByIndex(ctx, now, errs)
-    s.wg.Wait()
     return s.mb.Emit(), errs.Combine()
 }
 
 // Each metric has its own scrape function associated with it
 func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-    var sr *searchResponse
+    var sr searchResponse
     // Because we have to utilize network resources for each KPI we should check that each metrics
     // is enabled before proceeding
     if s.mfg.SplunkLicenseIndexUsage.Enabled {
-        sr = &searchResponse{
+        sr = searchResponse{
             search: searchDict[`SplunkLicenseIndexUsageSearch`],
         }
     } else {
         return
     }
 
-    s.wg.Add(1)
-    go func() {
-        start := time.Now()
-        _, err := s.splunkClient.makeRequest(sr)
+    // This doesn't work here
+
+    //s.wg.Add(1)
+    //go func(s *splunkScraper, sr *searchResponse) {
+    //    start := time.Now()
+    //    _, err := s.splunkClient.makeRequest(sr)
+    //    if err != nil {
+    //        errs.Add(err)
+    //    }
+    //    for ok := true; ok; ok = (sr.Return == 204) {
+    //        _, err := s.splunkClient.makeRequest(sr)
+    //        if err != nil {
+    //            errs.Add(err)
+    //        }
+    //        time.Sleep(2 * time.Second)
+    //        if time.Since(start) > s.conf.MaxSearchWaitTime {
+    //            errs.Add(errMaxSearchWaitTimeExceeded)
+    //            return
+    //        }
+    //    }
+    //} (s, &sr) 
+    //s.wg.Wait()
+
+    // but it does work really well here
+
+    start := time.Now()
+    _, err := s.splunkClient.makeRequest(&sr)
+    if err != nil {
+        errs.Add(err)
+    }
+    for ok := true; ok; ok = (sr.Return == 204) {
+        _, err := s.splunkClient.makeRequest(&sr)
         if err != nil {
             errs.Add(err)
         }
-        for ok := true; ok; ok = (sr.Return == 204) {
-            _, err := s.splunkClient.makeRequest(sr)
+        time.Sleep(2 * time.Second)
+        if time.Since(start) > s.conf.MaxSearchWaitTime {
+            errs.Add(errMaxSearchWaitTimeExceeded)
+            return
+        }
+    }
+
+    // Record the results
+    var indexName string
+    for _, f := range sr.Fields {
+        switch fieldName := f.FieldName; fieldName {
+        case "indexname":
+            indexName = f.Value
+            continue
+        case "GB":
+            v, err := strconv.ParseFloat(f.Value, 64)
             if err != nil {
                 errs.Add(err)
+                continue
             }
-            time.Sleep(2 * time.Second)
-            if time.Since(start) > s.conf.MaxSearchWaitTime {
-                errs.Add(errMaxSearchWaitTimeExceeded)
-                return
-            }
+            s.mb.RecordSplunkLicenseIndexUsageDataPoint(now, v, indexName)
         }
-    } () 
-    
-    // Record the results
-    for _, f := range sr.Fields {
-        // make sure the value is a valid float64 and convert it
-        v, err := strconv.ParseFloat(f.Value, 64)
-        if err != nil {
-            errs.Add(err)
-            continue
-        }
-
-        s.mb.RecordSplunkLicenseIndexUsageDataPoint(now, v, f.FieldName)
     }
 }
