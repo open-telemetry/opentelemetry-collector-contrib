@@ -156,7 +156,7 @@ func TestBuildBodyMap(t *testing.T) {
 var testLEventRaw = &add_events.Event{
 	Thread: "TL",
 	Log:    "LL",
-	Sev:    9,
+	Sev:    3,
 	Ts:     "1581452773000000789",
 	Attrs: map[string]interface{}{
 		"attributes.app":           "server",
@@ -168,8 +168,6 @@ var testLEventRaw = &add_events.Event{
 		"flags":                    plog.LogRecordFlags(0),
 		"message":                  "This is a log message",
 		"scope.name":               "",
-		"severity.number":          plog.SeverityNumberInfo,
-		"severity.text":            "Info",
 		"span_id":                  "0102040800000000",
 		"trace_id":                 "08040201000000000000000000000000",
 	},
@@ -190,8 +188,6 @@ var testLEventReq = &add_events.Event{
 		"flags":                    float64(plog.LogRecordFlags(0)),
 		"message":                  "This is a log message",
 		"scope.name":               "",
-		"severity.number":          float64(plog.SeverityNumberInfo),
-		"severity.text":            "Info",
 		"span_id":                  "0102040800000000",
 		"trace_id":                 "08040201000000000000000000000000",
 		"bundle_key":               "d41d8cd98f00b204e9800998ecf8427e",
@@ -406,4 +402,156 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		},
 		addRequest,
 	)
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityText(t *testing.T) {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	ld.SetSeverityText("")
+
+	// trace
+	ld.SetSeverityNumber(1)
+	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(2)
+	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(3)
+	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(4)
+	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
+
+	// debug
+	ld.SetSeverityNumber(5)
+	assert.Equal(t, 2, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(6)
+	assert.Equal(t, 2, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(7)
+	assert.Equal(t, 2, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(8)
+	assert.Equal(t, 2, otelSeverityToDataSetSeverity(ld))
+
+	// info
+	ld.SetSeverityNumber(9)
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(10)
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(11)
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(12)
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	// warn
+	ld.SetSeverityNumber(13)
+	assert.Equal(t, 4, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(14)
+	assert.Equal(t, 4, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(15)
+	assert.Equal(t, 4, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(16)
+	assert.Equal(t, 4, otelSeverityToDataSetSeverity(ld))
+
+	// error
+	ld.SetSeverityNumber(17)
+	assert.Equal(t, 5, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(18)
+	assert.Equal(t, 5, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(19)
+	assert.Equal(t, 5, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(20)
+	assert.Equal(t, 5, otelSeverityToDataSetSeverity(ld))
+
+	// fatal
+	ld.SetSeverityNumber(21)
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(22)
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(22)
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(24)
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+
+	// Invalid values get mapped to info (3)
+	ld.SetSeverityNumber(0)
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(-1)
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(25)
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumber(t *testing.T) {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	ld.SetSeverityNumber(0)
+
+	// trace
+	ld.SetSeverityText("trace")
+	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
+
+	// debug
+	ld.SetSeverityText("debug")
+	assert.Equal(t, 2, otelSeverityToDataSetSeverity(ld))
+
+	// info
+	ld.SetSeverityText("info")
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityText("informational")
+	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+
+	// warn
+	ld.SetSeverityText("warn")
+	assert.Equal(t, 4, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityText("warning")
+	assert.Equal(t, 4, otelSeverityToDataSetSeverity(ld))
+
+	// error
+	ld.SetSeverityText("error")
+	assert.Equal(t, 5, otelSeverityToDataSetSeverity(ld))
+
+	// fatal
+	ld.SetSeverityText("fatal")
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityText("critical")
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityText("emergency")
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberAndSeverityTextSeverityNumberHasPriority(t *testing.T) {
+	// If provided, SeverityNumber has priority over SeverityText
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	ld.SetSeverityNumber(3)
+	ld.SetSeverityText("debug")
+	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(22)
+	ld.SetSeverityText("info")
+	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+
 }
