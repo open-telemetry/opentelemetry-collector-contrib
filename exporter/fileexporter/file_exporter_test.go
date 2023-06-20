@@ -16,16 +16,15 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestFileTracesExporter(t *testing.T) {
@@ -170,8 +169,8 @@ func TestFileTracesExporter(t *testing.T) {
 func TestFileTracesExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:       mf,
-		formatType: formatTypeJSON,
+		file:            mf,
+		formatType:      formatTypeJSON,
 		tracesMarshaler: tracesMarshalers[formatTypeJSON],
 		compressor:      noneCompress,
 	}
@@ -286,7 +285,7 @@ func TestFileMetricsExporter(t *testing.T) {
 			}
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if fe.formatType == formatTypeJSON {	
+					if fe.formatType == formatTypeJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
@@ -308,8 +307,8 @@ func TestFileMetricsExporter(t *testing.T) {
 func TestFileMetricsExporterError(t *testing.T) {
 	mf := &errorWriter{}
 	fe := &fileExporter{
-		file:       mf,
-		formatType: formatTypeJSON,
+		file:             mf,
+		formatType:       formatTypeJSON,
 		metricsMarshaler: metricsMarshalers[formatTypeJSON],
 		compressor:       noneCompress,
 	}
@@ -449,7 +448,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 		file:          mf,
 		formatType:    formatTypeJSON,
 		logsMarshaler: logsMarshalers[formatTypeJSON],
-		compressor: noneCompress,
+		compressor:    noneCompress,
 	}
 	require.NotNil(t, fe)
 
@@ -482,9 +481,9 @@ func TestExportMessageAsBuffer(t *testing.T) {
 		MaxSize:  1,
 	}
 	fe := &fileExporter{
-		path:       path,
-		formatType: formatTypeProto,
-		file: &testWriter{writer: fw},
+		path:          path,
+		formatType:    formatTypeProto,
+		file:          &testWriter{writer: fw},
 		logsMarshaler: logsMarshalers[formatTypeProto],
 	}
 	require.NotNil(t, fe)

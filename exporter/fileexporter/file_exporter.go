@@ -39,10 +39,9 @@ type WriteCloseFlusher interface {
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
-	path     string
-	file     WriteCloseFlusher
-	mutex    sync.Mutex
-	logger   *zap.Logger
+	path  string
+	file  WriteCloseFlusher
+	mutex sync.Mutex
 
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
@@ -96,9 +95,8 @@ func NewLineWriter(cfg *Config, logger *zap.Logger, file io.WriteCloser) WriteCl
 		if cw, err := zstd.NewWriter(file); err == nil {
 			lw.file = cw
 			return lw
-		} else {
-			logger.Debug("Unable to create compressed writer", zap.Error(err))
 		}
+		logger.Debug("Unable to create compressed writer", zap.Error(err))
 	}
 
 	lw.file = newBufferedWriteCloser(file)
@@ -143,9 +141,8 @@ func NewFileWriter(cfg *Config, logger *zap.Logger, file io.WriteCloser) WriteCl
 		if cw, err := zstd.NewWriter(file); err == nil {
 			fw.file = cw
 			return fw
-		} else {
-			logger.Debug("Unable to create compressed writer", zap.Error(err))
 		}
+		logger.Debug("Unable to create compressed writer", zap.Error(err))
 	}
 
 	fw.file = newBufferedWriteCloser(file)

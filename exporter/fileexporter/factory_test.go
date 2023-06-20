@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -157,6 +157,7 @@ func TestBuildFileWriter(t *testing.T) {
 				bc, ok := fl.getFile().(interface{ getWrapped() io.Closer })
 				assert.True(t, ok)
 				writer, ok := bc.getWrapped().(*lumberjack.Logger)
+				assert.True(t, ok)
 
 				assert.Equal(t, 3, writer.MaxBackups)
 				assert.Equal(t, 30, writer.MaxSize)
