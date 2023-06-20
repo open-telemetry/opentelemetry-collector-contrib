@@ -85,10 +85,7 @@ func buildEventFromLog(
 	}
 
 	if body := log.Body().AsString(); body != "" {
-		attrs["message"] = fmt.Sprintf(
-			"OtelExporter - Log - %s",
-			buildBody(attrs, log.Body()),
-		)
+		attrs["message"] = buildBody(attrs, log.Body())
 	}
 	if dropped := log.DroppedAttributesCount(); dropped > 0 {
 		attrs["dropped_attributes_count"] = dropped
