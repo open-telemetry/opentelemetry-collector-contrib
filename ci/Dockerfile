@@ -1,4 +1,4 @@
-FROM registry.ddbuild.io/images/mirror/golang:1.19 AS build
+FROM registry.ddbuild.io/images/mirror/golang:1.20 AS build
 WORKDIR /src
 ADD . /src
 RUN make otelcontribcol
@@ -9,7 +9,7 @@ USER root
 RUN clean-apt install make \
             ca-certificates 
 
-COPY --from=build /src/bin/otelcontribcol_* /otelcontribcol
+COPY --from=build /src/bin/otelcontribcol_* /otelcol-contrib
 USER 1001
-ENTRYPOINT ["/otelcontribcol"]
-EXPOSE 4317 55680 55679
+ENTRYPOINT ["/otelcol-contrib"]
+EXPOSE 4317 4318 55680 55679

@@ -1,10 +1,16 @@
 variables:
-  CI_IMAGE: registry.ddbuild.io/images/docker:20.10.13
+  CI_PROJECT_NAME: "opentelemetry-collector-contrib"
+  BUILD_STABLE_REGISTRY: "486234852809.dkr.ecr.us-east-1.amazonaws.com"
+  CI_IMAGE: registry.ddbuild.io/ci/opentelemetry-collector-contrib:ci-image-2
   RESTORE_CACHE_ATTEMPTS: 2
-  BUILD_STABLE_REGISTRY: '486234852809.dkr.ecr.us-east-1.amazonaws.com'
+  BUILD_DD_REGISTRY: registry.ddbuild.io/ci/opentelemetry-collector-contrib
+  BUILD_DEMO_REGISTRY: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  DOCKERFILE: ci/Dockerfile
 
 stages:
+  - manaul-jobs
   - build
+  - prod-deploy
 
 # =======================================================================
 # Build and deploy the images used for CI
@@ -15,13 +21,52 @@ stages:
   tags: ["runner:docker"]
   image: $CI_IMAGE
   script:
+    - IMAGE_TAG_PREFIX=otelcolcontrib
     - TAG="$IMAGE_TAG_PREFIX-v$CI_COMMIT_SHORT_SHA"
-    - docker build --file $DOCKERFILE --tag registry.ddbuild.io/ci/opentelemetry-collector-contrib:$TAG --label target=staging .
-    - docker push registry.ddbuild.io/ci/opentelemetry-collector-contrib:$TAG
+    - docker build --file $DOCKERFILE --tag $BUILD_REGISTRY:$TAG --label target=staging .
+    - docker push $BUILD_REGISTRY:$TAG
 
-build-ci-image-main:
+build-image-main:
   <<: *build-ci-image
   variables:
-    DOCKERFILE: ci/Dockerfile
-    IMAGE_TAG_PREFIX: otelcolcontrib
+    BUILD_REGISTRY: $BUILD_DD_REGISTRY
 
+build-image-demo:
+  <<: *build-ci-image
+  variables:
+    BUILD_REGISTRY: $BUILD_DEMO_REGISTRY
+
+build-ci-image:
+  stage: manaul-jobs
+  when: manual
+  tags: ["runner:docker"]
+  image: $CI_IMAGE
+  script:
+    - TAG=ci-image-2
+    - docker build --file ci/Dockerfile.gitlab --tag $BUILD_DD_REGISTRY:$TAG . 
+    - docker push $BUILD_DD_REGISTRY:$TAG
+
+prod-deploy-demo-eks:
+  stage: prod-deploy
+  tags: ["runner:docker", "size:large"]
+  image: $CI_IMAGE
+  dependencies:
+    - build-image-demo
+  script:
+    # # For debugging
+    #- aws sts get-caller-identity
+    - >-
+      TEMP_AWS_ACCESS_KEY_ID=$(aws ssm get-parameter --region us-east-1
+      --name ci.opentelemetry-collector-contrib.eks_access_key
+      --with-decryption --query Parameter.Value
+      --out text)
+    - >-
+      TEMP_AWS_SECRET_ACCESS_KEY=$(aws ssm get-parameter --region us-east-1
+      --name ci.opentelemetry-collector-contrib.eks_secret_access_key
+      --with-decryption --query Parameter.Value
+      --out text)
+    - export AWS_ACCESS_KEY_ID=$TEMP_AWS_ACCESS_KEY_ID
+    - export AWS_SECRET_ACCESS_KEY=$TEMP_AWS_SECRET_ACCESS_KEY
+    # # For debugging
+    # - aws sts get-caller-identity
+    - bash ./ci/scripts/ci-deploy-demo.sh
