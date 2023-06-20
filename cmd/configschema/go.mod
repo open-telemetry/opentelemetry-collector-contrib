@@ -613,7 +613,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.79.1-0.20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.79.1-0.20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/extension v0.0.0-20230620160303-6059751e64e0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.0.0-20230619144035-25129b794d48 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.0.0-20230620163534-beb9545e96a0 // indirect
 	go.opentelemetry.io/collector/extension/ballastextension v0.79.1-0.20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.79.1-0.20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230619144035-25129b794d48 // indirect
