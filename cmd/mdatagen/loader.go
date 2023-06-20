@@ -224,17 +224,6 @@ type metadata struct {
 	ScopeName string `mapstructure:"-"`
 }
 
-func (md *metadata) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("name") {
-		return errors.New("missing required field: `description`")
-	}
-	err := parser.Unmarshal(md, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (md *metadata) Validate() error {
 	var errs error
 
