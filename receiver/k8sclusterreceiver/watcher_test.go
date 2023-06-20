@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -194,7 +195,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 			rw := &resourceWatcher{
 				client:        newFakeClientWithAllResources(),
 				logger:        obsLogger,
-				dataCollector: collection.NewDataCollector(zap.NewNop(), []string{}, []string{}),
+				dataCollector: collection.NewDataCollector(receivertest.NewNopCreateSettings(), []string{}, []string{}),
 			}
 
 			assert.NoError(t, rw.prepareSharedInformerFactory())
