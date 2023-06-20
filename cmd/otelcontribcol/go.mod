@@ -189,18 +189,18 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.80.0
 	go.opentelemetry.io/collector/confmap v0.80.0
 	go.opentelemetry.io/collector/connector v0.80.0
-	go.opentelemetry.io/collector/connector/forwardconnector v0.79.1-0.20230620160303-6059751e64e0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.80.0
 	go.opentelemetry.io/collector/consumer v0.80.0
 	go.opentelemetry.io/collector/exporter v0.80.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.79.1-0.20230620160303-6059751e64e0
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.80.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.80.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.80.0
 	go.opentelemetry.io/collector/extension v0.80.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.79.1-0.20230620160303-6059751e64e0
+	go.opentelemetry.io/collector/extension/ballastextension v0.80.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.80.0
 	go.opentelemetry.io/collector/processor v0.80.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.80.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.79.1-0.20230620160303-6059751e64e0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.80.0
 	go.opentelemetry.io/collector/receiver v0.80.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.80.0
 	golang.org/x/sys v0.9.0
