@@ -23,7 +23,6 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -50,7 +49,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.0.0-20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.0.0-20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.0.0-20230620160303-6059751e64e0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-20230619144035-25129b794d48 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.0.0-20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.0.0-20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.0.0-20230620160303-6059751e64e0 // indirect
 	go.opentelemetry.io/collector/extension v0.0.0-20230620160303-6059751e64e0 // indirect

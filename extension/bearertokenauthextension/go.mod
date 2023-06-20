@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v0.0.0-20230619144035-25129b794d48
 	go.opentelemetry.io/collector/confmap v0.79.1-0.20230620160303-6059751e64e0
 	go.opentelemetry.io/collector/extension v0.0.0-20230619144035-25129b794d48
+	go.opentelemetry.io/collector/extension/auth v0.0.0-20230620163534-beb9545e96a0
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.56.0
 )
