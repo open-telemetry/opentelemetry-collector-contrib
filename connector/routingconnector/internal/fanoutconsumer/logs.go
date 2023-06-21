@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// TODO: once we have fanoutconsumer test helpers use that instead of copying the code
+
 // Package fanoutconsumer contains implementations of Traces/Metrics/Logs consumers
 // that fan out the data to multiple other consumers.
 package fanoutconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/fanoutconsumer"
