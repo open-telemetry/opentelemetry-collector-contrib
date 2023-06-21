@@ -24,7 +24,7 @@ type MarshalerType string
 
 const (
 	OtlpJSON MarshalerType = "otlp_json"
-	Sumo     MarshalerType = "sumo"
+	SumoIC   MarshalerType = "sumo_ic"
 )
 
 // Config contains the main configuration options for the s3 exporter

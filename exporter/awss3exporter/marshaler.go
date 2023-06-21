@@ -31,7 +31,7 @@ func NewMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
 		marshaler.tracesMarshaler = &ptrace.JSONMarshaler{}
 		marshaler.metricsMarshaler = &pmetric.JSONMarshaler{}
 		marshaler.fileFormat = "json"
-	case Sumo:
+	case SumoIC:
 		sumomarshaler := NewSumoMarshaler()
 		marshaler.logsMarshaler = &sumomarshaler
 		marshaler.tracesMarshaler = &sumomarshaler
