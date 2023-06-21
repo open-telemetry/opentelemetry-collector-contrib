@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -164,8 +163,6 @@ var testLEventRaw = &add_events.Event{
 		"body.str":                 "This is a log message",
 		"body.type":                "Str",
 		"dropped_attributes_count": uint32(1),
-		"flag.is_sampled":          false,
-		"flags":                    plog.LogRecordFlags(0),
 		"message":                  "This is a log message",
 		"scope.name":               "",
 		"span_id":                  "0102040800000000",
@@ -184,8 +181,6 @@ var testLEventReq = &add_events.Event{
 		"body.str":                 "This is a log message",
 		"body.type":                "Str",
 		"dropped_attributes_count": float64(1),
-		"flag.is_sampled":          false,
-		"flags":                    float64(plog.LogRecordFlags(0)),
 		"message":                  "This is a log message",
 		"scope.name":               "",
 		"span_id":                  "0102040800000000",

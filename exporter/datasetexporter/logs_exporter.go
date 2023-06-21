@@ -182,8 +182,6 @@ func buildEventFromLog(
 	}
 
 	updateWithPrefixedValues(attrs, "attributes.", ".", log.Attributes().AsRaw(), 0)
-	attrs["flags"] = log.Flags()
-	attrs["flag.is_sampled"] = log.Flags().IsSampled()
 
 	if settings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
