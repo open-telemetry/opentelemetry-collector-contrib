@@ -1136,7 +1136,7 @@ type metricPostgresqlTableCount struct {
 func (m *metricPostgresqlTableCount) init() {
 	m.data.SetName("postgresql.table.count")
 	m.data.SetDescription("Number of user tables in a database.")
-	m.data.SetUnit("{tables}")
+	m.data.SetUnit("{table}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

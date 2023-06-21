@@ -226,7 +226,7 @@ Number of user tables in a database.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tables} | Sum | Int | Cumulative | false |
+| {table} | Sum | Int | Cumulative | false |
 
 ### postgresql.table.size
 
