@@ -291,7 +291,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
 	assert.Equal(t, "acme", v.Str())
-	require.Len(t, sink0.AllLogs(), 0,
+	assert.Len(t, sink0.AllLogs(), 0,
 		"metrics should not be routed to default pipeline",
 	)
 }
