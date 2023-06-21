@@ -49,6 +49,8 @@ func attributeValueToString(v pcommon.Value) string {
 		return sliceToString(v.Slice())
 	case pcommon.ValueTypeMap:
 		return mapToString(v.Map())
+	case pcommon.ValueTypeEmpty:
+		return ""
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
 	}
@@ -120,10 +122,10 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (SumoMarshaler) MarshalTraces(traces ptrace.Traces) ([]byte, error) {
+func (SumoMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
 	return nil, nil
 }
 
-func (SumoMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error) {
+func (SumoMarshaler) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
 	return nil, nil
 }

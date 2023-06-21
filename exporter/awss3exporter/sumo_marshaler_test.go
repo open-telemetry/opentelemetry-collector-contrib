@@ -86,7 +86,7 @@ func TestMarshalerOkStructure(t *testing.T) {
 	buf, err := marshaler.MarshalLogs(logs)
 	assert.NoError(t, err)
 	expectedEntry := "{\"date\": \"1970-01-01 00:00:00 +0000 UTC\",\"sourceName\":\"testSourceName\",\"sourceHost\":\"testHost\""
-	expectedEntry = expectedEntry + ",\"sourceCategory\":\"testcategory\",\"fields\":{},\"message\":\"entry1\"}\n"
+	expectedEntry += ",\"sourceCategory\":\"testcategory\",\"fields\":{},\"message\":\"entry1\"}\n"
 	assert.Equal(t, expectedEntry, string(buf))
 }
 
