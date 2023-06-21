@@ -68,7 +68,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces]) //nolint:staticcheck
 	if err != nil {
 		return err
 	}

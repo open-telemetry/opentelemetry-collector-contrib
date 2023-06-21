@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -28,13 +27,6 @@ import (
 const fullExpectedMetricsPath = "./testdata/expected_metrics/full.yaml"
 const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.yaml"
 const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.yaml"
-
-func TestMain(m *testing.M) {
-	// Enable the feature gates before all tests to avoid flaky tests.
-	_ = featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), true)
-	code := m.Run()
-	os.Exit(code)
-}
 
 func TestScraper(t *testing.T) {
 	t.Parallel()

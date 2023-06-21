@@ -17,9 +17,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -96,6 +98,7 @@ var (
 		ContainerNetworkIoUsageTxPackets:           metricEnabled,
 		ContainerPidsCount:                         metricEnabled,
 		ContainerPidsLimit:                         metricEnabled,
+		ContainerUptime:                            metricEnabled,
 	}
 )
 
@@ -253,9 +256,55 @@ func TestScrapeV2(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-				pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricValues(
+					"container.uptime", // value depends on time.Now(), making it unpredictable as far as tests go
+				),
+			))
 		})
 	}
+}
+
+func TestRecordBaseMetrics(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.Metrics = metadata.MetricsConfig{
+		ContainerUptime: metricEnabled,
+	}
+	r := newReceiver(receivertest.NewNopCreateSettings(), cfg)
+	now := time.Now()
+	started := now.Add(-2 * time.Second).Format(time.RFC3339)
+
+	t.Run("ok", func(t *testing.T) {
+		err := r.recordBaseMetrics(
+			pcommon.NewTimestampFromTime(now),
+			&types.ContainerJSONBase{
+				State: &types.ContainerState{
+					StartedAt: started,
+				},
+			},
+		)
+		require.NoError(t, err)
+		m := r.mb.Emit().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+		assert.Equal(t, "container.uptime", m.Name())
+		dp := m.Gauge().DataPoints()
+		assert.Equal(t, 1, dp.Len())
+		assert.Equal(t, 2, int(dp.At(0).DoubleValue()))
+	})
+
+	t.Run("error", func(t *testing.T) {
+		err := r.recordBaseMetrics(
+			pcommon.NewTimestampFromTime(now),
+			&types.ContainerJSONBase{
+				State: &types.ContainerState{
+					StartedAt: "bad date",
+				},
+			},
+		)
+		require.Error(t, err)
+	})
 }
 
 func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {

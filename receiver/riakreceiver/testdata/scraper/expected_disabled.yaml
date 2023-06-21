@@ -40,6 +40,13 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1648220661611816000"
+                  timeUnixNano: "1648220661612587000"
                 - asInt: "10"
                   attributes:
                     - key: operation
@@ -52,13 +59,6 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
-                - asInt: "9"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: delete
                   startTimeUnixNano: "1648220661611816000"
                   timeUnixNano: "1648220661612587000"
             unit: '{operation}'

@@ -3,7 +3,8 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Number of brokers in the cluster.
-            gauge:
+            sum:
+              aggregationTemporality: 1
               dataPoints:
                 - asInt: "1"
                   startTimeUnixNano: "1685063120199110000"

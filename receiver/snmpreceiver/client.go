@@ -325,7 +325,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 	}
 
 	// Condense gosnmp data types to our client's simplified data types
-	switch pdu.Type {
+	switch pdu.Type { // nolint:exhaustive
 	// Integer types
 	case gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)

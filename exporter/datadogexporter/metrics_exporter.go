@@ -52,6 +52,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
+		otlpmetrics.WithRemapping(),
 	}
 
 	if cfg.Metrics.HistConfig.SendAggregations {
@@ -186,7 +187,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	} else {
 		consumer = metrics.NewZorkianConsumer()
 	}
-	_, err := exp.tr.MapMetrics(ctx, md, consumer)
+	metadata, err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
@@ -203,10 +204,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	var sp []pb.ClientStatsPayload
 	if isMetricExportV2Enabled() {
 		var ms []datadogV2.MetricSeries
-		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
-		ms = metrics.PrepareSystemMetrics(ms)
-		ms = metrics.PrepareContainerMetrics(ms)
-
+		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)
 		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
@@ -220,9 +218,6 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	} else {
 		var ms []zorkian.Metric
 		ms, sl, sp = consumer.(*metrics.ZorkianConsumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
-		ms = metrics.PrepareZorkianSystemMetrics(ms)
-		ms = metrics.PrepareZorkianContainerMetrics(ms)
-
 		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting Zorkian Datadog payload", zap.Any("metric", ms))

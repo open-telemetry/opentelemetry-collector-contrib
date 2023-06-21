@@ -43,6 +43,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUUsageSystem:                    MetricConfig{Enabled: true},
 					ContainerCPUUsageTotal:                     MetricConfig{Enabled: true},
 					ContainerCPUUsageUsermode:                  MetricConfig{Enabled: true},
+					ContainerCPUUtilization:                    MetricConfig{Enabled: true},
 					ContainerMemoryActiveAnon:                  MetricConfig{Enabled: true},
 					ContainerMemoryActiveFile:                  MetricConfig{Enabled: true},
 					ContainerMemoryCache:                       MetricConfig{Enabled: true},
@@ -89,6 +90,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: true},
 					ContainerPidsCount:                         MetricConfig{Enabled: true},
 					ContainerPidsLimit:                         MetricConfig{Enabled: true},
+					ContainerUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerHostname:  ResourceAttributeConfig{Enabled: true},
@@ -120,6 +122,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUUsageSystem:                    MetricConfig{Enabled: false},
 					ContainerCPUUsageTotal:                     MetricConfig{Enabled: false},
 					ContainerCPUUsageUsermode:                  MetricConfig{Enabled: false},
+					ContainerCPUUtilization:                    MetricConfig{Enabled: false},
 					ContainerMemoryActiveAnon:                  MetricConfig{Enabled: false},
 					ContainerMemoryActiveFile:                  MetricConfig{Enabled: false},
 					ContainerMemoryCache:                       MetricConfig{Enabled: false},
@@ -166,6 +169,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: false},
 					ContainerPidsCount:                         MetricConfig{Enabled: false},
 					ContainerPidsLimit:                         MetricConfig{Enabled: false},
+					ContainerUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerHostname:  ResourceAttributeConfig{Enabled: false},

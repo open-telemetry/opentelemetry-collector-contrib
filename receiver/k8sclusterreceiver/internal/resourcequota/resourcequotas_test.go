@@ -4,40 +4,34 @@
 package resourcequota
 
 import (
+	"path/filepath"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestRequestQuotaMetrics(t *testing.T) {
 	rq := newResourceQuota("1")
+	m := GetMetrics(receivertest.NewNopCreateSettings(), rq)
 
-	actualResourceMetrics := GetMetrics(rq)
-
-	require.Equal(t, 1, len(actualResourceMetrics))
-
-	require.Equal(t, 2, len(actualResourceMetrics[0].Metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.resourcequota.uid":  "test-resourcequota-1-uid",
-			"k8s.resourcequota.name": "test-resourcequota-1",
-			"k8s.namespace.name":     "test-namespace",
-		},
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].Metrics[0], "k8s.resource_quota.hard_limit",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 2000)
-
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].Metrics[1], "k8s.resource_quota.used",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 1000)
 }
 
 func newResourceQuota(id string) *corev1.ResourceQuota {

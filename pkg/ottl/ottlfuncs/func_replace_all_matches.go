@@ -14,9 +14,9 @@ import (
 )
 
 type ReplaceAllMatchesArguments[K any] struct {
-	Target      ottl.PMapGetter[K] `ottlarg:"0"`
-	Pattern     string             `ottlarg:"1"`
-	Replacement string             `ottlarg:"2"`
+	Target      ottl.PMapGetter[K]   `ottlarg:"0"`
+	Pattern     string               `ottlarg:"1"`
+	Replacement ottl.StringGetter[K] `ottlarg:"2"`
 }
 
 func NewReplaceAllMatchesFactory[K any]() ottl.Factory[K] {
@@ -33,7 +33,7 @@ func createReplaceAllMatchesFunction[K any](_ ottl.FunctionContext, oArgs ottl.A
 	return replaceAllMatches(args.Target, args.Pattern, args.Replacement)
 }
 
-func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replacement string) (ottl.ExprFunc[K], error) {
+func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replacement ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
@@ -43,9 +43,13 @@ func replaceAllMatches[K any](target ottl.PMapGetter[K], pattern string, replace
 		if err != nil {
 			return nil, err
 		}
+		replacementVal, err := replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
 		val.Range(func(key string, value pcommon.Value) bool {
 			if glob.Match(value.Str()) {
-				value.SetStr(replacement)
+				value.SetStr(replacementVal)
 			}
 			return true
 		})

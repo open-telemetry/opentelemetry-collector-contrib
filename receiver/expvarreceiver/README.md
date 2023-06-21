@@ -39,6 +39,7 @@ The following can be configured:
     - `timeout = 3s`
 - `collection_interval` - Configure how often the metrics are scraped.
   - default: 1m
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `metrics` - Enable or disable metrics by name.
 
 ### Example configuration

@@ -46,6 +46,7 @@ The following settings are also optional and nested under `tls` to help configur
 - `ca_file` (default = ""): A set of certificate authorities used to validate the database server's SSL certificate.
 
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 ### Example Configuration
 
