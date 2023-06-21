@@ -89,7 +89,7 @@ type metricRedisClientsBlocked struct {
 func (m *metricRedisClientsBlocked) init() {
 	m.data.SetName("redis.clients.blocked")
 	m.data.SetDescription("Number of clients pending on a blocking call")
-	m.data.SetUnit("{clients}")
+	m.data.SetUnit("{client}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -140,7 +140,7 @@ type metricRedisClientsConnected struct {
 func (m *metricRedisClientsConnected) init() {
 	m.data.SetName("redis.clients.connected")
 	m.data.SetDescription("Number of client connections (excluding connections from replicas)")
-	m.data.SetUnit("{clients}")
+	m.data.SetUnit("{client}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -289,7 +289,7 @@ type metricRedisCmdCalls struct {
 func (m *metricRedisCmdCalls) init() {
 	m.data.SetName("redis.cmd.calls")
 	m.data.SetDescription("Total number of calls for a command")
-	m.data.SetUnit("{calls}")
+	m.data.SetUnit("{call}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -444,7 +444,7 @@ type metricRedisCommandsProcessed struct {
 func (m *metricRedisCommandsProcessed) init() {
 	m.data.SetName("redis.commands.processed")
 	m.data.SetDescription("Total number of commands processed by the server")
-	m.data.SetUnit("{commands}")
+	m.data.SetUnit("{command}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -495,7 +495,7 @@ type metricRedisConnectionsReceived struct {
 func (m *metricRedisConnectionsReceived) init() {
 	m.data.SetName("redis.connections.received")
 	m.data.SetDescription("Total number of connections accepted by the server")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -546,7 +546,7 @@ type metricRedisConnectionsRejected struct {
 func (m *metricRedisConnectionsRejected) init() {
 	m.data.SetName("redis.connections.rejected")
 	m.data.SetDescription("Number of connections rejected because of maxclients limit")
-	m.data.SetUnit("{connections}")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -701,7 +701,7 @@ type metricRedisDbExpires struct {
 func (m *metricRedisDbExpires) init() {
 	m.data.SetName("redis.db.expires")
 	m.data.SetDescription("Number of keyspace keys with an expiration")
-	m.data.SetUnit("{keys}")
+	m.data.SetUnit("{key}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -752,7 +752,7 @@ type metricRedisDbKeys struct {
 func (m *metricRedisDbKeys) init() {
 	m.data.SetName("redis.db.keys")
 	m.data.SetDescription("Number of keyspace keys")
-	m.data.SetUnit("{keys}")
+	m.data.SetUnit("{key}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -803,7 +803,7 @@ type metricRedisKeysEvicted struct {
 func (m *metricRedisKeysEvicted) init() {
 	m.data.SetName("redis.keys.evicted")
 	m.data.SetDescription("Number of evicted keys due to maxmemory limit")
-	m.data.SetUnit("{keys}")
+	m.data.SetUnit("{key}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -854,7 +854,7 @@ type metricRedisKeysExpired struct {
 func (m *metricRedisKeysExpired) init() {
 	m.data.SetName("redis.keys.expired")
 	m.data.SetDescription("Total number of key expiration events")
-	m.data.SetUnit("{events}")
+	m.data.SetUnit("{event}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -905,7 +905,7 @@ type metricRedisKeyspaceHits struct {
 func (m *metricRedisKeyspaceHits) init() {
 	m.data.SetName("redis.keyspace.hits")
 	m.data.SetDescription("Number of successful lookup of keys in the main dictionary")
-	m.data.SetUnit("{hits}")
+	m.data.SetUnit("{hit}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -956,7 +956,7 @@ type metricRedisKeyspaceMisses struct {
 func (m *metricRedisKeyspaceMisses) init() {
 	m.data.SetName("redis.keyspace.misses")
 	m.data.SetDescription("Number of failed lookup of keys in the main dictionary")
-	m.data.SetUnit("{misses}")
+	m.data.SetUnit("{miss}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1452,7 +1452,7 @@ type metricRedisRdbChangesSinceLastSave struct {
 func (m *metricRedisRdbChangesSinceLastSave) init() {
 	m.data.SetName("redis.rdb.changes_since_last_save")
 	m.data.SetDescription("Number of changes since the last dump")
-	m.data.SetUnit("{changes}")
+	m.data.SetUnit("{change}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1654,7 +1654,7 @@ type metricRedisSlavesConnected struct {
 func (m *metricRedisSlavesConnected) init() {
 	m.data.SetName("redis.slaves.connected")
 	m.data.SetDescription("Number of connected replicas")
-	m.data.SetUnit("{replicas}")
+	m.data.SetUnit("{replica}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
