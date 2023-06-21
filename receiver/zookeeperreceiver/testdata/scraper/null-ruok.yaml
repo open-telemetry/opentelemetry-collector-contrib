@@ -121,7 +121,7 @@ resourceMetrics:
             name: zookeeper.ruok
             gauge:
               dataPoints:
-                - asInt: "1"
+                - asInt: "0"
                   startTimeUnixNano: "1642685966447704000"
                   timeUnixNano: "1642685966447860000"
             unit: '1'
