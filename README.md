@@ -93,7 +93,6 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 - [Yang Song](https://github.com/songy23), DataDog
@@ -109,6 +108,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Bogdan Drutu](https://github.com/bogdandrutu), Splunk
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
