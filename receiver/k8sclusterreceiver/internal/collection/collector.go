@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/resourcequota"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
+	//"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 )
 
 // TODO: Consider moving some of these constants to
@@ -80,6 +81,11 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	dc.metadataStore.ForEach(gvk.ResourceQuota, func(o any) {
 		resourcequota.RecordMetrics(dc.metricsBuilder, o.(*corev1.ResourceQuota), ts)
 	})
+	//case *corev1.Service:
+	//rm = getMetricsForService(o)
+	/*dc.metadataStore.ForEach(gvk.Service, func(o any) {
+		service.RecordMetrics(dc.metricsBuilder, o.(*corev1.Service), ts)
+	})*/
 	dc.metadataStore.ForEach(gvk.Deployment, func(o any) {
 		deployment.RecordMetrics(dc.metricsBuilder, o.(*appsv1.Deployment), ts)
 	})
