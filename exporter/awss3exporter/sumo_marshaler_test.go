@@ -78,16 +78,16 @@ func TestMarshalerOkStructure(t *testing.T) {
 	ts := pcommon.Timestamp(int64(recordNum) * time.Millisecond.Nanoseconds())
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("entry1")
-	logRecord.Attributes().PutStr("log.file.path_resolved", "testSourceName")
+	logRecord.Attributes().PutStr("_sourceName", "testSourceName")
 	logRecord.SetTimestamp(ts)
 
 	marshaler := &SumoMarshaler{"txt"}
 	require.NotNil(t, marshaler)
 	buf, err := marshaler.MarshalLogs(logs)
 	assert.NoError(t, err)
-	expectedEntry := "{\"data\": \"1970-01-01 00:00:00 +0000 UTC\",\"sourceName\":\"testSourceName\",\"sourceHost\":\"testHost\""
+	expectedEntry := "{\"date\": \"1970-01-01 00:00:00 +0000 UTC\",\"sourceName\":\"testSourceName\",\"sourceHost\":\"testHost\""
 	expectedEntry = expectedEntry + ",\"sourceCategory\":\"testcategory\",\"fields\":{},\"message\":\"entry1\"}\n"
-	assert.Equal(t, string(buf), expectedEntry)
+	assert.Equal(t, expectedEntry, string(buf))
 }
 
 func TestAttributeValueToString(t *testing.T) {
