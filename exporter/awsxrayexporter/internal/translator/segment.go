@@ -17,6 +17,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/url"
@@ -57,6 +58,8 @@ var (
 )
 
 const (
+	// defaultMetadataNamespace is used for non-namespaced non-indexed attributes.
+	defaultMetadataNamespace = "default"
 	// defaultSpanName will be used if there are no valid xray characters in the span name
 	defaultSegmentName = "span"
 	// maxSegmentNameLength the maximum length of a Segment name
@@ -429,13 +432,29 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		}
 	} else {
 		for key, value := range attributes {
-			if indexedKeys[key] {
+			switch {
+			case indexedKeys[key]:
 				key = fixAnnotationKey(key)
 				annoVal := annotationValue(value)
 				if annoVal != nil {
 					annotations[key] = annoVal
 				}
-			} else {
+			case strings.HasPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix) && value.Type() == pcommon.ValueTypeStr:
+				namespace := strings.TrimPrefix(key, awsxray.AWSXraySegmentMetadataAttributePrefix)
+				var metaVal map[string]interface{}
+				err := json.Unmarshal([]byte(value.Str()), &metaVal)
+				switch {
+				case err != nil:
+					// if unable to unmarshal, keep the original key/value
+					defaultMetadata[key] = value.Str()
+				case strings.EqualFold(namespace, defaultMetadataNamespace):
+					for k, v := range metaVal {
+						defaultMetadata[k] = v
+					}
+				default:
+					metadata[namespace] = metaVal
+				}
+			default:
 				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
@@ -445,7 +464,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	}
 
 	if len(defaultMetadata) > 0 {
-		metadata["default"] = defaultMetadata
+		metadata[defaultMetadataNamespace] = defaultMetadata
 	}
 
 	return user, annotations, metadata
