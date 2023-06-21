@@ -18,7 +18,7 @@ Number of brokers in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {brokers} | Sum | Int | Delta | false |
+| {brokers} | Sum | Int | Cumulative | false |
 
 ### kafka.consumer_group.lag
 
@@ -57,7 +57,7 @@ Count of members in the consumer group
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {members} | Sum | Int | Delta | false |
+| {members} | Sum | Int | Cumulative | false |
 
 #### Attributes
 
@@ -132,7 +132,7 @@ Number of replicas for partition of topic
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {replicas} | Sum | Int | Delta | false |
+| {replicas} | Sum | Int | Cumulative | false |
 
 #### Attributes
 
@@ -147,7 +147,7 @@ Number of synchronized replicas of partition
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {replicas} | Sum | Int | Delta | false |
+| {replicas} | Sum | Int | Cumulative | false |
 
 #### Attributes
 
@@ -162,7 +162,7 @@ Number of partitions in topic.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {partitions} | Sum | Int | Delta | false |
+| {partitions} | Sum | Int | Cumulative | false |
 
 #### Attributes
 

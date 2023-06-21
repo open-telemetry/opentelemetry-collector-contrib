@@ -24,7 +24,7 @@ func (m *metricKafkaBrokers) init() {
 	m.data.SetUnit("{brokers}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricKafkaBrokers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -180,7 +180,7 @@ func (m *metricKafkaConsumerGroupMembers) init() {
 	m.data.SetUnit("{members}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -442,7 +442,7 @@ func (m *metricKafkaPartitionReplicas) init() {
 	m.data.SetUnit("{replicas}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -496,7 +496,7 @@ func (m *metricKafkaPartitionReplicasInSync) init() {
 	m.data.SetUnit("{replicas}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -550,7 +550,7 @@ func (m *metricKafkaTopicPartitions) init() {
 	m.data.SetUnit("{partitions}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
