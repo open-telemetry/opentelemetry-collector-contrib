@@ -35,7 +35,7 @@ func newTracesConnector(
 
 	tr, ok := traces.(connector.TracesRouter)
 	if !ok {
-		return nil, errTooFewPipelines
+		return nil, errUnexpectedConsumer
 	}
 
 	r, err := newRouter(

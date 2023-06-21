@@ -40,7 +40,7 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 	assert.NotNil(t, conn)
 }
 
-func TestCreationFailsWithTooFewPipelines(t *testing.T) {
+func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where attributes["X-Tenant"] == "acme"`,
@@ -58,6 +58,6 @@ func TestCreationFailsWithTooFewPipelines(t *testing.T) {
 	conn, err := factory.CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, consumer)
 
-	assert.ErrorIs(t, err, errTooFewPipelines)
+	assert.ErrorIs(t, err, errUnexpectedConsumer)
 	assert.Nil(t, conn)
 }

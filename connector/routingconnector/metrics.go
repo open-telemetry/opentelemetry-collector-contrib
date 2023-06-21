@@ -35,7 +35,7 @@ func newMetricsConnector(
 
 	mr, ok := metrics.(connector.MetricsRouter)
 	if !ok {
-		return nil, errTooFewPipelines
+		return nil, errUnexpectedConsumer
 	}
 
 	r, err := newRouter(

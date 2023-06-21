@@ -81,7 +81,6 @@ Respectively, if none of the routing conditions met, then a signal is routed to 
 ## Differences between the Routing Connector and Routing Processor
 
 - The connector will only route using [OTTL] statements which can only be applied to resource attributes. It does not support matching on context values at this time.
-- The connector must be a receiver in a minimum of two pipelines.
 - The connector routes to pipelines, not exporters as the processor does.
 
 ### OTTL Limitations

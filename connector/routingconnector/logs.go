@@ -35,7 +35,7 @@ func newLogsConnector(
 
 	lr, ok := logs.(connector.LogsRouter)
 	if !ok {
-		return nil, errTooFewPipelines
+		return nil, errUnexpectedConsumer
 	}
 
 	r, err := newRouter(

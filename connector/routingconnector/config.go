@@ -12,12 +12,10 @@ import (
 )
 
 var (
-	errEmptyRoute      = errors.New("invalid route: no statement provided")
-	errNoPipelines     = errors.New("invalid route: no pipelines defined")
-	errTooFewPipelines = errors.New(
-		"routingconnector requires at least two pipelines to route between",
-	)
-	errNoTableItems = errors.New("invalid routing table: the routing table is empty")
+	errEmptyRoute         = errors.New("invalid route: no statement provided")
+	errNoPipelines        = errors.New("invalid route: no pipelines defined")
+	errUnexpectedConsumer = errors.New("expected consumer to be a connector router")
+	errNoTableItems       = errors.New("invalid routing table: the routing table is empty")
 )
 
 // Config defines configuration for the Routing processor.
