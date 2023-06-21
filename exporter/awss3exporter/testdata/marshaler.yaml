@@ -1,0 +1,16 @@
+receivers:
+  nop:
+
+exporters:
+  awss3:
+    marshaler: sumo_ic
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awss3]
