@@ -5,7 +5,6 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -13,12 +12,12 @@ import (
 )
 
 var (
-	errEmptyRoute      = errors.New("no statement provided")
-	errNoPipelines     = errors.New("no pipelines defined for the route")
+	errEmptyRoute      = errors.New("invalid route: no statement provided")
+	errNoPipelines     = errors.New("invalid route: no pipelines defined")
 	errTooFewPipelines = errors.New(
 		"routingconnector requires at least two pipelines to route between",
 	)
-	errNoTableItems = errors.New("the routing table is empty")
+	errNoTableItems = errors.New("invalid routing table: the routing table is empty")
 )
 
 // Config defines configuration for the Routing processor.
@@ -48,18 +47,18 @@ type Config struct {
 func (c *Config) Validate() error {
 	// validate that there's at least one item in the table
 	if len(c.Table) == 0 {
-		return fmt.Errorf("invalid routing table: %w", errNoTableItems)
+		return errNoTableItems
 	}
 
 	// validate that every route has a value for the routing attribute and has
 	// at least one pipeline
 	for _, item := range c.Table {
 		if len(item.Statement) == 0 {
-			return fmt.Errorf("invalid (empty) route : %w", errEmptyRoute)
+			return errEmptyRoute
 		}
 
 		if len(item.Pipelines) == 0 {
-			return fmt.Errorf("invalid route: %w", errNoPipelines)
+			return errNoPipelines
 		}
 	}
 

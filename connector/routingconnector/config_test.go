@@ -134,7 +134,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			error: "invalid (empty) route : no statement provided",
+			error: "invalid route: no statement provided",
 		},
 		{
 			name: "no pipeline provided",
@@ -145,7 +145,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			error: "invalid route: no pipelines defined for the route",
+			error: "invalid route: no pipelines defined",
 		},
 		{
 			name: "no routes provided",
