@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     beta: [logs, metrics, traces]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib, splunk, observiq, sumo, redhat]
 
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
