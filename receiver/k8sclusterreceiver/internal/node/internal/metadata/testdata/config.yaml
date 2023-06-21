@@ -1,0 +1,55 @@
+default:
+all_set:
+  metrics:
+    k8s.node.allocatable_cpu:
+      enabled: true
+    k8s.node.allocatable_ephemeral_storage:
+      enabled: true
+    k8s.node.allocatable_memory:
+      enabled: true
+    k8s.node.allocatable_storage:
+      enabled: true
+    k8s.node.condition_disk_pressure:
+      enabled: true
+    k8s.node.condition_memory_pressure:
+      enabled: true
+    k8s.node.condition_network_unavailable:
+      enabled: true
+    k8s.node.condition_pid_pressure:
+      enabled: true
+    k8s.node.condition_ready:
+      enabled: true
+  resource_attributes:
+    k8s.node.name:
+      enabled: true
+    k8s.node.uid:
+      enabled: true
+    opencensus.resourcetype:
+      enabled: true
+none_set:
+  metrics:
+    k8s.node.allocatable_cpu:
+      enabled: false
+    k8s.node.allocatable_ephemeral_storage:
+      enabled: false
+    k8s.node.allocatable_memory:
+      enabled: false
+    k8s.node.allocatable_storage:
+      enabled: false
+    k8s.node.condition_disk_pressure:
+      enabled: false
+    k8s.node.condition_memory_pressure:
+      enabled: false
+    k8s.node.condition_network_unavailable:
+      enabled: false
+    k8s.node.condition_pid_pressure:
+      enabled: false
+    k8s.node.condition_ready:
+      enabled: false
+  resource_attributes:
+    k8s.node.name:
+      enabled: false
+    k8s.node.uid:
+      enabled: false
+    opencensus.resourcetype:
+      enabled: false

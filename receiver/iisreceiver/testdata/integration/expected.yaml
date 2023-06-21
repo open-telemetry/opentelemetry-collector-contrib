@@ -14,7 +14,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
-            unit: '{connections}'
+            unit: "{connections}"
           - description: Number of connections established anonymously.
             name: iis.connection.anonymous
             sum:
@@ -24,7 +24,7 @@ resourceMetrics:
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
               isMonotonic: true
-            unit: '{connections}'
+            unit: "{connections}"
           - description: Total number of attempts to connect to the server.
             name: iis.connection.attempt.count
             sum:
@@ -34,7 +34,7 @@ resourceMetrics:
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
               isMonotonic: true
-            unit: '{attempts}'
+            unit: "{attempts}"
           - description: Number of bytes blocked due to bandwidth throttling.
             name: iis.network.blocked
             sum:
@@ -65,7 +65,7 @@ resourceMetrics:
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
               isMonotonic: true
-            unit: '{files}'
+            unit: "{files}"
           - description: Total amount of bytes sent and received.
             name: iis.network.io
             sum:
@@ -142,7 +142,7 @@ resourceMetrics:
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
               isMonotonic: true
-            unit: '{requests}'
+            unit: "{requests}"
           - description: The amount of time the server has been up.
             gauge:
               dataPoints:
@@ -158,9 +158,17 @@ resourceMetrics:
       attributes:
         - key: iis.application_pool
           value:
-            stringValue: '---1'
+            stringValue: "---1"
     scopeMetrics:
       - metrics:
+          - description: Age of oldest request in the queue.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1686199451535881700"
+                  timeUnixNano: "1686199511675213400"
+            name: iis.request.queue.age.max
+            unit: ms
           - description: Current number of requests in the queue.
             name: iis.request.queue.count
             sum:
@@ -169,7 +177,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
-            unit: '{requests}'
+            unit: "{requests}"
           - description: Total number of requests rejected.
             name: iis.request.rejected
             sum:
@@ -179,7 +187,7 @@ resourceMetrics:
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
               isMonotonic: true
-            unit: '{requests}'
+            unit: "{requests}"
         scope:
           name: otelcol/iisreceiver
           version: latest
@@ -190,6 +198,14 @@ resourceMetrics:
             stringValue: DefaultAppPool
     scopeMetrics:
       - metrics:
+          - description: Age of oldest request in the queue.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1686199451535881700"
+                  timeUnixNano: "1686199511675213400"
+            name: iis.request.queue.age.max
+            unit: ms
           - description: Current number of requests in the queue.
             name: iis.request.queue.count
             sum:
@@ -198,7 +214,7 @@ resourceMetrics:
                 - asInt: "0"
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
-            unit: '{requests}'
+            unit: "{requests}"
           - description: Total number of requests rejected.
             name: iis.request.rejected
             sum:
@@ -208,7 +224,7 @@ resourceMetrics:
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
               isMonotonic: true
-            unit: '{requests}'
+            unit: "{requests}"
         scope:
           name: otelcol/iisreceiver
           version: latest
@@ -223,7 +239,7 @@ resourceMetrics:
                 - asInt: "1266"
                   startTimeUnixNano: "1664375532837715300"
                   timeUnixNano: "1664375533465547100"
-            unit: '{threads}'
+            unit: "{threads}"
         scope:
           name: otelcol/iisreceiver
           version: latest
