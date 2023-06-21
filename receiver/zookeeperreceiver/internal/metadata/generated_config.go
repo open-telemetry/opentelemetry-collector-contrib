@@ -37,6 +37,7 @@ type MetricsConfig struct {
 	ZookeeperLatencyMin                  MetricConfig `mapstructure:"zookeeper.latency.min"`
 	ZookeeperPacketCount                 MetricConfig `mapstructure:"zookeeper.packet.count"`
 	ZookeeperRequestActive               MetricConfig `mapstructure:"zookeeper.request.active"`
+	ZookeeperRuok                        MetricConfig `mapstructure:"zookeeper.ruok"`
 	ZookeeperSyncPending                 MetricConfig `mapstructure:"zookeeper.sync.pending"`
 	ZookeeperWatchCount                  MetricConfig `mapstructure:"zookeeper.watch.count"`
 	ZookeeperZnodeCount                  MetricConfig `mapstructure:"zookeeper.znode.count"`
@@ -78,6 +79,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ZookeeperRequestActive: MetricConfig{
+			Enabled: true,
+		},
+		ZookeeperRuok: MetricConfig{
 			Enabled: true,
 		},
 		ZookeeperSyncPending: MetricConfig{

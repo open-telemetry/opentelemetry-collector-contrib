@@ -120,6 +120,14 @@ Number of currently executing requests.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {requests} | Sum | Int | Cumulative | false |
 
+### zookeeper.ruok
+
+Response from zookeeper ruok command
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### zookeeper.sync.pending
 
 The number of pending syncs from the followers. Only exposed by the leader.
