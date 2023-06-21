@@ -195,6 +195,125 @@ func TestTransformer(t *testing.T) {
 			[]*entry.Entry{entryWithBody(t1, "test1test2")},
 		},
 		{
+			"Stacktrace",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = `body matches "^[^\\s]"`
+				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.OutputIDs = []string{"fake"}
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "Log message 1"),
+				entryWithBody(t1, "Error: java.lang.Exception: Stack trace"),
+				entryWithBody(t1, "        at java.lang.Thread.dumpStack(Thread.java:1336)"),
+				entryWithBody(t1, "        at Main.demo3(Main.java:15)"),
+				entryWithBody(t1, "        at Main.demo2(Main.java:12)"),
+				entryWithBody(t1, "        at Main.demo1(Main.java:9)"),
+				entryWithBody(t1, "        at Main.demo(Main.java:6)"),
+				entryWithBody(t1, "        at Main.main(Main.java:3)"),
+				entryWithBody(t1, "Another log message"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "Log message 1"),
+				entryWithBody(t1, "Error: java.lang.Exception: Stack trace\n"+
+					"        at java.lang.Thread.dumpStack(Thread.java:1336)\n"+
+					"        at Main.demo3(Main.java:15)\n"+
+					"        at Main.demo2(Main.java:12)\n"+
+					"        at Main.demo1(Main.java:9)\n"+
+					"        at Main.demo(Main.java:6)\n"+
+					"        at Main.main(Main.java:3)"),
+				entryWithBody(t1, "Another log message"),
+			},
+		},
+		{
+			"StacktraceSubfield",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField("message")
+				cfg.IsFirstEntry = `body.message matches "^[^\\s]"`
+				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.OutputIDs = []string{"fake"}
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, map[string]any{"message": "Log message 1"}),
+				entryWithBody(t1, map[string]any{"message": "Error: java.lang.Exception: Stack trace"}),
+				entryWithBody(t1, map[string]any{"message": "        at java.lang.Thread.dumpStack(Thread.java:1336)"}),
+				entryWithBody(t1, map[string]any{"message": "        at Main.demo3(Main.java:15)"}),
+				entryWithBody(t1, map[string]any{"message": "        at Main.demo2(Main.java:12)"}),
+				entryWithBody(t1, map[string]any{"message": "        at Main.demo1(Main.java:9)"}),
+				entryWithBody(t1, map[string]any{"message": "        at Main.demo(Main.java:6)"}),
+				entryWithBody(t1, map[string]any{"message": "        at Main.main(Main.java:3)"}),
+				entryWithBody(t1, map[string]any{"message": "Another log message"}),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, map[string]any{"message": "Log message 1"}),
+				entryWithBody(t1, map[string]any{"message": "Error: java.lang.Exception: Stack trace\n" +
+					"        at java.lang.Thread.dumpStack(Thread.java:1336)\n" +
+					"        at Main.demo3(Main.java:15)\n" +
+					"        at Main.demo2(Main.java:12)\n" +
+					"        at Main.demo1(Main.java:9)\n" +
+					"        at Main.demo(Main.java:6)\n" +
+					"        at Main.main(Main.java:3)"}),
+				entryWithBody(t1, map[string]any{"message": "Another log message"}),
+			},
+		},
+		{
+			"CombineOtherThanCondition",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField("message")
+				cfg.CombineWith = ""
+				cfg.IsLastEntry = "body.logtag == 'F'"
+				cfg.OverwriteWith = "newest"
+				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.OutputIDs = []string{"fake"}
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, map[string]any{
+					"message":   "Single entry log 1",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:09.669794202Z",
+				}),
+				entryWithBody(t1, map[string]any{
+					"message":   "This is a very very long line th",
+					"logtag":    "P",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:10.113242941Z",
+				}),
+				entryWithBody(t1, map[string]any{
+					"message":   "at is really really long and spa",
+					"logtag":    "P",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:10.113242941Z",
+				}),
+				entryWithBody(t1, map[string]any{
+					"message":   "ns across multiple log entries",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:10.113242941Z",
+				}),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, map[string]any{
+					"message":   "Single entry log 1",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:09.669794202Z",
+				}),
+				entryWithBody(t1, map[string]any{
+					"message":   "This is a very very long line that is really really long and spans across multiple log entries",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:10.113242941Z",
+				}),
+			},
+		},
+		{
 			"TestDefaultSourceIdentifier",
 			func() *Config {
 				cfg := NewConfig()
@@ -358,6 +477,7 @@ func TestTransformer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
+			require.NoError(t, op.Start(testutil.NewMockPersister("test")))
 			recombine := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)
