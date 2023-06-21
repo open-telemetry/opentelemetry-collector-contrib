@@ -12,8 +12,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.80.0
 	go.opentelemetry.io/collector/exporter v0.80.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.80.0
-	golang.org/x/oauth2 v0.8.0
-	google.golang.org/api v0.127.0
+	golang.org/x/oauth2 v0.9.0
+	google.golang.org/api v0.128.0
 )
 
 require (
