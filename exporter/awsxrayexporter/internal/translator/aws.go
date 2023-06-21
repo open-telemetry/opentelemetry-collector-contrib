@@ -237,12 +237,12 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		cwl = getLogGroupMetadata(configSlice, false)
 	}
 
-	if sdkName != "" && sdkLanguage != "" {
+	sdkLanguageSuffix := " for " + sdkLanguage
+	sdk = sdkName
+	if sdkName != "" && sdkLanguage != "" && !strings.HasSuffix(strings.ToLower(sdkName), strings.ToLower(sdkLanguageSuffix)) {
 		// Convention for SDK name for xray SDK information is e.g., `X-Ray SDK for Java`, `X-Ray for Go`.
 		// We fill in with e.g, `opentelemetry for java` by using the conventions
-		sdk = sdkName + " for " + sdkLanguage
-	} else {
-		sdk = sdkName
+		sdk += sdkLanguageSuffix
 	}
 
 	xray := &awsxray.XRayMetaData{

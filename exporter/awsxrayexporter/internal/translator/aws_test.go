@@ -388,6 +388,21 @@ func TestCustomSDK(t *testing.T) {
 	assert.Equal(t, "2.0.3", *awsData.XRay.SDKVersion)
 }
 
+func TestCustomSDKForLanguage(t *testing.T) {
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "test for java")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "2.0.3")
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "test for java", *awsData.XRay.SDK)
+	assert.Equal(t, "2.0.3", *awsData.XRay.SDKVersion)
+}
+
 func TestLogGroups(t *testing.T) {
 	cwl1 := awsxray.LogGroupMetadata{
 		LogGroup: awsxray.String("group1"),
