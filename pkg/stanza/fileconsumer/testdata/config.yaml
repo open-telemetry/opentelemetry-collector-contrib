@@ -30,8 +30,8 @@ exclude_glob_double_asterisk_prefix:
     - "**/directory/**/not*.log"
 exclude_inline:
   type: mock
-  include: [ "*.log" ]
-  exclude: [ "a.log", "b.log" ]
+  include: ["*.log"]
+  exclude: ["a.log", "b.log"]
 exclude_string:
   type: mock
   include:
@@ -51,6 +51,21 @@ exclude_one:
     - "*.log"
   exclude:
     - one.log
+sort_by_numeric:
+  type: mock
+  ordering_criteria:
+    sort_by:
+      - regex: 'err\.(?P<value>[a-zA-Z])\.\d+\.\d{10}\.log'
+        sort_type: numeric
+sort_by_timestamp:
+  type: mock
+  ordering_criteria:
+    sort_by:
+      - regex: 'err\.[a-zA-Z]\.\d+\.(?P<value>\d{10})\.log'
+        sort_type: timestamp
+        format: "%Y%m%d%H"
+        location: "utc"
+        ascending: true
 fingerprint_size_1KB:
   type: mock
   fingerprint_size: 1KB
@@ -87,7 +102,7 @@ include_glob_double_asterisk_prefix:
     - "**/directory/**/*.log"
 include_inline:
   type: mock
-  include: [ "a.log", "b.log" ]
+  include: ["a.log", "b.log"]
 include_string:
   type: mock
   include: "aString"
@@ -126,19 +141,19 @@ multiline_extra_field:
 multiline_line_end_special:
   type: mock
   multiline:
-    line_end_pattern: '%'
+    line_end_pattern: "%"
 multiline_line_end_string:
   type: mock
   multiline:
-    line_end_pattern: 'Start'
+    line_end_pattern: "Start"
 multiline_line_start_special:
   type: mock
   multiline:
-    line_start_pattern: '%'
+    line_start_pattern: "%"
 multiline_line_start_string:
   type: mock
   multiline:
-    line_start_pattern: 'Start'
+    line_start_pattern: "Start"
 poll_interval_1000ms:
   type: mock
   poll_interval: 1000ms
@@ -162,4 +177,4 @@ header_config:
   header:
     pattern: "^#"
     metadata_operators:
-     - type: "regex_parser"
+      - type: "regex_parser"

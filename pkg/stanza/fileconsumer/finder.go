@@ -5,17 +5,23 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"github.com/bmatcuk/doublestar/v4"
+	"go.uber.org/multierr"
 )
 
 type Finder struct {
-	Include []string `mapstructure:"include,omitempty"`
-	Exclude []string `mapstructure:"exclude,omitempty"`
+	Include          []string         `mapstructure:"include,omitempty"`
+	Exclude          []string         `mapstructure:"exclude,omitempty"`
+	OrderingCriteria OrderingCriteria `mapstructure:"ordering_criteria,omitempty"`
+}
+
+type OrderingCriteria struct {
+	SortBy []SortRule `mapstructure:"sort_by,omitempty"`
 }
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
 //
 // Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
-func (f Finder) FindFiles() []string {
+func (f Finder) FindFiles() ([]string, error) {
 	all := make([]string, 0, len(f.Include))
 	for _, include := range f.Include {
 		matches, _ := doublestar.FilepathGlob(include, doublestar.WithFilesOnly()) // compile error checked in build
@@ -37,5 +43,25 @@ func (f Finder) FindFiles() []string {
 		}
 	}
 
-	return all
+	return f.FindCurrent(all)
+}
+
+// FindCurrent gets the current file to read from a list of files if file_sort_patterns is configured
+// otherwise it returns the list of files.
+func (f Finder) FindCurrent(files []string) ([]string, error) {
+	if len(f.OrderingCriteria.SortBy) == 0 || files == nil || len(files) == 0 {
+		return files, nil
+	}
+
+	var errs error
+	for _, fsp := range f.OrderingCriteria.SortBy {
+		sortedFiles, err := fsp.Sort(files)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		files = sortedFiles
+	}
+
+	return []string{files[0]}, errs
 }

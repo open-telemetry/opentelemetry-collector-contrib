@@ -187,6 +187,12 @@ func (c Config) validate() error {
 		}
 	}
 
+	for _, sr := range c.OrderingCriteria.SortBy {
+		if err := sr.validate(); err != nil {
+			return err
+		}
+	}
+
 	if c.MaxLogSize <= 0 {
 		return fmt.Errorf("`max_log_size` must be positive")
 	}

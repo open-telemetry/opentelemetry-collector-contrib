@@ -161,6 +161,35 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "sort_by_timestamp",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria.SortBy = []SortRule{
+						{
+							SortType:  SortTypeTimestamp,
+							Regex:     `err\.[a-zA-Z]\.\d+\.(?P<value>\d{10})\.log`,
+							Location:  "utc",
+							Format:    `%Y%m%d%H`,
+							Ascending: true,
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
+				Name: "sort_by_numeric",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria.SortBy = []SortRule{
+						{
+							SortType: SortTypeNumeric,
+							Regex:    `err\.(?P<value>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
 				Name: "poll_interval_no_units",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
@@ -530,6 +559,129 @@ func TestBuild(t *testing.T) {
 			"HeaderConfigNoFlag",
 			func(f *Config) {
 				f.Header = &HeaderConfig{}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaRegex",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						SortType: SortTypeNumeric,
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaSortType",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: "invalid",
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaFormatNotNeeded",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: SortTypeNumeric,
+						Format:   "invalid",
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaFormatNotNeeded2",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: SortTypeAlphabetical,
+						Format:   "invalid",
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaLocationNotNeeded",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: SortTypeNumeric,
+						Format:   "invalid",
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaLocationNotNeeded2",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: SortTypeAlphabetical,
+						Format:   "invalid",
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaLocationNotNeeded2",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: SortTypeAlphabetical,
+						Format:   "invalid",
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaLocationNeeded",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: SortTypeTimestamp,
+						Format:   "%y%m%d",
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaFormatNeeded",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRule{
+					{
+						Regex:    ".*",
+						SortType: SortTypeTimestamp,
+						Location: "utc",
+					},
+				}
 			},
 			require.Error,
 			nil,

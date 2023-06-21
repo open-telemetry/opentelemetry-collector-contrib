@@ -50,7 +50,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 		return fmt.Errorf("read known files from database: %w", err)
 	}
 
-	if len(m.finder.FindFiles()) == 0 {
+	if files, err := m.finder.FindFiles(); err != nil {
+		return fmt.Errorf("find files: %w", err)
+	} else if len(files) == 0 {
 		m.Warnw("no files match the configured include patterns",
 			"include", m.finder.Include,
 			"exclude", m.finder.Exclude)
@@ -108,7 +110,11 @@ func (m *Manager) poll(ctx context.Context) {
 	batchesProcessed := 0
 
 	// Get the list of paths on disk
-	matches := m.finder.FindFiles()
+	matches, err := m.finder.FindFiles()
+	if err != nil {
+		m.Errorf("error finding files: %s", err)
+	}
+
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
 
