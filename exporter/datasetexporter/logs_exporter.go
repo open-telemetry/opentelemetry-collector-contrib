@@ -22,7 +22,7 @@ var now = time.Now
 
 // If a LogRecord doesn't contain severity or we can't map it to a valid DataSet severity, we use
 // this value (3 - INFO) instead
-var defaultSeverityLevel = 3
+var defaultDataSetSeverityLevel = 3
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
@@ -79,56 +79,82 @@ func otelSeverityToDataSetSeverity(log plog.LogRecord) int {
 	sevNum := log.SeverityNumber()
 	sevText := log.SeverityText()
 
-	dataSetSeverity := defaultSeverityLevel
+	dataSetSeverity := defaultDataSetSeverityLevel
 
 	if sevNum > 0 {
-		// See https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
-		// for OTEL mappings
-		switch sevNum {
-		case 1, 2, 3, 4:
-			// TRACE
-			dataSetSeverity = 1
-		case 5, 6, 7, 8:
-			// DEBUG
-			dataSetSeverity = 2
-		case 9, 10, 11, 12:
-			// INFO
-			dataSetSeverity = 3
-		case 13, 14, 15, 16:
-			// WARN
-			dataSetSeverity = 4
-		case 17, 18, 19, 20:
-			// ERROR
-			dataSetSeverity = 5
-		case 21, 22, 23, 24:
-			// FATAL / CRITICAL / EMERGENCY
-			dataSetSeverity = 6
-		}
+		dataSetSeverity = logRecordSevNumToDataSetSeverity(sevNum)
 	} else if sevText != "" {
 		// Per docs, SeverityNumber is optional so if it's not present we fall back to SeverityText
 		// https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext
-		switch strings.ToLower(sevText) {
-		case "fine", "finest":
-			dataSetSeverity = 0
-		case "trace":
-			dataSetSeverity = 1
-		case "debug":
-			dataSetSeverity = 2
-		case "info", "information":
-			dataSetSeverity = 3
-		case "warn", "warning":
-			dataSetSeverity = 4
-		case "error":
-			dataSetSeverity = 5
-		case "fatal", "critical", "emergency":
-			dataSetSeverity = 6
-		}
+		dataSetSeverity = logRecordSeverityTextToDataSetSeverity(sevText)
 	}
 
 	// TODO: We should log in case we see invalid severity, but right now, afaik, we / OTEL
 	// don't have a concept of "rate limited" logging. We don't want to log every single
 	// occurrence in case there are many log records like that since this could cause a lot of
 	// noise and performance overhead
+
+	return dataSetSeverity
+}
+
+func logRecordSevNumToDataSetSeverity(sevNum plog.SeverityNumber) int {
+	// Maps LogRecord.SeverityNumber field value to DataSet severity value.
+	dataSetSeverity := defaultDataSetSeverityLevel
+
+	if sevNum <= 0 {
+		return defaultDataSetSeverityLevel
+	}
+
+	// See https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
+	// for OTEL mappings
+	switch sevNum {
+	case 1, 2, 3, 4:
+		// TRACE
+		dataSetSeverity = 1
+	case 5, 6, 7, 8:
+		// DEBUG
+		dataSetSeverity = 2
+	case 9, 10, 11, 12:
+		// INFO
+		dataSetSeverity = 3
+	case 13, 14, 15, 16:
+		// WARN
+		dataSetSeverity = 4
+	case 17, 18, 19, 20:
+		// ERROR
+		dataSetSeverity = 5
+	case 21, 22, 23, 24:
+		// FATAL / CRITICAL / EMERGENCY
+		dataSetSeverity = 6
+	}
+
+	return dataSetSeverity
+}
+
+func logRecordSeverityTextToDataSetSeverity(sevText string) int {
+	// Maps LogRecord.SeverityText field value to DataSet severity value.
+	dataSetSeverity := defaultDataSetSeverityLevel
+
+	if sevText == "" {
+		return dataSetSeverity
+	}
+
+	switch strings.ToLower(sevText) {
+	case "fine", "finest":
+		dataSetSeverity = 0
+	case "trace":
+		dataSetSeverity = 1
+	case "debug":
+		dataSetSeverity = 2
+	case "info", "information":
+		dataSetSeverity = 3
+	case "warn", "warning":
+		dataSetSeverity = 4
+	case "error":
+		dataSetSeverity = 5
+	case "fatal", "critical", "emergency":
+		dataSetSeverity = 6
+	}
 
 	return dataSetSeverity
 }
