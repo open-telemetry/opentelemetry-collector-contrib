@@ -404,6 +404,16 @@ func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityText(t *testin
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	ld.SetSeverityText("")
 
+	// invalid values
+	ld.SetSeverityNumber(0)
+	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(-1)
+	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityNumber(100)
+	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+
 	// trace
 	ld.SetSeverityNumber(1)
 	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
@@ -498,6 +508,13 @@ func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumber(t *testin
 	lr := testdata.GenerateLogsOneLogRecord()
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	ld.SetSeverityNumber(0)
+
+	// invalid values
+	ld.SetSeverityText("a")
+	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+
+	ld.SetSeverityText("infofoo")
+	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
 
 	// trace
 	ld.SetSeverityText("trace")
