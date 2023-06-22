@@ -95,7 +95,6 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
-- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 - [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
@@ -112,6 +111,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
+- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers
