@@ -94,6 +94,8 @@ config:
           send_count_sum_metrics: true
       traces:
         span_name_as_resource_name: true
+        compute_stats_by_span_kind: true
+        peer_service_aggregation: true
       api:
         key: "$DD_API_KEY"
 
