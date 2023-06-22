@@ -214,8 +214,8 @@ func (m *metricReceiver) pollForMetrics(ctx context.Context, r []request, startT
 		}
 	default:
 		filters := m.request(startTime, endTime)
-		for idx, filter := range filters {
-			paginator := cloudwatch.NewGetMetricDataPaginator(m.client, &filter)
+		for idx := range filters {
+			paginator := cloudwatch.NewGetMetricDataPaginator(m.client, &filters[idx])
 			for paginator.HasMorePages() {
 				output, err := paginator.NextPage(ctx)
 				if err != nil {
