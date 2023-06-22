@@ -98,14 +98,14 @@ func TestGetContainerMetricsMissingMemory(t *testing.T) {
 func TestGetContainerDereferenceCheck(t *testing.T) {
 
 	tests := []struct {
-		memoryStats  MemoryStats
+		memoryStats  *MemoryStats
 		testName     string
-		cpuStats     CPUStats
-		networkRate  NetworkRateStats
-		prevCpuStats CPUStats
+		cpuStats     *CPUStats
+		networkRate  *NetworkRateStats
+		prevCPUStats *CPUStats
 	}{
 		{
-			memoryStats: MemoryStats{
+			memoryStats: &MemoryStats{
 				Usage:          nil,
 				MaxUsage:       nil,
 				Limit:          nil,
@@ -114,27 +114,27 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				Stats:          nil,
 			},
 			testName:     "nil memory stats values",
-			cpuStats:     cpuStats,
-			networkRate:  netRate,
-			prevCpuStats: previousCPUStats,
+			cpuStats:     &cpuStats,
+			networkRate:  &netRate,
+			prevCPUStats: &previousCPUStats,
 		},
 		{
-			memoryStats: mem,
+			memoryStats: &mem,
 			testName:    "nil cpuStats values",
-			cpuStats: CPUStats{
+			cpuStats: &CPUStats{
 				CPUUsage:       &cpuUsage,
 				OnlineCpus:     nil,
 				SystemCPUUsage: nil,
 				CPUReserved:    nil,
 				CPUUtilized:    nil,
 			},
-			networkRate:  netRate,
-			prevCpuStats: previousCPUStats,
+			networkRate:  &netRate,
+			prevCPUStats: &previousCPUStats,
 		},
 		{
-			memoryStats: mem,
+			memoryStats: &mem,
 			testName:    "nil cpuUsage and CPUstats values",
-			cpuStats: CPUStats{
+			cpuStats: &CPUStats{
 				CPUUsage: &CPUUsage{
 					TotalUsage:        nil,
 					UsageInKernelmode: nil,
@@ -146,25 +146,25 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				CPUReserved:    nil,
 				CPUUtilized:    nil,
 			},
-			networkRate:  netRate,
-			prevCpuStats: previousCPUStats,
+			networkRate:  &netRate,
+			prevCPUStats: &previousCPUStats,
 		},
 		{
-			memoryStats: mem,
+			memoryStats: &mem,
 			testName:    "nil network rate values",
-			cpuStats:    cpuStats,
-			networkRate: NetworkRateStats{
+			cpuStats:    &cpuStats,
+			networkRate: &NetworkRateStats{
 				RxBytesPerSecond: nil,
 				TxBytesPerSecond: nil,
 			},
-			prevCpuStats: previousCPUStats,
+			prevCPUStats: &previousCPUStats,
 		},
 		{
-			memoryStats: mem,
+			memoryStats: &mem,
 			testName:    "nil prev cpu stats values",
-			cpuStats:    cpuStats,
-			networkRate: netRate,
-			prevCpuStats: CPUStats{
+			cpuStats:    &cpuStats,
+			networkRate: &netRate,
+			prevCPUStats: &CPUStats{
 				CPUUsage: &CPUUsage{
 					TotalUsage:        nil,
 					UsageInKernelmode: nil,
@@ -178,11 +178,11 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 			},
 		},
 		{
-			memoryStats: mem,
+			memoryStats: &mem,
 			testName:    "nil prevcpu.cpuUsage stats values",
-			cpuStats:    cpuStats,
-			networkRate: netRate,
-			prevCpuStats: CPUStats{
+			cpuStats:    &cpuStats,
+			networkRate: &netRate,
+			prevCPUStats: &CPUStats{
 				CPUUsage:       nil,
 				OnlineCpus:     nil,
 				SystemCPUUsage: nil,
@@ -191,17 +191,17 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 			},
 		},
 		{
-			memoryStats: mem,
+			memoryStats: &mem,
 			testName:    "nil cpu.cpuUsage",
-			cpuStats: CPUStats{
+			cpuStats: &CPUStats{
 				CPUUsage:       nil,
 				OnlineCpus:     nil,
 				SystemCPUUsage: nil,
 				CPUReserved:    nil,
 				CPUUtilized:    nil,
 			},
-			networkRate:  netRate,
-			prevCpuStats: previousCPUStats,
+			networkRate:  &netRate,
+			prevCPUStats: &previousCPUStats,
 		},
 	}
 
@@ -212,12 +212,12 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				ID:           "001",
 				Read:         time.Now(),
 				PreviousRead: time.Now().Add(-10 * time.Second),
-				Memory:       &test.memoryStats,
+				Memory:       test.memoryStats,
 				Disk:         &disk,
 				Network:      net,
-				NetworkRate:  &test.networkRate,
-				CPU:          &test.cpuStats,
-				PreviousCPU:  &test.prevCpuStats,
+				NetworkRate:  test.networkRate,
+				CPU:          test.cpuStats,
+				PreviousCPU:  test.prevCPUStats,
 			}
 
 			require.NotPanics(t, func() {
