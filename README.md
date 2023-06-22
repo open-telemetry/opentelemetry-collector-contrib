@@ -78,6 +78,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
+- [Matt Wear](https://github.com/mwear), Lightstep
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - Actively seeking contributors to triage issues
 
