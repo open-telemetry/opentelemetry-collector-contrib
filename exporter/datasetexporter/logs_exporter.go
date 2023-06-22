@@ -22,7 +22,7 @@ var now = time.Now
 
 // If a LogRecord doesn't contain severity or we can't map it to a valid DataSet severity, we use
 // this value (3 - INFO) instead
-var defaultDataSetSeverityLevel = 3
+const defaultDataSetSeverityLevel int = 3
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
@@ -102,7 +102,7 @@ func logRecordSevNumToDataSetSeverity(sevNum plog.SeverityNumber) int {
 	dataSetSeverity := defaultDataSetSeverityLevel
 
 	if sevNum <= 0 {
-		return defaultDataSetSeverityLevel
+		return dataSetSeverity
 	}
 
 	// See https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
