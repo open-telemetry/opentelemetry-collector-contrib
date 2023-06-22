@@ -28,6 +28,8 @@ metrics:
     unit: "{brokers}"
     gauge:
       value_type: int
+    warnings:
+      if_enabled: The metric is deprecated and will be removed. Use `kafka.brokers.count`
   kafka.brokers.count:
     enabled: true
     description: Number of brokers in the cluster.
