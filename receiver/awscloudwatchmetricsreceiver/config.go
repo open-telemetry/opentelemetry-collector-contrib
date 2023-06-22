@@ -102,22 +102,22 @@ func (cfg *Config) Validate() error {
 // Unmarshal is a custom unmarshaller that ensures that autodiscover is nil if
 // autodiscover is not specified
 // https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awscloudwatchreceiver/config.go
-func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		return errors.New("")
 	}
-	err := componentParser.Unmarshal(c, confmap.WithErrorUnused())
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
 
 	if componentParser.IsSet("metrics::group") && !componentParser.IsSet("metrics::autodiscover") {
-		c.Metrics.AutoDiscover = nil
+		cfg.Metrics.AutoDiscover = nil
 		return nil
 	}
 
 	if componentParser.IsSet("metrics::autodiscover") && !componentParser.IsSet("metrics::group") {
-		c.Metrics.Group = nil
+		cfg.Metrics.Group = nil
 		return nil
 	}
 

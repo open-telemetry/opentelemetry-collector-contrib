@@ -30,7 +30,6 @@ const (
 type metricReceiver struct {
 	region        string
 	profile       string
-	roleArn       string
 	imdsEndpoint  string
 	pollInterval  time.Duration
 	nextStartTime time.Time
