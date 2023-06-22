@@ -85,15 +85,15 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 func getNetworkStats(stats map[string]NetworkStats) [8]uint64 {
 	var netStatArray [8]uint64
 	for _, netStat := range stats {
-		netStatArray[0] += *netStat.RxBytes
-		netStatArray[1] += *netStat.RxPackets
-		netStatArray[2] += *netStat.RxErrors
-		netStatArray[3] += *netStat.RxDropped
+		netStatArray[0] += aws.Uint64Value(netStat.RxBytes)
+		netStatArray[1] += aws.Uint64Value(netStat.RxPackets)
+		netStatArray[2] += aws.Uint64Value(netStat.RxErrors)
+		netStatArray[3] += aws.Uint64Value(netStat.RxDropped)
 
-		netStatArray[4] += *netStat.TxBytes
-		netStatArray[5] += *netStat.TxPackets
-		netStatArray[6] += *netStat.TxErrors
-		netStatArray[7] += *netStat.TxDropped
+		netStatArray[4] += aws.Uint64Value(netStat.TxBytes)
+		netStatArray[5] += aws.Uint64Value(netStat.TxPackets)
+		netStatArray[6] += aws.Uint64Value(netStat.TxErrors)
+		netStatArray[7] += aws.Uint64Value(netStat.TxDropped)
 	}
 	return netStatArray
 }

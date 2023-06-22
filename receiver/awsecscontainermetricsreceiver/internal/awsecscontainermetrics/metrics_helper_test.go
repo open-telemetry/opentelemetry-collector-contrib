@@ -382,3 +382,21 @@ func TestGetNetworkStats(t *testing.T) {
 	}
 	require.EqualValues(t, 800, sum)
 }
+
+func TestGetNetworkStatsDereferenceCheck(t *testing.T) {
+	stats := make(map[string]NetworkStats)
+	stats["eth0"] = NetworkStats{
+		RxBytes:   nil,
+		RxPackets: nil,
+		RxErrors:  nil,
+		RxDropped: nil,
+		TxBytes:   nil,
+		TxPackets: nil,
+		TxErrors:  nil,
+		TxDropped: nil,
+	}
+
+	require.NotPanics(t, func() {
+		getNetworkStats(stats)
+	})
+}
