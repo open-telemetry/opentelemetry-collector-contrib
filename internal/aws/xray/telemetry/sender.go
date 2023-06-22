@@ -183,28 +183,36 @@ func (p ec2MetadataProvider) get() string {
 }
 
 // ToOptions returns the metadata options if enabled by the config.
-func ToOptions(cfg Config, config aws.Config, settings *awsutil.AWSSessionSettings, logger *zap.Logger) []Option {
+func ToOptions(cfg Config, awsConfig *aws.Config, settings *awsutil.AWSSessionSettings, logger *zap.Logger) []Option {
 	if !cfg.IncludeMetadata {
 		return nil
 	}
-	clientIMDSV2Only, clientIMDSV1Fallback := awsutil.CreateIMDSV2AndFallbackClient(config)
+	hostnameProviders := []metadataProvider{
+		simpleMetadataProvider{metadata: cfg.Hostname},
+		envMetadataProvider{envKey: envAWSHostname},
+	}
+	instanceIDProviders := []metadataProvider{
+		simpleMetadataProvider{metadata: cfg.InstanceID},
+		envMetadataProvider{envKey: envAWSInstanceID},
+	}
+	if !settings.LocalMode {
+		clientIMDSV2Only, clientIMDSV1Fallback := awsutil.CreateIMDSV2AndFallbackClient(*awsConfig)
+		hostnameProviders = append(hostnameProviders, ec2MetadataProvider{
+			clientIMDSV2Only:     clientIMDSV2Only,
+			clientIMDSV1Fallback: clientIMDSV1Fallback,
+			metadataKey:          metadataHostname,
+			logger:               logger,
+		})
+		instanceIDProviders = append(instanceIDProviders, ec2MetadataProvider{
+			clientIMDSV2Only:     clientIMDSV2Only,
+			clientIMDSV1Fallback: clientIMDSV1Fallback,
+			metadataKey:          metadataInstanceID,
+			logger:               logger,
+		})
+	}
 	return []Option{
-		WithHostname(getMetadata(
-			simpleMetadataProvider{metadata: cfg.Hostname},
-			envMetadataProvider{envKey: envAWSHostname},
-			ec2MetadataProvider{clientIMDSV2Only: clientIMDSV2Only,
-				clientIMDSV1Fallback: clientIMDSV1Fallback,
-				metadataKey:          metadataHostname,
-				logger:               logger},
-		)),
-		WithInstanceID(getMetadata(
-			simpleMetadataProvider{metadata: cfg.InstanceID},
-			envMetadataProvider{envKey: envAWSInstanceID},
-			ec2MetadataProvider{clientIMDSV2Only: clientIMDSV2Only,
-				clientIMDSV1Fallback: clientIMDSV1Fallback,
-				metadataKey:          metadataInstanceID,
-				logger:               logger},
-		)),
+		WithHostname(getMetadata(hostnameProviders...)),
+		WithInstanceID(getMetadata(instanceIDProviders...)),
 		WithResourceARN(getMetadata(
 			simpleMetadataProvider{metadata: cfg.ResourceARN},
 			simpleMetadataProvider{metadata: settings.ResourceARN},
