@@ -48,63 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaBrokersDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "attr-val", "attr-val", 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "attr-val", "attr-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "attr-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "attr-val", "attr-val", 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "attr-val", "attr-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "attr-val", 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "attr-val", 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "attr-val", 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "attr-val", 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "attr-val")
-
-			metrics := mb.Emit()
-
-			if test.configSet == testSetNone {
-				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
-				return
-			}
-
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0

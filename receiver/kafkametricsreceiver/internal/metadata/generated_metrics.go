@@ -11,6 +11,145 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+// MetricSettings provides common settings for a particular metric.
+type MetricSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// MetricsSettings provides settings for kafkametricsreceiver metrics.
+type MetricsSettings struct {
+	KafkaBrokers                  MetricSettings `mapstructure:"kafka.brokers"`
+	KafkaBrokersConsumerFetchRate MetricSettings `mapstructure:"kafka.brokers.consumer_fetch_rate"`
+	KafkaBrokersCount             MetricSettings `mapstructure:"kafka.brokers.count"`
+	KafkaBrokersIncomingByteRate  MetricSettings `mapstructure:"kafka.brokers.incoming_byte_rate"`
+	KafkaBrokersOutgoingByteRate  MetricSettings `mapstructure:"kafka.brokers.outgoing_byte_rate"`
+	KafkaBrokersRequestLatency    MetricSettings `mapstructure:"kafka.brokers.request_latency"`
+	KafkaBrokersRequestRate       MetricSettings `mapstructure:"kafka.brokers.request_rate"`
+	KafkaBrokersRequestSize       MetricSettings `mapstructure:"kafka.brokers.request_size"`
+	KafkaBrokersRequestsInFlight  MetricSettings `mapstructure:"kafka.brokers.requests_in_flight"`
+	KafkaBrokersResponseRate      MetricSettings `mapstructure:"kafka.brokers.response_rate"`
+	KafkaBrokersResponseSize      MetricSettings `mapstructure:"kafka.brokers.response_size"`
+	KafkaConsumerGroupLag         MetricSettings `mapstructure:"kafka.consumer_group.lag"`
+	KafkaConsumerGroupLagSum      MetricSettings `mapstructure:"kafka.consumer_group.lag_sum"`
+	KafkaConsumerGroupMembers     MetricSettings `mapstructure:"kafka.consumer_group.members"`
+	KafkaConsumerGroupOffset      MetricSettings `mapstructure:"kafka.consumer_group.offset"`
+	KafkaConsumerGroupOffsetSum   MetricSettings `mapstructure:"kafka.consumer_group.offset_sum"`
+	KafkaPartitionCurrentOffset   MetricSettings `mapstructure:"kafka.partition.current_offset"`
+	KafkaPartitionOldestOffset    MetricSettings `mapstructure:"kafka.partition.oldest_offset"`
+	KafkaPartitionReplicas        MetricSettings `mapstructure:"kafka.partition.replicas"`
+	KafkaPartitionReplicasInSync  MetricSettings `mapstructure:"kafka.partition.replicas_in_sync"`
+	KafkaTopicPartitions          MetricSettings `mapstructure:"kafka.topic.partitions"`
+}
+
+func DefaultMetricsSettings() MetricsSettings {
+	return MetricsSettings{
+		KafkaBrokers: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersConsumerFetchRate: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersCount: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersIncomingByteRate: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersOutgoingByteRate: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersRequestLatency: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersRequestRate: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersRequestSize: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersRequestsInFlight: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersResponseRate: MetricSettings{
+			Enabled: true,
+		},
+		KafkaBrokersResponseSize: MetricSettings{
+			Enabled: true,
+		},
+		KafkaConsumerGroupLag: MetricSettings{
+			Enabled: true,
+		},
+		KafkaConsumerGroupLagSum: MetricSettings{
+			Enabled: true,
+		},
+		KafkaConsumerGroupMembers: MetricSettings{
+			Enabled: true,
+		},
+		KafkaConsumerGroupOffset: MetricSettings{
+			Enabled: true,
+		},
+		KafkaConsumerGroupOffsetSum: MetricSettings{
+			Enabled: true,
+		},
+		KafkaPartitionCurrentOffset: MetricSettings{
+			Enabled: true,
+		},
+		KafkaPartitionOldestOffset: MetricSettings{
+			Enabled: true,
+		},
+		KafkaPartitionReplicas: MetricSettings{
+			Enabled: true,
+		},
+		KafkaPartitionReplicasInSync: MetricSettings{
+			Enabled: true,
+		},
+		KafkaTopicPartitions: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for kafkametricsreceiver metrics.
+type ResourceAttributesSettings struct {
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{}
+}
+
 type metricKafkaBrokers struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -20,7 +159,7 @@ type metricKafkaBrokers struct {
 // init fills kafka.brokers metric with initial data.
 func (m *metricKafkaBrokers) init() {
 	m.data.SetName("kafka.brokers")
-	m.data.SetDescription("Number of brokers in the cluster.")
+	m.data.SetDescription("Number of brokers in the cluster (Deprecated).")
 	m.data.SetUnit("{brokers}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -56,6 +195,514 @@ func (m *metricKafkaBrokers) emit(metrics pmetric.MetricSlice) {
 func newMetricKafkaBrokers(cfg MetricConfig) metricKafkaBrokers {
 	m := metricKafkaBrokers{config: cfg}
 	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersConsumerFetchRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.consumer_fetch_rate metric with initial data.
+func (m *metricKafkaBrokersConsumerFetchRate) init() {
+	m.data.SetName("kafka.brokers.consumer_fetch_rate")
+	m.data.SetDescription("Average consumer fetch Rate")
+	m.data.SetUnit("{fetches}/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersConsumerFetchRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersConsumerFetchRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersConsumerFetchRate) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersConsumerFetchRate(settings MetricSettings) metricKafkaBrokersConsumerFetchRate {
+	m := metricKafkaBrokersConsumerFetchRate{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.count metric with initial data.
+func (m *metricKafkaBrokersCount) init() {
+	m.data.SetName("kafka.brokers.count")
+	m.data.SetDescription("Number of brokers in the cluster.")
+	m.data.SetUnit("{brokers}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricKafkaBrokersCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersCount(settings MetricSettings) metricKafkaBrokersCount {
+	m := metricKafkaBrokersCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersIncomingByteRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.incoming_byte_rate metric with initial data.
+func (m *metricKafkaBrokersIncomingByteRate) init() {
+	m.data.SetName("kafka.brokers.incoming_byte_rate")
+	m.data.SetDescription("Average tncoming Byte Rate in bytes/second")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersIncomingByteRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersIncomingByteRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersIncomingByteRate) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersIncomingByteRate(settings MetricSettings) metricKafkaBrokersIncomingByteRate {
+	m := metricKafkaBrokersIncomingByteRate{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersOutgoingByteRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.outgoing_byte_rate metric with initial data.
+func (m *metricKafkaBrokersOutgoingByteRate) init() {
+	m.data.SetName("kafka.brokers.outgoing_byte_rate")
+	m.data.SetDescription("Average outgoing Byte Rate in bytes/second.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersOutgoingByteRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersOutgoingByteRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersOutgoingByteRate) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersOutgoingByteRate(settings MetricSettings) metricKafkaBrokersOutgoingByteRate {
+	m := metricKafkaBrokersOutgoingByteRate{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersRequestLatency struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.request_latency metric with initial data.
+func (m *metricKafkaBrokersRequestLatency) init() {
+	m.data.SetName("kafka.brokers.request_latency")
+	m.data.SetDescription("Request latency Average in ms")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersRequestLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersRequestLatency) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersRequestLatency) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersRequestLatency(settings MetricSettings) metricKafkaBrokersRequestLatency {
+	m := metricKafkaBrokersRequestLatency{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersRequestRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.request_rate metric with initial data.
+func (m *metricKafkaBrokersRequestRate) init() {
+	m.data.SetName("kafka.brokers.request_rate")
+	m.data.SetDescription("Average request rate per second.")
+	m.data.SetUnit("{requests}/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersRequestRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersRequestRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersRequestRate) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersRequestRate(settings MetricSettings) metricKafkaBrokersRequestRate {
+	m := metricKafkaBrokersRequestRate{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersRequestSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.request_size metric with initial data.
+func (m *metricKafkaBrokersRequestSize) init() {
+	m.data.SetName("kafka.brokers.request_size")
+	m.data.SetDescription("Average request size in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersRequestSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersRequestSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersRequestSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersRequestSize(settings MetricSettings) metricKafkaBrokersRequestSize {
+	m := metricKafkaBrokersRequestSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersRequestsInFlight struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.requests_in_flight metric with initial data.
+func (m *metricKafkaBrokersRequestsInFlight) init() {
+	m.data.SetName("kafka.brokers.requests_in_flight")
+	m.data.SetDescription("Requests in flight")
+	m.data.SetUnit("{requests}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersRequestsInFlight) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersRequestsInFlight) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersRequestsInFlight) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersRequestsInFlight(settings MetricSettings) metricKafkaBrokersRequestsInFlight {
+	m := metricKafkaBrokersRequestsInFlight{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersResponseRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.response_rate metric with initial data.
+func (m *metricKafkaBrokersResponseRate) init() {
+	m.data.SetName("kafka.brokers.response_rate")
+	m.data.SetDescription("Average response rate per second")
+	m.data.SetUnit("{response}/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersResponseRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersResponseRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersResponseRate) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersResponseRate(settings MetricSettings) metricKafkaBrokersResponseRate {
+	m := metricKafkaBrokersResponseRate{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricKafkaBrokersResponseSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills kafka.brokers.response_size metric with initial data.
+func (m *metricKafkaBrokersResponseSize) init() {
+	m.data.SetName("kafka.brokers.response_size")
+	m.data.SetDescription("Average response size in bytes")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricKafkaBrokersResponseSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutInt("broker", brokerAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricKafkaBrokersResponseSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricKafkaBrokersResponseSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricKafkaBrokersResponseSize(settings MetricSettings) metricKafkaBrokersResponseSize {
+	m := metricKafkaBrokersResponseSize{settings: settings}
+	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -599,16 +1246,26 @@ type MetricsBuilder struct {
 	metricsBuffer                      pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo // contains version information
 	metricKafkaBrokers                 metricKafkaBrokers
-	metricKafkaConsumerGroupLag        metricKafkaConsumerGroupLag
-	metricKafkaConsumerGroupLagSum     metricKafkaConsumerGroupLagSum
-	metricKafkaConsumerGroupMembers    metricKafkaConsumerGroupMembers
-	metricKafkaConsumerGroupOffset     metricKafkaConsumerGroupOffset
-	metricKafkaConsumerGroupOffsetSum  metricKafkaConsumerGroupOffsetSum
-	metricKafkaPartitionCurrentOffset  metricKafkaPartitionCurrentOffset
-	metricKafkaPartitionOldestOffset   metricKafkaPartitionOldestOffset
-	metricKafkaPartitionReplicas       metricKafkaPartitionReplicas
-	metricKafkaPartitionReplicasInSync metricKafkaPartitionReplicasInSync
-	metricKafkaTopicPartitions         metricKafkaTopicPartitions
+	metricKafkaBrokersConsumerFetchRate metricKafkaBrokersConsumerFetchRate
+	metricKafkaBrokersCount             metricKafkaBrokersCount
+	metricKafkaBrokersIncomingByteRate  metricKafkaBrokersIncomingByteRate
+	metricKafkaBrokersOutgoingByteRate  metricKafkaBrokersOutgoingByteRate
+	metricKafkaBrokersRequestLatency    metricKafkaBrokersRequestLatency
+	metricKafkaBrokersRequestRate       metricKafkaBrokersRequestRate
+	metricKafkaBrokersRequestSize       metricKafkaBrokersRequestSize
+	metricKafkaBrokersRequestsInFlight  metricKafkaBrokersRequestsInFlight
+	metricKafkaBrokersResponseRate      metricKafkaBrokersResponseRate
+	metricKafkaBrokersResponseSize      metricKafkaBrokersResponseSize
+	metricKafkaConsumerGroupLag         metricKafkaConsumerGroupLag
+	metricKafkaConsumerGroupLagSum      metricKafkaConsumerGroupLagSum
+	metricKafkaConsumerGroupMembers     metricKafkaConsumerGroupMembers
+	metricKafkaConsumerGroupOffset      metricKafkaConsumerGroupOffset
+	metricKafkaConsumerGroupOffsetSum   metricKafkaConsumerGroupOffsetSum
+	metricKafkaPartitionCurrentOffset   metricKafkaPartitionCurrentOffset
+	metricKafkaPartitionOldestOffset    metricKafkaPartitionOldestOffset
+	metricKafkaPartitionReplicas        metricKafkaPartitionReplicas
+	metricKafkaPartitionReplicasInSync  metricKafkaPartitionReplicasInSync
+	metricKafkaTopicPartitions          metricKafkaTopicPartitions
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -626,17 +1283,28 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
 		buildInfo:                          settings.BuildInfo,
-		metricKafkaBrokers:                 newMetricKafkaBrokers(mbc.Metrics.KafkaBrokers),
-		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(mbc.Metrics.KafkaConsumerGroupLag),
-		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(mbc.Metrics.KafkaConsumerGroupLagSum),
-		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(mbc.Metrics.KafkaConsumerGroupMembers),
-		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(mbc.Metrics.KafkaConsumerGroupOffset),
-		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(mbc.Metrics.KafkaConsumerGroupOffsetSum),
-		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(mbc.Metrics.KafkaPartitionCurrentOffset),
-		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(mbc.Metrics.KafkaPartitionOldestOffset),
-		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(mbc.Metrics.KafkaPartitionReplicas),
-		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(mbc.Metrics.KafkaPartitionReplicasInSync),
-		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(mbc.Metrics.KafkaTopicPartitions),
+		resourceAttributesSettings:         DefaultResourceAttributesSettings(),
+		metricKafkaBrokers:                 newMetricKafkaBrokers(ms.KafkaBrokers),
+		metricKafkaBrokersConsumerFetchRate: newMetricKafkaBrokersConsumerFetchRate(ms.KafkaBrokersConsumerFetchRate),
+		metricKafkaBrokersCount:             newMetricKafkaBrokersCount(ms.KafkaBrokersCount),
+		metricKafkaBrokersIncomingByteRate:  newMetricKafkaBrokersIncomingByteRate(ms.KafkaBrokersIncomingByteRate),
+		metricKafkaBrokersOutgoingByteRate:  newMetricKafkaBrokersOutgoingByteRate(ms.KafkaBrokersOutgoingByteRate),
+		metricKafkaBrokersRequestLatency:    newMetricKafkaBrokersRequestLatency(ms.KafkaBrokersRequestLatency),
+		metricKafkaBrokersRequestRate:       newMetricKafkaBrokersRequestRate(ms.KafkaBrokersRequestRate),
+		metricKafkaBrokersRequestSize:       newMetricKafkaBrokersRequestSize(ms.KafkaBrokersRequestSize),
+		metricKafkaBrokersRequestsInFlight:  newMetricKafkaBrokersRequestsInFlight(ms.KafkaBrokersRequestsInFlight),
+		metricKafkaBrokersResponseRate:      newMetricKafkaBrokersResponseRate(ms.KafkaBrokersResponseRate),
+		metricKafkaBrokersResponseSize:      newMetricKafkaBrokersResponseSize(ms.KafkaBrokersResponseSize),
+		metricKafkaConsumerGroupLag:         newMetricKafkaConsumerGroupLag(ms.KafkaConsumerGroupLag),
+		metricKafkaConsumerGroupLagSum:      newMetricKafkaConsumerGroupLagSum(ms.KafkaConsumerGroupLagSum),
+		metricKafkaConsumerGroupMembers:     newMetricKafkaConsumerGroupMembers(ms.KafkaConsumerGroupMembers),
+		metricKafkaConsumerGroupOffset:      newMetricKafkaConsumerGroupOffset(ms.KafkaConsumerGroupOffset),
+		metricKafkaConsumerGroupOffsetSum:   newMetricKafkaConsumerGroupOffsetSum(ms.KafkaConsumerGroupOffsetSum),
+		metricKafkaPartitionCurrentOffset:   newMetricKafkaPartitionCurrentOffset(ms.KafkaPartitionCurrentOffset),
+		metricKafkaPartitionOldestOffset:    newMetricKafkaPartitionOldestOffset(ms.KafkaPartitionOldestOffset),
+		metricKafkaPartitionReplicas:        newMetricKafkaPartitionReplicas(ms.KafkaPartitionReplicas),
+		metricKafkaPartitionReplicasInSync:  newMetricKafkaPartitionReplicasInSync(ms.KafkaPartitionReplicasInSync),
+		metricKafkaTopicPartitions:          newMetricKafkaTopicPartitions(ms.KafkaTopicPartitions),
 	}
 	for _, op := range options {
 		op(mb)
@@ -690,6 +1358,16 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricKafkaBrokers.emit(ils.Metrics())
+	mb.metricKafkaBrokersConsumerFetchRate.emit(ils.Metrics())
+	mb.metricKafkaBrokersCount.emit(ils.Metrics())
+	mb.metricKafkaBrokersIncomingByteRate.emit(ils.Metrics())
+	mb.metricKafkaBrokersOutgoingByteRate.emit(ils.Metrics())
+	mb.metricKafkaBrokersRequestLatency.emit(ils.Metrics())
+	mb.metricKafkaBrokersRequestRate.emit(ils.Metrics())
+	mb.metricKafkaBrokersRequestSize.emit(ils.Metrics())
+	mb.metricKafkaBrokersRequestsInFlight.emit(ils.Metrics())
+	mb.metricKafkaBrokersResponseRate.emit(ils.Metrics())
+	mb.metricKafkaBrokersResponseSize.emit(ils.Metrics())
 	mb.metricKafkaConsumerGroupLag.emit(ils.Metrics())
 	mb.metricKafkaConsumerGroupLagSum.emit(ils.Metrics())
 	mb.metricKafkaConsumerGroupMembers.emit(ils.Metrics())
@@ -723,6 +1401,56 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 // RecordKafkaBrokersDataPoint adds a data point to kafka.brokers metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricKafkaBrokers.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordKafkaBrokersConsumerFetchRateDataPoint adds a data point to kafka.brokers.consumer_fetch_rate metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersConsumerFetchRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersConsumerFetchRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersCountDataPoint adds a data point to kafka.brokers.count metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricKafkaBrokersCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordKafkaBrokersIncomingByteRateDataPoint adds a data point to kafka.brokers.incoming_byte_rate metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersIncomingByteRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersIncomingByteRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersOutgoingByteRateDataPoint adds a data point to kafka.brokers.outgoing_byte_rate metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersOutgoingByteRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersOutgoingByteRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersRequestLatencyDataPoint adds a data point to kafka.brokers.request_latency metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersRequestLatencyDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersRequestLatency.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersRequestRateDataPoint adds a data point to kafka.brokers.request_rate metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersRequestRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersRequestRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersRequestSizeDataPoint adds a data point to kafka.brokers.request_size metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersRequestSizeDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersRequestSize.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersRequestsInFlightDataPoint adds a data point to kafka.brokers.requests_in_flight metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersRequestsInFlightDataPoint(ts pcommon.Timestamp, val int64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersRequestsInFlight.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersResponseRateDataPoint adds a data point to kafka.brokers.response_rate metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersResponseRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersResponseRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
+}
+
+// RecordKafkaBrokersResponseSizeDataPoint adds a data point to kafka.brokers.response_size metric.
+func (mb *MetricsBuilder) RecordKafkaBrokersResponseSizeDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+	mb.metricKafkaBrokersResponseSize.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
 // RecordKafkaConsumerGroupLagDataPoint adds a data point to kafka.consumer_group.lag metric.

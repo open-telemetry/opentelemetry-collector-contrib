@@ -46,6 +46,7 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	c := cfg.(*Config)
+
 	r, err := newMetricsReceiver(ctx, *c, params, nextConsumer)
 	if err != nil {
 		return nil, err

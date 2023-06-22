@@ -16,10 +16,19 @@ attributes:
   group:
     description: The ID (string) of a consumer group
     type: string
+  broker:
+    description: The ID (integer) of a broker
+    type: int
 
 metrics:
   #  brokers scraper
   kafka.brokers:
+    enabled: true
+    description: Number of brokers in the cluster (Deprecated).
+    unit: "{brokers}"
+    gauge:
+      value_type: int
+  kafka.brokers.count:
     enabled: true
     description: Number of brokers in the cluster.
     unit: "{brokers}"
@@ -27,7 +36,69 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-  #  topics scraper
+  kafka.brokers.consumer_fetch_rate:
+    enabled: true
+    description: Average consumer fetch Rate
+    unit: "{fetches}/s"
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.incoming_byte_rate:
+    enabled: true
+    description: Average tncoming Byte Rate in bytes/second
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.outgoing_byte_rate:
+    enabled: true
+    description: Average outgoing Byte Rate in bytes/second.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.request_latency:
+    enabled: true
+    description: Request latency Average in ms
+    unit: "ms"
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.response_rate:
+    enabled: true
+    description: Average response rate per second
+    unit: "{response}/s"
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.response_size:
+    enabled: true
+    description: Average response size in bytes
+    unit: "By"
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.request_rate:
+    enabled: true
+    description: Average request rate per second.
+    unit: "{requests}/s"
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.request_size:
+    enabled: true
+    description: Average request size in bytes
+    unit: "By"
+    gauge:
+      value_type: double
+    attributes: [broker]
+  kafka.brokers.requests_in_flight:
+    enabled: true
+    description: Requests in flight
+    unit: "{requests}"
+    gauge:
+      value_type: int
+    attributes: [broker]
   kafka.topic.partitions:
     enabled: true
     description: Number of partitions in topic.

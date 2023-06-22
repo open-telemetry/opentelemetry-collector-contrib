@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
@@ -31,12 +32,21 @@ var (
 	}
 )
 
+func logDeprecation(logger *zap.Logger) {
+	logger.Warn("kafka.brokers attribute is deprecated and will be removed in a future release. Use kafka.brokers.count instead.")
+}
+
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
 	params receiver.CreateSettings,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+
+	if config.Metrics.KafkaBrokers.Enabled {
+		logDeprecation(params.Logger)
+	}
+
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
 	if config.ProtocolVersion != "" {
