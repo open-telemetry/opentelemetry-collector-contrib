@@ -30,14 +30,14 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 
 		cpuUsageInVCpu := float64(0)
 		if timeDiffSinceLastRead > 0 {
-			cpuDelta := (float64)(*stats.CPU.CPUUsage.TotalUsage - *stats.PreviousCPU.CPUUsage.TotalUsage)
+			cpuDelta := (float64)(aws.Uint64Value(stats.CPU.CPUUsage.TotalUsage) - aws.Uint64Value(stats.PreviousCPU.CPUUsage.TotalUsage))
 			cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
 		}
 		cpuUtilized := cpuUsageInVCpu * 100
 
-		m.CPUTotalUsage = *stats.CPU.CPUUsage.TotalUsage
-		m.CPUUsageInKernelmode = *stats.CPU.CPUUsage.UsageInKernelmode
-		m.CPUUsageInUserMode = *stats.CPU.CPUUsage.UsageInUserMode
+		m.CPUTotalUsage = aws.Uint64Value(stats.CPU.CPUUsage.TotalUsage)
+		m.CPUUsageInKernelmode = aws.Uint64Value(stats.CPU.CPUUsage.UsageInKernelmode)
+		m.CPUUsageInUserMode = aws.Uint64Value(stats.CPU.CPUUsage.UsageInUserMode)
 		m.NumOfCPUCores = numOfCores
 		m.CPUOnlineCpus = aws.Uint64Value(stats.CPU.OnlineCpus)
 		m.SystemCPUUsage = aws.Uint64Value(stats.CPU.SystemCPUUsage)
