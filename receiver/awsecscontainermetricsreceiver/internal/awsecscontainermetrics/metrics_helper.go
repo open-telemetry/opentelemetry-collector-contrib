@@ -109,9 +109,9 @@ func extractStorageUsage(stats *DiskStats) (uint64, uint64) {
 	for _, blockStat := range stats.IoServiceBytesRecursives {
 		switch op := blockStat.Op; op {
 		case "Read":
-			readBytes = *blockStat.Value
+			readBytes = aws.Uint64Value(blockStat.Value)
 		case "Write":
-			writeBytes = *blockStat.Value
+			writeBytes = aws.Uint64Value(blockStat.Value)
 		default:
 			// ignoring "Async", "Total", "Sum", etc
 			continue

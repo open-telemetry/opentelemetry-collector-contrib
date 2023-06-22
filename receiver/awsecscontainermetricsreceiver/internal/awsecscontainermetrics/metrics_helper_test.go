@@ -360,6 +360,21 @@ func TestExtractStorageUsage(t *testing.T) {
 	require.EqualValues(t, v, write)
 }
 
+func TestExtractStorageUsageDereferenceCheck(t *testing.T) {
+	disk := &DiskStats{
+		IoServiceBytesRecursives: []IoServiceBytesRecursive{
+			{Op: "Read", Value: nil},
+			{Op: "Write", Value: nil},
+			{Op: "Total", Value: nil},
+		},
+	}
+
+	require.NotPanics(t, func() {
+		extractStorageUsage(disk)
+	})
+
+}
+
 func TestGetNetworkStats(t *testing.T) {
 	v := uint64(100)
 	stats := make(map[string]NetworkStats)
