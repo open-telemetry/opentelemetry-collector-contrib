@@ -39,8 +39,8 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 		m.CPUUsageInKernelmode = *stats.CPU.CPUUsage.UsageInKernelmode
 		m.CPUUsageInUserMode = *stats.CPU.CPUUsage.UsageInUserMode
 		m.NumOfCPUCores = numOfCores
-		m.CPUOnlineCpus = *stats.CPU.OnlineCpus
-		m.SystemCPUUsage = *stats.CPU.SystemCPUUsage
+		m.CPUOnlineCpus = aws.Uint64Value(stats.CPU.OnlineCpus)
+		m.SystemCPUUsage = aws.Uint64Value(stats.CPU.SystemCPUUsage)
 		m.CPUUsageInVCPU = cpuUsageInVCpu
 		m.CPUUtilized = cpuUtilized
 	} else {

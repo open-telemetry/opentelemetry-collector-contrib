@@ -114,6 +114,17 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 			testName: "nil memory stats values",
 			cpuStats: cpuStats,
 		},
+		{
+			memoryStats: mem,
+			testName:    "nil cpuStats values",
+			cpuStats: CPUStats{
+				CPUUsage:       &cpuUsage,
+				OnlineCpus:     nil,
+				SystemCPUUsage: nil,
+				CPUReserved:    nil,
+				CPUUtilized:    nil,
+			},
+		},
 	}
 
 	for _, test := range tests {
