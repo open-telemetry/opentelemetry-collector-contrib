@@ -4,6 +4,7 @@
 package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"go.uber.org/zap"
 )
 
@@ -12,12 +13,12 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 	m := ECSMetrics{}
 
 	if stats.Memory != nil {
-		m.MemoryUsage = *stats.Memory.Usage
+		m.MemoryUsage = aws.Uint64Value(stats.Memory.Usage)
 		m.MemoryMaxUsage = *stats.Memory.MaxUsage
 		m.MemoryLimit = *stats.Memory.Limit
 
 		if stats.Memory.Stats != nil {
-			m.MemoryUtilized = (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / bytesInMiB
+			m.MemoryUtilized = (aws.Uint64Value(stats.Memory.Usage) - stats.Memory.Stats["cache"]) / bytesInMiB
 		}
 	} else {
 		logger.Debug("Nil memory stats found for docker container:" + stats.Name)

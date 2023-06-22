@@ -95,6 +95,47 @@ func TestGetContainerMetricsMissingMemory(t *testing.T) {
 	require.EqualValues(t, v, containerMetrics.StorageWriteBytes)
 }
 
+func TestGetContainerDereferenceCheck(t *testing.T) {
+
+	tests := []struct {
+		memoryStats MemoryStats
+		testName    string
+	}{
+		{
+			memoryStats: MemoryStats{
+				Usage:          nil,
+				MaxUsage:       &v,
+				Limit:          &v,
+				MemoryReserved: &v,
+				MemoryUtilized: &v,
+				Stats:          memStats,
+			},
+			testName: "nil usage",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			containerStats = ContainerStats{
+				Name:         "test",
+				ID:           "001",
+				Read:         time.Now(),
+				PreviousRead: time.Now().Add(-10 * time.Second),
+				Memory:       &test.memoryStats,
+				Disk:         &disk,
+				Network:      net,
+				NetworkRate:  &netRate,
+				CPU:          &cpuStats,
+				PreviousCPU:  &previousCPUStats,
+			}
+
+			require.NotPanics(t, func() {
+				getContainerMetrics(&containerStats, logger)
+			})
+		})
+	}
+}
+
 func TestGetContainerMetricsMissingCpu(t *testing.T) {
 	containerStats = ContainerStats{
 		Name:         "test",
