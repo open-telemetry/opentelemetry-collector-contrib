@@ -14,6 +14,7 @@ body:
       # Start Collector components list
       - cmd/configschema
       - cmd/mdatagen
+      - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen

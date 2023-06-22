@@ -5,6 +5,7 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -134,6 +135,8 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
 						errors = multierr.Append(errors, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
 					}
+				case pmetric.MetricTypeEmpty:
+					errors = multierr.Append(errors, fmt.Errorf("metric %q: invalid metric type: %v", metric.Name(), metric.Type()))
 				}
 			}
 		}

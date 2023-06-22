@@ -24,6 +24,7 @@ type DatasetExporter struct {
 	logger      *zap.Logger
 	session     string
 	spanTracker *spanTracker
+	exporterCfg *ExporterConfig
 }
 
 func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*DatasetExporter, error) {
@@ -60,6 +61,7 @@ func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*Dat
 		session:     uuid.New().String(),
 		logger:      logger,
 		spanTracker: tracker,
+		exporterCfg: exporterCfg,
 	}, nil
 }
 
