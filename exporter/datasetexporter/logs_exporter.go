@@ -22,7 +22,18 @@ var now = time.Now
 
 // If a LogRecord doesn't contain severity or we can't map it to a valid DataSet severity, we use
 // this value (3 - INFO) instead
-const defaultDataSetSeverityLevel int = 3
+const defaultDataSetSeverityLevel int = dataSetLogLevelInfo
+
+// Constants for valid DataSet log levels (aka Event.sev int field value)
+const (
+	dataSetLogLevelFinest = 0
+	dataSetLogLevelTrace  = 1
+	dataSetLogLevelDebug  = 2
+	dataSetLogLevelInfo   = 3
+	dataSetLogLevelWarn   = 4
+	dataSetLogLevelError  = 5
+	dataSetLogLevelFatal  = 6
+)
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
@@ -110,22 +121,22 @@ func logRecordSevNumToDataSetSeverity(sevNum plog.SeverityNumber) int {
 	switch sevNum {
 	case 1, 2, 3, 4:
 		// TRACE
-		dataSetSeverity = 1
+		dataSetSeverity = dataSetLogLevelTrace
 	case 5, 6, 7, 8:
 		// DEBUG
-		dataSetSeverity = 2
+		dataSetSeverity = dataSetLogLevelDebug
 	case 9, 10, 11, 12:
 		// INFO
-		dataSetSeverity = 3
+		dataSetSeverity = dataSetLogLevelInfo
 	case 13, 14, 15, 16:
 		// WARN
-		dataSetSeverity = 4
+		dataSetSeverity = dataSetLogLevelWarn
 	case 17, 18, 19, 20:
 		// ERROR
-		dataSetSeverity = 5
+		dataSetSeverity = dataSetLogLevelError
 	case 21, 22, 23, 24:
 		// FATAL / CRITICAL / EMERGENCY
-		dataSetSeverity = 6
+		dataSetSeverity = dataSetLogLevelFatal
 	}
 
 	return dataSetSeverity
@@ -141,19 +152,19 @@ func logRecordSeverityTextToDataSetSeverity(sevText string) int {
 
 	switch strings.ToLower(sevText) {
 	case "fine", "finest":
-		dataSetSeverity = 0
+		dataSetSeverity = dataSetLogLevelFinest
 	case "trace":
-		dataSetSeverity = 1
+		dataSetSeverity = dataSetLogLevelTrace
 	case "debug":
-		dataSetSeverity = 2
+		dataSetSeverity = dataSetLogLevelDebug
 	case "info", "information":
-		dataSetSeverity = 3
+		dataSetSeverity = dataSetLogLevelInfo
 	case "warn", "warning":
-		dataSetSeverity = 4
+		dataSetSeverity = dataSetLogLevelWarn
 	case "error":
-		dataSetSeverity = 5
+		dataSetSeverity = dataSetLogLevelError
 	case "fatal", "critical", "emergency":
-		dataSetSeverity = 6
+		dataSetSeverity = dataSetLogLevelFatal
 	}
 
 	return dataSetSeverity
