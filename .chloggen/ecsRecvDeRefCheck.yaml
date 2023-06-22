@@ -9,7 +9,7 @@ change_type: bug_fix
 component: awsecscontainermetricsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix possible panics in awsecscontainerrmetrics receiver
+note: Fix possible panics in awsecscontainermetrics receiver
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [23644]
