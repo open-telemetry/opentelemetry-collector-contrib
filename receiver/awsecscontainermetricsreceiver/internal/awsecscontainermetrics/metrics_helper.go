@@ -14,7 +14,7 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 
 	if stats.Memory != nil {
 		m.MemoryUsage = aws.Uint64Value(stats.Memory.Usage)
-		m.MemoryMaxUsage = *stats.Memory.MaxUsage
+		m.MemoryMaxUsage = aws.Uint64Value(stats.Memory.MaxUsage)
 		m.MemoryLimit = *stats.Memory.Limit
 
 		if stats.Memory.Stats != nil {

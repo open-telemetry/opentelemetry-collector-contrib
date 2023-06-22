@@ -112,6 +112,17 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 			},
 			testName: "nil usage",
 		},
+		{
+			memoryStats: MemoryStats{
+				Usage:          &v,
+				MaxUsage:       nil,
+				Limit:          &v,
+				MemoryReserved: &v,
+				MemoryUtilized: &v,
+				Stats:          memStats,
+			},
+			testName: "nil MaxUsage",
+		},
 	}
 
 	for _, test := range tests {
