@@ -101,6 +101,7 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 		memoryStats MemoryStats
 		testName    string
 		cpuStats    CPUStats
+		networkRate NetworkRateStats
 	}{
 		{
 			memoryStats: MemoryStats{
@@ -111,8 +112,9 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				MemoryUtilized: nil,
 				Stats:          nil,
 			},
-			testName: "nil memory stats values",
-			cpuStats: cpuStats,
+			testName:    "nil memory stats values",
+			cpuStats:    cpuStats,
+			networkRate: netRate,
 		},
 		{
 			memoryStats: mem,
@@ -124,6 +126,7 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				CPUReserved:    nil,
 				CPUUtilized:    nil,
 			},
+			networkRate: netRate,
 		},
 		{
 			memoryStats: mem,
@@ -140,6 +143,16 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				CPUReserved:    nil,
 				CPUUtilized:    nil,
 			},
+			networkRate: netRate,
+		},
+		{
+			memoryStats: mem,
+			testName:    "net network rate values",
+			cpuStats:    cpuStats,
+			networkRate: NetworkRateStats{
+				RxBytesPerSecond: nil,
+				TxBytesPerSecond: nil,
+			},
 		},
 	}
 
@@ -153,7 +166,7 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				Memory:       &test.memoryStats,
 				Disk:         &disk,
 				Network:      net,
-				NetworkRate:  &netRate,
+				NetworkRate:  &test.networkRate,
 				CPU:          &test.cpuStats,
 				PreviousCPU:  &previousCPUStats,
 			}

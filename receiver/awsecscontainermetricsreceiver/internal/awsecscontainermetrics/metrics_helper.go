@@ -48,8 +48,8 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 	}
 
 	if stats.NetworkRate != nil {
-		m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.RxBytesPerSecond
-		m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
+		m.NetworkRateRxBytesPerSecond = aws.Float64Value(stats.NetworkRate.RxBytesPerSecond)
+		m.NetworkRateTxBytesPerSecond = aws.Float64Value(stats.NetworkRate.TxBytesPerSecond)
 	} else {
 		logger.Debug("Nil NetworkRate stats found for docker container:" + stats.Name)
 	}
