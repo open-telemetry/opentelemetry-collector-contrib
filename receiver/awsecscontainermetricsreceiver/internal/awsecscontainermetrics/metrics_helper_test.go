@@ -100,28 +100,19 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 	tests := []struct {
 		memoryStats MemoryStats
 		testName    string
+		cpuStats    CPUStats
 	}{
 		{
 			memoryStats: MemoryStats{
 				Usage:          nil,
-				MaxUsage:       &v,
-				Limit:          &v,
-				MemoryReserved: &v,
-				MemoryUtilized: &v,
-				Stats:          memStats,
-			},
-			testName: "nil usage",
-		},
-		{
-			memoryStats: MemoryStats{
-				Usage:          &v,
 				MaxUsage:       nil,
-				Limit:          &v,
-				MemoryReserved: &v,
-				MemoryUtilized: &v,
-				Stats:          memStats,
+				Limit:          nil,
+				MemoryReserved: nil,
+				MemoryUtilized: nil,
+				Stats:          nil,
 			},
-			testName: "nil MaxUsage",
+			testName: "nil memory stats values",
+			cpuStats: cpuStats,
 		},
 	}
 
@@ -136,7 +127,7 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				Disk:         &disk,
 				Network:      net,
 				NetworkRate:  &netRate,
-				CPU:          &cpuStats,
+				CPU:          &test.cpuStats,
 				PreviousCPU:  &previousCPUStats,
 			}
 
