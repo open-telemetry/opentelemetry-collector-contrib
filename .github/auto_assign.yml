@@ -16,7 +16,6 @@ assigneeGroups:
     # - dashpole is out on leave
     - fatsheep9146
     - kovrus
-    - MovieStoreGuy
     # Maintainers
     - bogdandrutu
     - codeboten
@@ -24,6 +23,7 @@ assigneeGroups:
     - dmitryax
     - evan-bradley
     - jpkrohling
+    - MovieStoreGuy
     - mx-psi
     - TylerHelmuth
 
