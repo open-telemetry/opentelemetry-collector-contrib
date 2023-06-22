@@ -177,6 +177,32 @@ func TestGetContainerDereferenceCheck(t *testing.T) {
 				CPUUtilized:    nil,
 			},
 		},
+		{
+			memoryStats: mem,
+			testName:    "nil prevcpu.cpuUsage stats values",
+			cpuStats:    cpuStats,
+			networkRate: netRate,
+			prevCpuStats: CPUStats{
+				CPUUsage:       nil,
+				OnlineCpus:     nil,
+				SystemCPUUsage: nil,
+				CPUReserved:    nil,
+				CPUUtilized:    nil,
+			},
+		},
+		{
+			memoryStats: mem,
+			testName:    "nil cpu.cpuUsage",
+			cpuStats: CPUStats{
+				CPUUsage:       nil,
+				OnlineCpus:     nil,
+				SystemCPUUsage: nil,
+				CPUReserved:    nil,
+				CPUUtilized:    nil,
+			},
+			networkRate:  netRate,
+			prevCpuStats: previousCPUStats,
+		},
 	}
 
 	for _, test := range tests {

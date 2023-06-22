@@ -24,7 +24,9 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 		logger.Debug("Nil memory stats found for docker container:" + stats.Name)
 	}
 
-	if stats.CPU != nil && stats.CPU.CPUUsage != nil {
+	if stats.CPU != nil && stats.CPU.CPUUsage != nil &&
+		stats.PreviousCPU != nil && stats.PreviousCPU.CPUUsage != nil {
+
 		numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
 		timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
 
