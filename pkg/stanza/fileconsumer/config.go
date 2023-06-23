@@ -172,6 +172,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 	}
 	if useThreadPool.IsEnabled() {
 		manager.readerChan = make(chan readerWrapper, c.MaxConcurrentFiles)
+		manager.saveReaders = make(chan readerWrapper, c.MaxConcurrentFiles)
 		manager.trie = NewTrie()
 	}
 	return &manager, nil

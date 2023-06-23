@@ -46,7 +46,7 @@ func (m *Manager) worker(ctx context.Context) {
 
 		if !m.readToEnd(r, ctx) {
 			// Save off any files that were not fully read or if deleteAfterRead is disabled
-			m.saveCurrentConcurrent(r)
+			m.saveReaders <- readerWrapper{reader: r, fp: fp}
 		}
 		m.removePath(fp)
 	}
@@ -135,15 +135,23 @@ func (m *Manager) removePath(fp *Fingerprint) {
 	m.trie.Delete(fp.FirstBytes)
 }
 
-// saveCurrent adds the readers from this polling interval to this list of
-// known files, then increments the generation of all tracked old readers
-// before clearing out readers that have existed for 3 generations.
-func (m *Manager) saveCurrentConcurrent(reader *Reader) {
+// saveReadersConcurrent adds the readers from this polling interval to this list of
+// known files and removes the fingerprint from the TRIE
+func (m *Manager) saveReadersConcurrent(ctx context.Context) {
+	defer m._workerWg.Done()
 	// Add readers from the current, completed poll interval to the list of known files
-	m.knownFilesLock.Lock()
-	defer m.knownFilesLock.Unlock()
-
-	m.knownFiles = append(m.knownFiles, reader)
+	for {
+		select {
+		case readerWrapper, ok := <-m.saveReaders:
+			if !ok {
+				return
+			}
+			m.knownFilesLock.Lock()
+			m.knownFiles = append(m.knownFiles, readerWrapper.reader)
+			m.knownFilesLock.Unlock()
+			m.removePath(readerWrapper.fp)
+		}
+	}
 }
 
 func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {

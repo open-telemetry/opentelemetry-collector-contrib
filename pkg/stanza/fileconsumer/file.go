@@ -42,10 +42,12 @@ type Manager struct {
 
 	// Following fields are used only when useThreadPool is enabled
 	workerWg       sync.WaitGroup
+	_workerWg      sync.WaitGroup
 	knownFilesLock sync.RWMutex
 
-	readerChan chan readerWrapper
-	trieLock   sync.RWMutex
+	readerChan  chan readerWrapper
+	saveReaders chan readerWrapper
+	trieLock    sync.RWMutex
 
 	// TRIE - this data structure stores the fingerprint of the files which are currently being consumed
 	trie *Trie
@@ -71,10 +73,13 @@ func (m *Manager) Start(persister operator.Persister) error {
 	// If useThreadPool is enabled, kick off the worker threads
 	if useThreadPool.IsEnabled() {
 		m.readerChan = make(chan readerWrapper, m.maxBatchFiles*2)
+		m.saveReaders = make(chan readerWrapper, m.maxBatchFiles*2)
 		for i := 0; i < m.maxBatchFiles; i++ {
 			m.workerWg.Add(1)
 			go m.worker(ctx)
 		}
+		m._workerWg.Add(1)
+		go m.saveReadersConcurrent(ctx)
 	}
 	// Start polling goroutine
 	m.startPoller(ctx)
@@ -86,10 +91,16 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
-	if useThreadPool.IsEnabled() && m.readerChan != nil {
-		close(m.readerChan)
+	if useThreadPool.IsEnabled() {
+		if m.readerChan != nil {
+			close(m.readerChan)
+		}
+		m.workerWg.Wait()
+		if m.saveReaders != nil {
+			close(m.saveReaders)
+		}
+		m._workerWg.Wait()
 	}
-	m.workerWg.Wait()
 	// save off any files left
 	m.syncLastPollFiles(m.ctx)
 
