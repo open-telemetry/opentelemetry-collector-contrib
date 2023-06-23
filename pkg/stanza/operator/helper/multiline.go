@@ -143,7 +143,7 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc
 }
 
 func newOctetFrameSplitFunc(flushAtEOF bool) bufio.SplitFunc {
-	frameRegex, _ := regexp.Compile("^[1-9]\\d*\\s")
+	frameRegex := regexp.MustCompile(`^[1-9]\d*\s`)
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		frameLoc := frameRegex.FindIndex(data)
 		if frameLoc == nil {
