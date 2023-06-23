@@ -103,7 +103,7 @@ func (v *vcenterMetricScraper) recordDatastoreProperties(
 	diskUsage := s.Capacity - s.FreeSpace
 	diskUtilization := float64(diskUsage) / float64(s.Capacity) * 100
 	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, diskUsage, metadata.AttributeDiskStateUsed)
-	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.Capacity, metadata.AttributeDiskStateAvailable)
+	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.FreeSpace, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(now, diskUtilization)
 }
 
