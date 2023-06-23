@@ -40,7 +40,7 @@ func attributeValueToString(v pcommon.Value) string {
 	case pcommon.ValueTypeBool:
 		return strconv.FormatBool(v.Bool())
 	case pcommon.ValueTypeBytes:
-		return fmt.Sprint(v.Bytes().AsRaw())
+		return bytesToString(v.Bytes())
 	case pcommon.ValueTypeDouble:
 		return strconv.FormatFloat(v.Double(), 'f', -1, 64)
 	case pcommon.ValueTypeInt:
@@ -54,6 +54,21 @@ func attributeValueToString(v pcommon.Value) string {
 	default:
 		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
 	}
+}
+
+func bytesToString(bs pcommon.ByteSlice) string {
+	var b strings.Builder
+	b.WriteByte('[')
+	for i := 0; i < bs.Len(); i++ {
+		if i < bs.Len()-1 {
+			fmt.Fprintf(&b, "%v, ", bs.At(i))
+		} else {
+			b.WriteString(fmt.Sprint(bs.At(i)))
+		}
+	}
+
+	b.WriteByte(']')
+	return b.String()
 }
 
 func sliceToString(s pcommon.Slice) string {

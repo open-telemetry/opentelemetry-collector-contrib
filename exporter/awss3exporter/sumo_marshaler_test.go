@@ -103,7 +103,7 @@ func TestAttributeValueToString(t *testing.T) {
 		},
 		{
 			value:  pcommon.NewValueBytes(),
-			result: "[42 33 77 255 0]",
+			result: "[42, 33, 77, 255, 0]",
 			init: func(v pcommon.Value) {
 				v.Bytes().Append(42, 33, 77, 255, 0)
 			},
@@ -135,7 +135,7 @@ func TestAttributeValueToString(t *testing.T) {
 		},
 		{
 			value:  pcommon.NewValueSlice(),
-			result: "[110.37, [true], [1 2 3], asdfg]",
+			result: "[110.37, [true], [1, 2, 3], asdfg]",
 			init: func(v pcommon.Value) {
 				s := v.Slice()
 				s.AppendEmpty().SetDouble(110.37)
