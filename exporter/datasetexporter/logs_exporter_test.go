@@ -406,101 +406,101 @@ func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityText(t *testin
 
 	// invalid values
 	ld.SetSeverityNumber(0)
-	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(-1)
-	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(100)
-	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
 
 	// trace
 	ld.SetSeverityNumber(1)
-	assert.Equal(t, dataSetLogLevelTrace, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(2)
-	assert.Equal(t, dataSetLogLevelTrace, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(3)
-	assert.Equal(t, dataSetLogLevelTrace, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(4)
-	assert.Equal(t, dataSetLogLevelTrace, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
 
 	// debug
 	ld.SetSeverityNumber(5)
-	assert.Equal(t, dataSetLogLevelDebug, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(6)
-	assert.Equal(t, dataSetLogLevelDebug, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(7)
-	assert.Equal(t, dataSetLogLevelDebug, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(8)
-	assert.Equal(t, dataSetLogLevelDebug, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
 
 	// info
 	ld.SetSeverityNumber(9)
-	assert.Equal(t, dataSetLogLevelInfo, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(10)
-	assert.Equal(t, dataSetLogLevelInfo, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(11)
-	assert.Equal(t, dataSetLogLevelInfo, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(12)
-	assert.Equal(t, dataSetLogLevelInfo, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
 
 	// warn
 	ld.SetSeverityNumber(13)
-	assert.Equal(t, dataSetLogLevelWarn, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(14)
-	assert.Equal(t, dataSetLogLevelWarn, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(15)
-	assert.Equal(t, dataSetLogLevelWarn, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(16)
-	assert.Equal(t, dataSetLogLevelWarn, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
 
 	// error
 	ld.SetSeverityNumber(17)
-	assert.Equal(t, dataSetLogLevelError, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(18)
-	assert.Equal(t, dataSetLogLevelError, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(19)
-	assert.Equal(t, dataSetLogLevelError, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(20)
-	assert.Equal(t, dataSetLogLevelError, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
 
 	// fatal
 	ld.SetSeverityNumber(21)
-	assert.Equal(t, dataSetLogLevelFatal, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(22)
-	assert.Equal(t, dataSetLogLevelFatal, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(22)
-	assert.Equal(t, dataSetLogLevelFatal, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(24)
-	assert.Equal(t, dataSetLogLevelFatal, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 
 	// Invalid values get mapped to info (3)
 	ld.SetSeverityNumber(0)
-	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(-1)
-	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(25)
-	assert.Equal(t, 3, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, 3, mapOtelSeverityToDataSetSeverity(ld))
 
 }
 
@@ -511,46 +511,46 @@ func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumber(t *testin
 
 	// invalid values
 	ld.SetSeverityText("a")
-	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityText("infofoo")
-	assert.Equal(t, defaultDataSetSeverityLevel, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
 
 	// trace
 	ld.SetSeverityText("trace")
-	assert.Equal(t, dataSetLogLevelTrace, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
 
 	// debug
 	ld.SetSeverityText("debug")
-	assert.Equal(t, dataSetLogLevelDebug, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
 
 	// info
 	ld.SetSeverityText("info")
-	assert.Equal(t, dataSetLogLevelInfo, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityText("informational")
-	assert.Equal(t, dataSetLogLevelInfo, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
 
 	// warn
 	ld.SetSeverityText("warn")
-	assert.Equal(t, dataSetLogLevelWarn, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityText("warning")
-	assert.Equal(t, dataSetLogLevelWarn, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
 
 	// error
 	ld.SetSeverityText("error")
-	assert.Equal(t, dataSetLogLevelError, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
 
 	// fatal
 	ld.SetSeverityText("fatal")
-	assert.Equal(t, dataSetLogLevelFatal, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityText("critical")
-	assert.Equal(t, dataSetLogLevelFatal, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityText("emergency")
-	assert.Equal(t, dataSetLogLevelFatal, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 }
 
 func TestOtelSeverityToDataSetSeverityWithSeverityNumberAndSeverityTextSeverityNumberHasPriority(t *testing.T) {
@@ -560,10 +560,10 @@ func TestOtelSeverityToDataSetSeverityWithSeverityNumberAndSeverityTextSeverityN
 
 	ld.SetSeverityNumber(3)
 	ld.SetSeverityText("debug")
-	assert.Equal(t, 1, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, 1, mapOtelSeverityToDataSetSeverity(ld))
 
 	ld.SetSeverityNumber(22)
 	ld.SetSeverityText("info")
-	assert.Equal(t, 6, otelSeverityToDataSetSeverity(ld))
+	assert.Equal(t, 6, mapOtelSeverityToDataSetSeverity(ld))
 
 }

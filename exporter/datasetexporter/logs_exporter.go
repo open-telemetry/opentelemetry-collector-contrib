@@ -82,7 +82,7 @@ func buildBody(attrs map[string]interface{}, value pcommon.Value) string {
 }
 
 // Function maps OTel severity on the LogRecord to DataSet severity level (number)
-func otelSeverityToDataSetSeverity(log plog.LogRecord) int {
+func mapOtelSeverityToDataSetSeverity(log plog.LogRecord) int {
 	// This function maps OTel severity level to DataSet severity levels
 	//
 	// Valid OTel levels - https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
@@ -93,11 +93,11 @@ func otelSeverityToDataSetSeverity(log plog.LogRecord) int {
 	dataSetSeverity := defaultDataSetSeverityLevel
 
 	if sevNum > 0 {
-		dataSetSeverity = logRecordSevNumToDataSetSeverity(sevNum)
+		dataSetSeverity = mapLogRecordSevNumToDataSetSeverity(sevNum)
 	} else if sevText != "" {
 		// Per docs, SeverityNumber is optional so if it's not present we fall back to SeverityText
 		// https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext
-		dataSetSeverity = logRecordSeverityTextToDataSetSeverity(sevText)
+		dataSetSeverity = mapLogRecordSeverityTextToDataSetSeverity(sevText)
 	}
 
 	// TODO: We should log in case we see invalid severity, but right now, afaik, we / OTEL
@@ -108,7 +108,7 @@ func otelSeverityToDataSetSeverity(log plog.LogRecord) int {
 	return dataSetSeverity
 }
 
-func logRecordSevNumToDataSetSeverity(sevNum plog.SeverityNumber) int {
+func mapLogRecordSevNumToDataSetSeverity(sevNum plog.SeverityNumber) int {
 	// Maps LogRecord.SeverityNumber field value to DataSet severity value.
 	dataSetSeverity := defaultDataSetSeverityLevel
 
@@ -142,7 +142,7 @@ func logRecordSevNumToDataSetSeverity(sevNum plog.SeverityNumber) int {
 	return dataSetSeverity
 }
 
-func logRecordSeverityTextToDataSetSeverity(sevText string) int {
+func mapLogRecordSeverityTextToDataSetSeverity(sevText string) int {
 	// Maps LogRecord.SeverityText field value to DataSet severity value.
 	dataSetSeverity := defaultDataSetSeverityLevel
 
@@ -181,7 +181,7 @@ func buildEventFromLog(
 
 	observedTs := log.ObservedTimestamp().AsTime()
 
-	event.Sev = otelSeverityToDataSetSeverity(log)
+	event.Sev = mapOtelSeverityToDataSetSeverity(log)
 
 	if timestamp := log.Timestamp().AsTime(); !timestamp.Equal(time.Unix(0, 0)) {
 		event.Ts = strconv.FormatInt(timestamp.UnixNano(), 10)
