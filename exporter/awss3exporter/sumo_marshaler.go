@@ -102,6 +102,10 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 		if !exists {
 			return nil, errors.New("_sourceHost attribute does not exists")
 		}
+		sourceName, exists := rl.Resource().Attributes().Get(SourceNameKey)
+		if !exists {
+			return nil, errors.New("_sourceName attribute does not exists")
+		}
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
@@ -110,10 +114,7 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 				lr := logs.At(k)
 				dateVal := lr.ObservedTimestamp()
 				body := attributeValueToString(lr.Body())
-				sourceName, exists := lr.Attributes().Get(SourceNameKey)
-				if !exists {
-					return nil, errors.New("_sourceName attribute does not exists")
-				}
+
 				logEntry(&buf, "{\"date\": \"%s\",\"sourceName\":\"%s\",\"sourceHost\":\"%s\",\"sourceCategory\":\"%s\",\"fields\":{},\"message\":\"%s\"}",
 					dateVal, attributeValueToString(sourceName), attributeValueToString(sourceHost), attributeValueToString(sourceCategory), body)
 			}

@@ -39,6 +39,7 @@ func TestMarshalerMissingScopedLogs(t *testing.T) {
 	rls := logs.ResourceLogs().AppendEmpty()
 	rls.Resource().Attributes().PutStr("_sourceCategory", "testcategory")
 	rls.Resource().Attributes().PutStr("_sourceHost", "testHost")
+	rls.Resource().Attributes().PutStr("_sourceName", "testName")
 
 	marshaler := &SumoMarshaler{"txt"}
 	require.NotNil(t, marshaler)
@@ -71,6 +72,7 @@ func TestMarshalerOkStructure(t *testing.T) {
 	rls := logs.ResourceLogs().AppendEmpty()
 	rls.Resource().Attributes().PutStr("_sourceCategory", "testcategory")
 	rls.Resource().Attributes().PutStr("_sourceHost", "testHost")
+	rls.Resource().Attributes().PutStr("_sourceName", "testSourceName")
 
 	sl := rls.ScopeLogs().AppendEmpty()
 	const recordNum = 0
@@ -78,7 +80,6 @@ func TestMarshalerOkStructure(t *testing.T) {
 	ts := pcommon.Timestamp(int64(recordNum) * time.Millisecond.Nanoseconds())
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("entry1")
-	logRecord.Attributes().PutStr("_sourceName", "testSourceName")
 	logRecord.SetTimestamp(ts)
 
 	marshaler := &SumoMarshaler{"txt"}
