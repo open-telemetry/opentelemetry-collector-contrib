@@ -131,8 +131,7 @@ func (m *metricKafkaConsumerGroupLagSum) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) 
-{
+func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
