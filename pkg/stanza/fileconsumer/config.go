@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+
 	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
@@ -169,6 +171,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
+		persister:       storage.NewNopClient(),
 	}
 	if useThreadPool.IsEnabled() {
 		manager.readerChan = make(chan readerWrapper, c.MaxConcurrentFiles)

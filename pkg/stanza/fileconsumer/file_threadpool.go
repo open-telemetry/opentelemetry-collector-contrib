@@ -53,50 +53,25 @@ func (m *Manager) worker(ctx context.Context) {
 }
 
 func (m *Manager) makeReaderConcurrent(filePath string) (*Reader, *Fingerprint) {
-	if _, ok := m.seenPaths[filePath]; !ok {
-		if m.readerFactory.fromBeginning {
-			m.Infow("Started watching file", "path", filePath)
-		} else {
-			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", filePath)
-		}
-		m.seenPaths[filePath] = struct{}{}
-	}
-	file, err := os.Open(filePath) // #nosec - operator must read in files defined by user
-	if err != nil {
-		m.Debugf("Failed to open file", zap.Error(err))
-		return nil, nil
-	}
-	fp, err := m.readerFactory.newFingerprint(file)
-	if err != nil {
-		m.Errorw("Failed creating fingerprint", zap.Error(err))
-		return nil, nil
-	}
-	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-
-	if len(fp.FirstBytes) == 0 {
-		if err = file.Close(); err != nil {
-			m.Errorf("problem closing file", "file", file.Name())
-		}
+	fp, file := m.makeFingerprint(filePath)
+	if fp == nil {
 		return nil, nil
 	}
 
 	// check if the current file is already being consumed
 	if m.isCurrentlyConsuming(fp) {
-		if err = file.Close(); err != nil {
+		if err := file.Close(); err != nil {
 			m.Errorf("problem closing file", "file", file.Name())
 		}
 		return nil, nil
 	}
 
-	for i := 0; i < len(m.currentFps)-1; i++ {
-		fp2 := m.currentFps[i]
-		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
-			// Exclude
-			if err = file.Close(); err != nil {
-				m.Errorf("problem closing file", "file", file.Name())
-			}
-			return nil, nil
+	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
+	if m.checkDuplicates(fp) {
+		if err := file.Close(); err != nil {
+			m.Errorf("problem closing file", "file", file.Name())
 		}
+		return nil, nil
 	}
 	m.currentFps = append(m.currentFps, fp)
 

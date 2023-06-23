@@ -26,14 +26,16 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: delta
+      aggregation: cumulative
   #  topics scraper
   kafka.topic.partitions:
     enabled: true
     description: Number of partitions in topic.
     unit: "{partitions}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation: cumulative
     attributes: [topic]
   kafka.partition.current_offset:
     enabled: true
@@ -53,23 +55,29 @@ metrics:
     enabled: true
     description: Number of replicas for partition of topic
     unit: "{replicas}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation: cumulative
     attributes: [topic, partition]
   kafka.partition.replicas_in_sync:
     enabled: true
     description: Number of synchronized replicas of partition
     unit: "{replicas}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation: cumulative
     attributes: [topic, partition]
   #  consumers scraper
   kafka.consumer_group.members:
     enabled: true
     description: Count of members in the consumer group
     unit: "{members}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation: cumulative
     attributes: [group]
   kafka.consumer_group.offset:
     enabled: true

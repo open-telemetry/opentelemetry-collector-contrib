@@ -4,4 +4,4 @@ status:
   class: processor
   stability:
     alpha: [traces]
-  distributions: [core, contrib, observiq, splunk, sumo, aws]
+  distributions: [core, contrib, observiq, splunk, sumo, aws, redhat]

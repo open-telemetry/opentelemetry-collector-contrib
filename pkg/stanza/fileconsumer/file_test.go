@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 
-	"math/rand"
 	"path/filepath"
 	"runtime"
 	"strconv"

@@ -101,7 +101,7 @@ func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Ma
 			input.workerWg.Add(1)
 			go input.worker(ctx)
 		}
-		input.workerWg.Add(1)
+		input._workerWg.Add(1)
 		go input.saveReadersConcurrent(ctx)
 	}
 

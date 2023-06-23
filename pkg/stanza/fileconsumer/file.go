@@ -100,9 +100,13 @@ func (m *Manager) Stop() error {
 			close(m.saveReaders)
 		}
 		m._workerWg.Wait()
+		// save off any files left
+		// As we already cancelled our current context, create a new one to save any left offsets
+		// This is only applicable for `filelog.useThreadPool` featuregate
+		ctx, cancel := context.WithCancel(context.Background())
+		m.syncLastPollFiles(ctx)
+		cancel()
 	}
-	// save off any files left
-	m.syncLastPollFiles(m.ctx)
 
 	m.roller.cleanup()
 	for _, reader := range m.knownFiles {
@@ -228,11 +232,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.clearCurrentFingerprints()
 }
 
-// makeReader take a file path, then creates reader,
-// discarding any that have a duplicate fingerprint to other files that have already
-// been read this polling interval
-func (m *Manager) makeReader(path string) *Reader {
-	// Open the files first to minimize the time between listing and opening
+func (m *Manager) makeFingerprint(path string) (*Fingerprint, *os.File) {
 	if _, ok := m.seenPaths[path]; !ok {
 		if m.readerFactory.fromBeginning {
 			m.Infow("Started watching file", "path", path)
@@ -244,13 +244,15 @@ func (m *Manager) makeReader(path string) *Reader {
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
 		m.Debugf("Failed to open file", zap.Error(err))
-		return nil
+		return nil, nil
 	}
 
 	fp, err := m.readerFactory.newFingerprint(file)
 	if err != nil {
-		m.Errorw("Failed creating fingerprint", zap.Error(err))
-		return nil
+		if err = file.Close(); err != nil {
+			m.Errorf("problem closing file %s", file.Name())
+		}
+		return nil, nil
 	}
 
 	if len(fp.FirstBytes) == 0 {
@@ -258,19 +260,37 @@ func (m *Manager) makeReader(path string) *Reader {
 		if err = file.Close(); err != nil {
 			m.Errorf("problem closing file %s", file.Name())
 		}
+		return nil, nil
+	}
+	return fp, file
+}
+
+func (m *Manager) checkDuplicates(fp *Fingerprint) bool {
+	for i := 0; i < len(m.currentFps); i++ {
+		fp2 := m.currentFps[i]
+		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
+			return true
+		}
+	}
+	return false
+}
+
+// makeReader take a file path, then creates reader,
+// discarding any that have a duplicate fingerprint to other files that have already
+// been read this polling interval
+func (m *Manager) makeReader(path string) *Reader {
+	// Open the files first to minimize the time between listing and opening
+	fp, file := m.makeFingerprint(path)
+	if fp == nil {
 		return nil
 	}
 
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-	for i := 0; i < len(m.currentFps); i++ {
-		fp2 := m.currentFps[i]
-		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
-			// Exclude duplicates
-			if err = file.Close(); err != nil {
-				m.Errorf("problem closing file", "file", file.Name())
-			}
-			return nil
+	if m.checkDuplicates(fp) {
+		if err := file.Close(); err != nil {
+			m.Errorf("problem closing file", "file", file.Name())
 		}
+		return nil
 	}
 
 	m.currentFps = append(m.currentFps, fp)

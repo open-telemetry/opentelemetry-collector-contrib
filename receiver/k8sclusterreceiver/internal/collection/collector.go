@@ -106,21 +106,21 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *corev1.Pod:
 		md = ocsToMetrics(pod.GetMetrics(o, dc.settings.TelemetrySettings.Logger))
 	case *corev1.Node:
-		md = ocsToMetrics(node.GetMetrics(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.settings.TelemetrySettings.Logger))
+		md = node.GetMetrics(dc.settings, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
 	case *corev1.Namespace:
-		md = ocsToMetrics(namespace.GetMetrics(o))
+		md = namespace.GetMetrics(dc.settings, o)
 	case *corev1.ReplicationController:
 		md = ocsToMetrics(replicationcontroller.GetMetrics(o))
 	case *corev1.ResourceQuota:
-		md = ocsToMetrics(resourcequota.GetMetrics(o))
+		md = resourcequota.GetMetrics(dc.settings, o)
 	case *appsv1.Deployment:
-		md = ocsToMetrics(deployment.GetMetrics(o))
+		md = deployment.GetMetrics(dc.settings, o)
 	case *appsv1.ReplicaSet:
 		md = ocsToMetrics(replicaset.GetMetrics(o))
 	case *appsv1.DaemonSet:
 		md = ocsToMetrics(demonset.GetMetrics(o))
 	case *appsv1.StatefulSet:
-		md = ocsToMetrics(statefulset.GetMetrics(o))
+		md = statefulset.GetMetrics(dc.settings, o)
 	case *batchv1.Job:
 		md = ocsToMetrics(jobs.GetMetrics(o))
 	case *batchv1.CronJob:
