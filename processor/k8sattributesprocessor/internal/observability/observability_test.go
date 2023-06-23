@@ -55,6 +55,7 @@ func (e *exporter) ExportMetrics(_ context.Context, data []*metricdata.Metric) e
 // This test can only be run with -count 1 because of static
 // metricproducer.GlobalManager() used in metricexport.NewReader().
 func TestMetrics(t *testing.T) {
+	Init()
 	type testCase struct {
 		name       string
 		recordFunc func()
