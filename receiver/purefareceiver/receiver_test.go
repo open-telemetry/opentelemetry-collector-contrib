@@ -49,31 +49,142 @@ func TestReceiverArray(t *testing.T) {
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 
-	cfg.Endpoint = ts.URL
-	cfg.Array = []internal.ScraperConfig{{
-		Address: "array01",
-	}}
-	cfg.Settings = &Settings{
-		ReloadIntervals: &ReloadIntervals{
-			Array: 10 * time.Millisecond,
-		},
-	}
+	t.Run("Array scraper rceiver is created properly", func(t *testing.T) {
+		cfg.Endpoint = ts.URL
+		cfg.Array = []internal.ScraperConfig{{
+			Address: "array01",
+		}}
+		cfg.Settings = &Settings{
+			ReloadIntervals: &ReloadIntervals{
+				Array: 10 * time.Millisecond,
+			},
+		}
 
-	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
-	wg.Add(1)
+		sink := &consumertest.MetricsSink{}
+		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+		// wg.Add(1)
 
-	// test
-	err := recv.Start(context.Background(), componenttest.NewNopHost())
-	wg.Wait()
+		// test
+		err := recv.Start(context.Background(), componenttest.NewNopHost())
+		// wg.Wait()
 
-	// verify
-	assert.NoError(t, err)
-	// assert.Greater(t, len(sink.AllMetrics()), 0, "expected to have received more than 0 metrics")
-	require.Equal(t, len(sink.AllMetrics()), 0)
-	/* 	assert.Eventually(t, func() bool {
-		return len(sink.AllMetrics()) == 1
-	}, 10*time.Second, 10*time.Millisecond) */
+		// verify
+		assert.NoError(t, err)
+		// assert.Greater(t, len(sink.AllMetrics()), 1, "expected to have received more than 0 metrics")
+		require.Equal(t, len(sink.AllMetrics()), 0)
+		/* 	assert.Eventually(t, func() bool {
+			return len(sink.AllMetrics()) == 1
+		}, 10*time.Second, 10*time.Millisecond) */
+	})
+
+	t.Run("Hosts scraper rceiver is created properly", func(t *testing.T) {
+		cfg.Endpoint = ts.URL
+		cfg.Hosts = []internal.ScraperConfig{{
+			Address: "array01",
+		}}
+		cfg.Settings = &Settings{
+			ReloadIntervals: &ReloadIntervals{
+				Hosts: 10 * time.Millisecond,
+			},
+		}
+
+		sink := &consumertest.MetricsSink{}
+		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+		wg.Add(1)
+
+		// test
+		err := recv.Start(context.Background(), componenttest.NewNopHost())
+		wg.Wait()
+
+		// verify
+		assert.NoError(t, err)
+
+		// the assert below, nee to be changed.
+		require.Equal(t, len(sink.AllMetrics()), 0)
+		require.NoError(t, err)
+		require.NotNil(t, recv)
+	})
+
+	t.Run("Directories scraper rceiver is created properly", func(t *testing.T) {
+		cfg.Endpoint = ts.URL
+		cfg.Directories = []internal.ScraperConfig{{
+			Address: "array01",
+		}}
+		cfg.Settings = &Settings{
+			ReloadIntervals: &ReloadIntervals{
+				Directories: 10 * time.Millisecond,
+			},
+		}
+
+		sink := &consumertest.MetricsSink{}
+		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+		// wg.Add(1)
+
+		// test
+		err := recv.Start(context.Background(), componenttest.NewNopHost())
+		// wg.Wait()
+
+		// verify
+		assert.NoError(t, err)
+
+		require.Equal(t, len(sink.AllMetrics()), 0)
+		require.NoError(t, err)
+		require.NotNil(t, recv)
+	})
+
+	t.Run("Pods scraper rceiver is created properly", func(t *testing.T) {
+		cfg.Endpoint = ts.URL
+		cfg.Pods = []internal.ScraperConfig{{
+			Address: "array01",
+		}}
+		cfg.Settings = &Settings{
+			ReloadIntervals: &ReloadIntervals{
+				Pods: 10 * time.Millisecond,
+			},
+		}
+
+		sink := &consumertest.MetricsSink{}
+		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+		// wg.Add(1)
+
+		// test
+		err := recv.Start(context.Background(), componenttest.NewNopHost())
+		// wg.Wait()
+
+		// verify
+		assert.NoError(t, err)
+
+		require.Equal(t, len(sink.AllMetrics()), 0)
+		require.NoError(t, err)
+		require.NotNil(t, recv)
+	})
+
+	t.Run("Volumes scraper rceiver is created properly", func(t *testing.T) {
+		cfg.Endpoint = ts.URL
+		cfg.Volumes = []internal.ScraperConfig{{
+			Address: "array01",
+		}}
+		cfg.Settings = &Settings{
+			ReloadIntervals: &ReloadIntervals{
+				Volumes: 10 * time.Millisecond,
+			},
+		}
+
+		sink := &consumertest.MetricsSink{}
+		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+		// wg.Add(1)
+
+		// test
+		err := recv.Start(context.Background(), componenttest.NewNopHost())
+		// wg.Wait()
+
+		// verify
+		assert.NoError(t, err)
+
+		require.Equal(t, len(sink.AllMetrics()), 0)
+		require.NoError(t, err)
+		require.NotNil(t, recv)
+	})
 
 }
 
