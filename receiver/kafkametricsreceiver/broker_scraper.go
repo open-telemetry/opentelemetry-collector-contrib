@@ -60,6 +60,9 @@ func (s *brokerScraper) scrapeMetric(now pcommon.Timestamp, allMetrics saramaMet
 	key := fmt.Sprint(prefix, brokerID)
 
 	if metric, ok := allMetrics[key]; ok {
+		fmt.Println(">>>>>>>>")
+		fmt.Printf(">>>>>>>>>: %v", metric)
+		fmt.Println(">>>>>>>>")
 		switch prefix {
 		case "consumer-fetch-rate-for-broker-":
 			if v, ok := metric["mean.rate"].(float64); ok {

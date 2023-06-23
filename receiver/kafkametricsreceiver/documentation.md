@@ -20,140 +20,6 @@ metrics:
 | ---- | ----------- | ---------- |
 | {brokers} | Gauge | Int |
 
-### kafka.brokers.consumer_fetch_rate
-
-Average consumer fetch Rate
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {fetches}/s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.count
-
-Number of brokers in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {brokers} | Sum | Int | Cumulative | false |
-
-### kafka.brokers.incoming_byte_rate
-
-Average tncoming Byte Rate in bytes/second
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.outgoing_byte_rate
-
-Average outgoing Byte Rate in bytes/second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.request_latency
-
-Request latency Average in ms
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.request_rate
-
-Average request rate per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {requests}/s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.request_size
-
-Average request size in bytes
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.requests_in_flight
-
-Requests in flight
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {requests} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.response_rate
-
-Average response rate per second
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {response}/s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### kafka.brokers.response_size
-
-Average response size in bytes
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
 ### kafka.consumer_group.lag
 
 Current approximate lag of consumer group at partition of topic
@@ -303,3 +169,147 @@ Number of partitions in topic.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### kafka.brokers.consumer_fetch_rate
+
+Average consumer fetch Rate
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fetches}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.count
+
+Number of brokers in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {brokers} | Sum | Int | Cumulative | false |
+
+### kafka.brokers.incoming_byte_rate
+
+Average tncoming Byte Rate in bytes/second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.outgoing_byte_rate
+
+Average outgoing Byte Rate in bytes/second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.request_latency
+
+Average request latency in ms
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.request_rate
+
+Average request rate per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {requests}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.request_size
+
+Average request size in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.requests_in_flight
+
+Requests in flight
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {requests} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.response_rate
+
+Average response rate per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {response}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### kafka.brokers.response_size
+
+Average response size in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
