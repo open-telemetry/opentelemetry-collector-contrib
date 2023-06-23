@@ -19,6 +19,12 @@ func TestMarshaler(t *testing.T) {
 		assert.Equal(t, m.format(), "json")
 	}
 	{
+		m, err := NewMarshaler("sumo_ic", zap.NewNop())
+		assert.NoError(t, err)
+		require.NotNil(t, m)
+		assert.Equal(t, m.format(), "sumo_ic")
+	}
+	{
 		m, err := NewMarshaler("unknown", zap.NewNop())
 		assert.Error(t, err)
 		require.Nil(t, m)
