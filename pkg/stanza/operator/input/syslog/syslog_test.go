@@ -98,11 +98,14 @@ func TestSyslogIDs(t *testing.T) {
 
 	t.Run("TCP", func(t *testing.T) {
 		cfg := NewConfigWithTCP(basicConfig())
+		cfg.Protocol = "rfc5424"
+		cfg.EnableOctetCounting = true
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		syslogInputOp := op.(*Input)
 		require.Equal(t, "test_syslog_internal_tcp", syslogInputOp.tcp.ID())
 		require.Equal(t, "test_syslog_internal_parser", syslogInputOp.parser.ID())
+		require.Equal(t, true, cfg.TCP.Multiline.OctetCounting)
 		require.Equal(t, []string{syslogInputOp.parser.ID()}, syslogInputOp.tcp.GetOutputIDs())
 		require.Equal(t, []string{"fake"}, syslogInputOp.parser.GetOutputIDs())
 		require.Equal(t, []string{"fake"}, syslogInputOp.GetOutputIDs())

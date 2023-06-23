@@ -6,8 +6,10 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	"golang.org/x/text/encoding"
 )
@@ -30,6 +32,7 @@ func NewMultilineConfig() MultilineConfig {
 type MultilineConfig struct {
 	LineStartPattern string `mapstructure:"line_start_pattern"`
 	LineEndPattern   string `mapstructure:"line_end_pattern"`
+	OctetCounting    bool   `mapstructure:"enable_octet_counting"`
 }
 
 // Build will build a Multiline operator.
@@ -48,6 +51,8 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 	)
 
 	switch {
+	case c.OctetCounting:
+		splitFunc = newOctetFrameSplitFunc(flushAtEOF)
 	case endPattern != "" && startPattern != "":
 		return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
 	case enc == encoding.Nop && (endPattern != "" || startPattern != ""):
@@ -132,6 +137,39 @@ func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc
 
 		advance = secondMatchStart                               // start scanning at the beginning of the second match
 		token = trimFunc(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
+		err = nil
+		return
+	}
+}
+
+func newOctetFrameSplitFunc(flushAtEOF bool) bufio.SplitFunc {
+	frameRegex, _ := regexp.Compile("^[1-9]\\d*\\s")
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		frameLoc := frameRegex.FindIndex(data)
+		if frameLoc == nil {
+			// Flush if no more data is expected
+			if len(data) != 0 && atEOF && flushAtEOF {
+				token = data
+				advance = len(data)
+				return
+			}
+			return 0, nil, nil // read more data and try again.
+		}
+
+		frameMaxIndex := frameLoc[1]
+		// delimit space between length and log
+		frameLenValue, err := strconv.Atoi(string(data[:frameMaxIndex-1]))
+		if err != nil {
+			return 0, nil, err // read more data and try again.
+		}
+
+		advance = frameMaxIndex + frameLenValue
+		// the limitation here is that we can only line split within a single buffer
+		// the context of buffer length cannot be pass onto the next scan
+		if advance > cap(data) {
+			return 0, nil, errors.New("frame size is larger than buffer capacity")
+		}
+		token = data[:advance]
 		err = nil
 		return
 	}

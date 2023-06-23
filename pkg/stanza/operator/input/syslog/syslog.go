@@ -58,6 +58,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	if c.TCP != nil {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
+		c.TCP.Multiline.OctetCounting = syslogParserCfg.EnableOctetCounting
 		tcpInputCfg.BaseConfig = *c.TCP
 
 		tcpInput, err := tcpInputCfg.Build(logger)

@@ -598,6 +598,103 @@ func TestNewlineSplitFunc(t *testing.T) {
 	}
 }
 
+func TestOctetFramingSplitFunc(t *testing.T) {
+	cfg := &MultilineConfig{
+		OctetCounting: true,
+	}
+
+	testCases := []tokenizerTestCase{
+		{
+			Name: "OneLogSimple",
+			Raw:  []byte(`17 my log LOGEND 123`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "TwoLogsSimple",
+			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "NoMatches",
+			Raw:  []byte(`file that has no matches in it`),
+		},
+		{
+			Name: "NonMatchesAfter",
+			Raw:  []byte(`17 my log LOGEND 123my log LOGEND 123`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "HugeLog100",
+			Raw: func() []byte {
+				newRaw := generatedByteSliceOfLength(100)
+				newRaw = append([]byte(`100 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokenized: []string{
+				`100 ` + string(generatedByteSliceOfLength(100)),
+			},
+		},
+		{
+			Name: "maxCapacity",
+			Raw: func() []byte {
+				newRaw := generatedByteSliceOfLength(4091)
+				newRaw = append([]byte(`4091 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokenized: []string{
+				`4091 ` + string(generatedByteSliceOfLength(4091)),
+			},
+		},
+		{
+			Name:    "LogsWithoutFlusher",
+			Raw:     []byte(`17 my log LOGEND 123should not flush this`),
+			Flusher: &Flusher{},
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "LogsWithFlusher",
+			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123should flush this`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+				`17 my log LOGEND 123`,
+				`should flush this`,
+			},
+			Flusher: &Flusher{
+				forcePeriod: forcePeriod,
+			},
+			AdditionalIterations: 1,
+			Sleep:                sleepDuration,
+		},
+		{
+			Name: "LogsWithLongFlusherWithMultipleLogsInBuffer",
+			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123should not wait for this`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+				`17 my log LOGEND 123`,
+			},
+			Flusher: &Flusher{
+				forcePeriod: forcePeriod * 16,
+			},
+			AdditionalIterations: 1,
+			Sleep:                forcePeriod / 4,
+		},
+	}
+	for _, tc := range testCases {
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		require.NoError(t, err)
+		t.Run(tc.Name, tc.RunFunc(splitFunc))
+	}
+}
+
 type noSplitTestCase struct {
 	Name              string
 	Raw               []byte
