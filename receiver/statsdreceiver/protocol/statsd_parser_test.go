@@ -11,6 +11,8 @@ import (
 
 	"github.com/lightstep/go-expohisto/mapping/logarithm"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -1066,6 +1068,45 @@ func TestStatsDParser_Mappings(t *testing.T) {
 			assert.Equal(t, tc.expect, typeNames)
 		})
 	}
+}
+
+func TestStatsDParser_ScopeIsIncluded(t *testing.T) {
+
+	const devVersion = "dev-0.0.1"
+
+	p := &StatsDParser{
+		BuildInfo: component.BuildInfo{
+			Version: devVersion,
+		},
+	}
+	testAddress, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+
+	err := p.Initialize(true, false,
+		[]TimerHistogramMapping{
+			{StatsdType: "timer", ObserverType: "summary"},
+			{StatsdType: "histogram", ObserverType: "histogram"},
+		},
+	)
+	require.NoError(t, err)
+	require.NoError(t, p.Aggregate("test.metric:1|c", testAddress))
+	require.NoError(t, p.Aggregate("test.metric:2|g", testAddress))
+	require.NoError(t, p.Aggregate("test.metric:42|h", testAddress))
+	require.NoError(t, p.Aggregate("statsdTestMetric1:1|ms|#mykey:myvalue", testAddress))
+	require.NoError(t, p.Aggregate("test.metric:-42|ms", testAddress))
+
+	metrics := p.GetMetrics()[0].Metrics
+
+	require.Equal(t, 1, metrics.ResourceMetrics().Len())
+	require.Equal(t, 5, metrics.MetricCount())
+
+	el := metrics.ResourceMetrics().At(0)
+	for i := 0; i < metrics.MetricCount(); i++ {
+		scope := el.ScopeMetrics().At(i).Scope()
+
+		assert.Equal(t, receiverName, scope.Name())
+		assert.Equal(t, devVersion, scope.Version())
+	}
+
 }
 
 func TestTimeNowFunc(t *testing.T) {
