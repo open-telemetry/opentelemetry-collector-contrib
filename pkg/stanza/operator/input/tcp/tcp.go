@@ -70,6 +70,21 @@ type BaseConfig struct {
 	Multiline                   helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
 	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
 	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
+	MultiLineBuilder            MultiLineBuilderFunc
+}
+
+type MultiLineBuilderFunc func() (bufio.SplitFunc, error)
+
+func (c Config) defaultMultilineBuilder() (bufio.SplitFunc, error) {
+	encoding, err := c.Encoding.Build()
+	if err != nil {
+		return nil, err
+	}
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
+	if err != nil {
+		return nil, err
+	}
+	return splitFunc, nil
 }
 
 // Build will build a tcp input operator.
@@ -102,8 +117,12 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
+	if c.MultiLineBuilder == nil {
+		c.MultiLineBuilder = c.defaultMultilineBuilder
+	}
+
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
+	splitFunc, err := c.MultiLineBuilder()
 	if err != nil {
 		return nil, err
 	}

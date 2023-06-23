@@ -12,7 +12,6 @@ tcp:
     encoding: utf-16
     multiline:
       line_start_pattern: ABC
-      enable_octet_counting: true
     tls:
       cert_file: foo
       key_file: foo2

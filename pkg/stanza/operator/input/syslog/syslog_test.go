@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
@@ -98,14 +99,11 @@ func TestSyslogIDs(t *testing.T) {
 
 	t.Run("TCP", func(t *testing.T) {
 		cfg := NewConfigWithTCP(basicConfig())
-		cfg.Protocol = "rfc5424"
-		cfg.EnableOctetCounting = true
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		syslogInputOp := op.(*Input)
 		require.Equal(t, "test_syslog_internal_tcp", syslogInputOp.tcp.ID())
 		require.Equal(t, "test_syslog_internal_parser", syslogInputOp.parser.ID())
-		require.Equal(t, true, cfg.TCP.Multiline.OctetCounting)
 		require.Equal(t, []string{syslogInputOp.parser.ID()}, syslogInputOp.tcp.GetOutputIDs())
 		require.Equal(t, []string{"fake"}, syslogInputOp.parser.GetOutputIDs())
 		require.Equal(t, []string{"fake"}, syslogInputOp.GetOutputIDs())
@@ -139,4 +137,66 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg.UDP.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
+}
+
+func TestOctetFramingSplitFunc(t *testing.T) {
+	testCases := []helper.TokenizerTestCase{
+		{
+			Name: "OneLogSimple",
+			Raw:  []byte(`17 my log LOGEND 123`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "TwoLogsSimple",
+			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "NoMatches",
+			Raw:  []byte(`no matches in it`),
+			ExpectedTokenized: []string{
+				`no matches in it`,
+			},
+		},
+		{
+			Name: "NonMatchesAfter",
+			Raw:  []byte(`17 my log LOGEND 123my log LOGEND 12317 my log LOGEND 123`),
+			ExpectedTokenized: []string{
+				`17 my log LOGEND 123`,
+				`my log LOGEND 12317 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "HugeLog100",
+			Raw: func() []byte {
+				newRaw := helper.GeneratedByteSliceOfLength(100)
+				newRaw = append([]byte(`100 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokenized: []string{
+				`100 ` + string(helper.GeneratedByteSliceOfLength(100)),
+			},
+		},
+		{
+			Name: "maxCapacity",
+			Raw: func() []byte {
+				newRaw := helper.GeneratedByteSliceOfLength(4091)
+				newRaw = append([]byte(`4091 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokenized: []string{
+				`4091 ` + string(helper.GeneratedByteSliceOfLength(4091)),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		splitFunc, err := OctetMultiLineBuilder()
+		require.NoError(t, err)
+		t.Run(tc.Name, tc.RunFunc(splitFunc))
+	}
 }

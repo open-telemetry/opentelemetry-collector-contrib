@@ -41,7 +41,6 @@ func TestUnmarshal(t *testing.T) {
 					cfg.TCP.Encoding.Encoding = "utf-16"
 					cfg.TCP.Multiline = helper.NewMultilineConfig()
 					cfg.TCP.Multiline.LineStartPattern = "ABC"
-					cfg.TCP.Multiline.OctetCounting = true
 					cfg.TCP.TLS = &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "foo",

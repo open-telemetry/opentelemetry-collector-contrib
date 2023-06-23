@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"regexp"
 	"testing"
 	"time"
@@ -25,106 +24,8 @@ const (
 	forcePeriod   time.Duration = time.Millisecond * 40
 )
 
-// state is going to keep processing state of the reader
-type state struct {
-	ReadFrom  int
-	Processed int
-}
-
-// reader is a reader which keeps state of readed and processed data
-type reader struct {
-	State *state
-	Data  []byte
-}
-
-// newReader creates reader with empty state
-func newReader(data []byte) reader {
-	return reader{
-		State: &state{
-			ReadFrom:  0,
-			Processed: 0,
-		},
-		Data: data,
-	}
-}
-
-// Read reads data from reader and remebers where reading has been finished
-func (r reader) Read(p []byte) (n int, err error) {
-	// return eof if data has been fully readed
-	if len(r.Data)-r.State.ReadFrom == 0 {
-		return 0, io.EOF
-	}
-
-	// iterate over data char by char and write into p
-	// until p is full or no more data left to read
-	i := 0
-	for ; i < len(r.Data)-r.State.ReadFrom; i++ {
-		if i == len(p) {
-			break
-		}
-		p[i] = r.Data[r.State.ReadFrom+i]
-	}
-
-	// update state
-	r.State.ReadFrom += i
-	return i, nil
-}
-
-// Reset resets reader state (sets last readed position to last processed position)
-func (r *reader) Reset() {
-	r.State.ReadFrom = r.State.Processed
-}
-
-func (r *reader) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		advance, token, err = splitFunc(data, atEOF)
-		r.State.Processed += advance
-		return
-	}
-}
-
-type tokenizerTestCase struct {
-	Name                        string
-	Pattern                     string
-	Raw                         []byte
-	ExpectedTokenized           []string
-	ExpectedError               error
-	Flusher                     *Flusher
-	Sleep                       time.Duration
-	AdditionalIterations        int
-	PreserveLeadingWhitespaces  bool
-	PreserveTrailingWhitespaces bool
-}
-
-func (tc tokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) {
-	reader := newReader(tc.Raw)
-
-	return func(t *testing.T) {
-		var tokenized []string
-		for i := 0; i < 1+tc.AdditionalIterations; i++ {
-			// sleep before next iterations
-			if i > 0 {
-				time.Sleep(tc.Sleep)
-			}
-			reader.Reset()
-			scanner := bufio.NewScanner(reader)
-			scanner.Split(reader.SplitFunc(splitFunc))
-			for {
-				ok := scanner.Scan()
-				if !ok {
-					assert.Equal(t, tc.ExpectedError, scanner.Err())
-					break
-				}
-				tokenized = append(tokenized, scanner.Text())
-			}
-		}
-
-		assert.Equal(t, tc.ExpectedTokenized, tokenized)
-	}
-}
-
 func TestLineStartSplitFunc(t *testing.T) {
-	testCases := []tokenizerTestCase{
+	testCases := []TokenizerTestCase{
 		{
 			Name:    "OneLogSimple",
 			Pattern: `LOGSTART \d+ `,
@@ -170,12 +71,12 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Raw: func() []byte {
 				newRaw := []byte(`LOGSTART 123 `)
-				newRaw = append(newRaw, generatedByteSliceOfLength(100)...)
+				newRaw = append(newRaw, GeneratedByteSliceOfLength(100)...)
 				newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				`LOGSTART 123 ` + string(generatedByteSliceOfLength(100)),
+				`LOGSTART 123 ` + string(GeneratedByteSliceOfLength(100)),
 			},
 		},
 		{
@@ -183,12 +84,12 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Raw: func() []byte {
 				newRaw := []byte(`LOGSTART 123 `)
-				newRaw = append(newRaw, generatedByteSliceOfLength(10000)...)
+				newRaw = append(newRaw, GeneratedByteSliceOfLength(10000)...)
 				newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				`LOGSTART 123 ` + string(generatedByteSliceOfLength(10000)),
+				`LOGSTART 123 ` + string(GeneratedByteSliceOfLength(10000)),
 			},
 		},
 		{
@@ -196,7 +97,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Raw: func() []byte {
 				newRaw := []byte(`LOGSTART 123 `)
-				newRaw = append(newRaw, generatedByteSliceOfLength(1000000)...)
+				newRaw = append(newRaw, GeneratedByteSliceOfLength(1000000)...)
 				newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 				return newRaw
 			}(),
@@ -303,7 +204,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 }
 
 func TestLineEndSplitFunc(t *testing.T) {
-	testCases := []tokenizerTestCase{
+	testCases := []TokenizerTestCase{
 		{
 			Name:    "OneLogSimple",
 			Pattern: `LOGEND \d+`,
@@ -347,31 +248,31 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Name:    "HugeLog100",
 			Pattern: `LOGEND \d`,
 			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(100)
+				newRaw := GeneratedByteSliceOfLength(100)
 				newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				string(generatedByteSliceOfLength(100)) + `LOGEND 1`,
+				string(GeneratedByteSliceOfLength(100)) + `LOGEND 1`,
 			},
 		},
 		{
 			Name:    "HugeLog10000",
 			Pattern: `LOGEND \d`,
 			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(10000)
+				newRaw := GeneratedByteSliceOfLength(10000)
 				newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				string(generatedByteSliceOfLength(10000)) + `LOGEND 1`,
+				string(GeneratedByteSliceOfLength(10000)) + `LOGEND 1`,
 			},
 		},
 		{
 			Name:    "HugeLog1000000",
 			Pattern: `LOGEND \d`,
 			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(1000000)
+				newRaw := GeneratedByteSliceOfLength(1000000)
 				newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 				return newRaw
 			}(),
@@ -459,7 +360,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 }
 
 func TestNewlineSplitFunc(t *testing.T) {
-	testCases := []tokenizerTestCase{
+	testCases := []TokenizerTestCase{
 		{
 			Name: "OneLogSimple",
 			Raw:  []byte("my log\n"),
@@ -497,29 +398,29 @@ func TestNewlineSplitFunc(t *testing.T) {
 		{
 			Name: "HugeLog100",
 			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(100)
+				newRaw := GeneratedByteSliceOfLength(100)
 				newRaw = append(newRaw, '\n')
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				string(generatedByteSliceOfLength(100)),
+				string(GeneratedByteSliceOfLength(100)),
 			},
 		},
 		{
 			Name: "HugeLog10000",
 			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(10000)
+				newRaw := GeneratedByteSliceOfLength(10000)
 				newRaw = append(newRaw, '\n')
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				string(generatedByteSliceOfLength(10000)),
+				string(GeneratedByteSliceOfLength(10000)),
 			},
 		},
 		{
 			Name: "HugeLog1000000",
 			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(1000000)
+				newRaw := GeneratedByteSliceOfLength(1000000)
 				newRaw = append(newRaw, '\n')
 				return newRaw
 			}(),
@@ -598,103 +499,6 @@ func TestNewlineSplitFunc(t *testing.T) {
 	}
 }
 
-func TestOctetFramingSplitFunc(t *testing.T) {
-	cfg := &MultilineConfig{
-		OctetCounting: true,
-	}
-
-	testCases := []tokenizerTestCase{
-		{
-			Name: "OneLogSimple",
-			Raw:  []byte(`17 my log LOGEND 123`),
-			ExpectedTokenized: []string{
-				`17 my log LOGEND 123`,
-			},
-		},
-		{
-			Name: "TwoLogsSimple",
-			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
-			ExpectedTokenized: []string{
-				`17 my log LOGEND 123`,
-				`17 my log LOGEND 123`,
-			},
-		},
-		{
-			Name: "NoMatches",
-			Raw:  []byte(`file that has no matches in it`),
-		},
-		{
-			Name: "NonMatchesAfter",
-			Raw:  []byte(`17 my log LOGEND 123my log LOGEND 123`),
-			ExpectedTokenized: []string{
-				`17 my log LOGEND 123`,
-			},
-		},
-		{
-			Name: "HugeLog100",
-			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(100)
-				newRaw = append([]byte(`100 `), newRaw...)
-				return newRaw
-			}(),
-			ExpectedTokenized: []string{
-				`100 ` + string(generatedByteSliceOfLength(100)),
-			},
-		},
-		{
-			Name: "maxCapacity",
-			Raw: func() []byte {
-				newRaw := generatedByteSliceOfLength(4091)
-				newRaw = append([]byte(`4091 `), newRaw...)
-				return newRaw
-			}(),
-			ExpectedTokenized: []string{
-				`4091 ` + string(generatedByteSliceOfLength(4091)),
-			},
-		},
-		{
-			Name:    "LogsWithoutFlusher",
-			Raw:     []byte(`17 my log LOGEND 123should not flush this`),
-			Flusher: &Flusher{},
-			ExpectedTokenized: []string{
-				`17 my log LOGEND 123`,
-			},
-		},
-		{
-			Name: "LogsWithFlusher",
-			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123should flush this`),
-			ExpectedTokenized: []string{
-				`17 my log LOGEND 123`,
-				`17 my log LOGEND 123`,
-				`should flush this`,
-			},
-			Flusher: &Flusher{
-				forcePeriod: forcePeriod,
-			},
-			AdditionalIterations: 1,
-			Sleep:                sleepDuration,
-		},
-		{
-			Name: "LogsWithLongFlusherWithMultipleLogsInBuffer",
-			Raw:  []byte(`17 my log LOGEND 12317 my log LOGEND 123should not wait for this`),
-			ExpectedTokenized: []string{
-				`17 my log LOGEND 123`,
-				`17 my log LOGEND 123`,
-			},
-			Flusher: &Flusher{
-				forcePeriod: forcePeriod * 16,
-			},
-			AdditionalIterations: 1,
-			Sleep:                forcePeriod / 4,
-		},
-	}
-	for _, tc := range testCases {
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
-		require.NoError(t, err)
-		t.Run(tc.Name, tc.RunFunc(splitFunc))
-	}
-}
-
 type noSplitTestCase struct {
 	Name              string
 	Raw               []byte
@@ -750,16 +554,16 @@ func TestNoSplitFunc(t *testing.T) {
 		{
 			Name: "HugeLog100",
 			Raw: func() []byte {
-				return generatedByteSliceOfLength(largeLogSize)
+				return GeneratedByteSliceOfLength(largeLogSize)
 			}(),
 			ExpectedTokenized: [][]byte{
-				generatedByteSliceOfLength(100),
+				GeneratedByteSliceOfLength(100),
 			},
 		},
 		{
 			Name: "HugeLog300",
 			Raw: func() []byte {
-				return generatedByteSliceOfLength(largeLogSize * 3)
+				return GeneratedByteSliceOfLength(largeLogSize * 3)
 			}(),
 			ExpectedTokenized: [][]byte{
 				[]byte("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
@@ -770,7 +574,7 @@ func TestNoSplitFunc(t *testing.T) {
 		{
 			Name: "EOFBeforeMaxLogSize",
 			Raw: func() []byte {
-				return generatedByteSliceOfLength(largeLogSize * 3.5)
+				return GeneratedByteSliceOfLength(largeLogSize * 3.5)
 			}(),
 			ExpectedTokenized: [][]byte{
 				[]byte("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
@@ -879,13 +683,4 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 			require.Equal(t, tc.tokens, tokens)
 		})
 	}
-}
-
-func generatedByteSliceOfLength(length int) []byte {
-	chars := []byte(`abcdefghijklmnopqrstuvwxyz`)
-	newSlice := make([]byte, length)
-	for i := 0; i < length; i++ {
-		newSlice[i] = chars[i%len(chars)]
-	}
-	return newSlice
 }
