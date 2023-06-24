@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package gitmetricsreceiver // import "github.com/liatrio/otel-liatrio-contrib/receiver/githubreceiver"
+package gitmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
 	"errors"
