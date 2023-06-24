@@ -16,7 +16,7 @@ time.
 
 ## Getting Started
 
-The collection interval is defaulted to 30 seconds across the board. 
+The collection interval is common to all scrapers and is set to 30 seconds by default.
 
 ```yaml
 gitmetrics:
