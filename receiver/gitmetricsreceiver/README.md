@@ -30,5 +30,5 @@ gitmetrics:
 The available scrapers are:
 | Scraper  | Description             |
 |----------|-------------------------|
-| [github] | Git Metrics from GitHub |
+| [github] | Git Metrics from [GitHub](https://github.com/) |
 
