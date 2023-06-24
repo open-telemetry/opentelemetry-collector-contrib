@@ -32,7 +32,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 // Validate the configuration passed through the OTEL config.yaml
 func (cfg *Config) Validate() error {
 	if len(cfg.Scrapers) == 0 {
-		return errors.New("must specify at least one scraper when using git metrics receiver")
+		return errors.New("must specify at least one scraper")
 	}
 	return nil
 }
