@@ -50,8 +50,9 @@ func (m *Manager) worker(ctx context.Context) {
 		if !m.readToEnd(ctx, r) {
 			// Save off any files that were not fully read or if deleteAfterRead is disabled
 			m.saveReaders <- readerWrapper{reader: r, fp: fp}
+		} else {
+			m.removePath(fp)
 		}
-		m.removePath(fp)
 	}
 }
 
