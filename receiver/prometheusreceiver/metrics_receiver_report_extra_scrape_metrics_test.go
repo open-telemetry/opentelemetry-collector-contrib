@@ -35,7 +35,8 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: metricSet, useOpenMetrics: true},
 			},
-			validateFunc: verifyMetrics,
+			normalizedName: false,
+			validateFunc:   verifyMetrics,
 		},
 	}
 
@@ -92,7 +93,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 			name := target.name
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name])
+				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
 				assert.GreaterOrEqual(t, 1, len(scrapes))
 				if reportExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10
@@ -117,7 +118,7 @@ func verifyMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
-		assertMetricPresent("http_connected",
+		assertMetricPresent("http_connected_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{

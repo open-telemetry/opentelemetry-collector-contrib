@@ -337,7 +337,7 @@ func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 }
 func isExtraScrapeMetrics(m pmetric.Metric) bool {
 	switch m.Name() {
-	case "scrape_body_size_bytes", "scrape_duration_seconds", "scrape_sample_limit", "scrape_timeout_seconds":
+	case "scrape_body_size_bytes", "scrape_sample_limit", "scrape_timeout_seconds":
 		return true
 	default:
 		return false
