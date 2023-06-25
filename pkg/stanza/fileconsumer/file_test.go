@@ -32,13 +32,13 @@ func TestMain(m *testing.M) {
 		os.Exit(code)
 	}
 
-	// // Run once with thread pool featuregate enabled
-	featuregate.GlobalRegistry().Set(useThreadPool.ID(), true)
+	// Run once with thread pool featuregate enabled
+	featuregate.GlobalRegistry().Set(useThreadPool.ID(), true) //nolint:all
 	code = m.Run()
 	if code > 0 {
 		os.Exit(code)
 	}
-	featuregate.GlobalRegistry().Set(useThreadPool.ID(), false)
+	featuregate.GlobalRegistry().Set(useThreadPool.ID(), false) //nolint:all
 }
 
 func TestCleanStop(t *testing.T) {

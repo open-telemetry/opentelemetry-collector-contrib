@@ -96,13 +96,12 @@ func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Ma
 		input.saveReaders = make(chan readerWrapper, cfg.MaxConcurrentFiles)
 		ctx, cancel := context.WithCancel(context.Background())
 		input.cancel = cancel
-		input.ctx = ctx
 		for i := 0; i < cfg.MaxConcurrentFiles/2; i++ {
 			input.workerWg.Add(1)
 			go input.worker(ctx)
 		}
 		input._workerWg.Add(1)
-		go input.saveReadersConcurrent(ctx)
+		go input.saveReadersConcurrent()
 	}
 
 	return input, tmc.emitChan

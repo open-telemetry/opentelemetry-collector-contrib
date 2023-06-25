@@ -23,7 +23,6 @@ type Manager struct {
 	*zap.SugaredLogger
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
-	ctx    context.Context
 
 	readerFactory readerFactory
 	finder        Finder
@@ -57,7 +56,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 	m.persister = persister
-	m.ctx = ctx
 
 	// Load offsets from disk
 	if err := m.loadLastPollFiles(ctx); err != nil {
@@ -79,7 +77,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 			go m.worker(ctx)
 		}
 		m._workerWg.Add(1)
-		go m.saveReadersConcurrent(ctx)
+		go m.saveReadersConcurrent()
 	}
 	// Start polling goroutine
 	m.startPoller(ctx)
@@ -170,7 +168,7 @@ func (m *Manager) poll(ctx context.Context) {
 	m.consume(ctx, matches)
 }
 
-func (m *Manager) readToEnd(r *Reader, ctx context.Context) bool {
+func (m *Manager) readToEnd(ctx context.Context, r *Reader) bool {
 	r.ReadToEnd(ctx)
 	if m.deleteAfterRead && r.eof {
 		r.Close()
@@ -202,7 +200,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *Reader) {
 			defer wg.Done()
-			m.readToEnd(r, ctx)
+			m.readToEnd(ctx, r)
 		}(reader)
 	}
 	wg.Wait()

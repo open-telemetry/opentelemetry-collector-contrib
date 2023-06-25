@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
@@ -44,7 +47,7 @@ func (m *Manager) worker(ctx context.Context) {
 		}
 		r, fp := chanData.reader, chanData.fp
 
-		if !m.readToEnd(r, ctx) {
+		if !m.readToEnd(ctx, r) {
 			// Save off any files that were not fully read or if deleteAfterRead is disabled
 			m.saveReaders <- readerWrapper{reader: r, fp: fp}
 		}
@@ -112,19 +115,19 @@ func (m *Manager) removePath(fp *Fingerprint) {
 
 // saveReadersConcurrent adds the readers from this polling interval to this list of
 // known files and removes the fingerprint from the TRIE
-func (m *Manager) saveReadersConcurrent(ctx context.Context) {
+func (m *Manager) saveReadersConcurrent() {
 	defer m._workerWg.Done()
 	// Add readers from the current, completed poll interval to the list of known files
 	for {
 		select {
-		case readerWrapper, ok := <-m.saveReaders:
+		case reader, ok := <-m.saveReaders:
 			if !ok {
 				return
 			}
 			m.knownFilesLock.Lock()
-			m.knownFiles = append(m.knownFiles, readerWrapper.reader)
+			m.knownFiles = append(m.knownFiles, reader.reader)
 			m.knownFilesLock.Unlock()
-			m.removePath(readerWrapper.fp)
+			m.removePath(reader.fp)
 		}
 	}
 }
