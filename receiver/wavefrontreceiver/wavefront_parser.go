@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
@@ -47,32 +47,18 @@ func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
 //	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
-func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
+func (wp *WavefrontParser) Parse(line string) (pmetric.Metric, error) {
 	parts := strings.SplitN(line, " ", 3)
 	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid wavefront metric [%s]", line)
+		return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]", line)
 	}
 
 	metricName := unDoubleQuote(parts[0])
 	if metricName == "" {
-		return nil, fmt.Errorf("empty name for wavefront metric [%s]", line)
+		return pmetric.Metric{}, fmt.Errorf("empty name for wavefront metric [%s]", line)
 	}
 	valueStr := parts[1]
 	rest := parts[2]
-
-	var metricType metricspb.MetricDescriptor_Type
-	var point metricspb.Point
-	if intVal, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
-		metricType = metricspb.MetricDescriptor_GAUGE_INT64
-		point.Value = &metricspb.Point_Int64Value{Int64Value: intVal}
-	} else {
-		dblVal, err := strconv.ParseFloat(valueStr, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
-		}
-		metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-		point.Value = &metricspb.Point_DoubleValue{DoubleValue: dblVal}
-	}
 
 	parts = strings.SplitN(rest, " ", 2)
 	timestampStr := parts[0]
@@ -80,58 +66,55 @@ func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
 	if len(parts) == 2 {
 		tags = parts[1]
 	}
-	var ts timestamppb.Timestamp
+	var ts time.Time
 	if unixTime, err := strconv.ParseInt(timestampStr, 10, 64); err == nil {
-		ts.Seconds = unixTime
+		ts = time.Unix(unixTime, 0)
 	} else {
 		// Timestamp can be omitted so it is only correct if the string was a tag.
 		if strings.IndexByte(timestampStr, '=') == -1 {
-			return nil, fmt.Errorf(
+			return pmetric.Metric{}, fmt.Errorf(
 				"invalid timestamp for wavefront metric [%s]", line)
 		}
 		// Assume timestamp was omitted, get current time and adjust index.
-		ts.Seconds = time.Now().Unix()
+		ts = time.Now()
 		tags = rest
 	}
-	point.Timestamp = &ts
 
-	var labelKeys []*metricspb.LabelKey
-	var labelValues []*metricspb.LabelValue
+	attributes := pcommon.NewMap()
 	if tags != "" {
 		// to need for special treatment for source, treat it as a normal tag since
 		// tags are separated by space and are optionally double-quoted.
-		var err error
-		labelKeys, labelValues, err = buildLabels(tags)
-		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
+
+		if err := buildLabels(attributes, tags); err != nil {
+			return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
 		}
 	}
 
 	if wp.ExtractCollectdTags {
-		metricName, labelKeys, labelValues = wp.injectCollectDLabels(metricName, labelKeys, labelValues)
+		metricName = wp.injectCollectDLabels(metricName, attributes)
+	}
+	metric := pmetric.NewMetric()
+	metric.SetName(metricName)
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+	attributes.CopyTo(dp.Attributes())
+	if intVal, err := strconv.ParseInt(valueStr, 10, 64); err == nil {
+		dp.SetIntValue(intVal)
+	} else {
+		dblVal, err := strconv.ParseFloat(valueStr, 64)
+		if err != nil {
+			return pmetric.Metric{}, fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
+		}
+		dp.SetDoubleValue(dblVal)
 	}
 
-	metric := &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      metricName,
-			Type:      metricType,
-			LabelKeys: labelKeys,
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: labelValues,
-				Points:      []*metricspb.Point{&point},
-			},
-		},
-	}
 	return metric, nil
 }
 
 func (wp *WavefrontParser) injectCollectDLabels(
 	metricName string,
-	labelKeys []*metricspb.LabelKey,
-	labelValues []*metricspb.LabelValue,
-) (string, []*metricspb.LabelKey, []*metricspb.LabelValue) {
+	attributes pcommon.Map,
+) string {
 	// This comes from SignalFx Gateway code that has the capability to
 	// remove CollectD tags from the name of the metric.
 	var toAddDims map[string]string
@@ -147,24 +130,20 @@ func (wp *WavefrontParser) injectCollectDLabels(
 		}
 
 		for k, v := range toAddDims {
-			labelKeys = append(labelKeys, &metricspb.LabelKey{Key: k})
-			labelValues = append(labelValues, &metricspb.LabelValue{
-				Value:    v,
-				HasValue: true,
-			})
+			attributes.PutStr(k, v)
 		}
 	}
-	return metricName, labelKeys, labelValues
+	return metricName
 }
 
-func buildLabels(tags string) (keys []*metricspb.LabelKey, values []*metricspb.LabelValue, err error) {
+func buildLabels(attributes pcommon.Map, tags string) (err error) {
 	if tags == "" {
 		return
 	}
 	for {
 		parts := strings.SplitN(tags, "=", 2)
 		if len(parts) != 2 {
-			return nil, nil, fmt.Errorf("failed to break key for [%s]", tags)
+			return fmt.Errorf("failed to break key for [%s]", tags)
 		}
 
 		key := parts[0]
@@ -198,16 +177,12 @@ func buildLabels(tags string) (keys []*metricspb.LabelKey, values []*metricspb.L
 		} else {
 			// Skip until space.
 			i := 0
-			for ; i < len(rest) && rest[i] != ' '; i++ {
+			for ; i < len(rest) && rest[i] != ' '; i++ { // nolint
 			}
 			value = rest[:i]
 			tagLen += i
 		}
-
-		keys = append(keys, &metricspb.LabelKey{Key: key})
-		values = append(values, &metricspb.LabelValue{
-			Value:    value,
-			HasValue: true})
+		attributes.PutStr(key, value)
 
 		tags = strings.TrimLeft(tags[tagLen:], " ")
 		if tags == "" {

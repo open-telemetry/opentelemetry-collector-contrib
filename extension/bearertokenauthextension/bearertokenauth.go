@@ -5,6 +5,7 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -33,6 +34,11 @@ func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]
 func (c *PerRPCAuth) RequireTransportSecurity() bool {
 	return true
 }
+
+var (
+	_ auth.Server = (*BearerTokenAuth)(nil)
+	_ auth.Client = (*BearerTokenAuth)(nil)
+)
 
 // BearerTokenAuth is an implementation of auth.Client. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
@@ -63,7 +69,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 // Start of BearerTokenAuth does nothing and returns nil if no filename
 // is specified. Otherwise a routine is started to monitor the file containing
 // the token to be transferred.
-func (b *BearerTokenAuth) Start(ctx context.Context, host component.Host) error {
+func (b *BearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	if b.filename == "" {
 		return nil
 	}
@@ -135,7 +141,7 @@ func (b *BearerTokenAuth) refreshToken() {
 }
 
 // Shutdown of BearerTokenAuth does nothing and returns nil
-func (b *BearerTokenAuth) Shutdown(ctx context.Context) error {
+func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 	if b.filename == "" {
 		return nil
 	}
@@ -169,6 +175,23 @@ func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTrippe
 		baseTransport:   base,
 		bearerTokenFunc: b.bearerToken,
 	}, nil
+}
+
+// Authenticate checks whether the given context contains valid auth data.
+func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	auth, ok := headers["authorization"]
+	if !ok || len(auth) == 0 {
+		return ctx, errors.New("authentication didn't succeed")
+	}
+	token := auth[0]
+	expect := b.tokenString
+	if len(b.scheme) != 0 {
+		expect = fmt.Sprintf("%s %s", b.scheme, expect)
+	}
+	if expect != token {
+		return ctx, fmt.Errorf("scheme or token does not match: %s", token)
+	}
+	return ctx, nil
 }
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.

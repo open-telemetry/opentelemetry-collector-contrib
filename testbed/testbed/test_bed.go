@@ -67,7 +67,6 @@ func DoTestMain(m *testing.M, resultsSummary TestResultsSummary) {
 
 	if err != nil {
 		log.Fatalf(err.Error())
-		os.Exit(0)
 	}
 
 	res := m.Run()

@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestSetInvalidError(t *testing.T) {
+func TestSetInvalidError(_ *testing.T) {
 	printErrors(zap.NewExample(), nil) // you know, for coverage
 	// The actual test cen be found in the following locations:
 	//

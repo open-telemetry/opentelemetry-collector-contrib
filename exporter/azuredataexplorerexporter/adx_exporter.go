@@ -69,7 +69,7 @@ func (e *adxDataProducer) ingestData(b []string) error {
 	return nil
 }
 
-func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs) error {
+func (e *adxDataProducer) logsDataPusher(_ context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	var logsBuffer []string
 	for i := 0; i < resourceLogs.Len(); i++ {
@@ -97,7 +97,7 @@ func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs)
 	return nil
 }
 
-func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace.Traces) error {
+func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.Traces) error {
 	resourceSpans := traceData.ResourceSpans()
 	var spanBuffer []string
 	for i := 0; i < resourceSpans.Len(); i++ {

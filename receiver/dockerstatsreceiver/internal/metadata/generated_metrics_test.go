@@ -49,6 +49,14 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -111,16 +119,26 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryActiveFileDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordContainerMemoryAnonDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordContainerMemoryCacheDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryDirtyDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryFileDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts, 1)
@@ -256,6 +274,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerPidsLimitDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordContainerUptimeDataPoint(ts, 1)
+
 			metrics := mb.Emit(WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
 
 			if test.configSet == testSetNone {
@@ -321,7 +342,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.blockio.io_merged_recursive"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{operations}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -344,7 +365,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.blockio.io_queued_recursive"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of requests queued up for this cgroup and its descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "Number of requests queued up for this cgroup and its descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{operations}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -390,7 +411,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.blockio.io_service_time_recursive"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "ns", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -413,7 +434,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.blockio.io_serviced_recursive"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of IOs (bio) issued to the disk by the group and descendant groups.", ms.At(i).Description())
+					assert.Equal(t, "Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{operations}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -436,7 +457,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.blockio.io_time_recursive"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.", ms.At(i).Description())
+					assert.Equal(t, "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "ms", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -459,7 +480,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.blockio.io_wait_time_recursive"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.", ms.At(i).Description())
+					assert.Equal(t, "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "ns", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -482,7 +503,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.blockio.sectors_recursive"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of sectors transferred to/from disk by the group and descendant groups.", ms.At(i).Description())
+					assert.Equal(t, "Number of sectors transferred to/from disk by the group and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{sectors}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -505,7 +526,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.percent"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Percent of CPU used by the container.", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -573,7 +594,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.usage.percpu"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Per-core CPU usage by the container.", ms.At(i).Description())
+					assert.Equal(t, "Per-core CPU usage by the container (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "ns", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -627,6 +648,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.utilization":
+					assert.False(t, validatedMetrics["container.cpu.utilization"], "Found a duplicate in the metrics slice: container.cpu.utilization")
+					validatedMetrics["container.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percent of CPU used by the container.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "container.memory.active_anon":
 					assert.False(t, validatedMetrics["container.memory.active_anon"], "Found a duplicate in the metrics slice: container.memory.active_anon")
 					validatedMetrics["container.memory.active_anon"] = true
@@ -655,12 +688,26 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.anon":
+					assert.False(t, validatedMetrics["container.memory.anon"], "Found a duplicate in the metrics slice: container.memory.anon")
+					validatedMetrics["container.memory.anon"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.memory.cache":
 					assert.False(t, validatedMetrics["container.memory.cache"], "Found a duplicate in the metrics slice: container.memory.cache")
 					validatedMetrics["container.memory.cache"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.", ms.At(i).Description())
+					assert.Equal(t, "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -674,7 +721,21 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.dirty"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup.", ms.At(i).Description())
+					assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.file":
+					assert.False(t, validatedMetrics["container.memory.file"], "Found a duplicate in the metrics slice: container.memory.file")
+					validatedMetrics["container.memory.file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -688,7 +749,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.hierarchical_memory_limit"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The maximum amount of physical memory that can be used by the processes of this control group.", ms.At(i).Description())
+					assert.Equal(t, "The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -702,7 +763,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.hierarchical_memsw_limit"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The maximum amount of RAM + swap that can be used by the processes of this control group.", ms.At(i).Description())
+					assert.Equal(t, "The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -744,7 +805,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.mapped_file"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group.", ms.At(i).Description())
+					assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -798,7 +859,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.pgpgin"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pages read from disk by the cgroup.", ms.At(i).Description())
+					assert.Equal(t, "Number of pages read from disk by the cgroup (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{operations}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -812,7 +873,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.pgpgout"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pages written to disk by the cgroup.", ms.At(i).Description())
+					assert.Equal(t, "Number of pages written to disk by the cgroup (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{operations}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -826,7 +887,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.rss"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.", ms.At(i).Description())
+					assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -840,7 +901,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.rss_huge"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup.", ms.At(i).Description())
+					assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -854,7 +915,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_active_anon"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -868,7 +929,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_active_file"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -882,7 +943,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_cache"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.", ms.At(i).Description())
+					assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -896,7 +957,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_dirty"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.", ms.At(i).Description())
+					assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -910,7 +971,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_inactive_anon"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -924,7 +985,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_inactive_file"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -938,7 +999,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_mapped_file"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group and descendant groups.", ms.At(i).Description())
+					assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -952,7 +1013,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_pgfault"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.", ms.At(i).Description())
+					assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{faults}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -966,7 +1027,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_pgmajfault"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.", ms.At(i).Description())
+					assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{faults}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -980,7 +1041,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_pgpgin"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pages read from disk by the cgroup and descendant groups.", ms.At(i).Description())
+					assert.Equal(t, "Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{operations}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -994,7 +1055,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_pgpgout"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of pages written to disk by the cgroup and descendant groups.", ms.At(i).Description())
+					assert.Equal(t, "Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "{operations}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1008,7 +1069,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_rss"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1022,7 +1083,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_rss_huge"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1036,7 +1097,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_unevictable"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that cannot be reclaimed. Includes descendant cgroups.", ms.At(i).Description())
+					assert.Equal(t, "The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1050,7 +1111,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.total_writeback"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.", ms.At(i).Description())
+					assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1120,7 +1181,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.writeback"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.", ms.At(i).Description())
+					assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -1293,6 +1354,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.uptime":
+					assert.False(t, validatedMetrics["container.uptime"], "Found a duplicate in the metrics slice: container.uptime")
+					validatedMetrics["container.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Time elapsed since container start time.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				}
 			}
 		})

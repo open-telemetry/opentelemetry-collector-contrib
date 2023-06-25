@@ -47,6 +47,11 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	swappedMem := vm.Summary.QuickStats.SwappedMemory
 	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
 
+	if totalMemory := vm.Summary.Config.MemorySizeMB; totalMemory > 0 && memUsage > 0 {
+		memoryUtilization := float64(memUsage) / float64(totalMemory) * 100
+		v.mb.RecordVcenterVMMemoryUtilizationDataPoint(now, memoryUtilization)
+	}
+
 	v.mb.RecordVcenterVMMemoryUsageDataPoint(now, int64(memUsage))
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))
 	v.mb.RecordVcenterVMMemorySwappedDataPoint(now, int64(swappedMem))
@@ -98,7 +103,7 @@ func (v *vcenterMetricScraper) recordDatastoreProperties(
 	diskUsage := s.Capacity - s.FreeSpace
 	diskUtilization := float64(diskUsage) / float64(s.Capacity) * 100
 	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, diskUsage, metadata.AttributeDiskStateUsed)
-	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.Capacity, metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.FreeSpace, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(now, diskUtilization)
 }
 

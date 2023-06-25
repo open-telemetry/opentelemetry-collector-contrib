@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "statsdreceiver"
+	Type             = "statsd"
 	MetricsStability = component.StabilityLevelBeta
 )

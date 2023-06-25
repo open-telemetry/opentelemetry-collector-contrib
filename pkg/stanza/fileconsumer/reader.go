@@ -23,6 +23,8 @@ type readerConfig struct {
 }
 
 // Reader manages a single file
+//
+// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
 type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
@@ -112,7 +114,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 // consumeHeaderLine checks if the given token is a line of the header, and consumes it if it is.
 // The return value dictates whether the given line was a header line or not.
 // If false is returned, the full header can be assumed to be read.
-func (r *Reader) consumeHeaderLine(ctx context.Context, attrs *FileAttributes, token []byte) {
+func (r *Reader) consumeHeaderLine(ctx context.Context, _ *FileAttributes, token []byte) {
 	if !r.headerSettings.matchRegex.Match(token) {
 		// Finalize and cleanup the pipeline
 		r.HeaderFinalized = true

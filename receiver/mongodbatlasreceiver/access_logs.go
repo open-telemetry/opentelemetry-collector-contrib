@@ -83,7 +83,7 @@ func newAccessLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer c
 	return r
 }
 
-func (alr *accessLogsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
+func (alr *accessLogsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
 	alr.logger.Debug("Starting up access log receiver")
 	cancelCtx, cancel := context.WithCancel(ctx)
 	alr.cancel = cancel
@@ -92,7 +92,7 @@ func (alr *accessLogsReceiver) Start(ctx context.Context, host component.Host, s
 	return alr.startPolling(cancelCtx)
 }
 
-func (alr *accessLogsReceiver) Shutdown(ctx context.Context) error {
+func (alr *accessLogsReceiver) Shutdown(_ context.Context) error {
 	alr.logger.Debug("Shutting down accessLog receiver")
 	alr.cancel()
 	alr.wg.Wait()

@@ -59,7 +59,9 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		reporter:     rep,
-		parser:       &protocol.StatsDParser{},
+		parser: &protocol.StatsDParser{
+			BuildInfo: set.BuildInfo,
+		},
 	}
 	return r, nil
 }
@@ -131,10 +133,5 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 }
 
 func (r *statsdReceiver) Flush(ctx context.Context, metrics pmetric.Metrics, nextConsumer consumer.Metrics) error {
-	error := nextConsumer.ConsumeMetrics(ctx, metrics)
-	if error != nil {
-		return error
-	}
-
-	return nil
+	return nextConsumer.ConsumeMetrics(ctx, metrics)
 }

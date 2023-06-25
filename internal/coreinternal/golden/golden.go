@@ -69,14 +69,12 @@ func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 
 // writeMetrics writes a pmetric.Metrics to the specified file in YAML format.
 func writeMetrics(filePath string, metrics pmetric.Metrics) error {
+	sortMetrics(metrics)
 	b, err := MarshalMetricsYAML(metrics)
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filePath, b, 0600); err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(filePath, b, 0600)
 }
 
 // ReadLogs reads a plog.Logs from the specified YAML or JSON file.

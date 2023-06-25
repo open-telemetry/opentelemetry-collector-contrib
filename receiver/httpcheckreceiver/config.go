@@ -17,10 +17,9 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
+	errMissingEndpoint = errors.New(`"endpoint" must be specified`)
 	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>:<port>`)
 )
-
-const defaultEndpoint = "http://localhost:80"
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
@@ -34,6 +33,9 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	var err error
 
+	if cfg.Endpoint == "" {
+		err = multierr.Append(err, errMissingEndpoint)
+	}
 	_, parseErr := url.Parse(cfg.Endpoint)
 	if parseErr != nil {
 		wrappedErr := fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)

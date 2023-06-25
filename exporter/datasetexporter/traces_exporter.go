@@ -23,7 +23,7 @@ const ServiceNameKey = "service.name"
 
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := castConfig(config)
-	e, err := newDatasetExporter("logs", cfg, set.Logger)
+	e, err := newDatasetExporter("logs", cfg, set)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
 	}
@@ -245,8 +245,7 @@ func buildEventsFromTraces(ld ptrace.Traces, tracker *spanTracker) []*add_events
 	return events
 }
 
-func (e *DatasetExporter) consumeTraces(ctx context.Context, ld ptrace.Traces) error {
-
+func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
 	return sendBatch(buildEventsFromTraces(ld, e.spanTracker), e.client)
 }
 

@@ -25,6 +25,28 @@ type postgreSQLScraper struct {
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
 }
+type errsMux struct {
+	sync.RWMutex
+	errs scrapererror.ScrapeErrors
+}
+
+func (e *errsMux) add(err error) {
+	e.Lock()
+	defer e.Unlock()
+	e.errs.Add(err)
+}
+
+func (e *errsMux) addPartial(err error) {
+	e.Lock()
+	defer e.Unlock()
+	e.errs.AddPartial(1, err)
+}
+
+func (e *errsMux) combine() error {
+	e.Lock()
+	defer e.Unlock()
+	return e.errs.Combine()
+}
 
 type postgreSQLClientFactory interface {
 	getClient(c *Config, database string) (client, error)
@@ -83,7 +105,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	var errs scrapererror.ScrapeErrors
+	var errs errsMux
 	r := &dbRetrieval{
 		activityMap: make(map[databaseName]int64),
 		dbSizeMap:   make(map[databaseName]int64),
@@ -94,7 +116,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
 		if err != nil {
-			errs.Add(err)
+			errs.add(err)
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
 			continue
 		}
@@ -111,7 +133,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
 
-	return p.mb.Emit(), errs.Combine()
+	return p.mb.Emit(), errs.combine()
 }
 
 func (p *postgreSQLScraper) retrieveDBMetrics(
@@ -119,7 +141,7 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	listClient client,
 	databases []string,
 	r *dbRetrieval,
-	errs *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	wg := &sync.WaitGroup{}
 
@@ -147,15 +169,15 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	p.mb.EmitForResource(metadata.WithPostgresqlDatabaseName(db))
 }
 
-func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *scrapererror.ScrapeErrors) (numTables int64) {
+func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
 	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.addPartial(err)
 	}
 
 	tableMetrics, err := dbClient.getDatabaseTableMetrics(ctx, db)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.addPartial(err)
 	}
 
 	for tableKey, tm := range tableMetrics {
@@ -175,7 +197,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxRead, metadata.AttributeSourceIdxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxHit, metadata.AttributeSourceIdxHit)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastHit, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastHit)
+			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxRead, metadata.AttributeSourceTidxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit, metadata.AttributeSourceTidxHit)
 		}
@@ -192,11 +214,11 @@ func (p *postgreSQLScraper) collectIndexes(
 	now pcommon.Timestamp,
 	client client,
 	database string,
-	errs *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	idxStats, err := client.getIndexStats(ctx, database)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.addPartial(err)
 		return
 	}
 
@@ -215,11 +237,11 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
-	errs *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	bgStats, err := client.getBGWriterStats(ctx)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.addPartial(err)
 		return
 	}
 
@@ -243,11 +265,11 @@ func (p *postgreSQLScraper) collectMaxConnections(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
-	errs *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	mc, err := client.getMaxConnections(ctx)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.addPartial(err)
 		return
 	}
 	p.mb.RecordPostgresqlConnectionMaxDataPoint(now, mc)
@@ -257,11 +279,11 @@ func (p *postgreSQLScraper) collectReplicationStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
-	errs *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	rss, err := client.getReplicationStats(ctx)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.addPartial(err)
 		return
 	}
 	for _, rs := range rss {
@@ -284,7 +306,7 @@ func (p *postgreSQLScraper) collectWalAge(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
-	errs *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	walAge, err := client.getLatestWalAgeSeconds(ctx)
 	if errors.Is(err, errNoLastArchive) {
@@ -292,7 +314,7 @@ func (p *postgreSQLScraper) collectWalAge(
 		return
 	}
 	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("unable to determine latest WAL age: %w", err))
+		errs.addPartial(fmt.Errorf("unable to determine latest WAL age: %w", err))
 		return
 	}
 	p.mb.RecordPostgresqlWalAgeDataPoint(now, walAge)
@@ -304,13 +326,13 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 	client client,
 	databases []string,
 	r *dbRetrieval,
-	errors *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	defer wg.Done()
 	dbStats, err := client.getDatabaseStats(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching commits and rollbacks", zap.Error(err))
-		errors.AddPartial(1, err)
+		errs.addPartial(err)
 		return
 	}
 	r.Lock()
@@ -324,13 +346,13 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	client client,
 	databases []string,
 	r *dbRetrieval,
-	errors *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	defer wg.Done()
 	databaseSizeMetrics, err := client.getDatabaseSize(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database size", zap.Error(err))
-		errors.AddPartial(1, err)
+		errs.addPartial(err)
 		return
 	}
 	r.Lock()
@@ -344,12 +366,12 @@ func (p *postgreSQLScraper) retrieveBackends(
 	client client,
 	databases []string,
 	r *dbRetrieval,
-	errors *scrapererror.ScrapeErrors,
+	errs *errsMux,
 ) {
 	defer wg.Done()
 	activityByDB, err := client.getBackends(ctx, databases)
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.addPartial(err)
 		return
 	}
 	r.Lock()

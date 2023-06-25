@@ -25,9 +25,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
 )
 
 func TestDefaultProcessors(t *testing.T) {
+	t.Parallel()
+
 	allFactories, err := components()
 	require.NoError(t, err)
 
@@ -134,6 +137,14 @@ func TestDefaultProcessors(t *testing.T) {
 		{
 			processor: "redaction",
 		},
+		{
+			processor: "websocket",
+			getConfigFn: func() component.Config {
+				cfg := procFactories["websocket"].CreateDefaultConfig().(*websocketprocessor.Config)
+				cfg.Endpoint = "localhost:0"
+				return cfg
+			},
+		},
 	}
 
 	processorCount := 0
@@ -148,17 +159,24 @@ func TestDefaultProcessors(t *testing.T) {
 			continue
 		}
 		delete(expectedProcessors, tt.processor)
+
+		tt := tt
 		processorCount++
 		t.Run(string(tt.processor), func(t *testing.T) {
+			t.Parallel()
+
 			factory := procFactories[tt.processor]
 			assert.Equal(t, tt.processor, factory.Type())
 
-			verifyProcessorShutdown(t, factory, tt.getConfigFn)
-
-			if !tt.skipLifecycle {
+			t.Run("shutdown", func(t *testing.T) {
+				verifyProcessorShutdown(t, factory, tt.getConfigFn)
+			})
+			t.Run("lifecycle", func(t *testing.T) {
+				if tt.skipLifecycle {
+					t.SkipNow()
+				}
 				verifyProcessorLifecycle(t, factory, tt.getConfigFn)
-			}
-
+			})
 		})
 	}
 	assert.Len(t, procFactories, processorCount, "All processors must be added to lifecycle tests", expectedProcessors)

@@ -450,6 +450,11 @@ func (p *processHandleMock) Parent() (*process.Process, error) {
 	return args.Get(0).(*process.Process), args.Error(1)
 }
 
+func (p *processHandleMock) Ppid() (int32, error) {
+	args := p.MethodCalled("Ppid")
+	return args.Get(0).(int32), args.Error(1)
+}
+
 func (p *processHandleMock) PageFaults() (*process.PageFaultsStat, error) {
 	args := p.MethodCalled("PageFaults")
 	return args.Get(0).(*process.PageFaultsStat), args.Error(1)
@@ -465,7 +470,7 @@ func (p *processHandleMock) NumFDs() (int32, error) {
 	return args.Get(0).(int32), args.Error(1)
 }
 
-func (p *processHandleMock) RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error) {
+func (p *processHandleMock) RlimitUsage(_ bool) ([]process.RlimitStat, error) {
 	args := p.MethodCalled("RlimitUsage")
 	return args.Get(0).([]process.RlimitStat), args.Error(1)
 }
@@ -480,7 +485,7 @@ func newDefaultHandleMock() *processHandleMock {
 	handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
 	handleMock.On("MemoryPercent").Return(float32(0), nil)
 	handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
-	handleMock.On("Parent").Return(&process.Process{Pid: 2}, nil)
+	handleMock.On("Ppid").Return(int32(2), nil)
 	handleMock.On("NumThreads").Return(int32(0), nil)
 	handleMock.On("PageFaults").Return(&process.PageFaultsStat{}, nil)
 	handleMock.On("NumCtxSwitches").Return(&process.NumCtxSwitchesStat{}, nil)
@@ -818,7 +823,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("MemoryPercent").Return(float32(0), test.memoryPercentError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 			handleMock.On("CreateTime").Return(int64(0), test.createTimeError)
-			handleMock.On("Parent").Return(&process.Process{Pid: 2}, test.parentPidError)
+			handleMock.On("Ppid").Return(int32(2), test.parentPidError)
 			handleMock.On("NumThreads").Return(int32(0), test.numThreadsError)
 			handleMock.On("PageFaults").Return(&process.PageFaultsStat{}, test.pageFaultsError)
 			handleMock.On("NumCtxSwitches").Return(&process.NumCtxSwitchesStat{}, test.numCtxSwitchesError)
@@ -1073,7 +1078,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		handleMock.On("Name").Return("test", nil)
 		handleMock.On("Exe").Return("test", nil)
 		handleMock.On("CreateTime").Return(time.Now().UnixMilli(), nil)
-		handleMock.On("Parent").Return(&process.Process{Pid: 2}, nil)
+		handleMock.On("Ppid").Return(int32(2), nil)
 
 		scraper.getProcessHandles = func() (processHandles, error) {
 			return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
@@ -1083,4 +1088,86 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		assert.Zero(t, md.MetricCount())
 		assert.Nil(t, err)
 	})
+}
+
+func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	testCases := []struct {
+		name                  string
+		processCPUTimes       bool
+		processCPUUtilization bool
+		expectedMetricCount   int
+		expectedMetricNames   []string
+	}{
+		{
+			name:                  "process.cpu.time enabled, process.cpu.utilization disabled",
+			processCPUTimes:       true,
+			processCPUUtilization: false,
+			expectedMetricCount:   1,
+			expectedMetricNames:   []string{"process.cpu.time"},
+		},
+		{
+			name:                  "process.cpu.time disabled, process.cpu.utilization enabled",
+			processCPUTimes:       false,
+			processCPUUtilization: true,
+			expectedMetricCount:   1,
+			expectedMetricNames:   []string{"process.cpu.utilization"},
+		},
+		{
+			name:                  "process.cpu.time enabled, process.cpu.utilization enabled",
+			processCPUTimes:       true,
+			processCPUUtilization: true,
+			expectedMetricCount:   2,
+			expectedMetricNames:   []string{"process.cpu.time", "process.cpu.utilization"},
+		},
+	}
+
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+
+			metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = testCase.processCPUTimes
+			metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled = testCase.processCPUUtilization
+
+			// disable some default metrics for easy assertion
+			metricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled = false
+			metricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled = false
+			metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+
+			config := &Config{MetricsBuilderConfig: metricsBuilderConfig}
+
+			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			handleMock := newDefaultHandleMock()
+			handleMock.On("Name").Return("test", nil)
+			handleMock.On("Exe").Return("test", nil)
+			handleMock.On("CreateTime").Return(time.Now().UnixMilli(), nil)
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
+
+			// scrape the first time
+			_, err = scraper.scrape(context.Background())
+			assert.Nil(t, err)
+
+			// scrape second time to get utilization
+			md, err := scraper.scrape(context.Background())
+			assert.Nil(t, err)
+
+			for k := 0; k < md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); k++ {
+				fmt.Println(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(k).Name())
+			}
+			assert.Equal(t, testCase.expectedMetricCount, md.MetricCount())
+			for metricIdx, expectedMetricName := range testCase.expectedMetricNames {
+				assert.Equal(t, expectedMetricName, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(metricIdx).Name())
+			}
+		})
+	}
+
 }

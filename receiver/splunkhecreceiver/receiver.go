@@ -4,7 +4,6 @@
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
-	"bufio"
 	"compress/gzip"
 	"context"
 	"errors"
@@ -265,9 +264,12 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		defer r.gzipReaderPool.Put(reader)
 	}
 
-	sc := bufio.NewScanner(bodyReader)
 	resourceCustomizer := r.createResourceCustomizer(req)
-	ld, slLen := splunkHecRawToLogData(sc, req.URL.Query(), resourceCustomizer, r.config)
+	ld, slLen, err := splunkHecRawToLogData(bodyReader, req.URL.Query(), resourceCustomizer, r.config)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, err)
+		return
+	}
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()

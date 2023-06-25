@@ -104,7 +104,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		// // yes tls success secure
+		// yes tls success secure
 		{
 			name: "expecting success with TLS expecting an amqps connection",
 			cfg: &Config{ // invalid to only provide a key file
@@ -128,7 +128,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 				logger: logger,
 			},
 		},
-		// // no tls success plaintext
+		// no tls success plaintext
 		{
 			name: "expecting success without TLS expecting an amqp connection",
 			cfg: &Config{ // invalid to only provide a key file
@@ -685,13 +685,13 @@ func (c *connMock) LocalAddr() net.Addr {
 func (c *connMock) RemoteAddr() net.Addr {
 	return nil
 }
-func (c *connMock) SetDeadline(t time.Time) error {
+func (c *connMock) SetDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetReadDeadline(t time.Time) error {
+func (c *connMock) SetReadDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetWriteDeadline(t time.Time) error {
+func (c *connMock) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 

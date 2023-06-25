@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -31,11 +31,13 @@ func TestIntegration(t *testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context:    path.Join("testdata", "integration"),
-					Dockerfile: "Dockerfile.apache",
-				},
-				ExposedPorts: []string{"80"},
+				Image: "httpd:2.4",
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "httpd.conf"),
+					ContainerFilePath: "/usr/local/apache2/conf/httpd.conf",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{apachePort},
 				WaitingFor:   waitStrategy{},
 			}),
 		scraperinttest.WithCustomConfig(

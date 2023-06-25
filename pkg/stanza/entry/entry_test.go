@@ -136,7 +136,7 @@ func TestCopy(t *testing.T) {
 	entry.SpanID = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	entry.TraceFlags = []byte{0x01}
 	entry.ScopeName = "my.logger"
-	copy := entry.Copy()
+	cp := entry.Copy()
 
 	entry.Severity = Severity(1)
 	entry.SeverityText = "1"
@@ -149,24 +149,24 @@ func TestCopy(t *testing.T) {
 	entry.TraceFlags[0] = 0xff
 	entry.ScopeName = "foo"
 
-	require.Equal(t, now, copy.ObservedTimestamp)
-	require.Equal(t, time.Time{}, copy.Timestamp)
-	require.Equal(t, Severity(0), copy.Severity)
-	require.Equal(t, "ok", copy.SeverityText)
-	require.Equal(t, map[string]interface{}{"label": "value"}, copy.Attributes)
-	require.Equal(t, map[string]interface{}{"resource": "value"}, copy.Resource)
-	require.Equal(t, "test", copy.Body)
-	require.Equal(t, []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}, copy.TraceID)
-	require.Equal(t, []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}, copy.SpanID)
-	require.Equal(t, []byte{0x01}, copy.TraceFlags)
-	require.Equal(t, "my.logger", copy.ScopeName)
+	require.Equal(t, now, cp.ObservedTimestamp)
+	require.Equal(t, time.Time{}, cp.Timestamp)
+	require.Equal(t, Severity(0), cp.Severity)
+	require.Equal(t, "ok", cp.SeverityText)
+	require.Equal(t, map[string]interface{}{"label": "value"}, cp.Attributes)
+	require.Equal(t, map[string]interface{}{"resource": "value"}, cp.Resource)
+	require.Equal(t, "test", cp.Body)
+	require.Equal(t, []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}, cp.TraceID)
+	require.Equal(t, []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}, cp.SpanID)
+	require.Equal(t, []byte{0x01}, cp.TraceFlags)
+	require.Equal(t, "my.logger", cp.ScopeName)
 }
 
 func TestCopyNil(t *testing.T) {
 	now := time.Now()
 	entry := New()
 	entry.ObservedTimestamp = now
-	copy := entry.Copy()
+	cp := entry.Copy()
 
 	entry.Severity = Severity(1)
 	entry.SeverityText = "1"
@@ -179,17 +179,17 @@ func TestCopyNil(t *testing.T) {
 	entry.TraceFlags = []byte{0x01}
 	entry.ScopeName = "foo"
 
-	require.Equal(t, now, copy.ObservedTimestamp)
-	require.Equal(t, time.Time{}, copy.Timestamp)
-	require.Equal(t, Severity(0), copy.Severity)
-	require.Equal(t, "", copy.SeverityText)
-	require.Equal(t, map[string]interface{}{}, copy.Attributes)
-	require.Equal(t, map[string]interface{}{}, copy.Resource)
-	require.Equal(t, nil, copy.Body)
-	require.Equal(t, []byte{}, copy.TraceID)
-	require.Equal(t, []byte{}, copy.SpanID)
-	require.Equal(t, []byte{}, copy.TraceFlags)
-	require.Equal(t, "", copy.ScopeName)
+	require.Equal(t, now, cp.ObservedTimestamp)
+	require.Equal(t, time.Time{}, cp.Timestamp)
+	require.Equal(t, Severity(0), cp.Severity)
+	require.Equal(t, "", cp.SeverityText)
+	require.Equal(t, map[string]interface{}{}, cp.Attributes)
+	require.Equal(t, map[string]interface{}{}, cp.Resource)
+	require.Equal(t, nil, cp.Body)
+	require.Equal(t, []byte{}, cp.TraceID)
+	require.Equal(t, []byte{}, cp.SpanID)
+	require.Equal(t, []byte{}, cp.TraceFlags)
+	require.Equal(t, "", cp.ScopeName)
 }
 
 func TestFieldFromString(t *testing.T) {

@@ -33,6 +33,7 @@ The following configuration example is:
 receivers:
   googlecloudspanner:
     collection_interval: 60s
+    initial_delay: 1s
     top_metrics_query_max_rows: 100
     backfill_enabled: true
     cardinality_total_limit: 200000
@@ -66,6 +67,7 @@ receivers:
 Brief description of configuration properties:
 - **googlecloudspanner** - name of the Cloud Spanner Receiver related section in OpenTelemetry collector configuration file
 - **collection_interval** - this receiver runs periodically. Each time it runs, it queries Google Cloud Spanner, creates metrics, and sends them to the next consumer (default: 1 minute). **It is not recommended to change the default value of collection interval, since new values for metrics in the Spanner database appear only once a minute.**
+- **initial_delay**  defines how long this receiver waits before starting.
 - **top_metrics_query_max_rows** - max number of rows to fetch from Top N built-in table(100 by default)
 - **backfill_enabled** - turn on/off 1-hour data backfill(by default it is turned off)
 - **cardinality_total_limit** - limit of active series per 24 hours period. If specified, turns on cardinality filtering and handling. If zero or not specified, cardinality is not handled. You can read [this document](cardinality.md) for more information about cardinality handling and filtering.

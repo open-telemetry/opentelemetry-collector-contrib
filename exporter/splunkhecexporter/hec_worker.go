@@ -16,7 +16,7 @@ import (
 )
 
 type hecWorker interface {
-	send(context.Context, *bufferState, map[string]string) error
+	send(context.Context, buffer, map[string]string) error
 }
 
 type defaultHecWorker struct {
@@ -25,12 +25,12 @@ type defaultHecWorker struct {
 	headers map[string]string
 }
 
-func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bufferState)
+func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
+	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), buf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	req.ContentLength = int64(bufferState.buf.Len())
+	req.ContentLength = int64(buf.Len())
 
 	// Set the headers configured for the client
 	for k, v := range hec.headers {
@@ -42,7 +42,7 @@ func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState,
 		req.Header.Set(k, v)
 	}
 
-	if bufferState.compressionEnabled() {
+	if _, ok := buf.(*cancellableGzipWriter); ok {
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 

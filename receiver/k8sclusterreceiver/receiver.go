@@ -41,7 +41,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	exporters := host.GetExporters()
+	exporters := host.GetExporters() //nolint:staticcheck
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
 		return err
@@ -120,7 +120,7 @@ func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.C
 		return nil, err
 	}
 	return &kubernetesReceiver{
-		resourceWatcher: newResourceWatcher(set.Logger, rCfg),
+		resourceWatcher: newResourceWatcher(set, rCfg),
 		settings:        set,
 		config:          rCfg,
 		consumer:        consumer,

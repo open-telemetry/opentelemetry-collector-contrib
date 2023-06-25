@@ -594,7 +594,7 @@ func newMetrics(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Met
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	rms.Resource().Attributes().PutStr("key", "value")
 	rms.Resource().Attributes().PutStr(hostkey, testhost)
-	// // Scope metric in a metric
+	// Scope metric in a metric
 	sms := rms.ScopeMetrics().AppendEmpty()
 	scope := sms.Scope()
 	scope.SetName("SN")

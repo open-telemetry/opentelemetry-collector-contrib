@@ -111,11 +111,29 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "217"
+                - asInt: "4"
                   attributes:
                     - key: state
                       value:
-                        stringValue: waiting
+                        stringValue: closing
+                  timeUnixNano: "1632495518500962000"
+                - asInt: "2"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: dnslookup
+                  timeUnixNano: "1632495518500962000"
+                - asInt: "3"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: finishing
+                  timeUnixNano: "1632495518500962000"
+                - asInt: "4"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: idle_cleanup
                   timeUnixNano: "1632495518500962000"
                 - asInt: "2"
                   attributes:
@@ -129,29 +147,11 @@ resourceMetrics:
                       value:
                         stringValue: logging
                   timeUnixNano: "1632495518500962000"
-                - asInt: "3"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: finishing
-                  timeUnixNano: "1632495518500962000"
                 - asInt: "150"
                   attributes:
                     - key: state
                       value:
                         stringValue: open
-                  timeUnixNano: "1632495518500962000"
-                - asInt: "4"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: idle_cleanup
-                  timeUnixNano: "1632495518500962000"
-                - asInt: "1"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: starting
                   timeUnixNano: "1632495518500962000"
                 - asInt: "4"
                   attributes:
@@ -165,17 +165,17 @@ resourceMetrics:
                       value:
                         stringValue: sending
                   timeUnixNano: "1632495518500962000"
-                - asInt: "2"
+                - asInt: "1"
                   attributes:
                     - key: state
                       value:
-                        stringValue: dnslookup
+                        stringValue: starting
                   timeUnixNano: "1632495518500962000"
-                - asInt: "4"
+                - asInt: "217"
                   attributes:
                     - key: state
                       value:
-                        stringValue: closing
+                        stringValue: waiting
                   timeUnixNano: "1632495518500962000"
             unit: '{workers}'
           - description: Total HTTP server traffic.

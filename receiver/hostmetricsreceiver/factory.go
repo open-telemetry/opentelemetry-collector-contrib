@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
@@ -26,14 +27,6 @@ import (
 )
 
 // This file implements Factory for HostMetrics receiver.
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "hostmetrics"
-	// The stability level of the host metrics receiver.
-	stability = component.StabilityLevelBeta
-)
-
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
 		cpuscraper.TypeStr:        &cpuscraper.Factory{},
@@ -51,9 +44,9 @@ var (
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -66,7 +59,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
-	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr)}
+	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.

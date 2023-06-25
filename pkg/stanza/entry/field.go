@@ -204,6 +204,8 @@ func fromJSONDot(s string) ([]string, error) {
 		return nil, fmt.Errorf("found unclosed single quote")
 	case InUnbracketedToken:
 		fields = append(fields, s[tokenStart:])
+	case Begin, OutBracket:
+		// shouldn't be possible
 	}
 
 	if len(fields) == 0 {

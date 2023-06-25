@@ -41,6 +41,7 @@ func TestConfig(t *testing.T) {
 			Password: "test",
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},

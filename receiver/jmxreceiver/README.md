@@ -39,6 +39,7 @@ receivers:
     endpoint: my_jmx_host:12345
     target_system: jvm
     collection_interval: 10s
+    initial_delay: 1s
     # optional: the same as specifying OTLP receiver endpoint.
     otlp:
       endpoint: mycollectorotlpreceiver:4317
@@ -92,6 +93,10 @@ Corresponds to the `otel.jmx.target.system` property.
 The interval time for the Groovy script to be run and metrics to be exported by the JMX Metric Gatherer within the persistent JRE process.
 
 Corresponds to the `otel.jmx.interval.milliseconds` property.
+
+### initial_delay (default: `1s`)
+
+Defines how long this receiver waits before starting.
 
 ### username
 
