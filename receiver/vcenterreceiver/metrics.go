@@ -5,6 +5,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"time"
 
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -232,10 +233,15 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 }
 
 func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.EntityMetric) {
+	metricMap := make(map[string][]types.PerfSampleInfo)
 	for _, m := range metrics {
 		for _, val := range m.Value {
+			_, ok := metricMap[val.Name]
+			if !ok {
+				metricMap[val.Name] = m.SampleInfo
+			}
 			for j, nestedValue := range val.Value {
-				si := m.SampleInfo[j]
+				si := metricMap[val.Name][j]
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.usage.average":
@@ -266,6 +272,13 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
 				case "disk.write.average":
 					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
+				}
+				// Increment values of timestamps when finished with all nested values
+				if j == len(val.Value)-1 {
+					for ind, metricMapVal := range metricMap[val.Name] {
+						incrementedTime := time.Duration(metricMapVal.Interval) * time.Duration(j+1) * time.Nanosecond
+						metricMap[val.Name][ind].Timestamp = metricMapVal.Timestamp.Add(incrementedTime)
+					}
 				}
 			}
 		}
