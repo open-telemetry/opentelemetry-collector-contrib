@@ -16,6 +16,7 @@ MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
 
+
 FIND_MOD_ARGS=-type f -name "go.mod"
 TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
 EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*" -not -path "./connector/*"
