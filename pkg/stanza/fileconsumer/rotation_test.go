@@ -584,7 +584,6 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	waitForToken(t, emitCalls, log1)
 
 	// Stop the operator, then rename and write a new log
-	fmt.Println("okay")
 	require.NoError(t, operator.Stop())
 
 	err := os.Rename(temp.Name(), fmt.Sprintf("%s2", temp.Name()))
