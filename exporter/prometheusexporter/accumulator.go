@@ -241,14 +241,15 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs) // uniquely idenity this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
 		}
 
-		v, ok := a.registeredMetrics.Load(signature)
+		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particualr time series
 		if !ok {
+			// first data point
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 			m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -256,14 +257,28 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 			n++
 			continue
 		}
-		mv := v.(*accumulatedValue)
+		mv := v.(*accumulatedValue) //current accumulated histogram
 
 		m := copyMetricMetadata(metric)
 		m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		switch histogram.AggregationTemporality() {
 		case pmetric.AggregationTemporalityDelta:
-			accumulateHistogramValues(mv.value.Histogram().DataPoints().At(0), ip, m.Histogram().DataPoints().AppendEmpty())
+			if ip.StartTimestamp().AsTime().Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
+				// only keep datapoint with latest timestamp
+				logger.Warn("Dropping misaligned histogram datapoint for time series",
+					zap.String("DataType", pmd.Type().String()),
+					zap.String("Name", pmd.Name()),
+					zap.String("Unit", pmd.Unit()),
+				)
+				continue
+			}
+			// assuming an application restart and reset counter
+			if ip.StartTimestamp().AsTime().After(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
+				ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
+			} else {
+				accumulateHistogramValues(mv.value.Histogram().DataPoints().At(0), ip, m.Histogram().DataPoints().AppendEmpty())
+			}
 		case pmetric.AggregationTemporalityCumulative:
 			if ip.Timestamp().AsTime().Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
 				// only keep datapoint with latest timestamp
@@ -336,11 +351,12 @@ func copyMetricMetadata(metric pmetric.Metric) pmetric.Metric {
 }
 
 func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
-	if current.StartTimestamp().AsTime().Before(prev.StartTimestamp().AsTime()) {
-		dest.SetStartTimestamp(current.StartTimestamp())
-	} else {
-		dest.SetStartTimestamp(prev.StartTimestamp())
-	}
+	//if current.StartTimestamp().AsTime().Before(prev.StartTimestamp().AsTime()) {
+	//	dest.SetStartTimestamp(current.StartTimestamp())
+	//} else {
+	//	dest.SetStartTimestamp(prev.StartTimestamp())
+	//}
+	dest.SetStartTimestamp(prev.StartTimestamp())
 
 	older := prev
 	newer := current
@@ -352,6 +368,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	newer.Attributes().CopyTo(dest.Attributes())
 	dest.SetTimestamp(newer.Timestamp())
 
+	// checking for bucket boundary alignment, optionally re-aggregate on newer boundaries
 	match := true
 	if older.ExplicitBounds().Len() == newer.ExplicitBounds().Len() {
 		for i := 0; i < newer.BucketCounts().Len(); i++ {
