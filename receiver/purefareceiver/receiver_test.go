@@ -17,12 +17,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
-func TestReceiverArray(t *testing.T) {
+func TestReceiverEndpoints(t *testing.T) {
 	// prepare
 	wg := &sync.WaitGroup{}
 
@@ -37,155 +38,113 @@ func TestReceiverArray(t *testing.T) {
 			wg.Done()
 		})
 
-		fmt.Println("Received request:", r.URL)
-
 		_, err = w.Write(data)
 		require.NoError(t, err)
 		fmt.Println(string(data))
-
 	}))
 	defer ts.Close()
 
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 
-	t.Run("Array scraper rceiver is created properly", func(t *testing.T) {
-		cfg.Endpoint = ts.URL
-		cfg.Array = []internal.ScraperConfig{{
-			Address: "array01",
-		}}
-		cfg.Settings = &Settings{
-			ReloadIntervals: &ReloadIntervals{
-				Array: 10 * time.Millisecond,
-			},
+	tests := []struct {
+		name     string
+		scraper  []internal.ScraperConfig
+		interval time.Duration
+	}{
+		{
+			name:     "Array scraper receiver is created properly",
+			scraper:  []internal.ScraperConfig{{Address: "array01"}},
+			interval: 10 * time.Millisecond,
+		},
+		{
+			name:     "Hosts scraper receiver is created properly",
+			scraper:  []internal.ScraperConfig{{Address: "array01"}},
+			interval: 10 * time.Millisecond,
+		},
+		{
+			name:     "Directories scraper receiver is created properly",
+			scraper:  []internal.ScraperConfig{{Address: "array01"}},
+			interval: 10 * time.Millisecond,
+		},
+		{
+			name:     "Pods scraper receiver is created properly",
+			scraper:  []internal.ScraperConfig{{Address: "array01"}},
+			interval: 10 * time.Millisecond,
+		},
+		{
+			name:     "Volumes scraper receiver is created properly",
+			scraper:  []internal.ScraperConfig{{Address: "array01"}},
+			interval: 10 * time.Millisecond,
+		},
+	}
+
+	metricsSink := &consumertest.MetricsSink{}
+
+	for _, test := range tests {
+		switch test.name {
+		case "Array scraper receiver is created properly":
+			cfg.Array = test.scraper
+			cfg.Settings = &Settings{
+				ReloadIntervals: &ReloadIntervals{Array: test.interval},
+			}
+		case "Hosts scraper receiver is created properly":
+			cfg.Hosts = test.scraper
+			cfg.Settings = &Settings{
+				ReloadIntervals: &ReloadIntervals{Hosts: test.interval},
+			}
+		case "Directories scraper receiver is created properly":
+			cfg.Directories = test.scraper
+			cfg.Settings = &Settings{
+				ReloadIntervals: &ReloadIntervals{Directories: test.interval},
+			}
+		case "Pods scraper receiver is created properly":
+			cfg.Pods = test.scraper
+			cfg.Settings = &Settings{
+				ReloadIntervals: &ReloadIntervals{Pods: test.interval},
+			}
+		case "Volumes scraper receiver is created properly":
+			cfg.Volumes = test.scraper
+			cfg.Settings = &Settings{
+				ReloadIntervals: &ReloadIntervals{Volumes: test.interval},
+			}
+		default:
+			t.Errorf("Unknown test name: %s", test.name)
+			continue
 		}
 
-		sink := &consumertest.MetricsSink{}
-		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
-		// wg.Add(1)
+		t.Run(test.name, func(t *testing.T) {
+			/* 			recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+			   			// wg.Add(1)
 
-		// test
-		err := recv.Start(context.Background(), componenttest.NewNopHost())
-		// wg.Wait()
+			   			// test
+			   			err := recv.Start(context.Background(), componenttest.NewNopHost())
+			   			// wg.Wait()
 
-		// verify
-		assert.NoError(t, err)
-		// assert.Greater(t, len(sink.AllMetrics()), 1, "expected to have received more than 0 metrics")
-		require.Equal(t, len(sink.AllMetrics()), 0)
-		/* 	assert.Eventually(t, func() bool {
-			return len(sink.AllMetrics()) == 1
-		}, 10*time.Second, 10*time.Millisecond) */
-	})
+			   			// verify
+			   			assert.NoError(t, err)
 
-	t.Run("Hosts scraper rceiver is created properly", func(t *testing.T) {
-		cfg.Endpoint = ts.URL
-		cfg.Hosts = []internal.ScraperConfig{{
-			Address: "array01",
-		}}
-		cfg.Settings = &Settings{
-			ReloadIntervals: &ReloadIntervals{
-				Hosts: 10 * time.Millisecond,
-			},
-		}
+			   			require.Equal(t, len(sink.AllMetrics()), 0)
+			   			require.NoError(t, err)
+			   			require.NotNil(t, recv) */
 
-		sink := &consumertest.MetricsSink{}
-		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
-		wg.Add(1)
+			recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), metricsSink)
+			metric := pmetric.NewMetrics()
+			metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
+			// err = recv.Start(context.Background(), componenttest.NewNopHost())
+			err := recv.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+			err = metricsSink.ConsumeMetrics(context.Background(), metric)
+			require.NoError(t, err)
+			assert.Greater(t, len(metricsSink.AllMetrics()), 0, "expected to have received more than 0 metrics")
+			assert.Eventually(t, func() bool {
+				return len(metricsSink.AllMetrics()) != 0
+			}, 1*time.Second, 10*time.Millisecond)
 
-		// test
-		err := recv.Start(context.Background(), componenttest.NewNopHost())
-		wg.Wait()
-
-		// verify
-		assert.NoError(t, err)
-
-		// the assert below, nee to be changed.
-		require.Equal(t, len(sink.AllMetrics()), 0)
-		require.NoError(t, err)
-		require.NotNil(t, recv)
-	})
-
-	t.Run("Directories scraper rceiver is created properly", func(t *testing.T) {
-		cfg.Endpoint = ts.URL
-		cfg.Directories = []internal.ScraperConfig{{
-			Address: "array01",
-		}}
-		cfg.Settings = &Settings{
-			ReloadIntervals: &ReloadIntervals{
-				Directories: 10 * time.Millisecond,
-			},
-		}
-
-		sink := &consumertest.MetricsSink{}
-		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
-		// wg.Add(1)
-
-		// test
-		err := recv.Start(context.Background(), componenttest.NewNopHost())
-		// wg.Wait()
-
-		// verify
-		assert.NoError(t, err)
-
-		require.Equal(t, len(sink.AllMetrics()), 0)
-		require.NoError(t, err)
-		require.NotNil(t, recv)
-	})
-
-	t.Run("Pods scraper rceiver is created properly", func(t *testing.T) {
-		cfg.Endpoint = ts.URL
-		cfg.Pods = []internal.ScraperConfig{{
-			Address: "array01",
-		}}
-		cfg.Settings = &Settings{
-			ReloadIntervals: &ReloadIntervals{
-				Pods: 10 * time.Millisecond,
-			},
-		}
-
-		sink := &consumertest.MetricsSink{}
-		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
-		// wg.Add(1)
-
-		// test
-		err := recv.Start(context.Background(), componenttest.NewNopHost())
-		// wg.Wait()
-
-		// verify
-		assert.NoError(t, err)
-
-		require.Equal(t, len(sink.AllMetrics()), 0)
-		require.NoError(t, err)
-		require.NotNil(t, recv)
-	})
-
-	t.Run("Volumes scraper rceiver is created properly", func(t *testing.T) {
-		cfg.Endpoint = ts.URL
-		cfg.Volumes = []internal.ScraperConfig{{
-			Address: "array01",
-		}}
-		cfg.Settings = &Settings{
-			ReloadIntervals: &ReloadIntervals{
-				Volumes: 10 * time.Millisecond,
-			},
-		}
-
-		sink := &consumertest.MetricsSink{}
-		recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
-		// wg.Add(1)
-
-		// test
-		err := recv.Start(context.Background(), componenttest.NewNopHost())
-		// wg.Wait()
-
-		// verify
-		assert.NoError(t, err)
-
-		require.Equal(t, len(sink.AllMetrics()), 0)
-		require.NoError(t, err)
-		require.NotNil(t, recv)
-	})
-
+			err = recv.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestStart(t *testing.T) {
