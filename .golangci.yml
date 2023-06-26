@@ -341,6 +341,9 @@ issues:
     - path: opencensus
       linters:
         - exhaustive
+    - path: opensearch
+      linters:
+        - exhaustive
     - path: signalfx
       linters:
         - exhaustive
