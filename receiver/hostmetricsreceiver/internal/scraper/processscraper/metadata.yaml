@@ -1,5 +1,7 @@
 type: hostmetricsreceiver/process
 
+parent: hostmetrics
+
 sem_conv_version: 1.9.0
 
 resource_attributes:

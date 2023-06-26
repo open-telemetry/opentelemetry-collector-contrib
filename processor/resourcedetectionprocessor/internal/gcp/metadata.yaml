@@ -1,5 +1,7 @@
 type: resourcedetectionprocessor/gcp
 
+parent: resourcedetection
+
 resource_attributes:
   host.name:
     description: The host.name
