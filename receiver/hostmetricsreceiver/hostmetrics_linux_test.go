@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
 
@@ -36,12 +37,12 @@ func TestLoadConfigRootPath(t *testing.T) {
 	t.Setenv("HOST_PROC", "testdata")
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
 	require.NoError(t, err)
 	globalRootPath = ""
 
-	r := cfg.Receivers[component.NewID(typeStr)].(*Config)
+	r := cfg.Receivers[component.NewID(metadata.Type)].(*Config)
 	expectedConfig := factory.CreateDefaultConfig().(*Config)
 	expectedConfig.RootPath = "testdata"
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
@@ -54,7 +55,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 	_, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
 	assert.ErrorContains(t, err, "invalid root_path:")
 	globalRootPath = ""

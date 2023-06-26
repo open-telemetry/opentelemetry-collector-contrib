@@ -11,11 +11,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func Test_DataPointFunctions(t *testing.T) {
-	expected := common.Functions[ottldatapoint.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 	expected["convert_sum_to_gauge"] = newConvertSumToGaugeFactory()
 	expected["convert_gauge_to_sum"] = newConvertGaugeToSumFactory()
 	expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
@@ -30,7 +30,7 @@ func Test_DataPointFunctions(t *testing.T) {
 }
 
 func Test_MetricFunctions(t *testing.T) {
-	expected := common.Functions[ottlmetric.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
 	actual := MetricFunctions()
 	require.Equal(t, len(expected), len(actual))
 	for k := range actual {

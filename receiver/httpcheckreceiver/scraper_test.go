@@ -42,7 +42,7 @@ func TestScraperStart(t *testing.T) {
 			scraper: &httpcheckScraper{
 				cfg: &Config{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: defaultEndpoint,
+						Endpoint: "http://example.com",
 						TLSSetting: configtls.TLSClientSetting{
 							TLSSetting: configtls.TLSSetting{
 								CAFile: "/non/existent",
@@ -60,7 +60,7 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						TLSSetting: configtls.TLSClientSetting{},
-						Endpoint:   defaultEndpoint,
+						Endpoint:   "http://example.com",
 					},
 				},
 				settings: componenttest.NewNopTelemetrySettings(),

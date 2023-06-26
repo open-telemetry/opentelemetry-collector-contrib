@@ -48,6 +48,7 @@ func createDefaultConfig() component.Config {
 		},
 		RawPath:    splunk.DefaultRawPath,
 		HealthPath: splunk.DefaultHealthPath,
+		Splitting:  SplittingStrategyLine,
 	}
 }
 
@@ -68,6 +69,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
+	r.Unwrap().(*splunkReceiver).metricsConsumer = consumer
 	return r, nil
 }
 
@@ -88,6 +90,7 @@ func createLogsReceiver(
 	if err != nil {
 		return nil, err
 	}
+	r.Unwrap().(*splunkReceiver).logsConsumer = consumer
 	return r, nil
 }
 

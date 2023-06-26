@@ -166,7 +166,7 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 }
 
 // shutdown stops the exporter and is invoked during shutdown.
-func (emf *emfExporter) shutdown(ctx context.Context) error {
+func (emf *emfExporter) shutdown(_ context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {

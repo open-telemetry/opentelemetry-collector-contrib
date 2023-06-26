@@ -25,6 +25,7 @@ The following settings are optional:
 
 - `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
 as the specified metric label key.
 - `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
@@ -69,6 +70,40 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+## Deprecations
+
+### Transition to cpu utilization metric name aligned with OpenTelemetry specification
+
+The Docker Stats receiver has been emitting the following cpu memory metric:
+
+- [container.cpu.percent] for the percentage of CPU used by the container,
+
+This is in conflict with the OpenTelemetry specification,
+which defines [container.cpu.utilization] as the name for this metric.
+
+To align the emitted metric names with the OpenTelemetry specification,
+the following process will be followed to phase out the old metrics:
+
+- Between `v0.79.0` and `v0.81.0`, the new metric is introduced and the old metric is marked as deprecated.
+  Only the old metric are emitted by default.
+- Between `v0.82.0` and `v0.84.0`, the old metric is disabled and the new one enabled by default.
+- In `v0.85.0` and up, the old metric is removed.
+
+To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
+
+Here's an example configuration to disable the old metrics and enable the new metrics:
+
+```yaml
+receivers:
+  docker_stats:
+    metrics:
+      container.cpu.percent:
+        enabled: false
+      container.cpu.utilization:
+        enabled: true
+
+```
 
 ### Migrating from ScraperV1 to ScraperV2
 

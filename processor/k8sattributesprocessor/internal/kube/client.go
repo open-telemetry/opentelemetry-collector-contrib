@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -108,6 +109,20 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	err = c.informer.SetTransform(
+		func(object interface{}) (interface{}, error) {
+			originalPod, success := object.(*api_v1.Pod)
+			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+				return object, nil
+			}
+
+			return removeUnnecessaryPodData(originalPod, c.Rules), nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	if c.extractNamespaceLabelsAnnotations() {
 		c.namespaceInformer = newNamespaceInformer(c.kc)
 	} else {
@@ -119,6 +134,19 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 			newReplicaSetInformer = newReplicaSetSharedInformer
 		}
 		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		err = c.replicasetInformer.SetTransform(
+			func(object interface{}) (interface{}, error) {
+				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+
+				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c, err
@@ -175,7 +203,7 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handlePodUpdate(old, new interface{}) {
+func (c *WatchClient) handlePodUpdate(_, new interface{}) {
 	observability.RecordPodUpdated()
 	if pod, ok := new.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
@@ -207,7 +235,7 @@ func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleNamespaceUpdate(old, new interface{}) {
+func (c *WatchClient) handleNamespaceUpdate(_, new interface{}) {
 	observability.RecordNamespaceUpdated()
 	if namespace, ok := new.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
@@ -396,6 +424,100 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
 	return tags
+}
+
+// This function removes all data from the Pod except what is required by extraction rules and pod association
+func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Pod {
+
+	// name, namespace, uid, start time and ip are needed for identifying Pods
+	// there's room to optimize this further, it's kept this way for simplicity
+	transformedPod := api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      pod.GetName(),
+			Namespace: pod.GetNamespace(),
+			UID:       pod.GetUID(),
+		},
+		Status: api_v1.PodStatus{
+			PodIP:     pod.Status.PodIP,
+			StartTime: pod.Status.StartTime,
+		},
+		Spec: api_v1.PodSpec{
+			HostNetwork: pod.Spec.HostNetwork,
+		},
+	}
+
+	if rules.StartTime {
+		transformedPod.SetCreationTimestamp(pod.GetCreationTimestamp())
+	}
+
+	if rules.PodUID {
+		transformedPod.SetUID(pod.GetUID())
+	}
+
+	if rules.Node {
+		transformedPod.Spec.NodeName = pod.Spec.NodeName
+	}
+
+	if rules.PodHostName {
+		transformedPod.Spec.Hostname = pod.Spec.Hostname
+	}
+
+	if needContainerAttributes(rules) {
+		for _, containerStatus := range pod.Status.ContainerStatuses {
+			transformedPod.Status.ContainerStatuses = append(
+				transformedPod.Status.ContainerStatuses,
+				api_v1.ContainerStatus{
+					Name:         containerStatus.Name,
+					ContainerID:  containerStatus.ContainerID,
+					RestartCount: containerStatus.RestartCount,
+				},
+			)
+		}
+		for _, containerStatus := range pod.Status.InitContainerStatuses {
+			transformedPod.Status.InitContainerStatuses = append(
+				transformedPod.Status.InitContainerStatuses,
+				api_v1.ContainerStatus{
+					Name:         containerStatus.Name,
+					ContainerID:  containerStatus.ContainerID,
+					RestartCount: containerStatus.RestartCount,
+				},
+			)
+		}
+
+		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
+			transformedContainer := api_v1.Container{}
+			transformedContainer.Name = c.Name // we always need the name, it's used for identification
+			if rules.ContainerImageName || rules.ContainerImageTag {
+				transformedContainer.Image = c.Image
+			}
+			return transformedContainer
+		}
+
+		for _, container := range pod.Spec.Containers {
+			transformedPod.Spec.Containers = append(
+				transformedPod.Spec.Containers, removeUnnecessaryContainerData(container),
+			)
+		}
+		for _, container := range pod.Spec.InitContainers {
+			transformedPod.Spec.InitContainers = append(
+				transformedPod.Spec.InitContainers, removeUnnecessaryContainerData(container),
+			)
+		}
+	}
+
+	if len(rules.Labels) > 0 {
+		transformedPod.Labels = pod.Labels
+	}
+
+	if len(rules.Annotations) > 0 {
+		transformedPod.Annotations = pod.Annotations
+	}
+
+	if rules.IncludesOwnerMetadata() {
+		transformedPod.SetOwnerReferences(pod.GetOwnerReferences())
+	}
+
+	return &transformedPod
 }
 
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
@@ -695,7 +817,7 @@ func (c *WatchClient) handleReplicaSetAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(old, new interface{}) {
+func (c *WatchClient) handleReplicaSetUpdate(_, new interface{}) {
 	observability.RecordReplicaSetUpdated()
 	if replicaset, ok := new.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)
@@ -738,6 +860,19 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
 	}
 	c.m.Unlock()
+}
+
+// This function removes all data from the ReplicaSet except what is required by extraction rules
+func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
+	transformedReplicaset := apps_v1.ReplicaSet{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      replicaset.GetName(),
+			Namespace: replicaset.GetNamespace(),
+			UID:       replicaset.GetUID(),
+		},
+	}
+	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
+	return &transformedReplicaset
 }
 
 func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {

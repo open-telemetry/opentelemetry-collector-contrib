@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -45,7 +47,9 @@ func NewIntegrationTest(f receiver.Factory, opts ...TestOption) *IntegrationTest
 }
 
 type IntegrationTest struct {
+	networkRequest         *testcontainers.NetworkRequest
 	containerRequests      []testcontainers.ContainerRequest
+	allowHardcodedHostPort bool
 	createContainerTimeout time.Duration
 
 	factory      receiver.Factory
@@ -55,11 +59,19 @@ type IntegrationTest struct {
 	compareOptions []pmetrictest.CompareMetricsOption
 	compareTimeout time.Duration
 
-	writeExpected bool
+	failOnErrorLogs bool
+	writeExpected   bool
 }
 
 func (it *IntegrationTest) Run(t *testing.T) {
 	it.validate(t)
+
+	if it.networkRequest != nil {
+		network := it.createNetwork(t)
+		defer func() {
+			require.NoError(t, network.Remove(context.Background()))
+		}()
+	}
 
 	ci := it.createContainers(t)
 	defer ci.terminate(t)
@@ -68,6 +80,8 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	it.customConfig(t, cfg, ci)
 	sink := new(consumertest.MetricsSink)
 	settings := receivertest.NewNopCreateSettings()
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings.Logger = zap.New(observedZapCore)
 
 	rcvr, err := it.factory.CreateMetricsReceiver(context.Background(), settings, cfg, sink)
 	require.NoError(t, err, "failed creating metrics receiver")
@@ -87,6 +101,13 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	defer func() {
 		if t.Failed() && validateErr != nil {
 			t.Error(validateErr.Error())
+
+			logs := strings.Builder{}
+			for _, e := range observedLogs.All() {
+				logs.WriteString(e.Message + "\n")
+			}
+			t.Errorf("full log:\n%s", logs.String())
+
 			if len(sink.AllMetrics()) == 0 {
 				t.Error("no data emitted by scraper")
 				return
@@ -103,6 +124,14 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			if len(allMetrics) == 0 {
 				return false
 			}
+			if it.failOnErrorLogs && len(observedLogs.All()) > 0 {
+				logs := strings.Builder{}
+				for _, e := range observedLogs.All() {
+					logs.WriteString(e.Message + "\n")
+				}
+				t.Errorf("full log:\n%s", logs.String())
+			}
+
 			if it.writeExpected {
 				require.NoError(t, golden.WriteMetrics(t, it.expectedFile, allMetrics[0]))
 				return true
@@ -111,6 +140,26 @@ func (it *IntegrationTest) Run(t *testing.T) {
 			return validateErr == nil
 		},
 		it.compareTimeout, it.compareTimeout/20)
+}
+
+func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
+	var errs error
+
+	var network testcontainers.Network
+	var err error
+	require.Eventuallyf(t, func() bool {
+		network, err = testcontainers.GenericNetwork(
+			context.Background(),
+			testcontainers.GenericNetworkRequest{
+				NetworkRequest: *it.networkRequest,
+			})
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			return false
+		}
+		return true
+	}, it.createContainerTimeout, time.Second, "create network timeout: %v", errs)
+	return network
 }
 
 func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
@@ -122,12 +171,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 	for _, cr := range it.containerRequests {
 		go func(req testcontainers.ContainerRequest) {
 			var errs error
-			defer func() {
-				if t.Failed() && errs != nil {
-					t.Errorf("create container: %v", errs)
-				}
-			}()
-			require.Eventually(t, func() bool {
+			require.Eventuallyf(t, func() bool {
 				c, err := testcontainers.GenericContainer(
 					context.Background(),
 					testcontainers.GenericContainerRequest{
@@ -140,7 +184,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 				}
 				ci.add(req.Name, c)
 				return true
-			}, it.createContainerTimeout, time.Second)
+			}, it.createContainerTimeout, time.Second, "create container timeout: %v", errs)
 			wg.Done()
 		}(cr)
 	}
@@ -156,8 +200,10 @@ func (it *IntegrationTest) validate(t *testing.T) {
 		} else {
 			containerNames[cr.Name] = true
 		}
-		for _, port := range cr.ExposedPorts {
-			require.False(t, strings.ContainsRune(port, ':'), "exposed port hardcoded to host port: %q", port)
+		if !it.allowHardcodedHostPort {
+			for _, port := range cr.ExposedPorts {
+				require.False(t, strings.ContainsRune(port, ':'), "exposed port hardcoded to host port: %q", port)
+			}
 		}
 		require.NoError(t, cr.Validate())
 	}
@@ -165,9 +211,21 @@ func (it *IntegrationTest) validate(t *testing.T) {
 
 type TestOption func(*IntegrationTest)
 
+func WithNetworkRequest(nr testcontainers.NetworkRequest) TestOption {
+	return func(it *IntegrationTest) {
+		it.networkRequest = &nr
+	}
+}
+
 func WithContainerRequest(cr testcontainers.ContainerRequest) TestOption {
 	return func(it *IntegrationTest) {
 		it.containerRequests = append(it.containerRequests, cr)
+	}
+}
+
+func AllowHardcodedHostPort() TestOption {
+	return func(it *IntegrationTest) {
+		it.allowHardcodedHostPort = true
 	}
 }
 
@@ -186,6 +244,15 @@ func WithCustomConfig(c customConfigFunc) TestOption {
 func WithExpectedFile(f string) TestOption {
 	return func(it *IntegrationTest) {
 		it.expectedFile = f
+	}
+}
+
+// This option is useful for debugging scrapers but should not be used permanently
+// because the logs do not correlate to a single scrape interval. In other words,
+// when a retryable failure occurs, this setting will likely force a failure anyways.
+func FailOnErrorLogs() TestOption {
+	return func(it *IntegrationTest) {
+		it.failOnErrorLogs = true
 	}
 }
 

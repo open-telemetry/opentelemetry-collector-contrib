@@ -21,7 +21,7 @@ func TestDBSQLClient_SingleRow(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	require.NoError(t, err)
 	assert.Len(t, rows, 1)
 	assert.EqualValues(t, map[string]string{
@@ -42,7 +42,7 @@ func TestDBSQLClient_MultiRow(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	require.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.EqualValues(t, map[string]string{
@@ -69,7 +69,7 @@ func TestDBSQLClient_Nulls(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, errNullValueWarning))
 	assert.Len(t, rows, 1)
@@ -88,7 +88,7 @@ func TestDBSQLClient_Nulls_MultiRow(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	assert.Error(t, err)
 	errs := multierr.Errors(err)
 	for _, err := range errs {
@@ -152,7 +152,7 @@ type fakeDBClient struct {
 	err            error
 }
 
-func (c *fakeDBClient) metricRows(context.Context) ([]stringMap, error) {
+func (c *fakeDBClient) queryRows(context.Context, ...any) ([]stringMap, error) {
 	if c.err != nil {
 		return nil, c.err
 	}

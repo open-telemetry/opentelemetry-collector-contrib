@@ -1,0 +1,8 @@
+type: hostmetrics
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, observiq, splunk, sumo]
+  
