@@ -11,8 +11,6 @@ import (
 	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
-const defaultBufSize = 16 * 1024
-
 // PositionalScanner is a scanner that maintains position
 //
 // Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
@@ -24,18 +22,18 @@ type PositionalScanner struct {
 // NewPositionalScanner creates a new positional scanner
 //
 // Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
-func NewPositionalScanner(r io.Reader, maxLogSize int, startOffset int64, splitFunc bufio.SplitFunc) *PositionalScanner {
+func NewPositionalScanner(r io.Reader, maxLogSize int, bufferCap int, startOffset int64, splitFunc bufio.SplitFunc) *PositionalScanner {
 	ps := &PositionalScanner{
 		pos:     startOffset,
 		Scanner: bufio.NewScanner(r),
 	}
 
-	buf := make([]byte, 0, defaultBufSize)
+	buf := make([]byte, 0, bufferCap)
 	ps.Scanner.Buffer(buf, maxLogSize*2)
 
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
-		if (advance == 0 && token == nil && err == nil) && len(data) >= 2*maxLogSize {
+		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLogSize {
 			// reference: https://pkg.go.dev/bufio#SplitFunc
 			// splitFunc returns (0, nil, nil) to signal the Scanner to read more data but the buffer is full.
 			// Truncate the log entry.
