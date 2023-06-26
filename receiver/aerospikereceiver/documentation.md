@@ -189,7 +189,7 @@ Number of queries which ran more than query untracked_time (default 1 sec), Aero
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {queries} | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 

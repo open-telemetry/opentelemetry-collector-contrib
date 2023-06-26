@@ -87,9 +87,9 @@
     "stats": {
       "active_anon": 4096,
       "active_file": 0,
-      "anon": 114688,
+      "anon": 61440,
       "anon_thp": 0,
-      "file": 1892352,
+      "file": 233848832,
       "file_dirty": 0,
       "file_mapped": 1138688,
       "file_writeback": 0,

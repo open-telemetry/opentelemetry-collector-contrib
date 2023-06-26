@@ -155,7 +155,7 @@ func BenchmarkReadLine(b *testing.B) {
 		"test",
 	)
 
-	// // Run the actual benchmark
+	// Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pipe.Start(storageClient))
 	for i := 0; i < b.N; i++ {
@@ -220,7 +220,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 		"test",
 	)
 
-	// // Run the actual benchmark
+	// Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pipe.Start(storageClient))
 	for i := 0; i < b.N; i++ {

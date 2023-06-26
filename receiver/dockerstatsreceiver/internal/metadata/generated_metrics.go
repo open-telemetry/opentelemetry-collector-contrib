@@ -21,7 +21,7 @@ type metricContainerBlockioIoMergedRecursive struct {
 // init fills container.blockio.io_merged_recursive metric with initial data.
 func (m *metricContainerBlockioIoMergedRecursive) init() {
 	m.data.SetName("container.blockio.io_merged_recursive")
-	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
+	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -76,7 +76,7 @@ type metricContainerBlockioIoQueuedRecursive struct {
 // init fills container.blockio.io_queued_recursive metric with initial data.
 func (m *metricContainerBlockioIoQueuedRecursive) init() {
 	m.data.SetName("container.blockio.io_queued_recursive")
-	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
+	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -186,7 +186,7 @@ type metricContainerBlockioIoServiceTimeRecursive struct {
 // init fills container.blockio.io_service_time_recursive metric with initial data.
 func (m *metricContainerBlockioIoServiceTimeRecursive) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive")
-	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
+	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -241,7 +241,7 @@ type metricContainerBlockioIoServicedRecursive struct {
 // init fills container.blockio.io_serviced_recursive metric with initial data.
 func (m *metricContainerBlockioIoServicedRecursive) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive")
-	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
+	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -296,7 +296,7 @@ type metricContainerBlockioIoTimeRecursive struct {
 // init fills container.blockio.io_time_recursive metric with initial data.
 func (m *metricContainerBlockioIoTimeRecursive) init() {
 	m.data.SetName("container.blockio.io_time_recursive")
-	m.data.SetDescription("Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.")
+	m.data.SetDescription("Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds (Only available with cgroups v1).")
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -351,7 +351,7 @@ type metricContainerBlockioIoWaitTimeRecursive struct {
 // init fills container.blockio.io_wait_time_recursive metric with initial data.
 func (m *metricContainerBlockioIoWaitTimeRecursive) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive")
-	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
+	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service (Only available with cgroups v1).")
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -406,7 +406,7 @@ type metricContainerBlockioSectorsRecursive struct {
 // init fills container.blockio.sectors_recursive metric with initial data.
 func (m *metricContainerBlockioSectorsRecursive) init() {
 	m.data.SetName("container.blockio.sectors_recursive")
-	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
+	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups (Only available with cgroups v1).")
 	m.data.SetUnit("{sectors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -812,7 +812,7 @@ type metricContainerCPUUsagePercpu struct {
 // init fills container.cpu.usage.percpu metric with initial data.
 func (m *metricContainerCPUUsagePercpu) init() {
 	m.data.SetName("container.cpu.usage.percpu")
-	m.data.SetDescription("Per-core CPU usage by the container.")
+	m.data.SetDescription("Per-core CPU usage by the container (Only available with cgroups v1).")
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1160,6 +1160,57 @@ func newMetricContainerMemoryActiveFile(cfg MetricConfig) metricContainerMemoryA
 	return m
 }
 
+type metricContainerMemoryAnon struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.memory.anon metric with initial data.
+func (m *metricContainerMemoryAnon) init() {
+	m.data.SetName("container.memory.anon")
+	m.data.SetDescription("Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerMemoryAnon) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryAnon) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryAnon) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryAnon(cfg MetricConfig) metricContainerMemoryAnon {
+	m := metricContainerMemoryAnon{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerMemoryCache struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1169,7 +1220,7 @@ type metricContainerMemoryCache struct {
 // init fills container.memory.cache metric with initial data.
 func (m *metricContainerMemoryCache) init() {
 	m.data.SetName("container.memory.cache")
-	m.data.SetDescription("The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.")
+	m.data.SetDescription("The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1220,7 +1271,7 @@ type metricContainerMemoryDirty struct {
 // init fills container.memory.dirty metric with initial data.
 func (m *metricContainerMemoryDirty) init() {
 	m.data.SetName("container.memory.dirty")
-	m.data.SetDescription("Bytes that are waiting to get written back to the disk, from this cgroup.")
+	m.data.SetDescription("Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1262,6 +1313,57 @@ func newMetricContainerMemoryDirty(cfg MetricConfig) metricContainerMemoryDirty 
 	return m
 }
 
+type metricContainerMemoryFile struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.memory.file metric with initial data.
+func (m *metricContainerMemoryFile) init() {
+	m.data.SetName("container.memory.file")
+	m.data.SetDescription("Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerMemoryFile) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerMemoryFile) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerMemoryFile) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerMemoryFile(cfg MetricConfig) metricContainerMemoryFile {
+	m := metricContainerMemoryFile{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerMemoryHierarchicalMemoryLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1271,7 +1373,7 @@ type metricContainerMemoryHierarchicalMemoryLimit struct {
 // init fills container.memory.hierarchical_memory_limit metric with initial data.
 func (m *metricContainerMemoryHierarchicalMemoryLimit) init() {
 	m.data.SetName("container.memory.hierarchical_memory_limit")
-	m.data.SetDescription("The maximum amount of physical memory that can be used by the processes of this control group.")
+	m.data.SetDescription("The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1322,7 +1424,7 @@ type metricContainerMemoryHierarchicalMemswLimit struct {
 // init fills container.memory.hierarchical_memsw_limit metric with initial data.
 func (m *metricContainerMemoryHierarchicalMemswLimit) init() {
 	m.data.SetName("container.memory.hierarchical_memsw_limit")
-	m.data.SetDescription("The maximum amount of RAM + swap that can be used by the processes of this control group.")
+	m.data.SetDescription("The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1475,7 +1577,7 @@ type metricContainerMemoryMappedFile struct {
 // init fills container.memory.mapped_file metric with initial data.
 func (m *metricContainerMemoryMappedFile) init() {
 	m.data.SetName("container.memory.mapped_file")
-	m.data.SetDescription("Indicates the amount of memory mapped by the processes in the control group.")
+	m.data.SetDescription("Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1677,7 +1779,7 @@ type metricContainerMemoryPgpgin struct {
 // init fills container.memory.pgpgin metric with initial data.
 func (m *metricContainerMemoryPgpgin) init() {
 	m.data.SetName("container.memory.pgpgin")
-	m.data.SetDescription("Number of pages read from disk by the cgroup.")
+	m.data.SetDescription("Number of pages read from disk by the cgroup (Only available with cgroups v1).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1728,7 +1830,7 @@ type metricContainerMemoryPgpgout struct {
 // init fills container.memory.pgpgout metric with initial data.
 func (m *metricContainerMemoryPgpgout) init() {
 	m.data.SetName("container.memory.pgpgout")
-	m.data.SetDescription("Number of pages written to disk by the cgroup.")
+	m.data.SetDescription("Number of pages written to disk by the cgroup (Only available with cgroups v1).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1779,7 +1881,7 @@ type metricContainerMemoryRss struct {
 // init fills container.memory.rss metric with initial data.
 func (m *metricContainerMemoryRss) init() {
 	m.data.SetName("container.memory.rss")
-	m.data.SetDescription("The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.")
+	m.data.SetDescription("The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1830,7 +1932,7 @@ type metricContainerMemoryRssHuge struct {
 // init fills container.memory.rss_huge metric with initial data.
 func (m *metricContainerMemoryRssHuge) init() {
 	m.data.SetName("container.memory.rss_huge")
-	m.data.SetDescription("Number of bytes of anonymous transparent hugepages in this cgroup.")
+	m.data.SetDescription("Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1881,7 +1983,7 @@ type metricContainerMemoryTotalActiveAnon struct {
 // init fills container.memory.total_active_anon metric with initial data.
 func (m *metricContainerMemoryTotalActiveAnon) init() {
 	m.data.SetName("container.memory.total_active_anon")
-	m.data.SetDescription("The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.")
+	m.data.SetDescription("The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1932,7 +2034,7 @@ type metricContainerMemoryTotalActiveFile struct {
 // init fills container.memory.total_active_file metric with initial data.
 func (m *metricContainerMemoryTotalActiveFile) init() {
 	m.data.SetName("container.memory.total_active_file")
-	m.data.SetDescription("Cache memory that has been identified as active by the kernel. Includes descendant cgroups.")
+	m.data.SetDescription("Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1983,7 +2085,7 @@ type metricContainerMemoryTotalCache struct {
 // init fills container.memory.total_cache metric with initial data.
 func (m *metricContainerMemoryTotalCache) init() {
 	m.data.SetName("container.memory.total_cache")
-	m.data.SetDescription("Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.")
+	m.data.SetDescription("Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2034,7 +2136,7 @@ type metricContainerMemoryTotalDirty struct {
 // init fills container.memory.total_dirty metric with initial data.
 func (m *metricContainerMemoryTotalDirty) init() {
 	m.data.SetName("container.memory.total_dirty")
-	m.data.SetDescription("Bytes that are waiting to get written back to the disk, from this cgroup and descendants.")
+	m.data.SetDescription("Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2085,7 +2187,7 @@ type metricContainerMemoryTotalInactiveAnon struct {
 // init fills container.memory.total_inactive_anon metric with initial data.
 func (m *metricContainerMemoryTotalInactiveAnon) init() {
 	m.data.SetName("container.memory.total_inactive_anon")
-	m.data.SetDescription("The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.")
+	m.data.SetDescription("The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2136,7 +2238,7 @@ type metricContainerMemoryTotalInactiveFile struct {
 // init fills container.memory.total_inactive_file metric with initial data.
 func (m *metricContainerMemoryTotalInactiveFile) init() {
 	m.data.SetName("container.memory.total_inactive_file")
-	m.data.SetDescription("Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.")
+	m.data.SetDescription("Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2187,7 +2289,7 @@ type metricContainerMemoryTotalMappedFile struct {
 // init fills container.memory.total_mapped_file metric with initial data.
 func (m *metricContainerMemoryTotalMappedFile) init() {
 	m.data.SetName("container.memory.total_mapped_file")
-	m.data.SetDescription("Indicates the amount of memory mapped by the processes in the control group and descendant groups.")
+	m.data.SetDescription("Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2238,7 +2340,7 @@ type metricContainerMemoryTotalPgfault struct {
 // init fills container.memory.total_pgfault metric with initial data.
 func (m *metricContainerMemoryTotalPgfault) init() {
 	m.data.SetName("container.memory.total_pgfault")
-	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.")
+	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1).")
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2289,7 +2391,7 @@ type metricContainerMemoryTotalPgmajfault struct {
 // init fills container.memory.total_pgmajfault metric with initial data.
 func (m *metricContainerMemoryTotalPgmajfault) init() {
 	m.data.SetName("container.memory.total_pgmajfault")
-	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.")
+	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1).")
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2340,7 +2442,7 @@ type metricContainerMemoryTotalPgpgin struct {
 // init fills container.memory.total_pgpgin metric with initial data.
 func (m *metricContainerMemoryTotalPgpgin) init() {
 	m.data.SetName("container.memory.total_pgpgin")
-	m.data.SetDescription("Number of pages read from disk by the cgroup and descendant groups.")
+	m.data.SetDescription("Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2391,7 +2493,7 @@ type metricContainerMemoryTotalPgpgout struct {
 // init fills container.memory.total_pgpgout metric with initial data.
 func (m *metricContainerMemoryTotalPgpgout) init() {
 	m.data.SetName("container.memory.total_pgpgout")
-	m.data.SetDescription("Number of pages written to disk by the cgroup and descendant groups.")
+	m.data.SetDescription("Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1).")
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2442,7 +2544,7 @@ type metricContainerMemoryTotalRss struct {
 // init fills container.memory.total_rss metric with initial data.
 func (m *metricContainerMemoryTotalRss) init() {
 	m.data.SetName("container.memory.total_rss")
-	m.data.SetDescription("The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.")
+	m.data.SetDescription("The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2493,7 +2595,7 @@ type metricContainerMemoryTotalRssHuge struct {
 // init fills container.memory.total_rss_huge metric with initial data.
 func (m *metricContainerMemoryTotalRssHuge) init() {
 	m.data.SetName("container.memory.total_rss_huge")
-	m.data.SetDescription("Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.")
+	m.data.SetDescription("Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2544,7 +2646,7 @@ type metricContainerMemoryTotalUnevictable struct {
 // init fills container.memory.total_unevictable metric with initial data.
 func (m *metricContainerMemoryTotalUnevictable) init() {
 	m.data.SetName("container.memory.total_unevictable")
-	m.data.SetDescription("The amount of memory that cannot be reclaimed. Includes descendant cgroups.")
+	m.data.SetDescription("The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2595,7 +2697,7 @@ type metricContainerMemoryTotalWriteback struct {
 // init fills container.memory.total_writeback metric with initial data.
 func (m *metricContainerMemoryTotalWriteback) init() {
 	m.data.SetName("container.memory.total_writeback")
-	m.data.SetDescription("Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.")
+	m.data.SetDescription("Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2850,7 +2952,7 @@ type metricContainerMemoryWriteback struct {
 // init fills container.memory.writeback metric with initial data.
 func (m *metricContainerMemoryWriteback) init() {
 	m.data.SetName("container.memory.writeback")
-	m.data.SetDescription("Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.")
+	m.data.SetDescription("Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1).")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -3549,8 +3651,10 @@ type MetricsBuilder struct {
 	metricContainerCPUUtilization                    metricContainerCPUUtilization
 	metricContainerMemoryActiveAnon                  metricContainerMemoryActiveAnon
 	metricContainerMemoryActiveFile                  metricContainerMemoryActiveFile
+	metricContainerMemoryAnon                        metricContainerMemoryAnon
 	metricContainerMemoryCache                       metricContainerMemoryCache
 	metricContainerMemoryDirty                       metricContainerMemoryDirty
+	metricContainerMemoryFile                        metricContainerMemoryFile
 	metricContainerMemoryHierarchicalMemoryLimit     metricContainerMemoryHierarchicalMemoryLimit
 	metricContainerMemoryHierarchicalMemswLimit      metricContainerMemoryHierarchicalMemswLimit
 	metricContainerMemoryInactiveAnon                metricContainerMemoryInactiveAnon
@@ -3641,8 +3745,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerCPUUtilization:                    newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
 		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mbc.Metrics.ContainerMemoryActiveAnon),
 		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mbc.Metrics.ContainerMemoryActiveFile),
+		metricContainerMemoryAnon:                        newMetricContainerMemoryAnon(mbc.Metrics.ContainerMemoryAnon),
 		metricContainerMemoryCache:                       newMetricContainerMemoryCache(mbc.Metrics.ContainerMemoryCache),
 		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(mbc.Metrics.ContainerMemoryDirty),
+		metricContainerMemoryFile:                        newMetricContainerMemoryFile(mbc.Metrics.ContainerMemoryFile),
 		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(mbc.Metrics.ContainerMemoryHierarchicalMemoryLimit),
 		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(mbc.Metrics.ContainerMemoryHierarchicalMemswLimit),
 		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(mbc.Metrics.ContainerMemoryInactiveAnon),
@@ -3807,8 +3913,10 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerCPUUtilization.emit(ils.Metrics())
 	mb.metricContainerMemoryActiveAnon.emit(ils.Metrics())
 	mb.metricContainerMemoryActiveFile.emit(ils.Metrics())
+	mb.metricContainerMemoryAnon.emit(ils.Metrics())
 	mb.metricContainerMemoryCache.emit(ils.Metrics())
 	mb.metricContainerMemoryDirty.emit(ils.Metrics())
+	mb.metricContainerMemoryFile.emit(ils.Metrics())
 	mb.metricContainerMemoryHierarchicalMemoryLimit.emit(ils.Metrics())
 	mb.metricContainerMemoryHierarchicalMemswLimit.emit(ils.Metrics())
 	mb.metricContainerMemoryInactiveAnon.emit(ils.Metrics())
@@ -3983,6 +4091,11 @@ func (mb *MetricsBuilder) RecordContainerMemoryActiveFileDataPoint(ts pcommon.Ti
 	mb.metricContainerMemoryActiveFile.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordContainerMemoryAnonDataPoint adds a data point to container.memory.anon metric.
+func (mb *MetricsBuilder) RecordContainerMemoryAnonDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerMemoryAnon.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordContainerMemoryCacheDataPoint adds a data point to container.memory.cache metric.
 func (mb *MetricsBuilder) RecordContainerMemoryCacheDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerMemoryCache.recordDataPoint(mb.startTime, ts, val)
@@ -3991,6 +4104,11 @@ func (mb *MetricsBuilder) RecordContainerMemoryCacheDataPoint(ts pcommon.Timesta
 // RecordContainerMemoryDirtyDataPoint adds a data point to container.memory.dirty metric.
 func (mb *MetricsBuilder) RecordContainerMemoryDirtyDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerMemoryDirty.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerMemoryFileDataPoint adds a data point to container.memory.file metric.
+func (mb *MetricsBuilder) RecordContainerMemoryFileDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerMemoryFile.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerMemoryHierarchicalMemoryLimitDataPoint adds a data point to container.memory.hierarchical_memory_limit metric.

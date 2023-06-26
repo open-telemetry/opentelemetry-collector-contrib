@@ -19,6 +19,7 @@ import (
 const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
+	defaultBufSize            = 16 * 1024
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -148,6 +149,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			readerConfig: &readerConfig{
 				fingerprintSize: int(c.FingerprintSize),
 				maxLogSize:      int(c.MaxLogSize),
+				bufferSize:      defaultBufSize,
 				emit:            emit,
 			},
 			fromBeginning:   startAtBeginning,

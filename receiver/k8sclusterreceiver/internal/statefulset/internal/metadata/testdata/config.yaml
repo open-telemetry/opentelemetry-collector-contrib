@@ -1,0 +1,39 @@
+default:
+all_set:
+  metrics:
+    k8s.statefulset.current_pods:
+      enabled: true
+    k8s.statefulset.desired_pods:
+      enabled: true
+    k8s.statefulset.ready_pods:
+      enabled: true
+    k8s.statefulset.updated_pods:
+      enabled: true
+  resource_attributes:
+    k8s.namespace.name:
+      enabled: true
+    k8s.statefulset.name:
+      enabled: true
+    k8s.statefulset.uid:
+      enabled: true
+    opencensus.resourcetype:
+      enabled: true
+none_set:
+  metrics:
+    k8s.statefulset.current_pods:
+      enabled: false
+    k8s.statefulset.desired_pods:
+      enabled: false
+    k8s.statefulset.ready_pods:
+      enabled: false
+    k8s.statefulset.updated_pods:
+      enabled: false
+  resource_attributes:
+    k8s.namespace.name:
+      enabled: false
+    k8s.statefulset.name:
+      enabled: false
+    k8s.statefulset.uid:
+      enabled: false
+    opencensus.resourcetype:
+      enabled: false

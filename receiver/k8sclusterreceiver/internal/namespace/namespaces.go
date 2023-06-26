@@ -4,46 +4,21 @@
 package namespace // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
 
 import (
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace/internal/metadata"
 )
 
-func GetMetrics(ns *corev1.Namespace) []*agentmetricspb.ExportMetricsServiceRequest {
-	metrics := []*metricspb.Metric{
-		{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "k8s.namespace.phase",
-				Description: "The current phase of namespaces (1 for active and 0 for terminating)",
-				Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(namespacePhaseValues[ns.Status.Phase])),
-			},
-		},
-	}
-
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResource(ns),
-			Metrics:  metrics,
-		},
-	}
-}
-
-func getResource(ns *corev1.Namespace) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			constants.K8sKeyNamespaceUID:          string(ns.UID),
-			conventions.AttributeK8SNamespaceName: ns.Namespace,
-		},
-	}
+func GetMetrics(set receiver.CreateSettings, ns *corev1.Namespace) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	mb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
+	return mb.Emit(imetadata.WithK8sNamespaceUID(string(ns.UID)), imetadata.WithK8sNamespaceName(ns.Name), imetadata.WithOpencensusResourcetype("k8s"))
 }
 
 var namespacePhaseValues = map[corev1.NamespacePhase]int32{

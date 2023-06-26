@@ -4,7 +4,6 @@
 package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -26,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -38,6 +37,42 @@ var podPhaseMetric = &metricspb.MetricDescriptor{
 	Name:        "k8s.pod.phase",
 	Description: "Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+// Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new pod fields.
+func Transform(pod *corev1.Pod) *corev1.Pod {
+	newPod := &corev1.Pod{
+		ObjectMeta: metadata.TransformObjectMeta(pod.ObjectMeta),
+		Spec: corev1.PodSpec{
+			NodeName: pod.Spec.NodeName,
+		},
+		Status: corev1.PodStatus{
+			Phase: pod.Status.Phase,
+		},
+	}
+	for _, cs := range pod.Status.ContainerStatuses {
+		if cs.ContainerID == "" {
+			continue
+		}
+		newPod.Status.ContainerStatuses = append(newPod.Status.ContainerStatuses, corev1.ContainerStatus{
+			Name:         cs.Name,
+			Image:        cs.Image,
+			ContainerID:  cs.ContainerID,
+			RestartCount: cs.RestartCount,
+			Ready:        cs.Ready,
+		})
+	}
+	for _, c := range pod.Spec.Containers {
+		newPod.Spec.Containers = append(newPod.Spec.Containers, corev1.Container{
+			Name: c.Name,
+			Resources: corev1.ResourceRequirements{
+				Requests: c.Resources.Requests,
+				Limits:   c.Resources.Limits,
+			},
+		})
+	}
+	return newPod
 }
 
 func GetMetrics(pod *corev1.Pod, logger *zap.Logger) []*agentmetricspb.ExportMetricsServiceRequest {
@@ -55,10 +90,6 @@ func GetMetrics(pod *corev1.Pod, logger *zap.Logger) []*agentmetricspb.ExportMet
 	containerResByName := map[string]*agentmetricspb.ExportMetricsServiceRequest{}
 
 	for _, cs := range pod.Status.ContainerStatuses {
-		if cs.ContainerID == "" {
-			continue
-		}
-
 		contLabels := container.GetAllLabels(cs, podRes.Labels, logger)
 		containerResByName[cs.Name] = &agentmetricspb.ExportMetricsServiceRequest{Resource: container.GetResource(contLabels)}
 
@@ -152,7 +183,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	}
 
 	if mc.Services != nil {
-		meta = maps.MergeStringMaps(meta, getPodServiceTags(pod, mc.Services))
+		meta = maps.MergeStringMaps(meta, service.GetPodServiceTags(pod, mc.Services))
 	}
 
 	if mc.Jobs != nil {
@@ -236,21 +267,6 @@ func logError(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.L
 	)
 }
 
-// getPodServiceTags returns a set of services associated with the pod.
-func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string {
-	properties := map[string]string{}
-
-	for _, ser := range services.List() {
-		serObj := ser.(*corev1.Service)
-		if serObj.Namespace == pod.Namespace &&
-			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
-			properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
-		}
-	}
-
-	return properties
-}
-
 // getWorkloadProperties returns workload metadata for provided owner reference.
 func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]string {
 	uidKey := metadata.GetOTelUIDFromKind(strings.ToLower(ref.Kind))
@@ -265,11 +281,6 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 func getPodContainerProperties(pod *corev1.Pod) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
-		// Skip if container id returned is empty.
-		if cs.ContainerID == "" {
-			continue
-		}
-
 		md := container.GetMetadata(cs)
 		km[md.ResourceID] = md
 	}

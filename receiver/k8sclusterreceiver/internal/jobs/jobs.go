@@ -51,6 +51,23 @@ var podsSuccessfulMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
+// Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new job fields.
+func Transform(job *batchv1.Job) *batchv1.Job {
+	return &batchv1.Job{
+		ObjectMeta: metadata.TransformObjectMeta(job.ObjectMeta),
+		Spec: batchv1.JobSpec{
+			Completions: job.Spec.Completions,
+			Parallelism: job.Spec.Parallelism,
+		},
+		Status: batchv1.JobStatus{
+			Active:    job.Status.Active,
+			Succeeded: job.Status.Succeeded,
+			Failed:    job.Status.Failed,
+		},
+	}
+}
+
 func GetMetrics(j *batchv1.Job) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := make([]*metricspb.Metric, 0, 5)
 	metrics = append(metrics, []*metricspb.Metric{

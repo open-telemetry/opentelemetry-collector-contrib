@@ -237,7 +237,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 }
 
 func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle, pid int32) error {
-	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled && !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 		return nil
 	}
 
@@ -246,7 +246,14 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 		return err
 	}
 
-	s.recordCPUTimeMetric(now, times)
+	if s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
+		s.recordCPUTimeMetric(now, times)
+	}
+
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
+		return nil
+	}
+
 	if _, ok := s.ucals[pid]; !ok {
 		s.ucals[pid] = &ucal.CPUUtilizationCalculator{}
 	}

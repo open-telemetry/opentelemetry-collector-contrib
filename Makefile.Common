@@ -1,11 +1,11 @@
 # In order to ensure make instructions fail if there is command that fails a pipe (ie: `go test ... | tee -a ./test_results.txt`)
 # the value `-o pipefail` (or `set -o pipefail`) is added to each shell command that make runs
-# otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause 
+# otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause
 # test to pass in CI when they should not.
 SHELL = /bin/bash
 ifeq ($(shell uname -s),Windows)
 	.SHELLFLAGS = /o pipefile /c
-else 
+else
 	.SHELLFLAGS = -o pipefail -c
 endif
 
@@ -17,7 +17,8 @@ GO_BUILD_TAGS=""
 GOTEST_OPT?= -race -timeout 300s -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS) -run=Integration
+GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOTEST=$(GOCMD) test
 GOOS=$(shell $(GOCMD) env GOOS)
@@ -43,7 +44,7 @@ $(TOOLS_BIN_DIR):
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
-ADDLICENCESE        := $(TOOLS_BIN_DIR)/addlicense
+ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
 MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
 MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
 MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
@@ -108,10 +109,18 @@ do-unit-tests-with-cover:
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
+.PHONY: mod-integration-test
+mod-integration-test:
+	@echo "running $(GOCMD) integration test ./... in `pwd`"
+	$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
+	@if [ -e integration-coverage.txt ]; then \
+  		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
+  	fi
+
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover:
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
-	$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
+	$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE) ./...
 	@if [ -e integration-coverage.txt ]; then \
   		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
@@ -121,18 +130,18 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests --tags=$(GO_BUILD_TAGS) $(ALL_PKGS)
 
 .PHONY: addlicense
-addlicense: $(ADDLICENCESE)
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -s=only -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
+addlicense: $(ADDLICENSE)
+	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENSEOUT" ]; then \
+			echo "$(ADDLICENSE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENSEOUT\n"; \
 			exit 1; \
 		else \
 			echo "Add License finished successfully"; \
 		fi
 
 .PHONY: checklicense
-checklicense: $(ADDLICENCESE)
+checklicense: $(ADDLICENSE)
 	@licRes=$$(for f in $$(find . -type f \( -iname '*.go' -o -iname '*.sh' \) ! -path '**/third_party/*') ; do \
 	           awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 			   awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
@@ -155,7 +164,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --build-tags integration --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --path-prefix $(shell basename "$(CURDIR)")
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)

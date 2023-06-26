@@ -202,6 +202,8 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 		"total_unevictable":         r.mb.RecordContainerMemoryTotalUnevictableDataPoint,
 		"hierarchical_memory_limit": r.mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint,
 		"hierarchical_memsw_limit":  r.mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint,
+		"anon":                      r.mb.RecordContainerMemoryAnonDataPoint,
+		"file":                      r.mb.RecordContainerMemoryFileDataPoint,
 	}
 
 	for name, val := range memoryStats.Stats {

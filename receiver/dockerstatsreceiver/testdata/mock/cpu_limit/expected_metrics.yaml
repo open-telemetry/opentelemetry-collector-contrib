@@ -219,6 +219,24 @@ resourceMetrics:
                   startTimeUnixNano: "1683723781127718000"
                   timeUnixNano: "1683723781130612000"
             unit: By
+          - description: Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).
+            name: container.memory.anon
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "61440"
+                  startTimeUnixNano: "1686652517912798000"
+                  timeUnixNano: "1686652517916756000"
+            unit: By
+          - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
+            name: container.memory.file
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "233848832"
+                  startTimeUnixNano: "1686652517912798000"
+                  timeUnixNano: "1686652517916756000"
+            unit: By
           - description: The amount of anonymous memory that has been identified as inactive by the kernel.
             name: container.memory.inactive_anon
             sum:

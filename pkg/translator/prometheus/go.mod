@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.79.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.80.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0012.0.20230609201858-ed8547a8e5d6
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0012.0.20230609201858-ed8547a8e5d6
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013
 )
 
 require (
@@ -18,11 +18,11 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.10.0 // indirect
-	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
-	google.golang.org/grpc v1.55.0 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/grpc v1.56.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

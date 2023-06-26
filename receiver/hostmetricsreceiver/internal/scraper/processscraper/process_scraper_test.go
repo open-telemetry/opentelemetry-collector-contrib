@@ -1089,3 +1089,85 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+
+func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	testCases := []struct {
+		name                  string
+		processCPUTimes       bool
+		processCPUUtilization bool
+		expectedMetricCount   int
+		expectedMetricNames   []string
+	}{
+		{
+			name:                  "process.cpu.time enabled, process.cpu.utilization disabled",
+			processCPUTimes:       true,
+			processCPUUtilization: false,
+			expectedMetricCount:   1,
+			expectedMetricNames:   []string{"process.cpu.time"},
+		},
+		{
+			name:                  "process.cpu.time disabled, process.cpu.utilization enabled",
+			processCPUTimes:       false,
+			processCPUUtilization: true,
+			expectedMetricCount:   1,
+			expectedMetricNames:   []string{"process.cpu.utilization"},
+		},
+		{
+			name:                  "process.cpu.time enabled, process.cpu.utilization enabled",
+			processCPUTimes:       true,
+			processCPUUtilization: true,
+			expectedMetricCount:   2,
+			expectedMetricNames:   []string{"process.cpu.time", "process.cpu.utilization"},
+		},
+	}
+
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+
+			metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = testCase.processCPUTimes
+			metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled = testCase.processCPUUtilization
+
+			// disable some default metrics for easy assertion
+			metricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled = false
+			metricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled = false
+			metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+
+			config := &Config{MetricsBuilderConfig: metricsBuilderConfig}
+
+			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			handleMock := newDefaultHandleMock()
+			handleMock.On("Name").Return("test", nil)
+			handleMock.On("Exe").Return("test", nil)
+			handleMock.On("CreateTime").Return(time.Now().UnixMilli(), nil)
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
+
+			// scrape the first time
+			_, err = scraper.scrape(context.Background())
+			assert.Nil(t, err)
+
+			// scrape second time to get utilization
+			md, err := scraper.scrape(context.Background())
+			assert.Nil(t, err)
+
+			for k := 0; k < md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); k++ {
+				fmt.Println(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(k).Name())
+			}
+			assert.Equal(t, testCase.expectedMetricCount, md.MetricCount())
+			for metricIdx, expectedMetricName := range testCase.expectedMetricNames {
+				assert.Equal(t, expectedMetricName, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(metricIdx).Name())
+			}
+		})
+	}
+
+}
