@@ -1,3 +1,3 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
 
-go 1.20
+go 1.19
