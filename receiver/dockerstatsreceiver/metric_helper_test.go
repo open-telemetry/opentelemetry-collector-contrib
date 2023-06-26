@@ -4,6 +4,7 @@
 package dockerstatsreceiver
 
 import (
+	"errors"
 	"testing"
 
 	ctypes "github.com/docker/docker/api/types/container"
@@ -15,6 +16,7 @@ func Test_calculateCPULimit1(t *testing.T) {
 		name string
 		args *ctypes.HostConfig
 		want float64
+		err  error
 	}{
 		{
 			"Test CPULimit",
@@ -24,6 +26,7 @@ func Test_calculateCPULimit1(t *testing.T) {
 				},
 			},
 			2.5,
+			nil,
 		},
 		{
 			"Test CPUSetCpu",
@@ -33,6 +36,7 @@ func Test_calculateCPULimit1(t *testing.T) {
 				},
 			},
 			3,
+			nil,
 		},
 		{
 			"Test CPUQuota",
@@ -42,6 +46,7 @@ func Test_calculateCPULimit1(t *testing.T) {
 				},
 			},
 			0.5,
+			nil,
 		},
 		{
 			"Test CPUQuota Custom Period",
@@ -52,6 +57,17 @@ func Test_calculateCPULimit1(t *testing.T) {
 				},
 			},
 			1.5,
+			nil,
+		},
+		{
+			"Test CPUSetCpu Error",
+			&ctypes.HostConfig{
+				Resources: ctypes.Resources{
+					CpusetCpus: "0-a",
+				},
+			},
+			0,
+			errors.New("invalid cpusetCpus value"),
 		},
 		{
 			"Test Default",
@@ -63,6 +79,7 @@ func Test_calculateCPULimit1(t *testing.T) {
 				},
 			},
 			1.8,
+			nil,
 		},
 		{
 			"Test No Values",
@@ -70,11 +87,14 @@ func Test_calculateCPULimit1(t *testing.T) {
 				Resources: ctypes.Resources{},
 			},
 			0,
+			nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, calculateCPULimit(tt.args), "calculateCPULimit(%v)", tt.args)
+			want, err := calculateCPULimit(tt.args)
+			assert.Equalf(t, tt.want, want, "calculateCPULimit(%v)", tt.args)
+			assert.Equalf(t, tt.err, err, "calculateCPULimit(%v)", tt.args)
 		})
 	}
 }
@@ -83,18 +103,19 @@ func Test_parseCPUSet(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected float64
+		err      error
 	}{
-		{"0,2", 2},
-		{"0-2", 3},
-		{"0-2,4", 4},
-		{"0-2,4-5", 5},
-		{"", 1},
+		{"0,2", 2, nil},
+		{"0-2", 3, nil},
+		{"0-2,4", 4, nil},
+		{"0-2,4-5", 5, nil},
+		{"a-b", 0, errors.New("invalid cpusetCpus value")},
+		{"", 1, nil},
 	}
 
 	for _, test := range tests {
-		result := parseCPUSet(test.input)
-		if result != test.expected {
-			t.Errorf("Expected parseCPUSet(%s) to be %f, but got %f", test.input, test.expected, result)
-		}
+		result, err := parseCPUSet(test.input)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
 	}
 }

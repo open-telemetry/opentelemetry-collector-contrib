@@ -123,7 +123,9 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	r.recordHostConfigMetrics(now, container.ContainerJSON)
+	if err := r.recordHostConfigMetrics(now, container.ContainerJSON); err != nil {
+		errs = multierr.Append(errs, err)
+	}
 	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
 
 	// Always-present resource attrs + the user-configured resource attrs
@@ -288,7 +290,15 @@ func (r *receiver) recordBaseMetrics(now pcommon.Timestamp, base *types.Containe
 	return nil
 }
 
-func (r *receiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) {
-	r.mb.RecordContainerCPULimitDataPoint(now, calculateCPULimit(containerJSON.HostConfig))
+func (r *receiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) error {
 	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
+
+	cpuLimit, err := calculateCPULimit(containerJSON.HostConfig)
+	if err != nil {
+		return scrapererror.NewPartialScrapeError(fmt.Errorf("error retrieving container.cpu.limit: %w", err), 1)
+	}
+	if cpuLimit > 0 {
+		r.mb.RecordContainerCPULimitDataPoint(now, cpuLimit)
+	}
+	return nil
 }

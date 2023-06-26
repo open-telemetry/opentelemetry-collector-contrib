@@ -195,13 +195,6 @@ resourceMetrics:
                   timeUnixNano: "1661128790158163000"
               isMonotonic: true
             unit: '{operations}'
-          - description: CPU limit set for the container.
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  timeUnixNano: "1657771832637112000"
-            name: container.cpu.limit
-            unit: "{cpus}"
           - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
@@ -915,13 +908,6 @@ resourceMetrics:
                   timeUnixNano: "1661128790158163000"
               isMonotonic: true
             unit: '{operations}'
-          - description: CPU limit set for the container.
-            gauge:
-              dataPoints:
-                - asDouble: 0
-                  timeUnixNano: "1657771832637093000"
-            name: container.cpu.limit
-            unit: "{cpus}"
           - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:

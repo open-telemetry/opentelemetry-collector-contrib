@@ -213,6 +213,21 @@ func TestScrapeV2(t *testing.T) {
 			},
 		},
 		{
+			desc:                "scrapeV2_cpu_limit",
+			expectedMetricsFile: filepath.Join(mockFolder, "cpu_limit", "expected_metrics.yaml"),
+			mockDockerEngine: func(t *testing.T) *httptest.Server {
+				t.Helper()
+				containerID := "9b842c47c1c3e4ee931e2c9713cf4e77aa09acc2201aea60fba04b6dbba6c674"
+				mockServer, err := dockerMockServer(&map[string]string{
+					"/v1.25/containers/json":                      filepath.Join(mockFolder, "cpu_limit", "containers.json"),
+					"/v1.25/containers/" + containerID + "/json":  filepath.Join(mockFolder, "cpu_limit", "container.json"),
+					"/v1.25/containers/" + containerID + "/stats": filepath.Join(mockFolder, "cpu_limit", "stats.json"),
+				})
+				require.NoError(t, err)
+				return mockServer
+			},
+		},
+		{
 			desc:                "cgroups_v2_container",
 			expectedMetricsFile: filepath.Join(mockFolder, "cgroups_v2", "expected_metrics.yaml"),
 			mockDockerEngine: func(t *testing.T) *httptest.Server {
