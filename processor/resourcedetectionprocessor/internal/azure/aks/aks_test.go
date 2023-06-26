@@ -18,14 +18,16 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	d, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
 
 func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
-	detector := &Detector{provider: mockProvider()}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mockProvider(), resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -39,7 +41,8 @@ func TestDetector_Detect_K8s_NonAzure(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(nil, errors.New(""))
-	detector := &Detector{provider: mp}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mp, resourceAttributes: resourceAttributes}
 	res, _, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	attrs := res.Attributes()
@@ -48,7 +51,8 @@ func TestDetector_Detect_K8s_NonAzure(t *testing.T) {
 
 func TestDetector_Detect_NonK8s(t *testing.T) {
 	os.Clearenv()
-	detector := &Detector{provider: mockProvider()}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mockProvider(), resourceAttributes: resourceAttributes}
 	res, _, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	attrs := res.Attributes()

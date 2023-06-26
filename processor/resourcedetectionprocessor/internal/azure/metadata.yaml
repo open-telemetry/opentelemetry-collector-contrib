@@ -1,0 +1,43 @@
+type: resourcedetectionprocessor/azure
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.region:
+    description: The cloud.region
+    type: string
+    enabled: true
+  cloud.account.id:
+    description: The cloud.account.id
+    type: string
+    enabled: true
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: true
+  azure.resourcegroup.name:
+    description: The azure.resourcegroup.name
+    enabled: true
+    type: string
+  azure.vm.name:
+    description: The azure.vm.name
+    enabled: true
+    type: string
+  azure.vm.scaleset.name:
+    description: The azure.vm.scaleset.name
+    enabled: true
+    type: string
+  azure.vm.size:
+    description: The azure.vm.size
+    enabled: true
+    type: string

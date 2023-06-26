@@ -1,0 +1,39 @@
+type: resourcedetectionprocessor/lambda
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.region:
+    description: The cloud.region
+    type: string
+    enabled: true
+  aws.log.group.names:
+    description: The aws.log.group.names
+    type: string
+    enabled: true
+  aws.log.stream.names:
+    description: The aws.log.stream.names
+    type: string
+    enabled: true
+  faas.name:
+    description: faas.name
+    type: string
+    enabled: true
+  faas.version:
+    description: The faas.version
+    type: string
+    enabled: true
+  faas.instance:
+    description: The faas.instance
+    type: string
+    enabled: true
+  faas.max_memory:
+    description: The faas.max_memory
+    type: string
+    enabled: true
