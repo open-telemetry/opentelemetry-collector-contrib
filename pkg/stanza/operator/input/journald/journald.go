@@ -29,6 +29,7 @@ import (
 )
 
 const operatorType = "journald_input"
+const waitDuration = 1 * time.Second
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
@@ -196,6 +197,11 @@ type cmd interface {
 	Wait() error
 }
 
+type failedCommand struct {
+	err    string
+	output string
+}
+
 var lastReadCursorKey = "lastReadCursor"
 
 // Start will start generating log entries.
@@ -227,6 +233,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 	}
 
 	stderrChan := make(chan string)
+	failedChan := make(chan failedCommand)
 
 	// Start the wait goroutine
 	operator.wg.Add(1)
@@ -235,11 +242,22 @@ func (operator *Input) Start(persister operator.Persister) error {
 		err := journal.Wait()
 		message := <-stderrChan
 
+		f := failedCommand{
+			output: message,
+		}
+
 		if err != nil {
 			ee := (&exec.ExitError{})
-			if ok := errors.As(err, &ee); ok {
-				operator.Logger().Errorw("journalctl command failed", "error", ee.Error(), "output", message)
+			if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
+				f.err = ee.Error()
 			}
+		}
+
+		select {
+		case failedChan <- f:
+		// log an error in case channel is closed
+		case <-time.After(waitDuration):
+			operator.Logger().Errorw("journalctl command exited", "error", f.err, "output", f.output)
 		}
 	}()
 
@@ -292,7 +310,16 @@ func (operator *Input) Start(persister operator.Persister) error {
 		}
 	}()
 
-	return nil
+	// Wait waitDuration for eventual error
+	select {
+	case err := <-failedChan:
+		if err.err == "" {
+			return fmt.Errorf("journalctl command exited")
+		}
+		return fmt.Errorf("journalctl command failed (%v): %v", err.err, err.output)
+	case <-time.After(waitDuration):
+		return nil
+	}
 }
 
 func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
