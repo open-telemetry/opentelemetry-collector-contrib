@@ -56,6 +56,10 @@ func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 	}
 	m.sqlclient = sqlclient
 
+	if m.config.MetricsBuilderConfig.Metrics.MysqlLockedConnects.Enabled {
+		m.logger.Warn("`mysql.locked_connects` is deprecated and is going to be set as optional in `v0.81.0` and removed in `v0.82.0`. Please use `mysql.connection.errors` instead")
+	}
+
 	return nil
 }
 
@@ -122,7 +126,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 	for k, v := range globalStats {
 		switch k {
-
 		// bytes transmission
 		case "Bytes_received":
 			addPartialIfError(errs, m.mb.RecordMysqlClientNetworkIoDataPoint(now, v, metadata.AttributeDirectionReceived))
@@ -186,6 +189,17 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connection_errors_tcpwrap":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorTcpwrap))
+		case "Aborted_clients":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAbortedClients))
+		case "Aborted_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAborted))
+		case "Locked_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorLocked))
+
 		// connection
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
@@ -321,10 +335,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksImmediate))
 		case "Table_locks_waited":
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
-
-		// locked_connects
-		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
 
 		// joins
 		case "Select_full_join":

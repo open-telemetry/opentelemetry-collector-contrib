@@ -41,7 +41,7 @@ attributes:
     name_override: error
     description: The connection error type.
     type: string
-    enum: [accept, internal, max_connections, peer_address, select, tcpwrap]
+    enum: [accept, internal, max_connections, peer_address, select, tcpwrap, aborted, aborted_clients, locked]
   handler:
     name_override: kind
     description: The handler types.
@@ -445,7 +445,7 @@ metrics:
     attributes: [schema, table_name, write_lock_type]
   mysql.locked_connects:
     enabled: true
-    description: The number of attempts to connect to locked user accounts.
+    description: "[DEPRECATED] The number of attempts to connect to locked user accounts."
     unit: 1
     sum:
       value_type: int

@@ -16,7 +16,7 @@ metrics:
 
 Number of bytes transferred to/from the disk by the group and descendant groups.
 
-[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+More docs for [cgroups v1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt) and [cgroups v2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -62,6 +62,16 @@ Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all conta
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
 
+### container.memory.file
+
+Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### container.memory.percent
 
 Percentage of memory used.
@@ -72,7 +82,7 @@ Percentage of memory used.
 
 ### container.memory.total_cache
 
-Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.
+Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -162,7 +172,7 @@ metrics:
 
 ### container.blockio.io_merged_recursive
 
-Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.
+Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
@@ -180,7 +190,7 @@ Number of bios/requests merged into requests belonging to this cgroup and its de
 
 ### container.blockio.io_queued_recursive
 
-Number of requests queued up for this cgroup and its descendant cgroups.
+Number of requests queued up for this cgroup and its descendant cgroups (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
@@ -198,7 +208,7 @@ Number of requests queued up for this cgroup and its descendant cgroups.
 
 ### container.blockio.io_service_time_recursive
 
-Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.
+Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
@@ -216,7 +226,7 @@ Total amount of time in nanoseconds between request dispatch and request complet
 
 ### container.blockio.io_serviced_recursive
 
-Number of IOs (bio) issued to the disk by the group and descendant groups.
+Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
@@ -234,7 +244,7 @@ Number of IOs (bio) issued to the disk by the group and descendant groups.
 
 ### container.blockio.io_time_recursive
 
-Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.
+Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
@@ -252,7 +262,7 @@ Disk time allocated to cgroup (and descendant cgroups) per device in millisecond
 
 ### container.blockio.io_wait_time_recursive
 
-Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.
+Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
@@ -270,7 +280,7 @@ Total amount of time the IOs for this cgroup (and descendant cgroups) spent wait
 
 ### container.blockio.sectors_recursive
 
-Number of sectors transferred to/from disk by the group and descendant groups.
+Number of sectors transferred to/from disk by the group and descendant groups (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
@@ -312,7 +322,7 @@ Aggregate time the container was throttled.
 
 ### container.cpu.usage.percpu
 
-Per-core CPU usage by the container.
+Per-core CPU usage by the container (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -360,9 +370,19 @@ Cache memory that has been identified as active by the kernel.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
+### container.memory.anon
+
+Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### container.memory.cache
 
-The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.
+The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -370,7 +390,7 @@ The amount of memory used by the processes of this control group that can be ass
 
 ### container.memory.dirty
 
-Bytes that are waiting to get written back to the disk, from this cgroup.
+Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -378,7 +398,7 @@ Bytes that are waiting to get written back to the disk, from this cgroup.
 
 ### container.memory.hierarchical_memory_limit
 
-The maximum amount of physical memory that can be used by the processes of this control group.
+The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -386,7 +406,7 @@ The maximum amount of physical memory that can be used by the processes of this 
 
 ### container.memory.hierarchical_memsw_limit
 
-The maximum amount of RAM + swap that can be used by the processes of this control group.
+The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -412,7 +432,7 @@ Cache memory that has been identified as inactive by the kernel.
 
 ### container.memory.mapped_file
 
-Indicates the amount of memory mapped by the processes in the control group.
+Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -436,7 +456,7 @@ Indicate the number of times that a process of the cgroup triggered a major faul
 
 ### container.memory.pgpgin
 
-Number of pages read from disk by the cgroup.
+Number of pages read from disk by the cgroup (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt).
 
@@ -446,7 +466,7 @@ Number of pages read from disk by the cgroup.
 
 ### container.memory.pgpgout
 
-Number of pages written to disk by the cgroup.
+Number of pages written to disk by the cgroup (Only available with cgroups v1).
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt).
 
@@ -456,7 +476,7 @@ Number of pages written to disk by the cgroup.
 
 ### container.memory.rss
 
-The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.
+The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -464,7 +484,7 @@ The amount of memory that doesn’t correspond to anything on disk: stacks, heap
 
 ### container.memory.rss_huge
 
-Number of bytes of anonymous transparent hugepages in this cgroup.
+Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -472,7 +492,7 @@ Number of bytes of anonymous transparent hugepages in this cgroup.
 
 ### container.memory.total_active_anon
 
-The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.
+The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -480,7 +500,7 @@ The amount of anonymous memory that has been identified as active by the kernel.
 
 ### container.memory.total_active_file
 
-Cache memory that has been identified as active by the kernel. Includes descendant cgroups.
+Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).
 
 [More docs](https://docs.docker.com/config/containers/runmetrics/).
 
@@ -490,7 +510,7 @@ Cache memory that has been identified as active by the kernel. Includes descenda
 
 ### container.memory.total_dirty
 
-Bytes that are waiting to get written back to the disk, from this cgroup and descendants.
+Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -498,7 +518,7 @@ Bytes that are waiting to get written back to the disk, from this cgroup and des
 
 ### container.memory.total_inactive_anon
 
-The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -506,7 +526,7 @@ The amount of anonymous memory that has been identified as inactive by the kerne
 
 ### container.memory.total_inactive_file
 
-Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).
 
 [More docs](https://docs.docker.com/config/containers/runmetrics/).
 
@@ -516,7 +536,7 @@ Cache memory that has been identified as inactive by the kernel. Includes descen
 
 ### container.memory.total_mapped_file
 
-Indicates the amount of memory mapped by the processes in the control group and descendant groups.
+Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -524,7 +544,7 @@ Indicates the amount of memory mapped by the processes in the control group and 
 
 ### container.memory.total_pgfault
 
-Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.
+Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -532,7 +552,7 @@ Indicate the number of times that a process of the cgroup (or descendant cgroups
 
 ### container.memory.total_pgmajfault
 
-Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.
+Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -540,7 +560,7 @@ Indicate the number of times that a process of the cgroup (or descendant cgroups
 
 ### container.memory.total_pgpgin
 
-Number of pages read from disk by the cgroup and descendant groups.
+Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -548,7 +568,7 @@ Number of pages read from disk by the cgroup and descendant groups.
 
 ### container.memory.total_pgpgout
 
-Number of pages written to disk by the cgroup and descendant groups.
+Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -556,7 +576,7 @@ Number of pages written to disk by the cgroup and descendant groups.
 
 ### container.memory.total_rss
 
-The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.
+The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -564,7 +584,7 @@ The amount of memory that doesn’t correspond to anything on disk: stacks, heap
 
 ### container.memory.total_rss_huge
 
-Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.
+Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -572,7 +592,7 @@ Number of bytes of anonymous transparent hugepages in this cgroup and descendant
 
 ### container.memory.total_unevictable
 
-The amount of memory that cannot be reclaimed. Includes descendant cgroups.
+The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -580,7 +600,7 @@ The amount of memory that cannot be reclaimed. Includes descendant cgroups.
 
 ### container.memory.total_writeback
 
-Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.
+Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -604,7 +624,7 @@ Maximum memory usage.
 
 ### container.memory.writeback
 
-Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
+Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -685,6 +705,14 @@ It requires docker API 1.23 or higher and kernel version >= 4.3 with pids cgroup
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {pids} | Sum | Int | Cumulative | false |
+
+### container.uptime
+
+Time elapsed since container start time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
 
 ## Resource Attributes
 

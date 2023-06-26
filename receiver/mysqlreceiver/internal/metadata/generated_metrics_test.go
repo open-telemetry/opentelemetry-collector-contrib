@@ -513,7 +513,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["mysql.locked_connects"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of attempts to connect to locked user accounts.", ms.At(i).Description())
+					assert.Equal(t, "[DEPRECATED] The number of attempts to connect to locked user accounts.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

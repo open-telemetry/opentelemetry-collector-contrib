@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: "1.20"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -138,7 +138,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.9
+          go-version: ~1.19.10
           cache: false
       - name: Cache Go
         id: go-cache
@@ -292,10 +292,14 @@ jobs:
         with:
           name: coverage-artifacts
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: Wandalen/wretry.action@v1.0.36
         with:
-          fail_ci_if_error: true
-          verbose: true
+          action: codecov/codecov-action@v3
+          with: |
+            fail_ci_if_error: true
+            verbose: true
+          attempt_limit: 5
+          attempt_delay: 10000
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -315,7 +319,7 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
-        run: make integration-tests-with-cover
+        run: make integration-test
 
   correctness-traces:
     runs-on: ubuntu-latest

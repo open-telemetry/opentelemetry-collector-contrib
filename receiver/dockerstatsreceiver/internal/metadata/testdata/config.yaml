@@ -41,9 +41,13 @@ all_set:
       enabled: true
     container.memory.active_file:
       enabled: true
+    container.memory.anon:
+      enabled: true
     container.memory.cache:
       enabled: true
     container.memory.dirty:
+      enabled: true
+    container.memory.file:
       enabled: true
     container.memory.hierarchical_memory_limit:
       enabled: true
@@ -128,6 +132,8 @@ all_set:
     container.pids.count:
       enabled: true
     container.pids.limit:
+      enabled: true
+    container.uptime:
       enabled: true
   resource_attributes:
     container.hostname:
@@ -182,9 +188,13 @@ none_set:
       enabled: false
     container.memory.active_file:
       enabled: false
+    container.memory.anon:
+      enabled: false
     container.memory.cache:
       enabled: false
     container.memory.dirty:
+      enabled: false
+    container.memory.file:
       enabled: false
     container.memory.hierarchical_memory_limit:
       enabled: false
@@ -269,6 +279,8 @@ none_set:
     container.pids.count:
       enabled: false
     container.pids.limit:
+      enabled: false
+    container.uptime:
       enabled: false
   resource_attributes:
     container.hostname:
