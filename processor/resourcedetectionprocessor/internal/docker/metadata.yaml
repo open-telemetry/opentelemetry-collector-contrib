@@ -1,5 +1,7 @@
 type: resourcedetectionprocessor/docker
 
+parent: resourcedetection
+
 resource_attributes:
   host.name:
     description: The host.name
