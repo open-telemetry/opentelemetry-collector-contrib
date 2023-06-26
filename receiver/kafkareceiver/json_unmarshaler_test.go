@@ -21,11 +21,11 @@ func TestPlogReturnType(t *testing.T) {
 	um := newJSONLogsUnmarshaler()
 	json := `{"example": "example valid json to test that the unmarshaler is correctly returning a plog value"}`
 
-	unmarshaledJson, err := um.Unmarshal([]byte(json))
+	unmarshaledJSON, err := um.Unmarshal([]byte(json))
 
 	assert.NoError(t, err)
 	assert.Nil(t, err)
 
 	var expectedType plog.Logs
-	assert.IsType(t, expectedType, unmarshaledJson)
+	assert.IsType(t, expectedType, unmarshaledJSON)
 }
