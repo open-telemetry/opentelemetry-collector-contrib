@@ -1,0 +1,15 @@
+FROM 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:20.10.13
+
+# Install Helm 3
+RUN curl https://get.helm.sh/helm-v3.11.2-linux-amd64.tar.gz -o /tmp/helm-v3.11.2-linux-amd64.tar.gz
+RUN tar -xzvf /tmp/helm-v3.11.2-linux-amd64.tar.gz
+RUN mv linux-amd64/helm /usr/local/bin/helm
+
+# install kubectl
+RUN curl -LO "https://dl.k8s.io/v1.26.3/kubernetes-client-linux-arm64.tar.gz"
+RUN tar -xvzf kubernetes-client-linux-arm64.tar.gz
+RUN install -o root -g root -m 0755 kubernetes/client/bin/kubectl /usr/local/bin/kubectl
+
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+RUN unzip awscliv2.zip
+RUN ./aws/install
