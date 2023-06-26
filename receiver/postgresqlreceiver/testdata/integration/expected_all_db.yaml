@@ -267,9 +267,158 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687338621474126000"
-                  timeUnixNano: "1687338622486543000"
-            unit: '{table}'
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+        scope:
+          name: otelcol/postgresqlreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: otel
+        - key: postgresql.table.name
+          value:
+            stringValue: public.table2
+    scopeMetrics:
+      - metrics:
+          - description: The number of blocks read.
+            name: postgresql.blocks_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: idx_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: idx_hit
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of db row operations.
+            name: postgresql.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: ins
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: del
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: upd
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: hot_upd
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of rows in the database.
+            name: postgresql.rows
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: dead
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: live
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+            unit: "1"
+          - description: Disk space used by a table.
+            name: postgresql.table.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+            unit: By
+          - description: Number of times a table has manually been vacuumed.
+            name: postgresql.table.vacuum.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+              isMonotonic: true
+            unit: '{vacuums}'
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -313,9 +462,23 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1687338621474126000"
-                  timeUnixNano: "1687338622486543000"
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
                 - asInt: "0"
                   attributes:
                     - key: source
@@ -613,9 +776,23 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1687338621474126000"
-                  timeUnixNano: "1687338622486543000"
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
                 - asInt: "0"
                   attributes:
                     - key: source
@@ -763,9 +940,23 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1687338621474126000"
-                  timeUnixNano: "1687338622486543000"
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565933924183000"
+                  timeUnixNano: "1662565943934293000"
                 - asInt: "0"
                   attributes:
                     - key: source

@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
@@ -45,12 +44,12 @@ type MetricFilters struct {
 	// Include match properties describe metrics that should be included in the Collector Service pipeline,
 	// all other metrics should be dropped from further processing.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	Include *filtermetric.MatchProperties `mapstructure:"include"`
+	Include *filterconfig.MetricMatchProperties `mapstructure:"include"`
 
 	// Exclude match properties describe metrics that should be excluded from the Collector Service pipeline,
 	// all other metrics should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	Exclude *filtermetric.MatchProperties `mapstructure:"exclude"`
+	Exclude *filterconfig.MetricMatchProperties `mapstructure:"exclude"`
 
 	// RegexpConfig specifies options for the Regexp match type
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`

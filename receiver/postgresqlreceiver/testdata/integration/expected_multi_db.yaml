@@ -132,9 +132,62 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6"
-                  startTimeUnixNano: "1687338611400357000"
-                  timeUnixNano: "1687338612400834000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: heap_hit
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: idx_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: idx_hit
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_hit
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
               isMonotonic: true
             unit: "1"
           - description: The database disk usage.
@@ -256,9 +309,23 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1687338611400357000"
-                  timeUnixNano: "1687338612400834000"
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
                 - asInt: "0"
                   attributes:
                     - key: source
@@ -556,9 +623,23 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1687338611400357000"
-                  timeUnixNano: "1687338612400834000"
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
                 - asInt: "0"
                   attributes:
                     - key: source
@@ -706,9 +787,23 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: idx_read
-                  startTimeUnixNano: "1687338611400357000"
-                  timeUnixNano: "1687338612400834000"
+                        stringValue: toast_hit
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: toast_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
+                - asInt: "0"
+                  attributes:
+                    - key: source
+                      value:
+                        stringValue: tidx_read
+                  startTimeUnixNano: "1662565922919465000"
+                  timeUnixNano: "1662565932919535000"
                 - asInt: "0"
                   attributes:
                     - key: source
