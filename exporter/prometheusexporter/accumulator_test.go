@@ -57,8 +57,9 @@ func TestAccumulateHistogram(t *testing.T) {
 	resourceMetrics1 := pmetric.NewResourceMetrics()
 	ilm1 := resourceMetrics1.ScopeMetrics().AppendEmpty()
 	ilm1.Scope().SetName("test")
-	appendHistogram(startTs2, ts3, 5, 2.5, []uint64{1, 3, 1, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics())
-	appendHistogram(startTs2, ts2, 4, 8.3, []uint64{1, 1, 2, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics())
+	// counts is one more than explicit bounds to account for the one implicit count/bucket for <=inf
+	appendHistogram(startTs2, ts3, 5, 2.5, []uint64{1, 3, 1, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics())
+	appendHistogram(startTs2, ts2, 4, 8.3, []uint64{1, 1, 2, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm1.Metrics())
 
 	m3 := ilm1.Metrics().At(0).Histogram().DataPoints().At(0)
 	m2 := ilm1.Metrics().At(1).Histogram().DataPoints().At(0)
@@ -68,13 +69,13 @@ func TestAccumulateHistogram(t *testing.T) {
 	resourceMetrics2 := pmetric.NewResourceMetrics()
 	ilm2 := resourceMetrics2.ScopeMetrics().AppendEmpty()
 	ilm2.Scope().SetName("test")
-	appendHistogram(startTs2, ts1, 7, 5, []uint64{3, 1, 1, 0}, []float64{0.1, 0.2, 1, 10}, ilm2.Metrics())
+	appendHistogram(startTs2, ts1, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10}, ilm2.Metrics())
 
 	// add extra buckets
 	resourceMetrics3 := pmetric.NewResourceMetrics()
 	ilm3 := resourceMetrics3.ScopeMetrics().AppendEmpty()
 	ilm3.Scope().SetName("test")
-	appendHistogram(startTs2, ts4, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10, 15}, ilm3.Metrics())
+	appendHistogram(startTs2, ts4, 7, 5, []uint64{3, 1, 1, 0, 0, 0}, []float64{0.1, 0.2, 1, 10, 15}, ilm3.Metrics())
 
 	m4 := ilm3.Metrics().At(0).Histogram().DataPoints().At(0)
 
@@ -82,14 +83,14 @@ func TestAccumulateHistogram(t *testing.T) {
 	resourceMetrics4 := pmetric.NewResourceMetrics()
 	ilm4 := resourceMetrics4.ScopeMetrics().AppendEmpty()
 	ilm4.Scope().SetName("test")
-	appendHistogram(startTs1, ts5, 4, 8.3, []uint64{1, 1, 2, 0}, []float64{0.1, 0.5, 1, 10}, ilm4.Metrics())
-	appendHistogram(ts3, ts5, 4, 8.3, []uint64{1, 1, 2, 0}, []float64{0.1, 0.5, 1, 10}, ilm4.Metrics())
+	appendHistogram(startTs1, ts5, 4, 8.3, []uint64{1, 1, 2, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm4.Metrics())
+	appendHistogram(ts3, ts5, 4, 8.3, []uint64{1, 1, 2, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm4.Metrics())
 
 	// misaligned start timestamp, treat as restart
 	resourceMetrics5 := pmetric.NewResourceMetrics()
 	ilm5 := resourceMetrics5.ScopeMetrics().AppendEmpty()
 	ilm5.Scope().SetName("test")
-	appendHistogram(startTs3, ts5, 4, 8.3, []uint64{1, 1, 2, 0}, []float64{0.1, 0.5, 1, 10}, ilm5.Metrics())
+	appendHistogram(startTs3, ts5, 4, 8.3, []uint64{1, 1, 2, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm5.Metrics())
 	m5 := ilm5.Metrics().At(0).Histogram().DataPoints().At(0)
 
 	t.Run("Accumulate", func(t *testing.T) {
