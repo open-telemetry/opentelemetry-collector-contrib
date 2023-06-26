@@ -1,0 +1,23 @@
+type: resourcedetectionprocessor/elastic_beanstalk
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  deployment.environment:
+    description: The deployment.environment
+    type: string
+    enabled: true
+  service.instance.id:
+    description: The service.instance.id
+    type: string
+    enabled: true
+  service.version:
+    description: The service.version
+    type: string
+    enabled: true
