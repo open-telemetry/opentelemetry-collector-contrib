@@ -53,7 +53,7 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: toast_hit
+                        stringValue: toast_read
                   startTimeUnixNano: "1662565922919465000"
                   timeUnixNano: "1662565932919535000"
                 - asInt: "0"
@@ -203,7 +203,7 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: toast_hit
+                        stringValue: toast_read
                   startTimeUnixNano: "1662565922919465000"
                   timeUnixNano: "1662565932919535000"
                 - asInt: "0"
@@ -468,7 +468,7 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: toast_hit
+                        stringValue: toast_read
                   startTimeUnixNano: "1662565922919465000"
                   timeUnixNano: "1662565932919535000"
                 - asInt: "0"
@@ -618,7 +618,7 @@ resourceMetrics:
                   attributes:
                     - key: source
                       value:
-                        stringValue: toast_hit
+                        stringValue: toast_read
                   startTimeUnixNano: "1662565922919465000"
                   timeUnixNano: "1662565932919535000"
                 - asInt: "0"

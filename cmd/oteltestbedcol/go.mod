@@ -68,7 +68,7 @@ require (
 	github.com/antonmedv/expr v1.12.5 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.286 // indirect
+	github.com/aws/aws-sdk-go v1.44.287 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect

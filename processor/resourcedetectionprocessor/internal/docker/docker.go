@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker/internal/metadata"
 )
 
 const (
@@ -25,8 +26,9 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider docker.Provider
-	logger   *zap.Logger
+	provider           docker.Provider
+	logger             *zap.Logger
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 // NewDetector creates a new system metadata detector
@@ -54,8 +56,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
-	attrs.PutStr(conventions.AttributeHostName, hostname)
-	attrs.PutStr(conventions.AttributeOSType, osType)
+	if d.resourceAttributes.HostName.Enabled {
+		attrs.PutStr(conventions.AttributeHostName, hostname)
+	}
+	if d.resourceAttributes.OsType.Enabled {
+		attrs.PutStr(conventions.AttributeOSType, osType)
+	}
 
 	return res, conventions.SchemaURL, nil
 }

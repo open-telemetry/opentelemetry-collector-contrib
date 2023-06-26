@@ -5,7 +5,8 @@ go 1.19
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.15.0
-	github.com/aws/aws-sdk-go v1.44.286
+	github.com/aws/aws-sdk-go v1.44.287
+	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/consul/api v1.21.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.80.0
@@ -50,7 +51,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect

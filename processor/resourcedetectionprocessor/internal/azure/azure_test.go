@@ -19,7 +19,8 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	d, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -36,7 +37,8 @@ func TestDetectAzureAvailable(t *testing.T) {
 		VMScaleSetName:    "myScaleset",
 	}, nil)
 
-	detector := &Detector{provider: mp}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mp, resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -61,8 +63,8 @@ func TestDetectAzureAvailable(t *testing.T) {
 func TestDetectError(t *testing.T) {
 	mp := &azure.MockProvider{}
 	mp.On("Metadata").Return(&azure.ComputeMetadata{}, fmt.Errorf("mock error"))
-
-	detector := &Detector{provider: mp, logger: zap.NewNop()}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mp, logger: zap.NewNop(), resourceAttributes: resourceAttributes}
 	res, _, err := detector.Detect(context.Background())
 	assert.NoError(t, err)
 	assert.True(t, internal.IsEmptyResource(res))

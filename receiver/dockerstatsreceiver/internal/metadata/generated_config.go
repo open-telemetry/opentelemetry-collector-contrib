@@ -45,8 +45,10 @@ type MetricsConfig struct {
 	ContainerCPUUtilization                    MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerMemoryActiveAnon                  MetricConfig `mapstructure:"container.memory.active_anon"`
 	ContainerMemoryActiveFile                  MetricConfig `mapstructure:"container.memory.active_file"`
+	ContainerMemoryAnon                        MetricConfig `mapstructure:"container.memory.anon"`
 	ContainerMemoryCache                       MetricConfig `mapstructure:"container.memory.cache"`
 	ContainerMemoryDirty                       MetricConfig `mapstructure:"container.memory.dirty"`
+	ContainerMemoryFile                        MetricConfig `mapstructure:"container.memory.file"`
 	ContainerMemoryHierarchicalMemoryLimit     MetricConfig `mapstructure:"container.memory.hierarchical_memory_limit"`
 	ContainerMemoryHierarchicalMemswLimit      MetricConfig `mapstructure:"container.memory.hierarchical_memsw_limit"`
 	ContainerMemoryInactiveAnon                MetricConfig `mapstructure:"container.memory.inactive_anon"`
@@ -154,11 +156,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryActiveFile: MetricConfig{
 			Enabled: false,
 		},
+		ContainerMemoryAnon: MetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryCache: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryDirty: MetricConfig{
 			Enabled: false,
+		},
+		ContainerMemoryFile: MetricConfig{
+			Enabled: true,
 		},
 		ContainerMemoryHierarchicalMemoryLimit: MetricConfig{
 			Enabled: false,

@@ -123,18 +123,17 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
-		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
 		case "kafka.topic.partitions":
-			assert.Equal(t, dp.IntValue(), int64(len(testPartitions)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testPartitions)))
 		case "kafka.partition.current_offset":
-			assert.Equal(t, dp.IntValue(), testOffset)
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
 		case "kafka.partition.oldest_offset":
-			assert.Equal(t, dp.IntValue(), testOffset)
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
 		case "kafka.partition.replicas":
-			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
 		case "kafka.partition.replicas_in_sync":
-			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
 		}
 	}
 }
