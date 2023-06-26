@@ -193,6 +193,18 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 				`4091 ` + string(helper.GeneratedByteSliceOfLength(4091)),
 			},
 		},
+		{
+			Name: "over capacity",
+			Raw: func() []byte {
+				newRaw := helper.GeneratedByteSliceOfLength(4092)
+				newRaw = append([]byte(`5000 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokenized: []string{
+				`5000 ` + string(helper.GeneratedByteSliceOfLength(4091)),
+				`j`,
+			},
+		},
 	}
 	for _, tc := range testCases {
 		splitFunc, err := OctetMultiLineBuilder()

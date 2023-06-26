@@ -171,8 +171,9 @@ func newOctetFrameSplitFunc(flushAtEOF bool) bufio.SplitFunc {
 		advance = frameMaxIndex + frameLenValue
 		// the limitation here is that we can only line split within a single buffer
 		// the context of buffer length cannot be pass onto the next scan
-		if advance > cap(data) {
-			return 0, nil, errors.New("frame size is larger than buffer capacity")
+		capacity := cap(data)
+		if advance > capacity {
+			return capacity, data, nil
 		}
 		token = data[:advance]
 		err = nil
