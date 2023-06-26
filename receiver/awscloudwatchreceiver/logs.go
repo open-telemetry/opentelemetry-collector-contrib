@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	NoStreamName = "THIS IS INVALID STREAM"
+	noStreamName = "THIS IS INVALID STREAM"
 )
 
 type logsReceiver struct {
@@ -263,7 +263,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 				resourceMap[logGroupName][*e.LogStreamName] = rl
 				resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
 			} else {
-				resourceMap[logGroupName][NoStreamName] = rl
+				resourceMap[logGroupName][noStreamName] = rl
 			}
 
 			logRecord = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -283,7 +283,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 func (*logsReceiver) getResourceLogs(m map[string](map[string]plog.ResourceLogs), group string, logStream *string) *plog.ResourceLogs {
 	if streamMap := m[group]; streamMap != nil {
 		if logStream == nil {
-			if resource, ok := streamMap[NoStreamName]; ok {
+			if resource, ok := streamMap[noStreamName]; ok {
 				return &resource
 			}
 		} else if resource, ok := streamMap[*logStream]; ok {
