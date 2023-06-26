@@ -83,5 +83,8 @@ metrics:
       # Required for sum metric: whether reported values incorporate previous measurements
       # (cumulative) or not (delta).
       aggregation: <delta|cumulative>
+       # Optional: Indicates the type the metric needs to be parsed from. If set, the generated
+       # functions will parse the value from string to value_type.
+      input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
