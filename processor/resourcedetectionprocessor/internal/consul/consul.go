@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
 )
 
 const (
@@ -26,8 +27,9 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider consul.Provider
-	logger   *zap.Logger
+	provider           consul.Provider
+	logger             *zap.Logger
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 // NewDetector creates a new system metadata detector
@@ -57,7 +59,7 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 	}
 
 	provider := consul.NewProvider(client, userCfg.MetaLabels)
-	return &Detector{provider: provider, logger: p.Logger}, nil
+	return &Detector{provider: provider, logger: p.Logger, resourceAttributes: userCfg.ResourceAttributes}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
@@ -74,9 +76,15 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		attrs.PutStr(key, element)
 	}
 
-	attrs.PutStr(conventions.AttributeHostName, metadata.Hostname)
-	attrs.PutStr(conventions.AttributeCloudRegion, metadata.Datacenter)
-	attrs.PutStr(conventions.AttributeHostID, metadata.NodeID)
+	if d.resourceAttributes.HostName.Enabled {
+		attrs.PutStr(conventions.AttributeHostName, metadata.Hostname)
+	}
+	if d.resourceAttributes.CloudRegion.Enabled {
+		attrs.PutStr(conventions.AttributeCloudRegion, metadata.Datacenter)
+	}
+	if d.resourceAttributes.HostID.Enabled {
+		attrs.PutStr(conventions.AttributeHostID, metadata.NodeID)
+	}
 
 	return res, conventions.SchemaURL, nil
 }
