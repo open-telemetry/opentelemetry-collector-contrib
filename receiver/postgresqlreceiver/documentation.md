@@ -82,7 +82,7 @@ Number of times the background writer stopped a cleaning scan because it had wri
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {stoppages} | Sum | Int | Cumulative | true |
+| 1 | Sum | Int | Cumulative | true |
 
 ### postgresql.blocks_read
 

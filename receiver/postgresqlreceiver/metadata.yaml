@@ -126,7 +126,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
-    unit: "{stoppages}"
+    unit: 1
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
