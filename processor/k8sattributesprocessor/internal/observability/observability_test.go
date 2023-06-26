@@ -61,31 +61,31 @@ func TestMetrics(t *testing.T) {
 	}
 	tests := []testCase{
 		{
-			"processor.k8sattributes.pods.added",
+			"otelsvc/k8s/pod_added",
 			RecordPodAdded,
 		},
 		{
-			"processor.k8sattributes.pods.deleted",
+			"otelsvc/k8s/pod_deleted",
 			RecordPodDeleted,
 		},
 		{
-			"processor.k8sattributes.pods.updated",
+			"otelsvc/k8s/pod_updated",
 			RecordPodUpdated,
 		},
 		{
-			"processor.k8sattributes.ip_lookup_misses",
+			"otelsvc/k8s/ip_lookup_miss",
 			RecordIPLookupMiss,
 		},
 		{
-			"processor.k8sattributes.namespaces.added",
+			"otelsvc/k8s/namespace_added",
 			RecordNamespaceAdded,
 		},
 		{
-			"processor.k8sattributes.namespaces.updated",
+			"otelsvc/k8s/namespace_updated",
 			RecordNamespaceUpdated,
 		},
 		{
-			"processor.k8sattributes.namespaces.deleted",
+			"otelsvc/k8s/namespace_deleted",
 			RecordNamespaceDeleted,
 		},
 	}

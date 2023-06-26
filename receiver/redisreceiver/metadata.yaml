@@ -112,14 +112,14 @@ metrics:
   redis.clients.max_input_buffer:
     enabled: true
     description: Biggest input buffer among current client connections
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 
   redis.clients.max_output_buffer:
     enabled: true
     description: Longest output list among current client connections
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 
@@ -284,14 +284,14 @@ metrics:
   redis.replication.backlog_first_byte_offset:
     enabled: true
     description: The master offset of the replication backlog buffer
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 
   redis.replication.offset:
     enabled: true
     description: The server's current replication offset
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 

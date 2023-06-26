@@ -8,7 +8,6 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
@@ -17,16 +16,10 @@ import (
 )
 
 // Transform transforms the replica set to remove the fields that we don't use to reduce RAM utilization.
-// IMPORTANT: Make sure to update this function when using new replicaset fields.
+// IMPORTANT: Make sure to update this function before using new replicaset fields.
 func Transform(rs *appsv1.ReplicaSet) *appsv1.ReplicaSet {
-	newRS := &appsv1.ReplicaSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              rs.ObjectMeta.Name,
-			Namespace:         rs.ObjectMeta.Namespace,
-			UID:               rs.ObjectMeta.UID,
-			CreationTimestamp: rs.ObjectMeta.CreationTimestamp,
-			Labels:            rs.ObjectMeta.Labels,
-		},
+	return &appsv1.ReplicaSet{
+		ObjectMeta: metadata.TransformObjectMeta(rs.ObjectMeta),
 		Spec: appsv1.ReplicaSetSpec{
 			Replicas: rs.Spec.Replicas,
 		},
@@ -34,14 +27,6 @@ func Transform(rs *appsv1.ReplicaSet) *appsv1.ReplicaSet {
 			AvailableReplicas: rs.Status.AvailableReplicas,
 		},
 	}
-	for _, or := range rs.ObjectMeta.OwnerReferences {
-		newRS.ObjectMeta.OwnerReferences = append(newRS.ObjectMeta.OwnerReferences, metav1.OwnerReference{
-			Name: or.Name,
-			UID:  or.UID,
-			Kind: or.Kind,
-		})
-	}
-	return newRS
 }
 
 func GetMetrics(rs *appsv1.ReplicaSet) []*agentmetricspb.ExportMetricsServiceRequest {

@@ -4,7 +4,6 @@
 package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -26,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -41,15 +40,10 @@ var podPhaseMetric = &metricspb.MetricDescriptor{
 }
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
-// IMPORTANT: Make sure to update this function when using a new pod fields.
+// IMPORTANT: Make sure to update this function before using new pod fields.
 func Transform(pod *corev1.Pod) *corev1.Pod {
 	newPod := &corev1.Pod{
-		ObjectMeta: v1.ObjectMeta{
-			UID:       pod.ObjectMeta.UID,
-			Name:      pod.ObjectMeta.Name,
-			Namespace: pod.ObjectMeta.Namespace,
-			Labels:    pod.ObjectMeta.Labels,
-		},
+		ObjectMeta: metadata.TransformObjectMeta(pod.ObjectMeta),
 		Spec: corev1.PodSpec{
 			NodeName: pod.Spec.NodeName,
 		},
@@ -189,7 +183,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	}
 
 	if mc.Services != nil {
-		meta = maps.MergeStringMaps(meta, getPodServiceTags(pod, mc.Services))
+		meta = maps.MergeStringMaps(meta, service.GetPodServiceTags(pod, mc.Services))
 	}
 
 	if mc.Jobs != nil {
@@ -271,21 +265,6 @@ func logError(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.L
 		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
 		zap.Error(err),
 	)
-}
-
-// getPodServiceTags returns a set of services associated with the pod.
-func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string {
-	properties := map[string]string{}
-
-	for _, ser := range services.List() {
-		serObj := ser.(*corev1.Service)
-		if serObj.Namespace == pod.Namespace &&
-			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
-			properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
-		}
-	}
-
-	return properties
 }
 
 // getWorkloadProperties returns workload metadata for provided owner reference.

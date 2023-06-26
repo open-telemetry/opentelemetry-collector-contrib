@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku/internal/metadata"
 )
 
 const (
@@ -28,14 +29,17 @@ const (
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
-func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
 	return &detector{
-		logger: set.Logger,
+		logger:             set.Logger,
+		resourceAttributes: cfg.ResourceAttributes,
 	}, nil
 }
 
 type detector struct {
-	logger *zap.Logger
+	logger             *zap.Logger
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 // Detect detects heroku metadata and returns a resource with the available ones
@@ -48,23 +52,36 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	}
 
 	attrs := res.Attributes()
-	attrs.PutStr(conventions.AttributeCloudProvider, "heroku")
-
-	attrs.PutStr(conventions.AttributeServiceInstanceID, dynoID)
-	if v, ok := os.LookupEnv("HEROKU_APP_ID"); ok {
-		attrs.PutStr(herokuAppID, v)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		attrs.PutStr(conventions.AttributeCloudProvider, "heroku")
 	}
-	if v, ok := os.LookupEnv("HEROKU_APP_NAME"); ok {
-		attrs.PutStr(conventions.AttributeServiceName, v)
+	if d.resourceAttributes.ServiceInstanceID.Enabled {
+		attrs.PutStr(conventions.AttributeServiceInstanceID, dynoID)
 	}
-	if v, ok := os.LookupEnv("HEROKU_RELEASE_CREATED_AT"); ok {
-		attrs.PutStr(herokuReleaseCreationTimestamp, v)
+	if d.resourceAttributes.HerokuAppID.Enabled {
+		if v, ok := os.LookupEnv("HEROKU_APP_ID"); ok {
+			attrs.PutStr(herokuAppID, v)
+		}
 	}
-	if v, ok := os.LookupEnv("HEROKU_RELEASE_VERSION"); ok {
-		attrs.PutStr(conventions.AttributeServiceVersion, v)
+	if d.resourceAttributes.HerokuAppName.Enabled {
+		if v, ok := os.LookupEnv("HEROKU_APP_NAME"); ok {
+			attrs.PutStr(conventions.AttributeServiceName, v)
+		}
 	}
-	if v, ok := os.LookupEnv("HEROKU_SLUG_COMMIT"); ok {
-		attrs.PutStr(herokuReleaseCommit, v)
+	if d.resourceAttributes.HerokuReleaseCreationTimestamp.Enabled {
+		if v, ok := os.LookupEnv("HEROKU_RELEASE_CREATED_AT"); ok {
+			attrs.PutStr(herokuReleaseCreationTimestamp, v)
+		}
+	}
+	if d.resourceAttributes.HerokuReleaseVersion.Enabled {
+		if v, ok := os.LookupEnv("HEROKU_RELEASE_VERSION"); ok {
+			attrs.PutStr(conventions.AttributeServiceVersion, v)
+		}
+	}
+	if d.resourceAttributes.HerokuReleaseCommit.Enabled {
+		if v, ok := os.LookupEnv("HEROKU_SLUG_COMMIT"); ok {
+			attrs.PutStr(herokuReleaseCommit, v)
+		}
 	}
 
 	return res, conventions.SchemaURL, nil

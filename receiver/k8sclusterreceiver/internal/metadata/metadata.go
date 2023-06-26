@@ -26,6 +26,24 @@ type KubernetesMetadata struct {
 	Metadata map[string]string
 }
 
+func TransformObjectMeta(om v1.ObjectMeta) v1.ObjectMeta {
+	newOM := v1.ObjectMeta{
+		Name:              om.Name,
+		Namespace:         om.Namespace,
+		UID:               om.UID,
+		CreationTimestamp: om.CreationTimestamp,
+		Labels:            om.Labels,
+	}
+	for _, or := range om.OwnerReferences {
+		newOM.OwnerReferences = append(newOM.OwnerReferences, v1.OwnerReference{
+			Kind: or.Kind,
+			Name: or.Name,
+			UID:  or.UID,
+		})
+	}
+	return newOM
+}
+
 // GetGenericMetadata is responsible for collecting metadata from K8s resources that
 // live on v1.ObjectMeta.
 func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetadata {

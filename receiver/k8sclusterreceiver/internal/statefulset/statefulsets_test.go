@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -94,4 +95,77 @@ func newStatefulset(id string) *appsv1.StatefulSet {
 			UpdateRevision:  "update_revision",
 		},
 	}
+}
+
+func TestTransform(t *testing.T) {
+	orig := &appsv1.StatefulSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "my-statefulset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: func() *int32 { i := int32(3); return &i }(),
+			Selector: &v1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "my-app",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: v1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "my-app",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            "my-container",
+							Image:           "nginx:latest",
+							ImagePullPolicy: corev1.PullAlways,
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									ContainerPort: 80,
+									Protocol:      corev1.ProtocolTCP,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Status: appsv1.StatefulSetStatus{
+			Replicas:        3,
+			ReadyReplicas:   3,
+			CurrentReplicas: 3,
+			UpdatedReplicas: 3,
+			Conditions: []appsv1.StatefulSetCondition{
+				{
+					Type:   "Ready",
+					Status: corev1.ConditionTrue,
+				},
+			},
+		},
+	}
+	want := &appsv1.StatefulSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "my-statefulset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: func() *int32 { i := int32(3); return &i }(),
+		},
+		Status: appsv1.StatefulSetStatus{
+			ReadyReplicas:   3,
+			CurrentReplicas: 3,
+			UpdatedReplicas: 3,
+		},
+	}
+	assert.Equal(t, want, Transform(orig))
 }

@@ -36,7 +36,7 @@ jobs:
         run: |
           docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: otelcontribcol
           path: /tmp/otelcontribcol.tar
@@ -72,7 +72,7 @@ jobs:
           kubectl_version: ${{ matrix.k8s-version }}
           cluster_name: kind
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: otelcontribcol
           path: /tmp
