@@ -6,9 +6,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.80.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.80.0
-	go.opentelemetry.io/collector/confmap v0.80.0
-	go.opentelemetry.io/collector/extension v0.80.0
+	go.opentelemetry.io/collector/component v0.80.1-0.20230626185050-414dd45cf83a
+	go.opentelemetry.io/collector/confmap v0.80.1-0.20230626185050-414dd45cf83a
+	go.opentelemetry.io/collector/extension v0.80.1-0.20230626185050-414dd45cf83a
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.27.3
 	k8s.io/apimachinery v0.27.3
@@ -34,7 +34,7 @@ require (
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -43,9 +43,9 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.80.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.80.1-0.20230626185050-414dd45cf83a // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013.0.20230626185050-414dd45cf83a // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013.0.20230626185050-414dd45cf83a // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect

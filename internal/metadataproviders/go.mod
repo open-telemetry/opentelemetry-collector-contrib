@@ -8,7 +8,7 @@ require (
 	github.com/docker/docker v24.0.2+incompatible
 	github.com/hashicorp/consul/api v1.21.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/semconv v0.80.0
+	go.opentelemetry.io/collector/semconv v0.80.1-0.20230626185050-414dd45cf83a
 	go.opentelemetry.io/otel/sdk v1.16.0
 )
 
