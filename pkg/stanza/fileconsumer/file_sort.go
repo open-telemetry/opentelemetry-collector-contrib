@@ -1,4 +1,7 @@
-package fileconsumer
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"fmt"
@@ -8,8 +11,9 @@ import (
 	"time"
 
 	strptime "github.com/observiq/ctimefmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 )
 
 const (
@@ -57,12 +61,12 @@ func (f SortRule) validate() error {
 		}
 		_, err := strptime.ToNative(f.Format)
 		if err != nil {
-			return fmt.Errorf("error parsing format %s: %v", f.Format, err)
+			return fmt.Errorf("error parsing format %s: %w", f.Format, err)
 		}
 
 		_, err = time.LoadLocation(f.Location)
 		if err != nil {
-			return fmt.Errorf("error parsing location %s: %v", f.Location, err)
+			return fmt.Errorf("error parsing location %s: %w", f.Location, err)
 		}
 	default:
 		return fmt.Errorf("unknown sort type %s", f.SortType)
@@ -95,13 +99,13 @@ func (f SortRule) sortInteger(files []string) ([]string, error) {
 
 		numI, err := strconv.Atoi(valI)
 		if err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to int: %v", valI, err))
+			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to int: %w", valI, err))
 			return false
 		}
 
 		numJ, err := strconv.Atoi(valJ)
 		if err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to int: %v", valJ, err))
+			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to int: %w", valJ, err))
 			return false
 		}
 
@@ -119,7 +123,7 @@ func (f SortRule) sortTimestamp(files []string) ([]string, error) {
 	re := regexp.MustCompile(f.Regex)
 	location, err := time.LoadLocation(f.Location)
 	if err != nil {
-		return files, fmt.Errorf("error loading location %s: %v", f.Location, err)
+		return files, fmt.Errorf("error loading location %s: %w", f.Location, err)
 	}
 
 	var errs error
@@ -133,13 +137,13 @@ func (f SortRule) sortTimestamp(files []string) ([]string, error) {
 
 		timeI, err := timeutils.ParseStrptime(f.Format, valI, location)
 		if err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to Time: %v", timeI, err))
+			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to Time: %w", timeI, err))
 			return false
 		}
 
 		timeJ, err := timeutils.ParseStrptime(f.Format, valJ, location)
 		if err != nil {
-			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to Time: %v", timeI, err))
+			errs = multierr.Append(errs, fmt.Errorf("error parsing %s to Time: %w", timeI, err))
 			return false
 		}
 
