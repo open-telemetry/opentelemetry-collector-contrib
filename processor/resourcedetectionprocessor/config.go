@@ -85,7 +85,7 @@ type DetectorConfig struct {
 }
 
 func detectorCreateDefaultConfig() DetectorConfig {
-	defaultConfig := DetectorConfig{
+	return DetectorConfig{
 		EC2Config:              ec2.CreateDefaultConfig(),
 		ECSConfig:              ecs.CreateDefaultConfig(),
 		EKSConfig:              eks.CreateDefaultConfig(),
@@ -100,8 +100,6 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
 	}
-
-	return defaultConfig
 }
 
 func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig {
