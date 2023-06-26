@@ -1,4 +1,4 @@
-type: servicegraph
+type: slay
 
 status:
   class: connector

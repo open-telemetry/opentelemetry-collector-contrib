@@ -1,0 +1,57 @@
+# default configuration
+copyconnector/default:
+
+# default configuration with explicit buckets histogram
+copyconnector/default_explicit_histogram:
+  histogram:
+    explicit:
+
+# configuration with all possible parameters
+copyconnector/full:
+  histogram:
+    unit: "s"
+    explicit:
+      buckets: [ 10ms, 100ms, 250ms ]
+
+  dimensions_cache_size: 1500
+
+  # Additional list of dimensions on top of:
+  # - service.name
+  # - span.name
+  # - span.kind
+  # - status.code
+  dimensions:
+    # If the span is missing http.method, the connector will insert
+    # the http.method dimension with value 'GET'.
+    - name: http.method
+      default: GET
+
+    # If a default is not provided, the http.status_code dimension will be omitted
+    # if the span does not contain http.status_code.
+    - name: http.status_code
+
+  # The aggregation temporality of the generated metrics.
+  # Default: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+
+  # The period on which all metrics (whose dimension keys remain in cache) will be emitted.
+  # Default: 15s.
+  metrics_flush_interval: 30s
+
+# default configuration with exponential buckets histogram
+copyconnector/exponential_histogram:
+  histogram:
+    exponential:
+      max_size: 10
+
+# invalid histogram configuration
+copyconnector/exponential_and_explicit_histogram:
+  histogram:
+    exponential:
+      max_size: 10
+    explicit:
+      buckets: [ 10ms, 100ms, 250ms ]
+
+copyconnector/invalid_histogram_unit:
+  histogram:
+    unit: "h"

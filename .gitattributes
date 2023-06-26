@@ -3,4 +3,4 @@
 # https://github.com/github/linguist.
 
 go.sum linguist-generated=true
-
+otelcontribcol filter=lfs diff=lfs merge=lfs -text

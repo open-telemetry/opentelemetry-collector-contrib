@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type                     = "servicegraph"
+	Type                     = "copyconnector"
 	TracesToMetricsStability = component.StabilityLevelAlpha
 )

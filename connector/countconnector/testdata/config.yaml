@@ -1,4 +1,4 @@
-  count:
+  counted:
   count/custom_description:
     spans:
       trace.span.count:
