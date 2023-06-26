@@ -1,4 +1,4 @@
-type: gitmetricsreceiver
+type: gitproviderreceiver
 
 sem_conv_version: 1.9.0
 

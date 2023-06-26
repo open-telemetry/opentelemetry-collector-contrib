@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package gitmetricsreceiver
+package gitproviderreceiver
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal"
 )
 
 var creationSet = receivertest.NewNopCreateSettings()
@@ -52,5 +52,5 @@ func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 	cfg := &Config{Scrapers: map[string]internal.Config{errorKey: &mockConfig{}}}
 
 	_, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.EqualError(t, err, fmt.Sprintf("git metrics scraper factory not found for key: %q", errorKey))
+	assert.EqualError(t, err, fmt.Sprintf("git provider scraper factory not found for key: %q", errorKey))
 }

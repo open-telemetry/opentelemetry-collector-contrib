@@ -1,11 +1,11 @@
 receivers:
-  gitmetricsreceiver:
+  gitproviderreceiver:
     initial_delay: 1s
     collection_interval: 60s
     scrapers:
       githubscraper:
 
-  gitmetricsreceiver/customname:
+  gitproviderreceiver/customname:
     initial_delay: 1s
     collection_interval: 30s
     scrapers:
@@ -20,7 +20,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [gitmetricsreceiver, gitmetricsreceiver/customname]
+      receivers: [gitproviderreceiver, gitproviderreceiver/customname]
       processors: [nop]
       exporters: [nop]
 

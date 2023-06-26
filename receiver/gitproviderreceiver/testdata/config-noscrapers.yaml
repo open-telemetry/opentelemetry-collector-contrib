@@ -1,5 +1,5 @@
 receivers:
-  gitmetricsreceiver:
+  gitproviderreceiver:
 
 processors:
   nop:
@@ -10,7 +10,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [gitmetricsreceiver]
+      receivers: [gitproviderreceiver]
       processors: [nop]
       exporters: [nop]
 

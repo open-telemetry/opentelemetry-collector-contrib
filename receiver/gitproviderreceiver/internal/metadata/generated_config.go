@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for gitmetricsreceiver metrics.
+// MetricsConfig provides config for gitproviderreceiver metrics.
 type MetricsConfig struct {
 	GitRepositoryBranchCount      MetricConfig `mapstructure:"git.repository.branch.count"`
 	GitRepositoryBranchTime       MetricConfig `mapstructure:"git.repository.branch.time"`
@@ -57,7 +57,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for gitmetricsreceiver resource attributes.
+// ResourceAttributesConfig provides config for gitproviderreceiver resource attributes.
 type ResourceAttributesConfig struct {
 	GitVendorName    ResourceAttributeConfig `mapstructure:"git.vendor.name"`
 	OrganizationName ResourceAttributeConfig `mapstructure:"organization.name"`
@@ -74,7 +74,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for gitmetricsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for gitproviderreceiver metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package gitmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitmetricsreceiver"
+package gitproviderreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver"
 
 import (
 	"context"
@@ -14,14 +14,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitmetricsreceiver/internal/scraper/githubscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/scraper/githubscraper"
 )
 
-// This file implements a factory for the git metrics receiver
+// This file implements a factory for the git provider receiver
 
 const (
-	typeStr         = "gitmetrics"
+	typeStr         = "gitprovider"
 	defaultInterval = 30 * time.Second
 	defaultTimeout  = 15 * time.Second
 	stability       = component.StabilityLevelDevelopment
@@ -32,10 +32,10 @@ var (
 		githubscraper.TypeStr: &githubscraper.Factory{},
 	}
 
-	errConfigNotValid = errors.New("configuration is not valid for the git metrics receiver")
+	errConfigNotValid = errors.New("configuration is not valid for the git provider receiver")
 )
 
-// NewFactory creates a factory for the git metrics receiver
+// NewFactory creates a factory for the git provider receiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
@@ -59,7 +59,7 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		// TODO: metrics builder configuration may need to be in each sub scraper,
 		// TODO: for right now setting here because the metrics in this receiver will apply to all
-		// TODO: scrapers defined as a common set of gitmetrics
+		// TODO: scrapers defined as a common set of gitprovider
 		// TODO: aqp completely remove these comments if the metrics build config
 		// needs to be defined in each scraper
 		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -103,24 +103,24 @@ func createAddScraperOpts(
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(cfg.Scrapers))
 
 	for key, cfg := range cfg.Scrapers {
-		gitMetricsScraper, ok, err := createGitMetricsScraper(ctx, params, key, cfg, factories)
+		gitProviderScraper, ok, err := createGitProviderScraper(ctx, params, key, cfg, factories)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(gitMetricsScraper))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(gitProviderScraper))
 			continue
 		}
 
-		return nil, fmt.Errorf("git metrics scraper factory not found for key: %q", key)
+		return nil, fmt.Errorf("git provider scraper factory not found for key: %q", key)
 
 	}
 
 	return scraperControllerOptions, nil
 }
 
-func createGitMetricsScraper(
+func createGitProviderScraper(
 	ctx context.Context,
 	params receiver.CreateSettings,
 	key string,
