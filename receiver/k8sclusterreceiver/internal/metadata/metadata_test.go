@@ -224,3 +224,42 @@ func TestGetMetadataUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestTransformObjectMeta(t *testing.T) {
+	in := v1.ObjectMeta{
+		Name:      "my-pod",
+		UID:       "12345678-1234-1234-1234-123456789011",
+		Namespace: "default",
+		Labels: map[string]string{
+			"app": "my-app",
+		},
+		Annotations: map[string]string{
+			"version":     "1.0",
+			"description": "Sample resource",
+		},
+		OwnerReferences: []v1.OwnerReference{
+			{
+				APIVersion: "apps/v1",
+				Kind:       "ReplicaSet",
+				Name:       "my-replicaset-1",
+				UID:        "12345678-1234-1234-1234-123456789012",
+			},
+		},
+	}
+	want := v1.ObjectMeta{
+		Name:      "my-pod",
+		UID:       "12345678-1234-1234-1234-123456789011",
+		Namespace: "default",
+		Labels: map[string]string{
+			"app": "my-app",
+		},
+		OwnerReferences: []v1.OwnerReference{
+			{
+				Kind: "ReplicaSet",
+				Name: "my-replicaset-1",
+				UID:  "12345678-1234-1234-1234-123456789012",
+			},
+		},
+	}
+	assert.Equal(t, want, TransformObjectMeta(in))
+}

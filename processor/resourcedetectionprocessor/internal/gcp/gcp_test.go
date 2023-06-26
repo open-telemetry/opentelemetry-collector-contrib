@@ -227,9 +227,11 @@ func TestDetect(t *testing.T) {
 }
 
 func newTestDetector(gcpDetector *fakeGCPDetector) *detector {
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	return &detector{
-		logger:   zap.NewNop(),
-		detector: gcpDetector,
+		logger:             zap.NewNop(),
+		detector:           gcpDetector,
+		resourceAttributes: resourceAttributes,
 	}
 }
 

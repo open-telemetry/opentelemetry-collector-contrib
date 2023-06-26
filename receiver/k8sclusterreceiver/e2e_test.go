@@ -100,6 +100,7 @@ func TestE2E(t *testing.T) {
 		pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
+		pmetrictest.IgnoreScopeVersion(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),

@@ -47,8 +47,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: async
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -60,8 +60,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: discard
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "2502656"
                   attributes:
                     - key: device_major
@@ -73,8 +73,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "2502656"
                   attributes:
                     - key: device_major
@@ -86,8 +86,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: sync
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "2502656"
                   attributes:
                     - key: device_major
@@ -99,8 +99,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -112,11 +112,11 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: By
-          - description: Number of IOs (bio) issued to the disk by the group and descendant groups.
+          - description: Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1).
             name: container.blockio.io_serviced_recursive
             sum:
               aggregationTemporality: 2
@@ -132,8 +132,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: async
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -145,8 +145,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: discard
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "99"
                   attributes:
                     - key: device_major
@@ -158,8 +158,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "99"
                   attributes:
                     - key: device_major
@@ -171,8 +171,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: sync
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "99"
                   attributes:
                     - key: device_major
@@ -184,8 +184,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -197,15 +197,16 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1661128093793004000"
-                  timeUnixNano: "1661128093795620000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{operations}'
           - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0.0002888012543185477
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             name: container.cpu.percent
             unit: "1"
           - description: Number of periods with throttling active.
@@ -214,7 +215,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{periods}'
           - description: Number of periods when the container hits its throttling limit.
@@ -223,7 +225,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{periods}'
           - description: Aggregate time the container was throttled.
@@ -232,7 +235,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: ns
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
@@ -241,10 +245,11 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "10000000"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: ns
-          - description: Per-core CPU usage by the container.
+          - description: Per-core CPU usage by the container (Only available with cgroups v1).
             name: container.cpu.usage.percpu
             sum:
               aggregationTemporality: 2
@@ -254,49 +259,57 @@ resourceMetrics:
                     - key: core
                       value:
                         stringValue: cpu0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "0"
                   attributes:
                     - key: core
                       value:
                         stringValue: cpu1
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "262690"
                   attributes:
                     - key: core
                       value:
                         stringValue: cpu2
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "762532"
                   attributes:
                     - key: core
                       value:
                         stringValue: cpu3
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "78532"
                   attributes:
                     - key: core
                       value:
                         stringValue: cpu4
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "28108575"
                   attributes:
                     - key: core
                       value:
                         stringValue: cpu5
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "8800811"
                   attributes:
                     - key: core
                       value:
                         stringValue: cpu6
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
                 - asInt: "4191833"
                   attributes:
                     - key: core
                       value:
                         stringValue: cpu7
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: ns
           - description: System CPU usage, as reported by docker.
@@ -305,7 +318,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "120830550000000"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: ns
           - description: Total CPU time consumed.
@@ -314,7 +328,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "43620018"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: ns
           - description: Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
@@ -323,7 +338,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "10000000"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: ns
           - description: The amount of anonymous memory that has been identified as active by the kernel.
@@ -332,7 +348,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: Cache memory that has been identified as active by the kernel.
             name: container.memory.active_file
@@ -340,39 +357,44 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "270336"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.
+          - description: The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1).
             name: container.memory.cache
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2433024"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Bytes that are waiting to get written back to the disk, from this cgroup.
+          - description: Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1).
             name: container.memory.dirty
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: The maximum amount of physical memory that can be used by the processes of this control group.
+          - description: The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).
             name: container.memory.hierarchical_memory_limit
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "9223372036854772000"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: The maximum amount of RAM + swap that can be used by the processes of this control group.
+          - description: The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1).
             name: container.memory.hierarchical_memsw_limit
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "9223372036854772000"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: The amount of anonymous memory that has been identified as inactive by the kernel.
             name: container.memory.inactive_anon
@@ -380,7 +402,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: Cache memory that has been identified as inactive by the kernel.
             name: container.memory.inactive_file
@@ -388,21 +411,24 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2162688"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Indicates the amount of memory mapped by the processes in the control group.
+          - description: Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1).
             name: container.memory.mapped_file
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1486848"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: Percentage of memory used.
             gauge:
               dataPoints:
                 - asDouble: 0.006938014912420301
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             name: container.memory.percent
             unit: "1"
           - description: Indicate the number of times that a process of the cgroup triggered a page fault.
@@ -411,7 +437,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "990"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{faults}'
           - description: Indicate the number of times that a process of the cgroup triggered a major fault.
@@ -420,166 +447,186 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{faults}'
-          - description: Number of pages read from disk by the cgroup.
+          - description: Number of pages read from disk by the cgroup (Only available with cgroups v1).
             name: container.memory.pgpgin
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1287"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{operations}'
-          - description: Number of pages written to disk by the cgroup.
+          - description: Number of pages written to disk by the cgroup (Only available with cgroups v1).
             name: container.memory.pgpgout
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "667"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{operations}'
-          - description: 'The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.'
+          - description: 'The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1).'
             name: container.memory.rss
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Number of bytes of anonymous transparent hugepages in this cgroup.
+          - description: Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1).
             name: container.memory.rss_huge
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.
+          - description: The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).
             name: container.memory.total_active_anon
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Cache memory that has been identified as active by the kernel. Includes descendant cgroups.
+          - description: Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).
             name: container.memory.total_active_file
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "270336"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.
+          - description: Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).
             name: container.memory.total_cache
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2433024"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Bytes that are waiting to get written back to the disk, from this cgroup and descendants.
+          - description: Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1).
             name: container.memory.total_dirty
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+          - description: The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).
             name: container.memory.total_inactive_anon
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+          - description: Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).
             name: container.memory.total_inactive_file
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2162688"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Indicates the amount of memory mapped by the processes in the control group and descendant groups.
+          - description: Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1).
             name: container.memory.total_mapped_file
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1486848"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.
+          - description: Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1).
             name: container.memory.total_pgfault
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "990"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{faults}'
-          - description: Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.
+          - description: Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1).
             name: container.memory.total_pgmajfault
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{faults}'
-          - description: Number of pages read from disk by the cgroup and descendant groups.
+          - description: Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1).
             name: container.memory.total_pgpgin
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1287"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{operations}'
-          - description: Number of pages written to disk by the cgroup and descendant groups.
+          - description: Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1).
             name: container.memory.total_pgpgout
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "667"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{operations}'
-          - description: 'The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.'
+          - description: 'The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1).'
             name: container.memory.total_rss
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.
+          - description: Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1).
             name: container.memory.total_rss_huge
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: The amount of memory that cannot be reclaimed. Includes descendant cgroups.
+          - description: The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1).
             name: container.memory.total_unevictable
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.
+          - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1).
             name: container.memory.total_writeback
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: The amount of memory that cannot be reclaimed.
             name: container.memory.unevictable
@@ -587,7 +634,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: Memory limit of the container.
             name: container.memory.usage.limit
@@ -595,7 +643,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "10449559552"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: Maximum memory usage.
             name: container.memory.usage.max
@@ -603,7 +652,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3932160"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: Memory usage of the container. This excludes the cache.
             name: container.memory.usage.total
@@ -611,15 +661,17 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "724992"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
-          - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
+          - description: Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1).
             name: container.memory.writeback
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: By
           - description: Bytes received by the container.
             name: container.network.io.usage.rx_bytes
@@ -631,7 +683,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: By
           - description: Incoming packets dropped.
@@ -644,7 +697,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{packets}'
           - description: Received errors.
@@ -657,7 +711,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{errors}'
           - description: Packets received.
@@ -670,7 +725,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{packets}'
           - description: Bytes sent.
@@ -683,7 +739,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: By
           - description: Outgoing packets dropped.
@@ -696,7 +753,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{packets}'
           - description: Sent errors.
@@ -709,7 +767,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{errors}'
           - description: Packets sent.
@@ -722,7 +781,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
               isMonotonic: true
             unit: '{packets}'
           - description: Number of pids in the container's cgroup.
@@ -731,15 +791,17 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
             unit: '{pids}'
           - description: Time elapsed since container start time.
-            name: container.uptime
             gauge:
               dataPoints:
-                - asDouble: 0.0002888012543185477
-                  timeUnixNano: "1657771705535206000"
-            unit: 's'
+                - asDouble: 2.95714674407398e+07
+                  startTimeUnixNano: "1686652517690921000"
+                  timeUnixNano: "1686652517697808000"
+            name: container.uptime
+            unit: s
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest

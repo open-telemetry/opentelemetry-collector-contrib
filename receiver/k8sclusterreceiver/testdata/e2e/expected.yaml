@@ -3,13 +3,14 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: kube-system
         - key: k8s.namespace.uid
           value:
             stringValue: 3604b135-20f2-404b-9c1a-175ef649793e
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -18,18 +19,22 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: local-path-storage
         - key: k8s.namespace.uid
           value:
             stringValue: 414da07d-33d0-4043-ae7c-d6b264d134e5
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -38,18 +43,22 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: kube-public
         - key: k8s.namespace.uid
           value:
             stringValue: 7516afba-1597-49e3-8569-9732b7b94865
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -58,18 +67,22 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: kube-node-lease
         - key: k8s.namespace.uid
           value:
             stringValue: 8dd32894-d0ff-4cff-bd75-b818c20fc72b
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -78,18 +91,22 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: ""
+            stringValue: default
         - key: k8s.namespace.uid
           value:
             stringValue: caa467a2-d3e8-4e66-8b76-a155464bac79
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: The current phase of namespaces (1 for active and 0 for terminating)
@@ -98,7 +115,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.namespace.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.node.name
@@ -110,6 +130,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Whether this node is Ready (1), not Ready (0) or in an unknown state (-1)
@@ -118,7 +139,10 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.node.condition_ready
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.daemonset.name
@@ -223,6 +247,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this deployment
@@ -239,7 +264,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.available
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.deployment.name
@@ -254,6 +281,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this deployment
@@ -270,7 +298,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.available
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.deployment.name
@@ -285,6 +315,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this deployment
@@ -301,7 +332,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.deployment.available
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name

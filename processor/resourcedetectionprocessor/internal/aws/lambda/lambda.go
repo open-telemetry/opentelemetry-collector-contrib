@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda/internal/metadata"
 )
 
 const (
@@ -32,11 +33,13 @@ const (
 var _ internal.Detector = (*detector)(nil)
 
 type detector struct {
-	logger *zap.Logger
+	logger             *zap.Logger
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
-func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &detector{logger: set.Logger}, nil
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
+	return &detector{logger: set.Logger, resourceAttributes: cfg.ResourceAttributes}, nil
 }
 
 func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -51,35 +54,53 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 	attrs := res.Attributes()
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSLambda)
-	if value, ok := os.LookupEnv(awsRegionEnvVar); ok {
-		attrs.PutStr(conventions.AttributeCloudRegion, value)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	}
+	if d.resourceAttributes.CloudPlatform.Enabled {
+		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSLambda)
+	}
+	if d.resourceAttributes.CloudRegion.Enabled {
+		if value, ok := os.LookupEnv(awsRegionEnvVar); ok {
+			attrs.PutStr(conventions.AttributeCloudRegion, value)
+		}
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector
-	attrs.PutStr(conventions.AttributeFaaSName, functionName)
-	if value, ok := os.LookupEnv(awsLambdaFunctionVersionEnvVar); ok {
-		attrs.PutStr(conventions.AttributeFaaSVersion, value)
+	if d.resourceAttributes.FaasName.Enabled {
+		attrs.PutStr(conventions.AttributeFaaSName, functionName)
+	}
+	if d.resourceAttributes.FaasVersion.Enabled {
+		if value, ok := os.LookupEnv(awsLambdaFunctionVersionEnvVar); ok {
+			attrs.PutStr(conventions.AttributeFaaSVersion, value)
+		}
 	}
 	// Note: The FaaS spec (https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
 	//       recommends setting faas.instance to the full log stream name for AWS Lambda.
-	if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
-		attrs.PutStr(conventions.AttributeFaaSInstance, value)
+	if d.resourceAttributes.FaasInstance.Enabled {
+		if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
+			attrs.PutStr(conventions.AttributeFaaSInstance, value)
+		}
 	}
-	if value, ok := os.LookupEnv(awsLambdaFunctionMemorySizeEnvVar); ok {
-		attrs.PutStr(conventions.AttributeFaaSMaxMemory, value)
+	if d.resourceAttributes.FaasMaxMemory.Enabled {
+		if value, ok := os.LookupEnv(awsLambdaFunctionMemorySizeEnvVar); ok {
+			attrs.PutStr(conventions.AttributeFaaSMaxMemory, value)
+		}
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md
-	if value, ok := os.LookupEnv(awsLambdaLogGroupNameEnvVar); ok {
-		logGroupNames := attrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames)
-		logGroupNames.AppendEmpty().SetStr(value)
+	if d.resourceAttributes.AwsLogGroupNames.Enabled {
+		if value, ok := os.LookupEnv(awsLambdaLogGroupNameEnvVar); ok {
+			logGroupNames := attrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames)
+			logGroupNames.AppendEmpty().SetStr(value)
+		}
 	}
-	if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
-		logStreamNames := attrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames)
-		logStreamNames.AppendEmpty().SetStr(value)
+	if d.resourceAttributes.AwsLogStreamNames.Enabled {
+		if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
+			logStreamNames := attrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames)
+			logStreamNames.AppendEmpty().SetStr(value)
+		}
 	}
 
 	return res, conventions.SchemaURL, nil
