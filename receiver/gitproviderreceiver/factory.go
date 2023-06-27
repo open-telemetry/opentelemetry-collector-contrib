@@ -15,16 +15,15 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/scraper/githubscraper"
 )
 
 // This file implements a factory for the git provider receiver
 
 const (
-	typeStr         = "gitprovider"
 	defaultInterval = 30 * time.Second
 	defaultTimeout  = 15 * time.Second
-	stability       = component.StabilityLevelDevelopment
 )
 
 var (
@@ -38,9 +37,9 @@ var (
 // NewFactory creates a factory for the git provider receiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
@@ -56,7 +55,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		// TODO: metrics builder configuration may need to be in each sub scraper,
 		// TODO: for right now setting here because the metrics in this receiver will apply to all
 		// TODO: scrapers defined as a common set of gitprovider

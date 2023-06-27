@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "gitproviderreceiver"
+	Type             = "gitprovider"
 	MetricsStability = component.StabilityLevelDevelopment
 )
