@@ -201,7 +201,6 @@ func Test_loadMetadata(t *testing.T) {
 			want:    metadata{},
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
 		},
-
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

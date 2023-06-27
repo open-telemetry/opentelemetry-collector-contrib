@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -52,11 +55,11 @@ func TestValidate(t *testing.T) {
 			wantErr: "empty type for resource attribute: string.resource.attr",
 		},
 		{
-			name: "testdata/no_metric_description.yaml",
+			name:    "testdata/no_metric_description.yaml",
 			wantErr: "metric \"default.metric\": missing metric description",
 		},
 		{
-			name: "testdata/no_metric_unit.yaml",
+			name:    "testdata/no_metric_unit.yaml",
 			wantErr: "metric \"default.metric\": missing metric unit",
 		},
 		{
@@ -70,7 +73,7 @@ func TestValidate(t *testing.T) {
 				"only one of the following has to be specified: sum, gauge",
 		},
 		{
-			name: "testdata/invalid_input_type.yaml",
+			name:    "testdata/invalid_input_type.yaml",
 			wantErr: "metric \"system.cpu.time\": invalid `input_type` value \"double\", must be \"\" or \"string\"",
 		},
 		{

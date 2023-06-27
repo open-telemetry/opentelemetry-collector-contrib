@@ -31,7 +31,7 @@ func Test_runContents(t *testing.T) {
 			yml:                  "metrics_and_type.yaml",
 			wantMetricsGenerated: true,
 			wantConfigGenerated:  true,
-			wantStatusGenerated: true,
+			wantStatusGenerated:  true,
 		},
 		{
 			yml:                 "resource_attributes_only.yaml",
