@@ -259,7 +259,8 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 	ld.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(1686235113, 0)))
 
 	testLEventRaw.Ts = "1686235113000000000"
-	testLEventRaw.Attrs["observed.timestamp"] = "2023-06-08 14:38:33 +0000 UTC"
+	// 2023-06-08 14:38:33 +0000 UTC
+	testLEventRaw.Attrs["sca:observedTimestamp"] = "1686235113000000000"
 	delete(testLEventRaw.Attrs, "timestamp")
 	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
 
@@ -296,7 +297,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 
 	testLEventRaw.Ts = strconv.FormatInt(currentTime.UnixNano(), 10)
 	delete(testLEventRaw.Attrs, "timestamp")
-	delete(testLEventRaw.Attrs, "observed.timestamp")
+	delete(testLEventRaw.Attrs, "sca:observedTimestamp")
 	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
 
 	expected := &add_events.EventBundle{

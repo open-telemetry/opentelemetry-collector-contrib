@@ -194,7 +194,7 @@ func buildEventFromLog(
 		attrs["dropped_attributes_count"] = dropped
 	}
 	if !observedTs.Equal(time.Unix(0, 0)) {
-		attrs["observed.timestamp"] = observedTs.String()
+		attrs["sca:observedTimestamp"] = strconv.FormatInt(observedTs.UnixNano(), 10)
 	}
 	if span := log.SpanID().String(); span != "" {
 		attrs["span_id"] = span
