@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -20,11 +19,6 @@ import (
 )
 
 // This file implements a factory for the git provider receiver
-
-const (
-	defaultInterval = 30 * time.Second
-	defaultTimeout  = 15 * time.Second
-)
 
 var (
 	scraperFactories = map[string]internal.ScraperFactory{

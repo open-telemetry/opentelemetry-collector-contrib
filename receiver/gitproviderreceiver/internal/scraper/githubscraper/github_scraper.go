@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	//"github.com/google/go-github/v50/github"
-	//"github.com/shurcooL/githubv4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -51,8 +49,11 @@ func newGitHubScraper(
 	}
 }
 
-// scrape and return metrics
-func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+// scrape and return github metrics
+func (ghs *githubScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+	// TODO: ignoring ctx context.Context for now to pass linting given the removal
+	// of the original code within scraper that leverage the context. Will be added
+	// back in subsequent PRs
 	ghs.logger.Sugar().Debug("checking if client is initialized")
 	if ghs.client == nil {
 		return pmetric.NewMetrics(), errClientNotInitErr
@@ -64,6 +65,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	currentDate := time.Now().Day()
 	ghs.logger.Sugar().Debugf("current date: %v", currentDate)
 
-    ghs.logger.Sugar().Info("github scraper has started")
+	ghs.logger.Sugar().Info("github scraper has started")
 	return ghs.mb.Emit(), nil
 }
