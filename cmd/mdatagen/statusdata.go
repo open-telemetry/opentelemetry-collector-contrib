@@ -18,6 +18,7 @@ var distros = map[string]string{
 	"observiq": "https://github.com/observIQ/observiq-otel-collector",
 	"splunk":   "https://github.com/signalfx/splunk-otel-collector",
 	"sumo":     "https://github.com/SumoLogic/sumologic-otel-collector",
+	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
 }
 
 type Status struct {

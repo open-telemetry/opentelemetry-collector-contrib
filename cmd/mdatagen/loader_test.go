@@ -159,6 +159,14 @@ func Test_loadMetadata(t *testing.T) {
 			},
 		},
 		{
+			name: "testdata/parent.yaml",
+			want: metadata{
+				Type:      "subcomponent",
+				Parent:    "parentComponent",
+				ScopeName: "otelcol",
+			},
+		},
+		{
 			name:    "testdata/unknown_metric_attribute.yaml",
 			want:    metadata{},
 			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
