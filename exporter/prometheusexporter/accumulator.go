@@ -264,14 +264,16 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 
 		switch histogram.AggregationTemporality() {
 		case pmetric.AggregationTemporalityDelta:
-			if ip.StartTimestamp().AsTime().Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
-				// only keep datapoint with latest timestamp
-				a.logger.Warn(zap.String("Dropping misaligned histogram datapoint for time series ", signature))
-				continue
-			}
-			// assuming an application restart and reset counter
-			if ip.StartTimestamp().AsTime().After(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
-				ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
+			if ip.StartTimestamp().AsTime() != mv.value.Histogram().DataPoints().At(0).StartTimestamp().AsTime() {
+				// treat misalgnment as restart and reset or violation of single-writer principle and drop
+				if ip.StartTimestamp().AsTime().After(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
+					ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
+				} else {
+					a.logger.With(
+						zap.String("time_series", signature),
+					).Warn("Dropped misaligned histogram datapoint")
+					continue
+				}
 			} else {
 				accumulateHistogramValues(mv.value.Histogram().DataPoints().At(0), ip, m.Histogram().DataPoints().AppendEmpty())
 			}
@@ -347,11 +349,6 @@ func copyMetricMetadata(metric pmetric.Metric) pmetric.Metric {
 }
 
 func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
-	//if current.StartTimestamp().AsTime().Before(prev.StartTimestamp().AsTime()) {
-	//	dest.SetStartTimestamp(current.StartTimestamp())
-	//} else {
-	//	dest.SetStartTimestamp(prev.StartTimestamp())
-	//}
 	dest.SetStartTimestamp(prev.StartTimestamp())
 
 	older := prev
