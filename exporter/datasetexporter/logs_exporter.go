@@ -224,10 +224,10 @@ func buildEventFromLog(
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
 
-	fmt.Printf("a, %v", settings.ExportScopeInfo)
-
 	if settings.ExportScopeInfo {
-		attrs["scope.name"] = scope.Name()
+		if scope.Name() != "" {
+			attrs["scope.name"] = scope.Name()
+		}
 		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
 	}
 

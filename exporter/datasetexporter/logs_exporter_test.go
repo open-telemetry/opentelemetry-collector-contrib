@@ -155,7 +155,22 @@ var testLEventRaw = &add_events.Event{
 		"attributes.instance_num":  int64(1),
 		"dropped_attributes_count": uint32(1),
 		"message":                  "This is a log message",
-		"scope.name":               "",
+		"span_id":                  "0102040800000000",
+		"trace_id":                 "08040201000000000000000000000000",
+	},
+}
+
+var testLEventRawWithScopeInfo = &add_events.Event{
+	Thread: "TL",
+	Log:    "LL",
+	Sev:    3,
+	Ts:     "1581452773000000789",
+	Attrs: map[string]interface{}{
+		"attributes.app":           "server",
+		"attributes.instance_num":  int64(1),
+		"dropped_attributes_count": uint32(1),
+		"scope.name":               "test-scope",
+		"message":                  "This is a log message",
 		"span_id":                  "0102040800000000",
 		"trace_id":                 "08040201000000000000000000000000",
 	},
@@ -171,7 +186,6 @@ var testLEventReq = &add_events.Event{
 		"attributes.instance_num":  float64(1),
 		"dropped_attributes_count": float64(1),
 		"message":                  "This is a log message",
-		"scope.name":               "",
 		"span_id":                  "0102040800000000",
 		"trace_id":                 "08040201000000000000000000000000",
 		"bundle_key":               "d41d8cd98f00b204e9800998ecf8427e",
@@ -238,6 +252,37 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 	assert.Equal(t, expected, was)
 }
 
+func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("test-scope")
+	scope.SetDroppedAttributesCount(11)
+
+	expected := &add_events.EventBundle{
+		Event: &add_events.Event{
+			Thread: testLEventRawWithScopeInfo.Thread,
+			Log:    testLEventRawWithScopeInfo.Log,
+			Sev:    testLEventRawWithScopeInfo.Sev,
+			Ts:     testLEventRawWithScopeInfo.Ts,
+			Attrs:  testLEventRawWithScopeInfo.Attrs,
+		},
+		Thread: testLThread,
+		Log:    testLLog,
+	}
+	was := buildEventFromLog(
+		ld,
+		lr.ResourceLogs().At(0).Resource(),
+		scope,
+		LogsSettings{
+			ExportResourceInfo: false,
+			ExportScopeInfo:    true,
+		},
+	)
+
+	assert.Equal(t, expected, was)
+}
 func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
 	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
 	// ObservedTimestamp should be used
