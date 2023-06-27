@@ -164,9 +164,6 @@ issues:
     - path: azureeventhubreceiver
       linters:
         - exhaustive
-    - path: filereceiver
-      linters:
-        - exhaustive
     - path: fluentforwardreceiver
       linters:
         - exhaustive
