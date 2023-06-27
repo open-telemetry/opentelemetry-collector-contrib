@@ -187,6 +187,10 @@ func (c Config) validate() error {
 		}
 	}
 
+	if len(c.OrderingCriteria.SortBy) != 0 && c.OrderingCriteria.Regex == "" {
+		return fmt.Errorf("`regex` must be specified when `sort_by` is specified")
+	}
+
 	for _, sr := range c.OrderingCriteria.SortBy {
 		if err := sr.validate(); err != nil {
 			return err

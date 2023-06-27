@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	strptime "github.com/observiq/ctimefmt"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -22,76 +22,116 @@ const (
 	SortTypeAlphabetical = "alphabetical"
 )
 
-type SortRule struct {
-	Regex     string `mapstructure:"regex,omitempty"`
-	SortType  string `mapstructure:"sort_type,omitempty"`
-	Format    string `mapstructure:"format,omitempty"`
-	Location  string `mapstructure:"location,omitempty"`
-	Ascending bool   `mapstructure:"ascending,omitempty"`
+type SortRule interface {
+	validate() error
+	sort(re *regexp.Regexp, files []string) ([]string, error)
 }
 
-func (f SortRule) validate() error {
-	if f.Regex == "" {
-		return fmt.Errorf("regex must be specified for sort")
+type BaseSortRule struct {
+	RegexKey  string `mapstructure:"regex_key,omitempty"`
+	Ascending bool   `mapstructure:"ascending,omitempty"`
+	SortType  string `mapstructure:"sort_type,omitempty"`
+}
+
+type SortRuleImpl struct {
+	SortRule
+}
+
+func (sr *SortRuleImpl) Unmarshal(component *confmap.Conf) error {
+	if !component.IsSet("sort_type") {
+		return fmt.Errorf("missing required field 'sort_type'")
 	}
 
-	switch f.SortType {
-	case SortTypeNumeric:
-		if f.Format != "" {
-			return fmt.Errorf("format must be specified for timestamp sort")
-		}
-		if f.Location != "" {
-			return fmt.Errorf("location shouldn't be specified for timestamp sort")
-		}
-		return nil
-	case SortTypeAlphabetical:
-		if f.Format != "" {
-			return fmt.Errorf("format must be specified for timestamp sort")
-		}
-		if f.Location != "" {
-			return fmt.Errorf("location shouldn't be specified for timestamp sort")
-		}
-		return nil
-	case SortTypeTimestamp:
-		if f.Format == "" {
-			return fmt.Errorf("format must be specified for timestamp sort")
-		}
-		if f.Location == "" {
-			return fmt.Errorf("location must be specified for timestamp sort")
-		}
-		_, err := strptime.ToNative(f.Format)
-		if err != nil {
-			return fmt.Errorf("error parsing format %s: %w", f.Format, err)
-		}
+	typeInterface := component.Get("sort_type")
 
-		_, err = time.LoadLocation(f.Location)
+	typeString, ok := typeInterface.(string)
+	if !ok {
+		return fmt.Errorf("non-string type %T for field 'sort_type'", typeInterface)
+	}
+
+	switch typeString {
+	case SortTypeNumeric:
+		var numericSortRule NumericSortRule
+		err := component.Unmarshal(&numericSortRule, confmap.WithErrorUnused())
 		if err != nil {
-			return fmt.Errorf("error parsing location %s: %w", f.Location, err)
+			return err
 		}
+		sr.SortRule = numericSortRule
+	case SortTypeAlphabetical:
+		var alphabeticalSortRule AlphabeticalSortRule
+		err := component.Unmarshal(&alphabeticalSortRule, confmap.WithErrorUnused())
+		if err != nil {
+			return err
+		}
+		sr.SortRule = alphabeticalSortRule
+	case SortTypeTimestamp:
+		var timestampSortRule TimestampSortRule
+		err := component.Unmarshal(&timestampSortRule, confmap.WithErrorUnused())
+		if err != nil {
+			return err
+		}
+		sr.SortRule = timestampSortRule
 	default:
-		return fmt.Errorf("unknown sort type %s", f.SortType)
+		return fmt.Errorf("invalid sort type %s", typeString)
+	}
+
+	return nil
+}
+
+type NumericSortRule struct {
+	BaseSortRule `mapstructure:",squash"`
+}
+
+func (f NumericSortRule) validate() error {
+	if f.RegexKey == "" {
+		return fmt.Errorf("regex key must be specified for numeric sort")
 	}
 	return nil
 }
 
-func (f SortRule) Sort(files []string) ([]string, error) {
-	switch f.SortType {
-	case SortTypeNumeric:
-		return f.sortInteger(files)
-	case SortTypeTimestamp:
-		return f.sortTimestamp(files)
-	case SortTypeAlphabetical:
-		return f.sortAlphabetical(files)
-	}
-	return files, fmt.Errorf("unknown sort type %s", f.SortType)
+type AlphabeticalSortRule struct {
+	BaseSortRule `mapstructure:",squash"`
 }
 
-func (f SortRule) sortInteger(files []string) ([]string, error) {
-	re := regexp.MustCompile(f.Regex)
+func (f AlphabeticalSortRule) validate() error {
+	if f.RegexKey == "" {
+		return fmt.Errorf("regex key must be specified for alphabetical sort")
+	}
+	return nil
+}
 
+type TimestampSortRule struct {
+	BaseSortRule `mapstructure:",squash"`
+	Format       string `mapstructure:"format,omitempty"`
+	Location     string `mapstructure:"location,omitempty"`
+}
+
+func (f TimestampSortRule) validate() error {
+	if f.RegexKey == "" {
+		return fmt.Errorf("regex key must be specified for timestamp sort")
+	}
+	if f.Format == "" {
+		return fmt.Errorf("format must be specified for timestamp sort")
+	}
+	if f.Location == "" {
+		f.Location = "UTC"
+	}
+	_, err := time.Parse(f.Format, "")
+	if err != nil {
+		return fmt.Errorf("error parsing format %s: %w", f.Format, err)
+	}
+
+	_, err = time.LoadLocation(f.Location)
+	if err != nil {
+		return fmt.Errorf("error parsing location %s: %w", f.Location, err)
+	}
+	return nil
+}
+
+func (f NumericSortRule) sort(re *regexp.Regexp, files []string) ([]string, error) {
 	var errs error
 	sort.Slice(files, func(i, j int) bool {
-		valI, valJ, err := extractValues(re, files[i], files[j])
+		valI, valJ, err := extractValues(re, f.RegexKey, files[i], files[j])
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			return false
@@ -118,9 +158,8 @@ func (f SortRule) sortInteger(files []string) ([]string, error) {
 	return files, errs
 }
 
-func (f SortRule) sortTimestamp(files []string) ([]string, error) {
+func (f TimestampSortRule) sort(re *regexp.Regexp, files []string) ([]string, error) {
 	// apply regex to each file and sort the results
-	re := regexp.MustCompile(f.Regex)
 	location, err := time.LoadLocation(f.Location)
 	if err != nil {
 		return files, fmt.Errorf("error loading location %s: %w", f.Location, err)
@@ -129,7 +168,7 @@ func (f SortRule) sortTimestamp(files []string) ([]string, error) {
 	var errs error
 
 	sort.Slice(files, func(i, j int) bool {
-		valI, valJ, err := extractValues(re, files[i], files[j])
+		valI, valJ, err := extractValues(re, f.RegexKey, files[i], files[j])
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			return false
@@ -157,12 +196,10 @@ func (f SortRule) sortTimestamp(files []string) ([]string, error) {
 	return files, errs
 }
 
-func (f SortRule) sortAlphabetical(files []string) ([]string, error) {
-	re := regexp.MustCompile(f.Regex)
-
+func (f AlphabeticalSortRule) sort(re *regexp.Regexp, files []string) ([]string, error) {
 	var errs error
 	sort.Slice(files, func(i, j int) bool {
-		valI, valJ, err := extractValues(re, files[i], files[j])
+		valI, valJ, err := extractValues(re, f.RegexKey, files[i], files[j])
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			return false
@@ -177,27 +214,27 @@ func (f SortRule) sortAlphabetical(files []string) ([]string, error) {
 	return files, errs
 }
 
-func extractValues(re *regexp.Regexp, file1, file2 string) (string, string, error) {
-	valI := extractValue(re, file1)
+func extractValues(re *regexp.Regexp, reKey, file1, file2 string) (string, string, error) {
+	valI := extractValue(re, reKey, file1)
 	if valI == "" {
-		return "", "", fmt.Errorf("Unable to find `value` capture group in regex for file: %s", file1)
+		return "", "", fmt.Errorf("Unable to find `%s` capture group in regex for file: %s", reKey, file1)
 	}
-	valJ := extractValue(re, file2)
+	valJ := extractValue(re, reKey, file2)
 	if valJ == "" {
-		return "", "", fmt.Errorf("Unable to find `value` capture group in regex for file: %s", file2)
+		return "", "", fmt.Errorf("Unable to find `%s` capture group in regex for file: %s", reKey, file2)
 	}
 
 	return valI, valJ, nil
 }
 
-func extractValue(re *regexp.Regexp, input string) string {
+func extractValue(re *regexp.Regexp, reKey, input string) string {
 	match := re.FindStringSubmatch(input)
 	if match == nil {
 		return ""
 	}
 
 	for i, name := range re.SubexpNames() {
-		if name == "value" && i < len(match) {
+		if name == reKey && i < len(match) {
 			return match[i]
 		}
 	}

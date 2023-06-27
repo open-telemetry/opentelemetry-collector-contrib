@@ -164,13 +164,18 @@ func TestUnmarshal(t *testing.T) {
 				Name: "sort_by_timestamp",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.OrderingCriteria.SortBy = []SortRule{
+					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<value>\d{10})\.log`
+					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
-							SortType:  SortTypeTimestamp,
-							Regex:     `err\.[a-zA-Z]\.\d+\.(?P<value>\d{10})\.log`,
-							Location:  "utc",
-							Format:    `%Y%m%d%H`,
-							Ascending: true,
+							TimestampSortRule{
+								BaseSortRule: BaseSortRule{
+									SortType:  SortTypeTimestamp,
+									RegexKey:  "value",
+									Ascending: true,
+								},
+								Location: "utc",
+								Format:   `%Y%m%d%H`,
+							},
 						},
 					}
 					return newMockOperatorConfig(cfg)
@@ -180,10 +185,15 @@ func TestUnmarshal(t *testing.T) {
 				Name: "sort_by_numeric",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.OrderingCriteria.SortBy = []SortRule{
+					cfg.OrderingCriteria.Regex = `err\.(?P<value>[a-zA-Z])\.\d+\.\d{10}\.log`
+					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
-							SortType: SortTypeNumeric,
-							Regex:    `err\.(?P<value>[a-zA-Z])\.\d+\.\d{10}\.log`,
+							NumericSortRule{
+								BaseSortRule: BaseSortRule{
+									SortType: SortTypeNumeric,
+									RegexKey: "value",
+								},
+							},
 						},
 					}
 					return newMockOperatorConfig(cfg)
@@ -566,120 +576,14 @@ func TestBuild(t *testing.T) {
 		{
 			"BadOrderingCriteriaRegex",
 			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
-						SortType: SortTypeNumeric,
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaSortType",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: "invalid",
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaFormatNotNeeded",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: SortTypeNumeric,
-						Format:   "invalid",
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaFormatNotNeeded2",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: SortTypeAlphabetical,
-						Format:   "invalid",
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaLocationNotNeeded",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: SortTypeNumeric,
-						Format:   "invalid",
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaLocationNotNeeded2",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: SortTypeAlphabetical,
-						Format:   "invalid",
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaLocationNotNeeded2",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: SortTypeAlphabetical,
-						Format:   "invalid",
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaLocationNeeded",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: SortTypeTimestamp,
-						Format:   "%y%m%d",
-					},
-				}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadOrderingCriteriaFormatNeeded",
-			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRule{
-					{
-						Regex:    ".*",
-						SortType: SortTypeTimestamp,
-						Location: "utc",
+						NumericSortRule{
+							BaseSortRule: BaseSortRule{
+								RegexKey: "value",
+								SortType: SortTypeNumeric,
+							},
+						},
 					},
 				}
 			},

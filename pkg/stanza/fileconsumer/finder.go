@@ -4,6 +4,8 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"regexp"
+
 	"github.com/bmatcuk/doublestar/v4"
 	"go.uber.org/multierr"
 )
@@ -15,7 +17,11 @@ type Finder struct {
 }
 
 type OrderingCriteria struct {
-	SortBy []SortRule `mapstructure:"sort_by,omitempty"`
+	// TODO(#23787): Add Grouping Capability
+	// TODO(#23788): Add Support for multiple current files
+
+	Regex  string         `mapstructure:"regex,omitempty"`
+	SortBy []SortRuleImpl `mapstructure:"sort_by,omitempty"`
 }
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
@@ -53,9 +59,11 @@ func (f Finder) FindCurrent(files []string) ([]string, error) {
 		return files, nil
 	}
 
+	re := regexp.MustCompile(f.OrderingCriteria.Regex)
+
 	var errs error
-	for _, fsp := range f.OrderingCriteria.SortBy {
-		sortedFiles, err := fsp.Sort(files)
+	for _, SortPattern := range f.OrderingCriteria.SortBy {
+		sortedFiles, err := SortPattern.sort(re, files)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue

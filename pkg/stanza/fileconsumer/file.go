@@ -51,7 +51,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	}
 
 	if files, err := m.finder.FindFiles(); err != nil {
-		return fmt.Errorf("find files: %w", err)
+		m.Warnw("error occurred while finding files", "error", err.Error())
 	} else if len(files) == 0 {
 		m.Warnw("no files match the configured include patterns",
 			"include", m.finder.Include,
