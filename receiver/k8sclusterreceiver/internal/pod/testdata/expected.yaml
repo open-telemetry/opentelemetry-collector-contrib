@@ -76,13 +76,11 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 10
-            unit: "1"
             name: k8s.container.cpu_request
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asDouble: 20
-            unit: "1"
             name: k8s.container.cpu_limit
         scope:
           name: otelcol/k8sclusterreceiver
