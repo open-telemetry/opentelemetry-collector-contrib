@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
@@ -270,6 +271,7 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 
 	var rows []stringMap
 	var err error
+	observedAt := pcommon.NewTimestampFromTime(time.Now())
 	if queryReceiver.query.TrackingColumn != "" {
 		rows, err = queryReceiver.client.queryRows(ctx, queryReceiver.trackingValue)
 	} else {
@@ -283,7 +285,9 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
 		for _, row := range rows {
-			rowToLog(row, logsConfig, scopeLogs.AppendEmpty())
+			logRecord := scopeLogs.AppendEmpty()
+			rowToLog(row, logsConfig, logRecord)
+			logRecord.SetObservedTimestamp(observedAt)
 			if logsConfigIndex == 0 {
 				errs = multierr.Append(errs, queryReceiver.storeTrackingValue(ctx, row))
 			}
