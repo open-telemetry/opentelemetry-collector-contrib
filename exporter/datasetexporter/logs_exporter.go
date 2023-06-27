@@ -67,11 +67,8 @@ func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommo
 	// If user wants to achieve something like that, they usually handle that on the client
 	// (e.g. attribute processor or similar) or on the server (DataSet server side JSON parser
 	// for the message field).
-	if settings.DecomposeComplexMessageField {
-		switch value.Type() {
-		case pcommon.ValueTypeMap:
-			updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
-		}
+	if settings.DecomposeComplexMessageField && value.Type() == pcommon.ValueTypeMap {
+		updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
 	}
 
 	return message
