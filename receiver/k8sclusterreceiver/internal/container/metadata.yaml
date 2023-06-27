@@ -2,6 +2,8 @@ type: k8s/container
 
 sem_conv_version: 1.18.0
 
+parent: k8s_cluster
+
 resource_attributes:
   container.id:
     description: The container id.
