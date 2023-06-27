@@ -257,7 +257,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 			n++
 			continue
 		}
-		mv := v.(*accumulatedValue) //current accumulated histogram
+		mv := v.(*accumulatedValue)
 
 		m := copyMetricMetadata(metric)
 		m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -364,7 +364,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	// checking for bucket boundary alignment, optionally re-aggregate on newer boundaries
 	match := true
 	if older.ExplicitBounds().Len() == newer.ExplicitBounds().Len() {
-		for i := 0; i < newer.BucketCounts().Len(); i++ {
+		for i := 0; i < newer.ExplicitBounds().Len(); i++ {
 			if older.ExplicitBounds().At(i) != newer.ExplicitBounds().At(i) {
 				match = false
 				break
