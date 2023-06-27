@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+// We define it here so we can easily mock it inside tests
 var now = time.Now
 
 // If a LogRecord doesn't contain severity or we can't map it to a valid DataSet severity, we use
