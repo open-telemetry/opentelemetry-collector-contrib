@@ -73,13 +73,9 @@ type BaseConfig struct {
 	MultiLineBuilder            MultiLineBuilderFunc
 }
 
-type MultiLineBuilderFunc func() (bufio.SplitFunc, error)
+type MultiLineBuilderFunc func(encoding helper.Encoding) (bufio.SplitFunc, error)
 
-func (c Config) defaultMultilineBuilder() (bufio.SplitFunc, error) {
-	encoding, err := c.Encoding.Build()
-	if err != nil {
-		return nil, err
-	}
+func (c Config) defaultMultilineBuilder(encoding helper.Encoding) (bufio.SplitFunc, error) {
 	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
@@ -122,7 +118,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.MultiLineBuilder()
+	splitFunc, err := c.MultiLineBuilder(encoding)
 	if err != nil {
 		return nil, err
 	}

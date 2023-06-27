@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/internal"
@@ -207,7 +208,7 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		splitFunc, err := OctetMultiLineBuilder()
+		splitFunc, err := OctetMultiLineBuilder(helper.Encoding{})
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}

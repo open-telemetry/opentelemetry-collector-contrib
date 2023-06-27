@@ -143,7 +143,7 @@ func (t *Input) SetOutputs(operators []operator.Operator) error {
 	return t.parser.SetOutputs(operators)
 }
 
-func OctetMultiLineBuilder() (bufio.SplitFunc, error) {
+func OctetMultiLineBuilder(_ helper.Encoding) (bufio.SplitFunc, error) {
 	return newOctetFrameSplitFunc(true), nil
 }
 
