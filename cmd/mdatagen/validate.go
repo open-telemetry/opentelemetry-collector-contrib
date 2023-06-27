@@ -36,6 +36,10 @@ func (md *metadata) validateType() error {
 }
 
 func (md *metadata) validateStatus() error {
+	// TODO: Remove once k8s/container + k8s/pod have parent field.
+	if md.Type == "k8s/container" || md.Type == "k8s/pod" {
+		return nil
+	}
 	if md.Parent != "" && md.Status == nil {
 		// status is not required for subcomponents.
 		return nil
@@ -113,8 +117,9 @@ func (md *metadata) validateMetrics() error {
 				"only one of the following has to be specified: sum, gauge", mn))
 			continue
 		}
-		// TODO: Remove once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23573 is merged.
-		if md.Type != "redis" {
+		// TODO: Remove once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23573 is merged and
+		// k8s/container + k8s/pod have units.
+		if md.Type != "redis" && md.Type != "k8s/container" && md.Type != "k8s/pod" {
 			if err := m.validate(); err != nil {
 				errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
 				continue
