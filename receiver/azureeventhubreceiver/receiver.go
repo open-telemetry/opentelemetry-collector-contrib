@@ -73,6 +73,8 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.E
 		return receiver.consumeLogs(ctx, event)
 	case component.DataTypeMetrics:
 		return receiver.consumeMetrics(ctx, event)
+	case component.DataTypeTraces:
+		fallthrough
 	default:
 		return fmt.Errorf("invalid data type: %v", receiver.dataType)
 	}

@@ -205,8 +205,8 @@ func expectNoTokens(t *testing.T, c chan *emitParams) {
 
 func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
 	select {
-	case call := <-c:
-		require.FailNow(t, "Received unexpected message", "Message: %s", call.token)
+	case token := <-c:
+		require.FailNow(t, "Received unexpected message", "Message: %s", token)
 	case <-time.After(d):
 	}
 }

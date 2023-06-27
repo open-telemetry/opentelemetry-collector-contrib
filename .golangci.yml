@@ -158,9 +158,6 @@ issues:
     # in order to enable the exhaustive lint check.
     # We should not add more exclude-rules.
     # The progress of solving existing exclude-rules will be tracked in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23266
-    - path: azureeventhubreceiver
-      linters:
-        - exhaustive
     - path: filereceiver
       linters:
         - exhaustive
