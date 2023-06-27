@@ -2,6 +2,8 @@
 
 # k8s/container
 
+**Parent Component:** k8s_cluster
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -18,7 +20,7 @@ Maximum resource limit set for the container. See https://kubernetes.io/docs/ref
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Double |
+| {cpu} | Gauge | Double |
 
 ### k8s.container.cpu_request
 
@@ -26,7 +28,7 @@ Resource requested for the container. See https://kubernetes.io/docs/reference/g
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Double |
+| {cpu} | Gauge | Double |
 
 ### k8s.container.ephemeralstorage_limit
 
@@ -34,7 +36,7 @@ Maximum resource limit set for the container. See https://kubernetes.io/docs/ref
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| By | Gauge | Int |
 
 ### k8s.container.ephemeralstorage_request
 
@@ -42,7 +44,7 @@ Resource requested for the container. See https://kubernetes.io/docs/reference/g
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| By | Gauge | Int |
 
 ### k8s.container.memory_limit
 
@@ -50,7 +52,7 @@ Maximum resource limit set for the container. See https://kubernetes.io/docs/ref
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| By | Gauge | Int |
 
 ### k8s.container.memory_request
 
@@ -58,7 +60,7 @@ Resource requested for the container. See https://kubernetes.io/docs/reference/g
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| By | Gauge | Int |
 
 ### k8s.container.ready
 
@@ -82,7 +84,7 @@ Maximum resource limit set for the container. See https://kubernetes.io/docs/ref
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| By | Gauge | Int |
 
 ### k8s.container.storage_request
 
@@ -90,7 +92,7 @@ Resource requested for the container. See https://kubernetes.io/docs/reference/g
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| By | Gauge | Int |
 
 ## Resource Attributes
 
