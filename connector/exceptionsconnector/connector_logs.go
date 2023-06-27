@@ -93,6 +93,7 @@ func (c *logsConnector) exportLogs(ctx context.Context) error {
 func (c *logsConnector) attrToLogRecord(serviceName string, spanAttr, eventAttr pcommon.Map, eventTs pcommon.Timestamp) plog.LogRecord {
 	rl := c.ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("exceptionsconnector")
 	logRecord := sl.LogRecords().AppendEmpty()
 
 	logRecord.SetTimestamp(eventTs)
