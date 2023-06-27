@@ -1,9 +1,7 @@
----
 mode: daemonset
 image:
   repository: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
   tag: ""
-
 extraVolumes:
   - name: cgroups
     hostPath:
@@ -11,17 +9,14 @@ extraVolumes:
   - name: docker-sock
     hostPath:
       path: /var/run/docker.sock
-
 extraVolumeMounts:
   - name: cgroups
     mountPath: /sys/fs/cgroup
   - name: docker-sock
     mountPath: /var/run/docker.sock
-
 securityContext:
   runAsUser: 0
   runAsGroup: 0
-
 resources:
   limits:
     cpu: 256m
@@ -39,8 +34,13 @@ presets:
     enabled: true
   kubeletMetrics:
     enabled: true
-
 extraEnvs:
+  - name: POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
+  - name: OTEL_RESOURCE_ATTRIBUTES
+    value: "k8s.pod.ip=$(POD_IP)"
   - name: DD_API_KEY
     valueFrom:
       secretKeyRef:
@@ -87,7 +87,7 @@ config:
   exporters:
     datadog:
       host_metadata:
-        tags: [env:otel]
+        tags: ['env:otel']
       metrics:
         histograms:
           mode: counters
@@ -98,7 +98,6 @@ config:
         peer_service_aggregation: true
       api:
         key: "$DD_API_KEY"
-
   processors:
     resourcedetection:
       # ensures host.name and other important resource tags
@@ -162,7 +161,6 @@ config:
       send_batch_max_size: 1000
       send_batch_size: 100
       timeout: 10s
-
   service:
     telemetry:
       logs:
