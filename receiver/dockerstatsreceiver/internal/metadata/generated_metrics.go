@@ -3658,6 +3658,15 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
+// WithContainerCommandLine sets provided value as "container.command_line" attribute for current resource.
+func WithContainerCommandLine(val string) ResourceMetricsOption {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ContainerCommandLine.Enabled {
+			rm.Resource().Attributes().PutStr("container.command_line", val)
+		}
+	}
+}
+
 // WithContainerHostname sets provided value as "container.hostname" attribute for current resource.
 func WithContainerHostname(val string) ResourceMetricsOption {
 	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
@@ -3672,6 +3681,15 @@ func WithContainerID(val string) ResourceMetricsOption {
 	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		if rac.ContainerID.Enabled {
 			rm.Resource().Attributes().PutStr("container.id", val)
+		}
+	}
+}
+
+// WithContainerImageID sets provided value as "container.image.id" attribute for current resource.
+func WithContainerImageID(val string) ResourceMetricsOption {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.ContainerImageID.Enabled {
+			rm.Resource().Attributes().PutStr("container.image.id", val)
 		}
 	}
 }
