@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/internal"
 
 import (
 	"bufio"
@@ -76,7 +76,6 @@ type TokenizerTestCase struct {
 	Raw                         []byte
 	ExpectedTokenized           []string
 	ExpectedError               error
-	Flusher                     *Flusher
 	Sleep                       time.Duration
 	AdditionalIterations        int
 	PreserveLeadingWhitespaces  bool

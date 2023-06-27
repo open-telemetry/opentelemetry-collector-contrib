@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -140,7 +140,7 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 }
 
 func TestOctetFramingSplitFunc(t *testing.T) {
-	testCases := []helper.TokenizerTestCase{
+	testCases := []internal.TokenizerTestCase{
 		{
 			Name: "OneLogSimple",
 			Raw:  []byte(`17 my log LOGEND 123`),
@@ -174,34 +174,34 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 		{
 			Name: "HugeLog100",
 			Raw: func() []byte {
-				newRaw := helper.GeneratedByteSliceOfLength(100)
+				newRaw := internal.GeneratedByteSliceOfLength(100)
 				newRaw = append([]byte(`100 `), newRaw...)
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				`100 ` + string(helper.GeneratedByteSliceOfLength(100)),
+				`100 ` + string(internal.GeneratedByteSliceOfLength(100)),
 			},
 		},
 		{
 			Name: "maxCapacity",
 			Raw: func() []byte {
-				newRaw := helper.GeneratedByteSliceOfLength(4091)
+				newRaw := internal.GeneratedByteSliceOfLength(4091)
 				newRaw = append([]byte(`4091 `), newRaw...)
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				`4091 ` + string(helper.GeneratedByteSliceOfLength(4091)),
+				`4091 ` + string(internal.GeneratedByteSliceOfLength(4091)),
 			},
 		},
 		{
 			Name: "over capacity",
 			Raw: func() []byte {
-				newRaw := helper.GeneratedByteSliceOfLength(4092)
+				newRaw := internal.GeneratedByteSliceOfLength(4092)
 				newRaw = append([]byte(`5000 `), newRaw...)
 				return newRaw
 			}(),
 			ExpectedTokenized: []string{
-				`5000 ` + string(helper.GeneratedByteSliceOfLength(4091)),
+				`5000 ` + string(internal.GeneratedByteSliceOfLength(4091)),
 				`j`,
 			},
 		},
