@@ -27,6 +27,7 @@ dataset/full:
     max_wait: 3s
   logs:
     export_resource_info_on_event: true
+    decompose_complex_message_field: true
   retry_on_failure:
     enabled: true
     initial_interval: 11

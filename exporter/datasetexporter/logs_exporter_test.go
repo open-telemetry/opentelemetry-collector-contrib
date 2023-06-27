@@ -102,10 +102,12 @@ func TestBuildBody(t *testing.T) {
 		},
 	}
 
+	settings := newDefaultLogsSettings()
+
 	for _, tt := range tests {
 		t.Run(tt.valueType, func(*testing.T) {
 			attrs := make(map[string]interface{})
-			msg := buildBody(attrs, tt.body)
+			msg := buildBody(settings, attrs, tt.body)
 
 			assert.Equal(t, tt.message, msg, tt.valueType)
 		})
@@ -123,8 +125,11 @@ func TestBuildBodyMap(t *testing.T) {
 		"array": []any{1, 2, 3},
 	})
 	if assert.NoError(t, err) {
+		settings := newDefaultLogsSettings()
+		settings.DecomposeComplexMessageField = true
 		attrs := make(map[string]interface{})
-		msg := buildBody(attrs, m)
+
+		msg := buildBody(settings, attrs, m)
 		expectedAttrs := make(map[string]interface{})
 		expectedAttrs["body.map.scalar"] = "scalar-value"
 		expectedAttrs["body.map.map.m1"] = "v1"

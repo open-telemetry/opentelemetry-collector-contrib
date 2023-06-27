@@ -54,18 +54,24 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	)
 }
 
-func buildBody(attrs map[string]interface{}, value pcommon.Value) string {
+func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommon.Value) string {
+	// The message / body is stored as part of the "message" field on the DataSet event.
 	message := value.AsString()
 
-	// We already store value as part of a message field so there is no need to store it twice
-	// and also store the type which is dataset anti-pattern right now. We only handle it
-	// specially for map type where we decompose map into multiple attributes. Even though this
-	// may also not be desired in the future since other integrations don't handle it that way,
-	// but leave it up to the user to handle that (e.g. as part of a server side parser or otel
-	// collector attribute processor or similar).
-	switch value.Type() {
-	case pcommon.ValueTypeMap:
-		updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
+	// Additionally, we support de-composing complex message value (e.g. map / dictionary) into
+	// multiple event attributes.
+	//
+	// This functionality is behind a config option / feature flag and not enabled by default
+	// since no other existing DataSet integrations handle it in this manner (aka for out of
+	// the box consistency reasons).
+	// If user wants to achieve something like that, they usually handle that on the client
+	// (e.g. attribute processor or similar) or on the server (DataSet server side JSON parser
+	// for the message field).
+	if settings.DecomposeComplexMessageField {
+		switch value.Type() {
+		case pcommon.ValueTypeMap:
+			updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
+		}
 	}
 
 	return message
@@ -178,7 +184,7 @@ func buildEventFromLog(
 	}
 
 	if body := log.Body().AsString(); body != "" {
-		attrs["message"] = buildBody(attrs, log.Body())
+		attrs["message"] = buildBody(settings, attrs, log.Body())
 	}
 	if dropped := log.DroppedAttributesCount(); dropped > 0 {
 		attrs["dropped_attributes_count"] = dropped

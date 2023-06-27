@@ -44,6 +44,7 @@ func TestConfigUseDefaults(t *testing.T) {
 	assert.Equal(t, bufferMaxLifetime, config.MaxLifetime)
 	assert.Equal(t, tracesMaxWait, config.TracesSettings.MaxWait)
 	assert.Equal(t, logsExportResourceInfoDefault, config.LogsSettings.ExportResourceInfo)
+	assert.Equal(t, logsDecomposeComplexMessageFieldDefault, config.LogsSettings.DecomposeComplexMessageField)
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -115,7 +116,7 @@ func TestConfigString(t *testing.T) {
 	}
 
 	assert.Equal(t,
-		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:true MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}; LogsSettings: {ExportResourceInfo:false}",
+		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:true MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}; LogsSettings: {ExportResourceInfo:false DecomposeComplexMessageField:false}",
 		config.String(),
 	)
 }
