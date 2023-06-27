@@ -780,12 +780,14 @@ resourceMetrics:
                 - asDouble: 0.1
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "104857600"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_request
+            unit: "By"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -841,24 +843,28 @@ resourceMetrics:
                 - asDouble: 0.1
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "52428800"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_request
+            unit: "By"
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asDouble: 0.1
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_limit
+            unit: "{cpu}"
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "52428800"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
+            unit: "By"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -914,6 +920,7 @@ resourceMetrics:
                 - asDouble: 0.25
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -969,6 +976,7 @@ resourceMetrics:
                 - asDouble: 0.1
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -1024,6 +1032,7 @@ resourceMetrics:
                 - asDouble: 0.2
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -1128,18 +1137,21 @@ resourceMetrics:
                 - asDouble: 0.1
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "73400320"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_request
+            unit: "By"
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "178257920"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
+            unit: "By"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -1195,24 +1207,28 @@ resourceMetrics:
                 - asInt: "268435456"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_request
+            unit: "By"
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asDouble: 0.128
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asDouble: 0.128
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_limit
+            unit: "{cpu}"
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "268435456"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
+            unit: "By"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -1317,18 +1333,21 @@ resourceMetrics:
                 - asDouble: 0.1
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
+            unit: "{cpu}"
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "73400320"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_request
+            unit: "By"
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
                 - asInt: "178257920"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
+            unit: "By"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

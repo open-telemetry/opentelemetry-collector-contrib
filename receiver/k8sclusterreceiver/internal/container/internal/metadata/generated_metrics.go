@@ -22,7 +22,7 @@ type metricK8sContainerCPULimit struct {
 func (m *metricK8sContainerCPULimit) init() {
 	m.data.SetName("k8s.container.cpu_limit")
 	m.data.SetDescription("Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("{cpu}")
 	m.data.SetEmptyGauge()
 }
 
@@ -71,7 +71,7 @@ type metricK8sContainerCPURequest struct {
 func (m *metricK8sContainerCPURequest) init() {
 	m.data.SetName("k8s.container.cpu_request")
 	m.data.SetDescription("Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("{cpu}")
 	m.data.SetEmptyGauge()
 }
 
@@ -120,7 +120,7 @@ type metricK8sContainerEphemeralstorageLimit struct {
 func (m *metricK8sContainerEphemeralstorageLimit) init() {
 	m.data.SetName("k8s.container.ephemeralstorage_limit")
 	m.data.SetDescription("Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -169,7 +169,7 @@ type metricK8sContainerEphemeralstorageRequest struct {
 func (m *metricK8sContainerEphemeralstorageRequest) init() {
 	m.data.SetName("k8s.container.ephemeralstorage_request")
 	m.data.SetDescription("Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -218,7 +218,7 @@ type metricK8sContainerMemoryLimit struct {
 func (m *metricK8sContainerMemoryLimit) init() {
 	m.data.SetName("k8s.container.memory_limit")
 	m.data.SetDescription("Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -267,7 +267,7 @@ type metricK8sContainerMemoryRequest struct {
 func (m *metricK8sContainerMemoryRequest) init() {
 	m.data.SetName("k8s.container.memory_request")
 	m.data.SetDescription("Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -414,7 +414,7 @@ type metricK8sContainerStorageLimit struct {
 func (m *metricK8sContainerStorageLimit) init() {
 	m.data.SetName("k8s.container.storage_limit")
 	m.data.SetDescription("Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
@@ -463,7 +463,7 @@ type metricK8sContainerStorageRequest struct {
 func (m *metricK8sContainerStorageRequest) init() {
 	m.data.SetName("k8s.container.storage_request")
 	m.data.SetDescription("Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details")
-	m.data.SetUnit("")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 }
 
