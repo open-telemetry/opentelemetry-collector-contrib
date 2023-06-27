@@ -54,41 +54,49 @@ metrics:
   k8s.container.cpu_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "{cpu}"
     gauge:
       value_type: double
   k8s.container.cpu_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "{cpu}"
     gauge:
       value_type: double
   k8s.container.memory_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     gauge:
       value_type: int
   k8s.container.memory_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     gauge:
       value_type: int
   k8s.container.storage_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     gauge:
       value_type: int
   k8s.container.storage_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     gauge:
       value_type: int
   k8s.container.ephemeralstorage_request:
     enabled: true
     description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     gauge:
       value_type: int
   k8s.container.ephemeralstorage_limit:
     enabled: true
     description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+    unit: "By"
     gauge:
       value_type: int
   k8s.container.restarts:
