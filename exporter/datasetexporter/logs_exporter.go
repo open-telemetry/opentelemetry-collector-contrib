@@ -21,6 +21,9 @@ import (
 // We define it here so we can easily mock it inside tests
 var now = time.Now
 
+// Prefix which is added to all the special / internal DataSet fields
+const specialDataSetFieldNamePrefix string = "sca:"
+
 // If a LogRecord doesn't contain severity or we can't map it to a valid DataSet severity, we use
 // this value (3 - INFO) instead
 const defaultDataSetSeverityLevel int = dataSetLogLevelInfo
@@ -184,12 +187,15 @@ func buildEventFromLog(
 	if body := log.Body().AsString(); body != "" {
 		attrs["message"] = buildBody(settings, attrs, log.Body())
 	}
+
 	if dropped := log.DroppedAttributesCount(); dropped > 0 {
 		attrs["dropped_attributes_count"] = dropped
 	}
+
 	if !observedTs.Equal(time.Unix(0, 0)) {
-		attrs["sca:observedTimestamp"] = strconv.FormatInt(observedTs.UnixNano(), 10)
+		attrs[specialDataSetFieldNamePrefix + "observedTimestamp"] = strconv.FormatInt(observedTs.UnixNano(), 10)
 	}
+
 	if span := log.SpanID().String(); span != "" {
 		attrs["span_id"] = span
 	}
