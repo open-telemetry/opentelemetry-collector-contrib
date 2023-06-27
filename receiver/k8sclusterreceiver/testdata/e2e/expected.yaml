@@ -450,6 +450,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -479,6 +480,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -508,6 +510,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -537,6 +540,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -566,6 +570,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -595,6 +600,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -624,6 +630,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -653,6 +660,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -682,6 +690,7 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -711,7 +720,10 @@ resourceMetrics:
                 - asInt: "2"
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
-        scope: {}
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -769,7 +781,9 @@ resourceMetrics:
                 - asInt: "104857600"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_request
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -839,7 +853,9 @@ resourceMetrics:
                 - asInt: "52428800"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -891,7 +907,9 @@ resourceMetrics:
                 - asDouble: 0.25
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -943,7 +961,9 @@ resourceMetrics:
                 - asDouble: 0.1
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -995,7 +1015,9 @@ resourceMetrics:
                 - asDouble: 0.2
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.cpu_request
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -1041,7 +1063,9 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -1105,7 +1129,9 @@ resourceMetrics:
                 - asInt: "178257920"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -1175,7 +1201,9 @@ resourceMetrics:
                 - asInt: "268435456"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -1221,7 +1249,9 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: container.id
@@ -1285,4 +1315,6 @@ resourceMetrics:
                 - asInt: "178257920"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_limit
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

@@ -46,9 +46,11 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 	}
 
 	var containerID string
+	var imageStr string
 	for _, cs := range pod.Status.ContainerStatuses {
 		if cs.Name == c.Name {
 			containerID = cs.ContainerID
+			imageStr = cs.Image
 		}
 	}
 	resourceOptions := []imetadata.ResourceMetricsOption{
@@ -60,9 +62,9 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 		imetadata.WithContainerID(utils.StripContainerID(containerID)),
 		imetadata.WithK8sContainerName(c.Name),
 	}
-	image, err := docker.ParseImageName(c.Image)
+	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
-		docker.LogParseError(err, c.Image, set.Logger)
+		docker.LogParseError(err, imageStr, set.Logger)
 	} else {
 		resourceOptions = append(resourceOptions,
 			imetadata.WithContainerImageName(image.Repository),
