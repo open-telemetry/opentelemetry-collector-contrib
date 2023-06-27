@@ -136,10 +136,10 @@ func (md *metadata) validateMetrics() error {
 func (m *metric) validate() error {
 	var errs error
 	if m.Description == "" {
-		errs = multierr.Append(errs, fmt.Errorf(`missing metric description`))
+		errs = multierr.Append(errs, errors.New(`missing metric description`))
 	}
 	if m.Unit == "" {
-		errs = multierr.Append(errs, fmt.Errorf(`missing metric unit`))
+		errs = multierr.Append(errs, errors.New(`missing metric unit`))
 	}
 	if m.Sum != nil {
 		errs = multierr.Append(errs, m.Sum.Validate())
