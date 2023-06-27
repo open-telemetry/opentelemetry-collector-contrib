@@ -231,6 +231,7 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
 		LogsSettings{
 			ExportResourceInfo: true,
+			ExportScopeInfo:    true,
 		},
 	)
 
@@ -352,6 +353,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
 		},
+		LogsSettings:    newDefaultLogsSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),

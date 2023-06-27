@@ -193,7 +193,7 @@ func buildEventFromLog(
 	}
 
 	if !observedTs.Equal(time.Unix(0, 0)) {
-		attrs[specialDataSetFieldNamePrefix + "observedTimestamp"] = strconv.FormatInt(observedTs.UnixNano(), 10)
+		attrs[specialDataSetFieldNamePrefix+"observedTimestamp"] = strconv.FormatInt(observedTs.UnixNano(), 10)
 	}
 
 	if span := log.SpanID().String(); span != "" {
@@ -223,8 +223,13 @@ func buildEventFromLog(
 	if settings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
-	attrs["scope.name"] = scope.Name()
-	updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+
+	fmt.Printf("a, %v", settings.ExportScopeInfo)
+
+	if settings.ExportScopeInfo {
+		attrs["scope.name"] = scope.Name()
+		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+	}
 
 	event.Attrs = attrs
 	event.Log = "LL"

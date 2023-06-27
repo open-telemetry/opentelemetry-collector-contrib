@@ -33,6 +33,7 @@ func newDefaultTracesSettings() TracesSettings {
 }
 
 const logsExportResourceInfoDefault = false
+const logsExportScopeInfoDefault = true
 const logsDecomposeComplexMessageFieldDefault = false
 
 type LogsSettings struct {
@@ -40,6 +41,11 @@ type LogsSettings struct {
 	// This is especially useful when reducing DataSet billable log volume.
 	// Default value: false.
 	ExportResourceInfo bool `mapstructure:"export_resource_info_on_event"`
+
+	// ExportScopeInfo is optional flag that signals if scope info should be exported (when available) with each event. If scope
+	// information is not utilized, it makes sense to disable exporting it since it will result in increased billable log volume.
+	ExportScopeInfo bool `mapstructure:"export_scope_info_on_event"`
+
 	// DecomposeComplexMessageField is an optional flag to signal that message / body of complex types (e.g. a map) should be
 	// decomposed / deconstructed into multiple fields. This is usually done outside of the main DataSet integration on the
 	// client side (e.g. as part of the attribute processor or similar) or on the server side (DataSet server side JSON parser
@@ -51,6 +57,7 @@ type LogsSettings struct {
 func newDefaultLogsSettings() LogsSettings {
 	return LogsSettings{
 		ExportResourceInfo:           logsExportResourceInfoDefault,
+		ExportScopeInfo:              logsExportScopeInfoDefault,
 		DecomposeComplexMessageField: logsDecomposeComplexMessageFieldDefault,
 	}
 }
