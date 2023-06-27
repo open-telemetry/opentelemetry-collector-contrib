@@ -62,13 +62,6 @@ type MetricInputType struct {
 	InputType string `mapstructure:"input_type"`
 }
 
-func (mit MetricInputType) Validate() error {
-	if mit.InputType != "" && mit.InputType != "string" {
-		return fmt.Errorf("invalid `input_type` value \"%v\", must be \"\" or \"string\"", mit.InputType)
-	}
-	return nil
-}
-
 func (mit MetricInputType) HasMetricInputType() bool {
 	return mit.InputType != ""
 }
@@ -155,11 +148,25 @@ type sum struct {
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
 func (d *sum) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("aggregation") {
+		return errors.New("missing required field: `aggregation`")
+	}
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
 	return parser.Unmarshal(d, confmap.WithErrorUnused())
 }
+
+// TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
+// add a test case to Test_loadMetadata for file no_monotonic.yaml once the issue is solved.
+//
+// Unmarshal is a custom unmarshaler for Mono.
+// func (m *Mono) Unmarshal(parser *confmap.Conf) error {
+// 	if !parser.IsSet("monotonic") {
+// 		return errors.New("missing required field: `monotonic`")
+// 	}
+// 	return parser.Unmarshal(m, confmap.WithErrorUnused())
+// }
 
 func (d sum) Type() string {
 	return "Sum"

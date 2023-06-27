@@ -1,4 +1,4 @@
-type: test
+type: file
 
 status:
   class: receiver
@@ -10,8 +10,13 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
-resource_attributes:
-  res.attr1:
-    description: Resource attribute 1.
-    type: string
+
+metrics:
+  default.metric:
     enabled: true
+    extended_documentation: The metric will be become optional soon.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
