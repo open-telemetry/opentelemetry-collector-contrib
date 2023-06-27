@@ -24,8 +24,8 @@ type TestReader struct {
 	Data  []byte
 }
 
-// NewReader creates TestReader with empty state
-func NewReader(data []byte) TestReader {
+// NewTestReader creates TestReader with empty state
+func NewTestReader(data []byte) TestReader {
 	return TestReader{
 		State: &state{
 			ReadFrom:  0,
@@ -83,7 +83,7 @@ type TokenizerTestCase struct {
 }
 
 func (tc TokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) {
-	reader := NewReader(tc.Raw)
+	reader := NewTestReader(tc.Raw)
 
 	return func(t *testing.T) {
 		var tokenized []string
