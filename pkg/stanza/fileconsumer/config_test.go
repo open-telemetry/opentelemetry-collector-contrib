@@ -164,13 +164,13 @@ func TestUnmarshal(t *testing.T) {
 				Name: "sort_by_timestamp",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<value>\d{10})\.log`
+					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`
 					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
 							TimestampSortRule{
 								BaseSortRule: BaseSortRule{
 									SortType:  SortTypeTimestamp,
-									RegexKey:  "value",
+									RegexKey:  "rotation_time",
 									Ascending: true,
 								},
 								Location: "utc",
@@ -185,13 +185,13 @@ func TestUnmarshal(t *testing.T) {
 				Name: "sort_by_numeric",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.OrderingCriteria.Regex = `err\.(?P<value>[a-zA-Z])\.\d+\.\d{10}\.log`
+					cfg.OrderingCriteria.Regex = `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`
 					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
 							NumericSortRule{
 								BaseSortRule: BaseSortRule{
 									SortType: SortTypeNumeric,
-									RegexKey: "value",
+									RegexKey: "file_num",
 								},
 							},
 						},

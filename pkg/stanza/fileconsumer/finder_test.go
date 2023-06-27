@@ -316,13 +316,13 @@ func TestFinder(t *testing.T) {
 						AlphabeticalSortRule{
 							BaseSortRule: BaseSortRule{
 								RegexKey:  "alpha",
-								Ascending: false,
+								Ascending: true,
 							},
 						},
 					},
 				},
 			},
-			expected: []string{"err.d.123456787.2023020611.log"},
+			expected: []string{"err.a.123456786.2023020610.log"},
 		},
 	}
 

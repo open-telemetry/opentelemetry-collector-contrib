@@ -54,17 +54,17 @@ exclude_one:
 sort_by_numeric:
   type: mock
   ordering_criteria:
-    regex: 'err\.(?P<value>[a-zA-Z])\.\d+\.\d{10}\.log'
+    regex: 'err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log'
     sort_by:
-      - regex_key: value
+      - regex_key: file_num
         sort_type: numeric
 sort_by_timestamp:
   type: mock
   ordering_criteria:
-    regex: 'err\.[a-zA-Z]\.\d+\.(?P<value>\d{10})\.log'
+    regex: 'err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log'
     sort_by:
       - sort_type: timestamp
-        regex_key: value
+        regex_key: rotation_time
         format: "%Y%m%d%H"
         location: "utc"
         ascending: true
