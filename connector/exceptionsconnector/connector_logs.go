@@ -17,7 +17,6 @@ package exceptionsconnector
 import (
 	"context"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -72,7 +71,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					if event.Name() == "exception" {
-						c.attrToLogRecord(serviceName, span.Attributes(), event.Attributes())
+						c.attrToLogRecord(serviceName, span.Attributes(), event.Attributes(), event.Timestamp())
 					}
 				}
 			}
@@ -91,12 +90,12 @@ func (c *logsConnector) exportLogs(ctx context.Context) error {
 	return nil
 }
 
-func (c *logsConnector) attrToLogRecord(serviceName string, spanAttr, eventAttr pcommon.Map) plog.LogRecord {
+func (c *logsConnector) attrToLogRecord(serviceName string, spanAttr, eventAttr pcommon.Map, eventTs pcommon.Timestamp) plog.LogRecord {
 	rl := c.ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	logRecord := sl.LogRecords().AppendEmpty()
 
-	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	logRecord.SetTimestamp(eventTs)
 	logRecord.SetSeverityNumber(plog.SeverityNumberError)
 	logRecord.SetSeverityText("ERROR")
 
