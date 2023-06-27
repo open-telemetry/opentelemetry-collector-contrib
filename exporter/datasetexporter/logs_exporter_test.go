@@ -61,65 +61,53 @@ func TestBuildBody(t *testing.T) {
 	err = bytes.FromRaw([]byte{byte(65), byte(66), byte(67)})
 	assert.NoError(t, err)
 	tests := []struct {
-		body    pcommon.Value
-		key     string
-		value   interface{}
-		message string
+		body      pcommon.Value
+		valueType string
+		message   string
 	}{
 		{
-			body:    pcommon.NewValueEmpty(),
-			key:     "body.empty",
-			value:   "",
-			message: "",
+			body:      pcommon.NewValueEmpty(),
+			valueType: "empty",
+			message:   "",
 		},
 		{
-			body:    pcommon.NewValueStr("foo"),
-			key:     "body.str",
-			value:   "foo",
-			message: "foo",
+			body:      pcommon.NewValueStr("foo"),
+			valueType: "string",
+			message:   "foo",
 		},
 		{
-			body:    pcommon.NewValueBool(true),
-			key:     "body.bool",
-			value:   true,
-			message: "true",
+			body:      pcommon.NewValueBool(true),
+			valueType: "bool",
+			message:   "true",
 		},
 		{
-			body:    pcommon.NewValueDouble(42.5),
-			key:     "body.double",
-			value:   float64(42.5),
-			message: "42.5",
+			body:      pcommon.NewValueDouble(42.5),
+			valueType: "double",
+			message:   "42.5",
 		},
 		{
-			body:    pcommon.NewValueInt(42),
-			key:     "body.int",
-			value:   int64(42),
-			message: "42",
+			body:      pcommon.NewValueInt(42),
+			valueType: "int",
+			message:   "42",
 		},
 		{
-			body:    bytes,
-			key:     "body.bytes",
-			value:   "QUJD",
-			message: "QUJD",
+			body:      bytes,
+			valueType: "bytes",
+			message:   "QUJD",
 		},
 		{
-			body:    slice,
-			key:     "body.slice",
-			value:   []interface{}{int64(1), int64(2), int64(3)},
-			message: "[1,2,3]",
+			body:      slice,
+			valueType: "simpleMap",
+			message:   "[1,2,3]",
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.key, func(*testing.T) {
+		t.Run(tt.valueType, func(*testing.T) {
 			attrs := make(map[string]interface{})
 			msg := buildBody(attrs, tt.body)
-			expectedAttrs := make(map[string]interface{})
-			expectedAttrs["body.type"] = tt.body.Type().String()
-			expectedAttrs[tt.key] = tt.value
 
-			assert.Equal(t, tt.message, msg, tt.key)
-			assert.Equal(t, expectedAttrs, attrs, tt.key)
+			assert.Equal(t, tt.message, msg, tt.valueType)
 		})
 	}
 }
@@ -138,7 +126,6 @@ func TestBuildBodyMap(t *testing.T) {
 		attrs := make(map[string]interface{})
 		msg := buildBody(attrs, m)
 		expectedAttrs := make(map[string]interface{})
-		expectedAttrs["body.type"] = pcommon.ValueTypeMap.String()
 		expectedAttrs["body.map.scalar"] = "scalar-value"
 		expectedAttrs["body.map.map.m1"] = "v1"
 		expectedAttrs["body.map.map.m2"] = "v2"
@@ -161,8 +148,6 @@ var testLEventRaw = &add_events.Event{
 	Attrs: map[string]interface{}{
 		"attributes.app":           "server",
 		"attributes.instance_num":  int64(1),
-		"body.str":                 "This is a log message",
-		"body.type":                "Str",
 		"dropped_attributes_count": uint32(1),
 		"message":                  "This is a log message",
 		"scope.name":               "",
@@ -179,8 +164,6 @@ var testLEventReq = &add_events.Event{
 	Attrs: map[string]interface{}{
 		"attributes.app":           "server",
 		"attributes.instance_num":  float64(1),
-		"body.str":                 "This is a log message",
-		"body.type":                "Str",
 		"dropped_attributes_count": float64(1),
 		"message":                  "This is a log message",
 		"scope.name":               "",

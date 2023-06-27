@@ -56,26 +56,16 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 
 func buildBody(attrs map[string]interface{}, value pcommon.Value) string {
 	message := value.AsString()
-	attrs["body.type"] = value.Type().String()
+
+	// We already store value as part of a message field so there is no need to store it twice
+	// and also store the type which is dataset anti-pattern right now. We only handle it
+	// specially for map type where we decompose map into multiple attributes. Even though this
+	// may also not be desired in the future since other integrations don't handle it that way,
+	// but leave it up to the user to handle that (e.g. as part of a server side parser or otel
+	// collector attribute processor or similar).
 	switch value.Type() {
-	case pcommon.ValueTypeEmpty:
-		attrs["body.empty"] = value.AsString()
-	case pcommon.ValueTypeStr:
-		attrs["body.str"] = value.Str()
-	case pcommon.ValueTypeBool:
-		attrs["body.bool"] = value.Bool()
-	case pcommon.ValueTypeDouble:
-		attrs["body.double"] = value.Double()
-	case pcommon.ValueTypeInt:
-		attrs["body.int"] = value.Int()
 	case pcommon.ValueTypeMap:
 		updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
-	case pcommon.ValueTypeBytes:
-		attrs["body.bytes"] = value.AsString()
-	case pcommon.ValueTypeSlice:
-		attrs["body.slice"] = value.AsRaw()
-	default:
-		attrs["body.unknown"] = value.AsString()
 	}
 
 	return message
