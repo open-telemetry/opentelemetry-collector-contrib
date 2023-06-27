@@ -4,7 +4,10 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -190,7 +193,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 
 	r.ReadToEnd(context.Background())
 
-	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
+	require.Equal(t, fileContent, r.Fingerprint.FirstBytes)
 }
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
@@ -238,4 +241,373 @@ func TestMapCopy(t *testing.T) {
 	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
 	assert.Equal(t, 1, initMap["intVal"])
 	assert.Equal(t, "OrigStr", initMap["strVal"])
+}
+
+func TestEncodingDecode(t *testing.T) {
+	testFile := openTemp(t, t.TempDir())
+	testToken := tokenWithLength(2 * DefaultFingerprintSize)
+	_, err := testFile.Write(testToken)
+	require.NoError(t, err)
+	fp, err := NewFingerprint(testFile, DefaultFingerprintSize)
+	require.NoError(t, err)
+
+	f := readerFactory{
+		SugaredLogger: testutil.Logger(t),
+		readerConfig: &readerConfig{
+			fingerprintSize: DefaultFingerprintSize,
+			maxLogSize:      defaultMaxLogSize,
+		},
+		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
+		fromBeginning:   false,
+	}
+	r, err := f.newReader(testFile, fp)
+	require.NoError(t, err)
+
+	// Just faking out these properties
+	r.HeaderFinalized = true
+	r.FileAttributes.HeaderAttributes = map[string]any{"foo": "bar"}
+
+	assert.Equal(t, testToken[:DefaultFingerprintSize], r.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*DefaultFingerprintSize), r.Offset)
+
+	// Encode
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	require.NoError(t, enc.Encode(r))
+
+	// Decode
+	dec := json.NewDecoder(bytes.NewReader(buf.Bytes()))
+	decodedReader, err := f.unsafeReader()
+	require.NoError(t, err)
+	require.NoError(t, dec.Decode(decodedReader))
+
+	// Assert decoded reader has values persisted
+	assert.Equal(t, testToken[:DefaultFingerprintSize], decodedReader.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*DefaultFingerprintSize), decodedReader.Offset)
+	assert.True(t, decodedReader.HeaderFinalized)
+	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes.HeaderAttributes)
+
+	// These fields are intentionally excluded, as they may have changed
+	assert.Empty(t, decodedReader.FileAttributes.Name)
+	assert.Empty(t, decodedReader.FileAttributes.Path)
+	assert.Empty(t, decodedReader.FileAttributes.NameResolved)
+	assert.Empty(t, decodedReader.FileAttributes.PathResolved)
+}
+
+func TestReaderUpdateFingerprint(t *testing.T) {
+	bufferSizes := []int{2, 3, 5, 8, 10, 13, 20, 50}
+	testCases := []updateFingerprintTest{
+		{
+			name:              "new_file",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte(""),
+			moreBytes:         []byte("1234567890\n"),
+			expectTokens:      [][]byte{[]byte("1234567890")},
+			expectOffset:      11,
+			expectFingerprint: []byte("1234567890"),
+		},
+		{
+			name:              "existing_partial_line_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("1234567890\n"),
+			expectTokens:      [][]byte{[]byte("foo1234567890")},
+			expectOffset:      14,
+			expectFingerprint: []byte("foo1234567"),
+		},
+		{
+			name:              "existing_partial_line",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("1234567890\n"),
+			expectTokens:      [][]byte{[]byte("1234567890")},
+			expectOffset:      14,
+			expectFingerprint: []byte("foo1234567"),
+		},
+		{
+			name:              "existing_full_line_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte("foo\n"),
+			moreBytes:         []byte("1234567890\n"),
+			expectTokens:      [][]byte{[]byte("foo"), []byte("1234567890")},
+			expectOffset:      15,
+			expectFingerprint: []byte("foo\n123456"),
+		},
+		{
+			name:              "existing_full_line",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte("foo\n"),
+			moreBytes:         []byte("1234567890\n"),
+			expectTokens:      [][]byte{[]byte("1234567890")},
+			expectOffset:      15,
+			expectFingerprint: []byte("foo\n123456"),
+		},
+		{
+			name:              "split_none_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("1234567890"),
+			expectTokens:      [][]byte{},
+			expectOffset:      0,
+			expectFingerprint: []byte("foo1234567"),
+		},
+		{
+			name:              "split_none",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("1234567890"),
+			expectTokens:      [][]byte{},
+			expectOffset:      3,
+			expectFingerprint: []byte("foo1234567"),
+		},
+		{
+			name:              "split_mid_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("12345\n67890"),
+			expectTokens:      [][]byte{[]byte("foo12345")},
+			expectOffset:      9,
+			expectFingerprint: []byte("foo12345\n6"),
+		},
+		{
+			name:              "split_mid",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("12345\n67890"),
+			expectTokens:      [][]byte{[]byte("12345")},
+			expectOffset:      9,
+			expectFingerprint: []byte("foo12345\n6"),
+		},
+		{
+			name:              "clean_end_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("12345\n67890\n"),
+			expectTokens:      [][]byte{[]byte("foo12345"), []byte("67890")},
+			expectOffset:      15,
+			expectFingerprint: []byte("foo12345\n6"),
+		},
+		{
+			name:              "clean_end",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("12345\n67890\n"),
+			expectTokens:      [][]byte{[]byte("12345"), []byte("67890")},
+			expectOffset:      15,
+			expectFingerprint: []byte("foo12345\n6"),
+		},
+		{
+			name:              "full_lines_only_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte("foo\n"),
+			moreBytes:         []byte("12345\n67890\n"),
+			expectTokens:      [][]byte{[]byte("foo"), []byte("12345"), []byte("67890")},
+			expectOffset:      16,
+			expectFingerprint: []byte("foo\n12345\n"),
+		},
+		{
+			name:              "full_lines_only",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte("foo\n"),
+			moreBytes:         []byte("12345\n67890\n"),
+			expectTokens:      [][]byte{[]byte("12345"), []byte("67890")},
+			expectOffset:      16,
+			expectFingerprint: []byte("foo\n12345\n"),
+		},
+		{
+			name:              "tiny_max_log_size_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        2,
+			fromBeginning:     true,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("12345\n67890"),
+			expectTokens:      [][]byte{[]byte("fo"), []byte("o1"), []byte("23"), []byte("45"), []byte("67"), []byte("89")},
+			expectOffset:      13,
+			expectFingerprint: []byte("foo12345\n6"),
+		},
+		{
+			name:              "tiny_max_log_size",
+			fingerprintSize:   10,
+			maxLogSize:        2,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("12345\n67890"),
+			expectTokens:      [][]byte{[]byte("12"), []byte("34"), []byte("5"), []byte("67"), []byte("89")},
+			expectOffset:      13,
+			expectFingerprint: []byte("foo12345\n6"),
+		},
+		{
+			name:              "small_max_log_size_from_start",
+			fingerprintSize:   20,
+			maxLogSize:        4,
+			fromBeginning:     true,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("1234567890\nbar\nhelloworld\n"),
+			expectTokens:      [][]byte{[]byte("foo1"), []byte("2345"), []byte("6789"), []byte("0"), []byte("bar"), []byte("hell"), []byte("owor"), []byte("ld")},
+			expectOffset:      29,
+			expectFingerprint: []byte("foo1234567890\nbar\nhe"),
+		},
+		{
+			name:              "small_max_log_size",
+			fingerprintSize:   20,
+			maxLogSize:        4,
+			initBytes:         []byte("foo"),
+			moreBytes:         []byte("1234567890\nbar\nhelloworld\n"),
+			expectTokens:      [][]byte{[]byte("1234"), []byte("5678"), []byte("90"), []byte("bar"), []byte("hell"), []byte("owor"), []byte("ld")},
+			expectOffset:      29,
+			expectFingerprint: []byte("foo1234567890\nbar\nhe"),
+		},
+		{
+			name:              "leading_empty_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte(""),
+			moreBytes:         []byte("\n12345\n67890\n"),
+			expectTokens:      [][]byte{[]byte(""), []byte("12345"), []byte("67890")},
+			expectOffset:      13,
+			expectFingerprint: []byte("\n12345\n678"),
+		},
+		{
+			name:              "leading_empty",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte(""),
+			moreBytes:         []byte("\n12345\n67890\n"),
+			expectTokens:      [][]byte{[]byte(""), []byte("12345"), []byte("67890")},
+			expectOffset:      13,
+			expectFingerprint: []byte("\n12345\n678"),
+		},
+		{
+			name:              "multiple_empty_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte(""),
+			moreBytes:         []byte("\n\n12345\n\n67890\n\n"),
+			expectTokens:      [][]byte{[]byte(""), []byte(""), []byte("12345"), []byte(""), []byte("67890"), []byte("")},
+			expectOffset:      16,
+			expectFingerprint: []byte("\n\n12345\n\n6"),
+		},
+		{
+			name:              "multiple_empty",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte(""),
+			moreBytes:         []byte("\n\n12345\n\n67890\n\n"),
+			expectTokens:      [][]byte{[]byte(""), []byte(""), []byte("12345"), []byte(""), []byte("67890"), []byte("")},
+			expectOffset:      16,
+			expectFingerprint: []byte("\n\n12345\n\n6"),
+		},
+		{
+			name:              "multiple_empty_partial_end_from_start",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			fromBeginning:     true,
+			initBytes:         []byte(""),
+			moreBytes:         []byte("\n\n12345\n\n67890"),
+			expectTokens:      [][]byte{[]byte(""), []byte(""), []byte("12345"), []byte("")},
+			expectOffset:      9,
+			expectFingerprint: []byte("\n\n12345\n\n6"),
+		},
+		{
+			name:              "multiple_empty_partial_end",
+			fingerprintSize:   10,
+			maxLogSize:        100,
+			initBytes:         []byte(""),
+			moreBytes:         []byte("\n\n12345\n\n67890"),
+			expectTokens:      [][]byte{[]byte(""), []byte(""), []byte("12345"), []byte("")},
+			expectOffset:      9,
+			expectFingerprint: []byte("\n\n12345\n\n6"),
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, bufferSize := range bufferSizes {
+			t.Run(fmt.Sprintf("%s/bufferSize:%d", tc.name, bufferSize), tc.run(bufferSize))
+		}
+	}
+}
+
+type updateFingerprintTest struct {
+	name              string
+	fingerprintSize   int
+	maxLogSize        int
+	fromBeginning     bool
+	initBytes         []byte
+	moreBytes         []byte
+	expectTokens      [][]byte
+	expectOffset      int64
+	expectFingerprint []byte
+}
+
+func (tc updateFingerprintTest) run(bufferSize int) func(*testing.T) {
+	return func(t *testing.T) {
+		splitterConfig := helper.NewSplitterConfig()
+		emitChan := make(chan *emitParams, 100)
+		f := &readerFactory{
+			SugaredLogger: testutil.Logger(t),
+			readerConfig: &readerConfig{
+				fingerprintSize: tc.fingerprintSize,
+				maxLogSize:      tc.maxLogSize,
+				bufferSize:      bufferSize,
+				emit:            testEmitFunc(emitChan),
+			},
+			fromBeginning:   tc.fromBeginning,
+			splitterFactory: newMultilineSplitterFactory(splitterConfig),
+			encodingConfig:  splitterConfig.EncodingConfig,
+		}
+
+		temp := openTemp(t, t.TempDir())
+		_, err := temp.Write(tc.initBytes)
+		require.NoError(t, err)
+
+		fi, err := temp.Stat()
+		require.NoError(t, err)
+		require.Equal(t, int64(len(tc.initBytes)), fi.Size())
+
+		fp, err := NewFingerprint(temp, tc.fingerprintSize)
+		require.NoError(t, err)
+		r, err := f.newReader(temp, fp)
+		require.NoError(t, err)
+		require.Same(t, temp, r.file)
+
+		if tc.fromBeginning {
+			assert.Equal(t, int64(0), r.Offset)
+		} else {
+			assert.Equal(t, int64(len(tc.initBytes)), r.Offset)
+		}
+		assert.Equal(t, tc.initBytes, r.Fingerprint.FirstBytes)
+
+		i, err := temp.Write(tc.moreBytes)
+		require.NoError(t, err)
+		require.Equal(t, i, len(tc.moreBytes))
+
+		r.ReadToEnd(context.Background())
+
+		for _, token := range tc.expectTokens {
+			tk := readToken(t, emitChan)
+			require.Equal(t, token, tk)
+		}
+		assert.Equal(t, tc.expectOffset, r.Offset)
+		assert.Equal(t, tc.expectFingerprint, r.Fingerprint.FirstBytes)
+	}
 }

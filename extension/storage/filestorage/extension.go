@@ -78,6 +78,8 @@ func kindString(k component.Kind) string {
 		return "exporter"
 	case component.KindExtension:
 		return "extension"
+	case component.KindConnector:
+		return "connector"
 	default:
 		return "other" // not expected
 	}

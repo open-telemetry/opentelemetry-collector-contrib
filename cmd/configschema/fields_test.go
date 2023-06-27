@@ -142,11 +142,6 @@ func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{})
 		Kind:    "string",
 		Default: "",
 	}, getFieldByName(personPtrs.Fields, "name"))
-
-	tls := getFieldByName(root.Fields, "tls")
-	assert.NotEmpty(t, tls.Doc)
-	caFile := getFieldByName(tls.Fields, "ca_file")
-	assert.NotEmpty(t, caFile.Doc)
 }
 
 func getFieldByName(fields []*Field, name string) *Field {

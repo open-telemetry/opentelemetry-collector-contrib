@@ -20,8 +20,18 @@ func Test_loadMetadata(t *testing.T) {
 		{
 			name: "metadata.yaml",
 			want: metadata{
-				Type:           "test",
+				Type:           "file",
 				SemConvVersion: "1.9.0",
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[string][]string{
+						"development": {"logs"},
+						"beta":        {"traces"},
+						"stable":      {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
@@ -146,12 +156,14 @@ func Test_loadMetadata(t *testing.T) {
 					},
 				},
 				ScopeName: "otelcol",
-				Status: &Status{
-					Class: "receiver",
-					Stability: map[string][]string{
-						"development": {"metrics"},
-					},
-				},
+			},
+		},
+		{
+			name: "testdata/parent.yaml",
+			want: metadata{
+				Type:      "subcomponent",
+				Parent:    "parentComponent",
+				ScopeName: "otelcol",
 			},
 		},
 		{

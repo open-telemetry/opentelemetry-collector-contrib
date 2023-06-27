@@ -9,4 +9,5 @@ import (
 const (
 	Type             = "sqlquery"
 	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelDevelopment
 )

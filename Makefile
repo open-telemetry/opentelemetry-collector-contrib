@@ -73,9 +73,13 @@ all-common:
 e2e-test: otelcontribcol oteltestbedcol
 	$(MAKE) -C testbed run-tests
 
-TARGET="do-integration-tests-with-cover"
+.PHONY: integration-test
+integration-test:
+	@$(MAKE) for-integration-target TARGET="mod-integration-test"
+
 .PHONY: integration-tests-with-cover
-integration-tests-with-cover: $(INTEGRATION_MODS)
+integration-tests-with-cover:
+	@$(MAKE) for-integration-target TARGET="do-integration-tests-with-cover"
 
 # Long-running e2e tests
 .PHONY: stability-tests
@@ -204,6 +208,9 @@ for-pkg-target: $(PKG_MODS)
 
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
+
+.PHONY: for-integration-target
+for-integration-target: $(INTEGRATION_MODS)
 
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd

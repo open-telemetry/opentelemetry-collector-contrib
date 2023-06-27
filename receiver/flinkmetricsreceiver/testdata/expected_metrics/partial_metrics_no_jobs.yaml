@@ -272,18 +272,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: G1_Young_Generation
-                  startTimeUnixNano: "1656013017985668000"
-                  timeUnixNano: "1656013017985722000"
                 - asInt: "19"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
+                  startTimeUnixNano: "1656013017985668000"
+                  timeUnixNano: "1656013017985722000"
+                - asInt: "6"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: G1_Young_Generation
                   startTimeUnixNano: "1656013017985668000"
                   timeUnixNano: "1656013017985722000"
               isMonotonic: true
@@ -502,18 +502,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: G1_Young_Generation
-                  startTimeUnixNano: "1656013017985668000"
-                  timeUnixNano: "1656013017985722000"
                 - asInt: "19"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
+                  startTimeUnixNano: "1656013017985668000"
+                  timeUnixNano: "1656013017985722000"
+                - asInt: "6"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: G1_Young_Generation
                   startTimeUnixNano: "1656013017985668000"
                   timeUnixNano: "1656013017985722000"
               isMonotonic: true

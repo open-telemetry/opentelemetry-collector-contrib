@@ -30,23 +30,31 @@ func Test_replaceMatch(t *testing.T) {
 		name        string
 		target      ottl.GetSetter[pcommon.Value]
 		pattern     string
-		replacement string
+		replacement ottl.StringGetter[pcommon.Value]
 		want        func(pcommon.Value)
 	}{
 		{
-			name:        "replace match",
-			target:      target,
-			pattern:     "hello*",
-			replacement: "hello {universe}",
+			name:    "replace match",
+			target:  target,
+			pattern: "hello*",
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "hello {universe}", nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello {universe}")
 			},
 		},
 		{
-			name:        "no match",
-			target:      target,
-			pattern:     "goodbye*",
-			replacement: "goodbye {universe}",
+			name:    "no match",
+			target:  target,
+			pattern: "goodbye*",
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "goodbye {universe}", nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello world")
 			},
@@ -81,8 +89,13 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 			return nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{replacement}", nil
+		},
+	}
 
-	exprFunc, err := replaceMatch[interface{}](target, "*", "{replacement}")
+	exprFunc, err := replaceMatch[interface{}](target, "*", replacement)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -102,8 +115,13 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 			return nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{anything}", nil
+		},
+	}
 
-	exprFunc, err := replaceMatch[interface{}](target, "*", "{anything}")
+	exprFunc, err := replaceMatch[interface{}](target, "*", replacement)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)

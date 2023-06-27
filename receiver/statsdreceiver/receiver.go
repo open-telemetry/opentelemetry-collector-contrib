@@ -59,7 +59,9 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		reporter:     rep,
-		parser:       &protocol.StatsDParser{},
+		parser: &protocol.StatsDParser{
+			BuildInfo: set.BuildInfo,
+		},
 	}
 	return r, nil
 }

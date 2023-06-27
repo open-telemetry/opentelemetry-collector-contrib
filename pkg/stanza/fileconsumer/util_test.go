@@ -77,7 +77,7 @@ func withEmitChan(emitChan chan *emitParams) testManagerOption {
 	}
 }
 
-func buildTestManagerWithOptions(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
+func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
 	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
 	for _, opt := range opts {
 		opt(tmc)
@@ -205,8 +205,8 @@ func expectNoTokens(t *testing.T, c chan *emitParams) {
 
 func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
 	select {
-	case token := <-c:
-		require.FailNow(t, "Received unexpected message", "Message: %s", token)
+	case call := <-c:
+		require.FailNow(t, "Received unexpected message", "Message: %s", call.token)
 	case <-time.After(d):
 	}
 }

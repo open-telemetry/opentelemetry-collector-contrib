@@ -171,7 +171,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	return md, nil
 }
 
-func newSkipResExpr(include *filtermetric.MatchProperties, exclude *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+func newSkipResExpr(include *filterconfig.MetricMatchProperties, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
 	var matchers []expr.BoolExpr[ottlresource.TransformContext]
 	inclExpr, err := newResExpr(include)
 	if err != nil {
@@ -196,7 +196,7 @@ func (r resExpr) Eval(_ context.Context, tCtx ottlresource.TransformContext) (bo
 	return filtermatcher.AttributesMatcher(r).Match(tCtx.GetResource().Attributes()), nil
 }
 
-func newResExpr(mp *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+func newResExpr(mp *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
 	if mp == nil {
 		return nil, nil
 	}

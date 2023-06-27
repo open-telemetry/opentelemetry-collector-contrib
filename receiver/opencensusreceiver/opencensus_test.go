@@ -618,7 +618,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	assert.NotNil(t, ocr)
 
 	srv, err := ocr.grpcServer(componenttest.NewNopHost())
-	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+	assert.EqualError(t, err, `failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 	assert.Nil(t, srv)
 }
 
