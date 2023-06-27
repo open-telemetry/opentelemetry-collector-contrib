@@ -19,7 +19,6 @@ import (
 type readerConfig struct {
 	fingerprintSize int
 	maxLogSize      int
-	bufferSize      int
 	emit            EmitFunc
 }
 
@@ -66,11 +65,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	bufferSize := r.bufferSize
-	if r.bufferSize < r.fingerprintSize {
-		bufferSize = r.fingerprintSize
-	}
-	scanner := NewPositionalScanner(r, r.maxLogSize, bufferSize, r.Offset, r.splitFunc)
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -109,7 +104,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				return
 			}
 
-			scanner = NewPositionalScanner(r, r.maxLogSize, r.bufferSize, r.Offset, r.splitFunc)
+			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
 		}
 
 		r.Offset = scanner.Pos()
@@ -177,64 +172,32 @@ func (r *Reader) Close() {
 }
 
 // Read from the file and update the fingerprint if necessary
-func (r *Reader) Read(dst []byte) (n int, err error) {
-	n, err = r.file.Read(dst)
-
-	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize {
-		// Steady state. Just return data to scanner.
-		return
+func (r *Reader) Read(dst []byte) (int, error) {
+	// Skip if fingerprint is already built
+	// or if fingerprint is behind Offset
+	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
+		return r.file.Read(dst)
+	}
+	n, err := r.file.Read(dst)
+	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
+	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
+	if appendCount == 0 {
+		return n, err
 	}
 
-	if len(r.Fingerprint.FirstBytes) > r.fingerprintSize {
-		// Oversized fingerprint. The component was restarted with a decreased 'fingerprint_size'.
-		// Just return data to scanner.
-		return
+	// for appendCount==0, the following code would add `0` to fingerprint
+	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
+	return n, err
+}
+
+func min0(a, b int) int {
+	if a < 0 || b < 0 {
+		return 0
 	}
-
-	if int(r.Offset) > len(r.Fingerprint.FirstBytes) {
-		// Undersized fingerprint.  The component was restarted with an increased 'fingerprint_size.
-		// However, we've already read past the fingerprint. Just keep reading.
-		return
+	if a < b {
+		return a
 	}
-
-	if len(r.Fingerprint.FirstBytes) == int(r.Offset) {
-		// The fingerprint is incomplete but is exactly aligned with the offset.
-		// Take advantage of the simple case and avoid some computation.
-		appendCount := r.fingerprintSize - len(r.Fingerprint.FirstBytes)
-		if appendCount > n {
-			appendCount = n
-		}
-		r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes, dst[:appendCount]...)
-	}
-
-	// The fingerprint is incomplete and is NOT aligned with the offset. This means the fingerprint
-	// contains data that hasn't yet been emitted. Either we observed an incomplete token at the end of the
-	// file, or we are running with 'start_at: beginning' in which case the fingerprint is initialized
-	// independently of the Reader.
-
-	// Allowing the fingerprint to run ahead of tokenization improves our ability to uniquely identify files.
-	// However, it also means we must compensate for the misalignment when appending to the fingerprint.
-
-	// WE MUST ASSUME that the fingerprint will never contain a token longer than the 'dst' buffer.
-	// The easiest way to enforce this is to ensure the buffer is at least as large as the fingerprint.
-	// Unfortunately, this must be enforced outside of this function.
-	// Without this guarantee, the scanner may call this function consecutively before we are able to update
-	// the offset, which means we cannot trust the offset to tell us which data in the 'dst' buffer has
-	// already been appended to the fingerprint.
-
-	newBytesIndex := len(r.Fingerprint.FirstBytes) - int(r.Offset)
-	if n <= newBytesIndex {
-		// Already have this data in the fingerprint. Just return data to scanner.
-		return
-	}
-
-	appendCount := r.fingerprintSize - len(r.Fingerprint.FirstBytes)
-	if appendCount > n-newBytesIndex {
-		// Not enough new data to complete the fingerprint, but append what we have.
-		appendCount = n - newBytesIndex
-	}
-	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes, dst[newBytesIndex:newBytesIndex+appendCount]...)
-	return
+	return b
 }
 
 // mapCopy deep copies the provided attributes map.
