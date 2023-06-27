@@ -247,7 +247,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 			return 0
 		}
 
-		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particualr time series
+		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
 		if !ok {
 			// first data point
 			m := copyMetricMetadata(metric)
@@ -266,11 +266,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 		case pmetric.AggregationTemporalityDelta:
 			if ip.StartTimestamp().AsTime().Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
 				// only keep datapoint with latest timestamp
-				logger.Warn("Dropping misaligned histogram datapoint for time series",
-					zap.String("DataType", pmd.Type().String()),
-					zap.String("Name", pmd.Name()),
-					zap.String("Unit", pmd.Unit()),
-				)
+				a.logger.Warn(zap.String("Dropping misaligned histogram datapoint for time series ", signature))
 				continue
 			}
 			// assuming an application restart and reset counter
