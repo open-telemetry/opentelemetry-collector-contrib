@@ -116,9 +116,12 @@ func parseCPUSet(line string) (float64, error) {
 		lineParts := strings.Split(l, "-")
 		if len(lineParts) == 2 {
 			p0, err0 := strconv.Atoi(lineParts[0])
+			if err0 != nil {
+				return 0, fmt.Errorf("invalid cpusetCpus value: %w", err0)
+			}
 			p1, err1 := strconv.Atoi(lineParts[1])
-			if err0 != nil || err1 != nil {
-				return 0, fmt.Errorf("invalid cpusetCpus value")
+			if err1 != nil {
+				return 0, fmt.Errorf("invalid cpusetCpus value: %w", err1)
 			}
 			numCPUs += uint64(p1 - p0 + 1)
 		} else if len(lineParts) == 1 {

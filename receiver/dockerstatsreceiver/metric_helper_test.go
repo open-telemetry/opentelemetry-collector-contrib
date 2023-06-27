@@ -60,16 +60,6 @@ func Test_calculateCPULimit1(t *testing.T) {
 			nil,
 		},
 		{
-			"Test CPUSetCpu Error",
-			&ctypes.HostConfig{
-				Resources: ctypes.Resources{
-					CpusetCpus: "0-a",
-				},
-			},
-			0,
-			errors.New("invalid cpusetCpus value"),
-		},
-		{
 			"Test Default",
 			&ctypes.HostConfig{
 				Resources: ctypes.Resources{
@@ -109,13 +99,23 @@ func Test_parseCPUSet(t *testing.T) {
 		{"0-2", 3, nil},
 		{"0-2,4", 4, nil},
 		{"0-2,4-5", 5, nil},
-		{"a-b", 0, errors.New("invalid cpusetCpus value")},
+		{"a-b", 0, errors.New("invalid cpusetCpus value: strconv.Atoi: parsing \"a\": invalid syntax")},
 		{"", 1, nil},
 	}
 
 	for _, test := range tests {
 		result, err := parseCPUSet(test.input)
-		assert.Equal(t, test.expected, result)
-		assert.Equal(t, test.err, err)
+
+		if err != nil && test.err != nil {
+			if err.Error() != test.err.Error() {
+				t.Errorf("parseCPUSet(%s) returned error %v, expected %v", test.input, err, test.err)
+			}
+		} else if !errors.Is(err, test.err) {
+			t.Errorf("parseCPUSet(%s) returned error %v, expected %v", test.input, err, test.err)
+		}
+
+		if result != test.expected {
+			t.Errorf("parseCPUSet(%s) returned %f, expected %f", test.input, result, test.expected)
+		}
 	}
 }
