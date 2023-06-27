@@ -26,10 +26,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sContainerCPULimit:   MetricConfig{Enabled: true},
-					K8sContainerCPURequest: MetricConfig{Enabled: true},
-					K8sContainerReady:      MetricConfig{Enabled: true},
-					K8sContainerRestarts:   MetricConfig{Enabled: true},
+					K8sContainerCPULimit:                MetricConfig{Enabled: true},
+					K8sContainerCPURequest:              MetricConfig{Enabled: true},
+					K8sContainerEphemeralstorageLimit:   MetricConfig{Enabled: true},
+					K8sContainerEphemeralstorageRequest: MetricConfig{Enabled: true},
+					K8sContainerMemoryLimit:             MetricConfig{Enabled: true},
+					K8sContainerMemoryRequest:           MetricConfig{Enabled: true},
+					K8sContainerReady:                   MetricConfig{Enabled: true},
+					K8sContainerRestarts:                MetricConfig{Enabled: true},
+					K8sContainerStorageLimit:            MetricConfig{Enabled: true},
+					K8sContainerStorageRequest:          MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerID:            ResourceAttributeConfig{Enabled: true},
@@ -48,10 +54,16 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sContainerCPULimit:   MetricConfig{Enabled: false},
-					K8sContainerCPURequest: MetricConfig{Enabled: false},
-					K8sContainerReady:      MetricConfig{Enabled: false},
-					K8sContainerRestarts:   MetricConfig{Enabled: false},
+					K8sContainerCPULimit:                MetricConfig{Enabled: false},
+					K8sContainerCPURequest:              MetricConfig{Enabled: false},
+					K8sContainerEphemeralstorageLimit:   MetricConfig{Enabled: false},
+					K8sContainerEphemeralstorageRequest: MetricConfig{Enabled: false},
+					K8sContainerMemoryLimit:             MetricConfig{Enabled: false},
+					K8sContainerMemoryRequest:           MetricConfig{Enabled: false},
+					K8sContainerReady:                   MetricConfig{Enabled: false},
+					K8sContainerRestarts:                MetricConfig{Enabled: false},
+					K8sContainerStorageLimit:            MetricConfig{Enabled: false},
+					K8sContainerStorageRequest:          MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					ContainerID:            ResourceAttributeConfig{Enabled: false},

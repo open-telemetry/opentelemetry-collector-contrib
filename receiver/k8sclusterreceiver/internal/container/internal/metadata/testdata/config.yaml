@@ -5,9 +5,21 @@ all_set:
       enabled: true
     k8s.container.cpu_request:
       enabled: true
+    k8s.container.ephemeralstorage_limit:
+      enabled: true
+    k8s.container.ephemeralstorage_request:
+      enabled: true
+    k8s.container.memory_limit:
+      enabled: true
+    k8s.container.memory_request:
+      enabled: true
     k8s.container.ready:
       enabled: true
     k8s.container.restarts:
+      enabled: true
+    k8s.container.storage_limit:
+      enabled: true
+    k8s.container.storage_request:
       enabled: true
   resource_attributes:
     container.id:
@@ -34,9 +46,21 @@ none_set:
       enabled: false
     k8s.container.cpu_request:
       enabled: false
+    k8s.container.ephemeralstorage_limit:
+      enabled: false
+    k8s.container.ephemeralstorage_request:
+      enabled: false
+    k8s.container.memory_limit:
+      enabled: false
+    k8s.container.memory_request:
+      enabled: false
     k8s.container.ready:
       enabled: false
     k8s.container.restarts:
+      enabled: false
+    k8s.container.storage_limit:
+      enabled: false
+    k8s.container.storage_request:
       enabled: false
   resource_attributes:
     container.id:

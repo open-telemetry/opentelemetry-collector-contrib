@@ -25,10 +25,16 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for k8s/container metrics.
 type MetricsConfig struct {
-	K8sContainerCPULimit   MetricConfig `mapstructure:"k8s.container.cpu_limit"`
-	K8sContainerCPURequest MetricConfig `mapstructure:"k8s.container.cpu_request"`
-	K8sContainerReady      MetricConfig `mapstructure:"k8s.container.ready"`
-	K8sContainerRestarts   MetricConfig `mapstructure:"k8s.container.restarts"`
+	K8sContainerCPULimit                MetricConfig `mapstructure:"k8s.container.cpu_limit"`
+	K8sContainerCPURequest              MetricConfig `mapstructure:"k8s.container.cpu_request"`
+	K8sContainerEphemeralstorageLimit   MetricConfig `mapstructure:"k8s.container.ephemeralstorage_limit"`
+	K8sContainerEphemeralstorageRequest MetricConfig `mapstructure:"k8s.container.ephemeralstorage_request"`
+	K8sContainerMemoryLimit             MetricConfig `mapstructure:"k8s.container.memory_limit"`
+	K8sContainerMemoryRequest           MetricConfig `mapstructure:"k8s.container.memory_request"`
+	K8sContainerReady                   MetricConfig `mapstructure:"k8s.container.ready"`
+	K8sContainerRestarts                MetricConfig `mapstructure:"k8s.container.restarts"`
+	K8sContainerStorageLimit            MetricConfig `mapstructure:"k8s.container.storage_limit"`
+	K8sContainerStorageRequest          MetricConfig `mapstructure:"k8s.container.storage_request"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -39,10 +45,28 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sContainerCPURequest: MetricConfig{
 			Enabled: true,
 		},
+		K8sContainerEphemeralstorageLimit: MetricConfig{
+			Enabled: true,
+		},
+		K8sContainerEphemeralstorageRequest: MetricConfig{
+			Enabled: true,
+		},
+		K8sContainerMemoryLimit: MetricConfig{
+			Enabled: true,
+		},
+		K8sContainerMemoryRequest: MetricConfig{
+			Enabled: true,
+		},
 		K8sContainerReady: MetricConfig{
 			Enabled: true,
 		},
 		K8sContainerRestarts: MetricConfig{
+			Enabled: true,
+		},
+		K8sContainerStorageLimit: MetricConfig{
+			Enabled: true,
+		},
+		K8sContainerStorageRequest: MetricConfig{
 			Enabled: true,
 		},
 	}

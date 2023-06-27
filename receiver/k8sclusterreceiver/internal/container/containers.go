@@ -35,24 +35,42 @@ const (
 func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1.Pod) pmetric.Metrics {
 	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	mb.RecordK8sContainerCPURequestDataPoint(ts, float64(c.Resources.Requests.Cpu().MilliValue())/1000.0)
-	mb.RecordK8sContainerCPULimitDataPoint(ts, float64(c.Resources.Limits.Cpu().MilliValue())/1000.0)
-	for _, cs := range pod.Status.ContainerStatuses {
-		if cs.Name == c.Name {
-			mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
-			mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
-			break
+	for k, r := range c.Resources.Requests {
+		switch k {
+		case corev1.ResourceCPU:
+			mb.RecordK8sContainerCPURequestDataPoint(ts, float64(r.MilliValue())/1000.0)
+		case corev1.ResourceMemory:
+			mb.RecordK8sContainerMemoryRequestDataPoint(ts, r.Value())
+		case corev1.ResourceStorage:
+			mb.RecordK8sContainerStorageRequestDataPoint(ts, r.Value())
+		case corev1.ResourceEphemeralStorage:
+			mb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, r.Value())
 		}
 	}
-
+	for k, l := range c.Resources.Limits {
+		switch k {
+		case corev1.ResourceCPU:
+			mb.RecordK8sContainerCPULimitDataPoint(ts, float64(l.MilliValue())/1000.0)
+		case corev1.ResourceMemory:
+			mb.RecordK8sContainerMemoryLimitDataPoint(ts, l.Value())
+		case corev1.ResourceStorage:
+			mb.RecordK8sContainerStorageLimitDataPoint(ts, l.Value())
+		case corev1.ResourceEphemeralStorage:
+			mb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, l.Value())
+		}
+	}
 	var containerID string
 	var imageStr string
 	for _, cs := range pod.Status.ContainerStatuses {
 		if cs.Name == c.Name {
 			containerID = cs.ContainerID
 			imageStr = cs.Image
+			mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
+			mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
+			break
 		}
 	}
+
 	resourceOptions := []imetadata.ResourceMetricsOption{
 		imetadata.WithK8sPodUID(string(pod.UID)),
 		imetadata.WithK8sPodName(pod.Name),
