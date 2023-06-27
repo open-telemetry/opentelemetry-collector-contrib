@@ -1144,6 +1144,7 @@ resourceMetrics:
                 - asInt: "73400320"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.memory_request
+            unit: "By"
           - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
