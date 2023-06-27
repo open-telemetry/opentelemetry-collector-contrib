@@ -19,7 +19,7 @@ import (
 
 const (
 	// TypeStr is the value of "type" key in configuration.
-	TypeStr            = "githubscraper"
+	TypeStr            = "github"
 	defaultHTTPTimeout = 15 * time.Second
 )
 
