@@ -8,12 +8,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.80.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.21.0
-	go.opentelemetry.io/collector v0.80.0
-	go.opentelemetry.io/collector/component v0.80.0
-	go.opentelemetry.io/collector/confmap v0.80.0
-	go.opentelemetry.io/collector/consumer v0.80.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013
-	go.opentelemetry.io/collector/receiver v0.80.0
+	go.opentelemetry.io/collector v0.80.1-0.20230627045857-5852d09fb7b5
+	go.opentelemetry.io/collector/component v0.80.1-0.20230627045857-5852d09fb7b5
+	go.opentelemetry.io/collector/confmap v0.80.1-0.20230627045857-5852d09fb7b5
+	go.opentelemetry.io/collector/consumer v0.80.1-0.20230627045857-5852d09fb7b5
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013.0.20230627045857-5852d09fb7b5
+	go.opentelemetry.io/collector/receiver v0.80.1-0.20230627045857-5852d09fb7b5
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 )
@@ -50,7 +50,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/patternmatcher v0.5.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
@@ -80,13 +80,13 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.80.0 // indirect
-	go.opentelemetry.io/collector/connector v0.80.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.80.0 // indirect
-	go.opentelemetry.io/collector/extension v0.80.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
-	go.opentelemetry.io/collector/processor v0.80.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.80.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.80.1-0.20230627045857-5852d09fb7b5 // indirect
+	go.opentelemetry.io/collector/connector v0.80.1-0.20230627045857-5852d09fb7b5 // indirect
+	go.opentelemetry.io/collector/exporter v0.80.1-0.20230627045857-5852d09fb7b5 // indirect
+	go.opentelemetry.io/collector/extension v0.80.1-0.20230627045857-5852d09fb7b5 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013.0.20230627045857-5852d09fb7b5 // indirect
+	go.opentelemetry.io/collector/processor v0.80.1-0.20230627045857-5852d09fb7b5 // indirect
+	go.opentelemetry.io/collector/semconv v0.80.1-0.20230627045857-5852d09fb7b5 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.39.0 // indirect
