@@ -320,9 +320,6 @@ issues:
     - path: opencensus
       linters:
         - exhaustive
-    - path: signalfx
-      linters:
-        - exhaustive
     - path: zipkin
       linters:
         - exhaustive
