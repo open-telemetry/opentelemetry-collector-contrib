@@ -63,6 +63,8 @@ config:
           enabled: true
         container.blockio.io_serviced_recursive:
           enabled: true
+        container.uptime:
+          enabled: true
     hostmetrics:
       scrapers:
         paging:
