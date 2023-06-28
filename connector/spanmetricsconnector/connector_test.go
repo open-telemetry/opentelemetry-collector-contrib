@@ -863,7 +863,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 
 						}
 					}
-				default:
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
 					{
 						dp := metric.Sum().DataPoints()
 						for dpi := 0; dpi < dp.Len(); dpi++ {
