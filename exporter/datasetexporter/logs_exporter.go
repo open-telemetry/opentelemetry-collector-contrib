@@ -193,7 +193,7 @@ func buildEventFromLog(
 	}
 
 	if !observedTs.Equal(time.Unix(0, 0)) {
-		attrs[specialDataSetFieldNamePrefix+"observedTimestamp"] = strconv.FormatInt(observedTs.UnixNano(), 10)
+		attrs[specialDataSetFieldNamePrefix+"observedTime"] = strconv.FormatInt(observedTs.UnixNano(), 10)
 	}
 
 	if span := log.SpanID().String(); span != "" {
