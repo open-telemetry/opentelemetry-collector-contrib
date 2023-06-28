@@ -119,7 +119,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MysqlLockedConnects: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MysqlLocks: MetricConfig{
 			Enabled: true,

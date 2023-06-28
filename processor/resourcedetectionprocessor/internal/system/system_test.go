@@ -88,7 +88,8 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("OSType").Return("darwin", nil)
 	md.On("HostID").Return("2", nil)
 
-	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"}, resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -112,7 +113,8 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"}}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"}, resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -133,7 +135,8 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("1", nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}, resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -156,7 +159,8 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("HostID").Return("", errors.New("err"))
 
-	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), hostnameSources: []string{"dns"}, resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)
@@ -168,7 +172,7 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostID").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
+	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}, resourceAttributes: resourceAttributes}
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)
@@ -180,7 +184,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("OSType").Return("", errors.New("err"))
 	mdOSType.On("HostID").Return("", errors.New("err"))
 
-	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
+	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), hostnameSources: []string{"dns"}, resourceAttributes: resourceAttributes}
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)

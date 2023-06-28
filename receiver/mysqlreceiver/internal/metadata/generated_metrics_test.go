@@ -109,7 +109,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKind(1))
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlLockedConnectsDataPoint(ts, "1")
 

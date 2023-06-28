@@ -749,8 +749,8 @@ go.opentelemetry.io/build-tools/issuegenerator v0.8.0 h1:AdeFmg9ZSyrVYSRSQ3fbb2N
 go.opentelemetry.io/build-tools/issuegenerator v0.8.0/go.mod h1:2rcN1YKc0rqycq8zJiLQcctbqOAHh1Q0YUIBMbiHcCs=
 go.opentelemetry.io/build-tools/multimod v0.8.0 h1:6MARVCyZa5Tdn8KvRbSZzS7ypxB1gTrvLdeimCiBZSo=
 go.opentelemetry.io/build-tools/multimod v0.8.0/go.mod h1:aPgW8qbcE6IoLge1LUKO5yo4XmnxsPIA+cdFjn93QrI=
-go.opentelemetry.io/collector/cmd/builder v0.79.0 h1:TuAbGPWp2M1A4nR0Y6u7COu2kZS5EzPz2+4rMbdpO90=
-go.opentelemetry.io/collector/cmd/builder v0.79.0/go.mod h1:lFWW/ncvMhMOBGrMRB+dPSE+dadE7L5NIPVJTC0tpPc=
+go.opentelemetry.io/collector/cmd/builder v0.80.0 h1:6K4sCwXLtOeUwIazMgMcSNTJQf6bDfwyGSNmt11p3GE=
+go.opentelemetry.io/collector/cmd/builder v0.80.0/go.mod h1:MKJx0mxWVup1/miTufYAb9zoCI+X+YxYIp/aiQXPkf4=
 go.tmz.dev/musttag v0.7.0 h1:QfytzjTWGXZmChoX0L++7uQN+yRCPfyFm+whsM+lfGc=
 go.tmz.dev/musttag v0.7.0/go.mod h1:oTFPvgOkJmp5kYL02S8+jrH0eLrBIl57rzWeA26zDEM=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
@@ -1182,8 +1182,8 @@ google.golang.org/protobuf v1.24.0/go.mod h1:r/3tXBNzIEhYS9I1OUVjXDlt8tc493IdKGj
 google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlbajtzgsN7c=
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.30.0 h1:kPPoIgf3TsEvrm0PFe15JQ+570QVxYzEvvHqChK+cng=
-google.golang.org/protobuf v1.30.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+google.golang.org/protobuf v1.31.0 h1:g0LDEJHgrBl9N9r17Ru3sqWhkIx2NB67okBHPwC7hs8=
+google.golang.org/protobuf v1.31.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d/go.mod h1:cuepJuh7vyXfUyUwEgHQXw849cJrilpS5NeIjOWESAw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
