@@ -98,10 +98,10 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 				if reportExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10
 					// scrape_sample_limit, scrape_timeout_seconds, scrape_body_size_bytes
-					assert.Equal(t, 10, metricsCount(scrapes[0]))
+					assert.Equal(t, 2+expectedExtraScrapeMetricCount, metricsCount(scrapes[0]))
 				} else {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics = 7
-					assert.Equal(t, 7, metricsCount(scrapes[0]))
+					assert.Equal(t, 2+expectedScrapeMetricCount, metricsCount(scrapes[0]))
 				}
 			}
 			target.validateFunc(t, target, scrapes)
