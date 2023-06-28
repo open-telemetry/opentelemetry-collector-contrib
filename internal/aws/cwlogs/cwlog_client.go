@@ -56,6 +56,7 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetent
 // NewClient create Client
 func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, sess *session.Session) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
+	client.Handlers.Build.PushBackNamed(handler.NewRequestCompressionHandler([]string{"PutLogEvents"}, logger))
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
 	return newCloudWatchLogClient(client, logRetention, logger)
