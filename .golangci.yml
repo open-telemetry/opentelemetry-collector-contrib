@@ -344,9 +344,6 @@ issues:
     - path: zipkin
       linters:
         - exhaustive
-    - path: mdatagen
-      linters:
-        - exhaustive
     - path: configschema
       linters:
         - exhaustive
