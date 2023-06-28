@@ -9,7 +9,7 @@ change_type: enhancement
 component: spanmetricsconnector
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Added disabling options for histogram and sum metrics. In some cases users wants to optionally disable part of metrics cause they can generate too many data or just not needed."
+note: "Added disabling options for histogram and sum metrics. In some cases users want to optionally disable part of metrics because they generate too much data or are not needed."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [16344]
