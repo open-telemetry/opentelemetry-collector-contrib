@@ -17,8 +17,34 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestCreateReceiver(t *testing.T) {
-	createReceiver := createReceiverFunc(fakeDBConnect, mkFakeClient)
+func TestCreateLogsReceiver(t *testing.T) {
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
+	ctx := context.Background()
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopCreateSettings(),
+		&Config{
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: 10 * time.Second,
+			},
+			Driver:     "mydriver",
+			DataSource: "my-datasource",
+			Queries: []Query{{
+				SQL: "select * from foo",
+				Logs: []LogsCfg{
+					{},
+				},
+			}},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+}
+
+func TestCreateMetricsReceiver(t *testing.T) {
+	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,

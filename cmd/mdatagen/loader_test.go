@@ -20,8 +20,18 @@ func Test_loadMetadata(t *testing.T) {
 		{
 			name: "metadata.yaml",
 			want: metadata{
-				Type:           "test",
+				Type:           "file",
 				SemConvVersion: "1.9.0",
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[string][]string{
+						"development": {"logs"},
+						"beta":        {"traces"},
+						"stable":      {"metrics"},
+					},
+					Distributions: []string{"contrib"},
+					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
@@ -146,35 +156,25 @@ func Test_loadMetadata(t *testing.T) {
 					},
 				},
 				ScopeName: "otelcol",
-				Status: &Status{
-					Class: "receiver",
-					Stability: map[string][]string{
-						"development": {"metrics"},
-					},
-				},
 			},
 		},
 		{
-			name:    "testdata/unknown_metric_attribute.yaml",
-			want:    metadata{},
-			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
+			name: "testdata/parent.yaml",
+			want: metadata{
+				Type:      "subcomponent",
+				Parent:    "parentComponent",
+				ScopeName: "otelcol",
+			},
 		},
 		{
-			name: "testdata/no_metric_type.yaml",
-			want: metadata{},
-			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
-				"one of the following has to be specified: sum, gauge",
+			name:    "testdata/invalid_type_rattr.yaml",
+			want:    metadata{},
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
 			want:    metadata{},
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
-		},
-		{
-			name: "testdata/two_metric_types.yaml",
-			want: metadata{},
-			wantErr: "metric system.cpu.time has more than one metric type keys, " +
-				"only one of the following has to be specified: sum, gauge",
 		},
 		{
 			name: "testdata/no_value_type.yaml",
@@ -183,15 +183,23 @@ func Test_loadMetadata(t *testing.T) {
 				"* error decoding 'sum': missing required field: `value_type`",
 		},
 		{
-			name: "testdata/unknown_value_type.yaml",
-			want: metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
-				"* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
+			name:    "testdata/unknown_value_type.yaml",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
 		},
 		{
-			name:    "testdata/unused_attribute.yaml",
+			name:    "testdata/no_aggregation.yaml",
 			want:    metadata{},
-			wantErr: "unused attributes: [unused_attr]",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': missing required field: `aggregation`",
+		},
+		{
+			name:    "testdata/invalid_aggregation.yaml",
+			want:    metadata{},
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'aggregation': invalid aggregation: \"invalidaggregation\"",
+		},
+		{
+			name:    "testdata/invalid_type_attr.yaml",
+			want:    metadata{},
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
 		},
 	}
 	for _, tt := range tests {

@@ -60,7 +60,10 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.yaml"))
 	require.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	)
 	require.NoError(t, err)
 }
 
@@ -143,36 +146,29 @@ func TestScraperRecordNoStat(_ *testing.T) {
 }
 
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "status.json"))
 	require.NoError(t, err)
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		var stats dm.TransportNodeStatus
 		err = json.Unmarshal(testFile, &stats)
 		require.NoError(t, err)
 		return &stats.NodeStatus, err
-	default:
-		var stats dm.NodeStatus
-		err = json.Unmarshal(testFile, &stats)
-		require.NoError(t, err)
-		return &stats, err
 	}
+
+	var stats dm.NodeStatus
+	err = json.Unmarshal(testFile, &stats)
+	require.NoError(t, err)
+	return &stats, err
 }
 
 func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.NetworkInterface, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", "index.json"))
 	require.NoError(t, err)
@@ -183,12 +179,9 @@ func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.
 }
 
 func loadInterfaceStats(t *testing.T, nodeID, interfaceID string, class nodeClass) (*dm.NetworkInterfaceStats, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", interfaceID, "stats.json"))
 	require.NoError(t, err)

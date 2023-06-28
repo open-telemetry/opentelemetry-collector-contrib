@@ -17,7 +17,8 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	d, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }
@@ -30,7 +31,8 @@ func TestDetectTrue(t *testing.T) {
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 	t.Setenv("HEROKU_SLUG_COMMIT", "23456")
 
-	detector := &detector{}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &detector{resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)
@@ -52,7 +54,8 @@ func TestDetectTruePartial(t *testing.T) {
 	t.Setenv("HEROKU_APP_NAME", "appname")
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 
-	detector := &detector{}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &detector{resourceAttributes: resourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)

@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 )
 
 const filteredMetric = "p0_metric_1"
@@ -142,13 +142,13 @@ func exprConfig(factory processor.Factory, include []string, exclude []string) c
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}
 	if include != nil {
-		pCfg.Metrics.Include = &filtermetric.MatchProperties{
+		pCfg.Metrics.Include = &filterconfig.MetricMatchProperties{
 			MatchType:   "expr",
 			Expressions: include,
 		}
 	}
 	if exclude != nil {
-		pCfg.Metrics.Exclude = &filtermetric.MatchProperties{
+		pCfg.Metrics.Exclude = &filterconfig.MetricMatchProperties{
 			MatchType:   "expr",
 			Expressions: exclude,
 		}

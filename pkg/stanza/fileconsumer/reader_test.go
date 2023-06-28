@@ -4,7 +4,9 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -238,4 +240,55 @@ func TestMapCopy(t *testing.T) {
 	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
 	assert.Equal(t, 1, initMap["intVal"])
 	assert.Equal(t, "OrigStr", initMap["strVal"])
+}
+
+func TestEncodingDecode(t *testing.T) {
+	testFile := openTemp(t, t.TempDir())
+	testToken := tokenWithLength(2 * DefaultFingerprintSize)
+	_, err := testFile.Write(testToken)
+	require.NoError(t, err)
+	fp, err := NewFingerprint(testFile, DefaultFingerprintSize)
+	require.NoError(t, err)
+
+	f := readerFactory{
+		SugaredLogger: testutil.Logger(t),
+		readerConfig: &readerConfig{
+			fingerprintSize: DefaultFingerprintSize,
+			maxLogSize:      defaultMaxLogSize,
+		},
+		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
+		fromBeginning:   false,
+	}
+	r, err := f.newReader(testFile, fp)
+	require.NoError(t, err)
+
+	// Just faking out these properties
+	r.HeaderFinalized = true
+	r.FileAttributes.HeaderAttributes = map[string]any{"foo": "bar"}
+
+	assert.Equal(t, testToken[:DefaultFingerprintSize], r.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*DefaultFingerprintSize), r.Offset)
+
+	// Encode
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	require.NoError(t, enc.Encode(r))
+
+	// Decode
+	dec := json.NewDecoder(bytes.NewReader(buf.Bytes()))
+	decodedReader, err := f.unsafeReader()
+	require.NoError(t, err)
+	require.NoError(t, dec.Decode(decodedReader))
+
+	// Assert decoded reader has values persisted
+	assert.Equal(t, testToken[:DefaultFingerprintSize], decodedReader.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*DefaultFingerprintSize), decodedReader.Offset)
+	assert.True(t, decodedReader.HeaderFinalized)
+	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes.HeaderAttributes)
+
+	// These fields are intentionally excluded, as they may have changed
+	assert.Empty(t, decodedReader.FileAttributes.Name)
+	assert.Empty(t, decodedReader.FileAttributes.Path)
+	assert.Empty(t, decodedReader.FileAttributes.NameResolved)
+	assert.Empty(t, decodedReader.FileAttributes.PathResolved)
 }

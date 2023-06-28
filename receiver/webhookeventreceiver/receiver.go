@@ -133,6 +133,11 @@ func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 
 // Shutdown function manages receiver shutdown tasks. part of the receiver.Logs interface.
 func (er *eventReceiver) Shutdown(_ context.Context) error {
+	// server must exist to be closed.
+	if er.server == nil {
+		return nil
+	}
+
 	err := er.server.Close()
 	er.shutdownWG.Wait()
 	return err

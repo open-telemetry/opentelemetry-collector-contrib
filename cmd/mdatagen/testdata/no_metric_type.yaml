@@ -1,4 +1,10 @@
 type: metricreceiver
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
 metrics:
   system.cpu.time:
     enabled: true
