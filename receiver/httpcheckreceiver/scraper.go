@@ -55,36 +55,35 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	var mux sync.Mutex
 
 	for idx, client := range h.clients {
-		go func(client *http.Client, idx int) {
+		go func(targetClient *http.Client, targetIndex int) {
 			defer wg.Done()
 
 			now := pcommon.NewTimestampFromTime(time.Now())
 
-			req, err := http.NewRequestWithContext(ctx, h.cfg.Targets[idx].Method, h.cfg.Targets[idx].Endpoint, http.NoBody)
+			req, err := http.NewRequestWithContext(ctx, h.cfg.Targets[targetIndex].Method, h.cfg.Targets[targetIndex].Endpoint, http.NoBody)
 			if err != nil {
 				h.settings.Logger.Error("failed to create request", zap.Error(err))
 				return
 			}
 
 			start := time.Now()
-			resp, err := client.Do(req)
+			resp, err := targetClient.Do(req)
 			mux.Lock()
-			h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Targets[idx].Endpoint)
+			h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Targets[targetIndex].Endpoint)
 
 			statusCode := 0
 			if err != nil {
-				h.mb.RecordHttpcheckErrorDataPoint(now, int64(1), h.cfg.Targets[idx].Endpoint, err.Error())
+				h.mb.RecordHttpcheckErrorDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, err.Error())
 			} else {
 				statusCode = resp.StatusCode
 			}
 
 			for class, intVal := range httpResponseClasses {
 				if statusCode/100 == intVal {
-					h.mb.RecordHttpcheckStatusDataPoint(now, int64(1), h.cfg.Targets[idx].Endpoint, int64(statusCode), req.Method, class)
+					h.mb.RecordHttpcheckStatusDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, int64(statusCode), req.Method, class)
 				} else {
-					h.mb.RecordHttpcheckStatusDataPoint(now, int64(0), h.cfg.Targets[idx].Endpoint, int64(statusCode), req.Method, class)
+					h.mb.RecordHttpcheckStatusDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint, int64(statusCode), req.Method, class)
 				}
-
 			}
 			mux.Unlock()
 		}(client, idx)
