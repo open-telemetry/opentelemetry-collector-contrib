@@ -89,6 +89,9 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 			requirePointOk(t, dp)
 		}
 	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
+	case pmetric.MetricTypeSummary:
 	}
 }
 
