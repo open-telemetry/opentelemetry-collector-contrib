@@ -535,7 +535,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.limit"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "CPU limit set for the container.", ms.At(i).Description())
+					assert.Equal(t, "CPU limit set for the container. This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota.", ms.At(i).Description())
 					assert.Equal(t, "{cpus}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

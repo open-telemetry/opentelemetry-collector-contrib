@@ -298,7 +298,7 @@ Number of sectors transferred to/from disk by the group and descendant groups (O
 
 ### container.cpu.limit
 
-CPU limit set for the container.
+CPU limit set for the container. This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

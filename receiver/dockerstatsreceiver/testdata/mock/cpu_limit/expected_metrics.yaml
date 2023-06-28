@@ -107,7 +107,7 @@ resourceMetrics:
                   timeUnixNano: "1683723781130612000"
               isMonotonic: true
             unit: By
-          - description: CPU limit set for the container.
+          - description: CPU limit set for the container. This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota.
             gauge:
               dataPoints:
                 - asDouble: 2

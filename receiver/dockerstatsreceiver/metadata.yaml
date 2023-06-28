@@ -139,7 +139,7 @@ metrics:
       value_type: double
   container.cpu.limit:
     enabled: false
-    description: "CPU limit set for the container."
+    description: "CPU limit set for the container. This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota."
     unit: "{cpus}"
     gauge:
       value_type: double

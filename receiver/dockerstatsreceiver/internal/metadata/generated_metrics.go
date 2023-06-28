@@ -461,7 +461,7 @@ type metricContainerCPULimit struct {
 // init fills container.cpu.limit metric with initial data.
 func (m *metricContainerCPULimit) init() {
 	m.data.SetName("container.cpu.limit")
-	m.data.SetDescription("CPU limit set for the container.")
+	m.data.SetDescription("CPU limit set for the container. This metric is only reported if the container has limits set with -cpus, -cpuset-cpus or -cpu-quota.")
 	m.data.SetUnit("{cpus}")
 	m.data.SetEmptyGauge()
 }
