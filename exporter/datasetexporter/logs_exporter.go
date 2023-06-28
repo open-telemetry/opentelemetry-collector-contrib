@@ -21,7 +21,7 @@ var now = time.Now
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
-	e, err := newDatasetExporter("logs", cfg, set.Logger)
+	e, err := newDatasetExporter("logs", cfg, set)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
 	}

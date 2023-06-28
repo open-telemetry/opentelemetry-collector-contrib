@@ -19,6 +19,7 @@ import (
 type SapmDataSender struct {
 	testbed.DataSenderBase
 	consumer.Traces
+	compression string
 }
 
 // Ensure SapmDataSender implements TraceDataSenderOld.
@@ -26,12 +27,13 @@ var _ testbed.TraceDataSender = (*SapmDataSender)(nil)
 
 // NewSapmDataSender creates a new Sapm protocol sender that will send
 // to the specified port after Start is called.
-func NewSapmDataSender(port int) *SapmDataSender {
+func NewSapmDataSender(port int, compression string) *SapmDataSender {
 	return &SapmDataSender{
 		DataSenderBase: testbed.DataSenderBase{
 			Port: port,
 			Host: testbed.DefaultHost,
 		},
+		compression: compression,
 	}
 }
 
@@ -39,9 +41,12 @@ func NewSapmDataSender(port int) *SapmDataSender {
 func (je *SapmDataSender) Start() error {
 	factory := sapmexporter.NewFactory()
 	cfg := &sapmexporter.Config{
-		Endpoint:           fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
-		DisableCompression: true,
-		AccessToken:        "MyToken",
+		Endpoint:    fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
+		Compression: je.compression,
+		AccessToken: "MyToken",
+	}
+	if je.compression == "" {
+		cfg.DisableCompression = true
 	}
 	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()

@@ -1,18 +1,21 @@
 # Required: The type of the component - Usually the name. The type and class combined uniquely identify the component (eg. receiver/otlp) or subcomponent (eg. receiver/hostmetricsreceiver/cpu)
 type:
 
+# Required for subcomponents: The type of the parent component.
+parent: string
+
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
   class: <receiver|processor|exporter|connector|extension>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
   stability:
-    development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
-    alpha: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
-    beta: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
-    stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
-    deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
-    unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics>]
+    development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    alpha: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    beta: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
   # Optional: The distributions that this component is bundled with (For example core or contrib). See statusdata.go for a list of common distros.
   distributions: [string]
   # Optional: A list of warnings that should be brought to the attention of users looking to use this component
@@ -80,5 +83,8 @@ metrics:
       # Required for sum metric: whether reported values incorporate previous measurements
       # (cumulative) or not (delta).
       aggregation: <delta|cumulative>
+       # Optional: Indicates the type the metric needs to be parsed from. If set, the generated
+       # functions will parse the value from string to value_type.
+      input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]

@@ -39,6 +39,10 @@ const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E(t *testing.T) {
+	var expected pmetric.Metrics
+	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
 	require.NoError(t, err)
 	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
@@ -57,11 +61,6 @@ func TestE2E(t *testing.T) {
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
-	var expected pmetric.Metrics
-	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
-	expected, err = golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-	require.NoError(t, err)
 	replaceWithStar := func(string) string { return "*" }
 	shortenNames := func(value string) string {
 		if strings.HasPrefix(value, "kube-proxy") {
@@ -82,7 +81,7 @@ func TestE2E(t *testing.T) {
 		return value
 	}
 	containerImageShorten := func(value string) string {
-		return value[strings.LastIndex(value, "/"):]
+		return value[(strings.LastIndex(value, "/") + 1):]
 	}
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
@@ -100,6 +99,7 @@ func TestE2E(t *testing.T) {
 		pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
+		pmetrictest.IgnoreScopeVersion(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),

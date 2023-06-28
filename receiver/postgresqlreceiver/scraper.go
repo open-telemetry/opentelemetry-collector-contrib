@@ -197,7 +197,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxRead, metadata.AttributeSourceIdxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxHit, metadata.AttributeSourceIdxHit)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastHit, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastHit)
+			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxRead, metadata.AttributeSourceTidxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit, metadata.AttributeSourceTidxHit)
 		}

@@ -14,6 +14,7 @@ import (
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 )
 
 const (
@@ -35,14 +36,16 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 	}
 
 	return &detector{
-		logger:   set.Logger,
-		provider: ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
+		logger:             set.Logger,
+		provider:           ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
+		resourceAttributes: userCfg.ResourceAttributes,
 	}, nil
 }
 
 type detector struct {
-	logger   *zap.Logger
-	provider ocp.Provider
+	logger             *zap.Logger
+	provider           ocp.Provider
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -83,17 +86,25 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		region = strings.ToLower(infra.Status.PlatformStatus.OpenStack.CloudName)
 	}
 
-	if infra.Status.InfrastructureName != "" {
-		attrs.PutStr(conventions.AttributeK8SClusterName, infra.Status.InfrastructureName)
+	if d.resourceAttributes.K8sClusterName.Enabled {
+		if infra.Status.InfrastructureName != "" {
+			attrs.PutStr(conventions.AttributeK8SClusterName, infra.Status.InfrastructureName)
+		}
 	}
-	if provider != "" {
-		attrs.PutStr(conventions.AttributeCloudProvider, provider)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		if provider != "" {
+			attrs.PutStr(conventions.AttributeCloudProvider, provider)
+		}
 	}
-	if platform != "" {
-		attrs.PutStr(conventions.AttributeCloudPlatform, platform)
+	if d.resourceAttributes.CloudPlatform.Enabled {
+		if platform != "" {
+			attrs.PutStr(conventions.AttributeCloudPlatform, platform)
+		}
 	}
-	if region != "" {
-		attrs.PutStr(conventions.AttributeCloudRegion, region)
+	if d.resourceAttributes.CloudRegion.Enabled {
+		if region != "" {
+			attrs.PutStr(conventions.AttributeCloudRegion, region)
+		}
 	}
 
 	// TODO(frzifus): support conventions openshift and kubernetes cluster version.
