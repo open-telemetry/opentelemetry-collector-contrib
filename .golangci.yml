@@ -173,9 +173,6 @@ issues:
     - path: k8sclusterreceiver
       linters:
         - exhaustive
-    - path: kubeletstatsreceiver
-      linters:
-        - exhaustive
     - path: podmanreceiver
       linters:
         - exhaustive

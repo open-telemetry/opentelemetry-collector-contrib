@@ -88,6 +88,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 			require.Less(t, dp.StartTimestamp(), dp.Timestamp())
 			requirePointOk(t, dp)
 		}
+	case pmetric.MetricTypeEmpty:
 	}
 }
 
