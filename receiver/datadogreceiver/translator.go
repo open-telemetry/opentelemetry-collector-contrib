@@ -84,6 +84,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
+			newSpan.Attributes().PutStr("span.Resource", span.Resource)
 
 			if span.Error > 0 {
 				newSpan.Status().SetCode(ptrace.StatusCodeError)
