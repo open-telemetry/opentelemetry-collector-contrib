@@ -109,6 +109,8 @@ func (mvt MetricValueType) BasicType() string {
 		return "int64"
 	case pmetric.NumberDataPointValueTypeDouble:
 		return "float64"
+	case pmetric.NumberDataPointValueTypeEmpty:
+		return ""
 	default:
 		return ""
 	}
