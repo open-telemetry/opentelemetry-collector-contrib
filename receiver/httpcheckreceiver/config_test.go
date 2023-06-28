@@ -39,10 +39,21 @@ func TestValidate(t *testing.T) {
 			),
 		},
 		{
+			desc: "missing scheme",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "www.opentelemetry.io/docs",
+				},
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "www.opentelemetry.io/docs": invalid URI for request`),
+			),
+		},
+		{
 			desc: "valid config",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://opentelemetry.io",
+					Endpoint: "https://opentelemetry.io:80/docs",
 				},
 			},
 			expectedErr: nil,

@@ -18,7 +18,7 @@ import (
 // Predefined error responses for configuration validation failures
 var (
 	errMissingEndpoint = errors.New(`"endpoint" must be specified`)
-	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>:<port>`)
+	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>[:<port>]`)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -35,11 +35,11 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Endpoint == "" {
 		err = multierr.Append(err, errMissingEndpoint)
-	}
-	_, parseErr := url.Parse(cfg.Endpoint)
-	if parseErr != nil {
-		wrappedErr := fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
-		err = multierr.Append(err, wrappedErr)
+	} else {
+		_, parseErr := url.ParseRequestURI(cfg.Endpoint)
+		if parseErr != nil {
+			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
+		}
 	}
 
 	return err
