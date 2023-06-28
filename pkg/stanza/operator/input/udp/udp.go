@@ -39,8 +39,8 @@ func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
-			Encoding:    helper.NewEncodingConfig(),
-			TokenizeLog: true,
+			Encoding:        helper.NewEncodingConfig(),
+			OneLogPerPacket: false,
 			Multiline: helper.MultilineConfig{
 				LineStartPattern: "",
 				LineEndPattern:   ".^", // Use never matching regex to not split data by default
@@ -58,7 +58,7 @@ type Config struct {
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
 	ListenAddress               string                 `mapstructure:"listen_address,omitempty"`
-	TokenizeLog                 bool                   `mapstructure:"tokenize_log,omitempty"`
+	OneLogPerPacket             bool                   `mapstructure:"one_log_per_packet,omitempty"`
 	AddAttributes               bool                   `mapstructure:"add_attributes,omitempty"`
 	Encoding                    helper.EncodingConfig  `mapstructure:",squash,omitempty"`
 	Multiline                   helper.MultilineConfig `mapstructure:"multiline,omitempty"`
@@ -99,14 +99,14 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	udpInput := &Input{
-		InputOperator: inputOperator,
-		address:       address,
-		buffer:        make([]byte, MaxUDPSize),
-		addAttributes: c.AddAttributes,
-		encoding:      encoding,
-		splitFunc:     splitFunc,
-		resolver:      resolver,
-		tokenizeLog:   c.TokenizeLog,
+		InputOperator:   inputOperator,
+		address:         address,
+		buffer:          make([]byte, MaxUDPSize),
+		addAttributes:   c.AddAttributes,
+		encoding:        encoding,
+		splitFunc:       splitFunc,
+		resolver:        resolver,
+		OneLogPerPacket: c.OneLogPerPacket,
 	}
 	return udpInput, nil
 }
@@ -115,9 +115,9 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 type Input struct {
 	buffer []byte
 	helper.InputOperator
-	address       *net.UDPAddr
-	addAttributes bool
-	tokenizeLog   bool
+	address         *net.UDPAddr
+	addAttributes   bool
+	OneLogPerPacket bool
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
@@ -163,7 +163,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 				break
 			}
 
-			if !u.tokenizeLog {
+			if u.OneLogPerPacket {
 				log := VerifyLog(message)
 				handleMessage(u, ctx, remoteAddr, log)
 				continue
