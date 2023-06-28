@@ -1,5 +1,7 @@
 type: k8s/node
 
+parent: k8s_cluster
+
 sem_conv_version: 1.18.0
 
 resource_attributes:

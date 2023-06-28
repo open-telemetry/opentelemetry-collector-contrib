@@ -38,7 +38,8 @@ func (mfs *mockFileSystem) IsWindows() bool {
 }
 
 func Test_newDetector(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	d, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, d)
@@ -79,7 +80,8 @@ func Test_fileMalformed(t *testing.T) {
 
 func Test_AttributesDetectedSuccessfully(t *testing.T) {
 	mfs := &mockFileSystem{exists: true, contents: xrayConf}
-	d := Detector{fs: mfs}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	d := Detector{fs: mfs, resourceAttributes: resourceAttributes}
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()

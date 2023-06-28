@@ -44,6 +44,7 @@ exporter/awsxrayexporter/                                @open-telemetry/collect
 exporter/azuremonitorexporter/                           @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/azuredataexplorerexporter/                      @open-telemetry/collector-contrib-approvers @asaharan @ag-ramachandran
 exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen
+exporter/carbonexporter/                                 @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 exporter/cassandraexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/coralogixexporter/                              @open-telemetry/collector-contrib-approvers @oded-dd @povilasv @matej-g
 exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13 @liustanley @songy23
@@ -172,6 +173,7 @@ receiver/awsxrayreceiver/                                @open-telemetry/collect
 receiver/azureblobreceiver/                              @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/azuremonitorreceiver/                           @open-telemetry/collector-contrib-approvers @altuner @codeboten
 receiver/bigipreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
+receiver/carbonreceiver/                                 @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 receiver/chronyreceiver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
 receiver/cloudflarereceiver/                             @open-telemetry/collector-contrib-approvers @dehaansa @djaglowski
 receiver/cloudfoundryreceiver/                           @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared @crobert-1
@@ -255,6 +257,4 @@ testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collect
 ## UNMAINTAINED components
 ## The Github issue template generation code needs this to generate the corresponding labels.
 
-exporter/carbonexporter/                                 @open-telemetry/collector-contrib-approvers 
-receiver/carbonreceiver/                                 @open-telemetry/collector-contrib-approvers 
 receiver/wavefrontreceiver/                              @open-telemetry/collector-contrib-approvers 
