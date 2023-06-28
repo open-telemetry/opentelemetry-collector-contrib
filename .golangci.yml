@@ -299,9 +299,6 @@ issues:
     - path: splunkhecexporter
       linters:
         - exhaustive
-    - path: signalfxexporter
-      linters:
-        - exhaustive
     - path: tanzuobservabilityexporter
       linters:
         - exhaustive
