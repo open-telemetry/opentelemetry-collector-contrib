@@ -294,6 +294,18 @@ transform:
         - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
 ``` 
 
+### Move field to attribute
+Set attribute `body` to the value of the log body:
+
+```yaml
+transform:
+  error_mode: ignore
+  log_statements:
+    - context: log
+      statements: 
+        - set(attributes["body"], body)
+``` 
+
 ### Comnbine two attributes
 Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined. 
 ```yaml
