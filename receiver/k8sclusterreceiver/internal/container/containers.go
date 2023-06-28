@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
@@ -36,6 +37,7 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	for k, r := range c.Resources.Requests {
+		//exhaustive:ignore
 		switch k {
 		case corev1.ResourceCPU:
 			mb.RecordK8sContainerCPURequestDataPoint(ts, float64(r.MilliValue())/1000.0)
@@ -45,9 +47,12 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 			mb.RecordK8sContainerStorageRequestDataPoint(ts, r.Value())
 		case corev1.ResourceEphemeralStorage:
 			mb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, r.Value())
+		default:
+			set.Logger.Debug("unsupported request type", zap.Any("type", k))
 		}
 	}
 	for k, l := range c.Resources.Limits {
+		//exhaustive:ignore
 		switch k {
 		case corev1.ResourceCPU:
 			mb.RecordK8sContainerCPULimitDataPoint(ts, float64(l.MilliValue())/1000.0)
@@ -57,6 +62,8 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 			mb.RecordK8sContainerStorageLimitDataPoint(ts, l.Value())
 		case corev1.ResourceEphemeralStorage:
 			mb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, l.Value())
+		default:
+			set.Logger.Debug("unsupported request type", zap.Any("type", k))
 		}
 	}
 	var containerID string
