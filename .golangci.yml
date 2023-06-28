@@ -161,9 +161,6 @@ issues:
     - path: awscontainerinsightreceiver
       linters:
         - exhaustive
-    - path: azureeventhubreceiver
-      linters:
-        - exhaustive
     - path: fluentforwardreceiver
       linters:
         - exhaustive

@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/multierr"
 )
 
 type metricName string
@@ -141,26 +140,12 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	if !parser.IsSet("description") {
-		return errors.New("missing required field: `description`")
-	}
 	err := parser.Unmarshal(m, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-func (m *metric) Validate() error {
-	if m.Sum != nil {
-		return m.Sum.Validate()
-	}
-	if m.Gauge != nil {
-		return m.Gauge.Validate()
-	}
-	return nil
-}
-
 func (m metric) Data() MetricData {
 	if m.Sum != nil {
 		return m.Sum
@@ -193,20 +178,6 @@ type attribute struct {
 	Type ValueType `mapstructure:"type"`
 }
 
-func (attr *attribute) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("description") {
-		return errors.New("missing required field: `description`")
-	}
-	if !parser.IsSet("type") {
-		return errors.New("missing required field: `type`")
-	}
-	err := parser.Unmarshal(attr, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -224,60 +195,6 @@ type metadata struct {
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 	// ScopeName of the metrics emitted by the component.
 	ScopeName string `mapstructure:"-"`
-}
-
-func (md *metadata) Validate() error {
-	var errs error
-
-	usedAttrs := map[attributeName]bool{}
-	for mn, m := range md.Metrics {
-		if m.Sum == nil && m.Gauge == nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-		if m.Sum != nil && m.Gauge != nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-
-		if err := m.Validate(); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
-			continue
-		}
-
-		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
-		for _, attr := range m.Attributes {
-			if _, ok := md.Attributes[attr]; ok {
-				usedAttrs[attr] = true
-			} else {
-				unknownAttrs = append(unknownAttrs, attr)
-			}
-		}
-		if len(unknownAttrs) > 0 {
-			errs = multierr.Append(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
-		}
-	}
-
-	unusedAttrs := make([]attributeName, 0, len(md.Attributes))
-	for attr := range md.Attributes {
-		if !usedAttrs[attr] {
-			unusedAttrs = append(unusedAttrs, attr)
-		}
-	}
-	if len(unusedAttrs) > 0 {
-		errs = multierr.Append(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
-	}
-	if md.Status != nil {
-		if md.Status.Class == "" {
-			errs = multierr.Append(errs, errors.New("missing status class metadata"))
-		}
-		if len(md.Status.Stability) == 0 {
-			errs = multierr.Append(errs, errors.New("missing status stability metadata"))
-		}
-	}
-	return errs
 }
 
 type templateContext struct {
