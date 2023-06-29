@@ -154,7 +154,7 @@ func (r *PerformanceResults) Add(_ string, result interface{}) {
 func (r *PerformanceResults) saveBenchmarks() {
 	path := path.Join(r.resultsDir, "benchmarks.json")
 	j, _ := json.MarshalIndent(r.benchmarkResults, "", "  ")
-	_ = os.WriteFile(path, j, 0644)
+	_ = os.WriteFile(path, j, 0600)
 }
 
 // CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
