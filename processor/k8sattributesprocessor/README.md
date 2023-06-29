@@ -21,13 +21,17 @@ running in a cluster, keeps a record of their IP addresses, pod UIDs and interes
 The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
 It represents a list of associations that are executed in the specified order until the first one is able to do the match.
 
+
 ## Configuration
 
-Each association is specified as a list of sources of associations. Sources represent list of rules. All rules are going
-to be executed, and combination of result is going to be a pod metadata cache key.
-In order to get an association applied, all the data defined in each source has to be successfully fetched from a log, trace or metric.
+The processor stores the list of running pods and the associated metadata. When it sees a datapoint (log, trace or metric), it will try to associate the datapoint
+to the pod from where the datapoint originated, so we can add the relevant pod metadata to the datapoint. By default, it associates the incoming connection IP
+to the Pod IP. But for cases where this approach doesn't work (sending through a proxy, etc.), a custom association rule can be specified.
 
-Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `From` is set to `resource_attribute`).
+Each association is specified as a list of sources of associations. A source is a rule that matches metadata from the datapoint to pod metadata.
+In order to get an association applied, all the sources specified need to match.
+
+Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `from` is set to `resource_attribute`).
 Following rule types are available:
 
 **from: "connection"** - takes the IP attribute from connection context (if available)
@@ -38,6 +42,8 @@ Pod association configuration.
 
 ```yaml
 pod_association:
+  # below association takes a look at the datapoint's k8s.pod.ip resource attribute and tries to match it with
+  # the pod having the same attribute.
   - sources:
       - from: resource_attribute
         name: k8s.pod.ip

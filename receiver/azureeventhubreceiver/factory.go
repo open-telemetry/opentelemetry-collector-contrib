@@ -97,21 +97,20 @@ func (f *eventhubReceiverFactory) getReceiver(
 		var metricsUnmarshaler eventMetricsUnmarshaler
 		switch receiverType {
 		case component.DataTypeLogs:
-			switch logFormat(receiverConfig.Format) {
-			case rawLogFormat:
+			if logFormat(receiverConfig.Format) == rawLogFormat {
 				logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
-			default:
+			} else {
 				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger)
 			}
-
 		case component.DataTypeMetrics:
-			switch logFormat(receiverConfig.Format) {
-			case rawLogFormat:
+			if logFormat(receiverConfig.Format) == rawLogFormat {
 				metricsUnmarshaler = nil
-				err = errors.New("Raw format not supported for Metrics")
-			default:
+				err = errors.New("raw format not supported for Metrics")
+			} else {
 				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger)
 			}
+		case component.DataTypeTraces:
+			err = errors.New("unsupported traces data")
 		}
 
 		if err != nil {

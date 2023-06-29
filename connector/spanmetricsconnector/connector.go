@@ -251,6 +251,7 @@ func (p *connectorImp) resetState() {
 	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
 		p.resourceMetrics = make(map[resourceKey]*resourceMetrics)
 		p.metricKeyToDimensions.Purge()
+		p.startTimestamp = pcommon.NewTimestampFromTime(time.Now())
 	} else {
 		p.metricKeyToDimensions.RemoveEvictedItems()
 

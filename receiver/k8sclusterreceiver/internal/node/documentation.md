@@ -2,6 +2,8 @@
 
 # k8s/node
 
+**Parent Component:** k8s_cluster
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -35,6 +37,14 @@ How many bytes of RAM memory remaining that the node can allocate to pods
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
+
+### k8s.node.allocatable_pods
+
+How many pods remaining the node can allocate
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pods} | Gauge | Int |
 
 ### k8s.node.allocatable_storage
 

@@ -30,6 +30,14 @@ resource_attributes:
     description: "The hostname of the container."
     type: string
     enabled: true
+  container.image.id:
+    description: "The ID of the container image."
+    type: string
+    enabled: false
+  container.command_line:
+    description: "The full command executed by the container."
+    type: string
+    enabled: false
 
 attributes:
   core:

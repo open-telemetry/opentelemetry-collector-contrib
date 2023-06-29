@@ -42,6 +42,14 @@ func assertMetric(t testing.TB, m pmetric.Metric, expectedMetric string, expecte
 		dps = m.Gauge().DataPoints()
 	case pmetric.MetricTypeSum:
 		dps = m.Sum().DataPoints()
+	case pmetric.MetricTypeHistogram:
+		require.Fail(t, "unsupported")
+	case pmetric.MetricTypeExponentialHistogram:
+		require.Fail(t, "unsupported")
+	case pmetric.MetricTypeSummary:
+		require.Fail(t, "unsupported")
+	case pmetric.MetricTypeEmpty:
+		require.Fail(t, "unsupported")
 	}
 	require.Equal(t, 1, dps.Len())
 	return dps
