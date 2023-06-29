@@ -164,7 +164,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 			}
 
 			if u.OneLogPerPacket {
-				log := VerifyLog(message)
+				log := truncateMaxLog(message)
 				handleMessage(u, ctx, remoteAddr, log)
 				continue
 			}
