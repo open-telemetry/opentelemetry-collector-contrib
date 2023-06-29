@@ -6,8 +6,8 @@ parent: string
 
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
-  # Required: The class of the component (For example receiver)
-  class: <receiver|processor|exporter|connector|extension>
+  # Required: The class of the component. receiver_scraper is a receiver which scrapes a fixed set of metrics.
+  class: <receiver|receiver_scraper|processor|exporter|connector|extension>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector#stability-levels
   stability:
     development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
@@ -51,7 +51,7 @@ attributes:
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
 
-# Optional: map of metric names with the key being the metric name and value
+# Required for receiver_scraper class: map of metric names with the key being the metric name and value
 # being described below.
 metrics:
   <metric.name>:

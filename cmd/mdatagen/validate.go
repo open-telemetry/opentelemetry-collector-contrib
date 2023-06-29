@@ -58,7 +58,7 @@ func (s *Status) validateClass() error {
 	if s.Class == "" {
 		return errors.New("missing class")
 	}
-	if s.Class != "receiver" && s.Class != "processor" && s.Class != "exporter" && s.Class != "connector" && s.Class != "extension" && s.Class != "cmd" {
+	if s.Class != "receiver" && s.Class != "receiver_scraper" && s.Class != "processor" && s.Class != "exporter" && s.Class != "connector" && s.Class != "extension" && s.Class != "cmd" {
 		return fmt.Errorf("invalid class: %v", s.Class)
 	}
 	return nil
@@ -100,6 +100,9 @@ func (md *metadata) validateResourceAttributes() error {
 }
 
 func (md *metadata) validateMetrics() error {
+	if md.Status != nil && md.Status.Class == "receiver_scraper" && len(md.Metrics) == 0 {
+		return fmt.Errorf("missing required metrics for receiver_scraper: %v", md.Type)
+	}
 	var errs error
 	usedAttrs := map[attributeName]bool{}
 	for mn, m := range md.Metrics {

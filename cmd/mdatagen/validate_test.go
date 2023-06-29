@@ -92,6 +92,10 @@ func TestValidate(t *testing.T) {
 			name:    "testdata/no_type_attr.yaml",
 			wantErr: "empty type for attribute: used_attr",
 		},
+		{
+			name:    "testdata/no_metrics_receiver_scraper.yaml",
+			wantErr: "missing required metrics for receiver_scraper: metricscraper",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

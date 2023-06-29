@@ -1,0 +1,11 @@
+type: metricscraper
+
+sem_conv_version: 1.9.0
+
+status:
+  class: receiver_scraper
+  stability:
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
