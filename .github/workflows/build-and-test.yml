@@ -298,8 +298,8 @@ jobs:
           with: |
             fail_ci_if_error: true
             verbose: true
-          attempt_limit: 5
-          attempt_delay: 10000
+          attempt_limit: 10
+          attempt_delay: 15000
 
   integration-tests:
     runs-on: ubuntu-latest
