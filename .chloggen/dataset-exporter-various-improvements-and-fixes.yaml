@@ -12,7 +12,7 @@ component: exporter/datasetexporter
 note: "Correctly map LogRecord severity to DataSet severity, remove redundant DataSet event message field prefix (OtelExporter - Log -) and remove redundant DataSet event fields (flags, flags.is_sampled)."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [20660]
+issues: [20660, 23672]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
