@@ -93,3 +93,32 @@ processors:
 exporters:
   nop:
 ```
+
+## Feature Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+
+### `extension.filestorage.replaceUnsafeCharacters`
+
+When enabled, characters that are not safe in file paths are replaced in component name using the extension before creating the file name to store data by the extension.
+
+This may change the file path that the extension is writing component's data to.
+For example, for component `filelog/logs/json`, the data is stored:
+
+- in path `receiver_filelog_logs/json` with the feature flag disabled (note that this is file named `json` inside directory named `receiver_filelog_logs`).
+- in file `receiver_filelog_logs~json` with the feature flag enabled.
+
+The feature replaces all characters other than `A-Z`, `a-z`, `0-9`, dot `.`, hyphen `-`, underscore `_`, with a tilde `~`.
+This replacement is done to prevent surprising behavior or errors in the file storage extension.
+
+For more details, see the following issues:
+
+- [File storage extension - invalid file name characters must be encoded #3148](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148)
+- [[filestorage] receiver name sanitization #20731](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20731)
+
+The schedule for this feature gate is:
+
+- Introduced in v0.81.0 (July 2023) as `alpha` - disabled by default.
+- Moved to `beta` in October 2023 - enabled by default.
+- Moved to `stable` in January 2024 - cannot be disabled.
+- Removed three releases after `stable`.

@@ -12,7 +12,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
+)
+
+var replaceUnsafeCharactersFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.filestorage.replaceUnsafeCharacters",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, characters that are not safe in file paths are replaced in component name using the extension. For example, the data for component `filelog/logs/json` will be stored in file `receiver_filelog_logs~json` and not in `receiver_filelog_logs/json`."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148"),
+	featuregate.WithRegisterFromVersion("v0.81.0"),
 )
 
 type localFileStorage struct {
@@ -50,7 +59,10 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	} else {
 		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
-	rawName = sanitize(rawName)
+
+	if replaceUnsafeCharactersFeatureGate.IsEnabled() {
+		rawName = sanitize(rawName)
+	}
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction)
 
