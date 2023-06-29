@@ -251,9 +251,6 @@ issues:
     - path: elasticsearchexporter
       linters:
         - exhaustive
-    - path: datadogexporter
-      linters:
-        - exhaustive
     - path: googlecloudpubsubexporter
       linters:
         - exhaustive
