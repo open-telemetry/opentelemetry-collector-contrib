@@ -71,7 +71,7 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 			conf := &clientConfig{
 				host:                  ashost,
 				username:              cfg.Username,
-				password:              cfg.Password,
+				password:              string(cfg.Password),
 				timeout:               cfg.Timeout,
 				logger:                sugaredLogger,
 				collectClusterMetrics: cfg.CollectClusterMetrics,
