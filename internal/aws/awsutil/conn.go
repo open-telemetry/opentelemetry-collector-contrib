@@ -24,6 +24,7 @@ import (
 	"os"
 	"time"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	awsSDKV2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -32,6 +33,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -181,6 +183,14 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		Endpoint:               aws.String(cfg.Endpoint),
 		HTTPClient:             http,
 	}
+	defaultCredProviders := defaults.CredProviders(config, defaults.Handlers())
+	overrideCredProviders := override.GetCredentialsChainOverride().GetCredentialsChain()
+	credProviders := make([]credentials.Provider, 0, len(defaultCredProviders)+len(overrideCredProviders))
+	credProviders = append(credProviders, defaultCredProviders...)
+	credProviders = append(credProviders, overrideCredProviders...)
+	config.Credentials = credentials.NewCredentials(&credentials.ChainProvider{
+		Providers: credProviders,
+	})
 	return config, s, nil
 }
 

@@ -103,6 +103,7 @@ body:
       - internal/sharedcomponent
       - internal/splunk
       - internal/tools
+      - override/aws
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata

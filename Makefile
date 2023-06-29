@@ -21,6 +21,7 @@ TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
 EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*" -not -path "./connector/*"
 EX_INTERNAL=-not -path "./internal/*"
 EX_PKG=-not -path "./pkg/*"
+EX_OVERRIDE=-not -path "./override/*"
 
 # NONROOT_MODS includes ./* dirs (excludes . dir)
 NONROOT_MODS := $(shell find . $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
@@ -34,8 +35,9 @@ EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR
 CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
-ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(OTHER_MODS)
+OVERRIDE_MODS := $(shell find ./override/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_OVERRIDE) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
+ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(OVERRIDE_MODS) $(OTHER_MODS)
 
 # find -exec dirname cannot be used to process multiple matching patterns
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
@@ -60,6 +62,7 @@ all-groups:
 	@echo "\nconnector: $(CONNECTOR_MODS)"
 	@echo "\ninternal: $(INTERNAL_MODS)"
 	@echo "\npkg: $(PKG_MODS)"
+	@echo "\noverride: $(OVERRIDE_MODS)"
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
@@ -202,6 +205,9 @@ for-internal-target: $(INTERNAL_MODS)
 
 .PHONY: for-pkg-target
 for-pkg-target: $(PKG_MODS)
+
+.PHONY: for-override-target
+for-override-target: $(OVERRIDE_MODS)
 
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
