@@ -105,6 +105,35 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./*.tar
+      - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
+      - name: Upload benchmarks.json
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: testbed/tests/results/${{steps.filename.outputs.name}}.json
+
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         run: issuegenerator $TEST_RESULTS
+
+  update-benchmarks:
+    runs-on: ubuntu-latest
+    needs: [loadtest]
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: benchmark-results
+          path: results
+      - run: jq -s 'map(.[])' results/*.json
+      - run: jq -s 'map(.[])' results/*.json > output.json
+      - uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: output.json
+          gh-pages-branch: gh-pages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: "docs/benchmarks/loadtests"
+          summary-always: true
+          auto-push: true
