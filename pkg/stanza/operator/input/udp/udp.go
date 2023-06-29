@@ -184,7 +184,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 	}()
 }
 
-func VerifyLog(data []byte) (token []byte) {
+func truncateMaxLog(data []byte) (token []byte) {
 	dataLength := len(data)
 	if dataLength >= MaxUDPSize {
 		return data[:MaxUDPSize]
