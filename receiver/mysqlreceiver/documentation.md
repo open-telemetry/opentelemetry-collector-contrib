@@ -146,14 +146,6 @@ The total time of I/O wait events for an index.
 | schema | The schema of the object. | Any Str |
 | index | The name of the index. | Any Str |
 
-### mysql.locked_connects
-
-[DEPRECATED] The number of attempts to connect to locked user accounts.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
 ### mysql.locks
 
 The number of MySQL locks.
@@ -437,6 +429,14 @@ The number of joins that perform table scans.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` |
+
+### mysql.locked_connects
+
+[DEPRECATED] The number of attempts to connect to locked user accounts.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
 
 ### mysql.mysqlx_worker_threads
 

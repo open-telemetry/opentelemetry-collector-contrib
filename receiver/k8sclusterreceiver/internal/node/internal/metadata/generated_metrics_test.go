@@ -68,6 +68,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -167,6 +171,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "How many bytes of RAM memory remaining that the node can allocate to pods", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.allocatable_pods":
+					assert.False(t, validatedMetrics["k8s.node.allocatable_pods"], "Found a duplicate in the metrics slice: k8s.node.allocatable_pods")
+					validatedMetrics["k8s.node.allocatable_pods"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "How many pods remaining the node can allocate", ms.At(i).Description())
+					assert.Equal(t, "{pods}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

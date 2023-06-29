@@ -4,11 +4,11 @@ go 1.19
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.44.287
+	github.com/aws/aws-sdk-go v1.44.290
 	github.com/docker/docker v24.0.2+incompatible
 	github.com/hashicorp/consul/api v1.21.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/semconv v0.80.0
+	go.opentelemetry.io/collector/semconv v0.80.1-0.20230629144634-c3f70bd1f8ea
 	go.opentelemetry.io/otel/sdk v1.16.0
 )
 

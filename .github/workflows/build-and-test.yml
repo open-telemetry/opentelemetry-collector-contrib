@@ -292,7 +292,7 @@ jobs:
         with:
           name: coverage-artifacts
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v1.0.36
+        uses: Wandalen/wretry.action@v1.3.0
         with:
           action: codecov/codecov-action@v3
           with: |

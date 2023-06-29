@@ -75,6 +75,7 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 				node.GetName()).Error())
 			continue
 		}
+		//exhaustive:ignore
 		switch v1NodeAllocatableTypeValue {
 		case corev1.ResourceCPU:
 			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
@@ -85,6 +86,10 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 			mb.RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts, quantity.Value())
 		case corev1.ResourceStorage:
 			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, quantity.Value())
+		case corev1.ResourcePods:
+			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, quantity.Value())
+		default:
+			set.Logger.Warn("unknown node condition type", zap.Any("conditionType", v1NodeAllocatableTypeValue))
 		}
 	}
 	return mb.Emit(imetadata.WithK8sNodeUID(string(node.UID)), imetadata.WithK8sNodeName(node.Name), imetadata.WithOpencensusResourcetype("k8s"))

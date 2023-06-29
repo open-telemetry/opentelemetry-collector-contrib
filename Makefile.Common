@@ -92,7 +92,7 @@ all-pkg-dirs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: lint
+common: lint test
 
 .PHONY: test
 test:
