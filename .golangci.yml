@@ -176,9 +176,6 @@ issues:
     - path: prometheusreceiver
       linters:
         - exhaustive
-    - path: receivercreator
-      linters:
-        - exhaustive
     - path: statsdreceiver
       linters:
         - exhaustive
