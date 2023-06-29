@@ -170,19 +170,10 @@ issues:
     - path: googlecloudspannerreceiver
       linters:
         - exhaustive
-    - path: k8sclusterreceiver
-      linters:
-        - exhaustive
-    - path: kubeletstatsreceiver
-      linters:
-        - exhaustive
     - path: podmanreceiver
       linters:
         - exhaustive
     - path: prometheusreceiver
-      linters:
-        - exhaustive
-    - path: receivercreator
       linters:
         - exhaustive
     - path: statsdreceiver
@@ -293,9 +284,6 @@ issues:
     - path: splunkhecexporter
       linters:
         - exhaustive
-    - path: signalfxexporter
-      linters:
-        - exhaustive
     - path: tanzuobservabilityexporter
       linters:
         - exhaustive
@@ -339,9 +327,6 @@ issues:
       linters:
         - exhaustive
     - path: zipkin
-      linters:
-        - exhaustive
-    - path: mdatagen
       linters:
         - exhaustive
     - path: configschema

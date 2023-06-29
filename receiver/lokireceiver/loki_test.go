@@ -143,7 +143,7 @@ func TestSendingProtobufPushRequestToHTTPEndpoint(t *testing.T) {
 		err             error
 	}{
 		{
-			name:            "Sending contentEncoding=\"\" contentType=application/x-protobuf to http endpoint",
+			name:            "Sending contentEncoding=\"snappy\" contentType=application/x-protobuf to http endpoint",
 			contentEncoding: "snappy",
 			contentType:     pbContentType,
 			body: &push.PushRequest{

@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [aws], [observiq], [sumo] |
+| Warnings      | [Other](#warnings) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -875,3 +876,17 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | EBSVolumeId          |
 <br/><br/>
 <br/><br/>
+
+# Warnings
+
+## Root permissions
+
+When using this component, the collector process needs root permission to be able to read the content of the files located in the following locations:
+   * `/`
+   * `/var/run/docker.sock`
+   * `/var/lib/docker`
+   * `/run/containerd/containerd.sock`
+   * `/sys`
+   * `/dev/disk`
+
+This requirement comes from the fact that this component is based on [cAdvisor](https://github.com/google/cadvisor).
