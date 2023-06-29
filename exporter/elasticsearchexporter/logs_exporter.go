@@ -51,8 +51,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	// TODO: Apply encoding and field mapping settings.
-	model := &encodeModel{dedup: true, dedot: false}
+	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
 
 	indexStr := cfg.LogsIndex
 	if cfg.Index != "" {
