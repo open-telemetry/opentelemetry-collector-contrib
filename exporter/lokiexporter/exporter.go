@@ -44,7 +44,7 @@ func newExporter(config *Config, settings component.TelemetrySettings) *lokiExpo
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	requests := loki.LogsToLokiRequests(ld)
+	requests := loki.LogsToLokiRequests(ld, l.config.DefaultLabelsEnabled)
 
 	var errs error
 	for tenant, request := range requests {
