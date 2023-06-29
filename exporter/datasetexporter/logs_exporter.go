@@ -18,7 +18,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+// We define it here so we can easily mock it inside tests
 var now = time.Now
+
+// Prefix which is added to all the special / internal DataSet fields
+const specialDataSetFieldNamePrefix string = "sca:"
 
 // If a LogRecord doesn't contain severity or we can't map it to a valid DataSet severity, we use
 // this value (3 - INFO) instead
@@ -54,28 +58,21 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	)
 }
 
-func buildBody(attrs map[string]interface{}, value pcommon.Value) string {
+func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommon.Value) string {
+	// The message / body is stored as part of the "message" field on the DataSet event.
 	message := value.AsString()
-	attrs["body.type"] = value.Type().String()
-	switch value.Type() {
-	case pcommon.ValueTypeEmpty:
-		attrs["body.empty"] = value.AsString()
-	case pcommon.ValueTypeStr:
-		attrs["body.str"] = value.Str()
-	case pcommon.ValueTypeBool:
-		attrs["body.bool"] = value.Bool()
-	case pcommon.ValueTypeDouble:
-		attrs["body.double"] = value.Double()
-	case pcommon.ValueTypeInt:
-		attrs["body.int"] = value.Int()
-	case pcommon.ValueTypeMap:
+
+	// Additionally, we support de-composing complex message value (e.g. map / dictionary) into
+	// multiple event attributes.
+	//
+	// This functionality is behind a config option / feature flag and not enabled by default
+	// since no other existing DataSet integrations handle it in this manner (aka for out of
+	// the box consistency reasons).
+	// If user wants to achieve something like that, they usually handle that on the client
+	// (e.g. attribute processor or similar) or on the server (DataSet server side JSON parser
+	// for the message field).
+	if settings.DecomposeComplexMessageField && value.Type() == pcommon.ValueTypeMap {
 		updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
-	case pcommon.ValueTypeBytes:
-		attrs["body.bytes"] = value.AsString()
-	case pcommon.ValueTypeSlice:
-		attrs["body.slice"] = value.AsRaw()
-	default:
-		attrs["body.unknown"] = value.AsString()
 	}
 
 	return message
@@ -188,14 +185,17 @@ func buildEventFromLog(
 	}
 
 	if body := log.Body().AsString(); body != "" {
-		attrs["message"] = buildBody(attrs, log.Body())
+		attrs["message"] = buildBody(settings, attrs, log.Body())
 	}
+
 	if dropped := log.DroppedAttributesCount(); dropped > 0 {
 		attrs["dropped_attributes_count"] = dropped
 	}
+
 	if !observedTs.Equal(time.Unix(0, 0)) {
-		attrs["observed.timestamp"] = observedTs.String()
+		attrs[specialDataSetFieldNamePrefix+"observedTime"] = strconv.FormatInt(observedTs.UnixNano(), 10)
 	}
+
 	if span := log.SpanID().String(); span != "" {
 		attrs["span_id"] = span
 	}
@@ -223,8 +223,13 @@ func buildEventFromLog(
 	if settings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
-	attrs["scope.name"] = scope.Name()
-	updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+
+	if settings.ExportScopeInfo {
+		if scope.Name() != "" {
+			attrs["scope.name"] = scope.Name()
+		}
+		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+	}
 
 	event.Attrs = attrs
 	event.Log = "LL"
