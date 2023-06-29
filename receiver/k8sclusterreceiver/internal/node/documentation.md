@@ -38,6 +38,14 @@ How many bytes of RAM memory remaining that the node can allocate to pods
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### k8s.node.allocatable_pods
+
+How many pods remaining the node can allocate
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pods} | Gauge | Int |
+
 ### k8s.node.allocatable_storage
 
 How many bytes of storage remaining that the node can allocate to pods

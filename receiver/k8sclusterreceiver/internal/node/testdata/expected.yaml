@@ -31,6 +31,12 @@ resourceMetrics:
                 - asInt: "456"
             name: k8s.node.allocatable_memory
             unit: By
+          - description: How many pods remaining the node can allocate
+            gauge:
+              dataPoints:
+                - asInt: "12"
+            name: k8s.node.allocatable_pods
+            unit: "{pods}"
           - description: Whether this node is DiskPressure (1), not DiskPressure (0) or in an unknown state (-1)
             gauge:
               dataPoints:

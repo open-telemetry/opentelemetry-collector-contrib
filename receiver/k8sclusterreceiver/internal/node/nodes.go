@@ -86,6 +86,8 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 			mb.RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts, quantity.Value())
 		case corev1.ResourceStorage:
 			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, quantity.Value())
+		case corev1.ResourcePods:
+			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, quantity.Value())
 		default:
 			set.Logger.Warn("unknown node condition type", zap.Any("conditionType", v1NodeAllocatableTypeValue))
 		}
