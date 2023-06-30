@@ -150,6 +150,7 @@ processor/resourceprocessor/                             @open-telemetry/collect
 processor/resourcedetectionprocessor/internal/azure/     @open-telemetry/collector-contrib-approvers @mx-psi
 processor/resourcedetectionprocessor/internal/heroku/    @open-telemetry/collector-contrib-approvers @atoulme
 processor/resourcedetectionprocessor/internal/openshift/ @open-telemetry/collector-contrib-approvers @frzifus
+processor/remoteobserverprocessor/                       @open-telemetry/collector-contrib-approvers @pmcollins
 processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/servicegraphprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
@@ -157,7 +158,6 @@ processor/spanmetricsprocessor/                          @open-telemetry/collect
 processor/spanprocessor/                                 @open-telemetry/collector-contrib-approvers @boostchicken
 processor/tailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
-processor/websocketprocessor/                            @open-telemetry/collector-contrib-approvers @pmcollins
 
 receiver/azureeventhubreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @djaglowski
 receiver/activedirectorydsreceiver/                      @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames

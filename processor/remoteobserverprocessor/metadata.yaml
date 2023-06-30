@@ -1,7 +1,7 @@
-type: websocket
+type: remoteobserver
 
 status:
   class: processor
   stability:
-    development: [logs, metrics, traces]
+    alpha: [logs, metrics, traces]
   distributions: []

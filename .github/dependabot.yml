@@ -643,6 +643,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/processor/remoteobserverprocessor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/processor/resourcedetectionprocessor"
     schedule:
       interval: "weekly"
@@ -684,11 +689,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/transformprocessor"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/processor/websocketprocessor"
     schedule:
       interval: "weekly"
       day: "wednesday"
