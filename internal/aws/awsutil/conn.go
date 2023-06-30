@@ -183,15 +183,36 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		Endpoint:               aws.String(cfg.Endpoint),
 		HTTPClient:             http,
 	}
+	// do not overwrite for sts assume role
+	if cfg.RoleARN == "" && len(override.GetCredentialsChainOverride().GetCredentialsChain()) > 0 {
+		config.Credentials = credentials.NewCredentials(&credentials.ChainProvider{
+			Providers: customCredentialProvider(cfg, config),
+		})
+	}
+	config.CredentialsChainVerboseErrors = aws.Bool(true)
+	return config, s, nil
+}
+
+func customCredentialProvider(cfg *AWSSessionSettings, config *aws.Config) []credentials.Provider {
 	defaultCredProviders := defaults.CredProviders(config, defaults.Handlers())
 	overrideCredProviders := override.GetCredentialsChainOverride().GetCredentialsChain()
-	credProviders := make([]credentials.Provider, 0, len(defaultCredProviders)+len(overrideCredProviders))
+	credProviders := make([]credentials.Provider, 0)
+	// if is for differently configured shared creds file location
+	// else if is for diff profile but no change in creds file ex run in containers
+	if cfg.SharedCredentialsFile != nil && len(cfg.SharedCredentialsFile) > 0 {
+		for _, file := range cfg.SharedCredentialsFile {
+			credProviders = append(credProviders, &credentials.SharedCredentialsProvider{Filename: file, Profile: cfg.Profile})
+		}
+	} else if cfg.Profile != "" {
+		credProviders = append(credProviders, &credentials.SharedCredentialsProvider{Filename: "", Profile: cfg.Profile})
+	}
 	credProviders = append(credProviders, defaultCredProviders...)
-	credProviders = append(credProviders, overrideCredProviders...)
-	config.Credentials = credentials.NewCredentials(&credentials.ChainProvider{
-		Providers: credProviders,
-	})
-	return config, s, nil
+	for _, provider := range overrideCredProviders {
+		for _, file := range cfg.SharedCredentialsFile {
+			credProviders = append(credProviders, provider(file))
+		}
+	}
+	return credProviders
 }
 
 func findRegions(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (string, error) {
