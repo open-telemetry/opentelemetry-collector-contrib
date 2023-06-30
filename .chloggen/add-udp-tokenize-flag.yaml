@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: add option to skip log tokenization. use the 'OneLogPerPacket' to skip log tokenization if multiline is not used. this will boost the components performance.
+note: Add option to skip log tokenization. use the 'one_log_per_packet' setting to skip log tokenization if multiline is not used.
 
 # One or more tracking issues related to the change
 issues: []
