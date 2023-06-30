@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 
@@ -34,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
+
+var _ otel2influx.InfluxWriter = (*influxHTTPWriter)(nil)
 
 type influxHTTPWriter struct {
 	encoderPool sync.Pool
@@ -111,6 +102,7 @@ func composeWriteURL(config *Config) (string, error) {
 	return writeURL.String(), nil
 }
 
+// Start implements component.StartFunc
 func (w *influxHTTPWriter) Start(_ context.Context, host component.Host) error {
 	httpClient, err := w.httpClientSettings.ToClient(host, w.telemetrySettings)
 	if err != nil {
@@ -124,6 +116,8 @@ func (w *influxHTTPWriter) NewBatch() otel2influx.InfluxWriterBatch {
 	return newInfluxHTTPWriterBatch(w)
 }
 
+var _ otel2influx.InfluxWriterBatch = (*influxHTTPWriterBatch)(nil)
+
 type influxHTTPWriterBatch struct {
 	*influxHTTPWriter
 	encoder *lineprotocol.Encoder
@@ -136,11 +130,12 @@ func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
 	}
 }
 
-// WritePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
-// to the internal line protocol buffer. This method implements otel2influx.InfluxWriter.
-func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
+// EnqueuePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
+// to the internal line protocol buffer.
+// Errors are always "permanent".
+func (b *influxHTTPWriterBatch) EnqueuePoint(measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
 	b.encoder.StartLine(measurement)
-	for _, tag := range b.sortTags(tags) {
+	for _, tag := range b.optimizeTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)
 	}
 	for k, v := range b.convertFields(fields) {
@@ -157,7 +152,8 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 	return nil
 }
 
-func (b *influxHTTPWriterBatch) FlushBatch(ctx context.Context) error {
+// WriteBatch sends the internal line protocol buffer to InfluxDB.
+func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	defer func() {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
@@ -194,12 +190,16 @@ type tag struct {
 	k, v string
 }
 
-func (b *influxHTTPWriterBatch) sortTags(m map[string]string) []tag {
+// optimizeTags sorts tags by key and removes tags with empty keys or values
+func (b *influxHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
 	tags := make([]tag, 0, len(m))
 	for k, v := range m {
-		if k == "" {
+		switch {
+		case k == "":
 			b.logger.Debug("empty tag key")
-		} else {
+		case v == "":
+			b.logger.Debug("empty tag value", "key", k)
+		default:
 			tags = append(tags, tag{k, v})
 		}
 	}

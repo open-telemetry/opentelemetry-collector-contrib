@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -83,6 +72,9 @@ func TestAddFileFields(t *testing.T) {
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
 // when IncludeFileNameResolved and IncludeFilePathResolved are set to true
 func TestAddFileResolvedFields(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Windows symlinks usage disabled for now. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21088")
+	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -112,9 +104,9 @@ func TestAddFileResolvedFields(t *testing.T) {
 	writeString(t, file, "testlog\n")
 
 	// Resolve path
-	real, err := filepath.EvalSymlinks(file.Name())
+	realPath, err := filepath.EvalSymlinks(file.Name())
 	require.NoError(t, err)
-	resolved, err := filepath.Abs(real)
+	resolved, err := filepath.Abs(realPath)
 	require.NoError(t, err)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
@@ -135,6 +127,9 @@ func TestAddFileResolvedFields(t *testing.T) {
 // monitored file (symlink) -> middleSymlink -> file_1
 // monitored file (symlink) -> middleSymlink -> file_2
 func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Windows symlinks usage disabled for now. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21088")
+	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -867,7 +862,7 @@ func TestFileBatching(t *testing.T) {
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 	operator.persister = testutil.NewMockPersister("test")
 
 	core, observedLogs := observer.New(zap.DebugLevel)
@@ -1223,7 +1218,7 @@ func TestDeleteAfterRead(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, totalLines)
-	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 
 	operator.poll(context.Background())
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
@@ -1254,7 +1249,7 @@ func TestMaxBatching(t *testing.T) {
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 	operator.persister = testutil.NewMockPersister("test")
 
 	core, observedLogs := observer.New(zap.DebugLevel)
@@ -1369,7 +1364,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, longFileLines+1)
-	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 	operator.persister = testutil.NewMockPersister("test")
 
 	shortFile := openTemp(t, tempDir)
@@ -1510,4 +1505,39 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 
 	require.NoError(t, op2.Stop())
 
+}
+
+func TestStalePartialFingerprintDiscarded(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.FingerprintSize = 18
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+
+	// Both of they will be include
+	file1 := openTempWithPattern(t, tempDir, "*.log1")
+	file2 := openTempWithPattern(t, tempDir, "*.log2")
+
+	// Two same fingerprint file , and smaller than  config size
+	content := "aaaaaaaaaaa"
+	writeString(t, file1, content+"\n")
+	writeString(t, file2, content+"\n")
+	operator.poll(context.Background())
+	// one file will be exclude, ingest only one content
+	waitForToken(t, emitCalls, []byte(content))
+	expectNoTokens(t, emitCalls)
+	operator.wg.Wait()
+
+	// keep append data to file1 and file2
+	newContent := "bbbbbbbbbbbb"
+	newContent1 := "ddd"
+	writeString(t, file1, newContent1+"\n")
+	writeString(t, file2, newContent+"\n")
+	operator.poll(context.Background())
+	// We should have updated the offset for one of the files, so the second file should now
+	// be ingested from the beginning
+	waitForTokens(t, emitCalls, [][]byte{[]byte(content), []byte(newContent1), []byte(newContent)})
+	operator.wg.Wait()
 }

@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
@@ -58,7 +47,7 @@ func newMySQLScraper(
 }
 
 // start starts the scraper by initializing the db client connection.
-func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
+func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 	sqlclient := newMySQLClient(m.config)
 
 	err := sqlclient.Connect()
@@ -66,6 +55,10 @@ func (m *mySQLScraper) start(_ context.Context, host component.Host) error {
 		return err
 	}
 	m.sqlclient = sqlclient
+
+	if m.config.MetricsBuilderConfig.Metrics.MysqlLockedConnects.Enabled {
+		m.logger.Warn("`mysql.locked_connects` is deprecated and is going to be set as optional in `v0.81.0` and removed in `v0.82.0`. Please use `mysql.connection.errors` instead")
+	}
 
 	return nil
 }
@@ -113,7 +106,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeGlobalStats(now, errs)
 
 	// colect replicas status metrics.
-	m.scrapeReplicaStatusStats(now, errs)
+	m.scrapeReplicaStatusStats(now)
 
 	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
 
@@ -133,7 +126,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 	for k, v := range globalStats {
 		switch k {
-
 		// bytes transmission
 		case "Bytes_received":
 			addPartialIfError(errs, m.mb.RecordMysqlClientNetworkIoDataPoint(now, v, metadata.AttributeDirectionReceived))
@@ -197,6 +189,17 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connection_errors_tcpwrap":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorTcpwrap))
+		case "Aborted_clients":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAbortedClients))
+		case "Aborted_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAborted))
+		case "Locked_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorLocked))
+
 		// connection
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
@@ -333,10 +336,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Table_locks_waited":
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
 
-		// locked_connects
-		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
-
 		// joins
 		case "Select_full_join":
 			addPartialIfError(errs, m.mb.RecordMysqlJoinsDataPoint(now, v, metadata.AttributeJoinKindFull))
@@ -406,6 +405,10 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlMysqlxConnectionsDataPoint(now, v, metadata.AttributeConnectionStatusClosed))
 		case "Mysqlx_connections_rejected":
 			addPartialIfError(errs, m.mb.RecordMysqlMysqlxConnectionsDataPoint(now, v, metadata.AttributeConnectionStatusRejected))
+
+		// uptime
+		case "Uptime":
+			addPartialIfError(errs, m.mb.RecordMysqlUptimeDataPoint(now, v))
 		}
 	}
 }
@@ -539,11 +542,10 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 	}
 }
 
-func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {
 	replicaStatusStats, err := m.sqlclient.getReplicaStatusStats()
 	if err != nil {
-		m.logger.Error("Failed to fetch replica status stats", zap.Error(err))
-		errs.AddPartial(8, err)
+		m.logger.Info("Failed to fetch replica status stats", zap.Error(err))
 		return
 	}
 

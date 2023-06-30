@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package expvarreceiver
 
@@ -45,14 +34,15 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, "default"),
+			id:       component.NewIDWithName(metadata.Type, "default"),
 			expected: factory.CreateDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "custom"),
+			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 30 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8000/custom/path",
@@ -62,15 +52,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_schemeless_endpoint"),
+			id:           component.NewIDWithName(metadata.Type, "bad_schemeless_endpoint"),
 			errorMessage: "scheme must be 'http' or 'https', but was 'localhost'",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_hostless_endpoint"),
+			id:           component.NewIDWithName(metadata.Type, "bad_hostless_endpoint"),
 			errorMessage: "host not found in HTTP endpoint",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_invalid_url"),
+			id:           component.NewIDWithName(metadata.Type, "bad_invalid_url"),
 			errorMessage: "endpoint is not a valid URL: parse \"#$%^&*()_\": invalid URL escape \"%^&\"",
 		},
 	}
@@ -92,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

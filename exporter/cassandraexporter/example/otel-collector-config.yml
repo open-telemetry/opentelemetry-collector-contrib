@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+exporters:
+  cassandra:
+    dsn: 127.0.0.1
+    keyspace: "otel"
+    trace_table: "otel_spans"
+    logs_table: "otel_logs"
+    replication:
+      class: "SimpleStrategy"
+      replication_factor: 1
+    compression:
+      algorithm: "ZstdCompressor"
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      exporters: [ cassandra ]
+    logs:
+      receivers: [ otlp ]
+      exporters: [ cassandra ]

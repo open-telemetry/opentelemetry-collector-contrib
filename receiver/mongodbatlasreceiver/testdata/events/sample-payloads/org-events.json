@@ -1,0 +1,36 @@
+[
+    {
+        "created": "2018-07-12T16:30:05Z",
+        "eventTypeName": "JOINED_TEAM",
+        "id": "b3ad04e680eef540be141abe",
+        "isGlobalAdmin": true,
+        "links": [
+            {
+                "href": "https://cloud.mongodb.com/api/atlas/v1.0/orgs/5b478b3afc4625789ce616a3/events/5b47820d80eef5264e12514a",
+                "rel": "self"
+            }
+        ],
+        "orgId": "5b478b3afc4625789ce616a3",
+        "remoteAddress": "203.0.113.22",
+        "targetUsername": "b.doe@example.com",
+        "userId": "5898b79080eef53b3ad04e68",
+        "username": "j.doe@example.com"
+    },
+    {
+        "created": "2018-07-09T21:14:40Z",
+        "eventTypeName": "GROUP_CREATED",
+        "groupId": "5b43d04087d9d6357de591a2",
+        "id": "5b478b3afc49d6357de591af",
+        "isGlobalAdmin": false,
+        "links": [
+            {
+                "href": "https://cloud.mongodb.com/api/atlas/v1.0/orgs/5b478b3afc4625789ce616a3/events/5b43d04087d9d6357de591af",
+                "rel": "self"
+            }
+        ],
+        "orgId": "5b478b3afc4625789ce616a3",
+        "remoteAddress": "192.0.2.88",
+        "userId": "5898b79080eef53b3ad04e68",
+        "username": "j.doe@example.com"
+    }
+]

@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
 
@@ -26,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
 
@@ -47,12 +37,12 @@ func TestLoadConfigRootPath(t *testing.T) {
 	t.Setenv("HOST_PROC", "testdata")
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
 	require.NoError(t, err)
 	globalRootPath = ""
 
-	r := cfg.Receivers[component.NewID(typeStr)].(*Config)
+	r := cfg.Receivers[component.NewID(metadata.Type)].(*Config)
 	expectedConfig := factory.CreateDefaultConfig().(*Config)
 	expectedConfig.RootPath = "testdata"
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
@@ -65,7 +55,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 	_, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
 	assert.ErrorContains(t, err, "invalid root_path:")
 	globalRootPath = ""

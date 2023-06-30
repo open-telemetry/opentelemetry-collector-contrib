@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -76,15 +65,26 @@ type emitParams struct {
 	token []byte
 }
 
-func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
-	emitChan := make(chan *emitParams, 100)
-	return buildTestManagerWithEmit(t, cfg, emitChan), emitChan
+type testManagerConfig struct {
+	emitChan chan *emitParams
 }
 
-func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
-	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(emitChan))
+type testManagerOption func(*testManagerConfig)
+
+func withEmitChan(emitChan chan *emitParams) testManagerOption {
+	return func(c *testManagerConfig) {
+		c.emitChan = emitChan
+	}
+}
+
+func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
+	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
+	for _, opt := range opts {
+		opt(tmc)
+	}
+	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
-	return input
+	return input, tmc.emitChan
 }
 
 func openFile(tb testing.TB, path string) *os.File {

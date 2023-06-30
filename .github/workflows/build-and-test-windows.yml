@@ -32,27 +32,19 @@ jobs:
           - exporter
           - extension
           - internal
+          - pkg
           - other
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - if: matrix.group == 'receiver-0'
         name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - if: matrix.group == 'receiver-0'
-        name: Install Active Directory DS
-        run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.7
+          go-version: ~1.19.10
+          cache: false
       - name: Cache Go
         id: go-mod-cache
         uses: actions/cache@v3
@@ -63,15 +55,6 @@ jobs:
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: golang
-          test_format: text
-          test_path: |
-            ./**/foresight-test*.txt
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     runs-on: windows-latest

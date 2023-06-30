@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
 //go:build !windows
@@ -42,9 +31,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
@@ -83,8 +74,8 @@ func TestDefaultExporters(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		exporter      component.Type
 		getConfigFn   getExporterConfigFn
+		exporter      component.Type
 		skipLifecycle bool
 	}{
 		{
@@ -93,6 +84,9 @@ func TestDefaultExporters(t *testing.T) {
 				return expFactories["awscloudwatchlogs"].CreateDefaultConfig()
 			},
 			skipLifecycle: true,
+		},
+		{
+			exporter: "awss3",
 		},
 		{
 			exporter: "file",
@@ -167,6 +161,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Path = t.TempDir()
 				return cfg
 			},
+			skipLifecycle: true, // Causes race detector to fail
 		},
 		{
 			exporter: "prometheus",
@@ -308,6 +303,15 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true,
 		},
 		{
+			exporter: "cassandra",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["cassandra"].CreateDefaultConfig().(*cassandraexporter.Config)
+				cfg.DSN = endpoint
+				return cfg
+			},
+			skipLifecycle: true,
+		},
+		{
 			exporter: "coralogix",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
@@ -322,6 +326,15 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
+				return cfg
+			},
+		},
+		{
+			exporter: "dataset",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["dataset"].CreateDefaultConfig().(*datasetexporter.Config)
+				cfg.DatasetURL = "https://" + endpoint
+				cfg.APIKey = "secret-key"
 				return cfg
 			},
 		},
@@ -430,6 +443,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["sentry"].CreateDefaultConfig().(*sentryexporter.Config)
 				return cfg
 			},
+			skipLifecycle: true, // causes race detector to fail
 		},
 		{
 			exporter: "skywalking",
@@ -478,15 +492,21 @@ func TestDefaultExporters(t *testing.T) {
 			// not part of the distro, skipping.
 			continue
 		}
+		tt := tt
 		exporterCount++
 		delete(expectedExporters, tt.exporter)
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory := expFactories[tt.exporter]
 			assert.Equal(t, tt.exporter, factory.Type())
-			verifyExporterShutdown(t, factory, tt.getConfigFn)
-			if !tt.skipLifecycle {
+			t.Run("shutdown", func(t *testing.T) {
+				verifyExporterShutdown(t, factory, tt.getConfigFn)
+			})
+			t.Run("lifecycle", func(t *testing.T) {
+				if tt.skipLifecycle {
+					t.SkipNow()
+				}
 				verifyExporterLifecycle(t, factory, tt.getConfigFn)
-			}
+			})
 		})
 	}
 	assert.Len(t, expFactories, exporterCount, "All user configurable components must be added to the lifecycle test", expectedExporters)

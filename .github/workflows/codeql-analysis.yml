@@ -6,7 +6,7 @@ on:
 
 jobs:
   CodeQL-Build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       # Force CodeQL to run the extraction on the files compiled by our custom
       # build command, as opposed to letting the autobuilder figure it out.
@@ -14,19 +14,11 @@ jobs:
       CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
 
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ~1.19.7
+          go-version: ~1.19.10
+          cache: false
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL

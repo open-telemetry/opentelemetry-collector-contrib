@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 files=(
     bin/otelcontribcol_darwin_arm64
     bin/otelcontribcol_darwin_amd64

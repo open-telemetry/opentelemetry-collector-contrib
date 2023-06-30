@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver
 
@@ -83,7 +72,7 @@ const (
 func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 	broker := "some-broker:1234"
 	queue := "someQueue"
-	maxUnacked := uint32(100)
+	maxUnacked := int32(100)
 	logger := zap.NewNop()
 	tests := []struct {
 		name    string
@@ -194,7 +183,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 func TestAMQPDialFailure(t *testing.T) {
 	const expectedAddr = "some-host:1234"
 	var expectedErr = fmt.Errorf("some error")
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
 		return nil, expectedErr
@@ -220,7 +209,7 @@ func TestAMQPDialConfigOptionsWithoutTLS(t *testing.T) {
 	const expectedAddr = "some-host:1234"
 	var expectedErr = fmt.Errorf("some error")
 	expectedAuthConnOption := amqp.SASLTypeAnonymous()
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
 		testFunctionEquality(t, expectedAuthConnOption, opts.SASLType)
@@ -251,7 +240,7 @@ func TestAMQPDialConfigOptionsWithTLS(t *testing.T) {
 	expectedTLSConnOption := &tls.Config{
 		InsecureSkipVerify: false,
 	}
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
 		testFunctionEquality(t, expectedAuthConnOption, opts.SASLType)
@@ -499,9 +488,9 @@ func mockWriteData(conn *connMock, data [][]byte, callbacks ...func(sentData, re
 }
 
 func mockDialFunc(conn *connMock) {
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
-		return amqp.NewConn(conn, opts)
+		return amqp.NewConn(ctx, conn, opts)
 	}
 }
 
@@ -696,13 +685,13 @@ func (c *connMock) LocalAddr() net.Addr {
 func (c *connMock) RemoteAddr() net.Addr {
 	return nil
 }
-func (c *connMock) SetDeadline(t time.Time) error {
+func (c *connMock) SetDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetReadDeadline(t time.Time) error {
+func (c *connMock) SetReadDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetWriteDeadline(t time.Time) error {
+func (c *connMock) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 

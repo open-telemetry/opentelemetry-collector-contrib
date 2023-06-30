@@ -2,6 +2,14 @@
 
 The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that
 interact with OTel data via the Collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata).
+
+This document contains documentation for both types of OTTL functions:
+
+- [Functions](#functions) that transform telemetry.
+- [Converters](#converters) that provide utilities for transforming telemetry.
+
+## Working with functions
+
 Functions generally expect specific types to be returned by `Paths`.
 For these functions, if that type is not returned or if `nil` is returned, the function will error.
 Some functions are able to handle different types and will generally convert those types to their desired type.
@@ -12,16 +20,17 @@ See the component-specific guides for how each uses error mode:
 - [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
 - [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
 
-## Functions
+## Editors
 
-Functions are the way that components that use OTTL transform telemetry.
+Editors are what OTTL uses to transform telemetry.
 
-Functions:
+Editors:
+
 - Are allowed to transform telemetry.  When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
 - May have side effects.  Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
-- May return values.  Although not common, Functions may return values, but they do not have to.
+- May return values.  Although not common and not required, Functions may return values.
 
-List of available Functions:
+Available Editors:
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
@@ -33,204 +42,6 @@ List of available Functions:
 - [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
-
-## Converters
-
-Converters are functions that help translate between the OTTL grammar and the underlying pdata structure.
-They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
-
-Converters:
-- Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
-- Always return something.
-
-List of available Converters:
-- [Concat](#concat)
-- [ConvertCase](#convertcase)
-- [Int](#int)
-- [IsMatch](#ismatch)
-- [ParseJSON](#parsejson)
-- [SpanID](#spanid)
-- [Split](#split)
-- [TraceID](#traceid)
-- [Substring](#substring)
-
-### Concat
-
-`Concat(values[], delimiter)`
-
-The `Concat` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
-
-`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
-
-`delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
-
-Examples:
-
-- `Concat([attributes["http.method"], attributes["http.path"]], ": ")`
-
-
-- `Concat([name, 1], " ")`
-
-
-- `Concat(["HTTP method is: ", attributes["http.method"]], "")`
-
-### ConvertCase
-
-`ConvertCase(target, toCase)`
-
-The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
-
-`target` is a string. `toCase` is a string.
-
-If the `target` is not a string or does not exist, the `ConvertCase` factory function will return an error.
-
-`toCase` can be:
-
-- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
-- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
-- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
-- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
-
-If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
-
-Examples:
-
-- `ConvertCase(metric.name, "snake")`
-
-### Int
-
-`Int(value)`
-
-The `Int` factory function converts the `value` to int type.
-
-The returned type is int64.
-
-The input `value` types:
-* float64. Fraction is discharged (truncation towards zero).
-* string. Trying to parse an integer from string if it fails then nil will be returned.
-* bool. If `value` is true, then the function will return 1 otherwise 0.
-* int64. The function returns the `value` without changes.
-
-If `value` is another type or parsing failed nil is always returned.
-
-The `value` is either a path expression to a telemetry field to retrieve or a literal.
-
-Examples:
-
-- `Int(attributes["http.status_code"])`
-
-
-- `Int("2.0")`
-
-### IsMatch
-
-`IsMatch(target, pattern)`
-
-The `IsMatch` factory function returns true if the `target` matches the regex `pattern`.
-
-`target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
-The matching semantics are identical to `regexp.MatchString`.
-
-The function matches the target against the pattern, returning true if the match is successful and false otherwise.
-If target is not a string, it will be converted to one:
-
-- booleans, ints and floats will be converted using `strconv`
-- byte slices will be encoded using base64
-- OTLP Maps and Slices will be JSON encoded
-- other OTLP Values will use their canonical string representation via `AsString`
-
-If target is nil, false is always returned.
-
-Examples:
-
-- `IsMatch(attributes["http.path"], "foo")`
-
-
-- `IsMatch("string", ".*ring")`
-
-### ParseJSON
-
-`ParseJSON(target)`
-
-The `ParseJSON` factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
-
-`target` is a Getter that returns a string. This string should be in json format.
-If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
-
-Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
-Each JSON type is converted into a `pdata.Value` using the following map:
-
-```
-JSON boolean -> bool
-JSON number  -> float64
-JSON string  -> string
-JSON null    -> nil
-JSON arrays  -> pdata.SliceValue
-JSON objects -> map[string]any
-```
-
-Examples:
-
-- `ParseJSON("{\"attr\":true}")`
-
-
-- `ParseJSON(attributes["kubernetes"])`
-
-
-- `ParseJSON(body)`
-
-### SpanID
-
-`SpanID(bytes)`
-
-The `SpanID` factory function returns a `pdata.SpanID` struct from the given byte slice.
-
-`bytes` is a byte slice of exactly 8 bytes.
-
-Examples:
-
-- `SpanID(0x0000000000000000)`
-
-### Split
-
-`Split(target, delimiter)`
-
-The `Split` factory function separates a string by the delimiter, and returns an array of substrings.
-
-`target` is a string. `delimiter` is a string.
-
-If the `target` is not a string or does not exist, the `Split` factory function will return an error.
-
-Examples:
-
-- ```Split("A|B|C", "|")```
-
-### TraceID
-
-`TraceID(bytes)`
-
-The `TraceID` factory function returns a `pdata.TraceID` struct from the given byte slice.
-
-`bytes` is a byte slice of exactly 16 bytes.
-
-Examples:
-
-- `TraceID(0x00000000000000000000000000000000)`
-
-### Substring
-
-`Substring(target, start, length)`
-
-The `Substring` Converter returns a substring from the given start index to the specified length.
-
-`target` is a string. `start` and `length` are `int64`.
-
-If `target` is not a string or is nil, an error is returned.
-If the start/length exceed the length of the `target` string, an error is returned.
-
-Examples:
-
-- `Substring("123456789", 0, 3)`
 
 ### delete_key
 
@@ -337,9 +148,12 @@ Examples:
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -351,13 +165,17 @@ Examples:
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 `mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -369,17 +187,38 @@ Note that when using OTTL within the collector's configuration file, `$` must be
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
 If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
+### replace_match
+
+`replace_match(target, pattern, replacement)`
+
+The `replace_match` function allows replacing entire strings if they match a glob pattern.
+
+`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
+
+If `target` matches `pattern` it will get replaced with `replacement`.
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
+Examples:
+
+- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
+
 ### replace_pattern
 
 `replace_pattern(target, regex, replacement)`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
-`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -389,20 +228,6 @@ Examples:
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
 If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
-
-### replace_match
-
-`replace_match(target, pattern, replacement)`
-
-The `replace_match` function allows replacing entire strings if they match a glob pattern.
-
-`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
-
-If `target` matches `pattern` it will get replaced with `replacement`.
-
-Examples:
-
-- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
 ### set
 
@@ -444,11 +269,344 @@ Examples:
 
 - `truncate_all(resource.attributes, 50)`
 
+## Converters
+
+Converters are pure functions that take OTTL values as input and output a single value for use within a statement.
+Unlike functions, they do not modify any input telemetry and always return a value.
+
+Available Converters:
+- [Concat](#concat)
+- [ConvertCase](#convertcase)
+- [FNV](#fnv)
+- [Int](#int)
+- [IsMap](#ismap)
+- [IsMatch](#ismatch)
+- [IsString](#isstring)
+- [Log](#log)
+- [ParseJSON](#parsejson)
+- [SHA1](#sha1)
+- [SHA256](#sha256)
+- [SpanID](#spanid)
+- [Split](#split)
+- [TraceID](#traceid)
+- [Substring](#substring)
+- [UUID](#UUID)
+
+### Concat
+
+`Concat(values[], delimiter)`
+
+The `Concat` Converter takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+
+`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+
+`delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
+
+Examples:
+
+- `Concat([attributes["http.method"], attributes["http.path"]], ": ")`
+
+
+- `Concat([name, 1], " ")`
+
+
+- `Concat(["HTTP method is: ", attributes["http.method"]], "")`
+
+### ConvertCase
+
+`ConvertCase(target, toCase)`
+
+The `ConvertCase` Converter converts the `target` string into the desired case `toCase`.
+
+`target` is a string. `toCase` is a string.
+
+If the `target` is not a string or does not exist, the `ConvertCase` Converter will return an error.
+
+`toCase` can be:
+
+- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
+- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
+- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
+- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
+
+If `toCase` is any value other than the options above, the `ConvertCase` Converter will return an error during collector startup.
+
+Examples:
+
+- `ConvertCase(metric.name, "snake")`
+
+### FNV
+
+`FNV(value)`
+
+The `FNV` Converter converts the `value` to an FNV hash/digest.
+
+The returned type is int64.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `FNV(attributes["device.name"])`
+
+
+- `FNV("name")`
+
+### Int
+
+`Int(value)`
+
+The `Int` Converter converts the `value` to int type.
+
+The returned type is int64.
+
+The input `value` types:
+* float64. Fraction is discharged (truncation towards zero).
+* string. Trying to parse an integer from string if it fails then nil will be returned.
+* bool. If `value` is true, then the function will return 1 otherwise 0.
+* int64. The function returns the `value` without changes.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Int(attributes["http.status_code"])`
+
+
+- `Int("2.0")`
+
+### IsMap
+
+`IsMap(value)`
+
+The `IsMap` Converter returns true if the given value is a map.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `map[string]any` or a `pcommon.ValueTypeMap` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsMap(body)`
+
+
+- `IsMap(attributes["maybe a map"])`
+
+### IsMatch
+
+`IsMatch(target, pattern)`
+
+The `IsMatch` Converter returns true if the `target` matches the regex `pattern`.
+
+`target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
+The matching semantics are identical to `regexp.MatchString`.
+
+The function matches the target against the pattern, returning true if the match is successful and false otherwise.
+If target is not a string, it will be converted to one:
+
+- booleans, ints and floats will be converted using `strconv`
+- byte slices will be encoded using base64
+- OTLP Maps and Slices will be JSON encoded
+- other OTLP Values will use their canonical string representation via `AsString`
+
+If target is nil, false is always returned.
+
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
+Examples:
+
+- `IsMatch(attributes["http.path"], "foo")`
+
+
+- `IsMatch("string", ".*ring")`
+
+### IsString
+
+`IsString(value)`
+
+The `IsString` Converter returns true if the given value is a string.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `string` or a `pcommon.ValueTypeStr` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsString(body)`
+
+- `IsString(attributes["maybe a string"])`
+
+### Log
+
+`Log(value)`
+
+The `Log` Converter returns the logarithm of the `target`.
+
+`target` is either a path expression to a telemetry field to retrieve or a literal.
+
+The function take the logarithm of the target, returning an error if the target is less than or equal to zero.
+
+If target is not a float64, it will be converted to one:
+
+- int64s are converted to float64s
+- strings are converted using `strconv`
+- booleans are converted using `1` for `true` and `0` for `false`.  This means passing `false` to the function will cause an error.
+- int, float, string, and bool OTLP Values are converted following the above rules depending on their type.  Other types cause an error.
+
+If target is nil an error is returned.
+
+Examples:
+
+- `Log(attributes["duration_ms"])`
+
+
+- `Int(Log(attributes["duration_ms"])`
+
+### ParseJSON
+
+`ParseJSON(target)`
+
+The `ParseJSON` Converter returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+
+`target` is a Getter that returns a string. This string should be in json format.
+If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
+
+Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Each JSON type is converted into a `pdata.Value` using the following map:
+
+```
+JSON boolean -> bool
+JSON number  -> float64
+JSON string  -> string
+JSON null    -> nil
+JSON arrays  -> pdata.SliceValue
+JSON objects -> map[string]any
+```
+
+Examples:
+
+- `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON(attributes["kubernetes"])`
+
+
+- `ParseJSON(body)`
+
+### SHA1
+
+`SHA1(value)`
+
+The `SHA1` Converter converts the `value` to a sha1 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `SHA1(attributes["device.name"])`
+
+
+- `SHA1("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
+### SHA256
+
+`SHA256(value)`
+
+The `SHA256` Converter converts the `value` to a sha256 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `SHA256(attributes["device.name"])`
+
+
+- `SHA256("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
+### SpanID
+
+`SpanID(bytes)`
+
+The `SpanID` Converter returns a `pdata.SpanID` struct from the given byte slice.
+
+`bytes` is a byte slice of exactly 8 bytes.
+
+Examples:
+
+- `SpanID(0x0000000000000000)`
+
+### Split
+
+`Split(target, delimiter)`
+
+The `Split` Converter separates a string by the delimiter, and returns an array of substrings.
+
+`target` is a string. `delimiter` is a string.
+
+If the `target` is not a string or does not exist, the `Split` Converter will return an error.
+
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
+Examples:
+
+- ```Split("A|B|C", "|")```
+
+### TraceID
+
+`TraceID(bytes)`
+
+The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice.
+
+`bytes` is a byte slice of exactly 16 bytes.
+
+Examples:
+
+- `TraceID(0x00000000000000000000000000000000)`
+
+### Substring
+
+`Substring(target, start, length)`
+
+The `Substring` Converter returns a substring from the given start index to the specified length.
+
+`target` is a string. `start` and `length` are `int64`.
+
+If `target` is not a string or is nil, an error is returned.
+If the start/length exceed the length of the `target` string, an error is returned.
+
+Examples:
+
+- `Substring("123456789", 0, 3)`
+
+### UUID
+
+`UUID()`
+
+The `UUID` function generates a v4 uuid string.
+
 ## Function syntax
 
 Functions should be named and formatted according to the following standards.
 - Function names MUST start with a verb unless it is a Factory that creates a new type.
-- Factory functions MUST be UpperCamelCase.
+- Converters MUST be UpperCamelCase.
 - Function names that contain multiple words MUST separate those words with `_`.
 - Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
 - Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `replace_match`.

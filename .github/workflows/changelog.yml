@@ -26,14 +26,13 @@ jobs:
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.7
+          go-version: ~1.19.10
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3

@@ -23,4 +23,6 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
-receiver/dotnetdiagnosticsreceiver
+exporter/carbonexporter/
+receiver/carbonreceiver/
+receiver/wavefrontreceiver/

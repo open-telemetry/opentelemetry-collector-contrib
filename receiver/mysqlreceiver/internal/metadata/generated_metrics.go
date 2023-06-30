@@ -8,229 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for mysqlreceiver metrics.
-type MetricsSettings struct {
-	MysqlBufferPoolDataPages     MetricSettings `mapstructure:"mysql.buffer_pool.data_pages"`
-	MysqlBufferPoolLimit         MetricSettings `mapstructure:"mysql.buffer_pool.limit"`
-	MysqlBufferPoolOperations    MetricSettings `mapstructure:"mysql.buffer_pool.operations"`
-	MysqlBufferPoolPageFlushes   MetricSettings `mapstructure:"mysql.buffer_pool.page_flushes"`
-	MysqlBufferPoolPages         MetricSettings `mapstructure:"mysql.buffer_pool.pages"`
-	MysqlBufferPoolUsage         MetricSettings `mapstructure:"mysql.buffer_pool.usage"`
-	MysqlClientNetworkIo         MetricSettings `mapstructure:"mysql.client.network.io"`
-	MysqlCommands                MetricSettings `mapstructure:"mysql.commands"`
-	MysqlConnectionCount         MetricSettings `mapstructure:"mysql.connection.count"`
-	MysqlConnectionErrors        MetricSettings `mapstructure:"mysql.connection.errors"`
-	MysqlDoubleWrites            MetricSettings `mapstructure:"mysql.double_writes"`
-	MysqlHandlers                MetricSettings `mapstructure:"mysql.handlers"`
-	MysqlIndexIoWaitCount        MetricSettings `mapstructure:"mysql.index.io.wait.count"`
-	MysqlIndexIoWaitTime         MetricSettings `mapstructure:"mysql.index.io.wait.time"`
-	MysqlJoins                   MetricSettings `mapstructure:"mysql.joins"`
-	MysqlLockedConnects          MetricSettings `mapstructure:"mysql.locked_connects"`
-	MysqlLocks                   MetricSettings `mapstructure:"mysql.locks"`
-	MysqlLogOperations           MetricSettings `mapstructure:"mysql.log_operations"`
-	MysqlMysqlxConnections       MetricSettings `mapstructure:"mysql.mysqlx_connections"`
-	MysqlMysqlxWorkerThreads     MetricSettings `mapstructure:"mysql.mysqlx_worker_threads"`
-	MysqlOpenedResources         MetricSettings `mapstructure:"mysql.opened_resources"`
-	MysqlOperations              MetricSettings `mapstructure:"mysql.operations"`
-	MysqlPageOperations          MetricSettings `mapstructure:"mysql.page_operations"`
-	MysqlPreparedStatements      MetricSettings `mapstructure:"mysql.prepared_statements"`
-	MysqlQueryClientCount        MetricSettings `mapstructure:"mysql.query.client.count"`
-	MysqlQueryCount              MetricSettings `mapstructure:"mysql.query.count"`
-	MysqlQuerySlowCount          MetricSettings `mapstructure:"mysql.query.slow.count"`
-	MysqlReplicaSQLDelay         MetricSettings `mapstructure:"mysql.replica.sql_delay"`
-	MysqlReplicaTimeBehindSource MetricSettings `mapstructure:"mysql.replica.time_behind_source"`
-	MysqlRowLocks                MetricSettings `mapstructure:"mysql.row_locks"`
-	MysqlRowOperations           MetricSettings `mapstructure:"mysql.row_operations"`
-	MysqlSorts                   MetricSettings `mapstructure:"mysql.sorts"`
-	MysqlStatementEventCount     MetricSettings `mapstructure:"mysql.statement_event.count"`
-	MysqlStatementEventWaitTime  MetricSettings `mapstructure:"mysql.statement_event.wait.time"`
-	MysqlTableIoWaitCount        MetricSettings `mapstructure:"mysql.table.io.wait.count"`
-	MysqlTableIoWaitTime         MetricSettings `mapstructure:"mysql.table.io.wait.time"`
-	MysqlTableLockWaitReadCount  MetricSettings `mapstructure:"mysql.table.lock_wait.read.count"`
-	MysqlTableLockWaitReadTime   MetricSettings `mapstructure:"mysql.table.lock_wait.read.time"`
-	MysqlTableLockWaitWriteCount MetricSettings `mapstructure:"mysql.table.lock_wait.write.count"`
-	MysqlTableLockWaitWriteTime  MetricSettings `mapstructure:"mysql.table.lock_wait.write.time"`
-	MysqlTableOpenCache          MetricSettings `mapstructure:"mysql.table_open_cache"`
-	MysqlThreads                 MetricSettings `mapstructure:"mysql.threads"`
-	MysqlTmpResources            MetricSettings `mapstructure:"mysql.tmp_resources"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		MysqlBufferPoolDataPages: MetricSettings{
-			Enabled: true,
-		},
-		MysqlBufferPoolLimit: MetricSettings{
-			Enabled: true,
-		},
-		MysqlBufferPoolOperations: MetricSettings{
-			Enabled: true,
-		},
-		MysqlBufferPoolPageFlushes: MetricSettings{
-			Enabled: true,
-		},
-		MysqlBufferPoolPages: MetricSettings{
-			Enabled: true,
-		},
-		MysqlBufferPoolUsage: MetricSettings{
-			Enabled: true,
-		},
-		MysqlClientNetworkIo: MetricSettings{
-			Enabled: false,
-		},
-		MysqlCommands: MetricSettings{
-			Enabled: false,
-		},
-		MysqlConnectionCount: MetricSettings{
-			Enabled: false,
-		},
-		MysqlConnectionErrors: MetricSettings{
-			Enabled: false,
-		},
-		MysqlDoubleWrites: MetricSettings{
-			Enabled: true,
-		},
-		MysqlHandlers: MetricSettings{
-			Enabled: true,
-		},
-		MysqlIndexIoWaitCount: MetricSettings{
-			Enabled: true,
-		},
-		MysqlIndexIoWaitTime: MetricSettings{
-			Enabled: true,
-		},
-		MysqlJoins: MetricSettings{
-			Enabled: false,
-		},
-		MysqlLockedConnects: MetricSettings{
-			Enabled: true,
-		},
-		MysqlLocks: MetricSettings{
-			Enabled: true,
-		},
-		MysqlLogOperations: MetricSettings{
-			Enabled: true,
-		},
-		MysqlMysqlxConnections: MetricSettings{
-			Enabled: true,
-		},
-		MysqlMysqlxWorkerThreads: MetricSettings{
-			Enabled: false,
-		},
-		MysqlOpenedResources: MetricSettings{
-			Enabled: true,
-		},
-		MysqlOperations: MetricSettings{
-			Enabled: true,
-		},
-		MysqlPageOperations: MetricSettings{
-			Enabled: true,
-		},
-		MysqlPreparedStatements: MetricSettings{
-			Enabled: true,
-		},
-		MysqlQueryClientCount: MetricSettings{
-			Enabled: false,
-		},
-		MysqlQueryCount: MetricSettings{
-			Enabled: false,
-		},
-		MysqlQuerySlowCount: MetricSettings{
-			Enabled: false,
-		},
-		MysqlReplicaSQLDelay: MetricSettings{
-			Enabled: false,
-		},
-		MysqlReplicaTimeBehindSource: MetricSettings{
-			Enabled: false,
-		},
-		MysqlRowLocks: MetricSettings{
-			Enabled: true,
-		},
-		MysqlRowOperations: MetricSettings{
-			Enabled: true,
-		},
-		MysqlSorts: MetricSettings{
-			Enabled: true,
-		},
-		MysqlStatementEventCount: MetricSettings{
-			Enabled: false,
-		},
-		MysqlStatementEventWaitTime: MetricSettings{
-			Enabled: false,
-		},
-		MysqlTableIoWaitCount: MetricSettings{
-			Enabled: true,
-		},
-		MysqlTableIoWaitTime: MetricSettings{
-			Enabled: true,
-		},
-		MysqlTableLockWaitReadCount: MetricSettings{
-			Enabled: false,
-		},
-		MysqlTableLockWaitReadTime: MetricSettings{
-			Enabled: false,
-		},
-		MysqlTableLockWaitWriteCount: MetricSettings{
-			Enabled: false,
-		},
-		MysqlTableLockWaitWriteTime: MetricSettings{
-			Enabled: false,
-		},
-		MysqlTableOpenCache: MetricSettings{
-			Enabled: false,
-		},
-		MysqlThreads: MetricSettings{
-			Enabled: true,
-		},
-		MysqlTmpResources: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesSettings provides settings for mysqlreceiver metrics.
-type ResourceAttributesSettings struct {
-	MysqlInstanceEndpoint ResourceAttributeSettings `mapstructure:"mysql.instance.endpoint"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		MysqlInstanceEndpoint: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeBufferPoolData specifies the a value buffer_pool_data attribute.
 type AttributeBufferPoolData int
@@ -409,6 +190,9 @@ const (
 	AttributeConnectionErrorPeerAddress
 	AttributeConnectionErrorSelect
 	AttributeConnectionErrorTcpwrap
+	AttributeConnectionErrorAborted
+	AttributeConnectionErrorAbortedClients
+	AttributeConnectionErrorLocked
 )
 
 // String returns the string representation of the AttributeConnectionError.
@@ -426,6 +210,12 @@ func (av AttributeConnectionError) String() string {
 		return "select"
 	case AttributeConnectionErrorTcpwrap:
 		return "tcpwrap"
+	case AttributeConnectionErrorAborted:
+		return "aborted"
+	case AttributeConnectionErrorAbortedClients:
+		return "aborted_clients"
+	case AttributeConnectionErrorLocked:
+		return "locked"
 	}
 	return ""
 }
@@ -438,6 +228,9 @@ var MapAttributeConnectionError = map[string]AttributeConnectionError{
 	"peer_address":    AttributeConnectionErrorPeerAddress,
 	"select":          AttributeConnectionErrorSelect,
 	"tcpwrap":         AttributeConnectionErrorTcpwrap,
+	"aborted":         AttributeConnectionErrorAborted,
+	"aborted_clients": AttributeConnectionErrorAbortedClients,
+	"locked":          AttributeConnectionErrorLocked,
 }
 
 // AttributeConnectionStatus specifies the a value connection_status attribute.
@@ -1192,7 +985,7 @@ var MapAttributeWriteLockType = map[string]AttributeWriteLockType{
 
 type metricMysqlBufferPoolDataPages struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1208,7 +1001,7 @@ func (m *metricMysqlBufferPoolDataPages) init() {
 }
 
 func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1227,16 +1020,16 @@ func (m *metricMysqlBufferPoolDataPages) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlBufferPoolDataPages) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlBufferPoolDataPages(settings MetricSettings) metricMysqlBufferPoolDataPages {
-	m := metricMysqlBufferPoolDataPages{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlBufferPoolDataPages(cfg MetricConfig) metricMysqlBufferPoolDataPages {
+	m := metricMysqlBufferPoolDataPages{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1245,7 +1038,7 @@ func newMetricMysqlBufferPoolDataPages(settings MetricSettings) metricMysqlBuffe
 
 type metricMysqlBufferPoolLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1260,7 +1053,7 @@ func (m *metricMysqlBufferPoolLimit) init() {
 }
 
 func (m *metricMysqlBufferPoolLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1278,16 +1071,16 @@ func (m *metricMysqlBufferPoolLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlBufferPoolLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlBufferPoolLimit(settings MetricSettings) metricMysqlBufferPoolLimit {
-	m := metricMysqlBufferPoolLimit{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlBufferPoolLimit(cfg MetricConfig) metricMysqlBufferPoolLimit {
+	m := metricMysqlBufferPoolLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1296,7 +1089,7 @@ func newMetricMysqlBufferPoolLimit(settings MetricSettings) metricMysqlBufferPoo
 
 type metricMysqlBufferPoolOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1312,7 +1105,7 @@ func (m *metricMysqlBufferPoolOperations) init() {
 }
 
 func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolOperationsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1331,16 +1124,16 @@ func (m *metricMysqlBufferPoolOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlBufferPoolOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlBufferPoolOperations(settings MetricSettings) metricMysqlBufferPoolOperations {
-	m := metricMysqlBufferPoolOperations{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlBufferPoolOperations(cfg MetricConfig) metricMysqlBufferPoolOperations {
+	m := metricMysqlBufferPoolOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1349,7 +1142,7 @@ func newMetricMysqlBufferPoolOperations(settings MetricSettings) metricMysqlBuff
 
 type metricMysqlBufferPoolPageFlushes struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1364,7 +1157,7 @@ func (m *metricMysqlBufferPoolPageFlushes) init() {
 }
 
 func (m *metricMysqlBufferPoolPageFlushes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1382,16 +1175,16 @@ func (m *metricMysqlBufferPoolPageFlushes) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlBufferPoolPageFlushes) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlBufferPoolPageFlushes(settings MetricSettings) metricMysqlBufferPoolPageFlushes {
-	m := metricMysqlBufferPoolPageFlushes{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlBufferPoolPageFlushes(cfg MetricConfig) metricMysqlBufferPoolPageFlushes {
+	m := metricMysqlBufferPoolPageFlushes{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1400,7 +1193,7 @@ func newMetricMysqlBufferPoolPageFlushes(settings MetricSettings) metricMysqlBuf
 
 type metricMysqlBufferPoolPages struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1416,7 +1209,7 @@ func (m *metricMysqlBufferPoolPages) init() {
 }
 
 func (m *metricMysqlBufferPoolPages) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolPagesAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1435,16 +1228,16 @@ func (m *metricMysqlBufferPoolPages) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlBufferPoolPages) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlBufferPoolPages(settings MetricSettings) metricMysqlBufferPoolPages {
-	m := metricMysqlBufferPoolPages{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlBufferPoolPages(cfg MetricConfig) metricMysqlBufferPoolPages {
+	m := metricMysqlBufferPoolPages{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1453,7 +1246,7 @@ func newMetricMysqlBufferPoolPages(settings MetricSettings) metricMysqlBufferPoo
 
 type metricMysqlBufferPoolUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1469,7 +1262,7 @@ func (m *metricMysqlBufferPoolUsage) init() {
 }
 
 func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1488,16 +1281,16 @@ func (m *metricMysqlBufferPoolUsage) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlBufferPoolUsage) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlBufferPoolUsage(settings MetricSettings) metricMysqlBufferPoolUsage {
-	m := metricMysqlBufferPoolUsage{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlBufferPoolUsage(cfg MetricConfig) metricMysqlBufferPoolUsage {
+	m := metricMysqlBufferPoolUsage{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1506,7 +1299,7 @@ func newMetricMysqlBufferPoolUsage(settings MetricSettings) metricMysqlBufferPoo
 
 type metricMysqlClientNetworkIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1522,7 +1315,7 @@ func (m *metricMysqlClientNetworkIo) init() {
 }
 
 func (m *metricMysqlClientNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1541,16 +1334,16 @@ func (m *metricMysqlClientNetworkIo) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlClientNetworkIo) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlClientNetworkIo(settings MetricSettings) metricMysqlClientNetworkIo {
-	m := metricMysqlClientNetworkIo{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlClientNetworkIo(cfg MetricConfig) metricMysqlClientNetworkIo {
+	m := metricMysqlClientNetworkIo{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1559,7 +1352,7 @@ func newMetricMysqlClientNetworkIo(settings MetricSettings) metricMysqlClientNet
 
 type metricMysqlCommands struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1575,7 +1368,7 @@ func (m *metricMysqlCommands) init() {
 }
 
 func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, commandAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1594,16 +1387,16 @@ func (m *metricMysqlCommands) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlCommands) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlCommands(settings MetricSettings) metricMysqlCommands {
-	m := metricMysqlCommands{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlCommands(cfg MetricConfig) metricMysqlCommands {
+	m := metricMysqlCommands{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1612,7 +1405,7 @@ func newMetricMysqlCommands(settings MetricSettings) metricMysqlCommands {
 
 type metricMysqlConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1627,7 +1420,7 @@ func (m *metricMysqlConnectionCount) init() {
 }
 
 func (m *metricMysqlConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1645,16 +1438,16 @@ func (m *metricMysqlConnectionCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlConnectionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlConnectionCount(settings MetricSettings) metricMysqlConnectionCount {
-	m := metricMysqlConnectionCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlConnectionCount(cfg MetricConfig) metricMysqlConnectionCount {
+	m := metricMysqlConnectionCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1663,7 +1456,7 @@ func newMetricMysqlConnectionCount(settings MetricSettings) metricMysqlConnectio
 
 type metricMysqlConnectionErrors struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1679,7 +1472,7 @@ func (m *metricMysqlConnectionErrors) init() {
 }
 
 func (m *metricMysqlConnectionErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionErrorAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1698,16 +1491,16 @@ func (m *metricMysqlConnectionErrors) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlConnectionErrors) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlConnectionErrors(settings MetricSettings) metricMysqlConnectionErrors {
-	m := metricMysqlConnectionErrors{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlConnectionErrors(cfg MetricConfig) metricMysqlConnectionErrors {
+	m := metricMysqlConnectionErrors{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1716,7 +1509,7 @@ func newMetricMysqlConnectionErrors(settings MetricSettings) metricMysqlConnecti
 
 type metricMysqlDoubleWrites struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1732,7 +1525,7 @@ func (m *metricMysqlDoubleWrites) init() {
 }
 
 func (m *metricMysqlDoubleWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, doubleWritesAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1751,16 +1544,16 @@ func (m *metricMysqlDoubleWrites) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlDoubleWrites) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlDoubleWrites(settings MetricSettings) metricMysqlDoubleWrites {
-	m := metricMysqlDoubleWrites{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlDoubleWrites(cfg MetricConfig) metricMysqlDoubleWrites {
+	m := metricMysqlDoubleWrites{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1769,7 +1562,7 @@ func newMetricMysqlDoubleWrites(settings MetricSettings) metricMysqlDoubleWrites
 
 type metricMysqlHandlers struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1785,7 +1578,7 @@ func (m *metricMysqlHandlers) init() {
 }
 
 func (m *metricMysqlHandlers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, handlerAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1804,16 +1597,16 @@ func (m *metricMysqlHandlers) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlHandlers) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlHandlers(settings MetricSettings) metricMysqlHandlers {
-	m := metricMysqlHandlers{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlHandlers(cfg MetricConfig) metricMysqlHandlers {
+	m := metricMysqlHandlers{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1822,7 +1615,7 @@ func newMetricMysqlHandlers(settings MetricSettings) metricMysqlHandlers {
 
 type metricMysqlIndexIoWaitCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1838,7 +1631,7 @@ func (m *metricMysqlIndexIoWaitCount) init() {
 }
 
 func (m *metricMysqlIndexIoWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1860,16 +1653,16 @@ func (m *metricMysqlIndexIoWaitCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlIndexIoWaitCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlIndexIoWaitCount(settings MetricSettings) metricMysqlIndexIoWaitCount {
-	m := metricMysqlIndexIoWaitCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlIndexIoWaitCount(cfg MetricConfig) metricMysqlIndexIoWaitCount {
+	m := metricMysqlIndexIoWaitCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1878,7 +1671,7 @@ func newMetricMysqlIndexIoWaitCount(settings MetricSettings) metricMysqlIndexIoW
 
 type metricMysqlIndexIoWaitTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1894,7 +1687,7 @@ func (m *metricMysqlIndexIoWaitTime) init() {
 }
 
 func (m *metricMysqlIndexIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1916,16 +1709,16 @@ func (m *metricMysqlIndexIoWaitTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlIndexIoWaitTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlIndexIoWaitTime(settings MetricSettings) metricMysqlIndexIoWaitTime {
-	m := metricMysqlIndexIoWaitTime{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlIndexIoWaitTime(cfg MetricConfig) metricMysqlIndexIoWaitTime {
+	m := metricMysqlIndexIoWaitTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1934,7 +1727,7 @@ func newMetricMysqlIndexIoWaitTime(settings MetricSettings) metricMysqlIndexIoWa
 
 type metricMysqlJoins struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -1950,7 +1743,7 @@ func (m *metricMysqlJoins) init() {
 }
 
 func (m *metricMysqlJoins) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, joinKindAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -1969,16 +1762,16 @@ func (m *metricMysqlJoins) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlJoins) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlJoins(settings MetricSettings) metricMysqlJoins {
-	m := metricMysqlJoins{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlJoins(cfg MetricConfig) metricMysqlJoins {
+	m := metricMysqlJoins{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -1987,14 +1780,14 @@ func newMetricMysqlJoins(settings MetricSettings) metricMysqlJoins {
 
 type metricMysqlLockedConnects struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
 // init fills mysql.locked_connects metric with initial data.
 func (m *metricMysqlLockedConnects) init() {
 	m.data.SetName("mysql.locked_connects")
-	m.data.SetDescription("The number of attempts to connect to locked user accounts.")
+	m.data.SetDescription("[DEPRECATED] The number of attempts to connect to locked user accounts.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -2002,7 +1795,7 @@ func (m *metricMysqlLockedConnects) init() {
 }
 
 func (m *metricMysqlLockedConnects) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2020,16 +1813,16 @@ func (m *metricMysqlLockedConnects) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlLockedConnects) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlLockedConnects(settings MetricSettings) metricMysqlLockedConnects {
-	m := metricMysqlLockedConnects{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlLockedConnects(cfg MetricConfig) metricMysqlLockedConnects {
+	m := metricMysqlLockedConnects{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2038,7 +1831,7 @@ func newMetricMysqlLockedConnects(settings MetricSettings) metricMysqlLockedConn
 
 type metricMysqlLocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2054,7 +1847,7 @@ func (m *metricMysqlLocks) init() {
 }
 
 func (m *metricMysqlLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, locksAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2073,16 +1866,16 @@ func (m *metricMysqlLocks) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlLocks) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlLocks(settings MetricSettings) metricMysqlLocks {
-	m := metricMysqlLocks{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlLocks(cfg MetricConfig) metricMysqlLocks {
+	m := metricMysqlLocks{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2091,7 +1884,7 @@ func newMetricMysqlLocks(settings MetricSettings) metricMysqlLocks {
 
 type metricMysqlLogOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2107,7 +1900,7 @@ func (m *metricMysqlLogOperations) init() {
 }
 
 func (m *metricMysqlLogOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, logOperationsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2126,16 +1919,16 @@ func (m *metricMysqlLogOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlLogOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlLogOperations(settings MetricSettings) metricMysqlLogOperations {
-	m := metricMysqlLogOperations{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlLogOperations(cfg MetricConfig) metricMysqlLogOperations {
+	m := metricMysqlLogOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2144,7 +1937,7 @@ func newMetricMysqlLogOperations(settings MetricSettings) metricMysqlLogOperatio
 
 type metricMysqlMysqlxConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2160,7 +1953,7 @@ func (m *metricMysqlMysqlxConnections) init() {
 }
 
 func (m *metricMysqlMysqlxConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, connectionStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2179,16 +1972,16 @@ func (m *metricMysqlMysqlxConnections) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlMysqlxConnections) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlMysqlxConnections(settings MetricSettings) metricMysqlMysqlxConnections {
-	m := metricMysqlMysqlxConnections{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlMysqlxConnections(cfg MetricConfig) metricMysqlMysqlxConnections {
+	m := metricMysqlMysqlxConnections{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2197,7 +1990,7 @@ func newMetricMysqlMysqlxConnections(settings MetricSettings) metricMysqlMysqlxC
 
 type metricMysqlMysqlxWorkerThreads struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2213,7 +2006,7 @@ func (m *metricMysqlMysqlxWorkerThreads) init() {
 }
 
 func (m *metricMysqlMysqlxWorkerThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, mysqlxThreadsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2232,16 +2025,16 @@ func (m *metricMysqlMysqlxWorkerThreads) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlMysqlxWorkerThreads) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlMysqlxWorkerThreads(settings MetricSettings) metricMysqlMysqlxWorkerThreads {
-	m := metricMysqlMysqlxWorkerThreads{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlMysqlxWorkerThreads(cfg MetricConfig) metricMysqlMysqlxWorkerThreads {
+	m := metricMysqlMysqlxWorkerThreads{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2250,7 +2043,7 @@ func newMetricMysqlMysqlxWorkerThreads(settings MetricSettings) metricMysqlMysql
 
 type metricMysqlOpenedResources struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2266,7 +2059,7 @@ func (m *metricMysqlOpenedResources) init() {
 }
 
 func (m *metricMysqlOpenedResources) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, openedResourcesAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2285,16 +2078,16 @@ func (m *metricMysqlOpenedResources) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlOpenedResources) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlOpenedResources(settings MetricSettings) metricMysqlOpenedResources {
-	m := metricMysqlOpenedResources{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlOpenedResources(cfg MetricConfig) metricMysqlOpenedResources {
+	m := metricMysqlOpenedResources{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2303,7 +2096,7 @@ func newMetricMysqlOpenedResources(settings MetricSettings) metricMysqlOpenedRes
 
 type metricMysqlOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2319,7 +2112,7 @@ func (m *metricMysqlOperations) init() {
 }
 
 func (m *metricMysqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2338,16 +2131,16 @@ func (m *metricMysqlOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlOperations(settings MetricSettings) metricMysqlOperations {
-	m := metricMysqlOperations{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlOperations(cfg MetricConfig) metricMysqlOperations {
+	m := metricMysqlOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2356,7 +2149,7 @@ func newMetricMysqlOperations(settings MetricSettings) metricMysqlOperations {
 
 type metricMysqlPageOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2372,7 +2165,7 @@ func (m *metricMysqlPageOperations) init() {
 }
 
 func (m *metricMysqlPageOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, pageOperationsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2391,16 +2184,16 @@ func (m *metricMysqlPageOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlPageOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlPageOperations(settings MetricSettings) metricMysqlPageOperations {
-	m := metricMysqlPageOperations{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlPageOperations(cfg MetricConfig) metricMysqlPageOperations {
+	m := metricMysqlPageOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2409,7 +2202,7 @@ func newMetricMysqlPageOperations(settings MetricSettings) metricMysqlPageOperat
 
 type metricMysqlPreparedStatements struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2425,7 +2218,7 @@ func (m *metricMysqlPreparedStatements) init() {
 }
 
 func (m *metricMysqlPreparedStatements) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, preparedStatementsCommandAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2444,16 +2237,16 @@ func (m *metricMysqlPreparedStatements) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlPreparedStatements) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlPreparedStatements(settings MetricSettings) metricMysqlPreparedStatements {
-	m := metricMysqlPreparedStatements{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlPreparedStatements(cfg MetricConfig) metricMysqlPreparedStatements {
+	m := metricMysqlPreparedStatements{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2462,7 +2255,7 @@ func newMetricMysqlPreparedStatements(settings MetricSettings) metricMysqlPrepar
 
 type metricMysqlQueryClientCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2477,7 +2270,7 @@ func (m *metricMysqlQueryClientCount) init() {
 }
 
 func (m *metricMysqlQueryClientCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2495,16 +2288,16 @@ func (m *metricMysqlQueryClientCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlQueryClientCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlQueryClientCount(settings MetricSettings) metricMysqlQueryClientCount {
-	m := metricMysqlQueryClientCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlQueryClientCount(cfg MetricConfig) metricMysqlQueryClientCount {
+	m := metricMysqlQueryClientCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2513,7 +2306,7 @@ func newMetricMysqlQueryClientCount(settings MetricSettings) metricMysqlQueryCli
 
 type metricMysqlQueryCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2528,7 +2321,7 @@ func (m *metricMysqlQueryCount) init() {
 }
 
 func (m *metricMysqlQueryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2546,16 +2339,16 @@ func (m *metricMysqlQueryCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlQueryCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlQueryCount(settings MetricSettings) metricMysqlQueryCount {
-	m := metricMysqlQueryCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlQueryCount(cfg MetricConfig) metricMysqlQueryCount {
+	m := metricMysqlQueryCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2564,7 +2357,7 @@ func newMetricMysqlQueryCount(settings MetricSettings) metricMysqlQueryCount {
 
 type metricMysqlQuerySlowCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2579,7 +2372,7 @@ func (m *metricMysqlQuerySlowCount) init() {
 }
 
 func (m *metricMysqlQuerySlowCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2597,16 +2390,16 @@ func (m *metricMysqlQuerySlowCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlQuerySlowCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlQuerySlowCount(settings MetricSettings) metricMysqlQuerySlowCount {
-	m := metricMysqlQuerySlowCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlQuerySlowCount(cfg MetricConfig) metricMysqlQuerySlowCount {
+	m := metricMysqlQuerySlowCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2615,7 +2408,7 @@ func newMetricMysqlQuerySlowCount(settings MetricSettings) metricMysqlQuerySlowC
 
 type metricMysqlReplicaSQLDelay struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2630,7 +2423,7 @@ func (m *metricMysqlReplicaSQLDelay) init() {
 }
 
 func (m *metricMysqlReplicaSQLDelay) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2648,16 +2441,16 @@ func (m *metricMysqlReplicaSQLDelay) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlReplicaSQLDelay) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlReplicaSQLDelay(settings MetricSettings) metricMysqlReplicaSQLDelay {
-	m := metricMysqlReplicaSQLDelay{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlReplicaSQLDelay(cfg MetricConfig) metricMysqlReplicaSQLDelay {
+	m := metricMysqlReplicaSQLDelay{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2666,7 +2459,7 @@ func newMetricMysqlReplicaSQLDelay(settings MetricSettings) metricMysqlReplicaSQ
 
 type metricMysqlReplicaTimeBehindSource struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2681,7 +2474,7 @@ func (m *metricMysqlReplicaTimeBehindSource) init() {
 }
 
 func (m *metricMysqlReplicaTimeBehindSource) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2699,16 +2492,16 @@ func (m *metricMysqlReplicaTimeBehindSource) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlReplicaTimeBehindSource) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlReplicaTimeBehindSource(settings MetricSettings) metricMysqlReplicaTimeBehindSource {
-	m := metricMysqlReplicaTimeBehindSource{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlReplicaTimeBehindSource(cfg MetricConfig) metricMysqlReplicaTimeBehindSource {
+	m := metricMysqlReplicaTimeBehindSource{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2717,7 +2510,7 @@ func newMetricMysqlReplicaTimeBehindSource(settings MetricSettings) metricMysqlR
 
 type metricMysqlRowLocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2733,7 +2526,7 @@ func (m *metricMysqlRowLocks) init() {
 }
 
 func (m *metricMysqlRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rowLocksAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2752,16 +2545,16 @@ func (m *metricMysqlRowLocks) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlRowLocks) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlRowLocks(settings MetricSettings) metricMysqlRowLocks {
-	m := metricMysqlRowLocks{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlRowLocks(cfg MetricConfig) metricMysqlRowLocks {
+	m := metricMysqlRowLocks{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2770,7 +2563,7 @@ func newMetricMysqlRowLocks(settings MetricSettings) metricMysqlRowLocks {
 
 type metricMysqlRowOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2786,7 +2579,7 @@ func (m *metricMysqlRowOperations) init() {
 }
 
 func (m *metricMysqlRowOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, rowOperationsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2805,16 +2598,16 @@ func (m *metricMysqlRowOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlRowOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlRowOperations(settings MetricSettings) metricMysqlRowOperations {
-	m := metricMysqlRowOperations{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlRowOperations(cfg MetricConfig) metricMysqlRowOperations {
+	m := metricMysqlRowOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2823,7 +2616,7 @@ func newMetricMysqlRowOperations(settings MetricSettings) metricMysqlRowOperatio
 
 type metricMysqlSorts struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2839,7 +2632,7 @@ func (m *metricMysqlSorts) init() {
 }
 
 func (m *metricMysqlSorts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sortsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2858,16 +2651,16 @@ func (m *metricMysqlSorts) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlSorts) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlSorts(settings MetricSettings) metricMysqlSorts {
-	m := metricMysqlSorts{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlSorts(cfg MetricConfig) metricMysqlSorts {
+	m := metricMysqlSorts{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2876,7 +2669,7 @@ func newMetricMysqlSorts(settings MetricSettings) metricMysqlSorts {
 
 type metricMysqlStatementEventCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2892,7 +2685,7 @@ func (m *metricMysqlStatementEventCount) init() {
 }
 
 func (m *metricMysqlStatementEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string, eventStateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2914,16 +2707,16 @@ func (m *metricMysqlStatementEventCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlStatementEventCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlStatementEventCount(settings MetricSettings) metricMysqlStatementEventCount {
-	m := metricMysqlStatementEventCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlStatementEventCount(cfg MetricConfig) metricMysqlStatementEventCount {
+	m := metricMysqlStatementEventCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2932,7 +2725,7 @@ func newMetricMysqlStatementEventCount(settings MetricSettings) metricMysqlState
 
 type metricMysqlStatementEventWaitTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -2948,7 +2741,7 @@ func (m *metricMysqlStatementEventWaitTime) init() {
 }
 
 func (m *metricMysqlStatementEventWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -2969,16 +2762,16 @@ func (m *metricMysqlStatementEventWaitTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlStatementEventWaitTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlStatementEventWaitTime(settings MetricSettings) metricMysqlStatementEventWaitTime {
-	m := metricMysqlStatementEventWaitTime{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlStatementEventWaitTime(cfg MetricConfig) metricMysqlStatementEventWaitTime {
+	m := metricMysqlStatementEventWaitTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -2987,7 +2780,7 @@ func newMetricMysqlStatementEventWaitTime(settings MetricSettings) metricMysqlSt
 
 type metricMysqlTableIoWaitCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3003,7 +2796,7 @@ func (m *metricMysqlTableIoWaitCount) init() {
 }
 
 func (m *metricMysqlTableIoWaitCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3024,16 +2817,16 @@ func (m *metricMysqlTableIoWaitCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTableIoWaitCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTableIoWaitCount(settings MetricSettings) metricMysqlTableIoWaitCount {
-	m := metricMysqlTableIoWaitCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTableIoWaitCount(cfg MetricConfig) metricMysqlTableIoWaitCount {
+	m := metricMysqlTableIoWaitCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3042,7 +2835,7 @@ func newMetricMysqlTableIoWaitCount(settings MetricSettings) metricMysqlTableIoW
 
 type metricMysqlTableIoWaitTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3058,7 +2851,7 @@ func (m *metricMysqlTableIoWaitTime) init() {
 }
 
 func (m *metricMysqlTableIoWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue string, tableNameAttributeValue string, schemaAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3079,16 +2872,16 @@ func (m *metricMysqlTableIoWaitTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTableIoWaitTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTableIoWaitTime(settings MetricSettings) metricMysqlTableIoWaitTime {
-	m := metricMysqlTableIoWaitTime{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTableIoWaitTime(cfg MetricConfig) metricMysqlTableIoWaitTime {
+	m := metricMysqlTableIoWaitTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3097,7 +2890,7 @@ func newMetricMysqlTableIoWaitTime(settings MetricSettings) metricMysqlTableIoWa
 
 type metricMysqlTableLockWaitReadCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3113,7 +2906,7 @@ func (m *metricMysqlTableLockWaitReadCount) init() {
 }
 
 func (m *metricMysqlTableLockWaitReadCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3134,16 +2927,16 @@ func (m *metricMysqlTableLockWaitReadCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTableLockWaitReadCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTableLockWaitReadCount(settings MetricSettings) metricMysqlTableLockWaitReadCount {
-	m := metricMysqlTableLockWaitReadCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTableLockWaitReadCount(cfg MetricConfig) metricMysqlTableLockWaitReadCount {
+	m := metricMysqlTableLockWaitReadCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3152,7 +2945,7 @@ func newMetricMysqlTableLockWaitReadCount(settings MetricSettings) metricMysqlTa
 
 type metricMysqlTableLockWaitReadTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3168,7 +2961,7 @@ func (m *metricMysqlTableLockWaitReadTime) init() {
 }
 
 func (m *metricMysqlTableLockWaitReadTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3189,16 +2982,16 @@ func (m *metricMysqlTableLockWaitReadTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTableLockWaitReadTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTableLockWaitReadTime(settings MetricSettings) metricMysqlTableLockWaitReadTime {
-	m := metricMysqlTableLockWaitReadTime{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTableLockWaitReadTime(cfg MetricConfig) metricMysqlTableLockWaitReadTime {
+	m := metricMysqlTableLockWaitReadTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3207,7 +3000,7 @@ func newMetricMysqlTableLockWaitReadTime(settings MetricSettings) metricMysqlTab
 
 type metricMysqlTableLockWaitWriteCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3223,7 +3016,7 @@ func (m *metricMysqlTableLockWaitWriteCount) init() {
 }
 
 func (m *metricMysqlTableLockWaitWriteCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3244,16 +3037,16 @@ func (m *metricMysqlTableLockWaitWriteCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTableLockWaitWriteCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTableLockWaitWriteCount(settings MetricSettings) metricMysqlTableLockWaitWriteCount {
-	m := metricMysqlTableLockWaitWriteCount{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTableLockWaitWriteCount(cfg MetricConfig) metricMysqlTableLockWaitWriteCount {
+	m := metricMysqlTableLockWaitWriteCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3262,7 +3055,7 @@ func newMetricMysqlTableLockWaitWriteCount(settings MetricSettings) metricMysqlT
 
 type metricMysqlTableLockWaitWriteTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3278,7 +3071,7 @@ func (m *metricMysqlTableLockWaitWriteTime) init() {
 }
 
 func (m *metricMysqlTableLockWaitWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3299,16 +3092,16 @@ func (m *metricMysqlTableLockWaitWriteTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTableLockWaitWriteTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTableLockWaitWriteTime(settings MetricSettings) metricMysqlTableLockWaitWriteTime {
-	m := metricMysqlTableLockWaitWriteTime{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTableLockWaitWriteTime(cfg MetricConfig) metricMysqlTableLockWaitWriteTime {
+	m := metricMysqlTableLockWaitWriteTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3317,7 +3110,7 @@ func newMetricMysqlTableLockWaitWriteTime(settings MetricSettings) metricMysqlTa
 
 type metricMysqlTableOpenCache struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3333,7 +3126,7 @@ func (m *metricMysqlTableOpenCache) init() {
 }
 
 func (m *metricMysqlTableOpenCache) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheStatusAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3352,16 +3145,16 @@ func (m *metricMysqlTableOpenCache) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTableOpenCache) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTableOpenCache(settings MetricSettings) metricMysqlTableOpenCache {
-	m := metricMysqlTableOpenCache{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTableOpenCache(cfg MetricConfig) metricMysqlTableOpenCache {
+	m := metricMysqlTableOpenCache{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3370,7 +3163,7 @@ func newMetricMysqlTableOpenCache(settings MetricSettings) metricMysqlTableOpenC
 
 type metricMysqlThreads struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3386,7 +3179,7 @@ func (m *metricMysqlThreads) init() {
 }
 
 func (m *metricMysqlThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, threadsAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3405,16 +3198,16 @@ func (m *metricMysqlThreads) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlThreads) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
-	m := metricMysqlThreads{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlThreads(cfg MetricConfig) metricMysqlThreads {
+	m := metricMysqlThreads{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -3423,7 +3216,7 @@ func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
 
 type metricMysqlTmpResources struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -3439,7 +3232,7 @@ func (m *metricMysqlTmpResources) init() {
 }
 
 func (m *metricMysqlTmpResources) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tmpResourceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -3458,37 +3251,82 @@ func (m *metricMysqlTmpResources) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMysqlTmpResources) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricMysqlTmpResources(settings MetricSettings) metricMysqlTmpResources {
-	m := metricMysqlTmpResources{settings: settings}
-	if settings.Enabled {
+func newMetricMysqlTmpResources(cfg MetricConfig) metricMysqlTmpResources {
+	m := metricMysqlTmpResources{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+type metricMysqlUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.uptime metric with initial data.
+func (m *metricMysqlUptime) init() {
+	m.data.SetName("mysql.uptime")
+	m.data.SetDescription("The number of seconds that the server has been up.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlUptime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlUptime(cfg MetricConfig) metricMysqlUptime {
+	m := metricMysqlUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                          pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                    int                 // maximum observed number of metrics per resource.
 	resourceCapacity                   int                 // maximum observed number of resource attributes.
 	metricsBuffer                      pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo // contains version information
-	resourceAttributesSettings         ResourceAttributesSettings
+	resourceAttributesConfig           ResourceAttributesConfig
 	metricMysqlBufferPoolDataPages     metricMysqlBufferPoolDataPages
 	metricMysqlBufferPoolLimit         metricMysqlBufferPoolLimit
 	metricMysqlBufferPoolOperations    metricMysqlBufferPoolOperations
@@ -3532,6 +3370,7 @@ type MetricsBuilder struct {
 	metricMysqlTableOpenCache          metricMysqlTableOpenCache
 	metricMysqlThreads                 metricMysqlThreads
 	metricMysqlTmpResources            metricMysqlTmpResources
+	metricMysqlUptime                  metricMysqlUptime
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3544,26 +3383,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsSettings(),
-		ResourceAttributes: DefaultResourceAttributesSettings(),
-	}
-}
-
-func NewMetricsBuilderConfig(ms MetricsSettings, ras ResourceAttributesSettings) MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            ms,
-		ResourceAttributes: ras,
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
 		buildInfo:                          settings.BuildInfo,
-		resourceAttributesSettings:         mbc.ResourceAttributes,
+		resourceAttributesConfig:           mbc.ResourceAttributes,
 		metricMysqlBufferPoolDataPages:     newMetricMysqlBufferPoolDataPages(mbc.Metrics.MysqlBufferPoolDataPages),
 		metricMysqlBufferPoolLimit:         newMetricMysqlBufferPoolLimit(mbc.Metrics.MysqlBufferPoolLimit),
 		metricMysqlBufferPoolOperations:    newMetricMysqlBufferPoolOperations(mbc.Metrics.MysqlBufferPoolOperations),
@@ -3607,6 +3432,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
+		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3625,12 +3451,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
 
 // WithMysqlInstanceEndpoint sets provided value as "mysql.instance.endpoint" attribute for current resource.
 func WithMysqlInstanceEndpoint(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.MysqlInstanceEndpoint.Enabled {
+	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+		if rac.MysqlInstanceEndpoint.Enabled {
 			rm.Resource().Attributes().PutStr("mysql.instance.endpoint", val)
 		}
 	}
@@ -3639,7 +3465,7 @@ func WithMysqlInstanceEndpoint(val string) ResourceMetricsOption {
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3711,9 +3537,10 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
+	mb.metricMysqlUptime.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(mb.resourceAttributesConfig, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -3723,7 +3550,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer
@@ -4088,6 +3915,16 @@ func (mb *MetricsBuilder) RecordMysqlTmpResourcesDataPoint(ts pcommon.Timestamp,
 		return fmt.Errorf("failed to parse int64 for MysqlTmpResources, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlTmpResources.recordDataPoint(mb.startTime, ts, val, tmpResourceAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlUptimeDataPoint adds a data point to mysql.uptime metric.
+func (mb *MetricsBuilder) RecordMysqlUptimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlUptime, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlUptime.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

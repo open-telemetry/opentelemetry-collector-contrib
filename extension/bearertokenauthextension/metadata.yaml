@@ -1,6 +1,7 @@
-name: bearertokenauthextension
+type: bearertokenauth
 
 status:
-  type: extension
-  stability: beta
-  distributions: [contrib]
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, observiq, sumo, redhat]

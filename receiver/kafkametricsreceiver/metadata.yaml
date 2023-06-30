@@ -1,4 +1,10 @@
-name: kafkametricsreceiver
+type: kafkametrics
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, sumo]
 
 attributes:
   topic:
@@ -12,14 +18,16 @@ attributes:
     type: string
 
 metrics:
-#  brokers scraper
+  #  brokers scraper
   kafka.brokers:
     enabled: true
     description: Number of brokers in the cluster.
     unit: "{brokers}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
-#  topics scraper
+      aggregation: delta
+  #  topics scraper
   kafka.topic.partitions:
     enabled: true
     description: Number of partitions in topic.
@@ -55,7 +63,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [topic, partition]
-#  consumers scraper
+  #  consumers scraper
   kafka.consumer_group.members:
     enabled: true
     description: Count of members in the consumer group

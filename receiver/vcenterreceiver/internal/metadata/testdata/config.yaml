@@ -49,6 +49,10 @@ all_set:
       enabled: true
     vcenter.resource_pool.memory.usage:
       enabled: true
+    vcenter.vm.cpu.usage:
+      enabled: true
+    vcenter.vm.cpu.utilization:
+      enabled: true
     vcenter.vm.disk.latency.avg:
       enabled: true
     vcenter.vm.disk.latency.max:
@@ -66,6 +70,8 @@ all_set:
     vcenter.vm.memory.swapped_ssd:
       enabled: true
     vcenter.vm.memory.usage:
+      enabled: true
+    vcenter.vm.memory.utilization:
       enabled: true
     vcenter.vm.network.packet.count:
       enabled: true
@@ -136,6 +142,10 @@ none_set:
       enabled: false
     vcenter.resource_pool.memory.usage:
       enabled: false
+    vcenter.vm.cpu.usage:
+      enabled: false
+    vcenter.vm.cpu.utilization:
+      enabled: false
     vcenter.vm.disk.latency.avg:
       enabled: false
     vcenter.vm.disk.latency.max:
@@ -153,6 +163,8 @@ none_set:
     vcenter.vm.memory.swapped_ssd:
       enabled: false
     vcenter.vm.memory.usage:
+      enabled: false
+    vcenter.vm.memory.utilization:
       enabled: false
     vcenter.vm.network.packet.count:
       enabled: false

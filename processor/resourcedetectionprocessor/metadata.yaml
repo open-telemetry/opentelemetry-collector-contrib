@@ -1,7 +1,7 @@
-name: resourcedetectionprocessor
+type: resourcedetection
 
 status:
-  type: processor
-  stability: beta
-  pipelines: [traces, metrics, logs]
-  distributions: [contrib]
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo, aws, redhat]

@@ -6,8 +6,9 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
 
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -20,19 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           path: opentelemetry-collector-contrib
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.7
+          go-version: ~1.19.10
+          cache: false
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -55,12 +50,3 @@ jobs:
       - name: Run compliance tests
         run: go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" ./ |& tee ./test-report.txt
         working-directory: compliance/remote_write_sender
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          working_directory: compliance/remote_write_sender
-          test_framework: golang
-          test_format: text
-          test_path: ./test-report.txt
