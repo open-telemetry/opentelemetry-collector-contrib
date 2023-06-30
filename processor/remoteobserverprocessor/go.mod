@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor
+module github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor
 
 go 1.19
 

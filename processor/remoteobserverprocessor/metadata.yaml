@@ -1,4 +1,4 @@
-type: websocket
+type: remoteobserver
 
 status:
   class: processor

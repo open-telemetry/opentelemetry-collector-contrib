@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Type             = "websocket"
+	Type             = "remoteobserver"
 	LogsStability    = component.StabilityLevelDevelopment
 	MetricsStability = component.StabilityLevelDevelopment
 	TracesStability  = component.StabilityLevelDevelopment
