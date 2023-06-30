@@ -8,7 +8,7 @@ import (
 
 const (
 	Type             = "websocket"
-	LogsStability    = component.StabilityLevelDevelopment
-	MetricsStability = component.StabilityLevelDevelopment
-	TracesStability  = component.StabilityLevelDevelopment
+	LogsStability    = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelAlpha
 )
