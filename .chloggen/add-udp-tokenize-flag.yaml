@@ -2,7 +2,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: stanza/udp
+component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: add option to skip log tokenization. use the 'OneLogPerPacket' to skip log tokenization if multiline is not used. this will boost the components performance.
