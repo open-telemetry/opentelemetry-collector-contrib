@@ -30,9 +30,6 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
   - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
-- `traces`:
-  - `aggregate` (default = false): Count the number of spans and errors belonging to a trace.
-  - `max_wait` (default = 5s): The maximum waiting for all spans from single trace to arrive; ignored if `aggregate` is false.
 - `logs`:
   - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
