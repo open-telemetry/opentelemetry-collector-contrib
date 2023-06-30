@@ -46,7 +46,7 @@ func Transform(node *corev1.Node) *corev1.Node {
 func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string) pmetric.Metrics {
 	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	customScopeMetrics := pmetric.NewMetrics().ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	customMetrics := pmetric.NewMetricSlice()
 
 	// Adding 'node condition type' metrics
 	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
@@ -64,7 +64,7 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 		case corev1.NodePIDPressure:
 			mb.RecordK8sNodeConditionPidPressureDataPoint(ts, v)
 		default:
-			customMetric := customScopeMetrics.Metrics().AppendEmpty()
+			customMetric := customMetrics.AppendEmpty()
 			customMetric.SetName(getNodeConditionMetric(nodeConditionTypeValue))
 			g := customMetric.SetEmptyGauge()
 			dp := g.DataPoints().AppendEmpty()
@@ -96,7 +96,7 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 		case corev1.ResourcePods:
 			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, quantity.Value())
 		default:
-			customMetric := customScopeMetrics.Metrics().AppendEmpty()
+			customMetric := customMetrics.AppendEmpty()
 			customMetric.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
 			g := customMetric.SetEmptyGauge()
 			dp := g.DataPoints().AppendEmpty()
@@ -105,7 +105,7 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 		}
 	}
 	m := mb.Emit(imetadata.WithK8sNodeUID(string(node.UID)), imetadata.WithK8sNodeName(node.Name), imetadata.WithOpencensusResourcetype("k8s"))
-	customScopeMetrics.Metrics().MoveAndAppendTo(m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics())
+	customMetrics.MoveAndAppendTo(m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics())
 	return m
 
 }
