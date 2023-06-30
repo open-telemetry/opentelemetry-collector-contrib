@@ -8,7 +8,7 @@ component: pkg/stanza
 note: Add option to skip log tokenization. use the 'one_log_per_packet' setting to skip log tokenization if multiline is not used.
 
 # One or more tracking issues related to the change
-issues: []
+issues: [23440]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
