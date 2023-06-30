@@ -6,6 +6,7 @@ go 1.19
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exampleconnector v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.80.0
@@ -1106,6 +1107,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ../../connector/countconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/exampleconnector => ../../connector/exampleconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
 
