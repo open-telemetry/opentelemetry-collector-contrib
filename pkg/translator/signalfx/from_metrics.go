@@ -69,10 +69,9 @@ func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.
 		dps = convertNumberDataPoints(m.Sum().DataPoints(), m.Name(), mt, extraDimensions)
 	case pmetric.MetricTypeHistogram:
 		dps = convertHistogram(m.Histogram().DataPoints(), m.Name(), mt, extraDimensions)
-	case pmetric.MetricTypeExponentialHistogram:
-		dps = convertExponentialHistogram(m.ExponentialHistogram().DataPoints(), m.Name(), mt, extraDimensions)
 	case pmetric.MetricTypeSummary:
 		dps = convertSummaryDataPoints(m.Summary().DataPoints(), m.Name(), extraDimensions)
+	case pmetric.MetricTypeExponentialHistogram:
 	case pmetric.MetricTypeEmpty:
 	}
 
@@ -106,10 +105,7 @@ func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 		return &sfxMetricTypeCumulativeCounter
 
 	case pmetric.MetricTypeExponentialHistogram:
-		if metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-			return &sfxMetricTypeCounter
-		}
-		return &sfxMetricTypeCumulativeCounter
+		return nil
 	}
 
 	return nil
@@ -209,57 +205,6 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 			dp := dps.appendPoint(bucketMetricName, mt, ts, cloneDim)
 			cInt := int64(val)
 			dp.Value.IntValue = &cInt
-		}
-	}
-
-	return dps.out
-}
-
-func convertExponentialHistogram(in pmetric.ExponentialHistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
-	var numDPs int
-	for i := 0; i < in.Len(); i++ {
-		histDP := in.At(i)
-		if histDP.HasSum() {
-			numDPs++
-		}
-
-		if histDP.HasMin() {
-			numDPs++
-		}
-
-		if histDP.HasMax() {
-			numDPs++
-		}
-	}
-	dps := newDpsBuilder(numDPs)
-
-	for i := 0; i < in.Len(); i++ {
-		histDP := in.At(i)
-		ts := fromTimestamp(histDP.Timestamp())
-		dims := attributesToDimensions(histDP.Attributes(), extraDims)
-
-		countDP := dps.appendPoint(name+"_count", mt, ts, dims)
-		count := int64(histDP.Count())
-		countDP.Value.IntValue = &count
-
-		if histDP.HasSum() {
-			sumDP := dps.appendPoint(name+"_sum", mt, ts, dims)
-			sum := histDP.Sum()
-			sumDP.Value.DoubleValue = &sum
-		}
-
-		if histDP.HasMin() {
-			// Min is always a gauge.
-			minDP := dps.appendPoint(name+"_min", &sfxMetricTypeGauge, ts, dims)
-			min := histDP.Min()
-			minDP.Value.DoubleValue = &min
-		}
-
-		if histDP.HasMax() {
-			// Max is always a gauge.
-			maxDP := dps.appendPoint(name+"_max", &sfxMetricTypeGauge, ts, dims)
-			max := histDP.Max()
-			maxDP.Value.DoubleValue = &max
 		}
 	}
 
