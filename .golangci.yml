@@ -176,9 +176,6 @@ issues:
     - path: prometheusreceiver
       linters:
         - exhaustive
-    - path: receivercreator
-      linters:
-        - exhaustive
     - path: statsdreceiver
       linters:
         - exhaustive
@@ -242,9 +239,6 @@ issues:
     - path: coralogixexporter
       linters:
         - exhaustive
-    - path: clickhouseexporter
-      linters:
-        - exhaustive
     - path: datasetexporter
       linters:
         - exhaustive
@@ -252,9 +246,6 @@ issues:
       linters:
         - exhaustive
     - path: elasticsearchexporter
-      linters:
-        - exhaustive
-    - path: datadogexporter
       linters:
         - exhaustive
     - path: googlecloudpubsubexporter
