@@ -176,7 +176,9 @@ The following configuration options are supported:
 - `metric` (optional): Configuration for sending metrics to Cloud Monitoring.
   - `prefix` (default = `workload.googleapis.com`): The prefix to add to metrics.
   - `endpoint` (default = monitoring.googleapis.com): Endpoint where metric data is going to be sent to.
-  - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `known_domains` (default = [googleapis.com, kubernetes.io, istio.io, knative.dev]): If a metric belongs to one of these domains it does not get a prefix.
   - `skip_create_descriptor` (default = false): If set to true, do not send metric descriptors to GCM.
   - `instrumentation_library_labels` (default = true): If true, set the instrumentation_source and instrumentation_version labels.
@@ -196,13 +198,17 @@ The following configuration options are supported:
       errors (`UNAVAILABLE` or `DEADLINE_EXCEEDED`).
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
   - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
-  - `use_insecure` (default = false): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
+  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes http and service keys so that they appear more prominently in the UI.
     - `key`: Key is the OpenTelemetry attribute key
     - `replacement`: Replacement is the attribute sent to Google Cloud Trace
 - `log` (optional): Configuration for sending metrics to Cloud Logging.
-  - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to. D
-  - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to.
+  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` attribute set, the exporter will return an error processing that entry.
   - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
