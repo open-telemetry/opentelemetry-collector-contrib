@@ -170,7 +170,7 @@ func TestFinder(t *testing.T) {
 		},
 		{
 			name:    "Numeric Sorting",
-			files:   []string{"err.123456789.log", "err.123456788.log", "err.123456787.log", "err.123456786.log"},
+			files:   []string{"err.123456788.log", "err.123456789.log", "err.123456787.log", "err.123456786.log"},
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
