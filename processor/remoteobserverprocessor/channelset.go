@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package websocketprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
+package remoteobserverprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor"
 
 import "sync"
 
