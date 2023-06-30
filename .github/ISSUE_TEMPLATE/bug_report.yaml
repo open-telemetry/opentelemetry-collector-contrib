@@ -135,6 +135,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
+      - processor/remoteobserver
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -147,7 +148,6 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
-      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache

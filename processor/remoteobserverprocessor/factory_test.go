@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package websocketprocessor
+package remoteobserverprocessor
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ import (
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
-	assert.EqualValues(t, "websocket", factory.Type())
+	assert.EqualValues(t, "remoteobserver", factory.Type())
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config)
 }
