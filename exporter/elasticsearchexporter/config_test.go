@@ -63,7 +63,7 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 			MaxInterval:     1 * time.Minute,
 		},
 		Mapping: MappingsSettings{
-			Mode:  "ecs",
+			Mode:  "none",
 			Dedup: true,
 			Dedot: true,
 		},
@@ -125,7 +125,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "none",
 					Dedup: true,
 					Dedot: true,
 				},
@@ -170,7 +170,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "none",
 					Dedup: true,
 					Dedot: true,
 				},
