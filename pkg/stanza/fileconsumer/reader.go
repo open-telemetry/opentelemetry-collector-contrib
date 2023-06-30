@@ -146,7 +146,7 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, _ *FileAttributes, token
 
 	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
 	if err != nil {
-		r.Errorw("Error while waiting for header entry", zap.Error(err))
+		r.Errorw("while waiting for header entry", zap.Error(err))
 		return
 	}
 

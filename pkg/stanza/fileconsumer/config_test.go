@@ -169,12 +169,12 @@ func TestUnmarshal(t *testing.T) {
 						{
 							TimestampSortRule{
 								BaseSortRule: BaseSortRule{
-									SortType:  SortTypeTimestamp,
+									SortType:  sortTypeTimestamp,
 									RegexKey:  "rotation_time",
 									Ascending: true,
 								},
 								Location: "utc",
-								Format:   `%Y%m%d%H`,
+								Layout:   `%Y%m%d%H`,
 							},
 						},
 					}
@@ -190,7 +190,7 @@ func TestUnmarshal(t *testing.T) {
 						{
 							NumericSortRule{
 								BaseSortRule: BaseSortRule{
-									SortType: SortTypeNumeric,
+									SortType: sortTypeNumeric,
 									RegexKey: "file_num",
 								},
 							},
@@ -581,7 +581,7 @@ func TestBuild(t *testing.T) {
 						NumericSortRule{
 							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
-								SortType: SortTypeNumeric,
+								SortType: sortTypeNumeric,
 							},
 						},
 					},

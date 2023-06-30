@@ -702,6 +702,7 @@ func TestMultiFileSort(t *testing.T) {
 	}()
 
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	expectNoTokens(t, emitCalls)
 }
 
 func TestMultiFileParallel_PreloadedFiles(t *testing.T) {

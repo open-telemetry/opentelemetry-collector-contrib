@@ -65,7 +65,7 @@ sort_by_timestamp:
     sort_by:
       - sort_type: timestamp
         regex_key: rotation_time
-        format: "%Y%m%d%H"
+        layout: "%Y%m%d%H"
         location: "utc"
         ascending: true
 fingerprint_size_1KB:

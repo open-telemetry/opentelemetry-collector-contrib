@@ -52,7 +52,7 @@ func (f Finder) FindFiles() ([]string, error) {
 	return f.FindCurrent(all)
 }
 
-// FindCurrent gets the current file to read from a list of files if file_sort_patterns is configured
+// FindCurrent gets the current file to read from a list of files if ordering_criteria is configured
 // otherwise it returns the list of files.
 func (f Finder) FindCurrent(files []string) ([]string, error) {
 	if len(f.OrderingCriteria.SortBy) == 0 || files == nil || len(files) == 0 {
