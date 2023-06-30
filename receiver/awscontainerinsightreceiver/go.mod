@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.255
+	github.com/aws/aws-sdk-go v1.44.293
 	github.com/aws/aws-sdk-go-v2 v1.18.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.25
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3
@@ -47,6 +47,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230630150539-890f186a40da // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.24 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.33 // indirect
@@ -254,6 +255,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prome
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+
+replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../override/aws
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible

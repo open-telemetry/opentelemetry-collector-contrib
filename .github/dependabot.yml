@@ -483,6 +483,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/override/aws"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/pkg/batchperresourceattr"
     schedule:
       interval: "weekly"
@@ -1094,11 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/windowseventlogreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/windowsperfcountersreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

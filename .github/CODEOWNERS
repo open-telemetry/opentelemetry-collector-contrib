@@ -129,6 +129,8 @@ pkg/winperfcounters/                                     @open-telemetry/collect
 pkg/batchperresourceattr/                                @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/experimentalmetricmetadata/                          @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 
+override/aws/                                            @open-telemetry/collector-contrib-approvers @sethAmazon
+
 processor/attributesprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                    @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/datadogprocessor/                              @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13

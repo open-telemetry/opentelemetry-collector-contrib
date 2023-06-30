@@ -3,13 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/aw
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.255
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230630150539-890f186a40da
+	github.com/aws/aws-sdk-go v1.44.293
 	github.com/aws/aws-sdk-go-v2 v1.18.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.25
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/net v0.9.0
+	golang.org/x/net v0.1.0
 )
 
 require (
@@ -33,6 +34,8 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../../override/aws
 
 retract (
 	v0.76.2
