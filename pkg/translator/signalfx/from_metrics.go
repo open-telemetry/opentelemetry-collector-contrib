@@ -102,7 +102,7 @@ func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 		return nil
 
 	case pmetric.MetricTypeSummary:
-		return &sfxMetricTypeCumulativeCounter
+		return nil
 
 	case pmetric.MetricTypeExponentialHistogram:
 		return nil
