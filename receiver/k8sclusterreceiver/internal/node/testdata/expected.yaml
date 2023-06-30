@@ -67,6 +67,18 @@ resourceMetrics:
                 - asInt: "1"
             name: k8s.node.condition_ready
             unit: "1"
+          - gauge:
+              dataPoints:
+                - asInt: "-1"
+            name: k8s.node.condition_out_of_disk
+          - gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.node.allocatable_hugepages_1_gi
+          - gauge:
+              dataPoints:
+                - asInt: "2048"
+            name: k8s.node.allocatable_hugepages_2_mi
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

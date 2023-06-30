@@ -86,6 +86,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.80.0
@@ -94,7 +95,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.80.0
@@ -1097,7 +1097,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webho
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver => ../../extension/observer/ecsobserver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor => ../../processor/websocketprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor => ../../processor/remoteobserverprocessor
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 

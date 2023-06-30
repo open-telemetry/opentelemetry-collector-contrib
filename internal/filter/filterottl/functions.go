@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+package filterottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 
 import (
 	"context"
@@ -9,19 +9,64 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
-	funcs := filterottl.StandardMetricFuncs()
-	hasAttributeKeyOnDatapointFactory := newHasAttributeKeyOnDatapointFactory()
-	funcs[hasAttributeKeyOnDatapointFactory.Name()] = hasAttributeKeyOnDatapointFactory
+func StandardSpanFuncs() map[string]ottl.Factory[ottlspan.TransformContext] {
+	return standardFuncs[ottlspan.TransformContext]()
+}
 
+func StandardSpanEventFuncs() map[string]ottl.Factory[ottlspanevent.TransformContext] {
+	return standardFuncs[ottlspanevent.TransformContext]()
+}
+
+func StandardMetricFuncs() map[string]ottl.Factory[ottlmetric.TransformContext] {
+	m := standardFuncs[ottlmetric.TransformContext]()
 	hasAttributeOnDatapointFactory := newHasAttributeOnDatapointFactory()
-	funcs[hasAttributeOnDatapointFactory.Name()] = hasAttributeOnDatapointFactory
-	return funcs
+	hasAttributeKeyOnDatapointFactory := newHasAttributeKeyOnDatapointFactory()
+	m[hasAttributeOnDatapointFactory.Name()] = hasAttributeOnDatapointFactory
+	m[hasAttributeKeyOnDatapointFactory.Name()] = hasAttributeKeyOnDatapointFactory
+	return m
+}
+
+func StandardDataPointFuncs() map[string]ottl.Factory[ottldatapoint.TransformContext] {
+	return standardFuncs[ottldatapoint.TransformContext]()
+}
+
+func StandardLogFuncs() map[string]ottl.Factory[ottllog.TransformContext] {
+	return standardFuncs[ottllog.TransformContext]()
+}
+
+func StandardResourceFuncs() map[string]ottl.Factory[ottlresource.TransformContext] {
+	return standardFuncs[ottlresource.TransformContext]()
+}
+
+func standardFuncs[K any]() map[string]ottl.Factory[K] {
+	m := ottlfuncs.StandardConverters[K]()
+	f := newDropFactory[K]()
+	m[f.Name()] = f
+	return m
+}
+
+func newDropFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("drop", nil, createDropFunction[K])
+}
+
+func createDropFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return dropFn[K]()
+}
+
+func dropFn[K any]() (ottl.ExprFunc[K], error) {
+	return func(context.Context, K) (interface{}, error) {
+		return true, nil
+	}, nil
 }
 
 type hasAttributeOnDatapointArguments struct {

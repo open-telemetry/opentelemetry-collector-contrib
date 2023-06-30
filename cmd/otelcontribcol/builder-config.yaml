@@ -103,7 +103,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.80.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor v0.80.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor v0.80.0
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.80.1-0.20230629144634-c3f70bd1f8ea
@@ -405,7 +405,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ../../receiver/windowseventlogreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver => ../../receiver/webhookeventreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver => ../../extension/observer/ecsobserver
-  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor => ../../processor/websocketprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor => ../../processor/remoteobserverprocessor
   # see https://github.com/mattn/go-ieproxy/issues/45
   - github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
