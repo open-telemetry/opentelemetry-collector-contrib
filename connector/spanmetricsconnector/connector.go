@@ -117,6 +117,9 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 }
 
 func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
+	if cfg.Histogram.Disable {
+		return nil
+	}
 	if cfg.Histogram.Exponential != nil {
 		maxSize := structure.DefaultMaxSize
 		if cfg.Histogram.Exponential.MaxSize != 0 {
@@ -235,12 +238,13 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
 		sums.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
-
-		histograms := rawMetrics.histograms
-		metric = sm.Metrics().AppendEmpty()
-		metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
-		metric.SetUnit(p.config.Histogram.Unit.String())
-		histograms.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
+		if !p.config.Histogram.Disable {
+			histograms := rawMetrics.histograms
+			metric = sm.Metrics().AppendEmpty()
+			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
+			metric.SetUnit(p.config.Histogram.Unit.String())
+			histograms.BuildMetrics(metric, p.startTimestamp, p.config.GetAggregationTemporality())
+		}
 	}
 
 	return m
@@ -256,9 +260,13 @@ func (p *connectorImp) resetState() {
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
 		// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
+		if p.config.Histogram.Disable {
+			return
+		}
 		for _, m := range p.resourceMetrics {
 			m.histograms.Reset(true)
 		}
+
 	}
 }
 
@@ -303,14 +311,14 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					attributes = p.buildAttributes(serviceName, span, resourceAttr)
 					p.metricKeyToDimensions.Add(key, attributes)
 				}
-
-				// aggregate histogram metrics
-				h := histograms.GetOrCreate(key, attributes)
-				h.Observe(duration)
-				if !span.TraceID().IsEmpty() {
-					h.AddExemplar(span.TraceID(), span.SpanID(), duration)
+				if !p.config.Histogram.Disable {
+					// aggregate histogram metrics
+					h := histograms.GetOrCreate(key, attributes)
+					h.Observe(duration)
+					if !span.TraceID().IsEmpty() {
+						h.AddExemplar(span.TraceID(), span.SpanID(), duration)
+					}
 				}
-
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)
 				s.Add(1)
@@ -335,13 +343,31 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 	return v
 }
 
+// contains checks if string slice contains a string value
+func contains(elements []string, value string) bool {
+	for _, element := range elements {
+		if value == element {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(4 + len(p.dimensions))
-	attr.PutStr(serviceNameKey, serviceName)
-	attr.PutStr(spanNameKey, span.Name())
-	attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
-	attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+		attr.PutStr(serviceNameKey, serviceName)
+	}
+	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+		attr.PutStr(spanNameKey, span.Name())
+	}
+	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+		attr.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
+	}
+	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
+		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	}
 	for _, d := range p.dimensions {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(attr.PutEmpty(d.name))
@@ -364,10 +390,18 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
 func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
-	concatDimensionValue(p.keyBuf, serviceName, false)
-	concatDimensionValue(p.keyBuf, span.Name(), true)
-	concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
-	concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+		concatDimensionValue(p.keyBuf, serviceName, false)
+	}
+	if !contains(p.config.ExcludeDimensions, spanNameKey) {
+		concatDimensionValue(p.keyBuf, span.Name(), true)
+	}
+	if !contains(p.config.ExcludeDimensions, spanKindKey) {
+		concatDimensionValue(p.keyBuf, traceutil.SpanKindStr(span.Kind()), true)
+	}
+	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
+		concatDimensionValue(p.keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	}
 
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
