@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"time"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
@@ -115,14 +114,15 @@ func (f TimestampSortRule) validate() error {
 	if f.Location == "" {
 		f.Location = "UTC"
 	}
-	_, err := time.Parse(f.Layout, "")
-	if err != nil {
-		return fmt.Errorf("parse format %s: %w", f.Layout, err)
-	}
 
-	_, err = timeutils.GetLocation(&f.Location, nil)
+	loc, err := timeutils.GetLocation(&f.Location, nil)
 	if err != nil {
 		return fmt.Errorf("parse location %s: %w", f.Location, err)
+	}
+
+	_, err = timeutils.ParseStrptime(f.Layout, "", loc)
+	if err != nil {
+		return fmt.Errorf("parse format %s: %w", f.Layout, err)
 	}
 	return nil
 }
