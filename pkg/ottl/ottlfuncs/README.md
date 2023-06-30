@@ -41,6 +41,7 @@ Available Editors:
 - [replace_match](#replace_match)
 - [replace_pattern](#replace_pattern)
 - [set](#set)
+- [truncate](#truncate)
 - [truncate_all](#truncate_all)
 
 ### delete_key
@@ -251,6 +252,20 @@ Examples:
 
 
 - `set(attributes["source"], trace_state["source"])`
+
+### truncate
+
+`truncate(target, limit)`
+
+The `truncate` function truncates the string value such that the result is no longer than the limit.
+
+`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match).
+
+The `target` will be mutated such that the number of characters in it is less than or equal to the limit. Non-string values are ignored.
+
+Examples:
+
+- `truncate(body, 100)`
 
 ### truncate_all
 
