@@ -33,16 +33,16 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.9.0 // indirect
-	go.opentelemetry.io/collector v0.80.0 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.80.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.80.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.80.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.80.0 // indirect
-	go.opentelemetry.io/collector/extension v0.80.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.80.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
+	go.opentelemetry.io/collector v0.80.1-0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/config/configauth v0.80.1-0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/config/configcompression v0.80.1-0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.80.1-0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/config/internal v0.80.1-0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/extension v0.80.1-0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/extension/auth v0.80.1-0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013.0.20230629144634-c3f70bd1f8ea // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
