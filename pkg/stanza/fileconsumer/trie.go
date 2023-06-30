@@ -10,17 +10,11 @@
 		it will return true because that's how fingerprint matching works in current implementation.
 */
 
-package fileconsumer
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 type Trie struct {
-	value    interface{}
+	_        interface{}
 	children map[byte]*Trie
-}
-
-// Trie node and the part string key of the child the path descends into.
-type nodeTrie struct {
-	node *Trie
-	b    byte
 }
 
 // NewPathTrie allocates and returns a new *Trie.
@@ -28,42 +22,36 @@ func NewTrie() *Trie {
 	return &Trie{}
 }
 
-func (trie *Trie) Get(key []byte) interface{} {
+func (trie *Trie) HasKey(key []byte) bool {
 	node := trie
 	for _, r := range key {
 		node = node.children[r]
 		if node == nil {
-			return nil
+			return false
 		}
 		// We have reached end of the current path and all the previous characters have matched
 		// Return if current node is leaf and it is not root
 		if node.isLeaf() && node != trie {
-			return node.value
+			return true
 		}
 	}
-	return node.value
+	return false //  If it's an exact match, the final node will be a leaf.
 }
 
-// Put inserts the value into the trie at the given key
-func (trie *Trie) Put(key []byte, value interface{}) {
+// Put inserts the key into the trie
+func (trie *Trie) Put(key []byte) {
 	node := trie
 	for _, r := range key {
-		child, _ := node.children[r]
-		if child == nil {
+		child, ok := node.children[r]
+		if !ok {
 			if node.children == nil {
 				node.children = map[byte]*Trie{}
 			}
 			child = NewTrie()
 			node.children[r] = child
-
-			// Assiging value to every child node allows us to detect partial matches.
-			// For eg. `123451` and `123456789` will match, even if they are not exactly same strings.
-			// Doing this, we store every prefix of the fingerprint.
-			node.value = value
 		}
 		node = child
 	}
-	node.value = value
 }
 
 // Delete removes the value associated with the given key. Returns true if a
@@ -80,8 +68,6 @@ func (trie *Trie) Delete(key []byte) bool {
 			return false
 		}
 	}
-	// delete the node value
-	node.value = nil
 	// if leaf, remove it from its parent's children map. Repeat for ancestor path.
 	if node.isLeaf() {
 		// iterate backwards over path
@@ -94,7 +80,6 @@ func (trie *Trie) Delete(key []byte) bool {
 				break
 			}
 			parent.children = nil
-			parent.value = nil
 		}
 	}
 	return true // node (internal or not) existed and its value was nil'd
