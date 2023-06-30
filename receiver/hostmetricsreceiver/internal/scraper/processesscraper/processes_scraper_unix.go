@@ -7,8 +7,10 @@
 package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
 import (
+	"context"
 	"runtime"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
@@ -18,6 +20,7 @@ const enableProcessesCount = true
 const enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
 
 func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
 	processes, err := s.getProcesses()
 	if err != nil {
 		return processesMetadata{}, err
@@ -43,7 +46,7 @@ func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 	// Processes are actively changing as we run this code, so this reason
 	// the above loop will tend to underestimate process counts.
 	// getMiscStats is a single read/syscall so it should be more accurate.
-	miscStat, err := s.getMiscStats()
+	miscStat, err := s.getMiscStats(ctx)
 	if err != nil {
 		return processesMetadata{}, err
 	}

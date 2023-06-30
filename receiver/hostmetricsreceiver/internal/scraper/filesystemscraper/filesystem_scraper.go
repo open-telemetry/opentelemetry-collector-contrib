@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
@@ -33,11 +34,12 @@ type scraper struct {
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
+	envMap   common.EnvMap
 
 	// for mocking gopsutil disk.Partitions & disk.Usage
-	bootTime   func() (uint64, error)
-	partitions func(bool) ([]disk.PartitionStat, error)
-	usage      func(string) (*disk.UsageStat, error)
+	bootTime   func(context.Context) (uint64, error)
+	partitions func(context.Context, bool) ([]disk.PartitionStat, error)
+	usage      func(context.Context, string) (*disk.UsageStat, error)
 }
 
 type deviceUsage struct {
@@ -46,18 +48,19 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) (*scraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
 	}
 
-	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter, envMap: envMap}
 	return scraper, nil
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -66,11 +69,12 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
-	partitions, err := s.partitions(s.config.IncludeVirtualFS)
+	partitions, err := s.partitions(ctx, s.config.IncludeVirtualFS)
 	if err != nil {
 		if len(partitions) == 0 {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -92,7 +96,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			continue
 		}
 		translatedMountpoint := translateMountpoint(s.config.RootPath, partition.Mountpoint)
-		usage, usageErr := s.usage(translatedMountpoint)
+		usage, usageErr := s.usage(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
 			continue

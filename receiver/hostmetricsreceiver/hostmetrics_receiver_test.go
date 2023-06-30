@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -219,7 +220,7 @@ type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 
 func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.CreateSettings, internal.Config) (scraperhelper.Scraper, error) {
+func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.CreateSettings, internal.Config, common.EnvMap) (scraperhelper.Scraper, error) {
 	args := m.MethodCalled("CreateMetricsScraper")
 	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
@@ -277,7 +278,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	sink := &notifyingSink{ch: make(chan int, 10)}
 	tickerCh := make(chan time.Time)
 
-	options, err := createAddScraperOptions(context.Background(), receivertest.NewNopCreateSettings(), cfg, scraperFactories)
+	options, err := createAddScraperOptions(context.Background(), receivertest.NewNopCreateSettings(), cfg, scraperFactories, common.EnvMap{})
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 

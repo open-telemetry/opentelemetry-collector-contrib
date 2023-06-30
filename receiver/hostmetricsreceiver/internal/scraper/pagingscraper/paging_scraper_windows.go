@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -43,23 +44,23 @@ type scraper struct {
 	skipScrape         bool
 
 	// for mocking
-	bootTime      func() (uint64, error)
+	bootTime      func(context.Context) (uint64, error)
 	pageFileStats func() ([]*pageFileStats, error)
 }
 
 // newPagingScraper creates a Paging Scraper
-func newPagingScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+func newPagingScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, _ common.EnvMap) *scraper {
 	return &scraper{
 		settings:           settings,
 		config:             cfg,
 		perfCounterScraper: &perfcounters.PerfLibScraper{},
-		bootTime:           host.BootTime,
+		bootTime:           host.BootTimeWithContext,
 		pageFileStats:      getPageFileStats,
 	}
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}

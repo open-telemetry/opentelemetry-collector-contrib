@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/net"
 	"go.opentelemetry.io/collector/component"
@@ -33,23 +34,25 @@ type scraper struct {
 	startTime pcommon.Timestamp
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
+	envMap    common.EnvMap
 
 	// for mocking
-	bootTime    func() (uint64, error)
-	ioCounters  func(bool) ([]net.IOCountersStat, error)
-	connections func(string) ([]net.ConnectionStat, error)
-	conntrack   func() ([]net.FilterStat, error)
+	bootTime    func(context.Context) (uint64, error)
+	ioCounters  func(context.Context, bool) ([]net.IOCountersStat, error)
+	connections func(context.Context, string) ([]net.ConnectionStat, error)
+	conntrack   func(context.Context) ([]net.FilterStat, error)
 }
 
 // newNetworkScraper creates a set of Network related metrics
-func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) (*scraper, error) {
 	scraper := &scraper{
 		settings:    settings,
 		config:      cfg,
-		bootTime:    host.BootTime,
-		ioCounters:  net.IOCounters,
-		connections: net.Connections,
-		conntrack:   net.FilterCounters,
+		bootTime:    host.BootTimeWithContext,
+		ioCounters:  net.IOCountersWithContext,
+		connections: net.ConnectionsWithContext,
+		conntrack:   net.FilterCountersWithContext,
+		envMap:      envMap,
 	}
 
 	var err error
@@ -71,8 +74,9 @@ func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg 
 	return scraper, nil
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -104,10 +108,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) recordNetworkCounterMetrics() error {
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// get total stats only
-	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
+	ioCounters, err := s.ioCounters(ctx, true /*perNetworkInterfaceController=*/)
 	if err != nil {
 		return fmt.Errorf("failed to read network IO stats: %w", err)
 	}
@@ -154,9 +159,10 @@ func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice [
 }
 
 func (s *scraper) recordNetworkConnectionsMetrics() error {
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	connections, err := s.connections("tcp")
+	connections, err := s.connections(ctx, "tcp")
 	if err != nil {
 		return fmt.Errorf("failed to read TCP connections: %w", err)
 	}

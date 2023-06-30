@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -47,15 +48,17 @@ type scraper struct {
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
 	ucals              map[int32]*ucal.CPUUtilizationCalculator
+	envMap             common.EnvMap
+
 	// for mocking
 	getProcessCreateTime func(p processHandle) (int64, error)
-	getProcessHandles    func() (processHandles, error)
+	getProcessHandles    func(context.Context) (processHandles, error)
 
 	handleCountManager handlecount.Manager
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newProcessScraper(settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) (*scraper, error) {
 	scraper := &scraper{
 		settings:             settings,
 		config:               cfg,
@@ -64,6 +67,7 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
 		handleCountManager:   handlecount.NewManager(),
+		envMap:               envMap,
 	}
 
 	var err error
@@ -169,7 +173,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
 func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
-	handles, err := s.getProcessHandles()
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
+	handles, err := s.getProcessHandles(ctx)
 	if err != nil {
 		return nil, err
 	}

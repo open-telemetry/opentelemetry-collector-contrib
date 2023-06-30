@@ -6,6 +6,7 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -36,9 +37,10 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.CreateSettings,
 	config internal.Config,
+	envMap common.EnvMap,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
-	s := newPagingScraper(ctx, settings, cfg)
+	s := newPagingScraper(ctx, settings, cfg, envMap)
 
 	return scraperhelper.NewScraper(
 		TypeStr,

@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/load"
 	"go.opentelemetry.io/collector/component"
@@ -30,20 +31,22 @@ type scraper struct {
 	config     *Config
 	mb         *metadata.MetricsBuilder
 	skipScrape bool
+	envMap     common.EnvMap
 
 	// for mocking
-	bootTime func() (uint64, error)
-	load     func() (*load.AvgStat, error)
+	bootTime func(context.Context) (uint64, error)
+	load     func(context.Context) (*load.AvgStat, error)
 }
 
 // newLoadScraper creates a set of Load related metrics
-func newLoadScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTime, load: getSampledLoadAverages}
+func newLoadScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) *scraper {
+	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages, envMap: envMap}
 }
 
 // start
 func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	bootTime, err := s.bootTime()
+	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -77,13 +80,15 @@ func (s *scraper) shutdown(ctx context.Context) error {
 }
 
 // scrape
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.skipScrape {
 		return pmetric.NewMetrics(), nil
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	avgLoadValues, err := s.load()
+	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+
+	avgLoadValues, err := s.load(ctx)
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}

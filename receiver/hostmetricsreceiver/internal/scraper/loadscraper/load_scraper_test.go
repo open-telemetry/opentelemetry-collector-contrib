@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,8 +37,8 @@ func TestScrape(t *testing.T) {
 	skip(t, "Flaky test. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10030")
 	type testCase struct {
 		name         string
-		bootTimeFunc func() (uint64, error)
-		loadFunc     func() (*load.AvgStat, error)
+		bootTimeFunc func(context.Context) (uint64, error)
+		loadFunc     func(context.Context) (*load.AvgStat, error)
 		expectedErr  string
 		saveMetrics  bool
 		config       *Config
@@ -58,11 +59,11 @@ func TestScrape(t *testing.T) {
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				CPUAverage:           true,
 			},
-			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
+			bootTimeFunc: func(context.Context) (uint64, error) { return bootTime, nil },
 		},
 		{
 			name:     "Load Error",
-			loadFunc: func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			loadFunc: func(context.Context) (*load.AvgStat, error) { return nil, errors.New("err1") },
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
@@ -73,7 +74,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
+			scraper := newLoadScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config, common.EnvMap{})
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
 			}
@@ -102,7 +103,7 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if test.bootTimeFunc != nil {
-				actualBootTime, err := scraper.bootTime()
+				actualBootTime, err := scraper.bootTime(context.Background())
 				assert.Nil(t, err)
 				assert.Equal(t, uint64(bootTime), actualBootTime)
 			}

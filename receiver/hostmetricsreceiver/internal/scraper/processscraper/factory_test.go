@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -22,7 +23,7 @@ func TestCreateResourceMetricsScraper(t *testing.T) {
 	factory := &Factory{}
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+	scraper, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopCreateSettings(), cfg, common.EnvMap{})
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		assert.NoError(t, err)

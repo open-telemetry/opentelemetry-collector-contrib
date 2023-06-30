@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/process"
@@ -32,7 +33,7 @@ var (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name         string
-		getMiscStats func() (*load.MiscStat, error)
+		getMiscStats func(context.Context) (*load.MiscStat, error)
 		getProcesses func() ([]proc, error)
 		expectedErr  string
 		validate     func(*testing.T, pmetric.MetricSlice)
@@ -43,12 +44,12 @@ func TestScrape(t *testing.T) {
 		validate: validateRealData,
 	}, {
 		name:         "FakeData",
-		getMiscStats: func() (*load.MiscStat, error) { return &fakeData, nil },
+		getMiscStats: func(ctx context.Context) (*load.MiscStat, error) { return &fakeData, nil },
 		getProcesses: func() ([]proc, error) { return fakeProcessesData, nil },
 		validate:     validateFakeData,
 	}, {
 		name:         "ErrorFromMiscStat",
-		getMiscStats: func() (*load.MiscStat, error) { return &load.MiscStat{}, errors.New("err1") },
+		getMiscStats: func(context.Context) (*load.MiscStat, error) { return &load.MiscStat{}, errors.New("err1") },
 		expectedErr:  "err1",
 	}, {
 		name:         "ErrorFromProcesses",
@@ -66,7 +67,7 @@ func TestScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-			})
+			}, common.EnvMap{})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)
 

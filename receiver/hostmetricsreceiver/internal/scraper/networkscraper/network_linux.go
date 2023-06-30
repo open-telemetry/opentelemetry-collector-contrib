@@ -7,9 +7,11 @@
 package networkscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -32,9 +34,9 @@ func (s *scraper) recordNetworkConntrackMetrics() error {
 	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackMax.Enabled {
 		return nil
 	}
-
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
-	conntrack, err := s.conntrack()
+	conntrack, err := s.conntrack(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read conntrack info: %w", err)
 	}

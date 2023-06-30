@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,8 +27,8 @@ import (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                string
-		bootTimeFunc        func() (uint64, error)
-		timesFunc           func(bool) ([]cpu.TimesStat, error)
+		bootTimeFunc        func(context.Context) (uint64, error)
+		timesFunc           func(context.Context, bool) ([]cpu.TimesStat, error)
 		metricsConfig       metadata.MetricsBuilderConfig
 		expectedMetricCount int
 		expectedStartTime   pcommon.Timestamp
@@ -46,21 +47,21 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:                "Validate Start Time",
-			bootTimeFunc:        func() (uint64, error) { return 100, nil },
+			bootTimeFunc:        func(context.Context) (uint64, error) { return 100, nil },
 			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			expectedStartTime:   100 * 1e9,
 		},
 		{
 			name:                "Boot Time Error",
-			bootTimeFunc:        func() (uint64, error) { return 0, errors.New("err1") },
+			bootTimeFunc:        func(context.Context) (uint64, error) { return 0, errors.New("err1") },
 			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			initializationErr:   "err1",
 		},
 		{
 			name:                "Times Error",
-			timesFunc:           func(bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
+			timesFunc:           func(context.Context, bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
 			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			expectedErr:         "err2",
@@ -74,7 +75,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: test.metricsConfig})
+			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: test.metricsConfig}, common.EnvMap{})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -173,7 +174,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
 			}
 
-			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: settings})
+			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: settings}, common.EnvMap{})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
@@ -210,9 +211,9 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 // Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}, common.EnvMap{})
 	// mock times function to force an error in next scrape
-	scraper.times = func(bool) ([]cpu.TimesStat, error) {
+	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
 	}
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -220,7 +221,7 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 
 	_, err = scraper.scrape(context.Background())
 	// Force error not finding CPU info
-	scraper.times = func(bool) ([]cpu.TimesStat, error) {
+	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{}, nil
 	}
 	require.NoError(t, err, "Failed to scrape metrics: %v", err)
@@ -278,10 +279,10 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	cpuScraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: overriddenMetricsSettings})
+	cpuScraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: overriddenMetricsSettings}, common.EnvMap{})
 	for _, scrapeData := range scrapesData {
 		// mock TimeStats and Now
-		cpuScraper.times = func(_ bool) ([]cpu.TimesStat, error) {
+		cpuScraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 			return scrapeData.times, nil
 		}
 		cpuScraper.now = func() time.Time {

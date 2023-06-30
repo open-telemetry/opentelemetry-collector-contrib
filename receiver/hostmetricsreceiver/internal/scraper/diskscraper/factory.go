@@ -6,6 +6,7 @@ package diskscraper // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -36,9 +37,10 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.CreateSettings,
 	config internal.Config,
+	envMap common.EnvMap,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
-	s, err := newDiskScraper(ctx, settings, cfg)
+	s, err := newDiskScraper(ctx, settings, cfg, envMap)
 	if err != nil {
 		return nil, err
 	}

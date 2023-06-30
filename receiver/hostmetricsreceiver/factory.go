@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -70,13 +71,10 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
+	envMap := setGoPsutilEnvVars(oCfg.RootPath, &osEnv{})
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
+	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories, envMap)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = setGoPsutilEnvVars(oCfg.RootPath, &osEnv{}); err != nil {
 		return nil, err
 	}
 
@@ -93,11 +91,12 @@ func createAddScraperOptions(
 	set receiver.CreateSettings,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
+	envMap common.EnvMap,
 ) ([]scraperhelper.ScraperControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 
 	for key, cfg := range config.Scrapers {
-		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
+		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories, envMap)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
 		}
@@ -113,7 +112,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory, envMap common.EnvMap) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -121,7 +120,7 @@ func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, 
 	}
 
 	ok = true
-	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
+	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg, envMap)
 	return
 }
 

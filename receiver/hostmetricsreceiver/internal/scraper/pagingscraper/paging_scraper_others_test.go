@@ -11,6 +11,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func TestScrape_Errors(t *testing.T) {
 	type testCase struct {
 		name              string
 		virtualMemoryFunc func() ([]*pageFileStats, error)
-		swapMemoryFunc    func() (*mem.SwapMemoryStat, error)
+		swapMemoryFunc    func(context.Context) (*mem.SwapMemoryStat, error)
 		expectedError     string
 		expectedErrCount  int
 	}
@@ -37,14 +38,14 @@ func TestScrape_Errors(t *testing.T) {
 		},
 		{
 			name:             "swapMemoryError",
-			swapMemoryFunc:   func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
+			swapMemoryFunc:   func(context.Context) (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:    "failed to read swap info: err2",
 			expectedErrCount: pagingMetricsLen,
 		},
 		{
 			name:              "multipleErrors",
 			virtualMemoryFunc: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
-			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
+			swapMemoryFunc:    func(context.Context) (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:     "failed to read page file stats: err1; failed to read swap info: err2",
 			expectedErrCount:  pagingUsageMetricsLen + pagingMetricsLen,
 		},
@@ -52,7 +53,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{}, common.EnvMap{})
 			if test.virtualMemoryFunc != nil {
 				scraper.getPageFileStats = test.virtualMemoryFunc
 			}

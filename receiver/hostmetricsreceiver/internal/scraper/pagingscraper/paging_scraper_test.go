@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -45,7 +46,7 @@ func TestScrape(t *testing.T) {
 			name:   "Validate Start Time",
 			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
-				s.bootTime = func() (uint64, error) { return 100, nil }
+				s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 			},
 			expectedStartTime: 100 * 1e9,
 		},
@@ -53,7 +54,7 @@ func TestScrape(t *testing.T) {
 			name:   "Boot Time Error",
 			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
-				s.bootTime = func() (uint64, error) { return 0, errors.New("err1") }
+				s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
 			},
 			initializationErr: "err1",
 		},
@@ -61,7 +62,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config, common.EnvMap{})
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

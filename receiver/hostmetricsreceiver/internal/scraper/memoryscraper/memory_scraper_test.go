@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,12 +26,12 @@ import (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                string
-		virtualMemoryFunc   func() (*mem.VirtualMemoryStat, error)
+		virtualMemoryFunc   func(context.Context) (*mem.VirtualMemoryStat, error)
 		expectedErr         string
 		initializationErr   string
 		config              *Config
 		expectedMetricCount int
-		bootTimeFunc        func() (uint64, error)
+		bootTimeFunc        func(context.Context) (uint64, error)
 	}
 
 	testCases := []testCase{
@@ -59,7 +60,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:              "Error",
-			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
+			virtualMemoryFunc: func(context.Context) (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedErr:       "err1",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -68,7 +69,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:              "Error",
-			bootTimeFunc:      func() (uint64, error) { return 100, errors.New("err1") },
+			bootTimeFunc:      func(context.Context) (uint64, error) { return 100, errors.New("err1") },
 			initializationErr: "err1",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -79,7 +80,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
+			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config, common.EnvMap{})
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
@@ -129,7 +130,7 @@ func TestScrape(t *testing.T) {
 func TestScrape_MemoryUtilization(t *testing.T) {
 	type testCase struct {
 		name              string
-		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
+		virtualMemoryFunc func(context.Context) (*mem.VirtualMemoryStat, error)
 		expectedErr       error
 	}
 	testCases := []testCase{
@@ -138,7 +139,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 		},
 		{
 			name:              "Invalid total memory",
-			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return &mem.VirtualMemoryStat{Total: 0}, nil },
+			virtualMemoryFunc: func(context.Context) (*mem.VirtualMemoryStat, error) { return &mem.VirtualMemoryStat{Total: 0}, nil },
 			expectedErr:       ErrInvalidTotalMem,
 		},
 	}
@@ -150,7 +151,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 			scraperConfig := Config{
 				MetricsBuilderConfig: mbc,
 			}
-			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), &scraperConfig)
+			scraper := newMemoryScraper(context.Background(), receivertest.NewNopCreateSettings(), &scraperConfig, common.EnvMap{})
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}

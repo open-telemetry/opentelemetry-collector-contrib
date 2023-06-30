@@ -20,16 +20,15 @@ import (
 )
 
 func TestConsistentRootPaths(t *testing.T) {
-	env := &testEnv{env: map[string]string{"HOST_PROC": "testdata"}}
 	// use testdata because it's a directory that exists - don't actually use any files in it
-	assert.Nil(t, testValidate("testdata", env))
-	assert.Nil(t, testValidate("", env))
-	assert.Nil(t, testValidate("/", env))
+	assert.Nil(t, testValidate("testdata"))
+	assert.Nil(t, testValidate(""))
+	assert.Nil(t, testValidate("/"))
 }
 
 func TestInconsistentRootPaths(t *testing.T) {
 	globalRootPath = "foo"
-	err := testValidate("testdata", &testEnv{})
+	err := testValidate("testdata")
 	assert.EqualError(t, err, "inconsistent root_path configuration detected between hostmetricsreceivers: `foo` != `testdata`")
 }
 
@@ -61,8 +60,8 @@ func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	globalRootPath = ""
 }
 
-func testValidate(rootPath string, env environment) error {
-	err := validateRootPath(rootPath, env)
+func testValidate(rootPath string) error {
+	err := validateRootPath(rootPath)
 	globalRootPath = ""
 	return err
 }

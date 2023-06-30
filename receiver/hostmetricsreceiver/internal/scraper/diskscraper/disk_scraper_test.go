@@ -8,6 +8,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -24,7 +25,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		config            Config
-		bootTimeFunc      func() (uint64, error)
+		bootTimeFunc      func(context.Context) (uint64, error)
 		newErrRegex       string
 		initializationErr string
 		expectMetrics     int
@@ -41,14 +42,14 @@ func TestScrape(t *testing.T) {
 		{
 			name:              "Validate Start Time",
 			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
-			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			bootTimeFunc:      func(context.Context) (uint64, error) { return 100, nil },
 			expectMetrics:     metricsLen,
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:              "Boot Time Error",
 			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			bootTimeFunc:      func(context.Context) (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
 			expectMetrics:     metricsLen,
 		},
@@ -89,7 +90,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
+			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config, common.EnvMap{})
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
