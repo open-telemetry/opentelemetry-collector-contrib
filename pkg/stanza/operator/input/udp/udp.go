@@ -165,7 +165,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 
 			if u.OneLogPerPacket {
 				log := truncateMaxLog(message)
-				handleMessage(u, ctx, remoteAddr, log)
+				handleMessage(ctx, u, remoteAddr, log)
 				continue
 			}
 
@@ -175,7 +175,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 			scanner.Split(u.splitFunc)
 
 			for scanner.Scan() {
-				handleMessage(u, ctx, remoteAddr, scanner.Bytes())
+				handleMessage(ctx, u, remoteAddr, scanner.Bytes())
 			}
 			if err := scanner.Err(); err != nil {
 				u.Errorw("Scanner error", zap.Error(err))
@@ -197,7 +197,7 @@ func truncateMaxLog(data []byte) (token []byte) {
 	return data
 }
 
-func handleMessage(u *Input, ctx context.Context, remoteAddr net.Addr, log []byte) {
+func handleMessage(ctx context.Context, u *Input, remoteAddr net.Addr, log []byte) {
 	decoded, err := u.encoding.Decode(log)
 	if err != nil {
 		u.Errorw("Failed to decode data", zap.Error(err))
