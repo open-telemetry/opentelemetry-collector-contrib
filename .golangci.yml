@@ -170,9 +170,6 @@ issues:
     - path: googlecloudspannerreceiver
       linters:
         - exhaustive
-    - path: podmanreceiver
-      linters:
-        - exhaustive
     - path: prometheusreceiver
       linters:
         - exhaustive
