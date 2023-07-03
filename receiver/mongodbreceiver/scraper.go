@@ -118,7 +118,10 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetDatabase(databaseName)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	s.mb.EmitForResource(
+		metadata.WithResource(rb.Emit()),
+		metadata.WithMongodbDatabaseName(databaseName),
+	)
 }
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

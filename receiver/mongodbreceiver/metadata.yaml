@@ -13,6 +13,9 @@ resource_attributes:
     description: The name of a database.
     enabled: true
     type: string
+  mongodb.database.name:
+    description: The name of a database (redundant).
+    type: string
 
 attributes:
   database:

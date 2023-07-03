@@ -1943,6 +1943,13 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	}
 }
 
+// WithMongodbDatabaseName sets provided value as "mongodb.database.name" attribute for current resource.
+func WithMongodbDatabaseName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutStr("mongodb.database.name", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
