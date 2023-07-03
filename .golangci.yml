@@ -164,9 +164,6 @@ issues:
     - path: fluentforwardreceiver
       linters:
         - exhaustive
-    - path: googlecloudpubsubreceiver
-      linters:
-        - exhaustive
     - path: googlecloudspannerreceiver
       linters:
         - exhaustive
