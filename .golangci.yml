@@ -173,9 +173,6 @@ issues:
     - path: prometheusreceiver
       linters:
         - exhaustive
-    - path: statsdreceiver
-      linters:
-        - exhaustive
     - path: attributesprocessor
       linters:
         - exhaustive
