@@ -28,6 +28,10 @@ type Config struct {
 	// pods by labels, fields, namespaces, nodes, etc.
 	Filter FilterConfig `mapstructure:"filter"`
 
+	// Selector section allows specifying selectors to select
+	// pods.
+	Selector SelectorConfig `mapstructure:"selector"`
+
 	// Association section allows to define rules for tagging spans, metrics,
 	// and logs with Pod metadata.
 	Association []PodAssociationConfig `mapstructure:"pod_association"`
@@ -49,6 +53,22 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// Selector section allows specifying selectors to select
+// pods.
+type SelectorConfig struct {
+	// Kubernetes namespace that the resource belongs to.
+	Namespace string `mapstructure:"namespace"`
+
+	// Kubernetes resource name.
+	Name string `mapstructure:"name"`
+
+	// API version of Kubernetes resource.
+	APIVersion string `mapstructure:"api_version"`
+
+	// Kubernetes resource type.
+	Kind string `mapstructure:"kind"`
 }
 
 // ExtractConfig section allows specifying extraction rules to extract

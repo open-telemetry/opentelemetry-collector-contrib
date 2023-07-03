@@ -25,6 +25,8 @@ import (
 const riakPort = "8098"
 
 func TestIntegration(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17556")
+
 	if runtime.GOARCH == "arm64" {
 		t.Skip("Incompatible with arm64")
 	}

@@ -257,6 +257,23 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	return rules, nil
 }
 
+// withSelector allows specifying options to enable selector.
+func withSelector(selector SelectorConfig) option {
+	return func(p *kubernetesprocessor) error {
+		if selector.Name == "" && selector.Kind == "" && selector.APIVersion == "" && selector.Namespace == "" {
+			p.selectors.Enabled = false
+		} else {
+			p.selectors.Enabled = true
+			p.selectors.Name = selector.Name
+			p.selectors.Kind = selector.Kind
+			p.selectors.APIVersion = selector.APIVersion
+			p.selectors.Namespace = selector.Namespace
+		}
+
+		return nil
+	}
+}
+
 // withFilterNode allows specifying options to control filtering pods by a node/host.
 func withFilterNode(node, nodeFromEnvVar string) option {
 	return func(p *kubernetesprocessor) error {

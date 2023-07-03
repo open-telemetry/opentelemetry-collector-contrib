@@ -44,6 +44,7 @@ type WatchClient struct {
 	Pods         map[PodIdentifier]*Pod
 	Rules        ExtractionRules
 	Filters      Filters
+	Selectors    Selectors
 	Associations []Association
 	Exclude      Excludes
 
@@ -65,11 +66,12 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, selectors Selectors, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
 	c := &WatchClient{
 		logger:          logger,
 		Rules:           rules,
 		Filters:         filters,
+		Selectors:       selectors,
 		Associations:    associations,
 		Exclude:         exclude,
 		replicasetRegex: rRegex,
@@ -108,7 +110,12 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		newNamespaceInformer = newNamespaceSharedInformer
 	}
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	namespace := c.Selectors.Namespace
+	if namespace == "" {
+		namespace = c.Filters.Namespace
+	}
+
+	c.informer = newInformer(c.kc, namespace, labelSelector, fieldSelector)
 	err = c.informer.SetTransform(
 		func(object interface{}) (interface{}, error) {
 			originalPod, success := object.(*api_v1.Pod)
@@ -133,7 +140,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		if newReplicaSetInformer == nil {
 			newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		c.replicasetInformer = newReplicaSetInformer(c.kc, namespace)
 		err = c.replicasetInformer.SetTransform(
 			func(object interface{}) (interface{}, error) {
 				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
@@ -739,7 +746,62 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 		}
 	}
 
+	// Check if the pod doesn't belong to the selector
+	return c.matchSelector(pod)
+}
+
+func (c *WatchClient) matchKind(kind, name, apiVersion string) bool {
+	if c.Selectors.Kind != "" && c.Selectors.Kind != kind {
+		return true
+	}
+
+	if c.Selectors.Name != "" && c.Selectors.Name != name {
+		return true
+	}
+
+	if c.Selectors.APIVersion != "" && c.Selectors.APIVersion != apiVersion {
+		return true
+	}
+
 	return false
+}
+
+func (c *WatchClient) matchSelector(pod *api_v1.Pod) bool {
+	if !c.Selectors.Enabled {
+		return false
+	}
+
+	if !c.matchKind(pod.Kind, pod.Name, pod.APIVersion) {
+		return false
+	}
+
+	for _, owner := range pod.OwnerReferences {
+		switch c.Selectors.Kind {
+		case "Deployment":
+			if owner.Kind == "ReplicaSet" {
+				if replicaset, ok := c.getReplicaSet(string(owner.UID)); ok {
+					if replicaset.Deployment.Name == c.Selectors.Name {
+						return false
+					}
+				}
+			} else {
+				return c.matchKind(owner.Kind, owner.Name, owner.APIVersion)
+			}
+		case "Job":
+			if c.Selectors.Kind == "CronJob" {
+				parts := c.cronJobRegex.FindStringSubmatch(owner.Name)
+				if len(parts) == 2 && c.Selectors.Name == parts[1] {
+					return false
+				}
+			} else {
+				return c.matchKind(owner.Kind, owner.Name, owner.APIVersion)
+			}
+		default:
+			return c.matchKind(owner.Kind, owner.Name, owner.APIVersion)
+		}
+	}
+
+	return true
 }
 
 func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, error) {

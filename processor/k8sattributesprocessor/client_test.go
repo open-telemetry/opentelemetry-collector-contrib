@@ -19,6 +19,7 @@ type fakeClient struct {
 	Pods               map[kube.PodIdentifier]*kube.Pod
 	Rules              kube.ExtractionRules
 	Filters            kube.Filters
+	Selectors          kube.Selectors
 	Associations       []kube.Association
 	Informer           cache.SharedInformer
 	NamespaceInformer  cache.SharedInformer
@@ -33,7 +34,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
+func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, kubeSelectors kube.Selectors, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
@@ -41,6 +42,7 @@ func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRu
 		Pods:               map[kube.PodIdentifier]*kube.Pod{},
 		Rules:              rules,
 		Filters:            filters,
+		Selectors:          kubeSelectors,
 		Associations:       associations,
 		Informer:           kube.NewFakeInformer(cs, "", ls, fs),
 		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs),

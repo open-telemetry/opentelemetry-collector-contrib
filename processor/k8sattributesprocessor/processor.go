@@ -31,6 +31,7 @@ type kubernetesprocessor struct {
 	passthroughMode bool
 	rules           kube.ExtractionRules
 	filters         kube.Filters
+	selectors       kube.Selectors
 	podAssociations []kube.Association
 	podIgnore       kube.Excludes
 }
@@ -40,7 +41,7 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.selectors, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -68,36 +69,48 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 
 // processTraces process traces and add k8s metadata using resource IP or incoming IP as pod origin.
 func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	processed := ptrace.NewTraces()
+	processed.ResourceSpans().EnsureCapacity(td.ResourceSpans().Len())
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		kp.processResource(ctx, rss.At(i).Resource())
+		if kp.processResource(ctx, rss.At(i).Resource()) {
+			rss.At(i).CopyTo(processed.ResourceSpans().AppendEmpty())
+		}
 	}
 
-	return td, nil
+	return processed, nil
 }
 
 // processMetrics process metrics and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
 func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	processed := pmetric.NewMetrics()
+	processed.ResourceMetrics().EnsureCapacity(md.ResourceMetrics().Len())
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		kp.processResource(ctx, rm.At(i).Resource())
+		if kp.processResource(ctx, rm.At(i).Resource()) {
+			rm.At(i).CopyTo(processed.ResourceMetrics().AppendEmpty())
+		}
 	}
 
-	return md, nil
+	return processed, nil
 }
 
 // processLogs process logs and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
 func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	processed := plog.NewLogs()
+	processed.ResourceLogs().EnsureCapacity(ld.ResourceLogs().Len())
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
-		kp.processResource(ctx, rl.At(i).Resource())
+		if kp.processResource(ctx, rl.At(i).Resource()) {
+			rl.At(i).CopyTo(processed.ResourceLogs().AppendEmpty())
+		}
 	}
 
-	return ld, nil
+	return processed, nil
 }
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
-func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
+func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) bool {
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
@@ -110,7 +123,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 	if kp.passthroughMode {
-		return
+		return true
 	}
 
 	if podIdentifierValue.IsNotEmpty() {
@@ -123,7 +136,11 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				}
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
+		} else if kp.selectors.Enabled {
+			return false
 		}
+	} else if kp.selectors.Enabled {
+		return false
 	}
 
 	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
@@ -135,6 +152,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 		}
 	}
+
+	return true
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
