@@ -266,9 +266,6 @@ issues:
     - path: prometheusremotewriteexporter
       linters:
         - exhaustive
-    - path: sumologicexporter
-      linters:
-        - exhaustive
     - path: skywalkingexporter
       linters:
         - exhaustive
