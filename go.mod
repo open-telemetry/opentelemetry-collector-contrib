@@ -1050,6 +1050,8 @@ replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/12322#issuecomment-1185029670
 replace github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 => github.com/docker/go-connections v0.4.0
 
+replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ./override/aws
+
 retract (
 	v0.76.2
 	v0.76.1

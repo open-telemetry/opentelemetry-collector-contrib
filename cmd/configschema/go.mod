@@ -1052,6 +1052,8 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
+replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../override/aws
+
 retract (
 	v0.76.2
 	v0.76.1

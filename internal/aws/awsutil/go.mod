@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3
 	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/net v0.1.0
+	golang.org/x/net v0.7.0
 )
 
 require (
