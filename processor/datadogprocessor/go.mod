@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-devel
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.1
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.80.1-0.20230629144634-c3f70bd1f8ea
@@ -26,8 +26,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.46.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
@@ -59,7 +59,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.5.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.5 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.6 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
