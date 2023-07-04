@@ -518,8 +518,8 @@ go.opentelemetry.io/collector/processor v0.80.1-0.20230629144634-c3f70bd1f8ea h1
 go.opentelemetry.io/collector/processor v0.80.1-0.20230629144634-c3f70bd1f8ea/go.mod h1:U11nO3q5oEx2rEq8lcqrGNABSgb/4Cld4/bUI/cCn3c=
 go.opentelemetry.io/collector/receiver v0.80.1-0.20230629144634-c3f70bd1f8ea h1:6iOT7mYlpFmM9xISVLV/ykZw3uNQU71gVQd9Ab0Wrtk=
 go.opentelemetry.io/collector/receiver v0.80.1-0.20230629144634-c3f70bd1f8ea/go.mod h1:Xv3vKdsCLxS3+7VHS+Yv+aGe8Lp1U39OTO/uWcIM0+s=
-go.opentelemetry.io/collector/semconv v0.80.1-0.20230629144634-c3f70bd1f8ea h1:LmPI0mIHeaXIimZdMrOmH7C45y2+phGHXNGT5+PSKe4=
-go.opentelemetry.io/collector/semconv v0.80.1-0.20230629144634-c3f70bd1f8ea/go.mod h1:TlYPtzvsXyHOgr5eATi43qEMqwSmIziivJB2uctKswo=
+go.opentelemetry.io/collector/semconv v0.81.0 h1:lCYNNo3powDvFIaTPP2jDKIrBiV1T92NK4QgL/aHYXw=
+go.opentelemetry.io/collector/semconv v0.81.0/go.mod h1:TlYPtzvsXyHOgr5eATi43qEMqwSmIziivJB2uctKswo=
 go.opentelemetry.io/otel v1.16.0 h1:Z7GVAX/UkAXPKsy94IU+i6thsQS4nb7LviLpnaNeW8s=
 go.opentelemetry.io/otel v1.16.0/go.mod h1:vl0h9NUa1D5s1nv3A5vZOYWn8av4K8Ml6JDeHrT/bx4=
 go.opentelemetry.io/otel/exporters/prometheus v0.39.0 h1:whAaiHxOatgtKd+w0dOi//1KUxj3KoPINZdtDaDj3IA=
