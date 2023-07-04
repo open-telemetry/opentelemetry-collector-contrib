@@ -1,18 +1,7 @@
-// Copyright 2022 Sumo Logic, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicprocessor
+package sumologicprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 
 import (
 	"context"
@@ -143,8 +132,7 @@ func TestAddCloudNamespaceForLogs(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
 
 			// Act
 			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
@@ -270,8 +258,7 @@ func TestAddCloudNamespaceForMetrics(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
 
 			// Act
 			outputMetrics, err := processor.processMetrics(context.Background(), testCase.createMetrics())
@@ -397,8 +384,7 @@ func TestAddCloudNamespaceForTraces(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newCloudNamespaceConfig(testCase.addCloudNamespace))
 
 			// Act
 			outputTraces, err := processor.processTraces(context.Background(), testCase.createTraces())
@@ -506,8 +492,7 @@ func TestTranslateAttributesForLogs(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
 
 			// Act
 			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
@@ -556,8 +541,7 @@ func TestTranslateAttributesForMetrics(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
 
 			// Act
 			outputMetrics, err := processor.processMetrics(context.Background(), testCase.createMetrics())
@@ -607,8 +591,7 @@ func TestTranslateAttributesForTraces(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateAttributesConfig(testCase.translateAttributes))
 
 			// Act
 			outputTraces, err := processor.processTraces(context.Background(), testCase.createTraces())
@@ -644,8 +627,7 @@ func TestTranslateTelegrafMetrics(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newTranslateTelegrafAttributesConfig(testCase.shouldTranslate))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateTelegrafAttributesConfig(testCase.shouldTranslate))
 
 			// Prepare metrics
 			metrics := pmetric.NewMetrics()
@@ -711,8 +693,7 @@ func TestTranslateDockerMetrics(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newTranslateDockerMetricsConfig(testCase.shouldTranslate))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newTranslateDockerMetricsConfig(testCase.shouldTranslate))
 
 			// Prepare metrics
 			metrics := pmetric.NewMetrics()
@@ -816,8 +797,7 @@ func TestNestingAttributesForLogs(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newNestAttributesConfig(".", true))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newNestAttributesConfig(".", true))
 
 			logs := testCase.createLogs()
 
@@ -910,15 +890,14 @@ func TestNestingAttributesForMetrics(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newNestAttributesConfig(".", true))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newNestAttributesConfig(".", true))
 
 			metrics := testCase.createMetrics()
 
 			resultMetrics, err := processor.processMetrics(context.Background(), metrics)
 			require.NoError(t, err)
 
-			testCase.test(t, pmetric.Metrics(resultMetrics))
+			testCase.test(t, resultMetrics)
 		})
 	}
 }
@@ -1000,8 +979,7 @@ func TestNestingAttributesForTraces(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newNestAttributesConfig(".", true))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newNestAttributesConfig(".", true))
 
 			traces := testCase.createTraces()
 
@@ -1100,8 +1078,7 @@ func TestAggregateAttributesForLogs(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
 
 			// Act
 			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
@@ -1201,8 +1178,7 @@ func TestAggregateAttributesForMetrics(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
 
 			// Act
 			outputMetrics, err := processor.processMetrics(context.Background(), testCase.createMetrics())
@@ -1298,8 +1274,7 @@ func TestAggregateAttributesForTraces(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newAggregateAttributesConfig(testCase.config))
 
 			// Act
 			outputTraces, err := processor.processTraces(context.Background(), testCase.createTraces())
@@ -1324,9 +1299,9 @@ func TestLogFieldsConversionLogs(t *testing.T) {
 				log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 				log.SetSeverityNumber(plog.SeverityNumberInfo)
 				log.SetSeverityText("severity")
-				var spanIDBytes [8]byte = [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
+				var spanIDBytes = [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
 				log.SetSpanID(spanIDBytes)
-				var traceIDBytes [16]byte = [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+				var traceIDBytes = [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 				log.SetTraceID(traceIDBytes)
 				return logs
 			},
@@ -1351,8 +1326,7 @@ func TestLogFieldsConversionLogs(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			// Arrange
-			processor, err := newsumologicProcessor(newProcessorCreateSettings(), newLogFieldsConversionConfig())
-			require.NoError(t, err)
+			processor := newsumologicProcessor(newProcessorCreateSettings(), newLogFieldsConversionConfig())
 
 			// Act
 			outputLogs, err := processor.processLogs(context.Background(), testCase.createLogs())
@@ -1455,8 +1429,8 @@ func newLogFieldsConversionConfig() *Config {
 	config.LogFieldsAttributes = &logFieldAttributesConfig{
 		&logFieldAttribute{Enabled: true, Name: "definitely_not_default_name"},
 		&logFieldAttribute{Enabled: true, Name: SeverityTextAttributeName},
-		&logFieldAttribute{Enabled: true, Name: SpanIdAttributeName},
-		&logFieldAttribute{Enabled: true, Name: TraceIdAttributeName},
+		&logFieldAttribute{Enabled: true, Name: SpanIDAttributeName},
+		&logFieldAttribute{Enabled: true, Name: TraceIDAttributeName},
 	}
 	return config
 }

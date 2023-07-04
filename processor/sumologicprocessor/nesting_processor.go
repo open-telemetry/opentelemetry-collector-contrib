@@ -1,18 +1,7 @@
-// Copyright 2022 Sumo Logic, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicprocessor
+package sumologicprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 
 import (
 	"strings"
@@ -39,7 +28,7 @@ type NestingProcessor struct {
 	squashSingleValues bool
 }
 
-func newNestingProcessor(config *NestingProcessorConfig) (*NestingProcessor, error) {
+func newNestingProcessor(config *NestingProcessorConfig) *NestingProcessor {
 	proc := &NestingProcessor{
 		separator:          config.Separator,
 		enabled:            config.Enabled,
@@ -48,7 +37,7 @@ func newNestingProcessor(config *NestingProcessorConfig) (*NestingProcessor, err
 		squashSingleValues: config.SquashSingleValues,
 	}
 
-	return proc, nil
+	return proc
 }
 
 func (proc *NestingProcessor) processLogs(logs plog.Logs) error {
@@ -164,13 +153,15 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 			newValue, ok := prevValue.Map().Get(keys[i])
 			if ok {
 				prevValue = newValue
-			} else if i == len(keys)-1 {
-				// If we're checking the last key, insert empty value, to which v will be copied.
-				prevValue = prevValue.Map().PutEmpty(keys[i])
 			} else {
-				// If we're not checking the last key, put a map.
-				prevValue = prevValue.Map().PutEmpty(keys[i])
-				prevValue.SetEmptyMap()
+				if i == len(keys)-1 {
+					// If we're checking the last key, insert empty value, to which v will be copied.
+					prevValue = prevValue.Map().PutEmpty(keys[i])
+				} else {
+					// If we're not checking the last key, put a map.
+					prevValue = prevValue.Map().PutEmpty(keys[i])
+					prevValue.SetEmptyMap()
+				}
 			}
 		}
 
@@ -270,22 +261,22 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 
 			val.CopyTo(value)
 			return key
-		} else {
-			// This map doesn't get squashed, but its content might have keys replaced.
-			newMap := pcommon.NewMap()
-			m.Range(func(k string, v pcommon.Value) bool {
-				keySuffix := proc.squashAttribute(v)
-				// If "" was returned, the value was not a one-element map and did not get squashed.
-				if keySuffix == "" {
-					v.CopyTo(newMap.PutEmpty(k))
-				} else {
-					v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
-				}
-
-				return true
-			})
-			newMap.CopyTo(value.Map())
 		}
+
+		// This map doesn't get squashed, but its content might have keys replaced.
+		newMap := pcommon.NewMap()
+		m.Range(func(k string, v pcommon.Value) bool {
+			keySuffix := proc.squashAttribute(v)
+			// If "" was returned, the value was not a one-element map and did not get squashed.
+			if keySuffix == "" {
+				v.CopyTo(newMap.PutEmpty(k))
+			} else {
+				v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
+			}
+
+			return true
+		})
+		newMap.CopyTo(value.Map())
 	}
 
 	return ""
@@ -294,9 +285,8 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 func (proc *NestingProcessor) squashKey(key string, keySuffix string) string {
 	if keySuffix == "" {
 		return key
-	} else {
-		return key + proc.separator + keySuffix
 	}
+	return key + proc.separator + keySuffix
 }
 
 func (proc *NestingProcessor) isEnabled() bool {

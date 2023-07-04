@@ -1,18 +1,7 @@
-// Copyright 2022 Sumo Logic, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicprocessor
+package sumologicprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 
 import (
 	"encoding/hex"
@@ -26,8 +15,8 @@ import (
 const (
 	SeverityNumberAttributeName = "loglevel"
 	SeverityTextAttributeName   = "severitytext"
-	SpanIdAttributeName         = "spanid"
-	TraceIdAttributeName        = "traceid"
+	SpanIDAttributeName         = "spanid"
+	TraceIDAttributeName        = "traceid"
 )
 
 type logFieldAttribute struct {
@@ -38,8 +27,8 @@ type logFieldAttribute struct {
 type logFieldAttributesConfig struct {
 	SeverityNumberAttribute *logFieldAttribute `mapstructure:"severity_number"`
 	SeverityTextAttribute   *logFieldAttribute `mapstructure:"severity_text"`
-	SpanIdAttribute         *logFieldAttribute `mapstructure:"span_id"`
-	TraceIdAttribute        *logFieldAttribute `mapstructure:"trace_id"`
+	SpanIDAttribute         *logFieldAttribute `mapstructure:"span_id"`
+	TraceIDAttribute        *logFieldAttribute `mapstructure:"trace_id"`
 }
 
 // SpanIDToHexOrEmptyString returns a hex string from SpanID.
@@ -94,10 +83,10 @@ type logFieldsConversionProcessor struct {
 	LogFieldsAttributes *logFieldAttributesConfig
 }
 
-func newLogFieldConversionProcessor(LogFieldsAttributes *logFieldAttributesConfig) (*logFieldsConversionProcessor, error) {
+func newLogFieldConversionProcessor(logFieldsAttributes *logFieldAttributesConfig) *logFieldsConversionProcessor {
 	return &logFieldsConversionProcessor{
-		LogFieldsAttributes,
-	}, nil
+		logFieldsAttributes,
+	}
 }
 
 func (proc *logFieldsConversionProcessor) addAttributes(log plog.LogRecord) {
@@ -112,13 +101,13 @@ func (proc *logFieldsConversionProcessor) addAttributes(log plog.LogRecord) {
 		proc.LogFieldsAttributes.SeverityTextAttribute.Enabled {
 		log.Attributes().PutStr(proc.LogFieldsAttributes.SeverityTextAttribute.Name, log.SeverityText())
 	}
-	if _, found := log.Attributes().Get(SpanIdAttributeName); !found &&
-		proc.LogFieldsAttributes.SpanIdAttribute.Enabled {
-		log.Attributes().PutStr(proc.LogFieldsAttributes.SpanIdAttribute.Name, SpanIDToHexOrEmptyString(log.SpanID()))
+	if _, found := log.Attributes().Get(SpanIDAttributeName); !found &&
+		proc.LogFieldsAttributes.SpanIDAttribute.Enabled {
+		log.Attributes().PutStr(proc.LogFieldsAttributes.SpanIDAttribute.Name, SpanIDToHexOrEmptyString(log.SpanID()))
 	}
-	if _, found := log.Attributes().Get(TraceIdAttributeName); !found &&
-		proc.LogFieldsAttributes.TraceIdAttribute.Enabled {
-		log.Attributes().PutStr(proc.LogFieldsAttributes.TraceIdAttribute.Name, TraceIDToHexOrEmptyString(log.TraceID()))
+	if _, found := log.Attributes().Get(TraceIDAttributeName); !found &&
+		proc.LogFieldsAttributes.TraceIDAttribute.Enabled {
+		log.Attributes().PutStr(proc.LogFieldsAttributes.TraceIDAttribute.Name, TraceIDToHexOrEmptyString(log.TraceID()))
 	}
 }
 
@@ -139,12 +128,12 @@ func (proc *logFieldsConversionProcessor) processLogs(logs plog.Logs) error {
 	return nil
 }
 
-func (proc *logFieldsConversionProcessor) processMetrics(metrics pmetric.Metrics) error {
+func (proc *logFieldsConversionProcessor) processMetrics(_ pmetric.Metrics) error {
 	// No-op. Metrics should not be translated.
 	return nil
 }
 
-func (proc *logFieldsConversionProcessor) processTraces(traces ptrace.Traces) error {
+func (proc *logFieldsConversionProcessor) processTraces(_ ptrace.Traces) error {
 	// No-op. Traces should not be translated.
 	return nil
 }
@@ -152,8 +141,8 @@ func (proc *logFieldsConversionProcessor) processTraces(traces ptrace.Traces) er
 func (proc *logFieldsConversionProcessor) isEnabled() bool {
 	return proc.LogFieldsAttributes.SeverityNumberAttribute.Enabled ||
 		proc.LogFieldsAttributes.SeverityTextAttribute.Enabled ||
-		proc.LogFieldsAttributes.SpanIdAttribute.Enabled ||
-		proc.LogFieldsAttributes.TraceIdAttribute.Enabled
+		proc.LogFieldsAttributes.SpanIDAttribute.Enabled ||
+		proc.LogFieldsAttributes.TraceIDAttribute.Enabled
 }
 
 func (*logFieldsConversionProcessor) ConfigPropertyName() string {

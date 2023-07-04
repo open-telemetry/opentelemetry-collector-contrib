@@ -198,11 +198,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/exporter/opensearchexporter"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/exporter/prometheusexporter"
     schedule:
       interval: "weekly"
@@ -629,6 +624,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/spanprocessor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/processor/sumologicprocessor"
     schedule:
       interval: "weekly"
       day: "wednesday"

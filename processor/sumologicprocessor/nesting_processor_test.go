@@ -1,18 +1,7 @@
-// Copyright 2022 Sumo Logic, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicprocessor
+package sumologicprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 
 import (
 	"testing"
@@ -174,13 +163,12 @@ func TestNestingAttributes(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			proc, err := newNestingProcessor(&NestingProcessorConfig{
+			proc := newNestingProcessor(&NestingProcessorConfig{
 				Separator: ".", Enabled: true, Include: testCase.include, Exclude: testCase.exclude, SquashSingleValues: false,
 			})
-			require.NoError(t, err)
 
 			attrs := mapToPcommonMap(testCase.input)
-			err = proc.processAttributes(attrs)
+			err := proc.processAttributes(attrs)
 			require.NoError(t, err)
 
 			expected := mapToPcommonMap(testCase.expected)
@@ -244,13 +232,12 @@ func TestSquashing(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			proc, err := newNestingProcessor(&NestingProcessorConfig{
+			proc := newNestingProcessor(&NestingProcessorConfig{
 				Separator: ".", Enabled: true, Include: []string{}, Exclude: []string{}, SquashSingleValues: true,
 			})
-			require.NoError(t, err)
 
 			attrs := mapToPcommonMap(testCase.input)
-			err = proc.processAttributes(attrs)
+			err := proc.processAttributes(attrs)
 			require.NoError(t, err)
 
 			expected := mapToPcommonMap(testCase.expected)

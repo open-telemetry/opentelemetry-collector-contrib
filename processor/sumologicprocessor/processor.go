@@ -1,18 +1,7 @@
-// Copyright 2022 Sumo Logic, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package sumologicprocessor
+package sumologicprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 
 import (
 	"context"
@@ -39,41 +28,20 @@ type sumologicProcessor struct {
 	subprocessors []sumologicSubprocessor
 }
 
-func newsumologicProcessor(set processor.CreateSettings, config *Config) (*sumologicProcessor, error) {
-	cloudNamespaceProcessor, err := newCloudNamespaceProcessor(config.AddCloudNamespace)
-	if err != nil {
-		return nil, err
-	}
+func newsumologicProcessor(set processor.CreateSettings, config *Config) *sumologicProcessor {
+	cloudNamespaceProcessor := newCloudNamespaceProcessor(config.AddCloudNamespace)
 
-	translateAttributesProcessor, err := newTranslateAttributesProcessor(config.TranslateAttributes)
-	if err != nil {
-		return nil, err
-	}
+	translateAttributesProcessor := newTranslateAttributesProcessor(config.TranslateAttributes)
 
-	translateTelegrafMetricsProcessor, err := newTranslateTelegrafMetricsProcessor(config.TranslateTelegrafAttributes)
-	if err != nil {
-		return nil, err
-	}
+	translateTelegrafMetricsProcessor := newTranslateTelegrafMetricsProcessor(config.TranslateTelegrafAttributes)
 
-	nestingProcessor, err := newNestingProcessor(config.NestAttributes)
-	if err != nil {
-		return nil, err
-	}
+	nestingProcessor := newNestingProcessor(config.NestAttributes)
 
-	aggregateAttributesProcessor, err := newAggregateAttributesProcessor(config.AggregateAttributes)
-	if err != nil {
-		return nil, err
-	}
+	aggregateAttributesProcessor := newAggregateAttributesProcessor(config.AggregateAttributes)
 
-	logFieldsConversionProcessor, err := newLogFieldConversionProcessor(config.LogFieldsAttributes)
-	if err != nil {
-		return nil, err
-	}
+	logFieldsConversionProcessor := newLogFieldConversionProcessor(config.LogFieldsAttributes)
 
-	translateDockerMetricsProcessor, err := newTranslateDockerMetricsProcessor(config.TranslateDockerMetrics)
-	if err != nil {
-		return nil, err
-	}
+	translateDockerMetricsProcessor := newTranslateDockerMetricsProcessor(config.TranslateDockerMetrics)
 
 	processors := []sumologicSubprocessor{
 		cloudNamespaceProcessor,
@@ -90,10 +58,10 @@ func newsumologicProcessor(set processor.CreateSettings, config *Config) (*sumol
 		subprocessors: processors,
 	}
 
-	return processor, nil
+	return processor
 }
 
-func (processor *sumologicProcessor) start(_ context.Context, host component.Host) error {
+func (processor *sumologicProcessor) start(_ context.Context, _ component.Host) error {
 	procs := processor.subprocessors
 	processor.logger.Info(
 		"Processor sumologic has started.",
@@ -116,29 +84,29 @@ func (processor *sumologicProcessor) processLogs(_ context.Context, logs plog.Lo
 	for i := 0; i < len(processor.subprocessors); i++ {
 		subprocessor := processor.subprocessors[i]
 		if err := subprocessor.processLogs(logs); err != nil {
-			return logs, fmt.Errorf("failed to process logs for property %s: %v", subprocessor.ConfigPropertyName(), err)
+			return logs, fmt.Errorf("failed to process logs for property %s: %w", subprocessor.ConfigPropertyName(), err)
 		}
 	}
 
 	return logs, nil
 }
 
-func (processor *sumologicProcessor) processMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
+func (processor *sumologicProcessor) processMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < len(processor.subprocessors); i++ {
 		subprocessor := processor.subprocessors[i]
 		if err := subprocessor.processMetrics(metrics); err != nil {
-			return metrics, fmt.Errorf("failed to process metrics for property %s: %v", subprocessor.ConfigPropertyName(), err)
+			return metrics, fmt.Errorf("failed to process metrics for property %s: %w", subprocessor.ConfigPropertyName(), err)
 		}
 	}
 
 	return metrics, nil
 }
 
-func (processor *sumologicProcessor) processTraces(ctx context.Context, traces ptrace.Traces) (ptrace.Traces, error) {
+func (processor *sumologicProcessor) processTraces(_ context.Context, traces ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < len(processor.subprocessors); i++ {
 		subprocessor := processor.subprocessors[i]
 		if err := subprocessor.processTraces(traces); err != nil {
-			return traces, fmt.Errorf("failed to process traces for property %s: %v", subprocessor.ConfigPropertyName(), err)
+			return traces, fmt.Errorf("failed to process traces for property %s: %w", subprocessor.ConfigPropertyName(), err)
 		}
 	}
 
