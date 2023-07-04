@@ -31,6 +31,12 @@ resourceMetrics:
                 - asInt: "456"
             name: k8s.node.allocatable_memory
             unit: By
+          - description: How many pods remaining the node can allocate
+            gauge:
+              dataPoints:
+                - asInt: "12"
+            name: k8s.node.allocatable_pods
+            unit: "{pods}"
           - description: Whether this node is DiskPressure (1), not DiskPressure (0) or in an unknown state (-1)
             gauge:
               dataPoints:
@@ -61,6 +67,18 @@ resourceMetrics:
                 - asInt: "1"
             name: k8s.node.condition_ready
             unit: "1"
+          - gauge:
+              dataPoints:
+                - asInt: "-1"
+            name: k8s.node.condition_out_of_disk
+          - gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.node.allocatable_hugepages_1_gi
+          - gauge:
+              dataPoints:
+                - asInt: "2048"
+            name: k8s.node.allocatable_hugepages_2_mi
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

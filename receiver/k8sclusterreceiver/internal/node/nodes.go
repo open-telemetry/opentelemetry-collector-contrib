@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/iancoleman/strcase"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
@@ -46,23 +46,30 @@ func Transform(node *corev1.Node) *corev1.Node {
 func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string) pmetric.Metrics {
 	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
+	customMetrics := pmetric.NewMetricSlice()
 
 	// Adding 'node condition type' metrics
 	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
 		v1NodeConditionTypeValue := corev1.NodeConditionType(nodeConditionTypeValue)
+		v := nodeConditionValue(node, v1NodeConditionTypeValue)
 		switch v1NodeConditionTypeValue {
 		case corev1.NodeReady:
-			mb.RecordK8sNodeConditionReadyDataPoint(ts, nodeConditionValue(node, v1NodeConditionTypeValue))
+			mb.RecordK8sNodeConditionReadyDataPoint(ts, v)
 		case corev1.NodeMemoryPressure:
-			mb.RecordK8sNodeConditionMemoryPressureDataPoint(ts, nodeConditionValue(node, v1NodeConditionTypeValue))
+			mb.RecordK8sNodeConditionMemoryPressureDataPoint(ts, v)
 		case corev1.NodeDiskPressure:
-			mb.RecordK8sNodeConditionDiskPressureDataPoint(ts, nodeConditionValue(node, v1NodeConditionTypeValue))
+			mb.RecordK8sNodeConditionDiskPressureDataPoint(ts, v)
 		case corev1.NodeNetworkUnavailable:
-			mb.RecordK8sNodeConditionNetworkUnavailableDataPoint(ts, nodeConditionValue(node, v1NodeConditionTypeValue))
+			mb.RecordK8sNodeConditionNetworkUnavailableDataPoint(ts, v)
 		case corev1.NodePIDPressure:
-			mb.RecordK8sNodeConditionPidPressureDataPoint(ts, nodeConditionValue(node, v1NodeConditionTypeValue))
+			mb.RecordK8sNodeConditionPidPressureDataPoint(ts, v)
 		default:
-			set.Logger.Warn("unknown node condition type", zap.String("conditionType", nodeConditionTypeValue))
+			customMetric := customMetrics.AppendEmpty()
+			customMetric.SetName(getNodeConditionMetric(nodeConditionTypeValue))
+			g := customMetric.SetEmptyGauge()
+			dp := g.DataPoints().AppendEmpty()
+			dp.SetIntValue(v)
+			dp.SetTimestamp(ts)
 		}
 	}
 
@@ -86,11 +93,20 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 			mb.RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts, quantity.Value())
 		case corev1.ResourceStorage:
 			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, quantity.Value())
+		case corev1.ResourcePods:
+			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, quantity.Value())
 		default:
-			set.Logger.Warn("unknown node condition type", zap.Any("conditionType", v1NodeAllocatableTypeValue))
+			customMetric := customMetrics.AppendEmpty()
+			customMetric.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
+			g := customMetric.SetEmptyGauge()
+			dp := g.DataPoints().AppendEmpty()
+			dp.SetIntValue(quantity.Value())
+			dp.SetTimestamp(ts)
 		}
 	}
-	return mb.Emit(imetadata.WithK8sNodeUID(string(node.UID)), imetadata.WithK8sNodeName(node.Name), imetadata.WithOpencensusResourcetype("k8s"))
+	m := mb.Emit(imetadata.WithK8sNodeUID(string(node.UID)), imetadata.WithK8sNodeName(node.Name), imetadata.WithOpencensusResourcetype("k8s"))
+	customMetrics.MoveAndAppendTo(m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics())
+	return m
 
 }
 
@@ -125,4 +141,12 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 			Metadata:      meta,
 		},
 	}
+}
+
+func getNodeConditionMetric(nodeConditionTypeValue string) string {
+	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
+}
+
+func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
+	return fmt.Sprintf("k8s.node.allocatable_%s", strcase.ToSnake(nodeAllocatableTypeValue))
 }
