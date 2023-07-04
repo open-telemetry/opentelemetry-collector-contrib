@@ -1,5 +1,9 @@
 server:
   endpoint: ws://127.0.0.1:4320/v1/opamp
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
 
 agent:
   executable: ../../bin/otelcontribcol_linux_amd64

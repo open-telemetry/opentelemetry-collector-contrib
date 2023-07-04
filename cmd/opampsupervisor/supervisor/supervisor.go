@@ -155,7 +155,11 @@ func (s *Supervisor) loadConfig(configFile string) error {
 		return err
 	}
 
-	if err := k.Unmarshal("", &s.config); err != nil {
+	decodeConf := koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	}
+
+	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
 		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
 
@@ -168,6 +172,75 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	s.agentVersion = "1.0.0"
 
 	return nil
+}
+
+func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
+	var supportedCapabilities protobufs.AgentCapabilities
+
+	if c := s.config.Capabilities; c != nil {
+		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+		}
+		if c.AcceptsOtherConnectionSettings != nil && *c.AcceptsOtherConnectionSettings {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOtherConnectionSettings
+		}
+		if c.AcceptsPackages != nil && *c.AcceptsPackages {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
+		}
+		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
+		}
+
+		// AcceptsRestartCommand is set if unspecified or explicitly set to true.
+		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		} else if c.AcceptsRestartCommand == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		}
+
+		// ReportsEffectiveConfig is set if unspecified or explicitly set to true.
+		if c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
+		} else if c.ReportsEffectiveConfig == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
+		}
+
+		// ReportsHealth is set if unspecified or explicitly set to true.
+		if c.ReportsHealth != nil && *c.ReportsHealth {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
+		} else if c.ReportsHealth == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
+		}
+
+		// ReportsOwnLogs is set if unspecified or explicitly set to true.
+		if c.ReportsOwnLogs != nil && *c.ReportsOwnLogs {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs
+		} else if c.ReportsOwnLogs == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs
+		}
+
+		// ReportsOwnMetrics is set if unspecified or explicitly set to true.
+		if c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
+		} else if c.ReportsOwnMetrics == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
+		}
+
+		if c.ReportsOwnTraces != nil && *c.ReportsOwnTraces {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
+		}
+		if c.ReportsPackageStatuses != nil && *c.ReportsPackageStatuses {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
+		}
+		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+		}
+		if c.ReportsStatus != nil && *c.ReportsStatus {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus
+		}
+	}
+
+	return supportedCapabilities
 }
 
 func (s *Supervisor) startOpAMP() error {
@@ -211,13 +284,9 @@ func (s *Supervisor) startOpAMP() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
-		// TODO: Make capabilities configurable
-		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
+		Capabilities: s.Capabilities(),
 	}
+	s.logger.Debug("Using capabilities", zap.String("capabilities", s.Capabilities().String()))
 	err := s.opampClient.SetAgentDescription(s.createAgentDescription())
 	if err != nil {
 		return err
