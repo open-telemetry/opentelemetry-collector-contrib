@@ -73,6 +73,12 @@ func TestMarshalerOkStructure(t *testing.T) {
 	rls.Resource().Attributes().PutStr("_sourceCategory", "testcategory")
 	rls.Resource().Attributes().PutStr("_sourceHost", "testHost")
 	rls.Resource().Attributes().PutStr("_sourceName", "testSourceName")
+	rls.Resource().Attributes().PutStr("42", "the question")
+	slice := rls.Resource().Attributes().PutEmptySlice("slice")
+	pcommon.NewValueInt(13).CopyTo(slice.AppendEmpty())
+	m := pcommon.NewValueMap()
+	m.Map().PutBool("b", true)
+	m.CopyTo(slice.AppendEmpty())
 
 	sl := rls.ScopeLogs().AppendEmpty()
 	const recordNum = 0
@@ -88,7 +94,7 @@ func TestMarshalerOkStructure(t *testing.T) {
 	buf, err := marshaler.MarshalLogs(logs)
 	assert.NoError(t, err)
 	expectedEntry := "{\"date\": \"1970-01-01 00:00:00 +0000 UTC\",\"sourceName\":\"testSourceName\",\"sourceHost\":\"testHost\""
-	expectedEntry += ",\"sourceCategory\":\"testcategory\",\"fields\":{},\"message\":{\"key\":\"value\",\"log\":\"entry1\"}}\n"
+	expectedEntry += ",\"sourceCategory\":\"testcategory\",\"fields\":{\"42\":\"the question\",\"slice\":[13,{\"b\":true}]},\"message\":{\"key\":\"value\",\"log\":\"entry1\"}}\n"
 	assert.Equal(t, expectedEntry, string(buf))
 }
 
@@ -122,10 +128,10 @@ func TestAttributeValueToString(t *testing.T) {
 			// "     -> <key>: <type>(<value>)\n"
 			// Type names: https://github.com/open-telemetry/opentelemetry-collector/blob/ed8547a8e5d6ed527e6d54136cb2e137b954f888/pdata/pcommon/value.go#L32
 			value: pcommon.NewValueMap(),
-			result: "{\n" +
-				"     -> bool: Bool(false)\n" +
-				"     -> map: Map({})\n" +
-				"     -> string: Str(abc)\n" +
+			result: "{" +
+				"\"bool\":false," +
+				"\"map\":{}," +
+				"\"string\":\"abc\"" +
 				"}",
 			init: func(v pcommon.Value) {
 				m := v.Map()
@@ -155,6 +161,8 @@ func TestAttributeValueToString(t *testing.T) {
 		if testCase.init != nil {
 			testCase.init(testCase.value)
 		}
-		assert.Equal(t, attributeValueToString(testCase.value), testCase.result)
+		val, err := attributeValueToString(testCase.value)
+		assert.NoError(t, err)
+		assert.Equal(t, val, testCase.result)
 	}
 }

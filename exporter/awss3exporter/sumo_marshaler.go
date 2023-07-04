@@ -38,26 +38,26 @@ func logEntry(buf *bytes.Buffer, format string, a ...interface{}) {
 	buf.WriteString("\n")
 }
 
-func attributeValueToString(v pcommon.Value) string {
+func attributeValueToString(v pcommon.Value) (string, error) {
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
-		return v.Str()
+		return v.Str(), nil
 	case pcommon.ValueTypeBool:
-		return strconv.FormatBool(v.Bool())
+		return strconv.FormatBool(v.Bool()), nil
 	case pcommon.ValueTypeBytes:
-		return bytesToString(v.Bytes())
+		return bytesToString(v.Bytes()), nil
 	case pcommon.ValueTypeDouble:
-		return strconv.FormatFloat(v.Double(), 'f', -1, 64)
+		return strconv.FormatFloat(v.Double(), 'f', -1, 64), nil
 	case pcommon.ValueTypeInt:
-		return strconv.FormatInt(v.Int(), 10)
+		return strconv.FormatInt(v.Int(), 10), nil
 	case pcommon.ValueTypeSlice:
 		return sliceToString(v.Slice())
 	case pcommon.ValueTypeMap:
 		return mapToString(v.Map())
 	case pcommon.ValueTypeEmpty:
-		return ""
+		return "", nil
 	default:
-		return fmt.Sprintf("<Unknown OpenTelemetry attribute value type %q>", v.Type())
+		return "", fmt.Errorf("unknown OpenTelemetry attribute value type: %q", v.Type())
 	}
 }
 
@@ -76,31 +76,32 @@ func bytesToString(bs pcommon.ByteSlice) string {
 	return b.String()
 }
 
-func sliceToString(s pcommon.Slice) string {
+func sliceToString(s pcommon.Slice) (string, error) {
 	var b strings.Builder
 	b.WriteByte('[')
 	for i := 0; i < s.Len(); i++ {
+		v, err := attributeValueToString(s.At(i))
+		if err != nil {
+			return "", err
+		}
+
 		if i < s.Len()-1 {
-			fmt.Fprintf(&b, "%s, ", attributeValueToString(s.At(i)))
+			fmt.Fprintf(&b, "%s, ", v)
 		} else {
-			b.WriteString(attributeValueToString(s.At(i)))
+			b.WriteString(v)
 		}
 	}
 
 	b.WriteByte(']')
-	return b.String()
+	return b.String(), nil
 }
 
-func mapToString(m pcommon.Map) string {
-	var b strings.Builder
-	b.WriteString("{\n")
+func mapToString(m pcommon.Map) (string, error) {
+	jsonString := new(bytes.Buffer)
+	enc := json.NewEncoder(jsonString)
+	err := enc.Encode(m.AsRaw())
 
-	m.Range(func(k string, v pcommon.Value) bool {
-		fmt.Fprintf(&b, "     -> %s: %s(%s)\n", k, v.Type(), v.AsString())
-		return true
-	})
-	b.WriteByte('}')
-	return b.String()
+	return strings.Trim(jsonString.String(), "\n"), err
 }
 
 const (
@@ -114,18 +115,44 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		sourceCategory, exists := rl.Resource().Attributes().Get(SourceCategoryKey)
+		ra := rl.Resource().Attributes()
+		sourceCategory, exists := ra.Get(SourceCategoryKey)
 		if !exists {
 			return nil, errors.New("_sourceCategory attribute does not exists")
 		}
-		sourceHost, exists := rl.Resource().Attributes().Get(SourceHostKey)
+		sourceHost, exists := ra.Get(SourceHostKey)
 		if !exists {
 			return nil, errors.New("_sourceHost attribute does not exists")
 		}
-		sourceName, exists := rl.Resource().Attributes().Get(SourceNameKey)
+		sourceName, exists := ra.Get(SourceNameKey)
 		if !exists {
 			return nil, errors.New("_sourceName attribute does not exists")
 		}
+
+		// Remove the source attributes so that they won't be included in "fields" value.
+		sc, err := attributeValueToString(sourceCategory)
+		if err != nil {
+			return nil, err
+		}
+		ra.Remove(SourceCategoryKey)
+
+		sh, err := attributeValueToString(sourceHost)
+		if err != nil {
+			return nil, err
+		}
+		ra.Remove(SourceHostKey)
+
+		sn, err := attributeValueToString(sourceName)
+		if err != nil {
+			return nil, err
+		}
+		ra.Remove(SourceNameKey)
+
+		fields, err := mapToString(ra)
+		if err != nil {
+			return nil, err
+		}
+
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
@@ -139,8 +166,8 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 					return nil, err
 				}
 
-				logEntry(&buf, "{\"date\": \"%s\",\"sourceName\":\"%s\",\"sourceHost\":\"%s\",\"sourceCategory\":\"%s\",\"fields\":{},\"message\":%s}",
-					dateVal, attributeValueToString(sourceName), attributeValueToString(sourceHost), attributeValueToString(sourceCategory), message)
+				logEntry(&buf, "{\"date\": \"%s\",\"sourceName\":\"%s\",\"sourceHost\":\"%s\",\"sourceCategory\":\"%s\",\"fields\":%s,\"message\":%s}",
+					dateVal, sn, sh, sc, fields, message)
 			}
 		}
 	}
