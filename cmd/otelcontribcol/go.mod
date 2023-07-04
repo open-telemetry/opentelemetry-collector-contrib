@@ -33,7 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.80.0-fn.patch.1
@@ -42,13 +42,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.80.0-fn.patch.1
@@ -56,7 +56,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.80.0-fn.patch.1
@@ -70,10 +70,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.80.0-fn.patch.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.80.0-fn.patch.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.80.0-fn.patch.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.80.0-fn.patch.1
@@ -81,15 +81,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.80.0-fn.patch.1
@@ -108,17 +108,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.80.0-fn.patch.1
@@ -126,7 +126,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.80.0-fn.patch.1
@@ -146,13 +146,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver v0.80.0-fn.patch.1
@@ -180,7 +180,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.80.0-fn.patch.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.80.0-fn.patch.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.80.0-fn.patch.1
 	github.com/prometheus/prometheus v0.43.1
 	github.com/stretchr/testify v1.8.4
@@ -503,36 +503,36 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.80.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.80.0-fn.patch.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
