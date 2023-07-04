@@ -167,7 +167,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.80.0
-	github.com/shirou/gopsutil/v3 v3.23.5
 	go.opentelemetry.io/collector v0.80.1-0.20230629234129-50c94c941969
 	go.opentelemetry.io/collector/exporter v0.80.1-0.20230629234129-50c94c941969
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.80.1-0.20230629234129-50c94c941969
@@ -553,6 +552,7 @@ require (
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.5.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
