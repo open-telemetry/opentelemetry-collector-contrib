@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/servi
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.80.0-fn.patch.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.80.0
 	go.opentelemetry.io/collector/connector v0.80.0

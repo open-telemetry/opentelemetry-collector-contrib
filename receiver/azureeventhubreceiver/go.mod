@@ -6,9 +6,9 @@ require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.80.0-fn.patch.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.80.0-fn.patch.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.80.0-fn.patch.1
 	github.com/relvacode/iso8601 v1.3.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.80.0
@@ -60,8 +60,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.80.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.80.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.80.0-fn.patch.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.80.0-fn.patch.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.16.0 // indirect

@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awspr
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.80.0-fn.patch.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.80.0-fn.patch.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.80.0
 	go.opentelemetry.io/collector/config/confignet v0.80.0
