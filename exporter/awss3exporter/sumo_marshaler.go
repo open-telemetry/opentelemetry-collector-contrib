@@ -5,6 +5,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -14,6 +15,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+)
+
+const (
+	logBodyKey = "log"
 )
 
 type SumoMarshaler struct {
@@ -128,14 +133,32 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
 				dateVal := lr.ObservedTimestamp()
-				body := attributeValueToString(lr.Body())
 
-				logEntry(&buf, "{\"date\": \"%s\",\"sourceName\":\"%s\",\"sourceHost\":\"%s\",\"sourceCategory\":\"%s\",\"fields\":{},\"message\":\"%s\"}",
-					dateVal, attributeValueToString(sourceName), attributeValueToString(sourceHost), attributeValueToString(sourceCategory), body)
+				message, err := getMessageJSON(lr)
+				if err != nil {
+					return nil, err
+				}
+
+				logEntry(&buf, "{\"date\": \"%s\",\"sourceName\":\"%s\",\"sourceHost\":\"%s\",\"sourceCategory\":\"%s\",\"fields\":{},\"message\":%s}",
+					dateVal, attributeValueToString(sourceName), attributeValueToString(sourceHost), attributeValueToString(sourceCategory), message)
 			}
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+func getMessageJSON(lr plog.LogRecord) (string, error) {
+	// The "message" fields is a JSON created from combining the actual log body and log-level attributes,
+	// where the log body is stored under "log" key.
+	// More info:
+	// https://help.sumologic.com/docs/send-data/opentelemetry-collector/data-source-configurations/additional-configurations-reference/#mapping-opentelemetry-concepts-to-sumo-logic
+	message := new(bytes.Buffer)
+	enc := json.NewEncoder(message)
+
+	lr.Body().CopyTo(lr.Attributes().PutEmpty(logBodyKey))
+	err := enc.Encode(lr.Attributes().AsRaw())
+
+	return strings.Trim(message.String(), "\n"), err
 }
 
 func (SumoMarshaler) MarshalTraces(_ ptrace.Traces) ([]byte, error) {

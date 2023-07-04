@@ -81,13 +81,14 @@ func TestMarshalerOkStructure(t *testing.T) {
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr("entry1")
 	logRecord.SetTimestamp(ts)
+	logRecord.Attributes().PutStr("key", "value")
 
 	marshaler := &SumoMarshaler{"txt"}
 	require.NotNil(t, marshaler)
 	buf, err := marshaler.MarshalLogs(logs)
 	assert.NoError(t, err)
 	expectedEntry := "{\"date\": \"1970-01-01 00:00:00 +0000 UTC\",\"sourceName\":\"testSourceName\",\"sourceHost\":\"testHost\""
-	expectedEntry += ",\"sourceCategory\":\"testcategory\",\"fields\":{},\"message\":\"entry1\"}\n"
+	expectedEntry += ",\"sourceCategory\":\"testcategory\",\"fields\":{},\"message\":{\"key\":\"value\",\"log\":\"entry1\"}}\n"
 	assert.Equal(t, expectedEntry, string(buf))
 }
 
