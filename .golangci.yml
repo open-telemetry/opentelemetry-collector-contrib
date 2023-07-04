@@ -203,9 +203,6 @@ issues:
     - path: servicegraphprocessor
       linters:
         - exhaustive
-    - path: spanprocessor
-      linters:
-        - exhaustive
     - path: resourcedetectionprocessor
       linters:
         - exhaustive
