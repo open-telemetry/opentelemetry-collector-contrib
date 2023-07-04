@@ -3,11 +3,11 @@ dist:
   name: otelcontribcol
   description: Local OpenTelemetry Collector Contrib binary, testing only.
   version: 0.80.0-dev
-  otelcol_version: 0.80.1-0.20230629144634-c3f70bd1f8ea
+  otelcol_version: 0.80.1-0.20230629234129-50c94c941969
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.80.1-0.20230629144634-c3f70bd1f8ea
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.80.1-0.20230629144634-c3f70bd1f8ea
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.80.1-0.20230629234129-50c94c941969
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.80.1-0.20230629234129-50c94c941969
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.80.0
@@ -31,9 +31,9 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.80.1-0.20230629144634-c3f70bd1f8ea
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.80.1-0.20230629144634-c3f70bd1f8ea
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.80.1-0.20230629144634-c3f70bd1f8ea
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.80.1-0.20230629234129-50c94c941969
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.80.1-0.20230629234129-50c94c941969
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.80.1-0.20230629234129-50c94c941969
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.80.0
@@ -81,8 +81,8 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.80.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.80.1-0.20230629144634-c3f70bd1f8ea
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.80.1-0.20230629144634-c3f70bd1f8ea
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.80.1-0.20230629234129-50c94c941969
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.80.1-0.20230629234129-50c94c941969
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.80.0
@@ -106,7 +106,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor v0.80.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.80.1-0.20230629144634-c3f70bd1f8ea
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.80.1-0.20230629234129-50c94c941969
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.80.0
@@ -196,7 +196,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.80.0
 
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.80.1-0.20230629144634-c3f70bd1f8ea
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.80.1-0.20230629234129-50c94c941969
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.80.0
