@@ -18,10 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
-<<<<<<< HEAD:processor/sumologicschemaprocessor/config_test.go
-=======
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor/internal/metadata"
->>>>>>> 72356b3064 (chore: rename sumologicschemaprocessor to sumologicprocessor):processor/sumologicprocessor/config_test.go
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -33,16 +31,16 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	factories.Processors[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors[component.NewID(typeStr)]
+	p0 := cfg.Processors[component.NewID(metadata.Type)]
 	assert.Equal(t, p0, factory.CreateDefaultConfig())
 
-	p1 := cfg.Processors[component.NewIDWithName(typeStr, "disabled-cloud-namespace")]
+	p1 := cfg.Processors[component.NewIDWithName(metadata.Type, "disabled-cloud-namespace")]
 
 	assert.Equal(t, p1,
 		&Config{
@@ -66,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p2 := cfg.Processors[component.NewIDWithName(typeStr, "disabled-attribute-translation")]
+	p2 := cfg.Processors[component.NewIDWithName(metadata.Type, "disabled-attribute-translation")]
 
 	assert.Equal(t, p2,
 		&Config{
@@ -90,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p3 := cfg.Processors[component.NewIDWithName(typeStr, "disabled-telegraf-attribute-translation")]
+	p3 := cfg.Processors[component.NewIDWithName(metadata.Type, "disabled-telegraf-attribute-translation")]
 
 	assert.Equal(t, p3,
 		&Config{
@@ -114,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p4 := cfg.Processors[component.NewIDWithName(typeStr, "enabled-nesting")]
+	p4 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-nesting")]
 
 	assert.Equal(t, p4,
 		&Config{
@@ -138,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p5 := cfg.Processors[component.NewIDWithName(typeStr, "aggregate-attributes")]
+	p5 := cfg.Processors[component.NewIDWithName(metadata.Type, "aggregate-attributes")]
 
 	assert.Equal(t, p5,
 		&Config{
@@ -171,7 +169,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p6 := cfg.Processors[component.NewIDWithName(typeStr, "enabled-severity-number-attribute")]
+	p6 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-severity-number-attribute")]
 
 	assert.Equal(t, p6,
 		&Config{
@@ -195,7 +193,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p7 := cfg.Processors[component.NewIDWithName(typeStr, "enabled-severity-text-attribute")]
+	p7 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-severity-text-attribute")]
 
 	assert.Equal(t, p7,
 		&Config{
@@ -219,7 +217,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p8 := cfg.Processors[component.NewIDWithName(typeStr, "enabled-span-id-attribute")]
+	p8 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-span-id-attribute")]
 
 	assert.Equal(t, p8,
 		&Config{
@@ -243,7 +241,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p9 := cfg.Processors[component.NewIDWithName(typeStr, "enabled-trace-id-attribute")]
+	p9 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-trace-id-attribute")]
 
 	assert.Equal(t, p9,
 		&Config{
@@ -267,7 +265,7 @@ func TestLoadConfig(t *testing.T) {
 			TranslateDockerMetrics: false,
 		})
 
-	p10 := cfg.Processors[component.NewIDWithName(typeStr, "enabled-docker-metrics-translation")]
+	p10 := cfg.Processors[component.NewIDWithName(metadata.Type, "enabled-docker-metrics-translation")]
 
 	assert.Equal(t, p10,
 		&Config{

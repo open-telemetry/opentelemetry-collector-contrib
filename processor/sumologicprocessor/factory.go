@@ -11,26 +11,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+//go:generate mdatagen metadata.yaml
 
 package sumologicprocessor
 
 import (
 	"context"
 
-<<<<<<< HEAD:processor/sumologicschemaprocessor/factory.go
-=======
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor/internal/metadata"
->>>>>>> 72356b3064 (chore: rename sumologicschemaprocessor to sumologicprocessor):processor/sumologicprocessor/factory.go
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr        = "sumologic_schema"
-	stabilityLevel = component.StabilityLevelBeta
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -38,11 +32,11 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // NewFactory returns a new factory for the processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stabilityLevel),
-		processor.WithMetrics(createMetricsProcessor, stabilityLevel),
-		processor.WithLogs(createLogsProcessor, stabilityLevel),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 

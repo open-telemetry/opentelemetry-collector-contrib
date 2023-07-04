@@ -1,8 +1,4 @@
-<<<<<<< HEAD:processor/sumologicschemaprocessor/go.mod
-module github.com/astencel-sumo/sumologicschemaprocessor
-=======
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
->>>>>>> 72356b3064 (chore: rename sumologicschemaprocessor to sumologicprocessor):processor/sumologicprocessor/go.mod
 
 go 1.19
 

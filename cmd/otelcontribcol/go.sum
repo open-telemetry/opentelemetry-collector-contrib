@@ -1655,6 +1655,8 @@ go.opentelemetry.io/collector/extension/zpagesextension v0.88.1-0.20231026220224
 go.opentelemetry.io/collector/extension/zpagesextension v0.88.1-0.20231026220224-6405e152a2d9/go.mod h1:8LPmV8UkQgDAfNaAizQqLzYnYibzQv81eBGKv0Mk6wU=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231026220224-6405e152a2d9 h1:luvDPu+FNy6LIylBOO8PH/ca6ym7JKAdMe1J1aJbsF4=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0017.0.20231026220224-6405e152a2d9/go.mod h1:fLmJMf1AoHttkF8p5oJAc4o5ZpHu8yO5XYJ7gbLCLzo=
+go.opentelemetry.io/collector/model v0.50.0 h1:1wt8pQ4O6GaUeYEaR+dh3zHmYsFicduF2bbPGMZeSKk=
+go.opentelemetry.io/collector/model v0.50.0/go.mod h1:vKpC0JMtrL7g9tUHmzcQqd8rEbnahKVdTWZSVO7x3Ms=
 go.opentelemetry.io/collector/otelcol v0.88.1-0.20231026220224-6405e152a2d9 h1:1xwiAV3ld5at8QCIUtHoUBK1DWijGydatUq6mkaI4S4=
 go.opentelemetry.io/collector/otelcol v0.88.1-0.20231026220224-6405e152a2d9/go.mod h1:m4m69T9SB+SzHzoSfu97KGQePxSjQPFPron4LoLd07k=
 go.opentelemetry.io/collector/pdata v1.0.0-rcv0017.0.20231026220224-6405e152a2d9 h1:TVYPzf0ZwFDTSoQ6gPk4lpQgVK4g43cWYuo710E0RHI=
