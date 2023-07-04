@@ -176,9 +176,6 @@ issues:
     - path: statsdreceiver
       linters:
         - exhaustive
-    - path: attributesprocessor
-      linters:
-        - exhaustive
     - path: cumulativetodeltaprocessor
       linters:
         - exhaustive
