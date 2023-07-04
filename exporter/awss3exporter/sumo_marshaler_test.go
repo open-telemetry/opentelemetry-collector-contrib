@@ -17,7 +17,7 @@ func TestMarshalerMissingAttributes(t *testing.T) {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	rl.ScopeLogs().AppendEmpty()
-	marshaler := &SumoMarshaler{"txt"}
+	marshaler := &sumoMarshaler{}
 	require.NotNil(t, marshaler)
 	_, err := marshaler.MarshalLogs(logs)
 	assert.Error(t, err)
@@ -28,7 +28,7 @@ func TestMarshalerMissingSourceHost(t *testing.T) {
 	rls := logs.ResourceLogs().AppendEmpty()
 	rls.Resource().Attributes().PutStr("_sourceCategory", "testcategory")
 
-	marshaler := &SumoMarshaler{"txt"}
+	marshaler := &sumoMarshaler{}
 	require.NotNil(t, marshaler)
 	_, err := marshaler.MarshalLogs(logs)
 	assert.Error(t, err)
@@ -41,7 +41,7 @@ func TestMarshalerMissingScopedLogs(t *testing.T) {
 	rls.Resource().Attributes().PutStr("_sourceHost", "testHost")
 	rls.Resource().Attributes().PutStr("_sourceName", "testName")
 
-	marshaler := &SumoMarshaler{"txt"}
+	marshaler := &sumoMarshaler{}
 	require.NotNil(t, marshaler)
 	_, err := marshaler.MarshalLogs(logs)
 	assert.NoError(t, err)
@@ -61,7 +61,7 @@ func TestMarshalerMissingSourceName(t *testing.T) {
 	logRecord.Body().SetStr("entry1")
 	logRecord.SetTimestamp(ts)
 
-	marshaler := &SumoMarshaler{"txt"}
+	marshaler := &sumoMarshaler{}
 	require.NotNil(t, marshaler)
 	_, err := marshaler.MarshalLogs(logs)
 	assert.Error(t, err)
@@ -89,12 +89,36 @@ func TestMarshalerOkStructure(t *testing.T) {
 	logRecord.SetTimestamp(ts)
 	logRecord.Attributes().PutStr("key", "value")
 
-	marshaler := &SumoMarshaler{"txt"}
+	marshaler := &sumoMarshaler{}
 	require.NotNil(t, marshaler)
 	buf, err := marshaler.MarshalLogs(logs)
 	assert.NoError(t, err)
 	expectedEntry := "{\"date\": \"1970-01-01 00:00:00 +0000 UTC\",\"sourceName\":\"testSourceName\",\"sourceHost\":\"testHost\""
 	expectedEntry += ",\"sourceCategory\":\"testcategory\",\"fields\":{\"42\":\"the question\",\"slice\":[13,{\"b\":true}]},\"message\":{\"key\":\"value\",\"log\":\"entry1\"}}\n"
+	assert.Equal(t, expectedEntry, string(buf))
+}
+
+func TestMarshalerQuotes(t *testing.T) {
+	logs := plog.NewLogs()
+	rls := logs.ResourceLogs().AppendEmpty()
+	rls.Resource().Attributes().PutStr("_sourceCategory", `"foo"bar"`)
+	rls.Resource().Attributes().PutStr("_sourceHost", "testHost")
+	rls.Resource().Attributes().PutStr("_sourceName", "testSourceName")
+
+	sl := rls.ScopeLogs().AppendEmpty()
+	const recordNum = 0
+
+	ts := pcommon.Timestamp(int64(recordNum) * time.Millisecond.Nanoseconds())
+	logRecord := sl.LogRecords().AppendEmpty()
+	logRecord.Body().SetStr("entry1")
+	logRecord.SetTimestamp(ts)
+
+	marshaler := &sumoMarshaler{}
+	require.NotNil(t, marshaler)
+	buf, err := marshaler.MarshalLogs(logs)
+	assert.NoError(t, err)
+	expectedEntry := "{\"date\": \"1970-01-01 00:00:00 +0000 UTC\",\"sourceName\":\"testSourceName\",\"sourceHost\":\"testHost\""
+	expectedEntry += ",\"sourceCategory\":\"\\\"foo\\\"bar\\\"\",\"fields\":{},\"message\":{\"log\":\"entry1\"}}\n"
 	assert.Equal(t, expectedEntry, string(buf))
 }
 
