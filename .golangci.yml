@@ -293,9 +293,6 @@ issues:
     - path: k8sconfig
       linters:
         - exhaustive
-    - path: pdatatest
-      linters:
-        - exhaustive
     - path: ottl
       linters:
         - exhaustive
