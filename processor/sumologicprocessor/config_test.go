@@ -18,6 +18,10 @@ import (
 	"path/filepath"
 	"testing"
 
+<<<<<<< HEAD:processor/sumologicschemaprocessor/config_test.go
+=======
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor/internal/metadata"
+>>>>>>> 72356b3064 (chore: rename sumologicschemaprocessor to sumologicprocessor):processor/sumologicprocessor/config_test.go
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

@@ -152,6 +152,10 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+<<<<<<< HEAD
+=======
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor
+>>>>>>> 72356b3064 (chore: rename sumologicschemaprocessor to sumologicprocessor)
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor

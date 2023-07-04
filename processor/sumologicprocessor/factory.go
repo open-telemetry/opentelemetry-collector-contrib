@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sumologicschemaprocessor
+package sumologicprocessor
 
 import (
 	"context"
 
+<<<<<<< HEAD:processor/sumologicschemaprocessor/factory.go
+=======
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor/internal/metadata"
+>>>>>>> 72356b3064 (chore: rename sumologicschemaprocessor to sumologicprocessor):processor/sumologicprocessor/factory.go
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -48,7 +52,7 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	processor, err := newSumologicSchemaProcessor(set, cfg.(*Config))
+	processor, err := newsumologicProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +73,7 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	processor, err := newSumologicSchemaProcessor(set, cfg.(*Config))
+	processor, err := newsumologicProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +94,7 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	processor, err := newSumologicSchemaProcessor(set, cfg.(*Config))
+	processor, err := newsumologicProcessor(set, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

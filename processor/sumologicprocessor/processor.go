@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type sumologicSchemaSubprocessor interface {
+type sumologicSubprocessor interface {
 	processLogs(plog.Logs) error
 	processMetrics(pmetric.Metrics) error
 	processTraces(ptrace.Traces) error
@@ -34,12 +34,12 @@ type sumologicSchemaSubprocessor interface {
 	ConfigPropertyName() string
 }
 
-type sumologicSchemaProcessor struct {
+type sumologicProcessor struct {
 	logger        *zap.Logger
-	subprocessors []sumologicSchemaSubprocessor
+	subprocessors []sumologicSubprocessor
 }
 
-func newSumologicSchemaProcessor(set processor.CreateSettings, config *Config) (*sumologicSchemaProcessor, error) {
+func newsumologicProcessor(set processor.CreateSettings, config *Config) (*sumologicProcessor, error) {
 	cloudNamespaceProcessor, err := newCloudNamespaceProcessor(config.AddCloudNamespace)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func newSumologicSchemaProcessor(set processor.CreateSettings, config *Config) (
 		return nil, err
 	}
 
-	processors := []sumologicSchemaSubprocessor{
+	processors := []sumologicSubprocessor{
 		cloudNamespaceProcessor,
 		translateAttributesProcessor,
 		translateTelegrafMetricsProcessor,
@@ -85,7 +85,7 @@ func newSumologicSchemaProcessor(set processor.CreateSettings, config *Config) (
 		translateDockerMetricsProcessor,
 	}
 
-	processor := &sumologicSchemaProcessor{
+	processor := &sumologicProcessor{
 		logger:        set.Logger,
 		subprocessors: processors,
 	}
@@ -93,7 +93,7 @@ func newSumologicSchemaProcessor(set processor.CreateSettings, config *Config) (
 	return processor, nil
 }
 
-func (processor *sumologicSchemaProcessor) start(_ context.Context, host component.Host) error {
+func (processor *sumologicProcessor) start(_ context.Context, host component.Host) error {
 	procs := processor.subprocessors
 	processor.logger.Info(
 		"Processor sumologic has started.",
@@ -107,12 +107,12 @@ func (processor *sumologicSchemaProcessor) start(_ context.Context, host compone
 	return nil
 }
 
-func (processor *sumologicSchemaProcessor) shutdown(_ context.Context) error {
+func (processor *sumologicProcessor) shutdown(_ context.Context) error {
 	processor.logger.Info("Processor sumologic has shut down.")
 	return nil
 }
 
-func (processor *sumologicSchemaProcessor) processLogs(_ context.Context, logs plog.Logs) (plog.Logs, error) {
+func (processor *sumologicProcessor) processLogs(_ context.Context, logs plog.Logs) (plog.Logs, error) {
 	for i := 0; i < len(processor.subprocessors); i++ {
 		subprocessor := processor.subprocessors[i]
 		if err := subprocessor.processLogs(logs); err != nil {
@@ -123,7 +123,7 @@ func (processor *sumologicSchemaProcessor) processLogs(_ context.Context, logs p
 	return logs, nil
 }
 
-func (processor *sumologicSchemaProcessor) processMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
+func (processor *sumologicProcessor) processMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < len(processor.subprocessors); i++ {
 		subprocessor := processor.subprocessors[i]
 		if err := subprocessor.processMetrics(metrics); err != nil {
@@ -134,7 +134,7 @@ func (processor *sumologicSchemaProcessor) processMetrics(ctx context.Context, m
 	return metrics, nil
 }
 
-func (processor *sumologicSchemaProcessor) processTraces(ctx context.Context, traces ptrace.Traces) (ptrace.Traces, error) {
+func (processor *sumologicProcessor) processTraces(ctx context.Context, traces ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < len(processor.subprocessors); i++ {
 		subprocessor := processor.subprocessors[i]
 		if err := subprocessor.processTraces(traces); err != nil {
