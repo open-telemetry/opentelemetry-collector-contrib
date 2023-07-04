@@ -1,13 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Sample contains a simple client that periodically makes a simple http request
-// to a server and exports to the OpenTelemetry service.
+// Sample contains a simple http server that exports to the OpenTelemetry agent.
+
 package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -27,8 +26,11 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 )
+
+var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // Initializes an OTLP exporter, and configures the corresponding trace and
 // metric providers.
@@ -42,7 +44,7 @@ func initProvider() func() {
 		resource.WithHost(),
 		resource.WithAttributes(
 			// the service name used to display traces in backends
-      semconv.ServiceNameKey.String(fmt.Sprintf("demo-client-%d", rand.Int31n(100))),
+			semconv.ServiceNameKey.String("demo-broker"),
 		),
 	)
 	handleErr(err, "failed to create resource")
@@ -55,8 +57,7 @@ func initProvider() func() {
 	metricExp, err := otlpmetricgrpc.New(
 		ctx,
 		otlpmetricgrpc.WithInsecure(),
-		otlpmetricgrpc.WithEndpoint(otelAgentAddr),
-	)
+		otlpmetricgrpc.WithEndpoint(otelAgentAddr))
 	handleErr(err, "Failed to create the collector metric exporter")
 
 	meterProvider := sdkmetric.NewMeterProvider(
@@ -74,9 +75,7 @@ func initProvider() func() {
 		otlptracegrpc.WithInsecure(),
 		otlptracegrpc.WithEndpoint(otelAgentAddr),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()))
-	sctx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
-	traceExp, err := otlptrace.New(sctx, traceClient)
+	traceExp, err := otlptrace.New(ctx, traceClient)
 	handleErr(err, "Failed to create the collector trace exporter")
 
 	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
@@ -113,65 +112,62 @@ func main() {
 	shutdown := initProvider()
 	defer shutdown()
 
-	tracer := otel.Tracer("demo-client-tracer")
-	meter := otel.Meter("demo-client-meter")
-
-	method, _ := baggage.NewMember("method", "repl")
-	client, _ := baggage.NewMember("client", "cli")
-	bag, _ := baggage.New(method, client)
-
-	// labels represent additional key-value descriptors that can be bound to a
-	// metric observer or recorder.
-	// TODO: Use baggage when supported to extract labels from baggage.
-	commonLabels := []attribute.KeyValue{
-		attribute.String("method", "repl"),
-		attribute.String("client", "cli"),
-	}
-
-	// Recorder metric example
-	requestLatency, _ := meter.Float64Histogram(
-		"demo_client/request_latency",
-		metric.WithDescription("The latency of requests processed"),
-	)
-
-	// TODO: Use a view to just count number of measurements for requestLatency when available.
+	meter := otel.Meter("demo-broker-meter")
+	serverAttribute := attribute.String("server-attribute", "foo")
+	commonLabels := []attribute.KeyValue{serverAttribute}
 	requestCount, _ := meter.Int64Counter(
-		"demo_client/request_counts",
-		metric.WithDescription("The number of requests processed"),
+		"demo_broker/request_counts",
+		metric.WithDescription("The number of requests received"),
 	)
 
-	lineLengths, _ := meter.Int64Histogram(
-		"demo_client/line_lengths",
-		metric.WithDescription("The lengths of the various lines in"),
-	)
-
-	// TODO: Use a view to just count number of measurements for lineLengths when available.
-	lineCounts, _ := meter.Int64Counter(
-		"demo_client/line_counts",
-		metric.WithDescription("The counts of the lines in"),
-	)
-
-	defaultCtx := baggage.ContextWithBaggage(context.Background(), bag)
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for {
-		startTime := time.Now()
-		ctx, span := tracer.Start(defaultCtx, "ExecuteRequest")
+	// create a handler wrapped in OpenTelemetry instrumentation
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		//  random sleep to simulate latency
+		var sleep int64
+		
+    ctx := req.Context()
 		makeRequest(ctx)
-		span.End()
-		latencyMs := float64(time.Since(startTime)) / 1e6
-		nr := int(rng.Int31n(7))
-		for i := 0; i < nr; i++ {
-			randLineLength := rng.Int63n(999)
-			lineCounts.Add(ctx, 1, metric.WithAttributes(commonLabels...))
-			lineLengths.Record(ctx, randLineLength, metric.WithAttributes(commonLabels...))
-			fmt.Printf("#%d: LineLength: %dBy\n", i, randLineLength)
+
+		switch modulus := time.Now().Unix() % 5; modulus {
+		case 0:
+			sleep = rng.Int63n(2000)
+		case 1:
+			sleep = rng.Int63n(15)
+		case 2:
+			sleep = rng.Int63n(917)
+		case 3:
+			sleep = rng.Int63n(87)
+		case 4:
+			sleep = rng.Int63n(1173)
+		}
+		time.Sleep(time.Duration(sleep) * time.Millisecond)
+		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
+		span := trace.SpanFromContext(ctx)
+		bag := baggage.FromContext(ctx)
+
+		var baggageAttributes []attribute.KeyValue
+		baggageAttributes = append(baggageAttributes, serverAttribute)
+		for _, member := range bag.Members() {
+			baggageAttributes = append(baggageAttributes, attribute.String("baggage key:"+member.Key(), member.Value()))
+		}
+		span.SetAttributes(baggageAttributes...)
+
+		if _, err := w.Write([]byte("Hello World")); err != nil {
+			http.Error(w, "write operation failed.", http.StatusInternalServerError)
+			return
 		}
 
-		requestLatency.Record(ctx, latencyMs, metric.WithAttributes(commonLabels...))
-		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
+	})
 
-		fmt.Printf("Latency: %.3fms\n", latencyMs)
-		time.Sleep(time.Duration(1) * time.Second)
+	mux := http.NewServeMux()
+	mux.Handle("/hello", otelhttp.NewHandler(handler, "/hello"))
+	server := &http.Server{
+		Addr:              ":7080",
+		Handler:           mux,
+		ReadHeaderTimeout: 20 * time.Second,
+	}
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		handleErr(err, "server failed to serve")
 	}
 }
 

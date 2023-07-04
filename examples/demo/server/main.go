@@ -137,7 +137,7 @@ func main() {
 		case 4:
 			sleep = rng.Int63n(1173)
 		}
-		time.Sleep(time.Duration(sleep) * time.Millisecond)
+		time.Sleep(time.Duration(sleep) * time.Millisecond / 100)
 		ctx := req.Context()
 		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 		span := trace.SpanFromContext(ctx)

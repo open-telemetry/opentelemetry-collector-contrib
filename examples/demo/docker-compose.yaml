@@ -35,10 +35,32 @@ services:
       - jaeger-all-in-one
       - zipkin-all-in-one
 
-  demo-client:
+  demo-client-0:
     build:
       dockerfile: Dockerfile
       context: ./client
+    restart: always
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - DEMO_SERVER_ENDPOINT=http://demo-broker:7080/hello
+    depends_on:
+      - demo-broker
+  
+  demo-client-1:
+    build:
+      dockerfile: Dockerfile
+      context: ./client
+    restart: always
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
+    depends_on:
+      - demo-broker
+
+  demo-broker:
+    build:
+      dockerfile: Dockerfile
+      context: ./broker
     restart: always
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
