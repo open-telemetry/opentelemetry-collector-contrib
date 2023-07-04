@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.80.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013.0.20230629144634-c3f70bd1f8ea
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013.0.20230629144634-c3f70bd1f8ea
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013.0.20230629234129-50c94c941969
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013.0.20230629234129-50c94c941969
 )
 
 require (
