@@ -45,15 +45,15 @@ func attributeValueToString(v pcommon.Value) (string, error) {
 	case pcommon.ValueTypeBool:
 		return strconv.FormatBool(v.Bool()), nil
 	case pcommon.ValueTypeBytes:
-		return bytesToString(v.Bytes()), nil
+		return valueToJSON(v.Bytes().AsRaw())
 	case pcommon.ValueTypeDouble:
 		return strconv.FormatFloat(v.Double(), 'f', -1, 64), nil
 	case pcommon.ValueTypeInt:
 		return strconv.FormatInt(v.Int(), 10), nil
 	case pcommon.ValueTypeSlice:
-		return sliceToString(v.Slice())
+		return valueToJSON(v.Slice().AsRaw())
 	case pcommon.ValueTypeMap:
-		return mapToString(v.Map())
+		return valueToJSON(v.Map().AsRaw())
 	case pcommon.ValueTypeEmpty:
 		return "", nil
 	default:
@@ -61,45 +61,10 @@ func attributeValueToString(v pcommon.Value) (string, error) {
 	}
 }
 
-func bytesToString(bs pcommon.ByteSlice) string {
-	var b strings.Builder
-	b.WriteByte('[')
-	for i := 0; i < bs.Len(); i++ {
-		if i < bs.Len()-1 {
-			fmt.Fprintf(&b, "%v, ", bs.At(i))
-		} else {
-			b.WriteString(fmt.Sprint(bs.At(i)))
-		}
-	}
-
-	b.WriteByte(']')
-	return b.String()
-}
-
-func sliceToString(s pcommon.Slice) (string, error) {
-	var b strings.Builder
-	b.WriteByte('[')
-	for i := 0; i < s.Len(); i++ {
-		v, err := attributeValueToString(s.At(i))
-		if err != nil {
-			return "", err
-		}
-
-		if i < s.Len()-1 {
-			fmt.Fprintf(&b, "%s, ", v)
-		} else {
-			b.WriteString(v)
-		}
-	}
-
-	b.WriteByte(']')
-	return b.String(), nil
-}
-
-func mapToString(m pcommon.Map) (string, error) {
+func valueToJSON(m any) (string, error) {
 	jsonString := new(bytes.Buffer)
 	enc := json.NewEncoder(jsonString)
-	err := enc.Encode(m.AsRaw())
+	err := enc.Encode(m)
 
 	return strings.Trim(jsonString.String(), "\n"), err
 }
@@ -129,26 +94,25 @@ func (SumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 			return nil, errors.New("_sourceName attribute does not exists")
 		}
 
-		// Remove the source attributes so that they won't be included in "fields" value.
 		sc, err := attributeValueToString(sourceCategory)
 		if err != nil {
 			return nil, err
 		}
-		ra.Remove(SourceCategoryKey)
-
 		sh, err := attributeValueToString(sourceHost)
 		if err != nil {
 			return nil, err
 		}
-		ra.Remove(SourceHostKey)
-
 		sn, err := attributeValueToString(sourceName)
 		if err != nil {
 			return nil, err
 		}
+
+		// Remove the source attributes so that they won't be included in "fields" value.
+		ra.Remove(SourceCategoryKey)
+		ra.Remove(SourceHostKey)
 		ra.Remove(SourceNameKey)
 
-		fields, err := mapToString(ra)
+		fields, err := valueToJSON(ra.AsRaw())
 		if err != nil {
 			return nil, err
 		}

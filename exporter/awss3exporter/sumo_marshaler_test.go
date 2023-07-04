@@ -110,7 +110,7 @@ func TestAttributeValueToString(t *testing.T) {
 		},
 		{
 			value:  pcommon.NewValueBytes(),
-			result: "[42, 33, 77, 255, 0]",
+			result: "\"KiFN/wA=\"",
 			init: func(v pcommon.Value) {
 				v.Bytes().Append(42, 33, 77, 255, 0)
 			},
@@ -142,12 +142,12 @@ func TestAttributeValueToString(t *testing.T) {
 		},
 		{
 			value:  pcommon.NewValueSlice(),
-			result: "[110.37, [true], [1, 2, 3], asdfg]",
+			result: "[110.37,[true],\"YWJj\",\"asdfg\"]",
 			init: func(v pcommon.Value) {
 				s := v.Slice()
 				s.AppendEmpty().SetDouble(110.37)
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetBool(true)
-				s.AppendEmpty().SetEmptyBytes().Append(1, 2, 3)
+				s.AppendEmpty().SetEmptyBytes().Append(97, 98, 99)
 				s.AppendEmpty().SetStr("asdfg")
 			},
 		},
@@ -163,6 +163,6 @@ func TestAttributeValueToString(t *testing.T) {
 		}
 		val, err := attributeValueToString(testCase.value)
 		assert.NoError(t, err)
-		assert.Equal(t, val, testCase.result)
+		assert.Equal(t, testCase.result, val)
 	}
 }
