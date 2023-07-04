@@ -63,7 +63,7 @@ exporter/jaegerthrifthttpexporter/                       @open-telemetry/collect
 exporter/kafkaexporter/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 exporter/loadbalancingexporter/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                           @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
-exporter/logzioexporter/                                 @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
+exporter/logzioexporter/                                 @open-telemetry/collector-contrib-approvers @Doron-Bargo @yotamloe
 exporter/lokiexporter/                                   @open-telemetry/collector-contrib-approvers @gramidt @gouthamve @jpkrohling @kovrus @mar4uk
 exporter/mezmoexporter/                                  @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
