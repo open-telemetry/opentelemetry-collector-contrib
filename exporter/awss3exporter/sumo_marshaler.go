@@ -23,7 +23,7 @@ const (
 
 type sumoMarshaler struct{}
 
-func (marshaler *sumoMarshaler) format() string {
+func (*sumoMarshaler) format() string {
 	return string(SumoIC)
 }
 
