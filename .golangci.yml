@@ -239,9 +239,6 @@ issues:
     - path: datasetexporter
       linters:
         - exhaustive
-    - path: dynatraceexporter
-      linters:
-        - exhaustive
     - path: elasticsearchexporter
       linters:
         - exhaustive
