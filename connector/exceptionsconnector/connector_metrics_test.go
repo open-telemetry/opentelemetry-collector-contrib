@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
@@ -33,8 +32,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector/mocks"
 )
 
 const (
@@ -126,16 +123,9 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		// instantiate a copy of the test case for t.Run's closure to use.
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			mcon := &mocks.MetricsConsumer{}
-			//mcon := &consumertest.MetricsSink{}
+			msink := &consumertest.MetricsSink{}
 
-			// Mocked metric exporter will perform validation on metrics, during p.ConsumeMetrics()
-			mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-				//wg.Done()
-				return tc.verifier(t, input)
-			})).Return(nil)
-
-			p, err := newTestMetricsConnector(t, mcon, stringp("defaultNullValue"), zaptest.NewLogger(t))
+			p, err := newTestMetricsConnector(t, msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
 			require.NoError(t, err)
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
@@ -145,6 +135,9 @@ func TestConnectorConsumeTraces(t *testing.T) {
 
 			for _, traces := range tc.traces {
 				err = p.ConsumeTraces(ctx, traces)
+				metrics := msink.AllMetrics()
+				assert.True(t, len(metrics) > 0)
+				tc.verifier(t, metrics[len(metrics)-1])
 				assert.NoError(t, err)
 			}
 		})
@@ -152,11 +145,9 @@ func TestConnectorConsumeTraces(t *testing.T) {
 }
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
-	// Prepare
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	msink := &consumertest.MetricsSink{}
 
-	conn, err := newTestMetricsConnector(nil, mcon, stringp("defaultNullValue"), zaptest.NewLogger(b))
+	conn, err := newTestMetricsConnector(nil, msink, stringp("defaultNullValue"), zaptest.NewLogger(b))
 	require.NoError(b, err)
 	traces := buildSampleTrace()
 
@@ -229,7 +220,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 
 	seenMetricIDs := make(map[metricID]bool)
 	// The first 3 data points are for call counts.
-	assert.Equal(t, "exceptions_total", m.At(0).Name())
+	assert.Equal(t, "exceptions", m.At(0).Name())
 	assert.True(t, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
 	require.Equal(t, 3, callsDps.Len())

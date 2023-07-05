@@ -19,30 +19,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector/mocks"
 )
 
 func TestConnectorLogConsumeTraces(t *testing.T) {
 	traces := []ptrace.Traces{buildSampleTrace()}
-	lcon := &mocks.LogsConsumer{}
+	lsink := new(consumertest.LogsSink)
 
-	//var wg sync.WaitGroup
-	// Mocked log exporter will perform validation on logs, during p.ConsumeLogs()
-	lcon.On("ConsumeLogs", mock.Anything, mock.MatchedBy(func(input plog.Logs) bool {
-		return verifyConsumeLogsInput(t, input)
-	})).Return(nil)
-
-	p, err := newTestLogsConnector(t, lcon, zaptest.NewLogger(t))
+	p, err := newTestLogsConnector(t, lsink, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
@@ -52,6 +44,9 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 
 	for _, traces := range traces {
 		err = p.ConsumeTraces(ctx, traces)
+		logs := lsink.AllLogs()
+		assert.True(t, len(logs) > 0)
+		assert.True(t, verifyConsumeLogsInput(t, logs[len(logs)-1]))
 		assert.NoError(t, err)
 	}
 }
