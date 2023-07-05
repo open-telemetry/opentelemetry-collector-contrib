@@ -23,7 +23,7 @@ type TestResultsSummary interface {
 	Save()
 }
 
-// BenchmarkResult holds the results of a benchmark to be stored by benchmark-action. See
+// benchmarkResult holds the results of a benchmark to be stored by benchmark-action. See
 // https://github.com/benchmark-action/github-action-benchmark#examples for more details on the
 // format
 type benchmarkResult struct {
@@ -34,7 +34,7 @@ type benchmarkResult struct {
 	Extra string  `json:"extra,omitempty"`
 }
 
-// PerformResults implements the TestResultsSummary interface with fields suitable for reporting
+// PerformanceResults implements the TestResultsSummary interface with fields suitable for reporting
 // performance test results.
 type PerformanceResults struct {
 	resultsDir       string
