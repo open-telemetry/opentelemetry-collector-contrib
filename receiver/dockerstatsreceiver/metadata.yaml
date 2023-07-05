@@ -30,6 +30,14 @@ resource_attributes:
     description: "The hostname of the container."
     type: string
     enabled: true
+  container.image.id:
+    description: "The ID of the container image."
+    type: string
+    enabled: false
+  container.command_line:
+    description: "The full command executed by the container."
+    type: string
+    enabled: false
 
 attributes:
   core:
@@ -89,7 +97,7 @@ metrics:
       aggregation: cumulative
   container.cpu.usage.percpu:
     enabled: false
-    description: "Per-core CPU usage by the container."
+    description: "Per-core CPU usage by the container (Only available with cgroups v1)."
     unit: ns
     sum:
       value_type: int
@@ -172,7 +180,7 @@ metrics:
       value_type: double
   container.memory.cache:
     enabled: false
-    description: "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device."
+    description: "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -180,7 +188,7 @@ metrics:
       monotonic: false
   container.memory.rss:
     enabled: false
-    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps."
+    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -188,7 +196,7 @@ metrics:
       monotonic: false
   container.memory.rss_huge:
     enabled: false
-    description: "Number of bytes of anonymous transparent hugepages in this cgroup."
+    description: "Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -196,7 +204,7 @@ metrics:
       monotonic: false
   container.memory.dirty:
     enabled: false
-    description: "Bytes that are waiting to get written back to the disk, from this cgroup."
+    description: "Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -204,7 +212,7 @@ metrics:
       monotonic: false
   container.memory.writeback:
     enabled: false
-    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup."
+    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -212,7 +220,7 @@ metrics:
       monotonic: false
   container.memory.mapped_file:
     enabled: false
-    description: "Indicates the amount of memory mapped by the processes in the control group."
+    description: "Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -220,7 +228,7 @@ metrics:
       monotonic: false
   container.memory.pgpgin:
     enabled: false
-    description: "Number of pages read from disk by the cgroup."
+    description: "Number of pages read from disk by the cgroup (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "{operations}"
     sum:
@@ -229,7 +237,7 @@ metrics:
       monotonic: true
   container.memory.pgpgout:
     enabled: false
-    description: "Number of pages written to disk by the cgroup."
+    description: "Number of pages written to disk by the cgroup (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "{operations}"
     sum:
@@ -296,7 +304,7 @@ metrics:
       monotonic: false
   container.memory.hierarchical_memory_limit:
     enabled: false
-    description: "The maximum amount of physical memory that can be used by the processes of this control group."
+    description: "The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -304,7 +312,7 @@ metrics:
       monotonic: false
   container.memory.hierarchical_memsw_limit:
     enabled: false
-    description: "The maximum amount of RAM + swap that can be used by the processes of this control group."
+    description: "The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -312,7 +320,7 @@ metrics:
       monotonic: false
   container.memory.total_cache:
     enabled: true
-    description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs."
+    description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -320,7 +328,7 @@ metrics:
       monotonic: false
   container.memory.total_rss:
     enabled: false
-    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups."
+    description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -328,7 +336,7 @@ metrics:
       monotonic: false
   container.memory.total_rss_huge:
     enabled: false
-    description: "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups."
+    description: "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -336,7 +344,7 @@ metrics:
       monotonic: false
   container.memory.total_dirty:
     enabled: false
-    description: "Bytes that are waiting to get written back to the disk, from this cgroup and descendants."
+    description: "Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -344,7 +352,7 @@ metrics:
       monotonic: false
   container.memory.total_writeback:
     enabled: false
-    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants."
+    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -352,7 +360,7 @@ metrics:
       monotonic: false
   container.memory.total_mapped_file:
     enabled: false
-    description: "Indicates the amount of memory mapped by the processes in the control group and descendant groups."
+    description: "Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -360,7 +368,7 @@ metrics:
       monotonic: false
   container.memory.total_pgpgin:
     enabled: false
-    description: "Number of pages read from disk by the cgroup and descendant groups."
+    description: "Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1)."
     unit: "{operations}"
     sum:
       value_type: int
@@ -368,7 +376,7 @@ metrics:
       monotonic: true
   container.memory.total_pgpgout:
     enabled: false
-    description: "Number of pages written to disk by the cgroup and descendant groups."
+    description: "Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1)."
     unit: "{operations}"
     sum:
       value_type: int
@@ -376,7 +384,7 @@ metrics:
       monotonic: true
   container.memory.total_pgfault:
     enabled: false
-    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault."
+    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1)."
     unit: "{faults}"
     sum:
       value_type: int
@@ -384,7 +392,7 @@ metrics:
       monotonic: true
   container.memory.total_pgmajfault:
     enabled: false
-    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault."
+    description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1)."
     unit: "{faults}"
     sum:
       value_type: int
@@ -392,7 +400,7 @@ metrics:
       monotonic: true
   container.memory.total_inactive_anon:
     enabled: false
-    description: "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups."
+    description: "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -400,7 +408,7 @@ metrics:
       monotonic: false
   container.memory.total_active_anon:
     enabled: false
-    description: "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups."
+    description: "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     unit: By
     sum:
       value_type: int
@@ -408,7 +416,7 @@ metrics:
       monotonic: false
   container.memory.total_inactive_file:
     enabled: false
-    description: "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups."
+    description: "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
     sum:
@@ -417,7 +425,7 @@ metrics:
       monotonic: false
   container.memory.total_active_file:
     enabled: false
-    description: "Cache memory that has been identified as active by the kernel. Includes descendant cgroups."
+    description: "Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
     sum:
@@ -426,7 +434,25 @@ metrics:
       monotonic: false
   container.memory.total_unevictable:
     enabled: false
-    description: "The amount of memory that cannot be reclaimed. Includes descendant cgroups."
+    description: "The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1)."
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+  container.memory.anon:
+    enabled: false
+    description: "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2)."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+  container.memory.file:
+    enabled: true
+    description: "Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2)."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)"
     unit: By
     sum:
       value_type: int
@@ -434,10 +460,10 @@ metrics:
       monotonic: false
 
 
-  # BlockIO
+  # BlockIO (cgroup v1) and IO (cgroup v2) controllers
   container.blockio.io_merged_recursive:
     enabled: false
-    description: "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups."
+    description: "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
     sum:
@@ -448,10 +474,9 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   container.blockio.io_queued_recursive:
     enabled: false
-    description: "Number of requests queued up for this cgroup and its descendant cgroups."
+    description: "Number of requests queued up for this cgroup and its descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
     sum:
@@ -462,11 +487,13 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   container.blockio.io_service_bytes_recursive:
     enabled: true
     description: "Number of bytes transferred to/from the disk by the group and descendant groups."
-    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
+    extended_documentation: >-
+      More docs
+      for [cgroups v1](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)
+      and [cgroups v2](https://www.kernel.org/doc/Documentation/cgroup-v2.txt)
     unit: By
     sum:
       value_type: int
@@ -476,10 +503,9 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   container.blockio.io_service_time_recursive:
     enabled: false
-    description: "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups."
+    description: "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ns
     sum:
@@ -490,10 +516,9 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   container.blockio.io_serviced_recursive:
     enabled: false
-    description: "Number of IOs (bio) issued to the disk by the group and descendant groups."
+    description: "Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{operations}"
     sum:
@@ -504,10 +529,9 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   container.blockio.io_time_recursive:
     enabled: false
-    description: "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds."
+    description: "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ms
     sum:
@@ -518,10 +542,9 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   container.blockio.io_wait_time_recursive:
     enabled: false
-    description: "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service."
+    description: "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ns
     sum:
@@ -532,10 +555,9 @@ metrics:
       - device_major
       - device_minor
       - operation
-
   container.blockio.sectors_recursive:
     enabled: false
-    description: "Number of sectors transferred to/from disk by the group and descendant groups."
+    description: "Number of sectors transferred to/from disk by the group and descendant groups (Only available with cgroups v1)."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "{sectors}"
     sum:

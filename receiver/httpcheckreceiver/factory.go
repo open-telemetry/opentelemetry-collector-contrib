@@ -36,9 +36,13 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		HTTPClientSettings:        httpSettings,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-		Method:                    "GET",
+		Targets: []*targetConfig{
+			{
+				HTTPClientSettings: httpSettings,
+				Method:             "GET",
+			},
+		},
 	}
 }
 

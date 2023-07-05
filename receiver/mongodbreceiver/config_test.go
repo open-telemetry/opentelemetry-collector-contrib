@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -84,7 +85,7 @@ func TestValidate(t *testing.T) {
 
 			cfg := &Config{
 				Username: tc.username,
-				Password: tc.password,
+				Password: configopaque.String(tc.password),
 				Hosts:    hosts,
 			}
 			err := component.ValidateConfig(cfg)

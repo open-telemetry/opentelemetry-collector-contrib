@@ -454,9 +454,56 @@ See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetr
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
-# When included, only attributes in the list will be appened.  Applies to all detectors.
+# [DEPRECATED] When included, only attributes in the list will be appended.  Applies to all detectors.
 attributes: [ <string> ]
 ```
+
+Moreover, you have the ability to specify which detector should collect each attribute with `resource_attributes` option. An example of such a configuration is:
+
+```yaml
+resourcedetection:
+  detectors: [system, ec2]
+  system:
+    resource_attributes:
+      host.name:
+        enabled: true
+      host.id:
+        enabled: false
+  ec2:
+    resource_attributes:
+      host.name:
+        enabled: false
+      host.id:
+        enabled: true
+```
+
+### Migration from attributes to resource_attributes
+
+The `attributes` option is deprecated and will be removed soon, from now on you should enable/disable attributes through `resource_attributes`.
+For example, this config:
+
+```yaml
+resourcedetection:
+  detectors: [system]
+  attributes: ['host.name', 'host.id']
+```
+
+can be replaced with:
+
+```yaml
+resourcedetection:
+  detectors: [system]
+  system:
+    resource_attributes:
+      host.name:
+        enabled: true
+      host.id:
+        enabled: true
+      os.type:
+        enabled: false
+```
+
+NOTE: Currently all attributes are enabled by default for backwards compatibility purposes, but it will change in the future.
 
 ## Ordering
 

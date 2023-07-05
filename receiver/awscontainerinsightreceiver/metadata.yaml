@@ -5,3 +5,4 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, aws, observiq, sumo]
+  warnings: [Other]
