@@ -170,9 +170,6 @@ issues:
     - path: googlecloudspannerreceiver
       linters:
         - exhaustive
-    - path: podmanreceiver
-      linters:
-        - exhaustive
     - path: prometheusreceiver
       linters:
         - exhaustive
@@ -239,19 +236,10 @@ issues:
     - path: coralogixexporter
       linters:
         - exhaustive
-    - path: clickhouseexporter
-      linters:
-        - exhaustive
     - path: datasetexporter
       linters:
         - exhaustive
-    - path: dynatraceexporter
-      linters:
-        - exhaustive
     - path: elasticsearchexporter
-      linters:
-        - exhaustive
-    - path: datadogexporter
       linters:
         - exhaustive
     - path: googlecloudpubsubexporter
