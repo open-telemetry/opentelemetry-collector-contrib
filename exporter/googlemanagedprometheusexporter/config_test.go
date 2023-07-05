@@ -64,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 	r2Expected.GMPConfig.MetricConfig.Prefix = "my-metric-domain.com"
 	assert.Equal(t, r2, r2Expected)
 
-	r3 := cfg.Exporters[component.NewIDWithName(typeStr, "clientconfig")].(*Config)
+	r3 := cfg.Exporters[component.NewIDWithName(metadata.Type, "clientconfig")].(*Config)
 	r3Expected := factory.CreateDefaultConfig().(*Config)
 	r3Expected.GMPConfig.MetricConfig.ClientConfig.Compression = "gzip"
 	r3Expected.GMPConfig.MetricConfig.ClientConfig.Endpoint = "foobar"
