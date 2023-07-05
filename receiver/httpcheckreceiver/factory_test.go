@@ -43,9 +43,13 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 60 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					HTTPClientSettings:   httpSettings,
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-					Method:               "GET",
+					Targets: []*targetConfig{
+						{
+							HTTPClientSettings: httpSettings,
+							Method:             "GET",
+						},
+					},
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

@@ -41,11 +41,15 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &httpcheckScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: "http://example.com",
-						TLSSetting: configtls.TLSClientSetting{
-							TLSSetting: configtls.TLSSetting{
-								CAFile: "/non/existent",
+					Targets: []*targetConfig{
+						{
+							HTTPClientSettings: confighttp.HTTPClientSettings{
+								Endpoint: "http://example.com",
+								TLSSetting: configtls.TLSClientSetting{
+									TLSSetting: configtls.TLSSetting{
+										CAFile: "/non/existent",
+									},
+								},
 							},
 						},
 					},
@@ -58,9 +62,13 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &httpcheckScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						TLSSetting: configtls.TLSClientSetting{},
-						Endpoint:   "http://example.com",
+					Targets: []*targetConfig{
+						{
+							HTTPClientSettings: confighttp.HTTPClientSettings{
+								TLSSetting: configtls.TLSClientSetting{},
+								Endpoint:   "http://example.com",
+							},
+						},
 					},
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
@@ -150,11 +158,11 @@ func TestScaperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
-				cfg.Endpoint = tc.endpoint
+				cfg.Targets[0].Endpoint = tc.endpoint
 			} else {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
-				cfg.Endpoint = ms.URL
+				cfg.Targets[0].Endpoint = ms.URL
 			}
 			scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
@@ -179,4 +187,41 @@ func TestNilClient(t *testing.T) {
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 
+}
+
+func TestScraperMultipleTargets(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	ms1 := newMockServer(t, 200)
+	defer ms1.Close()
+	ms2 := newMockServer(t, 404)
+	defer ms2.Close()
+
+	cfg.Targets = append(cfg.Targets, &targetConfig{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: ms1.URL,
+		},
+	})
+	cfg.Targets = append(cfg.Targets, &targetConfig{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: ms2.URL,
+		},
+	})
+
+	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	goldenPath := filepath.Join("testdata", "expected_metrics", "multiple_targets.yaml")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricAttributeValue("http.url"),
+		pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	))
 }
