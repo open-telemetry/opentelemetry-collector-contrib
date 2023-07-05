@@ -383,6 +383,57 @@ func newMetricProcessDiskOperations(cfg MetricConfig) metricProcessDiskOperation
 	return m
 }
 
+type metricProcessHandles struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.handles metric with initial data.
+func (m *metricProcessHandles) init() {
+	m.data.SetName("process.handles")
+	m.data.SetDescription("Number of handles held by the process.")
+	m.data.SetUnit("{count}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricProcessHandles) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessHandles) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessHandles) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessHandles(cfg MetricConfig) metricProcessHandles {
+	m := metricProcessHandles{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -754,6 +805,7 @@ type MetricsBuilder struct {
 	metricProcessCPUUtilization      metricProcessCPUUtilization
 	metricProcessDiskIo              metricProcessDiskIo
 	metricProcessDiskOperations      metricProcessDiskOperations
+	metricProcessHandles             metricProcessHandles
 	metricProcessMemoryUsage         metricProcessMemoryUsage
 	metricProcessMemoryUtilization   metricProcessMemoryUtilization
 	metricProcessMemoryVirtual       metricProcessMemoryVirtual
@@ -784,6 +836,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(mbc.Metrics.ProcessCPUUtilization),
 		metricProcessDiskIo:              newMetricProcessDiskIo(mbc.Metrics.ProcessDiskIo),
 		metricProcessDiskOperations:      newMetricProcessDiskOperations(mbc.Metrics.ProcessDiskOperations),
+		metricProcessHandles:             newMetricProcessHandles(mbc.Metrics.ProcessHandles),
 		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(mbc.Metrics.ProcessMemoryUsage),
 		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(mbc.Metrics.ProcessMemoryUtilization),
 		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(mbc.Metrics.ProcessMemoryVirtual),
@@ -912,6 +965,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessCPUUtilization.emit(ils.Metrics())
 	mb.metricProcessDiskIo.emit(ils.Metrics())
 	mb.metricProcessDiskOperations.emit(ils.Metrics())
+	mb.metricProcessHandles.emit(ils.Metrics())
 	mb.metricProcessMemoryUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryUtilization.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtual.emit(ils.Metrics())
@@ -962,6 +1016,11 @@ func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val
 // RecordProcessDiskOperationsDataPoint adds a data point to process.disk.operations metric.
 func (mb *MetricsBuilder) RecordProcessDiskOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
 	mb.metricProcessDiskOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+}
+
+// RecordProcessHandlesDataPoint adds a data point to process.handles metric.
+func (mb *MetricsBuilder) RecordProcessHandlesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricProcessHandles.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordProcessMemoryUsageDataPoint adds a data point to process.memory.usage metric.

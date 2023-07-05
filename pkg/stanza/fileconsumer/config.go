@@ -19,7 +19,6 @@ import (
 const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
-	defaultBufSize            = 16 * 1024
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -149,7 +148,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			readerConfig: &readerConfig{
 				fingerprintSize: int(c.FingerprintSize),
 				maxLogSize:      int(c.MaxLogSize),
-				bufferSize:      defaultBufSize,
 				emit:            emit,
 			},
 			fromBeginning:   startAtBeginning,
@@ -186,6 +184,16 @@ func (c Config) validate() error {
 		_, err := doublestar.PathMatch(exclude, "matchstring")
 		if err != nil {
 			return fmt.Errorf("parse exclude glob: %w", err)
+		}
+	}
+
+	if len(c.OrderingCriteria.SortBy) != 0 && c.OrderingCriteria.Regex == "" {
+		return fmt.Errorf("`regex` must be specified when `sort_by` is specified")
+	}
+
+	for _, sr := range c.OrderingCriteria.SortBy {
+		if err := sr.validate(); err != nil {
+			return err
 		}
 	}
 

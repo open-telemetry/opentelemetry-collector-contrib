@@ -127,6 +127,7 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue())
 					case pmetric.NumberDataPointValueTypeInt:
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
+					case pmetric.NumberDataPointValueTypeEmpty:
 					}
 
 					return

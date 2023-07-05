@@ -617,12 +617,12 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	temp4 := openTemp(t, tempDir)
 
 	writeString(t, temp, "testlog1\n")
-	writeString(t, temp2, "testlog2\n")
+	writeString(t, temp3, "testlog2\n")
 	operator.poll(context.Background())
 
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
 
-	writeString(t, temp3, "testlog3\n")
+	writeString(t, temp2, "testlog3\n")
 	writeString(t, temp4, "testlog4\n")
 	operator.poll(context.Background())
 
@@ -669,6 +669,40 @@ func TestMultiFileSimple(t *testing.T) {
 	}()
 
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
+}
+
+func TestMultiFileSort(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.Finder.OrderingCriteria.Regex = `.*(?P<value>\d)`
+	cfg.Finder.OrderingCriteria.SortBy = []SortRuleImpl{
+		{
+			NumericSortRule{
+				BaseSortRule: BaseSortRule{
+					RegexKey: `value`,
+				},
+			},
+		},
+	}
+
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	temp1 := openTempWithPattern(t, tempDir, ".*log1")
+	temp2 := openTempWithPattern(t, tempDir, ".*log2")
+
+	writeString(t, temp1, "testlog1\n")
+	writeString(t, temp2, "testlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	expectNoTokens(t, emitCalls)
 }
 
 func TestMultiFileParallel_PreloadedFiles(t *testing.T) {

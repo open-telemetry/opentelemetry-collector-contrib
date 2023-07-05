@@ -3,6 +3,19 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
+PATTERN="^[0-9]+\.[0-9]+\.[0-9]+.*"
+if ! [[ ${CURRENT_BETA} =~ $PATTERN ]]
+then
+    echo "CURRENT_BETA should follow a semver format and not be led by a v"
+    exit 1
+fi
+
+if ! [[ ${CANDIDATE_BETA} =~ $PATTERN ]]
+then
+    echo "CANDIDATE_BETA should follow a semver format and not be led by a v"
+    exit 1
+fi
+
 make chlog-update VERSION="v${CANDIDATE_BETA}"
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
