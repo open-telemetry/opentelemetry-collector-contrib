@@ -6,6 +6,7 @@ go 1.19
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exampleconnector v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.80.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.80.0
@@ -1113,6 +1114,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/exam
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ../../connector/datadogconnector
 
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 
