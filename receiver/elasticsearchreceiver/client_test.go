@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
@@ -93,7 +94,7 @@ func TestNodeStatsAuthentication(t *testing.T) {
 			Endpoint: elasticsearchMock.URL,
 		},
 		Username: username,
-		Password: password,
+		Password: configopaque.String(password),
 	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -180,7 +181,7 @@ func TestClusterHealthAuthentication(t *testing.T) {
 			Endpoint: elasticsearchMock.URL,
 		},
 		Username: username,
-		Password: password,
+		Password: configopaque.String(password),
 	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -267,7 +268,7 @@ func TestMetadataAuthentication(t *testing.T) {
 			Endpoint: elasticsearchMock.URL,
 		},
 		Username: username,
-		Password: password,
+		Password: configopaque.String(password),
 	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -420,7 +421,7 @@ func TestIndexStatsAuthentication(t *testing.T) {
 			Endpoint: elasticsearchMock.URL,
 		},
 		Username: username,
-		Password: password,
+		Password: configopaque.String(password),
 	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -530,7 +531,7 @@ func TestClusterStatsAuthentication(t *testing.T) {
 			Endpoint: elasticsearchMock.URL,
 		},
 		Username: username,
-		Password: password,
+		Password: configopaque.String(password),
 	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
