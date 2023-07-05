@@ -254,9 +254,6 @@ issues:
     - path: logzioexporter
       linters:
         - exhaustive
-    - path: sentryexporter
-      linters:
-        - exhaustive
     - path: prometheusexporter
       linters:
         - exhaustive
