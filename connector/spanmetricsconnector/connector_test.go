@@ -75,6 +75,24 @@ type span struct {
 	spanID     [8]byte
 }
 
+// verifyDisabledHistogram expects that histograms are disabled.
+func verifyDisabledHistogram(t testing.TB, input pmetric.Metrics) bool {
+	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+		rm := input.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
+		for ismC := 0; ismC < ism.Len(); ismC++ {
+			m := ism.At(ismC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				assert.NotEqual(t, pmetric.MetricTypeExponentialHistogram, metric.Type())
+				assert.NotEqual(t, pmetric.MetricTypeHistogram, metric.Type())
+			}
+		}
+	}
+	return true
+}
+
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
 	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
@@ -371,6 +389,13 @@ func exponentialHistogramsConfig() HistogramConfig {
 	}
 }
 
+func disabledHistogramsConfig() HistogramConfig {
+	return HistogramConfig{
+		Unit:    defaultUnit,
+		Disable: true,
+	}
+}
+
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -388,6 +413,32 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metrics.Key("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
 	assert.Equal(t, metrics.Key("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
+}
+
+func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ExcludeDimensions = []string{"span.kind", "service.name", "span.name", "status.code"}
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	span0 := ptrace.NewSpan()
+	span0.SetName("spanName")
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	assert.Equal(t, metrics.Key(""), k0)
+}
+
+func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ExcludeDimensions = []string{"span.kind", "service.name.wrong.name", "span.name", "status.code"}
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	span0 := ptrace.NewSpan()
+	span0.SetName("spanName")
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	assert.Equal(t, metrics.Key("serviceName"), k0)
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
@@ -601,6 +652,14 @@ func TestConsumeTraces(t *testing.T) {
 		verifier               func(t testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
 	}{
+		// disabling histogram
+		{
+			name:                   "Test histogram metrics are disabled",
+			aggregationTemporality: cumulative,
+			histogramConfig:        disabledHistogramsConfig,
+			verifier:               verifyDisabledHistogram,
+			traces:                 []ptrace.Traces{buildSampleTrace()},
+		},
 		// exponential buckets histogram
 		{
 			name:                   "Test single consumption, three spans (Cumulative), using exp. histogram",
@@ -769,10 +828,64 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker) *connectorImp {
+func TestExcludeDimensionsConsumeTraces(t *testing.T) {
+	mcon := &mocks.MetricsConsumer{}
+	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(t), nil, excludeDimensions...)
+	traces := buildSampleTrace()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	err := p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+	metrics := p.buildMetrics()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				// We check only sum and histogram metrics here, because for now only they are present in this module.
+
+				switch metric.Type() {
+				case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
+					{
+						dp := metric.Histogram().DataPoints()
+						for dpi := 0; dpi < dp.Len(); dpi++ {
+							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+								assert.NotContains(t, excludeDimensions, attributeKey)
+							}
+
+						}
+					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
+					{
+						dp := metric.Sum().DataPoints()
+						for dpi := 0; dpi < dp.Len(); dpi++ {
+							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+								assert.NotContains(t, excludeDimensions, attributeKey)
+							}
+						}
+					}
+
+				}
+
+			}
+		}
+	}
+
+}
+
+func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker, excludedDimensions ...string) *connectorImp {
 	cfg := &Config{
 		AggregationTemporality: temporality,
 		Histogram:              histogramConfig(),
+		ExcludeDimensions:      excludedDimensions,
 		DimensionsCacheSize:    DimensionsCacheSize,
 		Dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
@@ -999,6 +1112,15 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 			name:   "initialize histogram with no config provided",
 			config: Config{},
 			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
+		},
+		{
+			name: "Disable histogram",
+			config: Config{
+				Histogram: HistogramConfig{
+					Disable: true,
+				},
+			},
+			want: nil,
 		},
 		{
 			name: "initialize explicit histogram with default bounds (ms)",
