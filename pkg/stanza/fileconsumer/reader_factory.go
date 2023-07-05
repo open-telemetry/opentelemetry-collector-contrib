@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -24,7 +25,7 @@ type readerFactory struct {
 	headerSettings  *headerSettings
 }
 
-func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
+func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
 	return f.newReaderBuilder().
 		withFile(file).
 		withFingerprint(fp).
@@ -47,14 +48,14 @@ func (f *readerFactory) unsafeReader() (*Reader, error) {
 	return f.newReaderBuilder().build()
 }
 
-func (f *readerFactory) newFingerprint(file *os.File) (*Fingerprint, error) {
-	return NewFingerprint(file, f.readerConfig.fingerprintSize)
+func (f *readerFactory) newFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
+	return fingerprint.New(file, f.readerConfig.fingerprintSize)
 }
 
 type readerBuilder struct {
 	*readerFactory
 	file             *os.File
-	fp               *Fingerprint
+	fp               *fingerprint.Fingerprint
 	offset           int64
 	splitFunc        bufio.SplitFunc
 	headerFinalized  bool
@@ -75,7 +76,7 @@ func (b *readerBuilder) withFile(f *os.File) *readerBuilder {
 	return b
 }
 
-func (b *readerBuilder) withFingerprint(fp *Fingerprint) *readerBuilder {
+func (b *readerBuilder) withFingerprint(fp *fingerprint.Fingerprint) *readerBuilder {
 	b.fp = fp
 	return b
 }
