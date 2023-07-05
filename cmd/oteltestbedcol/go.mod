@@ -35,17 +35,17 @@ require (
 	go.opentelemetry.io/collector/component v0.81.0
 	go.opentelemetry.io/collector/connector v0.81.0
 	go.opentelemetry.io/collector/exporter v0.81.0
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.80.1-0.20230629144634-c3f70bd1f8ea
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.80.1-0.20230629144634-c3f70bd1f8ea
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.80.1-0.20230629144634-c3f70bd1f8ea
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.81.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.81.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.81.0
 	go.opentelemetry.io/collector/extension v0.81.0
-	go.opentelemetry.io/collector/extension/ballastextension v0.80.1-0.20230629144634-c3f70bd1f8ea
+	go.opentelemetry.io/collector/extension/ballastextension v0.81.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.81.0
 	go.opentelemetry.io/collector/processor v0.81.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.81.0
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.80.1-0.20230629144634-c3f70bd1f8ea
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.81.0
 	go.opentelemetry.io/collector/receiver v0.81.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.80.1-0.20230629144634-c3f70bd1f8ea
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.81.0
 	golang.org/x/sys v0.9.0
 )
 
@@ -230,8 +230,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.81.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.81.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.81.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013.0.20230629144634-c3f70bd1f8ea // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013.0.20230629144634-c3f70bd1f8ea // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013 // indirect
 	go.opentelemetry.io/collector/semconv v0.81.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
