@@ -7,6 +7,8 @@ all_set:
       enabled: true
     k8s.node.allocatable_memory:
       enabled: true
+    k8s.node.allocatable_pods:
+      enabled: true
     k8s.node.allocatable_storage:
       enabled: true
     k8s.node.condition_disk_pressure:
@@ -33,6 +35,8 @@ none_set:
     k8s.node.allocatable_ephemeral_storage:
       enabled: false
     k8s.node.allocatable_memory:
+      enabled: false
+    k8s.node.allocatable_pods:
       enabled: false
     k8s.node.allocatable_storage:
       enabled: false

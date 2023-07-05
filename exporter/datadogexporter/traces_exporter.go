@@ -106,6 +106,7 @@ func (exp *traceExporter) consumeTraces(
 			hosts[src.Identifier] = struct{}{}
 		case source.AWSECSFargateKind:
 			tags[src.Tag()] = struct{}{}
+		case source.InvalidKind:
 		}
 	}
 

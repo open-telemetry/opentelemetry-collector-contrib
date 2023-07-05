@@ -161,6 +161,45 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "sort_by_timestamp",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`
+					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
+						{
+							TimestampSortRule{
+								BaseSortRule: BaseSortRule{
+									SortType:  sortTypeTimestamp,
+									RegexKey:  "rotation_time",
+									Ascending: true,
+								},
+								Location: "utc",
+								Layout:   `%Y%m%d%H`,
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
+				Name: "sort_by_numeric",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria.Regex = `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`
+					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
+						{
+							NumericSortRule{
+								BaseSortRule: BaseSortRule{
+									SortType: sortTypeNumeric,
+									RegexKey: "file_num",
+								},
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
 				Name: "poll_interval_no_units",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
@@ -530,6 +569,23 @@ func TestBuild(t *testing.T) {
 			"HeaderConfigNoFlag",
 			func(f *Config) {
 				f.Header = &HeaderConfig{}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadOrderingCriteriaRegex",
+			func(f *Config) {
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
+					{
+						NumericSortRule{
+							BaseSortRule: BaseSortRule{
+								RegexKey: "value",
+								SortType: sortTypeNumeric,
+							},
+						},
+					},
+				}
 			},
 			require.Error,
 			nil,

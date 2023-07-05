@@ -87,6 +87,8 @@ func (mvt ValueType) Primitive() string {
 		return "[]any"
 	case pcommon.ValueTypeMap:
 		return "map[string]any"
+	case pcommon.ValueTypeEmpty:
+		return ""
 	default:
 		return ""
 	}
@@ -106,6 +108,8 @@ func (mvt ValueType) TestValue() string {
 		return `map[string]any{"onek": "onev", "twok": "twov"}`
 	case pcommon.ValueTypeSlice:
 		return `[]any{"one", "two"}`
+	case pcommon.ValueTypeBytes:
+		return ""
 	}
 	return ""
 }
