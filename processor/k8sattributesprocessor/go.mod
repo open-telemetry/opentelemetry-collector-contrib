@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.81.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.81.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.80.1-0.20230629144634-c3f70bd1f8ea
