@@ -228,7 +228,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 	var logRecord plog.LogRecord
 	logs := plog.NewLogs()
 
-	resourceMap := map[string](map[string]plog.ResourceLogs){}
+	resourceMap := map[string](map[string]*plog.ResourceLogs){}
 
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
@@ -256,19 +256,22 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
 
 			if _, ok := resourceMap[logGroupName]; !ok {
-				resourceMap[logGroupName] = map[string]plog.ResourceLogs{}
+				resourceMap[logGroupName] = map[string]*plog.ResourceLogs{}
 			}
 
 			if e.LogStreamName != nil {
-				resourceMap[logGroupName][*e.LogStreamName] = rl
+				resourceMap[logGroupName][*e.LogStreamName] = &rl
 				resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
 			} else {
-				resourceMap[logGroupName][noStreamName] = rl
+				resourceMap[logGroupName][noStreamName] = &rl
 			}
 
 			logRecord = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		} else {
-			logRecord = resource.ScopeLogs().At(0).LogRecords().AppendEmpty()
+			sls := resource.ScopeLogs()
+			sl := sls.At(0)
+			lrs := sl.LogRecords()
+			logRecord = lrs.AppendEmpty()
 		}
 
 		logRecord.SetObservedTimestamp(now)
@@ -280,18 +283,17 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 	return logs
 }
 
-func (*logsReceiver) getResourceLogs(m map[string](map[string]plog.ResourceLogs), group string, logStream *string) *plog.ResourceLogs {
-	if streamMap := m[group]; streamMap != nil {
-		if logStream == nil {
-			if resource, ok := streamMap[noStreamName]; ok {
-				return &resource
-			}
-		} else if resource, ok := streamMap[*logStream]; ok {
-			return &resource
-		}
+func (*logsReceiver) getResourceLogs(m map[string](map[string]*plog.ResourceLogs), group string, logStream *string) *plog.ResourceLogs {
+	streamMap := m[group]
+	if streamMap == nil {
+		return nil
 	}
 
-	return nil
+	if logStream == nil {
+		return streamMap[noStreamName]
+	}
+
+	return streamMap[*logStream]
 }
 
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
