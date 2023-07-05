@@ -53,6 +53,15 @@ func TestValidate(t *testing.T) {
 			desc: "valid config",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://opentelemetry.io",
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid endpoint with port and path",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://opentelemetry.io:80/docs",
 				},
 			},
