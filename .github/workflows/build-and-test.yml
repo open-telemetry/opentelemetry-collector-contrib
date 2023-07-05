@@ -395,6 +395,10 @@ jobs:
           - arm
           - arm64
           - ppc64le
+        include:
+          - os: linux
+          - arch: arm
+          - arm: 7
         exclude:
           - os: darwin
             arch: 386
@@ -429,7 +433,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Build Collector ${{ matrix.binary }}
-        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} otelcontribcol
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:
