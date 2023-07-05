@@ -1,3 +1,5 @@
+# Dynatrace
+
 [Dynatrace](https://www.dynatrace.com/integrations/opentelemetry) supports native
 OpenTelemetry protocol (OTLP) ingest for traces, metrics and logs.
 All signals can be sent directly to Dynatrace via **OTLP protobuf over HTTP**
@@ -5,7 +7,7 @@ using the built-in OTLP/HTTP Exporter available in the collector.
 More information on using the collector with Dynatrace can be found in the
 [Dynatrace documentation](https://www.dynatrace.com/support/help/shortlink/opentelemetry-collector-explanation#configuration).
 
-# Dynatrace Exporter
+## Dynatrace Metrics Exporter
 
 > **Warning**
 > Dynatrace supports native OpenTelemetry protocol (OTLP) ingest for traces, metrics and logs.
