@@ -11,13 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/fanoutconsumer"
 )
 
 func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
@@ -41,19 +38,16 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, cfg.Validate())
 
-	defaultSink := &consumertest.MetricsSink{}
-	sink0 := &consumertest.MetricsSink{}
-	sink1 := &consumertest.MetricsSink{}
+	var defaultSink, sink0, sink1 consumertest.MetricsSink
 
-	router := fanoutconsumer.NewMetricsRouter(
-		map[component.ID]consumer.Metrics{
-			metricsDefault: defaultSink,
-			metrics0:       sink0,
-			metrics1:       sink1,
-		})
+	router := connectortest.NewMetricsRouter(
+		connectortest.WithMetricsSink(metricsDefault, &defaultSink),
+		connectortest.WithMetricsSink(metrics0, &sink0),
+		connectortest.WithMetricsSink(metrics1, &sink1),
+	)
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router)
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -61,16 +55,16 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 	rtConn := conn.(*metricsConnector)
 	require.NoError(t, err)
-	require.Same(t, defaultSink, rtConn.router.defaultConsumer)
+	require.Same(t, &defaultSink, rtConn.router.defaultConsumer)
 
 	route, ok := rtConn.router.routes[rtConn.router.table[0].Statement]
 	assert.True(t, ok)
-	require.Same(t, sink0, route.consumer)
+	require.Same(t, &sink0, route.consumer)
 
 	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
 	assert.True(t, ok)
 
-	routeConsumer, err := router.(connector.MetricsRouter).Consumer(metrics0, metrics1)
+	routeConsumer, err := router.Consumer(metrics0, metrics1)
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
@@ -103,9 +97,13 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	}
 
-	defaultSink := &consumertest.MetricsSink{}
-	sink0 := &consumertest.MetricsSink{}
-	sink1 := &consumertest.MetricsSink{}
+	var defaultSink, sink0, sink1 consumertest.MetricsSink
+
+	router := connectortest.NewMetricsRouter(
+		connectortest.WithMetricsSink(metricsDefault, &defaultSink),
+		connectortest.WithMetricsSink(metrics0, &sink0),
+		connectortest.WithMetricsSink(metrics1, &sink1),
+	)
 
 	resetSinks := func() {
 		defaultSink.Reset()
@@ -113,19 +111,12 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		sink1.Reset()
 	}
 
-	consumer := fanoutconsumer.NewMetricsRouter(
-		map[component.ID]consumer.Metrics{
-			metricsDefault: defaultSink,
-			metrics0:       sink0,
-			metrics1:       sink1,
-		})
-
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Metrics),
 	)
 
 	require.NoError(t, err)
@@ -267,21 +258,19 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 		},
 	}
 
-	sink0 := &consumertest.MetricsSink{}
-	sink1 := &consumertest.MetricsSink{}
+	var sink0, sink1 consumertest.MetricsSink
 
-	consumer := fanoutconsumer.NewMetricsRouter(
-		map[component.ID]consumer.Metrics{
-			metricsDefault: sink0,
-			metricsOther:   sink1,
-		})
+	router := connectortest.NewMetricsRouter(
+		connectortest.WithMetricsSink(metricsDefault, &sink0),
+		connectortest.WithMetricsSink(metricsOther, &sink1),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Metrics),
 	)
 
 	require.NoError(t, err)
@@ -322,18 +311,17 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 		}},
 	}
 
-	consumer := fanoutconsumer.NewMetricsRouter(
-		map[component.ID]consumer.Metrics{
-			metricsDefault: &consumertest.MetricsSink{},
-			metricsOther:   &consumertest.MetricsSink{},
-		})
+	router := connectortest.NewMetricsRouter(
+		connectortest.WithNopMetrics(metricsDefault),
+		connectortest.WithNopMetrics(metricsOther),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Metrics),
 	)
 
 	require.NoError(t, err)

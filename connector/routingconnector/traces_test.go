@@ -11,13 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/fanoutconsumer"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -41,19 +38,16 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, cfg.Validate())
 
-	defaultSink := &consumertest.TracesSink{}
-	sink0 := &consumertest.TracesSink{}
-	sink1 := &consumertest.TracesSink{}
+	var defaultSink, sink0, sink1 consumertest.TracesSink
 
-	router := fanoutconsumer.NewTracesRouter(
-		map[component.ID]consumer.Traces{
-			tracesDefault: defaultSink,
-			traces0:       sink0,
-			traces1:       sink1,
-		})
+	router := connectortest.NewTracesRouter(
+		connectortest.WithTracesSink(tracesDefault, &defaultSink),
+		connectortest.WithTracesSink(traces0, &sink0),
+		connectortest.WithTracesSink(traces1, &sink1),
+	)
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router)
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -61,16 +55,16 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 	rtConn := conn.(*tracesConnector)
 	require.NoError(t, err)
-	require.Same(t, defaultSink, rtConn.router.defaultConsumer)
+	require.Same(t, &defaultSink, rtConn.router.defaultConsumer)
 
 	route, ok := rtConn.router.routes[rtConn.router.table[0].Statement]
 	assert.True(t, ok)
-	require.Same(t, sink0, route.consumer)
+	require.Same(t, &sink0, route.consumer)
 
 	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
 	assert.True(t, ok)
 
-	routeConsumer, err := router.(connector.TracesRouter).Consumer(traces0, traces1)
+	routeConsumer, err := router.Consumer(traces0, traces1)
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
@@ -103,9 +97,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	}
 
-	defaultSink := &consumertest.TracesSink{}
-	sink0 := &consumertest.TracesSink{}
-	sink1 := &consumertest.TracesSink{}
+	var defaultSink, sink0, sink1 consumertest.TracesSink
 
 	resetSinks := func() {
 		defaultSink.Reset()
@@ -113,19 +105,18 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		sink1.Reset()
 	}
 
-	consumer := fanoutconsumer.NewTracesRouter(
-		map[component.ID]consumer.Traces{
-			tracesDefault: defaultSink,
-			traces0:       sink0,
-			traces1:       sink1,
-		})
+	router := connectortest.NewTracesRouter(
+		connectortest.WithTracesSink(tracesDefault, &defaultSink),
+		connectortest.WithTracesSink(traces0, &sink0),
+		connectortest.WithTracesSink(traces1, &sink1),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)
@@ -227,21 +218,19 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 		},
 	}
 
-	sink0 := &consumertest.TracesSink{}
-	sink1 := &consumertest.TracesSink{}
+	var sink0, sink1 consumertest.TracesSink
 
-	consumer := fanoutconsumer.NewTracesRouter(
-		map[component.ID]consumer.Traces{
-			tracesDefault: sink0,
-			tracesOther:   sink1,
-		})
+	router := connectortest.NewTracesRouter(
+		connectortest.WithTracesSink(tracesDefault, &sink0),
+		connectortest.WithTracesSink(tracesOther, &sink1),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)
@@ -284,18 +273,17 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 		}},
 	}
 
-	consumer := fanoutconsumer.NewTracesRouter(
-		map[component.ID]consumer.Traces{
-			tracesDefault: &consumertest.TracesSink{},
-			tracesOther:   &consumertest.TracesSink{},
-		})
+	router := connectortest.NewTracesRouter(
+		connectortest.WithNopTraces(tracesDefault),
+		connectortest.WithNopTraces(tracesOther),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)

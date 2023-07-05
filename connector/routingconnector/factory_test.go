@@ -12,8 +12,6 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/fanoutconsumer"
 )
 
 func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
@@ -26,15 +24,14 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 		}},
 	}
 
-	consumer := fanoutconsumer.NewTracesRouter(
-		map[component.ID]consumer.Traces{
-			component.NewIDWithName(component.DataTypeTraces, "default"): &consumertest.TracesSink{},
-			component.NewIDWithName(component.DataTypeTraces, "0"):       &consumertest.TracesSink{},
-		})
+	router := connectortest.NewTracesRouter(
+		connectortest.WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "default")),
+		connectortest.WithNopTraces(component.NewIDWithName(component.DataTypeTraces, "0")),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, consumer)
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -50,8 +47,8 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 		}},
 	}
 
-	// if a connector is not a receiver in multiple pipelines the factory will receive a normal,
-	// non-fanout consumer
+	// in the real world, the factory will always receive a consumer with a concerete type of a
+	// connector router. this tests failure when a consumer of another type is passed in.
 	consumer := &consumertest.TracesSink{}
 
 	factory := NewFactory()

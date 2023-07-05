@@ -11,13 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/fanoutconsumer"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
@@ -41,19 +38,16 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, cfg.Validate())
 
-	defaultSink := &consumertest.LogsSink{}
-	sink0 := &consumertest.LogsSink{}
-	sink1 := &consumertest.LogsSink{}
+	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := fanoutconsumer.NewLogsRouter(
-		map[component.ID]consumer.Logs{
-			logsDefault: defaultSink,
-			logs0:       sink0,
-			logs1:       sink1,
-		})
+	router := connectortest.NewLogsRouter(
+		connectortest.WithLogsSink(logsDefault, &defaultSink),
+		connectortest.WithLogsSink(logs0, &sink0),
+		connectortest.WithLogsSink(logs1, &sink1),
+	)
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router)
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -61,16 +55,16 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	rtConn := conn.(*logsConnector)
 	require.NoError(t, err)
-	require.Same(t, defaultSink, rtConn.router.defaultConsumer)
+	require.Same(t, &defaultSink, rtConn.router.defaultConsumer)
 
 	route, ok := rtConn.router.routes[rtConn.router.table[0].Statement]
 	assert.True(t, ok)
-	require.Same(t, sink0, route.consumer)
+	require.Same(t, &sink0, route.consumer)
 
 	route, ok = rtConn.router.routes[rtConn.router.table[1].Statement]
 	assert.True(t, ok)
 
-	routeConsumer, err := router.(connector.LogsRouter).Consumer(logs0, logs1)
+	routeConsumer, err := router.Consumer(logs0, logs1)
 	require.NoError(t, err)
 	require.Equal(t, routeConsumer, route.consumer)
 
@@ -103,9 +97,13 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	}
 
-	defaultSink := &consumertest.LogsSink{}
-	sink0 := &consumertest.LogsSink{}
-	sink1 := &consumertest.LogsSink{}
+	var defaultSink, sink0, sink1 consumertest.LogsSink
+
+	router := connectortest.NewLogsRouter(
+		connectortest.WithLogsSink(logsDefault, &defaultSink),
+		connectortest.WithLogsSink(logs0, &sink0),
+		connectortest.WithLogsSink(logs1, &sink1),
+	)
 
 	resetSinks := func() {
 		defaultSink.Reset()
@@ -113,19 +111,12 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		sink1.Reset()
 	}
 
-	consumer := fanoutconsumer.NewLogsRouter(
-		map[component.ID]consumer.Logs{
-			logsDefault: defaultSink,
-			logs0:       sink0,
-			logs1:       sink1,
-		})
-
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Logs),
 	)
 
 	require.NoError(t, err)
@@ -252,21 +243,19 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 		},
 	}
 
-	sink0 := &consumertest.LogsSink{}
-	sink1 := &consumertest.LogsSink{}
+	var sink0, sink1 consumertest.LogsSink
 
-	consumer := fanoutconsumer.NewLogsRouter(
-		map[component.ID]consumer.Logs{
-			logsDefault: sink0,
-			logsOther:   sink1,
-		})
+	router := connectortest.NewLogsRouter(
+		connectortest.WithLogsSink(logsDefault, &sink0),
+		connectortest.WithLogsSink(logsOther, &sink1),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Logs),
 	)
 
 	require.NoError(t, err)
@@ -307,21 +296,17 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 		}},
 	}
 
-	sink0 := &consumertest.LogsSink{}
-	sink1 := &consumertest.LogsSink{}
-
-	consumer := fanoutconsumer.NewLogsRouter(
-		map[component.ID]consumer.Logs{
-			logsDefault: sink0,
-			logsOther:   sink1,
-		})
+	router := connectortest.NewLogsRouter(
+		connectortest.WithNopLogs(logsDefault),
+		connectortest.WithNopLogs(logsOther),
+	)
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
 		connectortest.NewNopCreateSettings(),
 		cfg,
-		consumer,
+		router.(consumer.Logs),
 	)
 
 	require.NoError(t, err)
