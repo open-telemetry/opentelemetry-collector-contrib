@@ -323,7 +323,7 @@ service:
 
 **Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**
 
-## Temporality
+### Temporality
 
 If possible when configuring your SDK, use DELTA temporality for Counter, Asynchronous Counter, and Histogram metrics.
 Use CUMULATIVE temporality for UpDownCounter and Asynchronous UpDownCounter metrics.
@@ -335,7 +335,7 @@ if you are unsure if the SDK you are using supports this configuration.
 You can read more about this and other configurations at
 [OpenTelemetry Metrics Exporter - OTLP](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk_exporters/otlp.md#additional-configuration).
 
-### Considerations when exporting Cumulative Data Points
+#### Considerations when exporting Cumulative Data Points
 
 Histogram metrics with CUMULATIVE temporality are NOT SUPPORTED and will NOT be exported.
 
@@ -343,13 +343,13 @@ When possible, Sum metrics should use DELTA temporality.
 When receiving Sum metrics with CUMULATIVE temporality, this exporter performs CUMULATIVE to DELTA conversion.
 This conversion can lead to missing or inconsistent data, as described below:
 
-#### First Data Points are dropped
+##### First Data Points are dropped
 
 Due to the conversion, the exporter will drop the first received data point
 after a counter is created or reset as there is no previous data point to compare it to.
 This can be circumvented by configuring the OpenTelemetry SDK to export DELTA values.
 
-### Multi-instance collector deployment
+#### Multi-instance collector deployment
 
 In a multiple-instance deployment of the OpenTelemetry Collector, the conversion 
 can produce inconsistent data unless it can be guaranteed that metrics from the 
