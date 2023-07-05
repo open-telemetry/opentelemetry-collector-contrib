@@ -1933,8 +1933,8 @@ github.com/influxdata/influxdb-observability/common v0.5.2 h1:n4/w+cu+Puva0tEodn
 github.com/influxdata/influxdb-observability/common v0.5.2/go.mod h1:4iLh+a678292K5J4pMh8wf2ZplteKfyGCfjHevgiUl0=
 github.com/influxdata/influxdb-observability/influx2otel v0.5.2 h1:IaTa5swJFrzy52KNTLU0hnrQ7oblfnPDckpfQy8FPpU=
 github.com/influxdata/influxdb-observability/influx2otel v0.5.2/go.mod h1:ALf1LF/Q8UKvKSZzF+Te6QwXPLbV3FlVnV6sGmiK99w=
-github.com/influxdata/influxdb-observability/otel2influx v0.5.2 h1:/AOtZgTR+KA2Qj/yr17fw6WTZRYeSbV7tE016i9kGlQ=
-github.com/influxdata/influxdb-observability/otel2influx v0.5.2/go.mod h1:e95xRYLB1aIR1IRC0/Iq4pSrR4txuQHu9PGtHbiVGAE=
+github.com/influxdata/influxdb-observability/otel2influx v0.0.0-20230705233630-3cfabd1d00b9 h1:IAzPIfEMeB21gyiwzon2k1GZN6qbSa/ia784i1MfHP8=
+github.com/influxdata/influxdb-observability/otel2influx v0.0.0-20230705233630-3cfabd1d00b9/go.mod h1:XpkvWmFSE1OkYUAI70+wXaZKGrwFh0zEUg63V0tB4aU=
 github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/influxdb1-client v0.0.0-20200827194710-b269163b24ab/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c h1:qSHzRbhzK8RdXOsAdfDgO49TtqC1oZ+acxPrkfTxcCs=
