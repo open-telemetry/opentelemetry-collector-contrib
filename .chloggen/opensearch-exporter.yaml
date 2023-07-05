@@ -1,0 +1,9 @@
+change_type: new_component
+
+component: opensearchexporter
+
+note: exports OpenTelemetry signals to [OpenSearch](https://opensearch.org/).
+
+issues: [23611]
+
+subtext:
