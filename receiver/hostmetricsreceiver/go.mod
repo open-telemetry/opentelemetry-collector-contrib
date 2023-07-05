@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/leoluk/perflib_exporter v0.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.81.0
 	github.com/shirou/gopsutil/v3 v3.23.6
 	github.com/stretchr/testify v1.8.4
 	github.com/yusufpapurcu/wmi v1.2.3
