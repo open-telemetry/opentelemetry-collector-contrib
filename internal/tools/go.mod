@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/build-tools/multimod v0.8.0
 	go.opentelemetry.io/collector/cmd/builder v0.80.0
 	golang.org/x/tools v0.10.0
-	golang.org/x/vuln v0.1.0
+	golang.org/x/vuln v0.2.0
 )
 
 require (
