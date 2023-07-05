@@ -181,12 +181,6 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
 		}
-		if c.AcceptsOtherConnectionSettings != nil && *c.AcceptsOtherConnectionSettings {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOtherConnectionSettings
-		}
-		if c.AcceptsPackages != nil && *c.AcceptsPackages {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsPackages
-		}
 		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
 		}
@@ -212,13 +206,6 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
 		}
 
-		// ReportsOwnLogs is set if unspecified or explicitly set to true.
-		if c.ReportsOwnLogs != nil && *c.ReportsOwnLogs {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs
-		} else if c.ReportsOwnLogs == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs
-		}
-
 		// ReportsOwnMetrics is set if unspecified or explicitly set to true.
 		if c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
@@ -226,12 +213,6 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
 		}
 
-		if c.ReportsOwnTraces != nil && *c.ReportsOwnTraces {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
-		}
-		if c.ReportsPackageStatuses != nil && *c.ReportsPackageStatuses {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsPackageStatuses
-		}
 		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
