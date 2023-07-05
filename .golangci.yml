@@ -236,9 +236,6 @@ issues:
     - path: coralogixexporter
       linters:
         - exhaustive
-    - path: datasetexporter
-      linters:
-        - exhaustive
     - path: elasticsearchexporter
       linters:
         - exhaustive
