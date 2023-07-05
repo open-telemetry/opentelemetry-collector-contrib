@@ -35,7 +35,7 @@ This receiver supports SNMP versions:
 ### Connection Configuration
 These configuration options are for connecting to a SNMP host.
 
-- `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `collection_interval`: (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `endpoint` (default: `udp://localhost:161`): SNMP endpoint to connect to in the form of `[udp|tcp][://]{host}[:{port}]`
   - If no scheme is supplied, a default of `udp` is assumed
   - If no port is supplied, a default of `161` is assumed
