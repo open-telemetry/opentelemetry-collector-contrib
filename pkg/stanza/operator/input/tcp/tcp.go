@@ -247,9 +247,12 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 
 		if t.OneLogPerPacket {
 			var buf bytes.Buffer
-			io.Copy(&buf, conn)
+			_, err := io.Copy(&buf, conn)
+			if err != nil {
+				t.Errorw("IO copy net connection buffer error", zap.Error(err))
+			}
 			log := truncateMaxLog(buf.Bytes(), t.MaxLogSize)
-			handleMessage(ctx, conn, t, log)
+			t.handleMessage(ctx, conn, log)
 			return
 		}
 
@@ -261,7 +264,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		scanner.Split(t.splitFunc)
 
 		for scanner.Scan() {
-			handleMessage(ctx, conn, t, scanner.Bytes())
+			t.handleMessage(ctx, conn, scanner.Bytes())
 		}
 
 		if err := scanner.Err(); err != nil {
@@ -270,7 +273,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 	}()
 }
 
-func handleMessage(ctx context.Context, conn net.Conn, t *Input, log []byte) {
+func (t *Input) handleMessage(ctx context.Context, conn net.Conn, log []byte) {
 	decoded, err := t.encoding.Decode(log)
 	if err != nil {
 		t.Errorw("Failed to decode data", zap.Error(err))
@@ -304,15 +307,14 @@ func handleMessage(ctx context.Context, conn net.Conn, t *Input, log []byte) {
 }
 
 func truncateMaxLog(data []byte, maxLogSize int) (token []byte) {
-	dataLength := len(data)
-
-	if dataLength >= maxLogSize {
+	if len(data) >= maxLogSize {
 		return data[:maxLogSize]
 	}
 
-	if dataLength == 0 {
+	if len(data) == 0 {
 		return nil
 	}
+
 	return data
 }
 
