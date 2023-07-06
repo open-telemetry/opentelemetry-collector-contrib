@@ -4,6 +4,7 @@
 package jaeger
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/jaegertracing/jaeger/model"
@@ -169,6 +170,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 	attributes.PutBool("bool-val", true)
 	attributes.PutInt("int-val", 123)
 	attributes.PutStr("string-val", "abc")
+	attributes.PutStr("bin-val", base64.StdEncoding.EncodeToString([]byte(`abc`)))
 	attributes.PutDouble("double-val", 1.23)
 	attributes.PutEmptyBytes("bytes-val").FromRaw([]byte{1, 2, 3, 4})
 	attributes.PutStr(conventions.AttributeServiceName, "service-name")
@@ -188,6 +190,11 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 			Key:   "string-val",
 			VType: model.ValueType_STRING,
 			VStr:  "abc",
+		},
+		{
+			Key:     "bin-val",
+			VType:   model.ValueType_BINARY,
+			VBinary: []byte(`abc`),
 		},
 		{
 			Key:      "double-val",
@@ -211,7 +218,7 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 
 	// The last item in expected ("service-name") must be skipped in resource tags translation
 	got = appendTagsFromResourceAttributes(make([]model.KeyValue, 0, len(expected)-1), attributes)
-	require.EqualValues(t, expected[:5], got)
+	require.EqualValues(t, expected[:6], got)
 }
 
 func TestInternalTracesToJaegerProto(t *testing.T) {

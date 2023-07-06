@@ -126,9 +126,15 @@ func attributeToJaegerProtoTag(key string, attr pcommon.Value) model.KeyValue {
 	switch attr.Type() {
 	case pcommon.ValueTypeStr:
 		// Jaeger-to-Internal maps binary tags to string attributes and encodes them as
-		// base64 strings. Blindingly attempting to decode base64 seems too much.
+		// base64 strings.
 		tag.VType = model.ValueType_STRING
-		tag.VStr = attr.Str()
+		encoded := attr.Str()
+		tag.VStr = encoded
+		if vbin, err := base64.StdEncoding.DecodeString(encoded); err == nil {
+			tag.VStr = ""
+			tag.VType = model.ValueType_BINARY
+			tag.VBinary = vbin
+		}
 	case pcommon.ValueTypeInt:
 		tag.VType = model.ValueType_INT64
 		tag.VInt64 = attr.Int()
