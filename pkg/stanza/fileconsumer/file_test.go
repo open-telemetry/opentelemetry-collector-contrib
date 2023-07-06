@@ -677,8 +677,8 @@ func TestMultiFileSort(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.Finder.OrderingCriteria.Regex = `.*(?P<value>\d)`
-	cfg.Finder.OrderingCriteria.SortBy = []SortRuleImpl{
+	cfg.MatchingCriteria.OrderingCriteria.Regex = `.*(?P<value>\d)`
+	cfg.MatchingCriteria.OrderingCriteria.SortBy = []SortRuleImpl{
 		{
 			NumericSortRule{
 				BaseSortRule: BaseSortRule{

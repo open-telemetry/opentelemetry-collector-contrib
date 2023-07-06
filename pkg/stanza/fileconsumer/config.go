@@ -55,7 +55,7 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	Finder                  `mapstructure:",squash"`
+	MatchingCriteria        `mapstructure:",squash"`
 	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
@@ -156,7 +156,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			encodingConfig:  c.Splitter.EncodingConfig,
 			headerSettings:  hs,
 		},
-		finder:          c.Finder,
+		finder:          c.MatchingCriteria,
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
