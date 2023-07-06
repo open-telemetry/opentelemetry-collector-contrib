@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -35,21 +34,13 @@ func TestNewFactory(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 
-				httpSettings := confighttp.NewDefaultHTTPClientSettings()
-				httpSettings.Timeout = 10 * time.Second
-
 				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 60 * time.Second,
 						InitialDelay:       time.Second,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-					Targets: []*targetConfig{
-						{
-							HTTPClientSettings: httpSettings,
-							Method:             "GET",
-						},
-					},
+					Targets:              []*targetConfig{},
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
