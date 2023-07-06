@@ -34,9 +34,6 @@ func Duration[K any](duration ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 		if err != nil {
 			return nil, err
 		}
-		// if d == "" {
-		// 	return nil, fmt.Errorf("duration cannot be nil")
-		// }
 		dur, err := time.ParseDuration(d)
 		if err != nil {
 			return nil, err

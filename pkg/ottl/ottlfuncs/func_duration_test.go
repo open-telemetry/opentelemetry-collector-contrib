@@ -180,15 +180,6 @@ func Test_DurationError(t *testing.T) {
 			},
 			expectedError: "invalid duration",
 		},
-		{
-			name: "empty duration",
-			duration: &ottl.StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "unknown unit", nil
-				},
-			},
-			expectedError: "invalid duration",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
