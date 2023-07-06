@@ -587,7 +587,7 @@ Examples:
 
 ### Time
 
-The `Time` Converter taking a string representation of a duration and converts it to a Golang `time.duration`.
+The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
 `time` is a string. `format` is a string.
 
