@@ -3,9 +3,9 @@
 
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 import (
-	"encoding/json"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -23,7 +23,7 @@ func (r *jsonLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 
 	// get json logs from the buffer
 	jsonVal := map[string]interface{}{}
-	if err := json.Unmarshal(buf, &jsonVal); err != nil {
+	if err := jsoniter.Unmarshal(buf, &jsonVal); err != nil {
 		return p, err
 	}
 
