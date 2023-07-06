@@ -1,0 +1,60 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: service.name
+                value:
+                  stringValue: service-a
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: ""
+            traceId: ""
+          - attributes:
+              - key: service.name
+                value:
+                  stringValue: service-a
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: ""
+            traceId: ""
+          - attributes:
+              - key: service.name
+                value:
+                  stringValue: service-b
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: ""
+            traceId: ""
+        scope:
+          name: exceptionsconnector

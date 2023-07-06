@@ -54,6 +54,7 @@ func (c *logsConnector) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate logs.
 func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	c.logger.Debug("Consume traces")
+	sl := c.newScopeLogs()
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -71,7 +72,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					if event.Name() == "exception" {
-						c.attrToLogRecord(serviceName, span.Attributes(), event.Attributes(), event.Timestamp())
+						c.attrToLogRecord(sl, serviceName, span.Attributes(), event.Attributes(), event.Timestamp())
 					}
 				}
 			}
@@ -90,10 +91,14 @@ func (c *logsConnector) exportLogs(ctx context.Context) error {
 	return nil
 }
 
-func (c *logsConnector) attrToLogRecord(serviceName string, spanAttr, eventAttr pcommon.Map, eventTs pcommon.Timestamp) plog.LogRecord {
+func (c *logsConnector) newScopeLogs() plog.ScopeLogs {
 	rl := c.ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("exceptionsconnector")
+	return sl
+}
+
+func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, spanAttr, eventAttr pcommon.Map, eventTs pcommon.Timestamp) plog.LogRecord {
 	logRecord := sl.LogRecords().AppendEmpty()
 
 	logRecord.SetTimestamp(eventTs)
