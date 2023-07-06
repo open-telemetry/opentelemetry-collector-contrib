@@ -45,7 +45,10 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.3 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+<<<<<<< HEAD
 	github.com/json-iterator/go v1.1.12 // indirect
+=======
+>>>>>>> 4e7801ca7266cd02870e770e1b8917b35059f244
 	github.com/klauspost/compress v1.16.6 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
