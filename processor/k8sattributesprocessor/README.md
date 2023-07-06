@@ -272,3 +272,9 @@ The processor does not support detecting containers from the same pods when runn
 as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 downward API to inject environment variables into the pods and directly use their values
 as tags.
+
+## Timestamp Encoding
+
+The `k8s.pod.start_time`attribute uses RFC3339 encoding for it's time value. See 
+[Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) for more information.
+

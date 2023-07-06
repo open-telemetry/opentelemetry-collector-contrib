@@ -594,6 +594,9 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
+	rfc3339ts, err := pod.GetCreationTimestamp().MarshalText()
+	require.NoError(t, err)
+
 	isController := true
 	replicaset := &apps_v1.ReplicaSet{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -721,7 +724,7 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.hostname":    "host1",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			"k8s.pod.start_time":  pod.GetCreationTimestamp().String(),
+			"k8s.pod.start_time":  string(rfc3339ts),
 		},
 	}, {
 		name: "labels",

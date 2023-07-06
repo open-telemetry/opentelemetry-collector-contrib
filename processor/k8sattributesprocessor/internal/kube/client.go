@@ -343,7 +343,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
 		if !ts.IsZero() {
-			tags[tagStartTime] = ts.String()
+			if rfc3339ts, err := ts.MarshalText(); err != nil {
+				c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
+			} else {
+				tags[tagStartTime] = string(rfc3339ts)
+			}
 		}
 	}
 
