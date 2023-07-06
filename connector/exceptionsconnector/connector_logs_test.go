@@ -18,12 +18,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -42,11 +43,16 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
 
+	expectedLogs, err := golden.ReadLogs("testdata/logs.yml")
+	require.NoError(t, err)
+
 	for _, traces := range traces {
 		err = p.ConsumeTraces(ctx, traces)
+		assert.NoError(t, err)
+
 		logs := lsink.AllLogs()
 		assert.True(t, len(logs) > 0)
-		assert.True(t, verifyConsumeLogsInput(t, logs[len(logs)-1]))
+		err = plogtest.CompareLogs(expectedLogs, logs[len(logs)-1])
 		assert.NoError(t, err)
 	}
 }
@@ -55,33 +61,4 @@ func newTestLogsConnector(t *testing.T, lcon consumer.Logs, logger *zap.Logger) 
 	c, err := newLogsConnector(logger)
 	c.logsConsumer = lcon
 	return c, err
-}
-
-func verifyConsumeLogsInput(t testing.TB, input plog.Logs) bool {
-	require.Equal(t, 3, input.LogRecordCount(), "Should be 1 for each generated span")
-
-	rl := input.ResourceLogs()
-
-	sl := rl.At(0).ScopeLogs()
-	require.Equal(t, 1, sl.Len())
-
-	lrs := sl.At(0).LogRecords()
-	require.Equal(t, 1, lrs.Len())
-
-	lr := lrs.At(0)
-	assert.Equal(t, plog.SeverityNumberError, lr.SeverityNumber())
-	assert.Equal(t, "ERROR", lr.SeverityText())
-
-	sn, _ := lr.Attributes().Get("service.name")
-	assert.Equal(t, "service-a", sn.AsString())
-
-	et, _ := lr.Attributes().Get("exception.type")
-	assert.Equal(t, "Exception", et.AsString())
-
-	em, _ := lr.Attributes().Get("exception.message")
-	assert.Equal(t, "Exception message", em.AsString())
-
-	est, _ := lr.Attributes().Get("exception.stacktrace")
-	assert.Equal(t, "Exception stacktrace", est.AsString())
-	return true
 }
