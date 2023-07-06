@@ -34,7 +34,6 @@ var (
 	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo, metricSuffixCreated}
 	errNoDataToBuild      = errors.New("there's no data to build")
 	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
-	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric is missing or empty")
 	errEmptyLeLabel       = errors.New("'le' label on histogram metric is missing or empty")
 	errMetricNameNotFound = errors.New("metricName not found from labels")
 	errTransactionAborted = errors.New("transaction aborted")
@@ -82,7 +81,8 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 	case pmetric.MetricTypeSummary:
 		val = labels.Get(model.QuantileLabel)
 		if val == "" {
-			return 0, errEmptyQuantileLabel
+			// if there's no quantile label, just return 0, which is the default
+			return 0, nil
 		}
 	default:
 		return 0, errNoBoundaryLabel

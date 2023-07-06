@@ -199,7 +199,7 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	)
 
 	_, err := tr.Append(0, goodLabels, 1917, 1.0)
-	require.ErrorIs(t, err, errEmptyQuantileLabel)
+	require.NoError(t, err)
 }
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {

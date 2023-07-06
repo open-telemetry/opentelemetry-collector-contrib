@@ -138,22 +138,16 @@ func TestGetBoundary(t *testing.T) {
 			wantValue: 11.71,
 		},
 		{
-			name:    "summary with bucket label",
-			mtype:   pmetric.MetricTypeSummary,
-			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
-			wantErr: errEmptyQuantileLabel,
+			name:      "summary without quantile label",
+			mtype:     pmetric.MetricTypeSummary,
+			labels:    labels.EmptyLabels(),
+			wantValue: 0,
 		},
 		{
 			name:      "summary with quantile label",
 			mtype:     pmetric.MetricTypeSummary,
 			labels:    labels.FromStrings(model.QuantileLabel, "92.88"),
 			wantValue: 92.88,
-		},
-		{
-			name:    "gauge histogram mismatched with bucket label",
-			mtype:   pmetric.MetricTypeSummary,
-			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
-			wantErr: errEmptyQuantileLabel,
 		},
 		{
 			name:    "other data types without matches",

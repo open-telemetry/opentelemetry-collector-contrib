@@ -185,7 +185,9 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 		if !pointIsStale {
 			quantile.SetValue(p.value)
 		}
-		quantile.SetQuantile(p.boundary)
+		if p.boundary != 0 {
+			quantile.SetQuantile(p.boundary)
+		}
 	}
 
 	// Based on the summary description from https://prometheus.io/docs/concepts/metric_types/#summary
