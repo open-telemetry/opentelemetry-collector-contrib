@@ -190,6 +190,8 @@ func DetermineNextEventMode(peeker Peeker) (EventMode, error) {
 		return ForwardMode, nil
 	case msgp.BinType, msgp.StrType:
 		return PackedForwardMode, nil
+	case msgp.InvalidType, msgp.MapType, msgp.Float64Type, msgp.Float32Type, msgp.BoolType, msgp.NilType, msgp.DurationType, msgp.Complex64Type, msgp.Complex128Type, msgp.TimeType:
+		fallthrough
 	default:
 		return UnknownMode, fmt.Errorf("unable to determine next event mode for type %v", secondElmType)
 	}

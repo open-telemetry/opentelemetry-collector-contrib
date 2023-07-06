@@ -356,6 +356,8 @@ func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 		if err != nil {
 			return msgp.WrapError(err, "EntriesRaw")
 		}
+	case msgp.InvalidType, msgp.MapType, msgp.ArrayType, msgp.Float64Type, msgp.Float32Type, msgp.BoolType, msgp.IntType, msgp.UintType, msgp.NilType, msgp.DurationType, msgp.ExtensionType, msgp.Complex64Type, msgp.Complex128Type, msgp.TimeType:
+		fallthrough
 	default:
 		return msgp.WrapError(fmt.Errorf("invalid type %d", entriesType), "EntriesRaw")
 	}
