@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -30,9 +29,6 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	cfg.CollectionInterval = 60 * time.Second
-
-	httpSettings := confighttp.NewDefaultHTTPClientSettings()
-	httpSettings.Timeout = 10 * time.Second
 
 	return &Config{
 		ScraperControllerSettings: cfg,
