@@ -273,8 +273,8 @@ as a sidecar. While this can be done, we think it is simpler to just use the kub
 downward API to inject environment variables into the pods and directly use their values
 as tags.
 
-## Timestamp Encoding
+## Timestamp Format
 
-The `k8s.pod.start_time`attribute uses RFC3339 encoding for it's time value. See 
+The `k8s.pod.start_time`attribute uses RFC3339 format. See
 [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) for more information.
 
