@@ -1778,57 +1778,6 @@ func newMetricMysqlJoins(cfg MetricConfig) metricMysqlJoins {
 	return m
 }
 
-type metricMysqlLockedConnects struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills mysql.locked_connects metric with initial data.
-func (m *metricMysqlLockedConnects) init() {
-	m.data.SetName("mysql.locked_connects")
-	m.data.SetDescription("[DEPRECATED] The number of attempts to connect to locked user accounts.")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricMysqlLockedConnects) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlLockedConnects) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlLockedConnects) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlLockedConnects(cfg MetricConfig) metricMysqlLockedConnects {
-	m := metricMysqlLockedConnects{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricMysqlLocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3342,7 +3291,6 @@ type MetricsBuilder struct {
 	metricMysqlIndexIoWaitCount        metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime         metricMysqlIndexIoWaitTime
 	metricMysqlJoins                   metricMysqlJoins
-	metricMysqlLockedConnects          metricMysqlLockedConnects
 	metricMysqlLocks                   metricMysqlLocks
 	metricMysqlLogOperations           metricMysqlLogOperations
 	metricMysqlMysqlxConnections       metricMysqlMysqlxConnections
@@ -3404,7 +3352,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
 		metricMysqlJoins:                   newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
-		metricMysqlLockedConnects:          newMetricMysqlLockedConnects(mbc.Metrics.MysqlLockedConnects),
 		metricMysqlLocks:                   newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
 		metricMysqlLogOperations:           newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
 		metricMysqlMysqlxConnections:       newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
@@ -3509,7 +3456,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
 	mb.metricMysqlJoins.emit(ils.Metrics())
-	mb.metricMysqlLockedConnects.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
 	mb.metricMysqlMysqlxConnections.emit(ils.Metrics())
@@ -3685,16 +3631,6 @@ func (mb *MetricsBuilder) RecordMysqlJoinsDataPoint(ts pcommon.Timestamp, inputV
 		return fmt.Errorf("failed to parse int64 for MysqlJoins, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlJoins.recordDataPoint(mb.startTime, ts, val, joinKindAttributeValue.String())
-	return nil
-}
-
-// RecordMysqlLockedConnectsDataPoint adds a data point to mysql.locked_connects metric.
-func (mb *MetricsBuilder) RecordMysqlLockedConnectsDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MysqlLockedConnects, value was %s: %w", inputVal, err)
-	}
-	mb.metricMysqlLockedConnects.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
