@@ -1,4 +1,0 @@
-# TYPE a counter
-# HELP a help
-a_total 9223372036854775808
-# EOF

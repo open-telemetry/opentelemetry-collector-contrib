@@ -1,6 +1,0 @@
-groupbyattrs/grouping:
-  keys:
-    - key1
-    - key2
-groupbyattrs/compaction:
-groupbytrace:

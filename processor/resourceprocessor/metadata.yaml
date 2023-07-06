@@ -1,7 +1,0 @@
-type: resource
-
-status:
-  class: processor
-  stability:
-    beta: [traces, metrics, logs]
-  distributions: [core, contrib, splunk, observiq, sumo, aws, redhat]

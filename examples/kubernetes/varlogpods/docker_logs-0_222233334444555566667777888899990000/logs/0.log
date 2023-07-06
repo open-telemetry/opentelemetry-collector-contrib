@@ -1,7 +1,0 @@
-{"log":"example: 12 Tue Feb 16 09:15:12 UTC 2021\n","stream":"stdout","time":"2021-02-16T09:15:12.50286486Z"}
-{"log":"example: 13 (part of log) Tue Feb 16 09:15:13 UTC 2021","stream":"stdout","time":"2021-02-16T09:15:13.503624173Z"}
-{"log":"example: 13 (end of log) Tue Feb 16 09:15:13 UTC 2021\n","stream":"stdout","time":"2021-02-16T09:15:13.503624173Z"}
-{"log":"example: 14 Tue Feb 16 09:15:14 UTC 2021\n","stream":"stdout","time":"2021-02-16T09:15:14.504446654Z"}
-{"log":"example: 15 Tue Feb 16 09:15:15 UTC 2021\n","stream":"stdout","time":"2021-02-16T09:15:15.505407523Z"}
-{"log":"example: 16 Tue Feb 16 09:15:16 UTC 2021\n","stream":"stdout","time":"2021-02-16T09:15:16.51048724Z"}
-{"log":"example: 17 Tue Feb 16 09:15:17 UTC 2021\n","stream":"stdout","time":"2021-02-16T09:15:17.511829776Z"}

@@ -1,5 +1,0 @@
-# TYPE a summary
-quantile{quantile="0"} 0
-a_sum{a="1"} 0
-quantile{quantile="1"} 0
-# EOF

@@ -1,6 +1,0 @@
-type: syslog
-
-status:
-  class: exporter
-  stability: 
-    development: [logs]

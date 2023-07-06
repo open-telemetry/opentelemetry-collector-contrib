@@ -1,7 +1,0 @@
-type: spanmetrics
-
-status:
-  class: connector
-  stability:
-    alpha: [traces_to_metrics]
-  distributions: [contrib, sumo]

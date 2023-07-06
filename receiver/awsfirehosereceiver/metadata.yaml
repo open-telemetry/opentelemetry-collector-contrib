@@ -1,8 +1,0 @@
-type: awsfirehose
-
-status:
-  class: receiver
-  stability:
-    alpha: [metrics]
-  distributions: [contrib, observiq, sumo]
-

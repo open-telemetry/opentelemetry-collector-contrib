@@ -1,8 +1,0 @@
-type: cassandra
-
-status:
-  class: exporter
-  stability:
-    alpha: [traces, logs]
-  distributions: [contrib]
-

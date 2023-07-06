@@ -1,7 +1,0 @@
-deltatorate:
-  metrics:
-    - metric1
-    - metric2
-
-deltatorate/missing_name:
-    metrics:

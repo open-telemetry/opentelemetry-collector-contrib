@@ -1,8 +1,0 @@
-type: datadog
-
-status:
-  class: receiver
-  stability:
-    alpha: [traces]
-  distributions: [contrib, sumo]
-  

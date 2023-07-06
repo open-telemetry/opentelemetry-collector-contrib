@@ -1,8 +1,0 @@
-type: syslog
-
-status:
-  class: receiver
-  stability:
-    alpha: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
-

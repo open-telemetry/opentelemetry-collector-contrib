@@ -1,6 +1,0 @@
-googlecloudpubsub:
-googlecloudpubsub/customname:
-  project: my-project
-  user_agent: opentelemetry-collector-contrib {{version}}
-  timeout: 20s
-  subscription: projects/my-project/subscriptions/otlp-subscription

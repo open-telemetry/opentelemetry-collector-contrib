@@ -1,8 +1,0 @@
-type: cumulativetodelta
-
-status:
-  class: processor
-  stability:
-    beta: [metrics]
-  distributions: [contrib, observiq, sumo, aws]
-  warnings: [Statefulness]

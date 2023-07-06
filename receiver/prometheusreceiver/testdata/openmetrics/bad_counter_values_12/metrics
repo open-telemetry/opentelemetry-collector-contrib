@@ -1,3 +1,0 @@
-# TYPE a gaugehistogram
-a_bucket{le=" Inf"} -1
-# EOF

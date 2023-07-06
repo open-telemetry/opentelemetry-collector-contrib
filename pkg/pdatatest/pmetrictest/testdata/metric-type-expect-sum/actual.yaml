@@ -1,7 +1,0 @@
-resourceMetrics:
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - gauge: {}
-            name: should.be.sum
-        scope: {}

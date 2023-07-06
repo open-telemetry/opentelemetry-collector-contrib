@@ -1,8 +1,0 @@
-coralogix/metrics:
-  endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  metrics:
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  application_name: "APP_NAME"
-  subsystem_name: "SUBSYSTEM_NAME"
-  timeout: 5s

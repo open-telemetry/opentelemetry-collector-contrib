@@ -1,5 +1,0 @@
-riak:
-  endpoint: http://localhost:8098
-  username: otelu
-  password: ${env:RIAK_PASSWORD}
-  collection_interval: 10s

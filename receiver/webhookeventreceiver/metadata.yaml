@@ -1,8 +1,0 @@
-type: webhookevent
-
-status:
-  class: receiver
-  stability:
-    alpha: [logs]
-  distributions:
-  

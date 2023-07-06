@@ -1,5 +1,0 @@
-# TYPE a histogram
-a_bucket{le="-1.0"} 1
-a_bucket{le=" Inf"} 2
-a_sum 1
-# EOF

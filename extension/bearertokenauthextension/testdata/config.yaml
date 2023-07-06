@@ -1,6 +1,0 @@
-bearertokenauth:
-bearertokenauth/sometoken:
-  token: "sometoken"
-bearertokenauth/withscheme:
-  scheme: MyScheme
-  token: "my-token"

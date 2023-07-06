@@ -1,3 +1,0 @@
-name	count
-Innodb_buffer_pool_pages_data	NotANumber
-Innodb_buffer_pool_pages_free	233

@@ -1,9 +1,0 @@
-k8s_cluster:
-k8s_cluster/all_settings:
-  collection_interval: 30s
-  node_conditions_to_report: [ "Ready", "MemoryPressure" ]
-  allocatable_types_to_report: [ "cpu","memory" ]
-  metadata_exporters: [ nop ]
-k8s_cluster/partial_settings:
-  collection_interval: 30s
-  distribution: openshift

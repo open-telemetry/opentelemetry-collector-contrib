@@ -1,3 +1,0 @@
-flinkmetrics:
-  endpoint: http://localhost:8081
-  collection_interval: 10s

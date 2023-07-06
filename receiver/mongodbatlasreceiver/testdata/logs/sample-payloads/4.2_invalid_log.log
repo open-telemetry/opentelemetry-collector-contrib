@@ -1,3 +1,0 @@
-2022-09-11T18:53:02.541+0000 I  NETWORK  [listener] connection accepted from 192.168.248.5:51972 #25288 (31 connections now open)
-2022-09-11T18:53:02.541+0000 I  NETWORK connection accepted from 192.168.248.5:51974 #25289 (32 connections now open)
-2022-09-11T18:53:02.563+0000 I  NETWORK  [conn25289] received client metadata from 192.168.248.5:51974 conn25289: { driver: { name: "mongo-go-driver", version: "v1.7.2+prerelease" }, os: { type: "linux", architecture: "amd64" }, platform: "go1.18.2", application: { name: "MongoDB Automation Agent v12.3.4.7674 (git: 4c7df3ac1d15ef3269d44aa38b17376ca00147eb)" } }

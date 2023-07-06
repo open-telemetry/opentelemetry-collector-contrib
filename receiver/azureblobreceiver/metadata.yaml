@@ -1,8 +1,0 @@
-type: azureblob
-
-status:
-  class: receiver
-  stability:
-    development: [logs, traces]
-  distributions: [contrib]
-  

@@ -1,3 +1,0 @@
-# TYPE a info
-a_info{foo="bar"} 2
-# EOF

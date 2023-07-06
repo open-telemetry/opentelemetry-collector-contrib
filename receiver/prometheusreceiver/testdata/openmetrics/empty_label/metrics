@@ -1,5 +1,0 @@
-# TYPE a counter
-# HELP a help
-a_total{foo="bar"} 1
-a_total{foo=""} 2
-# EOF

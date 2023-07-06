@@ -1,8 +1,0 @@
-type: prometheus_simple
-
-status:
-  class: receiver
-  stability:
-    beta: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
-

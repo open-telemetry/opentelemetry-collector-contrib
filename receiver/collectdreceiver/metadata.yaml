@@ -1,8 +1,0 @@
-type: collectd
-
-status:
-  class: receiver
-  stability:
-    alpha: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
-

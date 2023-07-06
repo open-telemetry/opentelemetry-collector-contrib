@@ -1,8 +1,0 @@
-sigv4auth:
-  region: "region"
-  service: "service"
-  assume_role:
-    session_name: "role_session_name"
-sigv4auth/missing_credentials:
-  region: "region"
-  service: "service"

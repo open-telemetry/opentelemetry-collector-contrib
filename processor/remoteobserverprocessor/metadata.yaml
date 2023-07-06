@@ -1,7 +1,0 @@
-type: remoteobserver
-
-status:
-  class: processor
-  stability:
-    alpha: [logs, metrics, traces]
-  distributions: []

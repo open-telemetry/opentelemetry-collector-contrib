@@ -1,7 +1,0 @@
-type: azuredataexplorer
-
-status:
-  class: exporter
-  stability:
-    beta: [traces, metrics, logs]
-  distributions: [contrib]

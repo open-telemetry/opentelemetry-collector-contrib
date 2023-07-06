@@ -1,6 +1,0 @@
-active_directory_ds:
-  collection_interval: 2m
-  metrics:
-    active_directory.ds.replication.object.rate:
-      enabled: false
-active_directory_ds/defaults:

@@ -1,4 +1,0 @@
-# TYPE a counter
-# HELP a 
-a_total 1
-# EOF

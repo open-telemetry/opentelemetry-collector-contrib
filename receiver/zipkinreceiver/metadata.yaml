@@ -1,7 +1,0 @@
-type: zipkin
-
-status:
-  class: receiver
-  stability:
-    beta: [traces]
-  distributions: [core, contrib, splunk, observiq, sumo, aws, redhat]

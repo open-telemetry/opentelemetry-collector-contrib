@@ -1,8 +1,0 @@
-type: filelog
-
-status:
-  class: receiver
-  stability:
-    beta: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
-

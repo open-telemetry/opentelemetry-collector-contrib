@@ -1,7 +1,0 @@
-type: elasticsearch
-
-status:
-  class: exporter
-  stability:
-    beta: [traces, logs]
-  distributions: [contrib, observiq]

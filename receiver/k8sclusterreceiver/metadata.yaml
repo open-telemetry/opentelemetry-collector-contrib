@@ -1,8 +1,0 @@
-type: k8s_cluster
-
-status:
-  class: receiver
-  stability:
-    beta: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
-

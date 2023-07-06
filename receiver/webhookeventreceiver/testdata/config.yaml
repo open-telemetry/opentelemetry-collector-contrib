@@ -1,7 +1,0 @@
-# each webhook will require its own webhook event receiver
-webhookevent/valid_config:
-  endpoint: localhost:8080
-  read_timeout: "500ms"
-  write_timeout: "500ms"
-  path: "some/path"
-  health_path: "health/path"

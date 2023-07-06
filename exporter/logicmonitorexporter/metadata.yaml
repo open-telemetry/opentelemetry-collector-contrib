@@ -1,7 +1,0 @@
-type: logicmonitor
-
-status:
-  class: exporter
-  stability:
-    alpha: [traces, logs]
-  distributions: [contrib]

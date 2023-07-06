@@ -1,7 +1,0 @@
-type: mezmo
-
-status:
-  class: exporter
-  stability:
-    beta: [logs]
-  distributions: [contrib]

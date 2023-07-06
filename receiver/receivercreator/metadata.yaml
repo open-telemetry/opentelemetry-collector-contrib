@@ -1,8 +1,0 @@
-type: receiver_creator
-
-status:
-  class: receiver
-  stability:
-    beta: [metrics]
-    alpha: [logs, traces]
-  distributions: [contrib, splunk, sumo]

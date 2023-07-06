@@ -1,7 +1,0 @@
-type: ecs_task_observer
-
-status:
-  class: extension
-  stability:
-    beta: [extension]
-  distributions: [contrib, splunk, sumo]

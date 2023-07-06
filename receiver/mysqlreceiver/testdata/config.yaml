@@ -1,6 +1,0 @@
-mysql:
-  endpoint: localhost:3306
-  username: otel
-  password: ${env:MYSQL_PASSWORD}
-  database: otel
-  collection_interval: 10s

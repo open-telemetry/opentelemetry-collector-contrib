@@ -1,8 +1,0 @@
-type: googlecloudspanner
-
-status:
-  class: receiver
-  stability:
-    beta: [metrics]
-  distributions: [contrib, observiq, sumo]
-

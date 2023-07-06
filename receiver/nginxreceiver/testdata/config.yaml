@@ -1,3 +1,0 @@
-nginx:
-  endpoint: "http://localhost:80/status"
-  collection_interval: 10s

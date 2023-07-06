@@ -1,8 +1,0 @@
-type: udplog
-
-status:
-  class: receiver
-  stability:
-    alpha: [logs]
-  distributions: [contrib, observiq, sumo]
-

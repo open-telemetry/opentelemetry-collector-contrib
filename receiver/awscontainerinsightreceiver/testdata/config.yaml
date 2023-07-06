@@ -1,4 +1,0 @@
-awscontainerinsightreceiver:
-  container_orchestrator: eks
-awscontainerinsightreceiver/collection_interval_settings:
-  collection_interval: 60s

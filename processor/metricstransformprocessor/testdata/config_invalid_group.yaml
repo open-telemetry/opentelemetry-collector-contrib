@@ -1,6 +1,0 @@
-metricstransform:
-  transforms:
-    - include: some.metric.name
-      action: group
-      match_type: strict
-      # group_resource_labels: absent

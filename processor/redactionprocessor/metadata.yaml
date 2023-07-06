@@ -1,7 +1,0 @@
-type: redaction
-
-status:
-  class: processor
-  stability:
-    beta: [traces]
-  distributions: [contrib, sumo]

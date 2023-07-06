@@ -1,8 +1,0 @@
-type: windowseventlog
-
-status:
-  class: receiver
-  stability:
-    alpha: [logs]
-  distributions: [splunk, observiq, sumo]
-

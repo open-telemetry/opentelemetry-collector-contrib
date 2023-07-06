@@ -1,7 +1,0 @@
-type: azureeventhub
-
-status:
-  class: receiver
-  stability:
-    alpha: [metrics, logs]
-  distributions: [contrib, splunk, observiq, sumo]

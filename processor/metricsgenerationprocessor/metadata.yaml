@@ -1,7 +1,0 @@
-type: experimental_metricsgeneration
-
-status:
-  class: processor
-  stability:
-    development: [metrics]
-  distributions: [contrib, sumo, aws]

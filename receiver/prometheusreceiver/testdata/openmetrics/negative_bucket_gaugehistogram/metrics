@@ -1,8 +1,0 @@
-# TYPE a gaugehistogram
-# HELP a help
-a_bucket{le="-1.0"} 1
-a_bucket{le="1.0"} 2
-a_bucket{le="+Inf"} 3
-a_gcount 3
-a_gsum -5
-# EOF

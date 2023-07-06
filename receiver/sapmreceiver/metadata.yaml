@@ -1,7 +1,0 @@
-type: sapm
-
-status:
-  class: receiver
-  stability:
-    beta: [traces]
-  distributions: [contrib, splunk, observiq, sumo]

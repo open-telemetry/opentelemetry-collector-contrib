@@ -1,6 +1,0 @@
-metricstransform:
-  transforms:
-    - include: old_name
-      action: update
-      operations:
-        - action: update_label # missing label key

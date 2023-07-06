@@ -1,7 +1,0 @@
-type: prometheusremotewrite
-
-status:
-  class: exporter
-  stability:
-    beta: [metrics]
-  distributions: [core, contrib, aws, observiq]

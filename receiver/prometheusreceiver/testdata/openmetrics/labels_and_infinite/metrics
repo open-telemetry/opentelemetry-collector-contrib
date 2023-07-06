@@ -1,5 +1,0 @@
-# TYPE a gauge
-# HELP a help
-a{foo="bar"} +Inf
-a{foo="baz"} -Inf
-# EOF

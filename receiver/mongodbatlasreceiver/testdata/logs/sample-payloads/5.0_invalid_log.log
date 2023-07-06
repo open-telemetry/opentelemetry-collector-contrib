@@ -1,3 +1,0 @@
-{"t":{"$date":"2022-09-11T18:53:14.675+00:00"},"s":"I",  "c":"NETWORK",  "id":22944,   "ctx":"conn35107","msg":"Connection ended","attr":{"remote":"192.168.248.2:52066","uuid":"d3f4641a-14ca-4a24-b5bb-7d7b391a02e7","connectionId":35107,"connectionCount":33}}
-"t":{"$date":"2022-09-11T18:53:14.676+00:00"},"s":"I",  "c":"NETWORK",  "id":22944,   "ctx":"conn35109","msg":"Connection ended","attr":{"remote":"192.168.248.2:52070","uuid":"dcdb08ac-981d-41ea-9d6b-f85fe0475bd1","connectionId":35109,"connectionCount":32}}
-{"t":{"$date":"2022-09-11T18:53:37.727+00:00"},"s":"I",  "c":"SHARDING", "id":20997,   "ctx":"conn9957","msg":"Refreshed RWC defaults","attr":{"newDefaults":{}}}

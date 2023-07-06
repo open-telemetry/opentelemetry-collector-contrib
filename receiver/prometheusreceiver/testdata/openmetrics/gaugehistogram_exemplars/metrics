@@ -1,6 +1,0 @@
-# TYPE a gaugehistogram
-# HELP a help
-a_bucket{le="1.0"} 0 123 # {a="b"} 0.5
-a_bucket{le="2.0"} 2 123 # {a="c"} 0.5
-a_bucket{le="+Inf"} 3 123 # {a="d"} 4 123
-# EOF

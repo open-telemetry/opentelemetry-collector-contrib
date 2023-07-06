@@ -1,8 +1,0 @@
-type: k8sobjects
-
-status:
-  class: receiver
-  stability:
-    alpha: [logs]
-  distributions: [contrib, splunk, sumo]
-  

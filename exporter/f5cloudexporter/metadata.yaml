@@ -1,7 +1,0 @@
-type: f5cloud
-
-status:
-  class: exporter
-  stability:
-    beta: [traces, metrics, logs]
-  distributions: [contrib, observiq]
