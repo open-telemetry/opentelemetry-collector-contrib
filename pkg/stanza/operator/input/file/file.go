@@ -20,8 +20,7 @@ type Input struct {
 
 	fileConsumer *fileconsumer.Manager
 
-	toBody         toBodyFunc
-	preEmitOptions []preEmitOption
+	toBody toBodyFunc
 }
 
 // Start will start the file monitoring process
@@ -34,7 +33,7 @@ func (f *Input) Stop() error {
 	return f.fileConsumer.Stop()
 }
 
-func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+func (f *Input) emit(ctx context.Context, token []byte, attrs map[string]any) {
 	if len(token) == 0 {
 		return
 	}
@@ -45,33 +44,10 @@ func (f *Input) emit(ctx context.Context, attrs *fileconsumer.FileAttributes, to
 		return
 	}
 
-	for _, option := range f.preEmitOptions {
-		if err := option(attrs, ent); err != nil {
-			f.Errorf("preemit: %w", err)
+	for k, v := range attrs {
+		if err := ent.Set(entry.NewAttributeField(k), v); err != nil {
+			f.Errorf("set attribute: %w", err)
 		}
 	}
-
 	f.Write(ctx, ent)
-}
-
-type preEmitOption func(*fileconsumer.FileAttributes, *entry.Entry) error
-
-func setHeaderMetadata(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
-	return ent.Set(entry.NewAttributeField(), attrs.HeaderAttributesCopy())
-}
-
-func setFileName(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
-	return ent.Set(entry.NewAttributeField("log.file.name"), attrs.Name)
-}
-
-func setFilePath(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
-	return ent.Set(entry.NewAttributeField("log.file.path"), attrs.Path)
-}
-
-func setFileNameResolved(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
-	return ent.Set(entry.NewAttributeField("log.file.name_resolved"), attrs.NameResolved)
-}
-
-func setFilePathResolved(attrs *fileconsumer.FileAttributes, ent *entry.Entry) error {
-	return ent.Set(entry.NewAttributeField("log.file.path_resolved"), attrs.PathResolved)
 }

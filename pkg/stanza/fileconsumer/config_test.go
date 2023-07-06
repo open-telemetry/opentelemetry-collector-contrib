@@ -636,7 +636,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
+			nopEmit := func(_ context.Context, _ []byte, _ map[string]any) {}
 
 			input, err := cfg.Build(testutil.Logger(t), nopEmit)
 			tc.errorRequirement(t, err)
@@ -708,7 +708,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
+			nopEmit := func(_ context.Context, _ []byte, _ map[string]any) {}
 			splitNone := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 				if !atEOF {
 					return 0, nil, nil
@@ -809,7 +809,7 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
+			nopEmit := func(_ context.Context, _ []byte, _ map[string]any) {}
 
 			input, err := cfg.Build(testutil.Logger(t), nopEmit)
 			tc.errorRequirement(t, err)
