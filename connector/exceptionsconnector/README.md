@@ -25,8 +25,6 @@ Each metric will have _at least_ the following dimensions because they are commo
 - Exception message
 - Exception type
 
-This connector lets traces to continue through the pipeline unmodified.
-
 ## Configurations
 
 If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README].
