@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -33,7 +34,7 @@ type Reader struct {
 	encoding      helper.Encoding
 	processFunc   EmitFunc
 
-	Fingerprint    *Fingerprint
+	Fingerprint    *fingerprint.Fingerprint
 	Offset         int64
 	generation     int
 	file           *os.File
