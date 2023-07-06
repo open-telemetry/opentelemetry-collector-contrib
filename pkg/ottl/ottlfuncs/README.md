@@ -339,7 +339,7 @@ Examples:
 
 ### Duration
 
-The `Duration` Converter taking a string representation of a duration and converts it to a Golang `time.duration`.
+The `Duration` Converter takes a string representation of a duration and converts it to a Golang `time.duration`.
 
 `duration` is a string.
 
