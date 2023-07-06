@@ -135,10 +135,11 @@ func TestConnectorConsumeTraces(t *testing.T) {
 
 			for _, traces := range tc.traces {
 				err = p.ConsumeTraces(ctx, traces)
+				assert.NoError(t, err)
+
 				metrics := msink.AllMetrics()
 				assert.True(t, len(metrics) > 0)
 				tc.verifier(t, metrics[len(metrics)-1])
-				assert.NoError(t, err)
 			}
 		})
 	}
