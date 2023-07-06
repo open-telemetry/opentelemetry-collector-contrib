@@ -43,10 +43,9 @@ receivers:
     targets:
       - endpoint: http://endpoint:80
         method: GET
-        collection_interval: 10s
       - endpoint: http://localhost:8080/health
         method: GET
-        collection_interval: 10s
+    collection_interval: 10s
 ```
 
 ## Metrics
