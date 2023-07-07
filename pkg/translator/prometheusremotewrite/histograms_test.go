@@ -203,14 +203,78 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid scale",
+			name: "invalid negative scale",
 			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
 				pt := pmetric.NewExponentialHistogramDataPoint()
 				pt.SetScale(-10)
 				return pt
 			},
 			wantErrMessage: "cannot convert exponential to native histogram." +
-				" Scale must be <= 8 and >= -4, was -10",
+				" Scale must be >= -4, was -10",
+		},
+		{
+			name: "no downscaling at scale 8",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(6)
+				pt.SetSum(10.1)
+				pt.SetScale(8)
+				pt.SetZeroCount(1)
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1, 1})
+				pt.Negative().SetOffset(2)
+				return pt
+			},
+			wantNativeHist: func() prompb.Histogram {
+				return prompb.Histogram{
+					Count:          &prompb.Histogram_CountInt{CountInt: 6},
+					Sum:            10.1,
+					Schema:         8,
+					ZeroThreshold:  defaultZeroThreshold,
+					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
+					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 3}},
+					PositiveDeltas: []int64{1, 0, 0}, // 1, 1, 1
+					NegativeSpans:  []prompb.BucketSpan{{Offset: 3, Length: 3}},
+					NegativeDeltas: []int64{1, 0, 0}, // 1, 1, 1
+					Timestamp:      500,
+				}
+			},
+		},
+		{
+			name: "downsample if scale is more than 8",
+			exponentialHist: func() pmetric.ExponentialHistogramDataPoint {
+				pt := pmetric.NewExponentialHistogramDataPoint()
+				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+				pt.SetCount(6)
+				pt.SetSum(10.1)
+				pt.SetScale(9)
+				pt.SetZeroCount(1)
+
+				pt.Positive().BucketCounts().FromRaw([]uint64{1, 1, 1})
+				pt.Positive().SetOffset(1)
+
+				pt.Negative().BucketCounts().FromRaw([]uint64{1, 1, 1})
+				pt.Negative().SetOffset(2)
+				return pt
+			},
+			wantNativeHist: func() prompb.Histogram {
+				return prompb.Histogram{
+					Count:          &prompb.Histogram_CountInt{CountInt: 6},
+					Sum:            10.1,
+					Schema:         8,
+					ZeroThreshold:  defaultZeroThreshold,
+					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
+					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
+					PositiveDeltas: []int64{2, -1}, // 1+1, 1+0 = 2, 1
+					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
+					NegativeDeltas: []int64{1, 1}, // 0+1, 1+1 = 1, 2
+					Timestamp:      500,
+				}
+			},
 		},
 	}
 	for _, tt := range tests {
