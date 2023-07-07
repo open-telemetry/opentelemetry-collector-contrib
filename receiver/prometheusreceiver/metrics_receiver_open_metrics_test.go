@@ -49,6 +49,10 @@ func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetri
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
+	// if we only have one ResourceMetrics, then we should have a non-default metric in there
+	if len(mds) == 1 {
+		require.Greater(t, len(metrics), countScrapeMetrics(metrics, false))
+	}
 }
 
 // Test open metrics positive test cases
@@ -103,7 +107,7 @@ func TestOpenMetricsFail(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
