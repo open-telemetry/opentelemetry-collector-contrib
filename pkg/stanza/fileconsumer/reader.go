@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -33,7 +35,7 @@ type Reader struct {
 	encoding      helper.Encoding
 	processFunc   EmitFunc
 
-	Fingerprint    *Fingerprint
+	Fingerprint    *fingerprint.Fingerprint
 	Offset         int64
 	generation     int
 	file           *os.File
@@ -65,7 +67,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -75,10 +77,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		default:
 		}
 
-		ok := scanner.Scan()
+		ok := s.Scan()
 		if !ok {
 			r.eof = true
-			if err := scanner.getError(); err != nil {
+			if err := s.Error(); err != nil {
 				// If Scan returned an error then we are not guaranteed to be at the end of the file
 				r.eof = false
 				r.Errorw("Failed during scan", zap.Error(err))
@@ -86,7 +88,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(scanner.Bytes())
+		token, err := r.encoding.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else {
@@ -104,10 +106,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				return
 			}
 
-			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+			s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 		}
 
-		r.Offset = scanner.Pos()
+		r.Offset = s.Pos()
 	}
 }
 

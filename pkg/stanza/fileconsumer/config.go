@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -45,7 +46,7 @@ func NewConfig() *Config {
 		PollInterval:            200 * time.Millisecond,
 		Splitter:                helper.NewSplitterConfig(),
 		StartAt:                 "end",
-		FingerprintSize:         DefaultFingerprintSize,
+		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
 		MaxBatches:              0,
@@ -72,14 +73,6 @@ type Config struct {
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
-	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
-		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
-	}
-
-	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
-		return nil, fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
-	}
-
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -94,8 +87,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
-func (c Config) BuildWithSplitFunc(
-	logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
+func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -167,6 +159,14 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 }
 
 func (c Config) validate() error {
+	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
+		return fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
+	}
+
+	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
+		return fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
+	}
+
 	if len(c.Include) == 0 {
 		return fmt.Errorf("required argument `include` is empty")
 	}
@@ -205,8 +205,8 @@ func (c Config) validate() error {
 		return fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
-	if c.FingerprintSize < MinFingerprintSize {
-		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	if c.FingerprintSize < fingerprint.MinSize {
+		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", fingerprint.MinSize)
 	}
 
 	if c.DeleteAfterRead && c.StartAt == "end" {

@@ -40,8 +40,11 @@ The following configuration settings are optional:
 ```yaml
 receivers:
   httpcheck:
-    endpoint: http://endpoint:80
-    method: GET
+    targets:
+      - endpoint: http://endpoint:80
+        method: GET
+      - endpoint: http://localhost:8080/health
+        method: GET
     collection_interval: 10s
 ```
 
