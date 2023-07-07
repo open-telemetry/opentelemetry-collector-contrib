@@ -167,7 +167,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`
 					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
-							TimestampSortRule{
+							&TimestampSortRule{
 								BaseSortRule: BaseSortRule{
 									SortType:  sortTypeTimestamp,
 									RegexKey:  "rotation_time",
@@ -188,7 +188,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.OrderingCriteria.Regex = `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`
 					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
-							NumericSortRule{
+							&NumericSortRule{
 								BaseSortRule: BaseSortRule{
 									SortType: sortTypeNumeric,
 									RegexKey: "file_num",
@@ -578,7 +578,7 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {
 				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
-						NumericSortRule{
+						&NumericSortRule{
 							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeNumeric,
@@ -596,7 +596,7 @@ func TestBuild(t *testing.T) {
 				f.OrderingCriteria.Regex = ".*"
 				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
-						TimestampSortRule{
+						&TimestampSortRule{
 							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeTimestamp,
@@ -614,7 +614,7 @@ func TestBuild(t *testing.T) {
 				f.OrderingCriteria.Regex = ".*"
 				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
-						TimestampSortRule{
+						&TimestampSortRule{
 							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeTimestamp,

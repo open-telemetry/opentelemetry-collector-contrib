@@ -680,7 +680,7 @@ func TestMultiFileSort(t *testing.T) {
 	cfg.MatchingCriteria.OrderingCriteria.Regex = `.*(?P<value>\d)`
 	cfg.MatchingCriteria.OrderingCriteria.SortBy = []SortRuleImpl{
 		{
-			NumericSortRule{
+			&NumericSortRule{
 				BaseSortRule: BaseSortRule{
 					RegexKey: `value`,
 				},
