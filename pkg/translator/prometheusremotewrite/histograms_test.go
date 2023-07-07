@@ -141,7 +141,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 				pt := pmetric.NewExponentialHistogramDataPoint()
 				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
-				pt.SetCount(2)
+				pt.SetCount(4)
 				pt.SetSum(10.1)
 				pt.SetScale(1)
 				pt.SetZeroCount(1)
@@ -156,7 +156,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			},
 			wantNativeHist: func() prompb.Histogram {
 				return prompb.Histogram{
-					Count:          &prompb.Histogram_CountInt{CountInt: 2},
+					Count:          &prompb.Histogram_CountInt{CountInt: 4},
 					Sum:            10.1,
 					Schema:         1,
 					ZeroThreshold:  defaultZeroThreshold,
@@ -176,7 +176,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 				pt.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 				pt.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 
-				pt.SetCount(2)
+				pt.SetCount(4)
 				pt.SetScale(1)
 				pt.SetZeroCount(1)
 
@@ -190,7 +190,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			},
 			wantNativeHist: func() prompb.Histogram {
 				return prompb.Histogram{
-					Count:          &prompb.Histogram_CountInt{CountInt: 2},
+					Count:          &prompb.Histogram_CountInt{CountInt: 4},
 					Schema:         1,
 					ZeroThreshold:  defaultZeroThreshold,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
