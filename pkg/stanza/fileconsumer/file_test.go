@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
@@ -204,6 +205,47 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	require.Equal(t, symLinkPath, emitCall.attrs.Path)
 	require.Equal(t, filepath.Base(resolved2), emitCall.attrs.NameResolved)
 	require.Equal(t, resolved2, emitCall.attrs.PathResolved)
+}
+
+func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.IncludeFileName = true
+	cfg.IncludeFilePath = true
+	op1, emitCalls1 := buildTestManager(t, cfg)
+
+	// Create a file, then start
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "testlog1\n")
+
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op1.Start(persister))
+
+	emitCall1 := waitForEmit(t, emitCalls1)
+	assert.Equal(t, []byte("testlog1"), emitCall1.token)
+	assert.Equal(t, filepath.Base(temp.Name()), emitCall1.attrs.Name)
+	assert.Equal(t, temp.Name(), emitCall1.attrs.Path)
+
+	require.NoError(t, op1.Stop())
+
+	newPath := temp.Name() + "_renamed"
+	require.NoError(t, os.Rename(temp.Name(), newPath))
+
+	writeString(t, temp, "testlog2\n")
+
+	op2, emitCalls2 := buildTestManager(t, cfg)
+
+	require.NoError(t, op2.Start(persister))
+
+	emitCall2 := waitForEmit(t, emitCalls2)
+	assert.Equal(t, []byte("testlog2"), emitCall2.token)
+	assert.Equal(t, filepath.Base(newPath), emitCall2.attrs.Name)
+	assert.Equal(t, newPath, emitCall2.attrs.Path)
+
+	require.NoError(t, op2.Stop())
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we
