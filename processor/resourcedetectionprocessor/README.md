@@ -425,6 +425,17 @@ Queries the OpenShift and Kubernetes API to retrieve the following resource attr
     * cloud.region
     * k8s.cluster.name
 
+The following permissions are required:
+```yaml
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+- apiGroups: ["config.openshift.io"]
+  resources: ["infrastructures"]
+  verbs: ["get", "watch", "list"]
+```
+
 By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
 If TLS is not explicit disabled and no `ca_file` is configured `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` is used.
 The determination of the API address, ca_file and the service token is skipped if they are set in the configuration.
