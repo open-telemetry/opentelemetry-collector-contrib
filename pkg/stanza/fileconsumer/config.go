@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -45,7 +46,7 @@ func NewConfig() *Config {
 		PollInterval:            200 * time.Millisecond,
 		Splitter:                helper.NewSplitterConfig(),
 		StartAt:                 "end",
-		FingerprintSize:         DefaultFingerprintSize,
+		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
 		MaxBatches:              0,
@@ -187,6 +188,16 @@ func (c Config) validate() error {
 		}
 	}
 
+	if len(c.OrderingCriteria.SortBy) != 0 && c.OrderingCriteria.Regex == "" {
+		return fmt.Errorf("`regex` must be specified when `sort_by` is specified")
+	}
+
+	for _, sr := range c.OrderingCriteria.SortBy {
+		if err := sr.validate(); err != nil {
+			return err
+		}
+	}
+
 	if c.MaxLogSize <= 0 {
 		return fmt.Errorf("`max_log_size` must be positive")
 	}
@@ -195,8 +206,8 @@ func (c Config) validate() error {
 		return fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
-	if c.FingerprintSize < MinFingerprintSize {
-		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	if c.FingerprintSize < fingerprint.MinSize {
+		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", fingerprint.MinSize)
 	}
 
 	if c.DeleteAfterRead && c.StartAt == "end" {

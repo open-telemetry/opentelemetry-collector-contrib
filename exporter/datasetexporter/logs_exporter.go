@@ -97,11 +97,6 @@ func mapOtelSeverityToDataSetSeverity(log plog.LogRecord) int {
 		dataSetSeverity = mapLogRecordSeverityTextToDataSetSeverity(sevText)
 	}
 
-	// TODO: We should log in case we see invalid severity, but right now, afaik, we / OTEL
-	// don't have a concept of "rate limited" logging. We don't want to log every single
-	// occurrence in case there are many log records like that since this could cause a lot of
-	// noise and performance overhead
-
 	return dataSetSeverity
 }
 
@@ -208,9 +203,6 @@ func buildEventFromLog(
 	if event.Ts == "" {
 		// ObservedTimestamp should always be set, but in case if it's not, we fall back to
 		// current time
-		// TODO: We should probably also do a rate limited log message here since this
-		// could indicate an issue with the current setup in case most events don't contain
-		// a timestamp.
 		if !observedTs.Equal(time.Unix(0, 0)) {
 			event.Ts = strconv.FormatInt(observedTs.UnixNano(), 10)
 		} else {

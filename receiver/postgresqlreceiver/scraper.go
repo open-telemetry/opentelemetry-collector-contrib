@@ -57,7 +57,7 @@ type defaultClientFactory struct{}
 func (d *defaultClientFactory) getClient(c *Config, database string) (client, error) {
 	return newPostgreSQLClient(postgreSQLConfig{
 		username: c.Username,
-		password: c.Password,
+		password: string(c.Password),
 		database: database,
 		tls:      c.TLSClientSetting,
 		address:  c.NetAddr,
