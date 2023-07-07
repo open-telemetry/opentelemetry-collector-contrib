@@ -590,6 +590,43 @@ func TestBuild(t *testing.T) {
 			require.Error,
 			nil,
 		},
+		{
+			"BasicOrderingCriteriaTimetsamp",
+			func(f *Config) {
+				f.OrderingCriteria.Regex = ".*"
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
+					{
+						TimestampSortRule{
+							BaseSortRule: BaseSortRule{
+								RegexKey: "value",
+								SortType: sortTypeTimestamp,
+							},
+						},
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"GoodOrderingCriteriaTimestamp",
+			func(f *Config) {
+				f.OrderingCriteria.Regex = ".*"
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
+					{
+						TimestampSortRule{
+							BaseSortRule: BaseSortRule{
+								RegexKey: "value",
+								SortType: sortTypeTimestamp,
+							},
+							Layout: "%Y%m%d%H",
+						},
+					},
+				}
+			},
+			require.NoError,
+			func(t *testing.T, f *Manager) {},
+		},
 	}
 
 	for _, tc := range cases {
