@@ -3,5 +3,5 @@ type: dynatrace
 status:
   class: exporter
   stability:
-    beta: [metrics]
+    deprecated: [metrics]
   distributions: [contrib, aws, observiq]

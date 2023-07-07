@@ -158,49 +158,16 @@ issues:
     # in order to enable the exhaustive lint check.
     # We should not add more exclude-rules.
     # The progress of solving existing exclude-rules will be tracked in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23266
-    - path: awscontainerinsightreceiver
-      linters:
-        - exhaustive
-    - path: azureeventhubreceiver
-      linters:
-        - exhaustive
-    - path: filereceiver
-      linters:
-        - exhaustive
     - path: fluentforwardreceiver
-      linters:
-        - exhaustive
-    - path: googlecloudpubsubreceiver
       linters:
         - exhaustive
     - path: googlecloudspannerreceiver
       linters:
         - exhaustive
-    - path: k8sclusterreceiver
-      linters:
-        - exhaustive
-    - path: kubeletstatsreceiver
-      linters:
-        - exhaustive
-    - path: nsxtreceiver
-      linters:
-        - exhaustive
-    - path: podmanreceiver
-      linters:
-        - exhaustive
     - path: prometheusreceiver
       linters:
         - exhaustive
-    - path: receivercreator
-      linters:
-        - exhaustive
-    - path: snmpreceiver
-      linters:
-        - exhaustive
     - path: statsdreceiver
-      linters:
-        - exhaustive
-    - path: attributesprocessor
       linters:
         - exhaustive
     - path: cumulativetodeltaprocessor
@@ -260,19 +227,10 @@ issues:
     - path: coralogixexporter
       linters:
         - exhaustive
-    - path: clickhouseexporter
-      linters:
-        - exhaustive
     - path: datasetexporter
       linters:
         - exhaustive
-    - path: dynatraceexporter
-      linters:
-        - exhaustive
     - path: elasticsearchexporter
-      linters:
-        - exhaustive
-    - path: datadogexporter
       linters:
         - exhaustive
     - path: googlecloudpubsubexporter
@@ -287,16 +245,10 @@ issues:
     - path: logzioexporter
       linters:
         - exhaustive
-    - path: sentryexporter
-      linters:
-        - exhaustive
     - path: prometheusexporter
       linters:
         - exhaustive
     - path: prometheusremotewriteexporter
-      linters:
-        - exhaustive
-    - path: sumologicexporter
       linters:
         - exhaustive
     - path: skywalkingexporter
@@ -305,19 +257,10 @@ issues:
     - path: splunkhecexporter
       linters:
         - exhaustive
-    - path: signalfxexporter
-      linters:
-        - exhaustive
     - path: tanzuobservabilityexporter
       linters:
         - exhaustive
     - path: k8sobserver
-      linters:
-        - exhaustive
-    - path: countconnector
-      linters:
-        - exhaustive
-    - path: storage
       linters:
         - exhaustive
     - path: containerinsight
@@ -332,13 +275,7 @@ issues:
     - path: k8sconfig
       linters:
         - exhaustive
-    - path: pdatatest
-      linters:
-        - exhaustive
     - path: ottl
-      linters:
-        - exhaustive
-    - path: stanza
       linters:
         - exhaustive
     - path: resourcetotelemetry
@@ -360,9 +297,6 @@ issues:
       linters:
         - exhaustive
     - path: zipkin
-      linters:
-        - exhaustive
-    - path: mdatagen
       linters:
         - exhaustive
     - path: configschema

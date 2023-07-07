@@ -443,15 +443,6 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [schema, table_name, write_lock_type]
-  mysql.locked_connects:
-    enabled: true
-    description: The number of attempts to connect to locked user accounts.
-    unit: 1
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation: cumulative
   mysql.connection.count:
     enabled: false
     description: The number of connection attempts (successful or not) to the MySQL server.

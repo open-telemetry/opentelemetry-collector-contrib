@@ -20,11 +20,13 @@ body:
       # Start Collector components list
       - cmd/configschema
       - cmd/mdatagen
+      - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
@@ -134,6 +136,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
+      - processor/remoteobserver
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -146,7 +149,6 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
-      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache

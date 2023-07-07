@@ -21,4 +21,11 @@ func TestNewFactory(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
+	_, err = factory.CreateLogsReceiver(
+		context.Background(),
+		receivertest.NewNopCreateSettings(),
+		factory.CreateDefaultConfig(),
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
 }

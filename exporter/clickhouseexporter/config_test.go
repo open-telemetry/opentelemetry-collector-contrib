@@ -147,7 +147,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Database: "otel",
 			},
 			args: args{
-				database: defaultDatabase,
+				database: "otel",
 			},
 			wantChOptions: ChOptions{
 				Secure: false,
@@ -201,7 +201,8 @@ func TestConfig_buildDSN(t *testing.T) {
 			},
 			args: args{},
 			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
-		}, {
+		},
+		{
 			name: "Parse clickhouse settings",
 			fields: fields{
 				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
@@ -225,6 +226,16 @@ func TestConfig_buildDSN(t *testing.T) {
 			},
 			args: args{},
 			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
+		},
+		{
+			name: "support replace database in DSN to default database",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000/otel",
+			},
+			args: args{
+				database: defaultDatabase,
+			},
+			want: "tcp://127.0.0.1:9000/default",
 		},
 	}
 	for _, tt := range tests {

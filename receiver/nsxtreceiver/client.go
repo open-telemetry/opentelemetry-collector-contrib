@@ -95,17 +95,15 @@ func (c *nsxClient) NodeStatus(ctx context.Context, nodeID string, class nodeCla
 		return nil, fmt.Errorf("unable to get a node's status from the REST API: %w", err)
 	}
 
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		var nodeStatus dm.TransportNodeStatus
 		err = json.Unmarshal(body, &nodeStatus)
 		return &nodeStatus.NodeStatus, err
-	default:
-		var nodeStatus dm.NodeStatus
-		err = json.Unmarshal(body, &nodeStatus)
-		return &nodeStatus, err
 	}
 
+	var nodeStatus dm.NodeStatus
+	err = json.Unmarshal(body, &nodeStatus)
+	return &nodeStatus, err
 }
 
 func (c *nsxClient) Interfaces(
@@ -154,7 +152,7 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(c.config.Username, c.config.Password)
+	req.SetBasicAuth(c.config.Username, string(c.config.Password))
 	h := req.Header
 	h.Add("User-Agent", "opentelemetry-collector")
 	h.Add("Accept", "application/json")
@@ -181,28 +179,22 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 }
 
 func (c *nsxClient) nodeStatusEndpoint(class nodeClass, nodeID string) string {
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/status", nodeID)
-	default:
-		return fmt.Sprintf("/api/v1/cluster/nodes/%s/status", nodeID)
 	}
+	return fmt.Sprintf("/api/v1/cluster/nodes/%s/status", nodeID)
 }
 
 func (c *nsxClient) interfacesEndpoint(class nodeClass, nodeID string) string {
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces", nodeID)
-	default:
-		return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", nodeID)
 	}
+	return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", nodeID)
 }
 
 func (c *nsxClient) interfaceStatusEndpoint(class nodeClass, nodeID, interfaceID string) string {
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		return fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
-	default:
-		return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
 	}
+	return fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces/%s/stats", nodeID, interfaceID)
 }

@@ -120,7 +120,7 @@ func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.C
 		return nil, err
 	}
 	return &kubernetesReceiver{
-		resourceWatcher: newResourceWatcher(set.Logger, rCfg),
+		resourceWatcher: newResourceWatcher(set, rCfg),
 		settings:        set,
 		config:          rCfg,
 		consumer:        consumer,

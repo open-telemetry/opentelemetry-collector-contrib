@@ -192,7 +192,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorAborted))
 		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorLocked))
 

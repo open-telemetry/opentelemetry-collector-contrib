@@ -18,6 +18,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/cmd/opampsupervisor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/cmd/otelcontribcol"
     schedule:
       interval: "weekly"
@@ -39,6 +44,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/connector/countconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/connector/routingconnector"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -638,6 +648,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/processor/remoteobserverprocessor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/processor/resourcedetectionprocessor"
     schedule:
       interval: "weekly"
@@ -679,11 +694,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/transformprocessor"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/processor/websocketprocessor"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1089,16 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/statsdreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/syslogreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/tcplogreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
