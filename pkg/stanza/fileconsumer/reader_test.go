@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -201,7 +202,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
-			fingerprintSize: DefaultFingerprintSize,
+			fingerprintSize: fingerprint.DefaultSize,
 			maxLogSize:      defaultMaxLogSize,
 			emit:            testEmitFunc(emitChan),
 		},
@@ -244,16 +245,16 @@ func TestMapCopy(t *testing.T) {
 
 func TestEncodingDecode(t *testing.T) {
 	testFile := openTemp(t, t.TempDir())
-	testToken := tokenWithLength(2 * DefaultFingerprintSize)
+	testToken := tokenWithLength(2 * fingerprint.DefaultSize)
 	_, err := testFile.Write(testToken)
 	require.NoError(t, err)
-	fp, err := NewFingerprint(testFile, DefaultFingerprintSize)
+	fp, err := fingerprint.New(testFile, fingerprint.DefaultSize)
 	require.NoError(t, err)
 
 	f := readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
-			fingerprintSize: DefaultFingerprintSize,
+			fingerprintSize: fingerprint.DefaultSize,
 			maxLogSize:      defaultMaxLogSize,
 		},
 		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
@@ -266,8 +267,8 @@ func TestEncodingDecode(t *testing.T) {
 	r.HeaderFinalized = true
 	r.FileAttributes.HeaderAttributes = map[string]any{"foo": "bar"}
 
-	assert.Equal(t, testToken[:DefaultFingerprintSize], r.Fingerprint.FirstBytes)
-	assert.Equal(t, int64(2*DefaultFingerprintSize), r.Offset)
+	assert.Equal(t, testToken[:fingerprint.DefaultSize], r.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*fingerprint.DefaultSize), r.Offset)
 
 	// Encode
 	var buf bytes.Buffer
@@ -281,8 +282,8 @@ func TestEncodingDecode(t *testing.T) {
 	require.NoError(t, dec.Decode(decodedReader))
 
 	// Assert decoded reader has values persisted
-	assert.Equal(t, testToken[:DefaultFingerprintSize], decodedReader.Fingerprint.FirstBytes)
-	assert.Equal(t, int64(2*DefaultFingerprintSize), decodedReader.Offset)
+	assert.Equal(t, testToken[:fingerprint.DefaultSize], decodedReader.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*fingerprint.DefaultSize), decodedReader.Offset)
 	assert.True(t, decodedReader.HeaderFinalized)
 	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes.HeaderAttributes)
 

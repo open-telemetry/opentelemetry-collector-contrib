@@ -158,28 +158,16 @@ issues:
     # in order to enable the exhaustive lint check.
     # We should not add more exclude-rules.
     # The progress of solving existing exclude-rules will be tracked in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23266
-    - path: filereceiver
-      linters:
-        - exhaustive
     - path: fluentforwardreceiver
       linters:
         - exhaustive
-    - path: googlecloudpubsubreceiver
-      linters:
-        - exhaustive
     - path: googlecloudspannerreceiver
-      linters:
-        - exhaustive
-    - path: podmanreceiver
       linters:
         - exhaustive
     - path: prometheusreceiver
       linters:
         - exhaustive
     - path: statsdreceiver
-      linters:
-        - exhaustive
-    - path: attributesprocessor
       linters:
         - exhaustive
     - path: cumulativetodeltaprocessor
@@ -242,9 +230,6 @@ issues:
     - path: datasetexporter
       linters:
         - exhaustive
-    - path: dynatraceexporter
-      linters:
-        - exhaustive
     - path: elasticsearchexporter
       linters:
         - exhaustive
@@ -260,16 +245,10 @@ issues:
     - path: logzioexporter
       linters:
         - exhaustive
-    - path: sentryexporter
-      linters:
-        - exhaustive
     - path: prometheusexporter
       linters:
         - exhaustive
     - path: prometheusremotewriteexporter
-      linters:
-        - exhaustive
-    - path: sumologicexporter
       linters:
         - exhaustive
     - path: skywalkingexporter
@@ -294,9 +273,6 @@ issues:
       linters:
         - exhaustive
     - path: k8sconfig
-      linters:
-        - exhaustive
-    - path: pdatatest
       linters:
         - exhaustive
     - path: ottl
