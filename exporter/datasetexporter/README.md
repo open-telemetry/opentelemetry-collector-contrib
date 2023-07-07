@@ -37,23 +37,31 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
-
 ### Example
 
 ```yaml
-
 exporters:
-  dataset:
-    # DataSet API URL
+  dataset/logs:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
     dataset_url: https://app.scalyr.com
     # API Key
     api_key: your_api_key
     buffer:
-      # Send buffer to the API at least every 10s
-      max_lifetime: 10s
+      # Send buffer to the API at least every 5s
+      max_lifetime: 5s
       # Group data based on these attributes
       group_by:
         - attributes.container_id
+
+  dataset/traces:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
+    dataset_url: https://app.scalyr.com
+    # API Key
+    api_key: your_api_key
+    buffer:
+      max_lifetime: 15s
+      group_by:
+        - resource_service.instance.id
 
 service:
   pipelines:
@@ -61,10 +69,10 @@ service:
       receivers: [otlp]
       processors: [batch]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/logs]
     traces:
       receivers: [otlp]
       processors: [batch]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/traces]
 ```
