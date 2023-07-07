@@ -143,18 +143,14 @@ func main() {
 		"traces_service_graph_request_total",
 		metric.WithDescription("Total count of requests between two nodes"),
 	)
-	// serviceGraphRequestFailTotal, _ := meter.Int64Counter(
-	// 	"traces_service_graph_request_failed_total",
-	// 	metric.WithDescription("Total count of failed requests between two nodes"),
-	// )
-	// serviceGraphRequestServerSeconds, _ := meter.Int64Histogram(
-	// 	"traces_service_graph_request_server_seconds",
-	// 	metric.WithDescription("Time for a request between two nodes as seen from the server"),
-	// )
-	// serviceGraphRequestClientSeconds, _ := meter.Int64Histogram(
-	// 	"traces_service_graph_request_client_seconds",
-	// 	metric.WithDescription("Time for a request between two nodes as seen from the client"),
-	// )
+	serviceGraphRequestFailTotal, _ := meter.Int64Counter(
+		"traces_service_graph_request_failed_total",
+		metric.WithDescription("Total count of failed requests between two nodes"),
+	)
+	serviceGraphRequestClientSeconds, _ := meter.Int64Histogram(
+		"traces_service_graph_request_client_seconds",
+		metric.WithDescription("Time for a request between two nodes as seen from the client"),
+	)
 	// serviceGraphUnpairedSpansTotal, _ := meter.Int64Counter(
 	// 	"traces_service_graph_unpaired_spans_total",
 	// 	metric.WithDescription("Total count of unpaired spans"),
@@ -192,8 +188,14 @@ func main() {
 	for {
 		startTime := time.Now()
 		ctx, span := tracer.Start(defaultCtx, "ExecuteRequest")
-		makeRequest(ctx)
+		isSuccess := makeRequest(ctx)
 		span.End()
+
+		if !isSuccess {
+			serviceGraphRequestFailTotal.Add(ctx, 1, metric.WithAttributes(commonLabels...))
+			continue
+		}
+
 		latencyMs := float64(time.Since(startTime)) / 1e6
 		nr := int(rng.Int31n(7))
 		for i := 0; i < nr; i++ {
@@ -202,6 +204,12 @@ func main() {
 			lineLengths.Record(ctx, randLineLength, metric.WithAttributes(commonLabels...))
 			fmt.Printf("#%d: LineLength: %dBy\n", i, randLineLength)
 		}
+
+		requestClientSeconds := time.Since(startTime)
+		serviceGraphRequestClientSeconds.Record(
+			ctx, requestClientSeconds.Microseconds(),
+			metric.WithAttributes(commonLabels...),
+		)
 
 		requestLatency.Record(ctx, latencyMs, metric.WithAttributes(commonLabels...))
 		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
@@ -212,7 +220,7 @@ func main() {
 	}
 }
 
-func makeRequest(ctx context.Context) {
+func makeRequest(ctx context.Context) bool {
 
 	demoServerAddr, ok := os.LookupEnv("DEMO_SERVER_ENDPOINT")
 	if !ok {
@@ -224,16 +232,22 @@ func makeRequest(ctx context.Context) {
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 	}
 
+	isSuccess := true
+
 	// Make sure we pass the context to the request to avoid broken traces.
 	req, err := http.NewRequestWithContext(ctx, "GET", demoServerAddr, nil)
 	if err != nil {
 		handleErr(err, "failed to http request")
+		isSuccess = false
 	}
 
 	// All requests made with this client will create spans.
 	res, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		isSuccess = false
+		return isSuccess
+		//panic(err)
 	}
 	res.Body.Close()
+	return isSuccess
 }

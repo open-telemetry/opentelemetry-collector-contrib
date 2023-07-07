@@ -114,7 +114,11 @@ func main() {
 
 	meter := otel.Meter("demo-server-meter")
 	serverAttribute := attribute.String("server-attribute", "foo")
-	commonLabels := []attribute.KeyValue{serverAttribute}
+	commonLabels := []attribute.KeyValue{
+		serverAttribute,
+		attribute.String("client", "broker"),
+		attribute.String("server", "server"),
+	}
 	requestCount, _ := meter.Int64Counter(
 		"demo_server/request_counts",
 		metric.WithDescription("The number of requests received"),
