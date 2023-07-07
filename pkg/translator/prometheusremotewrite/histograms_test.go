@@ -4,6 +4,7 @@
 package prometheusremotewrite
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -17,12 +18,16 @@ import (
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
+type expectedBucketLayout struct {
+	wantSpans  []prompb.BucketSpan
+	wantDeltas []int64
+}
+
 func TestConvertBucketsLayout(t *testing.T) {
 	tests := []struct {
 		name       string
 		buckets    func() pmetric.ExponentialHistogramDataPointBuckets
-		wantSpans  []prompb.BucketSpan
-		wantDeltas []int64
+		wantLayout map[int32]expectedBucketLayout
 	}{
 		{
 			name: "zero offset",
@@ -32,13 +37,75 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{4, 3, 2, 1})
 				return b
 			},
-			wantSpans: []prompb.BucketSpan{
-				{
-					Offset: 1,
-					Length: 4,
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 1,
+							Length: 4,
+						},
+					},
+					wantDeltas: []int64{4, -1, -1, -1},
+				},
+				2: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 1,
+							Length: 2,
+						},
+					},
+					// 4+3, 2+1 = 7, 3 =delta= 7, -4
+					wantDeltas: []int64{4, -4},
+				},
+				4: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 1,
+							Length: 1,
+						},
+					},
+					// 4+3+2+1 = 10 =delta= 10
+					wantDeltas: []int64{10},
 				},
 			},
-			wantDeltas: []int64{4, -1, -1, -1},
+		},
+		{
+			name: "offset 1",
+			buckets: func() pmetric.ExponentialHistogramDataPointBuckets {
+				b := pmetric.NewExponentialHistogramDataPointBuckets()
+				b.SetOffset(1)
+				b.BucketCounts().FromRaw([]uint64{4, 3, 2, 1})
+				return b
+			},
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 2,
+							Length: 4,
+						},
+					},
+					wantDeltas: []int64{4, -1, -1, -1},
+				},
+				2: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 1,
+							Length: 3,
+						},
+					},
+					wantDeltas: []int64{4, 1, -4}, // 0+4, 3+2, 1+0 = 4, 5, 1
+				},
+				4: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 1,
+							Length: 2,
+						},
+					},
+					wantDeltas: []int64{9, -8}, // 0+4+3+2, 1+0+0+0 = 9, 1
+				},
+			},
 		},
 		{
 			name: "positive offset",
@@ -48,17 +115,103 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{4, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
 				return b
 			},
-			wantSpans: []prompb.BucketSpan{
-				{
-					Offset: 5,
-					Length: 4,
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 5,
+							Length: 4,
+						},
+						{
+							Offset: 12,
+							Length: 1,
+						},
+					},
+					wantDeltas: []int64{4, -2, -2, 2, -1},
 				},
-				{
-					Offset: 12,
-					Length: 1,
+				2: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 4,
+							Length: 2,
+						},
+						{
+							Offset: 6,
+							Length: 1,
+						},
+					},
+					// Downscale:
+					// 4+2, 0+2, 0+0, 0+0, 0+0, 0+0, 0+0, 0+0, 1+0 = 6, 2, 0, 0, 0, 0, 0, 0, 1
+					wantDeltas: []int64{6, -4, -1},
+				},
+				4: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 4,
+							Length: 1,
+						},
+						{
+							Offset: 3,
+							Length: 1,
+						},
+					},
+					// Downscale:
+					// 4+2+0+2, 0+0+0+0, 0+0+0+0, 0+0+0+0, 1+0+0+0 = 8, 0, 0, 0, 1
+					// Check from sclaing from previous: 6+2, 0+0, 0+0, 0+0, 1+0 = 8, 0, 0, 0, 1
+					wantDeltas: []int64{8, -7},
 				},
 			},
-			wantDeltas: []int64{4, -2, -2, 2, -1},
+		},
+		{
+			name: "scaledown merges spans",
+			buckets: func() pmetric.ExponentialHistogramDataPointBuckets {
+				b := pmetric.NewExponentialHistogramDataPointBuckets()
+				b.SetOffset(4)
+				b.BucketCounts().FromRaw([]uint64{4, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+				return b
+			},
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 5,
+							Length: 4,
+						},
+						{
+							Offset: 8,
+							Length: 1,
+						},
+					},
+					wantDeltas: []int64{4, -2, -2, 2, -1},
+				},
+				2: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 4,
+							Length: 2,
+						},
+						{
+							Offset: 4,
+							Length: 1,
+						},
+					},
+					// Downscale:
+					// 4+2, 0+2, 0+0, 0+0, 0+0, 0+0, 1+0 = 6, 2, 0, 0, 0, 0, 1
+					wantDeltas: []int64{6, -4, -1},
+				},
+				4: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: 4,
+							Length: 4,
+						},
+					},
+					// Downscale:
+					// 4+2+0+2, 0+0+0+0, 0+0+0+0, 1+0+0+0 = 8, 0, 0, 1
+					// Check from sclaing from previous: 6+2, 0+0, 0+0, 1+0 = 8, 0, 0, 1
+					wantDeltas: []int64{8, -8, 0, 1},
+				},
+			},
 		},
 		{
 			name: "negative offset",
@@ -68,17 +221,43 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{3, 1, 0, 0, 0, 1})
 				return b
 			},
-			wantSpans: []prompb.BucketSpan{
-				{
-					Offset: -1,
-					Length: 2,
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 2,
+						},
+						{
+							Offset: 3,
+							Length: 1,
+						},
+					},
+					wantDeltas: []int64{3, -2, 0},
 				},
-				{
-					Offset: 3,
-					Length: 1,
+				2: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 3,
+						},
+					},
+					// Downscale:
+					// 3+1, 0+0, 0+1 = 4, 0, 1
+					wantDeltas: []int64{4, -4, 1},
+				},
+				4: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 2,
+						},
+					},
+					// Downscale:
+					// 0+0+3+1, 0+0+0+0 = 4, 1
+					wantDeltas: []int64{4, -3},
 				},
 			},
-			wantDeltas: []int64{3, -2, 0},
 		},
 		{
 			name: "buckets with gaps of size 1",
@@ -88,13 +267,39 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{3, 1, 0, 1, 0, 1})
 				return b
 			},
-			wantSpans: []prompb.BucketSpan{
-				{
-					Offset: -1,
-					Length: 6,
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 6,
+						},
+					},
+					wantDeltas: []int64{3, -2, -1, 1, -1, 1},
+				},
+				2: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 3,
+						},
+					},
+					// Downscale:
+					// 3+1, 0+1, 0+1 = 4, 1, 1
+					wantDeltas: []int64{4, -3, 0},
+				},
+				4: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 2,
+						},
+					},
+					// Downscale:
+					// 0+0+3+1, 0+1+0+1 = 4, 2
+					wantDeltas: []int64{4, -2},
 				},
 			},
-			wantDeltas: []int64{3, -2, -1, 1, -1, 1},
 		},
 		{
 			name: "buckets with gaps of size 2",
@@ -104,27 +309,69 @@ func TestConvertBucketsLayout(t *testing.T) {
 				b.BucketCounts().FromRaw([]uint64{3, 0, 0, 1, 0, 0, 1})
 				return b
 			},
-			wantSpans: []prompb.BucketSpan{
-				{
-					Offset: -1,
-					Length: 7,
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 7,
+						},
+					},
+					wantDeltas: []int64{3, -3, 0, 1, -1, 0, 1},
+				},
+				2: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 4,
+						},
+					},
+					// Downscale:
+					// 3+0, 0+1, 0+0, 0+1 = 3, 1, 0, 1
+					wantDeltas: []int64{3, -2, -1, 1},
+				},
+				4: {
+					wantSpans: []prompb.BucketSpan{
+						{
+							Offset: -1,
+							Length: 3,
+						},
+					},
+					// Downscale:
+					// 0+0+3+0, 0+1+0+0, 1+0+0+0 = 3, 1, 1
+					wantDeltas: []int64{3, -2, 0},
 				},
 			},
-			wantDeltas: []int64{3, -3, 0, 1, -1, 0, 1},
 		},
 		{
-			name:       "zero buckets",
-			buckets:    pmetric.NewExponentialHistogramDataPointBuckets,
-			wantSpans:  nil,
-			wantDeltas: nil,
+			name:    "zero buckets",
+			buckets: pmetric.NewExponentialHistogramDataPointBuckets,
+			wantLayout: map[int32]expectedBucketLayout{
+				1: {
+					wantSpans:  nil,
+					wantDeltas: nil,
+				},
+				2: {
+					wantSpans:  nil,
+					wantDeltas: nil,
+				},
+				4: {
+					wantSpans:  nil,
+					wantDeltas: nil,
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotSpans, gotDeltas := convertBucketsLayout(tt.buckets())
-			assert.Equal(t, tt.wantSpans, gotSpans)
-			assert.Equal(t, tt.wantDeltas, gotDeltas)
-		})
+		for scaleDown, wantLayout := range tt.wantLayout {
+			if scaleDown == 1 {
+				t.Run(fmt.Sprintf("%s-scaleby-%d", tt.name, scaleDown), func(t *testing.T) {
+					gotSpans, gotDeltas := convertBucketsLayout(tt.buckets(), scaleDown)
+					assert.Equal(t, wantLayout.wantSpans, gotSpans)
+					assert.Equal(t, wantLayout.wantDeltas, gotDeltas)
+				})
+			}
+		}
 	}
 }
 

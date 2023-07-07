@@ -65,8 +65,8 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		// TODO: downscale to 8 if scale > 8
 	}
 
-	pSpans, pDeltas := convertBucketsLayout(p.Positive())
-	nSpans, nDeltas := convertBucketsLayout(p.Negative())
+	pSpans, pDeltas := convertBucketsLayout(p.Positive(), 1)
+	nSpans, nDeltas := convertBucketsLayout(p.Negative(), 1)
 
 	h := prompb.Histogram{
 		Schema: scale,
@@ -104,7 +104,9 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 // The bucket indexes conversion was adjusted, since OTel exp. histogram bucket
 // index 0 corresponds to the range (1, base] while Prometheus bucket index 0
 // to the range (base 1].
-func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets) ([]prompb.BucketSpan, []int64) {
+//
+// scaleMerge is the number of buckets to merge into a single bucket - must be power of 2
+func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, _ int32) ([]prompb.BucketSpan, []int64) {
 	bucketCounts := buckets.BucketCounts()
 	if bucketCounts.Len() == 0 {
 		return nil, nil
