@@ -38,7 +38,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				return b
 			},
 			wantLayout: map[int32]expectedBucketLayout{
-				1: {
+				0: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 1,
@@ -47,7 +47,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{4, -1, -1, -1},
 				},
-				2: {
+				1: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 1,
@@ -55,9 +55,9 @@ func TestConvertBucketsLayout(t *testing.T) {
 						},
 					},
 					// 4+3, 2+1 = 7, 3 =delta= 7, -4
-					wantDeltas: []int64{4, -4},
+					wantDeltas: []int64{7, -4},
 				},
-				4: {
+				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 1,
@@ -78,7 +78,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				return b
 			},
 			wantLayout: map[int32]expectedBucketLayout{
-				1: {
+				0: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 2,
@@ -87,7 +87,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{4, -1, -1, -1},
 				},
-				2: {
+				1: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 1,
@@ -96,7 +96,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{4, 1, -4}, // 0+4, 3+2, 1+0 = 4, 5, 1
 				},
-				4: {
+				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 1,
@@ -116,7 +116,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				return b
 			},
 			wantLayout: map[int32]expectedBucketLayout{
-				1: {
+				0: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 5,
@@ -129,7 +129,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{4, -2, -2, 2, -1},
 				},
-				2: {
+				1: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 3,
@@ -144,7 +144,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 					// 4+2, 0+2, 0+0, 0+0, 0+0, 0+0, 0+0, 0+0, 1+0 = 6, 2, 0, 0, 0, 0, 0, 0, 1
 					wantDeltas: []int64{6, -4, -1},
 				},
-				4: {
+				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 2,
@@ -171,7 +171,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				return b
 			},
 			wantLayout: map[int32]expectedBucketLayout{
-				1: {
+				0: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 5,
@@ -184,10 +184,10 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{4, -2, -2, 2, -1},
 				},
-				2: {
+				1: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: 2,
+							Offset: 3,
 							Length: 2,
 						},
 						{
@@ -199,7 +199,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 					// 4+2, 0+2, 0+0, 0+0, 0+0, 0+0, 1+0 = 6, 2, 0, 0, 0, 0, 1
 					wantDeltas: []int64{6, -4, -1},
 				},
-				4: {
+				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: 2,
@@ -222,7 +222,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				return b
 			},
 			wantLayout: map[int32]expectedBucketLayout{
-				1: {
+				0: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: -1,
@@ -235,10 +235,10 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{3, -2, 0},
 				},
-				2: {
+				1: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: -1,
+							Offset: 0,
 							Length: 3,
 						},
 					},
@@ -246,10 +246,10 @@ func TestConvertBucketsLayout(t *testing.T) {
 					// 3+1, 0+0, 0+1 = 4, 0, 1
 					wantDeltas: []int64{4, -4, 1},
 				},
-				4: {
+				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: -1,
+							Offset: 0,
 							Length: 2,
 						},
 					},
@@ -268,7 +268,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				return b
 			},
 			wantLayout: map[int32]expectedBucketLayout{
-				1: {
+				0: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: -1,
@@ -277,10 +277,10 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{3, -2, -1, 1, -1, 1},
 				},
-				2: {
+				1: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: -1,
+							Offset: 0,
 							Length: 3,
 						},
 					},
@@ -288,10 +288,10 @@ func TestConvertBucketsLayout(t *testing.T) {
 					// 3+1, 0+1, 0+1 = 4, 1, 1
 					wantDeltas: []int64{4, -3, 0},
 				},
-				4: {
+				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: -1,
+							Offset: 0,
 							Length: 2,
 						},
 					},
@@ -310,7 +310,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				return b
 			},
 			wantLayout: map[int32]expectedBucketLayout{
-				1: {
+				0: {
 					wantSpans: []prompb.BucketSpan{
 						{
 							Offset: -1,
@@ -319,10 +319,10 @@ func TestConvertBucketsLayout(t *testing.T) {
 					},
 					wantDeltas: []int64{3, -3, 0, 1, -1, 0, 1},
 				},
-				2: {
+				1: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: -1,
+							Offset: 0,
 							Length: 4,
 						},
 					},
@@ -330,10 +330,10 @@ func TestConvertBucketsLayout(t *testing.T) {
 					// 3+0, 0+1, 0+0, 0+1 = 3, 1, 0, 1
 					wantDeltas: []int64{3, -2, -1, 1},
 				},
-				4: {
+				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: -1,
+							Offset: 0,
 							Length: 3,
 						},
 					},
@@ -347,15 +347,15 @@ func TestConvertBucketsLayout(t *testing.T) {
 			name:    "zero buckets",
 			buckets: pmetric.NewExponentialHistogramDataPointBuckets,
 			wantLayout: map[int32]expectedBucketLayout{
+				0: {
+					wantSpans:  nil,
+					wantDeltas: nil,
+				},
 				1: {
 					wantSpans:  nil,
 					wantDeltas: nil,
 				},
 				2: {
-					wantSpans:  nil,
-					wantDeltas: nil,
-				},
-				4: {
 					wantSpans:  nil,
 					wantDeltas: nil,
 				},

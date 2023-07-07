@@ -58,15 +58,20 @@ func addSingleExponentialHistogramDataPoint(
 // to Prometheus Native Histogram.
 func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prompb.Histogram, error) {
 	scale := p.Scale()
-	if scale < -4 || scale > 8 {
+	if scale < -4 {
 		return prompb.Histogram{},
 			fmt.Errorf("cannot convert exponential to native histogram."+
-				" Scale must be <= 8 and >= -4, was %d", scale)
-		// TODO: downscale to 8 if scale > 8
+				" Scale must be >= -4, was %d", scale)
 	}
 
-	pSpans, pDeltas := convertBucketsLayout(p.Positive(), 1)
-	nSpans, nDeltas := convertBucketsLayout(p.Negative(), 1)
+	var scaleDown int32
+	if scale > 8 {
+		scaleDown = scale - 8
+		scale = 8
+	}
+
+	pSpans, pDeltas := convertBucketsLayout(p.Positive(), scaleDown)
+	nSpans, nDeltas := convertBucketsLayout(p.Negative(), scaleDown)
 
 	h := prompb.Histogram{
 		Schema: scale,
@@ -105,8 +110,8 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 // index 0 corresponds to the range (1, base] while Prometheus bucket index 0
 // to the range (base 1].
 //
-// scaleMerge is the number of buckets to merge into a single bucket - must be power of 2
-func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, _ int32) ([]prompb.BucketSpan, []int64) {
+// scaleDown is the factor by which the buckets are scaled down. In other words 2^scaleDown buckets will be merged into one.
+func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) ([]prompb.BucketSpan, []int64) {
 	bucketCounts := buckets.BucketCounts()
 	if bucketCounts.Len() == 0 {
 		return nil, nil
@@ -115,6 +120,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 	var (
 		spans         []prompb.BucketSpan
 		deltas        []int64
+		count         int64
 		prevCount     int64
 		nextBucketIdx int32
 	)
@@ -125,34 +131,63 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		prevCount = count
 	}
 
+	// The offset is scaled and adjusted by 1 as described above.
+	bucketIdx := buckets.Offset()>>scaleDown + 1
+	spans = append(spans, prompb.BucketSpan{
+		Offset: bucketIdx,
+		Length: 0,
+	})
+
 	for i := 0; i < bucketCounts.Len(); i++ {
-		count := int64(bucketCounts.At(i))
+		// The offset is scaled and adjusted by 1 as described above.
+		nextBucketIdx = (int32(i)+buckets.Offset())>>scaleDown + 1
+		if bucketIdx == nextBucketIdx { // we have not collected enough buckets to merge yet
+			count += int64(bucketCounts.At(i))
+			continue
+		}
 		if count == 0 {
+			count = int64(bucketCounts.At(i))
 			continue
 		}
 
-		// The offset is adjusted by 1 as described above.
-		bucketIdx := int32(i) + buckets.Offset() + 1
-		delta := bucketIdx - nextBucketIdx
-		if i == 0 || delta > 2 {
-			// We have to create a new span, either because we are
-			// at the very beginning, or because we have found a gap
+		gap := nextBucketIdx - bucketIdx - 1
+		if gap > 2 {
+			// We have to create a new span, either because we have found a gap
 			// of more than two buckets. The constant 2 is copied from the logic in
 			// https://github.com/prometheus/client_golang/blob/27f0506d6ebbb117b6b697d0552ee5be2502c5f2/prometheus/histogram.go#L1296
 			spans = append(spans, prompb.BucketSpan{
-				Offset: delta,
+				Offset: gap,
 				Length: 0,
 			})
 		} else {
 			// We have found a small gap (or no gap at all).
 			// Insert empty buckets as needed.
-			for j := int32(0); j < delta; j++ {
+			for j := int32(0); j < gap; j++ {
 				appendDelta(0)
 			}
 		}
 		appendDelta(count)
-		nextBucketIdx = bucketIdx + 1
+		count = int64(bucketCounts.At(i))
+		bucketIdx = nextBucketIdx
 	}
+	// nextBucketIdx is the last index, not the next one, hence no need to deduct 1
+	gap := nextBucketIdx - bucketIdx
+	if gap > 2 {
+		// We have to create a new span, because we have found a gap
+		// of more than two buckets. The constant 2 is copied from the logic in
+		// https://github.com/prometheus/client_golang/blob/27f0506d6ebbb117b6b697d0552ee5be2502c5f2/prometheus/histogram.go#L1296
+		spans = append(spans, prompb.BucketSpan{
+			Offset: gap,
+			Length: 0,
+		})
+	} else {
+		// We have found a small gap (or no gap at all).
+		// Insert empty buckets as needed.
+		for j := int32(0); j < gap; j++ {
+			appendDelta(0)
+		}
+	}
+	appendDelta(count)
 
 	return spans, deltas
 }
