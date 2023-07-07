@@ -170,9 +170,6 @@ issues:
     - path: statsdreceiver
       linters:
         - exhaustive
-    - path: cumulativetodeltaprocessor
-      linters:
-        - exhaustive
     - path: deltatorateprocessor
       linters:
         - exhaustive
