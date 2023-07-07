@@ -1,3 +1,4 @@
+// Deprecated: The Dynatrace metrics exporter is deprecated. After the end of 2023, no support, updates, or compatibility with newer OTel versions will be provided/guaranteed. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23992 for more details.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter
 
 go 1.19

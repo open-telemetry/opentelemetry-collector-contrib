@@ -161,9 +161,6 @@ issues:
     - path: fluentforwardreceiver
       linters:
         - exhaustive
-    - path: googlecloudpubsubreceiver
-      linters:
-        - exhaustive
     - path: googlecloudspannerreceiver
       linters:
         - exhaustive
@@ -171,12 +168,6 @@ issues:
       linters:
         - exhaustive
     - path: statsdreceiver
-      linters:
-        - exhaustive
-    - path: attributesprocessor
-      linters:
-        - exhaustive
-    - path: cumulativetodeltaprocessor
       linters:
         - exhaustive
     - path: deltatorateprocessor

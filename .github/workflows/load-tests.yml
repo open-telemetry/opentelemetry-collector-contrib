@@ -131,7 +131,7 @@ jobs:
         with:
           tool: 'customSmallerIsBetter'
           output-file-path: output.json
-          gh-pages-branch: gh-pages
+          gh-pages-branch: benchmarks
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: "docs/benchmarks/loadtests"
           auto-push: true
