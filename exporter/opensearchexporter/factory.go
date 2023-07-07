@@ -34,8 +34,8 @@ func createDefaultConfig() component.Config {
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
-		Namespace: "",
-		Dataset:   "",
+		Namespace: "default",
+		Dataset:   "namespace",
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRequests:     3,
