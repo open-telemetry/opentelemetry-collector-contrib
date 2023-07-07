@@ -87,18 +87,9 @@ func (f TimestampSortRule) validate() error {
 	if f.Layout == "" {
 		return fmt.Errorf("format must be specified for timestamp sort")
 	}
+
 	if f.Location == "" {
 		f.Location = "UTC"
-	}
-
-	loc, err := timeutils.GetLocation(&f.Location, nil)
-	if err != nil {
-		return fmt.Errorf("parse location %s: %w", f.Location, err)
-	}
-
-	_, err = timeutils.ParseStrptime(f.Layout, "", loc)
-	if err != nil {
-		return fmt.Errorf("parse format %s: %w", f.Layout, err)
 	}
 	return nil
 }
