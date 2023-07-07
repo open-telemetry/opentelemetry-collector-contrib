@@ -132,7 +132,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: 4,
+							Offset: 3,
 							Length: 2,
 						},
 						{
@@ -147,7 +147,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				4: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: 4,
+							Offset: 2,
 							Length: 1,
 						},
 						{
@@ -187,7 +187,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				2: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: 4,
+							Offset: 2,
 							Length: 2,
 						},
 						{
@@ -202,7 +202,7 @@ func TestConvertBucketsLayout(t *testing.T) {
 				4: {
 					wantSpans: []prompb.BucketSpan{
 						{
-							Offset: 4,
+							Offset: 2,
 							Length: 4,
 						},
 					},
@@ -364,13 +364,11 @@ func TestConvertBucketsLayout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		for scaleDown, wantLayout := range tt.wantLayout {
-			if scaleDown == 1 {
-				t.Run(fmt.Sprintf("%s-scaleby-%d", tt.name, scaleDown), func(t *testing.T) {
-					gotSpans, gotDeltas := convertBucketsLayout(tt.buckets(), scaleDown)
-					assert.Equal(t, wantLayout.wantSpans, gotSpans)
-					assert.Equal(t, wantLayout.wantDeltas, gotDeltas)
-				})
-			}
+			t.Run(fmt.Sprintf("%s-scaleby-%d", tt.name, scaleDown), func(t *testing.T) {
+				gotSpans, gotDeltas := convertBucketsLayout(tt.buckets(), scaleDown)
+				assert.Equal(t, wantLayout.wantSpans, gotSpans)
+				assert.Equal(t, wantLayout.wantDeltas, gotDeltas)
+			})
 		}
 	}
 }
@@ -515,10 +513,10 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 					Schema:         8,
 					ZeroThreshold:  defaultZeroThreshold,
 					ZeroCount:      &prompb.Histogram_ZeroCountInt{ZeroCountInt: 1},
-					PositiveSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
-					PositiveDeltas: []int64{2, -1}, // 1+1, 1+0 = 2, 1
+					PositiveSpans:  []prompb.BucketSpan{{Offset: 1, Length: 2}},
+					PositiveDeltas: []int64{1, 1}, // 0+1, 1+1 = 1, 2
 					NegativeSpans:  []prompb.BucketSpan{{Offset: 2, Length: 2}},
-					NegativeDeltas: []int64{1, 1}, // 0+1, 1+1 = 1, 2
+					NegativeDeltas: []int64{2, -1}, // 1+1, 1+0 = 2, 1
 					Timestamp:      500,
 				}
 			},
