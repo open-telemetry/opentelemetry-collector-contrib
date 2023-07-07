@@ -114,10 +114,18 @@ func main() {
 
 	meter := otel.Meter("demo-broker-meter")
 	serverAttribute := attribute.String("server-attribute", "foo")
-	commonLabels := []attribute.KeyValue{serverAttribute}
+	commonLabels := []attribute.KeyValue{
+		serverAttribute,
+		attribute.String("client", "broker"),
+		attribute.String("server", "server"),
+	}
 	requestCount, _ := meter.Int64Counter(
 		"demo_broker/request_counts",
 		metric.WithDescription("The number of requests received"),
+	)
+	serviceGraphRequestTotal, _ := meter.Int64Counter(
+		"traces_service_graph_request_total",
+		metric.WithDescription("Total count of requests between two nodes"),
 	)
 
 	// create a handler wrapped in OpenTelemetry instrumentation
@@ -142,6 +150,7 @@ func main() {
 		}
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
+		serviceGraphRequestTotal.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 		span := trace.SpanFromContext(ctx)
 		bag := baggage.FromContext(ctx)
 

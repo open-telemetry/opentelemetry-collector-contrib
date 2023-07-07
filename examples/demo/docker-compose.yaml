@@ -1,21 +1,47 @@
 version: "2"
 services:
 
-  # Jaeger
-  jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest
-    restart: always
+  tempo:
+    image: grafana/tempo:latest
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+      - ./tempo-data:/tmp/tempo
     ports:
-      - "16686:16686"
-      - "14268"
-      - "14250"
+      # - "14268:14268"  # jaeger ingest
+      - "3200:3200"   # tempo
+      - "9095:9095" # tempo grpc
+      - "4377:4317"  # otlp grpc
+      - "4388:4318"  # otlp http
+      # - "9411:9411"   # zipkin
+  
+  grafana:
+    image: grafana/grafana:9.4.3
+    volumes:
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    ports:
+      - "3000:3000"
 
-  # Zipkin
-  zipkin-all-in-one:
-    image: openzipkin/zipkin:latest
-    restart: always
-    ports:
-      - "9411:9411"
+  # # Jaeger
+  # jaeger-all-in-one:
+  #   image: jaegertracing/all-in-one:latest
+  #   restart: always
+  #   ports:
+  #     - "16686:16686"
+  #     - "14268"
+  #     - "14250"
+
+  # # Zipkin
+  # zipkin-all-in-one:
+  #   image: openzipkin/zipkin:latest
+  #   restart: always
+  #   ports:
+  #     - "9411:9411"
 
   # Collector
   otel-collector:
@@ -32,8 +58,9 @@ services:
       - "4317:4317"   # OTLP gRPC receiver
       - "55679:55679" # zpages extension
     depends_on:
-      - jaeger-all-in-one
-      - zipkin-all-in-one
+      # - jaeger-all-in-one
+      # - zipkin-all-in-one
+      - tempo
 
   demo-client-0:
     build:
@@ -43,6 +70,7 @@ services:
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
       - DEMO_SERVER_ENDPOINT=http://demo-broker:7080/hello
+      - HOSTNAME=demo-client1
     depends_on:
       - demo-broker
   
@@ -54,6 +82,7 @@ services:
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
       - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
+      - HOSTNAME=demo-client2
     depends_on:
       - demo-broker
 

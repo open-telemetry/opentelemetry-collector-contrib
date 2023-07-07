@@ -35,6 +35,11 @@ import (
 func initProvider() func() {
 	ctx := context.Background()
 
+	hostname, ok := os.LookupEnv("HOSTNAME")
+	if !ok {
+		hostname = "demo-client"
+	}
+
 	res, err := resource.New(ctx,
 		resource.WithFromEnv(),
 		resource.WithProcess(),
@@ -42,7 +47,7 @@ func initProvider() func() {
 		resource.WithHost(),
 		resource.WithAttributes(
 			// the service name used to display traces in backends
-      semconv.ServiceNameKey.String(fmt.Sprintf("demo-client-%d", rand.Int31n(100))),
+            semconv.ServiceNameKey.String(hostname),
 		),
 	)
 	handleErr(err, "failed to create resource")
@@ -113,6 +118,11 @@ func main() {
 	shutdown := initProvider()
 	defer shutdown()
 
+	hostname, ok := os.LookupEnv("HOSTNAME")
+	if !ok {
+		hostname = "demo-client"
+	}
+
 	tracer := otel.Tracer("demo-client-tracer")
 	meter := otel.Meter("demo-client-meter")
 
@@ -125,8 +135,34 @@ func main() {
 	// TODO: Use baggage when supported to extract labels from baggage.
 	commonLabels := []attribute.KeyValue{
 		attribute.String("method", "repl"),
-		attribute.String("client", "cli"),
+		attribute.String("client", hostname),
+		attribute.String("server", "broker"),
 	}
+
+	serviceGraphRequestTotal, _ := meter.Int64Counter(
+		"traces_service_graph_request_total",
+		metric.WithDescription("Total count of requests between two nodes"),
+	)
+	// serviceGraphRequestFailTotal, _ := meter.Int64Counter(
+	// 	"traces_service_graph_request_failed_total",
+	// 	metric.WithDescription("Total count of failed requests between two nodes"),
+	// )
+	// serviceGraphRequestServerSeconds, _ := meter.Int64Histogram(
+	// 	"traces_service_graph_request_server_seconds",
+	// 	metric.WithDescription("Time for a request between two nodes as seen from the server"),
+	// )
+	// serviceGraphRequestClientSeconds, _ := meter.Int64Histogram(
+	// 	"traces_service_graph_request_client_seconds",
+	// 	metric.WithDescription("Time for a request between two nodes as seen from the client"),
+	// )
+	// serviceGraphUnpairedSpansTotal, _ := meter.Int64Counter(
+	// 	"traces_service_graph_unpaired_spans_total",
+	// 	metric.WithDescription("Total count of unpaired spans"),
+	// )
+	// serviceGraphDroppedSpansTotal, _ := meter.Int64Counter(
+	// 	"traces_service_graph_dropped_spans_total",
+	// 	metric.WithDescription("Total count of dropped spans"),
+	// )
 
 	// Recorder metric example
 	requestLatency, _ := meter.Float64Histogram(
@@ -169,6 +205,7 @@ func main() {
 
 		requestLatency.Record(ctx, latencyMs, metric.WithAttributes(commonLabels...))
 		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
+		serviceGraphRequestTotal.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 
 		fmt.Printf("Latency: %.3fms\n", latencyMs)
 		time.Sleep(time.Duration(1) * time.Second)

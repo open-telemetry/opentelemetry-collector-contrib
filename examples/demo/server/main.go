@@ -119,6 +119,10 @@ func main() {
 		"demo_server/request_counts",
 		metric.WithDescription("The number of requests received"),
 	)
+	serviceGraphRequestTotal, _ := meter.Int64Counter(
+		"traces_service_graph_request_total",
+		metric.WithDescription("Total count of requests between two nodes"),
+	)
 
 	// create a handler wrapped in OpenTelemetry instrumentation
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -140,6 +144,7 @@ func main() {
 		time.Sleep(time.Duration(sleep) * time.Millisecond / 100)
 		ctx := req.Context()
 		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
+		serviceGraphRequestTotal.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 		span := trace.SpanFromContext(ctx)
 		bag := baggage.FromContext(ctx)
 
