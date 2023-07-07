@@ -83,7 +83,12 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetr
 
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
-	assertUp(t, 0, metrics)
+
+	// There are two possibilities here
+	// 1. The Prometheus scrape parser rejected the sample as invalid. In this case, we get no metrics.
+	// 2. The Prometheus scrape parser accepted the sample, but the receiver dropped it due to incompatibility with the Otel schema.
+	//    In this case, we get just the default metrics.
+	require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
 }
 
 // Test open metrics negative test cases

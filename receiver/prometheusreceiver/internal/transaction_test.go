@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 const (
@@ -175,7 +177,18 @@ func TestTransactionAppendDuplicateLabels(t *testing.T) {
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -184,12 +197,28 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	)
 
 	_, err := tr.Append(0, goodLabels, 1917, 1.0)
-	require.ErrorIs(t, err, errEmptyLeLabel)
+	require.NoError(t, err)
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	assert.Len(t, sink.AllMetrics(), 0)
 }
 
 func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -198,7 +227,57 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	)
 
 	_, err := tr.Append(0, goodLabels, 1917, 1.0)
-	require.ErrorIs(t, err, errEmptyQuantileLabel)
+	require.NoError(t, err)
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	assert.Len(t, sink.AllMetrics(), 0)
+}
+
+func TestTransactionAppendValidAndInvalid(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
+
+	// a valid counter
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+
+	// summary without quantiles, should be ignored
+	summarylabels := labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "summary_test",
+	)
+
+	_, err = tr.Append(0, summarylabels, 1917, 1.0)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+	require.Equal(t, 1, mds[0].MetricCount())
 }
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
