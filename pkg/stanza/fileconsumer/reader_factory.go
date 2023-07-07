@@ -63,7 +63,7 @@ type readerBuilder struct {
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
-	return &readerBuilder{readerFactory: f}
+	return &readerBuilder{readerFactory: f, headerAttributes: map[string]any{}}
 }
 
 func (b *readerBuilder) withSplitterFunc(s bufio.SplitFunc) *readerBuilder {
@@ -113,13 +113,6 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		}
 	}
 
-	if b.headerSettings != nil && !b.headerFinalized {
-		// If we are reading the header, we should start with the header split func
-		r.splitFunc = b.headerSettings.splitFunc
-	} else {
-		r.splitFunc = r.lineSplitFunc
-	}
-
 	enc, err := b.encodingConfig.Build()
 	if err != nil {
 		return
@@ -136,7 +129,7 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 
 		// unsafeReader has the file set to nil, so don't try emending its offset.
 		if !b.fromBeginning {
-			if err := r.offsetToEnd(); err != nil {
+			if err = r.offsetToEnd(); err != nil {
 				return nil, err
 			}
 		}
@@ -145,47 +138,45 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		r.FileAttributes = &FileAttributes{}
 	}
 
-	if b.headerAttributes != nil {
-		r.FileAttributes.HeaderAttributes = b.headerAttributes
-	} else {
-		r.FileAttributes.HeaderAttributes = map[string]any{}
-	}
-
 	if b.fp != nil {
 		r.Fingerprint = b.fp
 	} else if b.file != nil {
-		fp, err := b.readerFactory.newFingerprint(r.file)
+		r.Fingerprint, err = b.readerFactory.newFingerprint(r.file)
 		if err != nil {
 			return nil, err
 		}
-		r.Fingerprint = fp
 	}
 
-	// Create the header pipeline if we need it
-	// (if we are doing header parsing (headerSettings != nil), and if the header is not yet finalized)
-	if b.headerSettings != nil && !b.headerFinalized {
-		outOp := newHeaderPipelineOutput(b.SugaredLogger)
-		p, err := pipeline.Config{
-			Operators:     b.headerSettings.config.MetadataOperators,
-			DefaultOutput: outOp,
-		}.Build(b.SugaredLogger)
+	r.FileAttributes.HeaderAttributes = b.headerAttributes
 
-		if err != nil {
-			return nil, fmt.Errorf("failed to build pipeline: %w", err)
-		}
-
-		if err := p.Start(storage.NewNopClient()); err != nil {
-			return nil, fmt.Errorf("failed to start header pipeline: %w", err)
-		}
-
-		r.headerPipeline = p
-		r.headerPipelineOutput = outOp
-
-		// Set initial emit func to header function
-		r.processFunc = r.consumeHeaderLine
-	} else {
+	if b.headerSettings == nil || b.headerFinalized {
+		r.splitFunc = r.lineSplitFunc
 		r.processFunc = b.readerConfig.emit
+		return r, nil
 	}
+
+	// We are reading the header so we should start with the header split func
+	r.splitFunc = b.headerSettings.splitFunc
+
+	outOp := newHeaderPipelineOutput(b.SugaredLogger)
+	p, err := pipeline.Config{
+		Operators:     b.headerSettings.config.MetadataOperators,
+		DefaultOutput: outOp,
+	}.Build(b.SugaredLogger)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to build pipeline: %w", err)
+	}
+
+	if err := p.Start(storage.NewNopClient()); err != nil {
+		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
+	}
+
+	r.headerPipeline = p
+	r.headerPipelineOutput = outOp
+
+	// Set initial emit func to header function
+	r.processFunc = r.consumeHeaderLine
 
 	return r, nil
 }
