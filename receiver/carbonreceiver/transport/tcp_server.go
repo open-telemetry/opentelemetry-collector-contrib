@@ -14,11 +14,10 @@ import (
 	"sync"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
@@ -168,14 +167,16 @@ func (t *tcpServer) handleConnection(
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
 			numReceivedMetricPoints++
-			var metric *metricspb.Metric
+			var metric pmetric.Metric
 			metric, err = p.Parse(line)
 			if err != nil {
 				t.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-
-			err = nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{metric}))
+			metrics := pmetric.NewMetrics()
+			newMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.MoveTo(newMetric)
+			err = nextConsumer.ConsumeMetrics(ctx, metrics)
 			t.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 			if err != nil {
 				// The protocol doesn't account for returning errors.

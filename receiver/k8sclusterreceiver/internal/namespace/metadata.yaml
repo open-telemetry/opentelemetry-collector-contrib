@@ -1,0 +1,27 @@
+type: k8s/namespace
+
+sem_conv_version: 1.18.0
+
+resource_attributes:
+  k8s.namespace.uid:
+    description: The k8s namespace uid.
+    type: string
+    enabled: true
+
+  k8s.namespace.name:
+    description: The k8s namespace name.
+    type: string
+    enabled: true
+
+  opencensus.resourcetype:
+    description: The OpenCensus resource type.
+    type: string
+    enabled: true
+
+metrics:
+  k8s.namespace.phase:
+    enabled: true
+    description: The current phase of namespaces (1 for active and 0 for terminating)
+    unit: 1
+    gauge:
+      value_type: int

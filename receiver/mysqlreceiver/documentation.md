@@ -148,7 +148,7 @@ The total time of I/O wait events for an index.
 
 ### mysql.locked_connects
 
-The number of attempts to connect to locked user accounts.
+[DEPRECATED] The number of attempts to connect to locked user accounts.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -422,7 +422,7 @@ Errors that occur during the client connection process.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap`` |
+| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` |
 
 ### mysql.joins
 

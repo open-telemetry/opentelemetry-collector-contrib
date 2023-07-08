@@ -733,6 +733,13 @@ resourceMetrics:
                 - asInt: "1"
                   timeUnixNano: "1657771705535206000"
             unit: '{pids}'
+          - description: Time elapsed since container start time.
+            name: container.uptime
+            gauge:
+              dataPoints:
+                - asDouble: 0.0002888012543185477
+                  timeUnixNano: "1657771705535206000"
+            unit: 's'
         scope:
           name: otelcol/dockerstatsreceiver
           version: latest

@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
@@ -231,11 +230,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 
 			mdd := sink.AllMetrics()
 			require.Len(t, mdd, 1)
-			_, _, metrics := internaldata.ResourceMetricsToOC(mdd[0].ResourceMetrics().At(0))
-			require.Len(t, metrics, 1)
-			assert.Equal(t, carbonMetric.Name, metrics[0].GetMetricDescriptor().GetName())
-			tss := metrics[0].GetTimeseries()
-			require.Equal(t, 1, len(tss))
+			require.Equal(t, 1, mdd[0].MetricCount())
+			m := mdd[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+			assert.Equal(t, carbonMetric.Name, m.Name())
+			require.Equal(t, 1, m.Gauge().DataPoints().Len())
 		})
 	}
 }
