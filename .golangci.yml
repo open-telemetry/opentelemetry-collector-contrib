@@ -167,9 +167,6 @@ issues:
     - path: prometheusreceiver
       linters:
         - exhaustive
-    - path: statsdreceiver
-      linters:
-        - exhaustive
     - path: deltatorateprocessor
       linters:
         - exhaustive
