@@ -118,11 +118,10 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 	}
 
 	var (
-		spans         []prompb.BucketSpan
-		deltas        []int64
-		count         int64
-		prevCount     int64
-		nextBucketIdx int32
+		spans     []prompb.BucketSpan
+		deltas    []int64
+		count     int64
+		prevCount int64
 	)
 
 	appendDelta := func(count int64) {
@@ -144,7 +143,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 
 	for i := 0; i < bucketsCount; i++ {
 		// The offset is scaled and adjusted by 1 as described above.
-		nextBucketIdx = (int32(i)+buckets.Offset())>>scaleDown + 1
+		nextBucketIdx := (int32(i)+buckets.Offset())>>scaleDown + 1
 		if bucketIdx == nextBucketIdx { // We have not collected enough buckets to merge yet.
 			count += int64(bucketCounts.At(i))
 			continue
@@ -174,8 +173,8 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		count = int64(bucketCounts.At(i))
 		bucketIdx = nextBucketIdx
 	}
-	// nextBucketIdx is the last index, not the next one, hence no need to deduct 1.
-	gap := nextBucketIdx - bucketIdx
+	// Need to use the last item's index. The offset is scaled and adjusted by 1 as described above.
+	gap := (int32(bucketsCount)+buckets.Offset()-1)>>scaleDown + 1 - bucketIdx
 	if gap > 2 {
 		// We have to create a new span, because we have found a gap
 		// of more than two buckets. The constant 2 is copied from the logic in
