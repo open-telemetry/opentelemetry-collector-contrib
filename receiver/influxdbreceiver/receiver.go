@@ -54,15 +54,14 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 		return nil, err
 	}
 
-	receiver := &metricsReceiver{
+	return &metricsReceiver{
 		nextConsumer:       nextConsumer,
 		httpServerSettings: &config.HTTPServerSettings,
 		converter:          converter,
 		logger:             influxLogger,
 		obsrecv:            obsrecv,
 		settings:           settings.TelemetrySettings,
-	}
-	return receiver, nil
+	}, err
 }
 
 func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
@@ -101,7 +100,10 @@ func (r *metricsReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
 
-const defaultPrecision = lineprotocol.Nanosecond
+const (
+	defaultPrecision = lineprotocol.Nanosecond
+	dataFormat       = "influxdb"
+)
 
 var precisions = map[string]lineprotocol.Precision{
 	lineprotocol.Nanosecond.String():  lineprotocol.Nanosecond,
@@ -182,7 +184,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 	}
 
 	err := r.nextConsumer.ConsumeMetrics(req.Context(), batch.GetMetrics())
-	r.obsrecv.EndMetricsOp(ctx, "influxdb", batch.GetMetrics().DataPointCount(), err)
+	r.obsrecv.EndMetricsOp(ctx, dataFormat, batch.GetMetrics().DataPointCount(), err)
 	if err != nil {
 		if consumererror.IsPermanent(err) {
 			w.WriteHeader(http.StatusBadRequest)
