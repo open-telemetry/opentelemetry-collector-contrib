@@ -395,7 +395,7 @@ func BenchmarkConvertBucketLayout(b *testing.B) {
 		}
 		b.Run(fmt.Sprintf("gap %d", scenario.gap), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				convertBucketsLayout(buckets)
+				convertBucketsLayout(buckets, 0)
 			}
 		})
 	}

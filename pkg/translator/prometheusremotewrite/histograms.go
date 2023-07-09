@@ -131,6 +131,10 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		prevCount = count
 	}
 
+	// Let the compiler figure out that this is const during this function by
+	// moving it into a local variable.
+	bucketsCount := bucketCounts.Len()
+
 	// The offset is scaled and adjusted by 1 as described above.
 	bucketIdx := buckets.Offset()>>scaleDown + 1
 	spans = append(spans, prompb.BucketSpan{
@@ -138,10 +142,10 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		Length: 0,
 	})
 
-	for i := 0; i < bucketCounts.Len(); i++ {
+	for i := 0; i < bucketsCount; i++ {
 		// The offset is scaled and adjusted by 1 as described above.
 		nextBucketIdx = (int32(i)+buckets.Offset())>>scaleDown + 1
-		if bucketIdx == nextBucketIdx { // we have not collected enough buckets to merge yet
+		if bucketIdx == nextBucketIdx { // We have not collected enough buckets to merge yet.
 			count += int64(bucketCounts.At(i))
 			continue
 		}
@@ -152,7 +156,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 
 		gap := nextBucketIdx - bucketIdx - 1
 		if gap > 2 {
-			// We have to create a new span, either because we have found a gap
+			// We have to create a new span, because we have found a gap
 			// of more than two buckets. The constant 2 is copied from the logic in
 			// https://github.com/prometheus/client_golang/blob/27f0506d6ebbb117b6b697d0552ee5be2502c5f2/prometheus/histogram.go#L1296
 			spans = append(spans, prompb.BucketSpan{
@@ -170,7 +174,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		count = int64(bucketCounts.At(i))
 		bucketIdx = nextBucketIdx
 	}
-	// nextBucketIdx is the last index, not the next one, hence no need to deduct 1
+	// nextBucketIdx is the last index, not the next one, hence no need to deduct 1.
 	gap := nextBucketIdx - bucketIdx
 	if gap > 2 {
 		// We have to create a new span, because we have found a gap
