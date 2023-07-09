@@ -373,6 +373,34 @@ func TestConvertBucketsLayout(t *testing.T) {
 	}
 }
 
+func BenchmarkConvertBucketLayout(b *testing.B) {
+	scenarios := []struct {
+		gap int
+	}{
+		{gap: 0},
+		{gap: 1},
+		{gap: 2},
+		{gap: 3},
+	}
+
+	for _, scenario := range scenarios {
+		buckets := pmetric.NewExponentialHistogramDataPointBuckets()
+		buckets.SetOffset(0)
+		for i := 0; i < 1000; i++ {
+			if i%(scenario.gap+1) == 0 {
+				buckets.BucketCounts().Append(10)
+			} else {
+				buckets.BucketCounts().Append(0)
+			}
+		}
+		b.Run(fmt.Sprintf("gap %d", scenario.gap), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				convertBucketsLayout(buckets)
+			}
+		})
+	}
+}
+
 func TestExponentialToNativeHistogram(t *testing.T) {
 	tests := []struct {
 		name            string
