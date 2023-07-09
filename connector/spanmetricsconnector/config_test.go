@@ -49,6 +49,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 				DimensionsCacheSize:  1500,
 				MetricsFlushInterval: 30 * time.Second,
+				ExemplarConfig: ExemplarConfig{
+					Enabled: true,
+				},
 				Histogram: HistogramConfig{
 					Unit: metrics.Seconds,
 					Explicit: &ExplicitHistogramConfig{
@@ -59,8 +62,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-			},
-		},
+			}},
 		{
 			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
 			expected: &Config{

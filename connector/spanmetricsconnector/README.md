@@ -98,7 +98,9 @@ The following settings can be optionally configured:
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
 - `namespace`: Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 - `metrics_flush_interval` (default: `15s`): Defines the flush interval of the generated metrics.
-  
+- `exemplars`:  Use to configure how to attach exemplars to histograms
+  - `enabled` (default: `false`): enabling will add spans as Exemplars.
+
 ## Examples
 
 The following is a simple example usage of the `spanmetrics` connector.
@@ -123,6 +125,8 @@ connectors:
       - name: http.method
         default: GET
       - name: http.status_code
+    exemplars:
+      enabled: false
     exclude_dimensions: ['status.code']
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    

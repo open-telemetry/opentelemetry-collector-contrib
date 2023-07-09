@@ -12,7 +12,8 @@ spanmetrics/full:
     unit: "s"
     explicit:
       buckets: [ 10ms, 100ms, 250ms ]
-
+  exemplar:
+    enabled: true
   dimensions_cache_size: 1500
 
   # Additional list of dimensions on top of:
@@ -55,3 +56,12 @@ spanmetrics/exponential_and_explicit_histogram:
 spanmetrics/invalid_histogram_unit:
   histogram:
     unit: "h"
+
+# exemplars disabled 
+spanmetrics/exemplars_disabled:
+  exemplars:
+    enabled: true
+  histogram:
+    exponential:
+      max_size: 10
+

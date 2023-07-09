@@ -93,6 +93,33 @@ func verifyDisabledHistogram(t testing.TB, input pmetric.Metrics) bool {
 	return true
 }
 
+func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
+	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+		rm := input.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+
+		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
+		for ismC := 0; ismC < ism.Len(); ismC++ {
+
+			m := ism.At(ismC).Metrics()
+
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+
+				if metric.Type() != pmetric.MetricTypeHistogram {
+					continue
+				}
+				dps := metric.Histogram().DataPoints()
+				for dp := 0; dp < dps.Len(); dp++ {
+					d := dps.At(dp)
+					assert.True(t, d.Exemplars().Len() > 0)
+				}
+			}
+		}
+	}
+	return true
+}
+
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
 	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
@@ -371,6 +398,18 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID(span.spanID))
 }
 
+func disabledExemplarConfig() ExemplarConfig {
+	return ExemplarConfig{
+		Enabled: false,
+	}
+}
+
+func enabledExemplarConfig() ExemplarConfig {
+	return ExemplarConfig{
+		Enabled: true,
+	}
+}
+
 func explicitHistogramsConfig() HistogramConfig {
 	return HistogramConfig{
 		Unit: defaultUnit,
@@ -544,7 +583,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Test
-	p := newConnectorImp(t, new(consumertest.MetricsSink), nil, explicitHistogramsConfig, cumulative, logger, ticker)
+	p := newConnectorImp(t, new(consumertest.MetricsSink), nil, explicitHistogramsConfig, disabledExemplarConfig, cumulative, logger, ticker)
 	err := p.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -612,7 +651,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 
 	mockClock := clock.NewMock(time.Now())
 	ticker := mockClock.NewTicker(time.Nanosecond)
-	p := newConnectorImp(t, mcon, nil, explicitHistogramsConfig, cumulative, logger, ticker)
+	p := newConnectorImp(t, mcon, nil, explicitHistogramsConfig, disabledExemplarConfig, cumulative, logger, ticker)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, componenttest.NewNopHost())
@@ -649,6 +688,7 @@ func TestConsumeTraces(t *testing.T) {
 		name                   string
 		aggregationTemporality string
 		histogramConfig        func() HistogramConfig
+		exemplarConfig         func() ExemplarConfig
 		verifier               func(t testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
 	}{
@@ -657,6 +697,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test histogram metrics are disabled",
 			aggregationTemporality: cumulative,
 			histogramConfig:        disabledHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyDisabledHistogram,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -665,6 +706,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test single consumption, three spans (Cumulative), using exp. histogram",
 			aggregationTemporality: cumulative,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyConsumeMetricsInputCumulative,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -672,6 +714,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test single consumption, three spans (Delta), using exp. histogram",
 			aggregationTemporality: delta,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -680,6 +723,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Cumulative), using exp. histogram",
 			aggregationTemporality: cumulative,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyMultipleCumulativeConsumptions(),
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -688,6 +732,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Delta), using exp. histogram",
 			aggregationTemporality: delta,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -696,6 +741,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test bad consumptions (Delta), using exp. histogram",
 			aggregationTemporality: cumulative,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyBadMetricsOkay,
 			traces:                 []ptrace.Traces{buildBadSampleTrace()},
 		},
@@ -705,6 +751,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test single consumption, three spans (Cumulative).",
 			aggregationTemporality: cumulative,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyConsumeMetricsInputCumulative,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -712,6 +759,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test single consumption, three spans (Delta).",
 			aggregationTemporality: delta,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -720,6 +768,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Cumulative).",
 			aggregationTemporality: cumulative,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyMultipleCumulativeConsumptions(),
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -728,6 +777,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Delta).",
 			aggregationTemporality: delta,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -736,8 +786,18 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test bad consumptions (Delta).",
 			aggregationTemporality: cumulative,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarConfig,
 			verifier:               verifyBadMetricsOkay,
 			traces:                 []ptrace.Traces{buildBadSampleTrace()},
+		},
+		// enabling exemplars
+		{
+			name:                   "Test Exemplars are enabled",
+			aggregationTemporality: cumulative,
+			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         enabledExemplarConfig,
+			verifier:               verifyExemplarsExist,
+			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
 	}
 
@@ -754,13 +814,14 @@ func TestConsumeTraces(t *testing.T) {
 			// Mocked metric exporter will perform validation on metrics, during p.ConsumeMetrics()
 			mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
 				wg.Done()
+
 				return tc.verifier(t, input)
 			})).Return(nil)
 
 			mockClock := clock.NewMock(time.Now())
 			ticker := mockClock.NewTicker(time.Nanosecond)
 
-			p := newConnectorImp(t, mcon, stringp("defaultNullValue"), tc.histogramConfig, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
+			p := newConnectorImp(t, mcon, stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err := p.Start(ctx, componenttest.NewNopHost())
@@ -785,7 +846,7 @@ func TestMetricKeyCache(t *testing.T) {
 	mcon := &mocks.MetricsConsumer{}
 	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(t), nil)
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarConfig, cumulative, zaptest.NewLogger(t), nil)
 	traces := buildSampleTrace()
 
 	// Test
@@ -817,7 +878,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	mcon := &mocks.MetricsConsumer{}
 	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 
-	conn := newConnectorImp(nil, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(b), nil)
+	conn := newConnectorImp(nil, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarConfig, cumulative, zaptest.NewLogger(b), nil)
 
 	traces := buildSampleTrace()
 
@@ -832,7 +893,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	mcon := &mocks.MetricsConsumer{}
 	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(t), nil, excludeDimensions...)
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarConfig, cumulative, zaptest.NewLogger(t), nil, excludeDimensions...)
 	traces := buildSampleTrace()
 
 	// Test
@@ -881,10 +942,12 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 
 }
 
-func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker, excludedDimensions ...string) *connectorImp {
+func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarConfig func() ExemplarConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker, excludedDimensions ...string) *connectorImp {
+
 	cfg := &Config{
 		AggregationTemporality: temporality,
 		Histogram:              histogramConfig(),
+		ExemplarConfig:         exemplarConfig(),
 		ExcludeDimensions:      excludedDimensions,
 		DimensionsCacheSize:    DimensionsCacheSize,
 		Dimensions: []Dimension{
@@ -1014,7 +1077,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Note: default dimension key cache size is 2.
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(t), ticker)
+	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarConfig, cumulative, zaptest.NewLogger(t), ticker)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, componenttest.NewNopHost())

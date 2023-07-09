@@ -314,10 +314,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if !p.config.Histogram.Disable {
 					// aggregate histogram metrics
 					h := histograms.GetOrCreate(key, attributes)
+					p.addExemplar(span, duration, h)
 					h.Observe(duration)
-					if !span.TraceID().IsEmpty() {
-						h.AddExemplar(span.TraceID(), span.SpanID(), duration)
-					}
+
 				}
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)
@@ -325,6 +324,17 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			}
 		}
 	}
+}
+
+func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics.Histogram) {
+	if !p.config.ExemplarConfig.Enabled {
+		return
+	}
+	if span.TraceID().IsEmpty() {
+		return
+	}
+
+	h.AddExemplar(span.TraceID(), span.SpanID(), duration)
 }
 
 type resourceKey [16]byte

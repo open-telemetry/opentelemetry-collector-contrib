@@ -55,6 +55,9 @@ type Config struct {
 
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
+
+	// ExemplarConfig defines the configuration for exemplars.
+	ExemplarConfig ExemplarConfig `mapstructure:"exemplar"`
 }
 
 type HistogramConfig struct {
@@ -62,6 +65,10 @@ type HistogramConfig struct {
 	Unit        metrics.Unit                `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
+}
+
+type ExemplarConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type ExponentialHistogramConfig struct {
