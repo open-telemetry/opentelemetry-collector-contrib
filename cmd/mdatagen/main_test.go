@@ -234,6 +234,7 @@ Some info about a component
 				stability = tt.stability
 			}
 			md := metadata{
+				Type: "foo",
 				Status: &Status{
 					Stability:     stability,
 					Distributions: tt.distros,
