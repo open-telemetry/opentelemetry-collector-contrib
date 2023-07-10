@@ -93,11 +93,10 @@ func (f *TimestampSortRule) validate() error {
 		f.Location = "UTC"
 	}
 
-	layout, err := timeutils.StrptimeToGotime(f.Layout)
+	_, err := timeutils.StrptimeToGotime(f.Layout)
 	if err != nil {
 		return errors.Wrap(err, "parse strptime layout")
 	}
-	f.Layout = layout
 
 	return nil
 }
