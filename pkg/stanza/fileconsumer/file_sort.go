@@ -26,16 +26,6 @@ type sortRule interface {
 	sort(re *regexp.Regexp, files []string) ([]string, error)
 }
 
-type BaseSortRule struct {
-	RegexKey  string `mapstructure:"regex_key,omitempty"`
-	Ascending bool   `mapstructure:"ascending,omitempty"`
-	SortType  string `mapstructure:"sort_type,omitempty"`
-}
-
-type SortRuleImpl struct {
-	sortRule
-}
-
 func (sr *SortRuleImpl) Unmarshal(component *confmap.Conf) error {
 	if !component.IsSet("sort_type") {
 		return fmt.Errorf("missing required field 'sort_type'")
@@ -76,10 +66,6 @@ func (sr *SortRuleImpl) Unmarshal(component *confmap.Conf) error {
 	return nil
 }
 
-type NumericSortRule struct {
-	BaseSortRule `mapstructure:",squash"`
-}
-
 func (f NumericSortRule) validate() error {
 	if f.RegexKey == "" {
 		return fmt.Errorf("regex key must be specified for numeric sort")
@@ -87,21 +73,11 @@ func (f NumericSortRule) validate() error {
 	return nil
 }
 
-type AlphabeticalSortRule struct {
-	BaseSortRule `mapstructure:",squash"`
-}
-
 func (f AlphabeticalSortRule) validate() error {
 	if f.RegexKey == "" {
 		return fmt.Errorf("regex key must be specified for alphabetical sort")
 	}
 	return nil
-}
-
-type TimestampSortRule struct {
-	BaseSortRule `mapstructure:",squash"`
-	Layout       string `mapstructure:"layout,omitempty"`
-	Location     string `mapstructure:"location,omitempty"`
 }
 
 func (f TimestampSortRule) validate() error {
