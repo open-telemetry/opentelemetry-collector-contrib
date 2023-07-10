@@ -79,7 +79,7 @@ Example configuration:
 ```yaml
 exporters:
   pulsar:
-    service_url: pulsar://localhost:6650
+    endpoint: pulsar://localhost:6650
     topic: otlp-spans
     encoding: otlp_proto
     auth:
