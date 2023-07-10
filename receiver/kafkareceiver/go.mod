@@ -7,6 +7,7 @@ require (
 	github.com/apache/thrift v0.18.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0
+	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.81.0
@@ -44,7 +45,6 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.3 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
