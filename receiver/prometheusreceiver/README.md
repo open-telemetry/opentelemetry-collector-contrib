@@ -69,7 +69,7 @@ prometheus --config.file=prom.yaml
 "--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
 ```
 
-- `receiver.prometheusreceiver.report_extra_scrape_metrics`: Extra prometheus scrape metrics can be reported by setting this parameter to `true`
+- `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
 
 You can copy and paste that same configuration under:
 
