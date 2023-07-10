@@ -2509,6 +2509,36 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 	}
 }
 
+func TestTranslateOtToGroupedMetricForInitialDeltaValue(t *testing.T) {
+	for _, test := range logGroupStreamTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{
+				Namespace:                       "",
+				LogGroupName:                    test.inLogGroupName,
+				LogStreamName:                   test.inLogStreamName,
+				DimensionRollupOption:           zeroAndSingleDimensionRollup,
+				logger:                          zap.NewNop(),
+				RetainInitialValueOfDeltaMetric: true,
+			}
+
+			translator := newMetricTranslator(*config)
+
+			groupedMetrics := make(map[interface{}]*groupedMetric)
+
+			rm := test.inputMetrics.ResourceMetrics().At(0)
+			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
+			assert.Nil(t, err)
+
+			assert.NotNil(t, groupedMetrics)
+			assert.Equal(t, 1, len(groupedMetrics))
+
+			for _, actual := range groupedMetrics {
+				assert.True(t, actual.metadata.retainInitialValueForDelta)
+			}
+		})
+	}
+}
+
 func generateTestMetrics(tm testMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()
