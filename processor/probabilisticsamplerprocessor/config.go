@@ -38,22 +38,44 @@ var validAttributeSource = map[AttributeSource]bool{
 // Config has the configuration guiding the sampler processor.
 type Config struct {
 
-	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to
-	// zero, i.e.: no sample.  Values greater or equal 100 are treated as "sample all traces/logs".  This is
-	// treated as having four significant figures when conveying the sampling probability.
+	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults
+	// to zero, i.e.: no sample.  Values greater or equal 100 are treated as "sample all traces/logs".  This
+	// is treated as having four significant figures when conveying the sampling probability.
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
 
-	// @@@ TODO
-	// SamplingOneInN int64
-
-	// HashSeed allows one to configure the legacy hashing seed.  The current version of this protocol assumes
-	// that tracecontext v2 TraceIDs are being used, which ensures 7 bytes of randomness are available.  We assume
-	// this is the case when HashSeed == 0.
-	//
-	// This is important in scenarios where multiple layers of collectors have different sampling rates: if they
-	// use the same seed all passing one layer may pass the other even if they have different sampling rates,
-	// configuring different seeds avoids that.
+	// HashSeed allows one to configure the hashing seed.  This is important in scenarios where multiple
+	// layers of collectors have different sampling rates: if they use the same seed all passing one layer
+	// may pass the other even if they have different sampling rates, configuring different seeds avoids
+	// that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
+
+	// SamplerMode selects the sampling behavior. Supported values:
+	//
+	// - "hash_seed_downsample": the legacy behavior of this
+	//    processor.  Using an FNV hash combined with the HashSeed
+	//    value, this sampler performs a non-consistent
+	//    probabilistic downsampling.  The number of spans output
+	//    is expected to equal SamplingPercentage (as a ratio)
+	//    times the number of spans inpout.  Statistically, a
+	//    span-to-metrics pipeline based on this mechanism may have
+	//    anomalous behavior.
+	//
+	// - "consistent_resample": Using an OTel-specified consistent
+	//   sampling mechanism, this sampler selectively reduces the
+	//   effective sampling probability of arriving spans.  This
+	//   can be useful to select a small fraction of complete
+	//   traces from a stream with mixed sampling rates.  The rate
+	//   of spans passing through depends on how much sampling has
+	//   already been applied.  If an arriving span was head
+	//   sampled at the same probability it passes through.  If
+	//   the span arrives with lower probability, a warning is
+	//   logged because it means this sampler is configured with
+	//   too large a sampling probability to ensure complete traces.
+	//
+	// - "consistent_downsample": Using an OTel-specified consistent
+	//   sampling mechanism, this sampler reduces the effective sampling
+	//   probability of each span by `Sampling
+	SamplerMode string `mapstructure:"sampler_mode"`
 
 	///////
 	// Logs only fields below.
