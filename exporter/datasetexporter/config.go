@@ -5,6 +5,8 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
+	"github.com/scalyr/dataset-go/pkg/api/add_events"
+	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -72,12 +74,28 @@ func newDefaultBufferSettings() BufferSettings {
 	}
 }
 
+type ServerHostSettings struct {
+	UseHostName   bool     `mapstructure:"use_host_name"`
+	ServerHost    string   `mapstructure:"server_host"`
+	UseAttributes []string `mapstructure:"use_attributes"`
+}
+
+// newDefaultBufferSettings returns the default settings for BufferSettings.
+func newDefaultServerHostSettings() ServerHostSettings {
+	return ServerHostSettings{
+		UseHostName:   true,
+		ServerHost:    "",
+		UseAttributes: []string{},
+	}
+}
+
 type Config struct {
 	DatasetURL                     string              `mapstructure:"dataset_url"`
 	APIKey                         configopaque.String `mapstructure:"api_key"`
 	BufferSettings                 `mapstructure:"buffer"`
 	TracesSettings                 `mapstructure:"traces"`
 	LogsSettings                   `mapstructure:"logs"`
+	ServerHostSettings             `mapstructure:"server_host"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
@@ -110,11 +128,12 @@ func (c *Config) String() string {
 	s := ""
 	s += fmt.Sprintf("%s: %s; ", "DatasetURL", c.DatasetURL)
 	s += fmt.Sprintf("%s: %+v; ", "BufferSettings", c.BufferSettings)
+	s += fmt.Sprintf("%s: %+v; ", "LogsSettings", c.LogsSettings)
 	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
+	s += fmt.Sprintf("%s: %+v; ", "ServerHostSettings", c.ServerHostSettings)
 	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
-	s += fmt.Sprintf("%s: %+v; ", "TimeoutSettings", c.TimeoutSettings)
-	s += fmt.Sprintf("%s: %+v", "LogsSettings", c.LogsSettings)
+	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
 
 	return s
 }
@@ -125,6 +144,11 @@ func (c *Config) convert() (*ExporterConfig, error) {
 		return nil, fmt.Errorf("config is not valid: %w", err)
 	}
 
+	// update ServerHostSettings attributes
+	c.ServerHostSettings.UseAttributes = append(
+		c.ServerHostSettings.UseAttributes,
+		[]string{add_events.AttrOrigServerHost, add_events.AttrServerHost}...,
+	)
 	return &ExporterConfig{
 			datasetConfig: &datasetConfig.DataSetConfig{
 				Endpoint: c.DatasetURL,
@@ -139,15 +163,21 @@ func (c *Config) convert() (*ExporterConfig, error) {
 					RetryMultiplier:          backoff.DefaultMultiplier,
 					RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
 				},
+				ServerHostSettings: server_host_config.DataSetServerHostSettings{
+					UseHostName: c.ServerHostSettings.UseHostName,
+					ServerHost:  c.ServerHostSettings.ServerHost,
+				},
 			},
-			tracesSettings: c.TracesSettings,
-			logsSettings:   c.LogsSettings,
+			tracesSettings:     c.TracesSettings,
+			logsSettings:       c.LogsSettings,
+			serverHostSettings: c.ServerHostSettings,
 		},
 		nil
 }
 
 type ExporterConfig struct {
-	datasetConfig  *datasetConfig.DataSetConfig
-	tracesSettings TracesSettings
-	logsSettings   LogsSettings
+	datasetConfig      *datasetConfig.DataSetConfig
+	tracesSettings     TracesSettings
+	logsSettings       LogsSettings
+	serverHostSettings ServerHostSettings
 }

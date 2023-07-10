@@ -43,6 +43,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 func buildEventFromSpan(
 	bundle spanBundle,
 	tracker *spanTracker,
+	hostSettings ServerHostSettings,
 ) *add_events.EventBundle {
 	span := bundle.span
 	resource := bundle.resource
@@ -126,6 +127,7 @@ func buildEventFromSpan(
 	event.Attrs = attrs
 	event.Log = "LT"
 	event.Thread = "TT"
+	event.ServerHost = serverHostFromAttrs(attrs, hostSettings)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TT", Name: "traces"},
@@ -195,7 +197,7 @@ type spanBundle struct {
 	scope    pcommon.InstrumentationScope
 }
 
-func buildEventsFromTraces(ld ptrace.Traces, tracker *spanTracker) []*add_events.EventBundle {
+func buildEventsFromTraces(ld ptrace.Traces, tracker *spanTracker, hostSettings ServerHostSettings) []*add_events.EventBundle {
 	var events []*add_events.EventBundle
 	var spans = make([]spanBundle, 0)
 
@@ -234,7 +236,7 @@ func buildEventsFromTraces(ld ptrace.Traces, tracker *spanTracker) []*add_events
 		if tracker != nil {
 			tracker.update(span)
 		}
-		events = append(events, buildEventFromSpan(span, tracker))
+		events = append(events, buildEventFromSpan(span, tracker, hostSettings))
 	}
 
 	if tracker != nil {
@@ -246,7 +248,7 @@ func buildEventsFromTraces(ld ptrace.Traces, tracker *spanTracker) []*add_events
 }
 
 func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
-	return sendBatch(buildEventsFromTraces(ld, e.spanTracker), e.client)
+	return sendBatch(buildEventsFromTraces(ld, e.spanTracker, e.exporterCfg.serverHostSettings), e.client)
 }
 
 type spanInfo struct {

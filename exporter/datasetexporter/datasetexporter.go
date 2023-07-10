@@ -125,3 +125,14 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 
 	}
 }
+
+func serverHostFromAttrs(attrs map[string]interface{}, hostSettings ServerHostSettings) string {
+	for _, key := range hostSettings.UseAttributes {
+		val, ok := attrs[key]
+		if ok {
+			return fmt.Sprintf("%v", val)
+		}
+	}
+
+	return ""
+}

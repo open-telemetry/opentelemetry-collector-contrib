@@ -150,6 +150,7 @@ func TestBuildEventFromSpanOne(t *testing.T) {
 			traces.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
 		},
 		newSpanTracker(time.Hour),
+		newDefaultServerHostSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -200,6 +201,7 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 			rss.Scope(),
 		},
 		newSpanTracker(time.Hour),
+		newDefaultServerHostSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -207,7 +209,7 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 
 func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T) {
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
-	was := buildEventsFromTraces(traces, newSpanTracker(time.Hour))
+	was := buildEventsFromTraces(traces, newSpanTracker(time.Hour), newDefaultServerHostSettings())
 
 	expected := []*add_events.EventBundle{
 		{
@@ -429,7 +431,7 @@ func generateSimpleEvent(
 func TestBuildEventsFromTracesTreesAndOrphansWithTracker(t *testing.T) {
 	tracker := newSpanTracker(time.Second)
 	traces := GenerateTracesTreesAndOrphans()
-	was := buildEventsFromTraces(traces, tracker)
+	was := buildEventsFromTraces(traces, tracker, newDefaultServerHostSettings())
 
 	statusUnset := ptrace.NewStatus()
 	statusError := ptrace.NewStatus()
@@ -547,7 +549,7 @@ func TestBuildEventsFromTracesTreesAndOrphansWithTracker(t *testing.T) {
 
 func TestBuildEventsFromTracesTreesAndOrphansWithoutTracker(t *testing.T) {
 	traces := GenerateTracesTreesAndOrphans()
-	was := buildEventsFromTraces(traces, nil)
+	was := buildEventsFromTraces(traces, nil, newDefaultServerHostSettings())
 
 	statusUnset := ptrace.NewStatus()
 	statusError := ptrace.NewStatus()

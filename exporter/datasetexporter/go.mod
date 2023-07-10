@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.81.0
-	github.com/scalyr/dataset-go v0.0.9
+	github.com/scalyr/dataset-go v0.0.10
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.81.0
 	go.opentelemetry.io/collector/confmap v0.81.0
@@ -51,6 +51,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.10.0 // indirect

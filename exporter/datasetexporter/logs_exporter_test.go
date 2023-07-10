@@ -154,10 +154,11 @@ func TestBuildBodyMap(t *testing.T) {
 }
 
 var testLEventRaw = &add_events.Event{
-	Thread: "TL",
-	Log:    "LL",
-	Sev:    3,
-	Ts:     "1581452773000000789",
+	Thread:     "TL",
+	Log:        "LL",
+	Sev:        3,
+	Ts:         "1581452773000000789",
+	ServerHost: "foo",
 	Attrs: map[string]interface{}{
 		"attributes.app":           "server",
 		"attributes.instance_num":  int64(1),
@@ -172,10 +173,11 @@ var testLEventRaw = &add_events.Event{
 }
 
 var testLEventReq = &add_events.Event{
-	Thread: testLEventRaw.Thread,
-	Log:    testLEventRaw.Log,
-	Sev:    testLEventRaw.Sev,
-	Ts:     testLEventRaw.Ts,
+	Thread:     testLEventRaw.Thread,
+	Log:        testLEventRaw.Log,
+	Sev:        testLEventRaw.Sev,
+	Ts:         testLEventRaw.Ts,
+	ServerHost: testLEventRaw.ServerHost,
 	Attrs: map[string]interface{}{
 		"attributes.app":           "server",
 		"attributes.instance_num":  float64(1),
@@ -214,6 +216,7 @@ func TestBuildEventFromLog(t *testing.T) {
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
 		newDefaultLogsSettings(),
+		newDefaultServerHostSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -244,6 +247,7 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 		LogsSettings{
 			ExportResourceInfo: true,
 		},
+		newDefaultServerHostSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -273,6 +277,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
 		newDefaultLogsSettings(),
+		newDefaultServerHostSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -309,6 +314,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
 		newDefaultLogsSettings(),
+		newDefaultServerHostSettings(),
 	)
 
 	assert.Equal(t, expected, was)
@@ -363,6 +369,9 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
 		},
+		ServerHostSettings: ServerHostSettings{
+			ServerHost: "foo",
+		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -390,10 +399,11 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 				Token: "key-lib",
 			},
 			AddEventsRequestParams: add_events.AddEventsRequestParams{
-				Session: addRequest.Session,
-				Events:  []*add_events.Event{testLEventReq},
-				Threads: []*add_events.Thread{testLThread},
-				Logs:    []*add_events.Log{testLLog},
+				Session:     addRequest.Session,
+				SessionInfo: addRequest.SessionInfo,
+				Events:      []*add_events.Event{testLEventReq},
+				Threads:     []*add_events.Thread{testLThread},
+				Logs:        []*add_events.Log{testLLog},
 			},
 		},
 		addRequest,

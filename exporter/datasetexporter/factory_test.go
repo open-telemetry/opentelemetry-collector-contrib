@@ -24,11 +24,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		BufferSettings:  newDefaultBufferSettings(),
-		TracesSettings:  newDefaultTracesSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		BufferSettings:     newDefaultBufferSettings(),
+		TracesSettings:     newDefaultTracesSettings(),
+		LogsSettings:       newDefaultLogsSettings(),
+		ServerHostSettings: newDefaultServerHostSettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 	}, cfg, "failed to create default config")
 
 	assert.Nil(t, componenttest.CheckConfigStruct(cfg))
@@ -45,14 +47,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "minimal"),
 			expected: &Config{
-				DatasetURL:      "https://app.scalyr.com",
-				APIKey:          "key-minimal",
-				BufferSettings:  newDefaultBufferSettings(),
-				TracesSettings:  newDefaultTracesSettings(),
-				LogsSettings:    newDefaultLogsSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				DatasetURL:         "https://app.scalyr.com",
+				APIKey:             "key-minimal",
+				BufferSettings:     newDefaultBufferSettings(),
+				TracesSettings:     newDefaultTracesSettings(),
+				LogsSettings:       newDefaultLogsSettings(),
+				ServerHostSettings: newDefaultServerHostSettings(),
+				RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 			},
 		},
 		{
@@ -67,11 +70,12 @@ func TestLoadConfig(t *testing.T) {
 					RetryMaxInterval:     bufferRetryMaxInterval,
 					RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
 				},
-				TracesSettings:  newDefaultTracesSettings(),
-				LogsSettings:    newDefaultLogsSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				TracesSettings:     newDefaultTracesSettings(),
+				LogsSettings:       newDefaultLogsSettings(),
+				ServerHostSettings: newDefaultServerHostSettings(),
+				RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 			},
 		},
 		{
@@ -91,6 +95,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				LogsSettings: LogsSettings{
 					ExportResourceInfo: true,
+				},
+				ServerHostSettings: ServerHostSettings{
+					UseHostName:   false,
+					ServerHost:    "server-host",
+					UseAttributes: []string{"attr1", "attr2"},
 				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             true,
@@ -138,7 +147,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:false MaxWait:0s}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; LogsSettings: {ExportResourceInfo:false}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; LogsSettings: {ExportResourceInfo:false}; TracesSettings: {Aggregate:false MaxWait:0s}; ServerHostSettings: {UseHostName:false ServerHost: UseAttributes:[]}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
@@ -155,6 +164,9 @@ func createExporterTests() []CreateTest {
 				TracesSettings: TracesSettings{
 					Aggregate: true,
 					MaxWait:   5 * time.Second,
+				},
+				ServerHostSettings: ServerHostSettings{
+					UseHostName: true,
 				},
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

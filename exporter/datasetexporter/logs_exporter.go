@@ -169,7 +169,8 @@ func buildEventFromLog(
 	log plog.LogRecord,
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	settings LogsSettings,
+	logSettings LogsSettings,
+	hostSettings ServerHostSettings,
 ) *add_events.EventBundle {
 	attrs := make(map[string]interface{})
 	event := add_events.Event{}
@@ -212,7 +213,7 @@ func buildEventFromLog(
 
 	updateWithPrefixedValues(attrs, "attributes.", ".", log.Attributes().AsRaw(), 0)
 
-	if settings.ExportResourceInfo {
+	if logSettings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
 	attrs["scope.name"] = scope.Name()
@@ -221,6 +222,7 @@ func buildEventFromLog(
 	event.Attrs = attrs
 	event.Log = "LL"
 	event.Thread = "TL"
+	event.ServerHost = serverHostFromAttrs(attrs, hostSettings)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TL", Name: "logs"},
@@ -240,7 +242,16 @@ func (e *DatasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				logRecord := logRecords.At(k)
-				events = append(events, buildEventFromLog(logRecord, resource, scope, e.exporterCfg.logsSettings))
+				events = append(
+					events,
+					buildEventFromLog(
+						logRecord,
+						resource,
+						scope,
+						e.exporterCfg.logsSettings,
+						e.exporterCfg.serverHostSettings,
+					),
+				)
 			}
 		}
 	}
