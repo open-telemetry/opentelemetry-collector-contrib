@@ -159,6 +159,7 @@ As measured over the most recent 20s interval. Aggregated disk I/O rate. Require
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of disk latency. | Str: ``read``, ``write`` |
+| disk_instance | The name of the storage device that is being recorded. | Any Str |
 
 ### vcenter.host.memory.usage
 
@@ -189,6 +190,7 @@ The number of packets transmitted and received, as measured over the most recent
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| network_interface | The name the network interface. | Any Str |
 
 ### vcenter.host.network.packet.errors
 
@@ -221,6 +223,7 @@ As measured over the most recent 20s interval.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| network_interface | The name the network interface. | Any Str |
 
 ### vcenter.host.network.usage
 
@@ -229,6 +232,12 @@ The sum of the data transmitted and received for all the NIC instances of the ho
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {KiBy/s} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| network_interface | The name the network interface. | Any Str |
 
 ### vcenter.resource_pool.cpu.shares
 
@@ -378,6 +387,7 @@ The amount of packets that was received or transmitted over the instance's netwo
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| network_interface | The name the network interface. | Any Str |
 
 ### vcenter.vm.network.throughput
 
@@ -394,6 +404,7 @@ As measured over the most recent 20s interval.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| network_interface | The name the network interface. | Any Str |
 
 ### vcenter.vm.network.usage
 
@@ -404,6 +415,12 @@ As measured over the most recent 20s interval.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {KiBy/s} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| network_interface | The name the network interface. | Any Str |
 
 ## Optional Metrics
 

@@ -12,8 +12,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "252846"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: '{MHz}'
           - description: The amount of CPU available to the cluster.
             name: vcenter.cluster.cpu.limit
@@ -21,8 +21,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "280044"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: '{MHz}'
           - description: The number of hosts in the cluster.
             name: vcenter.cluster.host.count
@@ -34,15 +34,15 @@ resourceMetrics:
                     - key: effective
                       value:
                         boolValue: false
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
                 - asInt: "3"
                   attributes:
                     - key: effective
                       value:
                         boolValue: true
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: '{hosts}'
           - description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
             name: vcenter.cluster.memory.effective
@@ -50,8 +50,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2140347"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: By
           - description: The available memory of the cluster.
             name: vcenter.cluster.memory.limit
@@ -59,8 +59,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2468289376256"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: By
           - description: the number of virtual machines in the cluster.
             name: vcenter.cluster.vm.count
@@ -72,15 +72,15 @@ resourceMetrics:
                     - key: power_state
                       value:
                         stringValue: "off"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
                 - asInt: "1"
                   attributes:
                     - key: power_state
                       value:
                         stringValue: "on"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: '{virtual_machines}'
         scope:
           name: otelcol/vcenterreceiver
@@ -98,8 +98,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4000"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: '{shares}'
           - description: The usage of the CPU used by the resource pool.
             name: vcenter.resource_pool.cpu.usage
@@ -107,8 +107,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "13791"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: '{MHz}'
           - description: The amount of shares of memory in the resource pool.
             name: vcenter.resource_pool.memory.shares
@@ -116,8 +116,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "163840"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: '{shares}'
           - description: The usage of the memory by the resource pool.
             name: vcenter.resource_pool.memory.usage
@@ -125,8 +125,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "40543"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: MiBy
         scope:
           name: otelcol/vcenterreceiver
@@ -151,22 +151,22 @@ resourceMetrics:
                     - key: disk_state
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
                 - asInt: "5917763748696"
                   attributes:
                     - key: disk_state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: By
           - description: The utilization of the datastore.
             gauge:
               dataPoints:
                 - asDouble: 10.271877533539964
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             name: vcenter.datastore.disk.utilization
             unit: '%'
         scope:
@@ -188,15 +188,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "6107"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: MHz
           - description: The CPU utilization of the host system.
             gauge:
               dataPoints:
                 - asDouble: 6.542186227878476
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             name: vcenter.host.cpu.utilization
             unit: '%'
           - description: The latency of operations to the host system's disk.
@@ -207,91 +207,91 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000008300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "789"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000008300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "645"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000008300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "781"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000008300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "782"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000008300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "781"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000008400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "789"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000008400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "645"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000008400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "781"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000008400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "782"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000008400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
             name: vcenter.host.disk.latency.avg
             unit: ms
           - description: Highest latency value across all disks used by the host.
             gauge:
               dataPoints:
                 - asInt: "899"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000008100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "899"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000008100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "905"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000008100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "1000"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000008100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "1002"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000008100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
             name: vcenter.host.disk.latency.max
             unit: ms
           - description: Average number of kilobytes read from or written to the disk each second.
@@ -299,391 +299,556 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000002600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000002600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000002600"
-                - asInt: "2"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000002600"
-                - asInt: "1"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000002600"
-                - asInt: "7"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003000"
-                - asInt: "4"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003000"
-                - asInt: "2"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003000"
                 - asInt: "28"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003900"
+                    - key: disk_instance
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "45"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003900"
+                    - key: disk_instance
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "88"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003900"
+                    - key: disk_instance
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "92"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003900"
+                    - key: disk_instance
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "31"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003900"
+                    - key: disk_instance
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "4"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004100"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
+                    - key: disk_instance
                       value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004100"
-                - asInt: "1"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004100"
-                - asInt: "2"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004100"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004100"
-                - asInt: "6"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004400"
-                - asInt: "6"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004400"
-                - asInt: "4"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004400"
-                - asInt: "8"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004400"
-                - asInt: "19"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004400"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004500"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004500"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004500"
-                - asInt: "1"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004500"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004500"
-                - asInt: "4"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006600"
+                        stringValue: t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "25"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006600"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "76"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006600"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "63"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006600"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
+                    - key: disk_instance
                       value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006900"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006900"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006900"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006900"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006900"
-                - asInt: "5"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000007300"
-                - asInt: "10"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000007300"
-                - asInt: "5"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000007300"
-                - asInt: "7"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000007300"
+                        stringValue: t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "6"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000007300"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "4"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "19"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "10"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "7"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "4"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000007400"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "2"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000007400"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000007400"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "7"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "4"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "2"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000007400"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000007400"
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: disk_instance
+                      value:
+                        stringValue: t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "781"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000008500"
+                    - key: disk_instance
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "789"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000008500"
+                    - key: disk_instance
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "645"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000008500"
+                    - key: disk_instance
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "781"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000008500"
+                    - key: disk_instance
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "782"
                   attributes:
                     - key: direction
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000008500"
+                    - key: disk_instance
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
             unit: '{KiBy/s}'
           - description: The amount of memory the host system is using.
             name: vcenter.host.memory.usage
@@ -691,15 +856,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "140833"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: MiBy
           - description: The percentage of the host system's memory capacity that is being utilized.
             gauge:
               dataPoints:
                 - asDouble: 17.948557824655133
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             name: vcenter.host.memory.utilization
             unit: '%'
           - description: The number of packets transmitted and received, as measured over the most recent 20s interval.
@@ -707,356 +872,506 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "42110"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000000300"
-                - asInt: "42686"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000000300"
-                - asInt: "44277"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000000300"
-                - asInt: "43122"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000000300"
-                - asInt: "42703"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000000300"
-                - asInt: "13316"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003800"
-                - asInt: "14473"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003800"
-                - asInt: "19662"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003800"
-                - asInt: "15478"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003800"
-                - asInt: "14458"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003800"
-                - asInt: "116"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004000"
-                - asInt: "114"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004000"
-                - asInt: "113"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004000"
-                - asInt: "112"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004000"
-                - asInt: "120"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004000"
                 - asInt: "55647"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000005300"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "57376"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000005300"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "64156"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000005300"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "58814"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000005300"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "57390"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000005300"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "13316"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "14473"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "19662"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "15478"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "14458"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "116"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "114"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "113"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "112"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "120"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "105"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006100"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "103"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006100"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "104"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006100"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "102"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006100"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "109"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006100"
-                - asInt: "40810"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "42110"
                   attributes:
                     - key: direction
                       value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000000200"
-                - asInt: "41703"
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "42686"
                   attributes:
                     - key: direction
                       value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000000200"
-                - asInt: "42960"
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "44277"
                   attributes:
                     - key: direction
                       value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000000200"
-                - asInt: "42206"
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "43122"
                   attributes:
                     - key: direction
                       value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000000200"
-                - asInt: "41480"
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "42703"
                   attributes:
                     - key: direction
                       value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000000200"
-                - asInt: "11182"
-                  attributes:
-                    - key: direction
+                        stringValue: received
+                    - key: network_interface
                       value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003700"
-                - asInt: "13009"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003700"
-                - asInt: "16489"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003700"
-                - asInt: "12398"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003700"
-                - asInt: "12984"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003700"
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "51992"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000005800"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "54712"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000005800"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "59449"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000005800"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "54604"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000005800"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "54464"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000005800"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "11182"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "13009"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "16489"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "12398"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "12984"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000005900"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000005900"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000005900"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000005900"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000005900"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006400"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006400"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006400"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006400"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006400"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "40810"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "41703"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "42960"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "42206"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "41480"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
             unit: '{packets/sec}'
           - description: The summation of packet errors on the host network.
             name: vcenter.host.network.packet.errors
@@ -1068,788 +1383,1038 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003400"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000007100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000007100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000007100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000007100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000007100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000007200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000007200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000007200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000007200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000007200"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000002300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000002300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000002300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000002300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000002300"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000002700"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000002700"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000002700"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000002700"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000002700"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003100"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000005600"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000005600"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000005600"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000005600"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000005600"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000008000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000008000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000008000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000008000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000008000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
             unit: '{errors}'
           - description: The amount of data that was transmitted or received over the network by the host.
             name: vcenter.host.network.throughput
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000002400"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000002400"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000002400"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000002400"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000002400"
                 - asInt: "928"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003200"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "1120"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003200"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "1646"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003200"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "1291"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003200"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "1058"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003200"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "570"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004300"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "768"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004300"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "1269"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004300"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "927"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004300"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "681"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004300"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "357"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004600"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "351"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004600"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "376"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004600"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "363"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004600"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "376"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
+                    - key: network_interface
                       value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006200"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006200"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006200"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006200"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006200"
-                - asInt: "411"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000000100"
-                - asInt: "422"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000000100"
-                - asInt: "551"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000000100"
-                - asInt: "617"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000000100"
-                - asInt: "488"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000000100"
-                - asInt: "3064"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003500"
-                - asInt: "2537"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003500"
-                - asInt: "4373"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003500"
-                - asInt: "3746"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003500"
-                - asInt: "2569"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003500"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000003600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000003600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000003600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000003600"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000003600"
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "3475"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004700"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "2959"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004700"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "4924"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004700"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "4364"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004700"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "3058"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004700"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "3064"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "2537"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "4373"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "3746"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "2569"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000004800"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000004800"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000004800"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000004800"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000004800"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "411"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "422"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "551"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "617"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "488"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
             unit: '{KiBy/s}'
           - description: The sum of the data transmitted and received for all the NIC instances of the host.
             name: vcenter.host.network.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "769"
-                  startTimeUnixNano: "1687735746622741000"
+                - asInt: "4404"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652808280000000000"
-                - asInt: "773"
-                  startTimeUnixNano: "1687735746622741000"
+                - asInt: "4079"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652808300000000000"
-                - asInt: "927"
-                  startTimeUnixNano: "1687735746622741000"
+                - asInt: "6570"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652808320000000000"
-                - asInt: "980"
-                  startTimeUnixNano: "1687735746622741000"
+                - asInt: "5655"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652808340000000000"
-                - asInt: "864"
-                  startTimeUnixNano: "1687735746622741000"
+                - asInt: "4117"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "3634"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "3305"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "5642"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "4674"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "3251"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652808360000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000002900"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000002900"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000002900"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000002900"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000002900"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006500"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006500"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006500"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006500"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006500"
-                - asInt: "3634"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006700"
-                - asInt: "3305"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006700"
-                - asInt: "5642"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006700"
-                - asInt: "4674"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006700"
-                - asInt: "3251"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006700"
-                - asInt: "4404"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808280000006800"
-                - asInt: "4079"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808300000006800"
-                - asInt: "6570"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808320000006800"
-                - asInt: "5655"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808340000006800"
-                - asInt: "4117"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1652808360000006800"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
+                - asInt: "769"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808280000000000"
+                - asInt: "773"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808300000000000"
+                - asInt: "927"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808320000000000"
+                - asInt: "980"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808340000000000"
+                - asInt: "864"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1652808360000000000"
             unit: '{KiBy/s}'
         scope:
           name: otelcol/vcenterreceiver
@@ -1876,15 +2441,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "12"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: MHz
           - description: The CPU utilization of the VM.
             gauge:
               dataPoints:
                 - asDouble: 0.11569610489780177
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             name: vcenter.vm.cpu.utilization
             unit: '%'
           - description: The latency of operations to the virtual machine's disk.
@@ -1898,7 +2463,7 @@ resourceMetrics:
                     - key: disk_type
                       value:
                         stringValue: virtual
-                  startTimeUnixNano: "1687735746622741000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
@@ -1908,7 +2473,7 @@ resourceMetrics:
                     - key: disk_type
                       value:
                         stringValue: virtual
-                  startTimeUnixNano: "1687735746622741000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
             name: vcenter.vm.disk.latency.avg
             unit: ms
@@ -1916,7 +2481,7 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "899"
-                  startTimeUnixNano: "1687735746622741000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
             name: vcenter.vm.disk.latency.max
             unit: ms
@@ -1930,22 +2495,22 @@ resourceMetrics:
                     - key: disk_state
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
                 - asInt: "16311648256"
                   attributes:
                     - key: disk_state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: By
           - description: The utilization of storage on the virtual machine.
             gauge:
               dataPoints:
                 - asDouble: 5.9280825572001286
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             name: vcenter.vm.disk.utilization
             unit: '%'
           - description: The amount of memory that is ballooned due to virtualization.
@@ -1954,8 +2519,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: MiBy
           - description: The portion of memory that is granted to this VM from the host's swap space.
             name: vcenter.vm.memory.swapped
@@ -1963,8 +2528,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: MiBy
           - description: The amount of memory swapped to fast disk device such as SSD.
             name: vcenter.vm.memory.swapped_ssd
@@ -1972,8 +2537,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: KiBy
           - description: The amount of memory that is used by the virtual machine.
             name: vcenter.vm.memory.usage
@@ -1981,8 +2546,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "163"
-                  startTimeUnixNano: "1687735746622741000"
-                  timeUnixNano: "1687735746628086000"
+                  startTimeUnixNano: "1689008727973697000"
+                  timeUnixNano: "1689008727982875000"
             unit: MiBy
           - description: The amount of packets that was received or transmitted over the instance's network.
             name: vcenter.vm.network.packet.count
@@ -1994,84 +2559,120 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
             unit: '{packets/sec}'
           - description: The amount of data that was transmitted or received over the network of the virtual machine.
@@ -2084,84 +2685,120 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1687735746622741000"
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
             unit: By/sec
           - description: The network utilization combined transmit and receive rates during an interval.
@@ -2170,22 +2807,46 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
                 - asInt: "0"
-                  startTimeUnixNano: "1687735746622741000"
+                  attributes:
+                    - key: network_interface
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "1689008727973697000"
                   timeUnixNano: "1652798360000000000"
             unit: '{KiBy/s}'
         scope:

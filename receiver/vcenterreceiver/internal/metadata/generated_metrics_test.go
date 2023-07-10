@@ -108,7 +108,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+<<<<<<< HEAD
 			mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead)
+=======
+			mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirection(1), "attr-val")
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -120,7 +124,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+<<<<<<< HEAD
 			mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+=======
+			mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1), "attr-val")
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -128,11 +136,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+<<<<<<< HEAD
 			mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+=======
+			mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1), "attr-val")
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1)
+			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1, "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -199,15 +211,23 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+<<<<<<< HEAD
 			mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+=======
+			mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1), "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
+			mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1), "attr-val")
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1, "attr-val")
 
 			rb := mb.NewResourceBuilder()
 			rb.SetVcenterClusterName("vcenter.cluster.name-val")
@@ -440,7 +460,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
+<<<<<<< HEAD
 					assert.EqualValues(t, "read", attrVal.Str())
+=======
+					assert.Equal(t, "read", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("disk_instance")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 				case "vcenter.host.memory.usage":
 					assert.False(t, validatedMetrics["vcenter.host.memory.usage"], "Found a duplicate in the metrics slice: vcenter.host.memory.usage")
 					validatedMetrics["vcenter.host.memory.usage"] = true
@@ -483,7 +510,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
+<<<<<<< HEAD
 					assert.EqualValues(t, "transmitted", attrVal.Str())
+=======
+					assert.Equal(t, "transmitted", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("network_interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 				case "vcenter.host.network.packet.errors":
 					assert.False(t, validatedMetrics["vcenter.host.network.packet.errors"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.errors")
 					validatedMetrics["vcenter.host.network.packet.errors"] = true
@@ -517,7 +551,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
+<<<<<<< HEAD
 					assert.EqualValues(t, "transmitted", attrVal.Str())
+=======
+					assert.Equal(t, "transmitted", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("network_interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 				case "vcenter.host.network.usage":
 					assert.False(t, validatedMetrics["vcenter.host.network.usage"], "Found a duplicate in the metrics slice: vcenter.host.network.usage")
 					validatedMetrics["vcenter.host.network.usage"] = true
@@ -532,6 +573,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("network_interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "vcenter.resource_pool.cpu.shares":
 					assert.False(t, validatedMetrics["vcenter.resource_pool.cpu.shares"], "Found a duplicate in the metrics slice: vcenter.resource_pool.cpu.shares")
 					validatedMetrics["vcenter.resource_pool.cpu.shares"] = true
@@ -771,7 +815,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
+<<<<<<< HEAD
 					assert.EqualValues(t, "transmitted", attrVal.Str())
+=======
+					assert.Equal(t, "transmitted", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("network_interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 				case "vcenter.vm.network.throughput":
 					assert.False(t, validatedMetrics["vcenter.vm.network.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.network.throughput")
 					validatedMetrics["vcenter.vm.network.throughput"] = true
@@ -788,7 +839,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
+<<<<<<< HEAD
 					assert.EqualValues(t, "transmitted", attrVal.Str())
+=======
+					assert.Equal(t, "transmitted", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("network_interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+>>>>>>> 2fc1a85621 (Add attributes for network instance and disk instance)
 				case "vcenter.vm.network.usage":
 					assert.False(t, validatedMetrics["vcenter.vm.network.usage"], "Found a duplicate in the metrics slice: vcenter.vm.network.usage")
 					validatedMetrics["vcenter.vm.network.usage"] = true
@@ -803,6 +861,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("network_interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				}
 			}
 		})

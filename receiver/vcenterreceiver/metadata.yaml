@@ -72,6 +72,14 @@ attributes:
     enum:
       - "on"
       - "off"
+  host_disk_instance:
+    name_override: disk_instance
+    description: The name of the storage device that is being recorded.
+    type: string
+  network_interface_instance:
+    name_override: network_interface
+    description: The name the network interface.
+    type: string
 
 metrics:
   vcenter.cluster.cpu.limit:
