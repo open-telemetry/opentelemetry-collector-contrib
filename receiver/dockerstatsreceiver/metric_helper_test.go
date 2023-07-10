@@ -99,7 +99,7 @@ func Test_parseCPUSet(t *testing.T) {
 		{"0-2", 3, nil},
 		{"0-2,4", 4, nil},
 		{"0-2,4-5", 5, nil},
-		{"a-b", 0, errors.New("invalid cpusetCpus value: strconv.Atoi: parsing \"a\": invalid syntax")},
+		{"a-b", 0, errors.New("invalid -cpuset-cpus value: strconv.Atoi: parsing \"a\": invalid syntax")},
 		{"", 1, nil},
 	}
 
