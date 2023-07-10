@@ -711,7 +711,7 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.MatchingCriteria.OrderingCriteria.Regex = `.*(?P<value>\d).log`
+	cfg.MatchingCriteria.OrderingCriteria.Regex = `.(?P<value>\d{10})\.log`
 	cfg.MatchingCriteria.OrderingCriteria.SortBy = []SortRuleImpl{
 		{
 			&TimestampSortRule{
