@@ -4,6 +4,96 @@
 
 <!-- next version -->
 
+## v0.81.0
+
+### 🛑 Breaking changes 🛑
+
+- `clickhouseexporter`: Add scopeName and scopeVersion column to span table. (#21214)
+- `clickhouseexporter`: add log scope columns to span table. (#20280)
+- `receiver/aerospike`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
+- `receiver/bigip`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
+- `receiver/couchdb`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
+- `receiver/elasticsearch`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
+- `receiver/mongodb`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
+- `receiver/mongodbatlas`: Change the types of `Config.PrivateKey` and `Config.Alerts.Secret` to be `configopaque.String` (#17273)
+- `receiver/mysql`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
+- `dockerstatsreceiver`: Add non populated metrics `container.memory.anon` and `container.memory.file` that are only available when the host uses cgroups v2. (#21097)
+  Metric `container.memory.file` was added to fulfil the lack of `container.memory.total_cache` metric in case that the
+  cgroup version mounted in the host is v2 instead of v1.
+  
+  Now there is documentation of which metrics are available depending cgroups version being used on the host.
+  
+
+### 🚩 Deprecations 🚩
+
+- `mysqlreceiver`: set `mysql.locked_connects` as optional in order to remove it in next release (#14138, #23274)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Adds a parent field to metadata.yaml for subcomponents. (#23636)
+- `sqlqueryreceiver`: Add support of Start and End Timestamp Column in Metric Configuration. (#18925, #14146)
+- `postgresqlreceiver`: Adds unit to metrics where this was missing. (#23571)
+  Affected metrics can be found below.
+  - postgresql.bgwriter.maxwritten
+  - postgresql.table.count
+  
+- `mdatagen`: Adds validation to mdatagen to ensure that all required fields are present, and their content is valid. (#23783)
+- `filelogreceiver`: Add support for tracking the current file in filelogreceiver (#22998)
+- `exporter/datasetexporter`: Add more details to User-Agent header for DataSet HTTP requests (#20660)
+- `dockerstatsreceiver`: Add `container.image.id` and `container.command_line` optional resource attributes (#21092)
+- `googlecloudexporter`: Adds an experimental, opt-in write ahead log for GCP metrics exporter. (#23679)
+- `pkg/ottl`: Adds new `Time` converter to convert a string to a Golang time struct based on a supplied format (#22007)
+- `hostmetricsreceiver`: Add new Windows-exclusive process.handles metric. (#21379)
+- `websocketprocessor`: Rename websocketprocessor to remoteobserverprocessor (#23856)
+- `resourcedetectionprocessor`: Adds a way to configure the list of added resource attributes by the processor (#21482)
+  Users can now configure what resource attributes are gathered by specific detectors.
+  Example configuration:
+  
+  ```
+  resourcedetection:
+    detectors: [system, ec2]
+    system:
+      resource_attributes:
+        host.name:
+          enabled: true
+        host.id:
+          enabled: false
+    ec2:
+      resource_attributes:
+        host.name:
+          enabled: false
+        host.id:
+          enabled: true
+  ```
+  
+  For example, this config makes `host.name` being set by `system` detector, and `host.id` by `ec2` detector.
+  Moreover:
+  - Existing behavior remains unaffected as all attributes are currently enabled by default.
+  - The default attributes 'enabled' values are defined in `metadata.yaml`.
+  - Future releases will introduce changes to resource_attributes `enabled` values.
+  - Users can tailor resource detection process to their needs and environment.
+  
+- `spanmetricsconnector`: Added disabling options for histogram metrics and option to exclude default labels from all metrics. In some cases users want to optionally disable part of metrics because they generate too much data or are not needed. (#16344)
+- `statsdreceiver`: All receivers are setting receiver name and version when sending data. This change introduces the same behaviour to the statsd receiver. (#23563)
+- `zookeeperreceiver`: Adds an additional health check metric based off of the response from the zookeeper ruok 4lw command. (#21481)
+- `k8sclusterreceiver`: Switch k8s.pod and k8s.container metrics to use pdata. (#23441)
+
+### 🧰 Bug fixes 🧰
+
+- `k8sclusterreceiver`: Add back all other vendor-specific node conditions, and report them even if missing, as well as all allocatable node metrics if present,  to the list of Kubernetes node metrics available, which went missing during the pdata translation (#23839)
+- `k8sclusterreceiver`: Add explicitly `k8s.node.allocatable_pods` to the list of Kubernetes node metrics available, which went missing during the pdata translation (#23839)
+- `awsecscontainermetricsreceiver`: Fix possible panics in awsecscontainermetrics receiver (#23644)
+- `elasticsearchexporter`: use mapping.dedup and mapping.dedot configuration values (#19419)
+- `receiver/kafkametricsreceiver`: Updates certain metrics in kafkametricsreceiver to function as non-monotonic sums. (#4327)
+  Update the metrics type in KafkaMetricsReceiver from "gauge" to "nonmonotonic sum". Changes metrics are, kafka.brokers, kafka.topic.partitions, kafka.partition.replicas, kafka.partition.replicas_in_sync, kafka.consumer_group.members.
+- `clickhouseexporter`: Fix clickhouse exporter create database fail (#23664)
+- `spanmetricsconnector`: set timestamp correctly for metrics with delta temporality (#7128)
+- `vcenterreceiver`: Fixed a bug in which the vCenter receiver was incorrectly emitting the "used" attribute twice under the vcenter.datastore.disk.usage metric instead of "used" and "available". (#23654)
+- `mongodbreceiver`: Fix missing version in mongodb creating panics during scrapes (#23859)
+- `postgresqlreceiver`: fixed an issue where postgresql receiver was emitting the same attribute value "toast_hit" twice under postgresql.blocks_read metric. (#23657)
+- `windowseventlogreceiver`: Fix buffer overflow when ingesting large raw Events (#23677)
+- `pkg/stanza`: adding octet counting event breaking for syslog parser (#23577)
+
 ## v0.80.0
 
 ### 🛑 Breaking changes 🛑

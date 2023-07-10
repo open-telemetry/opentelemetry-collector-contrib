@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.19
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.80.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.80.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.81.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.81.0
 	github.com/prometheus/common v0.44.0
 	github.com/prometheus/prometheus v0.43.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013
-	go.opentelemetry.io/collector/semconv v0.80.0
+	go.opentelemetry.io/collector/semconv v0.81.0
 	go.uber.org/multierr v1.11.0
 )
 

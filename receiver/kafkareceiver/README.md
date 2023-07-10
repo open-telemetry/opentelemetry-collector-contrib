@@ -37,7 +37,8 @@ The following settings can be optionally configured:
   - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
   - `raw`: (logs only) the payload's bytes are inserted as the body of a log record.
   - `text`: (logs only) the payload are decoded as text and inserted as the body of a log record. By default, it uses UTF-8 to decode. You can use `text_<ENCODING>`, like `text_utf-8`, `text_shift_jis`, etc., to customize this behavior.
-- `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
+  - `json`: (logs only) the payload is decoded as JSON and inserted as the body of a log record.
+- `group_id` (default = otel-collector): The consumer group that receiver will be consuming messages from
 - `client_id` (default = otel-collector): The consumer client ID that receiver will use
 - `initial_offset` (default = latest): The initial offset to use if no offset was previously committed. Must be `latest` or `earliest`.
 - `auth`
@@ -58,7 +59,7 @@ The following settings can be optionally configured:
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
-    - `use_keytab`:  Use of keytab instead of password, if this is true, keytab file will be used instead of password
+    - `use_keytab`: Use of keytab instead of password, if this is true, keytab file will be used instead of password
     - `username`: The Kerberos username used for authenticate with KDC
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
@@ -74,9 +75,9 @@ The following settings can be optionally configured:
   - `enable`: (default = true) Whether or not to auto-commit updated offsets back to the broker
   - `interval`: (default = 1s) How frequently to commit updated offsets. Ineffective unless auto-commit is enabled
 - `message_marking`:
-  - `after`: (default =  false)  If true, the messages are marked after the pipeline execution
+  - `after`: (default = false) If true, the messages are marked after the pipeline execution
   - `on_error`: (default = false) If false, only the successfully processed messages are marked
-     **Note: this can block the entire partition in case a message processing returns a permanent error**
+    **Note: this can block the entire partition in case a message processing returns a permanent error**
 
 Example:
 
@@ -85,4 +86,3 @@ receivers:
   kafka:
     protocol_version: 2.0.0
 ```
-
