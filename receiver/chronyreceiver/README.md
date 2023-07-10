@@ -66,4 +66,4 @@ receivers:
 The complete list of metrics emitted by this receiver is found in the [documentation].
 
 [documentation]: ./documentation.md
-[chrony]: https://chrony.tuxfamily.org/
+[chrony]: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-configuring_ntp_using_the_chrony_suite

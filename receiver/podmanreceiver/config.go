@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -22,9 +23,9 @@ type Config struct {
 	// The maximum amount of time to wait for Podman API responses.  Default is 5s
 	Timeout time.Duration `mapstructure:"timeout"`
 
-	APIVersion    string `mapstructure:"api_version"`
-	SSHKey        string `mapstructure:"ssh_key"`
-	SSHPassphrase string `mapstructure:"ssh_passphrase"`
+	APIVersion    string              `mapstructure:"api_version"`
+	SSHKey        string              `mapstructure:"ssh_key"`
+	SSHPassphrase configopaque.String `mapstructure:"ssh_passphrase"`
 }
 
 func (config Config) Validate() error {

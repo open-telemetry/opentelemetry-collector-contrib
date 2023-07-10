@@ -15,7 +15,8 @@ import (
 )
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }
@@ -28,7 +29,8 @@ func TestLambda(t *testing.T) {
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
 	// Call Lambda Resource detector to detect resources
-	lambdaDetector := &detector{logger: zap.NewNop()}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	lambdaDetector := &detector{logger: zap.NewNop(), resourceAttributes: resourceAttributes}
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
@@ -43,7 +45,8 @@ func TestLambda(t *testing.T) {
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
 	ctx := context.Background()
-	lambdaDetector := &detector{logger: zap.NewNop()}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	lambdaDetector := &detector{logger: zap.NewNop(), resourceAttributes: resourceAttributes}
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)

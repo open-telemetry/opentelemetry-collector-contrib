@@ -104,7 +104,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		md = ocsToMetrics(pod.GetMetrics(o, dc.settings.TelemetrySettings.Logger))
+		md = pod.GetMetrics(dc.settings, o)
 	case *corev1.Node:
 		md = node.GetMetrics(dc.settings, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
 	case *corev1.Namespace:

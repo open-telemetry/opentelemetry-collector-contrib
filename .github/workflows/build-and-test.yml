@@ -292,14 +292,14 @@ jobs:
         with:
           name: coverage-artifacts
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v1.0.36
+        uses: Wandalen/wretry.action@v1.3.0
         with:
           action: codecov/codecov-action@v3
           with: |
             fail_ci_if_error: true
             verbose: true
-          attempt_limit: 5
-          attempt_delay: 10000
+          attempt_limit: 10
+          attempt_delay: 15000
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -319,7 +319,7 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
-        run: make integration-tests-with-cover
+        run: make integration-test
 
   correctness-traces:
     runs-on: ubuntu-latest
@@ -395,6 +395,10 @@ jobs:
           - arm
           - arm64
           - ppc64le
+        include:
+          - os: linux
+          - arch: arm
+          - arm: 7
         exclude:
           - os: darwin
             arch: 386
@@ -429,7 +433,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Build Collector ${{ matrix.binary }}
-        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} otelcontribcol
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:

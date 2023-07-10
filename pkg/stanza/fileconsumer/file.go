@@ -14,6 +14,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -37,7 +38,7 @@ type Manager struct {
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
 
-	currentFps []*Fingerprint
+	currentFps []*fingerprint.Fingerprint
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -50,7 +51,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 		return fmt.Errorf("read known files from database: %w", err)
 	}
 
-	if len(m.finder.FindFiles()) == 0 {
+	if files, err := m.finder.FindFiles(); err != nil {
+		m.Warnw("error occurred while finding files", "error", err.Error())
+	} else if len(files) == 0 {
 		m.Warnw("no files match the configured include patterns",
 			"include", m.finder.Include,
 			"exclude", m.finder.Exclude)
@@ -108,7 +111,11 @@ func (m *Manager) poll(ctx context.Context) {
 	batchesProcessed := 0
 
 	// Get the list of paths on disk
-	matches := m.finder.FindFiles()
+	matches, err := m.finder.FindFiles()
+	if err != nil {
+		m.Errorf("error finding files: %s", err)
+	}
+
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
 
@@ -182,11 +189,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.clearCurrentFingerprints()
 }
 
-// makeReader take a file path, then creates reader,
-// discarding any that have a duplicate fingerprint to other files that have already
-// been read this polling interval
-func (m *Manager) makeReader(path string) *Reader {
-	// Open the files first to minimize the time between listing and opening
+func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
 	if _, ok := m.seenPaths[path]; !ok {
 		if m.readerFactory.fromBeginning {
 			m.Infow("Started watching file", "path", path)
@@ -198,13 +201,15 @@ func (m *Manager) makeReader(path string) *Reader {
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
 		m.Debugf("Failed to open file", zap.Error(err))
-		return nil
+		return nil, nil
 	}
 
 	fp, err := m.readerFactory.newFingerprint(file)
 	if err != nil {
-		m.Errorw("Failed creating fingerprint", zap.Error(err))
-		return nil
+		if err = file.Close(); err != nil {
+			m.Errorf("problem closing file %s", file.Name())
+		}
+		return nil, nil
 	}
 
 	if len(fp.FirstBytes) == 0 {
@@ -212,19 +217,37 @@ func (m *Manager) makeReader(path string) *Reader {
 		if err = file.Close(); err != nil {
 			m.Errorf("problem closing file %s", file.Name())
 		}
+		return nil, nil
+	}
+	return fp, file
+}
+
+func (m *Manager) checkDuplicates(fp *fingerprint.Fingerprint) bool {
+	for i := 0; i < len(m.currentFps); i++ {
+		fp2 := m.currentFps[i]
+		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
+			return true
+		}
+	}
+	return false
+}
+
+// makeReader take a file path, then creates reader,
+// discarding any that have a duplicate fingerprint to other files that have already
+// been read this polling interval
+func (m *Manager) makeReader(path string) *Reader {
+	// Open the files first to minimize the time between listing and opening
+	fp, file := m.makeFingerprint(path)
+	if fp == nil {
 		return nil
 	}
 
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-	for i := 0; i < len(m.currentFps); i++ {
-		fp2 := m.currentFps[i]
-		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
-			// Exclude duplicates
-			if err = file.Close(); err != nil {
-				m.Errorf("problem closing file", "file", file.Name())
-			}
-			return nil
+	if m.checkDuplicates(fp) {
+		if err := file.Close(); err != nil {
+			m.Errorf("problem closing file", "file", file.Name())
 		}
+		return nil
 	}
 
 	m.currentFps = append(m.currentFps, fp)
@@ -238,7 +261,7 @@ func (m *Manager) makeReader(path string) *Reader {
 }
 
 func (m *Manager) clearCurrentFingerprints() {
-	m.currentFps = make([]*Fingerprint, 0)
+	m.currentFps = make([]*fingerprint.Fingerprint, 0)
 }
 
 // saveCurrent adds the readers from this polling interval to this list of
@@ -260,7 +283,7 @@ func (m *Manager) saveCurrent(readers []*Reader) {
 	}
 }
 
-func (m *Manager) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
+func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
 	// Check if the new path has the same fingerprint as an old path
 	if oldReader, ok := m.findFingerprintMatch(fp); ok {
 		return m.readerFactory.copy(oldReader, file)
@@ -270,7 +293,7 @@ func (m *Manager) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 	return m.readerFactory.newReader(file, fp)
 }
 
-func (m *Manager) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
+func (m *Manager) findFingerprintMatch(fp *fingerprint.Fingerprint) (*Reader, bool) {
 	// Iterate backwards to match newest first
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
 		oldReader := m.knownFiles[i]

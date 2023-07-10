@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -31,8 +32,8 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Username                                string `mapstructure:"username"`
-	Password                                string `mapstructure:"password"`
+	Username                                string              `mapstructure:"username"`
+	Password                                configopaque.String `mapstructure:"password"`
 }
 
 // Validate validates missing and invalid configuration fields.
