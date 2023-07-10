@@ -14,7 +14,7 @@ The documents are sent using [observability catalog](https://github.com/opensear
 
 - `endpoints`: List of OpenSearch URLs. If endpoints is missing, the
   OPENSEARCH_URL environment variable will be used.
-- `num_workers` (optional): Number of workers publishing bulk requests concurrently.
+- `num_workers` (optional): Number of workers publishing bulk requests concurrently. Defaults to `runtime.NumCPU()`, which returns the number of logical CPUs usable by the current process.
 - `dataset` (default=`default`) a user-provided label. It is used to construct the name of the destination index or data stream.
 - `namespace` (default=`namespace`)a user-provided label. It is used to construct the name of the destination index or data stream.
 - `flush`: Event bulk buffer flush settings
