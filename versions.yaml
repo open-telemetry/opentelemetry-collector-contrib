@@ -169,6 +169,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
