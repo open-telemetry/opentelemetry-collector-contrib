@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.8.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.8.0
 	go.opentelemetry.io/build-tools/multimod v0.8.0
-	go.opentelemetry.io/collector/cmd/builder v0.80.0
+	go.opentelemetry.io/collector/cmd/builder v0.81.0
 	golang.org/x/tools v0.10.0
 	golang.org/x/vuln v0.2.0
 )
@@ -114,6 +114,7 @@ require (
 	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.4 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
+	github.com/knadh/koanf/v2 v2.0.1 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.7 // indirect
 	github.com/kyoh86/exportloopref v0.1.11 // indirect
