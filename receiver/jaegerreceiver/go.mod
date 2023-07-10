@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.81.0
 	go.opentelemetry.io/collector/semconv v0.81.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.56.1
+	google.golang.org/grpc v1.56.2
 )
 
 require (
