@@ -6,6 +6,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/Azure/azure-kusto-go/kusto"
@@ -205,8 +206,17 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 }
 
 func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
-	kcsb := kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
-	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{})
+	var kcsb *kusto.ConnectionStringBuilder
+	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityId)) == 0
+	// If the user has managed identity done, use it. For System managed identity use the MI as system
+	if isManagedIdentity && strings.ToUpper(strings.TrimSpace(config.ManagedIdentityId)) == "SYSTEM" {
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
+	} else if isManagedIdentity {
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityId)
+	} else {
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+	}
+	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
 	client, err := kusto.New(kcsb)
 	return client, err
 }

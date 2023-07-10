@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
@@ -17,6 +18,7 @@ type Config struct {
 	ApplicationID      string              `mapstructure:"application_id"`
 	ApplicationKey     configopaque.String `mapstructure:"application_key"`
 	TenantID           string              `mapstructure:"tenant_id"`
+	ManagedIdentityId  string              `mapstructure:"managed_identity_id"`
 	Database           string              `mapstructure:"db_name"`
 	MetricTable        string              `mapstructure:"metrics_table_name"`
 	LogTable           string              `mapstructure:"logs_table_name"`
@@ -33,12 +35,20 @@ func (adxCfg *Config) Validate() error {
 		return errors.New("ADX config is nil / not provided")
 	}
 
-	if isEmpty(adxCfg.ClusterURI) || isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID) {
-		return errors.New(`mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `)
+	if (isEmpty(adxCfg.ClusterURI) || isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID)) && isEmpty(adxCfg.ManagedIdentityId) {
+		return errors.New(`mandatory configurations "cluster_uri" ,"application_id" , "application_key" , "tenant_id" and "managed_identity_id" are missing or empty `)
 	}
 
 	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {
 		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedIngestType, queuedIngestTest, adxCfg.IngestionType)
+	}
+
+	if !isEmpty(adxCfg.ManagedIdentityId) && strings.ToUpper(strings.TrimSpace(adxCfg.ManagedIdentityId)) != "SYSTEM" {
+		// if the managed identity is not a system identity, validate if it is a valid UUID
+		_, err := uuid.Parse(strings.TrimSpace(adxCfg.ManagedIdentityId))
+		if err != nil {
+			return fmt.Errorf("UserManagedIdentity [%s] should be a UUID string", adxCfg.ManagedIdentityId)
+		}
 	}
 
 	return nil

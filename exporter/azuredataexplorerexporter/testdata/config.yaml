@@ -56,3 +56,48 @@ azuredataexplorer/3:
   traces_table_name: "OTELTraces"
   # type of ingestion is invalid
   ingestion_type: "streaming"
+azuredataexplorer/4:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # managed identity id
+  managed_identity_id: "bf61f0ec-1f01-11ee-be56-0242ac120002"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"
+azuredataexplorer/5:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # managed identity id
+  managed_identity_id: "managed_identity_id"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"
+azuredataexplorer/6:
+  # Kusto cluster uri
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
+  # managed identity id
+  managed_identity_id: "system"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"     
