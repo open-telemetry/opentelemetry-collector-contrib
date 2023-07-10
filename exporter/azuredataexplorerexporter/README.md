@@ -54,6 +54,8 @@ exporters:
     application_key: "xx-xx-xx-xx"
     # The tenant
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
+    # The managed identity id. Can be "system" for System managed identity or the UserManagedIdentity Id (GUID) for user managed identities
+    managed_identity_id: "z80da32c-108c-415c-a19e-643f461a677a"
     # Database for the logs
     db_name: "oteldb"
     # Metric table name
