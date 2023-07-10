@@ -28,7 +28,7 @@ type Config struct {
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
-	Username string `mapstructure:"username"`
+	Username string              `mapstructure:"username"`
 	Password configopaque.String `mapstructure:"password"`
 }
 
