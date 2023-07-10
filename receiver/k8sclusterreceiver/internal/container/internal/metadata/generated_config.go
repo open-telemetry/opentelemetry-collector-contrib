@@ -32,6 +32,7 @@ type MetricsConfig struct {
 	K8sContainerMemoryLimit             MetricConfig `mapstructure:"k8s.container.memory_limit"`
 	K8sContainerMemoryRequest           MetricConfig `mapstructure:"k8s.container.memory_request"`
 	K8sContainerReady                   MetricConfig `mapstructure:"k8s.container.ready"`
+	K8sContainerRestartCount            MetricConfig `mapstructure:"k8s.container.restart_count"`
 	K8sContainerRestarts                MetricConfig `mapstructure:"k8s.container.restarts"`
 	K8sContainerStorageLimit            MetricConfig `mapstructure:"k8s.container.storage_limit"`
 	K8sContainerStorageRequest          MetricConfig `mapstructure:"k8s.container.storage_request"`
@@ -58,6 +59,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sContainerReady: MetricConfig{
+			Enabled: true,
+		},
+		K8sContainerRestartCount: MetricConfig{
 			Enabled: true,
 		},
 		K8sContainerRestarts: MetricConfig{

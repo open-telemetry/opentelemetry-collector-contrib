@@ -73,6 +73,7 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 			containerID = cs.ContainerID
 			imageStr = cs.Image
 			mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
+			mb.RecordK8sContainerRestartCountDataPoint(ts, int64(cs.RestartCount))
 			mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
 			break
 		}

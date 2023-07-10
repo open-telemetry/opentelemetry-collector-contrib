@@ -15,6 +15,8 @@ all_set:
       enabled: true
     k8s.container.ready:
       enabled: true
+    k8s.container.restart_count:
+      enabled: true
     k8s.container.restarts:
       enabled: true
     k8s.container.storage_limit:
@@ -55,6 +57,8 @@ none_set:
     k8s.container.memory_request:
       enabled: false
     k8s.container.ready:
+      enabled: false
+    k8s.container.restart_count:
       enabled: false
     k8s.container.restarts:
       enabled: false

@@ -355,6 +355,55 @@ func newMetricK8sContainerReady(cfg MetricConfig) metricK8sContainerReady {
 	return m
 }
 
+type metricK8sContainerRestartCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.restart_count metric with initial data.
+func (m *metricK8sContainerRestartCount) init() {
+	m.data.SetName("k8s.container.restart_count")
+	m.data.SetDescription("How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.")
+	m.data.SetUnit("{restarts}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sContainerRestartCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerRestartCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerRestartCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerRestartCount(cfg MetricConfig) metricK8sContainerRestartCount {
+	m := metricK8sContainerRestartCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sContainerRestarts struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -518,6 +567,7 @@ type MetricsBuilder struct {
 	metricK8sContainerMemoryLimit             metricK8sContainerMemoryLimit
 	metricK8sContainerMemoryRequest           metricK8sContainerMemoryRequest
 	metricK8sContainerReady                   metricK8sContainerReady
+	metricK8sContainerRestartCount            metricK8sContainerRestartCount
 	metricK8sContainerRestarts                metricK8sContainerRestarts
 	metricK8sContainerStorageLimit            metricK8sContainerStorageLimit
 	metricK8sContainerStorageRequest          metricK8sContainerStorageRequest
@@ -534,6 +584,9 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.K8sContainerRestarts.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.container.restarts` should not be enabled: This metric is deprecated and will be removed soon. Use k8s.container.restart_count instead.")
+	}
 	mb := &MetricsBuilder{
 		startTime:                                 pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                             pmetric.NewMetrics(),
@@ -546,6 +599,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sContainerMemoryLimit:             newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
 		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
 		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
+		metricK8sContainerRestartCount:            newMetricK8sContainerRestartCount(mbc.Metrics.K8sContainerRestartCount),
 		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
 		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
 		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
@@ -690,6 +744,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sContainerMemoryLimit.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryRequest.emit(ils.Metrics())
 	mb.metricK8sContainerReady.emit(ils.Metrics())
+	mb.metricK8sContainerRestartCount.emit(ils.Metrics())
 	mb.metricK8sContainerRestarts.emit(ils.Metrics())
 	mb.metricK8sContainerStorageLimit.emit(ils.Metrics())
 	mb.metricK8sContainerStorageRequest.emit(ils.Metrics())
@@ -746,6 +801,11 @@ func (mb *MetricsBuilder) RecordK8sContainerMemoryRequestDataPoint(ts pcommon.Ti
 // RecordK8sContainerReadyDataPoint adds a data point to k8s.container.ready metric.
 func (mb *MetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerReady.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sContainerRestartCountDataPoint adds a data point to k8s.container.restart_count metric.
+func (mb *MetricsBuilder) RecordK8sContainerRestartCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sContainerRestartCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerRestartsDataPoint adds a data point to k8s.container.restarts metric.

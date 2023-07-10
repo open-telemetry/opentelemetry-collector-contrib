@@ -86,7 +86,7 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreMetricValues("k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"),
+		pmetrictest.IgnoreMetricValues("k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.restart_count", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"),
 		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
 		pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
 		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),

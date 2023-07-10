@@ -767,6 +767,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -830,6 +837,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -907,6 +921,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -963,6 +984,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1019,6 +1047,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1075,6 +1110,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1124,6 +1166,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1131,6 +1180,7 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.ready
             unit: "1"
+
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
@@ -1194,6 +1244,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1271,6 +1328,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1320,6 +1384,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
             unit: "1"
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.container.restart_count
+            unit: "{restarts}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
