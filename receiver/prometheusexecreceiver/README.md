@@ -5,7 +5,7 @@
 | ------------- |-----------|
 | Stability     | [deprecated]: metrics   |
 | Distributions | [splunk] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fprometheus_exec%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fprometheus_exec%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fprometheusexec%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fprometheusexec%20&label=closed&color=blue&logo=opentelemetry) |
 
 [deprecated]: https://github.com/open-telemetry/opentelemetry-collector#deprecated
 [splunk]: https://github.com/signalfx/splunk-otel-collector
