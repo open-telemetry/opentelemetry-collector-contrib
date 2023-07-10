@@ -167,10 +167,10 @@ github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKe
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
 github.com/influxdata/influxdb-client-go/v2 v2.12.3 h1:28nRlNMRIV4QbtIUvxhWqaxn0IpXeMSkY/uJa/O/vC4=
 github.com/influxdata/influxdb-client-go/v2 v2.12.3/go.mod h1:IrrLUbCjjfkmRuaCiGQg4m2GbkaeJDcuWoxiWdQEbA0=
-github.com/influxdata/influxdb-observability/common v0.5.3 h1:AgSr1kgk/OAVOafFBCCsLCMcr69c+YwZvwVii1yveh4=
-github.com/influxdata/influxdb-observability/common v0.5.3/go.mod h1:5MCcm/SfCpHaL6iBXkFCWyGDeyKeFcF6btAAUjKPiL8=
-github.com/influxdata/influxdb-observability/influx2otel v0.5.3 h1:Jgk9mb6PWcufkZvUUmN4NzxFeGlKmNF9+0rejTVBU2U=
-github.com/influxdata/influxdb-observability/influx2otel v0.5.3/go.mod h1:1VTLCB6bXF84w9cX9ssjWfzKpk+AAW+9ZJW+LIJsJXQ=
+github.com/influxdata/influxdb-observability/common v0.5.4 h1:DUrCX/4AusHE4MyjMFoDiDyWNC+r635qzU846kIXE0E=
+github.com/influxdata/influxdb-observability/common v0.5.4/go.mod h1:5MCcm/SfCpHaL6iBXkFCWyGDeyKeFcF6btAAUjKPiL8=
+github.com/influxdata/influxdb-observability/influx2otel v0.5.4 h1:eGrh650J4jIBwDyF4RV9rX+jWdJI4KL99qf/ayTry3Y=
+github.com/influxdata/influxdb-observability/influx2otel v0.5.4/go.mod h1:1VTLCB6bXF84w9cX9ssjWfzKpk+AAW+9ZJW+LIJsJXQ=
 github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c h1:qSHzRbhzK8RdXOsAdfDgO49TtqC1oZ+acxPrkfTxcCs=
 github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c/go.mod h1:qj24IKcXYK6Iy9ceXlo3Tc+vtHo9lIhSX5JddghvEPo=
 github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 h1:W9WBk7wlPfJLvMCdtV4zPulc4uCPrlywQOmbFOhgQNU=
