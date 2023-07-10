@@ -31,7 +31,7 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	Username                                string                        `mapstructure:"username"`
-	Password                                configopaque.String                        `mapstructure:"password"`
+	Password                                configopaque.String           `mapstructure:"password"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:"metrics"`
 }
 
