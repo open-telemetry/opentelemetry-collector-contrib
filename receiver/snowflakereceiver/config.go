@@ -23,13 +23,13 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Username                                string `mapstructure:"username"`
+	Username                                string              `mapstructure:"username"`
 	Password                                configopaque.String `mapstructure:"password"`
-	Account                                 string `mapstructure:"account"`
-	Schema                                  string `mapstructure:"schema"`
-	Warehouse                               string `mapstructure:"warehouse"`
-	Database                                string `mapstructure:"database"`
-	Role                                    string `mapstructure:"role"`
+	Account                                 string              `mapstructure:"account"`
+	Schema                                  string              `mapstructure:"schema"`
+	Warehouse                               string              `mapstructure:"warehouse"`
+	Database                                string              `mapstructure:"database"`
+	Role                                    string              `mapstructure:"role"`
 }
 
 func (cfg *Config) Validate() error {
