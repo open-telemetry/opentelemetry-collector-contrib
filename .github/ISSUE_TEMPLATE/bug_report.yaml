@@ -80,6 +80,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
