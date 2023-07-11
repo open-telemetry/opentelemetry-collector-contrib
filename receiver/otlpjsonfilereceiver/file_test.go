@@ -125,7 +125,7 @@ func testdataConfigYamlAsMap() *Config {
 			FingerprintSize:         1000,
 			MaxLogSize:              1024 * 1024,
 			MaxConcurrentFiles:      1024,
-			Finder: fileconsumer.Finder{
+			MatchingCriteria: fileconsumer.MatchingCriteria{
 				Include: []string{"/var/log/*.log"},
 				Exclude: []string{"/var/log/example.log"},
 			},
