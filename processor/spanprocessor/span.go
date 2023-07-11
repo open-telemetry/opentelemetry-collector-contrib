@@ -143,9 +143,13 @@ func (sp *spanProcessor) processFromAttributes(span ptrace.Span) {
 		case pcommon.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(attr.Int(), 10))
 		case pcommon.ValueTypeEmpty:
+			fallthrough
 		case pcommon.ValueTypeSlice:
+			fallthrough
 		case pcommon.ValueTypeBytes:
+			fallthrough
 		case pcommon.ValueTypeMap:
+			fallthrough
 		default:
 			sb.WriteString("<unknown-attribute-type>")
 		}
