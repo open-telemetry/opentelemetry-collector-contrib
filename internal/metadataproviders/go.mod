@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.44.295
-	github.com/docker/docker v24.0.2+incompatible
+	github.com/aws/aws-sdk-go v1.44.298
+	github.com/docker/docker v24.0.4+incompatible
 	github.com/hashicorp/consul/api v1.22.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/semconv v0.81.0
@@ -45,8 +45,8 @@ require (
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/net v0.11.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.2.0 // indirect
