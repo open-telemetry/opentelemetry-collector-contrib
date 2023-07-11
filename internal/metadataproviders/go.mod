@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.44.298
+	github.com/aws/aws-sdk-go v1.44.299
 	github.com/docker/docker v24.0.4+incompatible
 	github.com/hashicorp/consul/api v1.22.0
 	github.com/stretchr/testify v1.8.4

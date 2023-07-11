@@ -229,13 +229,13 @@ require (
 	github.com/ClickHouse/ch-go v0.52.1 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.10.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.89 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.14.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
@@ -271,7 +271,7 @@ require (
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.298 // indirect
+	github.com/aws/aws-sdk-go v1.44.299 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.27 // indirect
@@ -571,7 +571,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.697 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.698 // indirect
 	github.com/tg123/go-htpasswd v1.2.1 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
