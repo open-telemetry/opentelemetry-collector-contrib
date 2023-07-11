@@ -11,7 +11,7 @@ import (
 const (
 	defaultVal = 0
 	// this is the name used to refer to the connector in the config.yaml
-	typeStr = "datadogConnector"
+	typeStr = "datadconnector"
 	// datadogComponent defines the default component that will be used for exporting metrics.
 )
 
