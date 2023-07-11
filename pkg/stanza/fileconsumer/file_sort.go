@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strconv"
 
-	strptime "github.com/observiq/ctimefmt"
 	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
 
@@ -94,11 +93,10 @@ func (f *TimestampSortRule) validate() error {
 		f.Location = "UTC"
 	}
 
-	layout, err := strptime.ToNative(f.Layout)
+	_, err := timeutils.StrptimeToGotime(f.Layout)
 	if err != nil {
 		return errors.Wrap(err, "parse strptime layout")
 	}
-	f.Layout = layout
 
 	return nil
 }
