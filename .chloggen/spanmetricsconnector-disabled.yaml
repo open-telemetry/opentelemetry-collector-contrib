@@ -18,4 +18,4 @@ issues: [23872]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: "Previously spanmetricsconnector would attach every single span as an exemplar to the histogram. |
-  While now exemplars are disabled. To enable them set `exemplar.enabled=true`"
+  Exemplars are now disabled by default. To enable them set `exemplars.enabled=true`"
