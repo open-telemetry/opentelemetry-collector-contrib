@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 )
 
+// Upgrade to StageBeta in v0.83.0
 var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.rfc3339",
 	featuregate.StageAlpha,
