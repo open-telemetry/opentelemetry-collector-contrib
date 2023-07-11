@@ -34,15 +34,15 @@ func (adxCfg *Config) Validate() error {
 	if adxCfg == nil {
 		return errors.New("ADX config is nil / not provided")
 	}
-	is_app_auth_empty := isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID)
-	is_managed_auth_empty := isEmpty(adxCfg.ManagedIdentityID)
-	is_cluster_uri_empty := isEmpty(adxCfg.ClusterURI)
+	isAppAuthEmpty := isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID)
+	isManagedAuthEmpty := isEmpty(adxCfg.ManagedIdentityID)
+	isClusterURIEmpty := isEmpty(adxCfg.ClusterURI)
 	// Cluster URI is the target ADX cluster
-	if is_cluster_uri_empty {
+	if isClusterURIEmpty {
 		return errors.New(`clusterURI config is mandatory`)
 	}
 	// Parameters for AD App Auth or Managed Identity Auth are mandatory
-	if is_app_auth_empty && is_managed_auth_empty {
+	if isAppAuthEmpty && isManagedAuthEmpty {
 		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] are needed for auth`)
 	}
 

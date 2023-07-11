@@ -208,13 +208,15 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
 	var kcsb *kusto.ConnectionStringBuilder
 	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
+	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
-	if isManagedIdentity && strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM") {
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
-	} else if isManagedIdentity {
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
-	} else {
+	switch {
+	case !isManagedIdentity:
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+	case isManagedIdentity && isSystemManagedIdentity:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
+	case isManagedIdentity && !isSystemManagedIdentity:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
 	}
 	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
 	client, err := kusto.New(kcsb)
