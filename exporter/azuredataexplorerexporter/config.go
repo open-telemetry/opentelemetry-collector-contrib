@@ -18,7 +18,7 @@ type Config struct {
 	ApplicationID      string              `mapstructure:"application_id"`
 	ApplicationKey     configopaque.String `mapstructure:"application_key"`
 	TenantID           string              `mapstructure:"tenant_id"`
-	ManagedIdentityId  string              `mapstructure:"managed_identity_id"`
+	ManagedIdentityID  string              `mapstructure:"managed_identity_id"`
 	Database           string              `mapstructure:"db_name"`
 	MetricTable        string              `mapstructure:"metrics_table_name"`
 	LogTable           string              `mapstructure:"logs_table_name"`
@@ -35,7 +35,7 @@ func (adxCfg *Config) Validate() error {
 		return errors.New("ADX config is nil / not provided")
 	}
 
-	if (isEmpty(adxCfg.ClusterURI) || isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID)) && isEmpty(adxCfg.ManagedIdentityId) {
+	if (isEmpty(adxCfg.ClusterURI) || isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID)) && isEmpty(adxCfg.ManagedIdentityID) {
 		return errors.New(`mandatory configurations "cluster_uri" ,"application_id" , "application_key" , "tenant_id" and "managed_identity_id" are missing or empty `)
 	}
 
@@ -43,11 +43,11 @@ func (adxCfg *Config) Validate() error {
 		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedIngestType, queuedIngestTest, adxCfg.IngestionType)
 	}
 
-	if !isEmpty(adxCfg.ManagedIdentityId) && !strings.EqualFold(strings.TrimSpace(adxCfg.ManagedIdentityId), "SYSTEM") {
+	if !isEmpty(adxCfg.ManagedIdentityID) && !strings.EqualFold(strings.TrimSpace(adxCfg.ManagedIdentityID), "SYSTEM") {
 		// if the managed identity is not a system identity, validate if it is a valid UUID
-		_, err := uuid.Parse(strings.TrimSpace(adxCfg.ManagedIdentityId))
+		_, err := uuid.Parse(strings.TrimSpace(adxCfg.ManagedIdentityID))
 		if err != nil {
-			return fmt.Errorf("UserManagedIdentity [%s] should be a UUID string or system", adxCfg.ManagedIdentityId)
+			return fmt.Errorf("UserManagedIdentity [%s] should be a UUID string or system", adxCfg.ManagedIdentityID)
 		}
 	}
 

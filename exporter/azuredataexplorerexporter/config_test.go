@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "4"),
 			expected: &Config{
 				ClusterURI:        "https://CLUSTER.kusto.windows.net",
-				ManagedIdentityId: "bf61f0ec-1f01-11ee-be56-0242ac120002",
+				ManagedIdentityID: "bf61f0ec-1f01-11ee-be56-0242ac120002",
 				Database:          "oteldb",
 				MetricTable:       "OTELMetrics",
 				LogTable:          "OTELLogs",
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "6"),
 			expected: &Config{
 				ClusterURI:        "https://CLUSTER.kusto.windows.net",
-				ManagedIdentityId: "system",
+				ManagedIdentityID: "system",
 				Database:          "oteldb",
 				MetricTable:       "OTELMetrics",
 				LogTable:          "OTELLogs",
