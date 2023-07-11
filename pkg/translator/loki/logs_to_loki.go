@@ -216,7 +216,7 @@ func addHint(log plog.LogRecord) {
 		case pcommon.ValueTypeSlice:
 			value.Slice().AppendEmpty().SetStr(levelAttributeName)
 		case pcommon.ValueTypeStr:
-			log.Attributes().PutStr(hintAttributes, value.AsString()+","+levelAttributeName)
+			log.Attributes().PutStr(hintAttributes, fmt.Sprintf("%s,%s", value.AsString(), levelAttributeName))
 		}
 	} else {
 		log.Attributes().PutStr(hintAttributes, levelAttributeName)
