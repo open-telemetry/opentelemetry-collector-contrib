@@ -47,6 +47,10 @@ type lastValueAccumulator struct {
 	// metricExpiration contains duration for which metric
 	// should be served after it was updated
 	metricExpiration time.Duration
+
+	// record the last time GC happened during Accumulate
+	gcMu      sync.Mutex
+	lastAccGC time.Time
 }
 
 // NewAccumulator returns LastValueAccumulator
@@ -70,6 +74,17 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 		for j := 0; j < metrics.Len(); j++ {
 			n += a.addMetric(metrics.At(j), ilm.Scope(), resourceAttrs, now)
 		}
+	}
+
+	a.gcMu.Lock()
+	if lastGC := a.lastAccGC; lastGC.Before(now.Add(-a.metricExpiration)) {
+		a.lastAccGC = now
+		a.gcMu.Unlock()
+		a.registeredMetricsRange(func(v *accumulatedValue) {
+			// noop so GC happens
+		})
+	} else {
+		a.gcMu.Unlock()
 	}
 
 	return
@@ -269,8 +284,17 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 
 	var metrics []pmetric.Metric
 	var resourceAttrs []pcommon.Map
-	expirationTime := time.Now().Add(-a.metricExpiration)
+	a.registeredMetricsRange(func(v *accumulatedValue) {
+		metrics = append(metrics, v.value)
+		resourceAttrs = append(resourceAttrs, v.resourceAttrs)
+	})
 
+	return metrics, resourceAttrs
+}
+
+// iterates on registered metrics while GC'ing the expired ones
+func (a *lastValueAccumulator) registeredMetricsRange(fn func(v *accumulatedValue)) {
+	expirationTime := time.Now().Add(-a.metricExpiration)
 	a.registeredMetrics.Range(func(key, value interface{}) bool {
 		v := value.(*accumulatedValue)
 		if expirationTime.After(v.updated) {
@@ -278,13 +302,9 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 			a.registeredMetrics.Delete(key)
 			return true
 		}
-
-		metrics = append(metrics, v.value)
-		resourceAttrs = append(resourceAttrs, v.resourceAttrs)
+		fn(v)
 		return true
 	})
-
-	return metrics, resourceAttrs
 }
 
 func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) string {
