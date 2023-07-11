@@ -161,9 +161,6 @@ issues:
     - path: fluentforwardreceiver
       linters:
         - exhaustive
-    - path: googlecloudspannerreceiver
-      linters:
-        - exhaustive
     - path: prometheusreceiver
       linters:
         - exhaustive
