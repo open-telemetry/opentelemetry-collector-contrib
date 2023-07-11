@@ -56,8 +56,8 @@ type Config struct {
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
 
-	// ExemplarConfig defines the configuration for exemplars.
-	ExemplarConfig ExemplarConfig `mapstructure:"exemplar"`
+	// Exemplars defines the configuration for exemplars.
+	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
 }
 
 type HistogramConfig struct {
@@ -67,7 +67,7 @@ type HistogramConfig struct {
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
 }
 
-type ExemplarConfig struct {
+type ExemplarsConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 

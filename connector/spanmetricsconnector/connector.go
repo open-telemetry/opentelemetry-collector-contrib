@@ -327,7 +327,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 }
 
 func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics.Histogram) {
-	if !p.config.ExemplarConfig.Enabled {
+	if !p.config.Exemplars.Enabled {
 		return
 	}
 	if span.TraceID().IsEmpty() {

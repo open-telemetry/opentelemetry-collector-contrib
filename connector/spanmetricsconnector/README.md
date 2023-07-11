@@ -126,7 +126,7 @@ connectors:
         default: GET
       - name: http.status_code
     exemplars:
-      enabled: false
+      enabled: true
     exclude_dimensions: ['status.code']
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
