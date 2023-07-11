@@ -264,11 +264,6 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 					).Warn("Dropped misaligned histogram datapoint")
 					continue
 				}
-			} else if ip.HasSum() != pp.HasSum() {
-				a.logger.With(
-					zap.String("metric_name", metric.Name()),
-				).Warn("Dropped histogram data point due to disagreement on sum tracking")
-				continue
 			} else {
 				accumulateHistogramValues(pp, ip, m.Histogram().DataPoints().AppendEmpty())
 			}
@@ -364,9 +359,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 
 	if match {
 		dest.SetCount(newer.Count() + older.Count())
-		if newer.HasSum() {
-			dest.SetSum(newer.Sum() + older.Sum())
-		}
+		dest.SetSum(newer.Sum() + older.Sum())
 
 		counts := make([]uint64, newer.BucketCounts().Len())
 		for i := 0; i < newer.BucketCounts().Len(); i++ {
@@ -376,10 +369,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	} else {
 		// use new value if bucket bounds do not match
 		dest.SetCount(newer.Count())
-		if newer.HasSum() {
-			dest.SetSum(newer.Sum())
-		}
-
+		dest.SetSum(newer.Sum())
 		dest.BucketCounts().FromRaw(newer.BucketCounts().AsRaw())
 	}
 
