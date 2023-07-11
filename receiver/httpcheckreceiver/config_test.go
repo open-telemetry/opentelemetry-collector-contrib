@@ -69,8 +69,12 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing scheme",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "www.opentelemetry.io/docs",
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "www.opentelemetry.io/docs",
+						},
+					},
 				},
 			},
 			expectedErr: multierr.Combine(
@@ -86,15 +90,11 @@ func TestValidate(t *testing.T) {
 							Endpoint: "https://opentelemetry.io",
 						},
 					},
-				},
-			},
-			expectedErr: nil,
-		},
-		{
-			desc: "valid endpoint with port and path",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://opentelemetry.io:80/docs",
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "https://opentelemetry.io:80/docs",
+						},
+					},
 				},
 			},
 			expectedErr: nil,
