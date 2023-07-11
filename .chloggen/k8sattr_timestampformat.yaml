@@ -17,4 +17,6 @@ issues: [24016]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Timestamp value before and after.
+  `2023-07-10 12:34:39.740638 -0700 PDT m=+0.020184946`, `2023-07-10T12:39:53.112485-07:00`
