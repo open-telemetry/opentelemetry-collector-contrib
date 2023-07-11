@@ -132,6 +132,6 @@ jobs:
           tool: 'customSmallerIsBetter'
           output-file-path: output.json
           gh-pages-branch: benchmarks
-          github-token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: "docs/benchmarks/loadtests"
           auto-push: true
