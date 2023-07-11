@@ -6,11 +6,11 @@
 	This differs from the original trie.
    	This has been modified to detect partial matches as well.
    	For eg.
-		If we add "ABCDEF" to this trie, and try to check if "ABCD" is in the trie,
+		If we add "ABCD" to this trie, and try to check if "ABCDEF" is in the trie,
 		it will return true because that's how fingerprint matching works in current implementation.
 */
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+package trie // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 
 type Trie struct {
 	_        interface{}
@@ -54,8 +54,8 @@ func (trie *Trie) Put(key []byte) {
 	}
 }
 
-// Delete removes the value associated with the given key. Returns true if a
-// node was found for the given key. If the node or any of its ancestors
+// Delete removes keys from the Trie. Returns true if node was found for the given key.
+// If the node or any of its ancestors
 // becomes childless as a result, it is removed from the trie.
 func (trie *Trie) Delete(key []byte) bool {
 	var path []*Trie // record ancestors to check later
