@@ -54,7 +54,9 @@ exporters:
     application_key: "xx-xx-xx-xx"
     # The tenant
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
-    # The managed identity id. Can be "system" for System managed identity or the UserManagedIdentity Id (GUID) for user managed identities
+    # A managed identity id to authenticate with. 
+    # Set to "system" for system-assigned managed identity.
+    # Set the MI client Id (GUID) for user-assigned managed identity.
     managed_identity_id: "z80da32c-108c-415c-a19e-643f461a677a"
     # Database for the logs
     db_name: "oteldb"

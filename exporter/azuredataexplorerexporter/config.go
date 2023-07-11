@@ -43,11 +43,11 @@ func (adxCfg *Config) Validate() error {
 		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedIngestType, queuedIngestTest, adxCfg.IngestionType)
 	}
 
-	if !isEmpty(adxCfg.ManagedIdentityId) && strings.ToUpper(strings.TrimSpace(adxCfg.ManagedIdentityId)) != "SYSTEM" {
+	if !isEmpty(adxCfg.ManagedIdentityId) && !strings.EqualFold(strings.TrimSpace(adxCfg.ManagedIdentityId), "SYSTEM") {
 		// if the managed identity is not a system identity, validate if it is a valid UUID
 		_, err := uuid.Parse(strings.TrimSpace(adxCfg.ManagedIdentityId))
 		if err != nil {
-			return fmt.Errorf("UserManagedIdentity [%s] should be a UUID string", adxCfg.ManagedIdentityId)
+			return fmt.Errorf("UserManagedIdentity [%s] should be a UUID string or system", adxCfg.ManagedIdentityId)
 		}
 	}
 

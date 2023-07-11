@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "5"),
-			errorMessage: `UserManagedIdentity [managed_identity_id] should be a UUID string`,
+			errorMessage: `UserManagedIdentity [managed_identity_id] should be a UUID string or system`,
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "6"),

@@ -207,9 +207,9 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 
 func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
 	var kcsb *kusto.ConnectionStringBuilder
-	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityId)) == 0
+	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityId)) > 0
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
-	if isManagedIdentity && strings.ToUpper(strings.TrimSpace(config.ManagedIdentityId)) == "SYSTEM" {
+	if isManagedIdentity && strings.EqualFold(strings.TrimSpace(config.ManagedIdentityId), "SYSTEM") {
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
 	} else if isManagedIdentity {
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityId)
