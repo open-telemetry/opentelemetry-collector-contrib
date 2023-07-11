@@ -1,0 +1,32 @@
+pulsar:
+  topic: spans
+  endpoint: pulsar://localhost:6650
+  encoding: otlp-spans
+  auth:
+    basic:
+      username: hello 
+      password: world
+  timeout: 20s
+  sending_queue:
+    enabled: true
+    num_consumers: 2
+    queue_size: 10
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    max_interval: 60s
+    max_elapsed_time: 10m
+  producer:
+    disable_block_if_queue_full: false
+    max_pending_messages: 100
+    hashing_scheme: java_string_hash
+    compression_type: zstd
+    compression_level: default
+    batch_builder_type: key_based
+    disable_batching: false
+    # unit is nanoseconds (10^-9), set to 10 milliseconds in nanoseconds
+    batching_max_publish_delay: 10ms
+    batching_max_messages: 1000
+    batching_max_size: 128000
+    # unit is nanoseconds (10^-9), set to 1 minute in nanoseconds
+    partitions_auto_discovery_interval: 1m

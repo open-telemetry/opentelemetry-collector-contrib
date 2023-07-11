@@ -42,6 +42,12 @@ type Authentication struct {
 	Token  *Token  `mapstructure:"token"`
 	Athenz *Athenz `mapstructure:"athenz"`
 	OAuth2 *OAuth2 `mapstructure:"oauth2"`
+	Basic  *Basic  `mapstructure:"basic"`
+}
+
+type Basic struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type TLS struct {
@@ -89,7 +95,11 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-
+	if cfg.Authentication.Basic != nil {
+		if _, err := pulsar.NewAuthenticationBasic(cfg.Authentication.Basic.Username, cfg.Authentication.Basic.Password); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -118,6 +128,10 @@ func (cfg *Config) auth() pulsar.Authentication {
 			"principalHeader": authentication.Athenz.PrincipalHeader,
 			"ztsUrl":          authentication.Athenz.ZtsURL,
 		})
+	}
+	if authentication.Basic != nil {
+		basicAuthProvider, _ := pulsar.NewAuthenticationBasic(authentication.Basic.Username, authentication.Basic.Password)
+		return basicAuthProvider
 	}
 
 	return nil
