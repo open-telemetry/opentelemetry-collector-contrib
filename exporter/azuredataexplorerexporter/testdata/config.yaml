@@ -19,7 +19,7 @@ azuredataexplorer:
   ingestion_type: "managed"
 azuredataexplorer/2:
   # Kusto cluster uri
-  cluster_uri: ""
+  cluster_uri: "https://CLUSTER.kusto.windows.net"
   # Client Id
   application_id: ""
   # The client secret for the client
@@ -100,4 +100,19 @@ azuredataexplorer/6:
   # raw traces table
   traces_table_name: "OTELTraces"
   # type of ingestion managed or queued
-  ingestion_type: "managed"     
+  ingestion_type: "managed"
+azuredataexplorer/7:
+  # Kusto cluster uri
+  cluster_uri: ""
+  # managed identity id
+  managed_identity_id: "system"
+  # database for the logs
+  db_name: "oteldb"
+  # raw metric table name
+  metrics_table_name: "OTELMetrics"
+  # raw log table name
+  logs_table_name: "OTELLogs"
+  # raw traces table
+  traces_table_name: "OTELTraces"
+  # type of ingestion managed or queued
+  ingestion_type: "managed"   

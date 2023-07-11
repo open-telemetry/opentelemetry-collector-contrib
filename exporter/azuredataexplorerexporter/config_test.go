@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "2"),
-			errorMessage: `mandatory configurations "cluster_uri" ,"application_id" , "application_key" , "tenant_id" and "managed_identity_id" are missing or empty `,
+			errorMessage: `either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] are needed for auth`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "3"),
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "5"),
-			errorMessage: `UserManagedIdentity [managed_identity_id] should be a UUID string or system`,
+			errorMessage: `managed_identity_id should be a UUID string (for User Managed Identity) or system (for System Managed Identity)`,
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "6"),
@@ -75,7 +75,12 @@ func TestLoadConfig(t *testing.T) {
 				TraceTable:        "OTELTraces",
 				IngestionType:     managedIngestType,
 			},
-		}}
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "7"),
+			errorMessage: `clusterURI config is mandatory`,
+		},
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
