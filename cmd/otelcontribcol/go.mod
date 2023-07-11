@@ -6,6 +6,7 @@ go 1.19
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.81.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.81.0
@@ -436,9 +437,9 @@ require (
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.5.2 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.5.2 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.5.2 // indirect
+	github.com/influxdata/influxdb-observability/common v0.5.4 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.5.4 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.5.4 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.4 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -503,7 +504,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
-	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.81.0 // indirect
@@ -1107,6 +1107,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ../../connector/countconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../../connector/routingconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
 
