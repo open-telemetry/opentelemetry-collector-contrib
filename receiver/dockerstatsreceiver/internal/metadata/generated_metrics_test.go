@@ -49,12 +49,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.configSet == testSetDefault || test.configSet == testSetAll {
-				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.configSet == testSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.", observedLogs.All()[expectedWarnings].Message)
+			if test.configSet == testSetAll || test.configSet == testSetNone {
+				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be configured: The metric is deprecated and will be removed in v0.85.0. Please use `container.cpu.utilization` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -87,7 +83,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUPercentDataPoint(ts, 1)
 
@@ -118,6 +113,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 
@@ -540,7 +536,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.percent"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.", ms.At(i).Description())
+					assert.Equal(t, "[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

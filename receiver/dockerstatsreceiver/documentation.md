@@ -30,14 +30,6 @@ More docs for [cgroups v1](https://www.kernel.org/doc/Documentation/cgroup-v1/bl
 | device_minor | Device minor number for block IO operations. | Any Str |
 | operation | Type of BlockIO operation. | Any Str |
 
-### container.cpu.percent
-
-Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
 ### container.cpu.usage.kernelmode
 
 Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
@@ -61,6 +53,14 @@ Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all conta
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
+
+### container.cpu.utilization
+
+Percent of CPU used by the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### container.memory.file
 
@@ -296,6 +296,14 @@ Number of sectors transferred to/from disk by the group and descendant groups (O
 | device_minor | Device minor number for block IO operations. | Any Str |
 | operation | Type of BlockIO operation. | Any Str |
 
+### container.cpu.percent
+
+[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### container.cpu.throttling_data.periods
 
 Number of periods with throttling active.
@@ -343,14 +351,6 @@ Note this is the usage for the system, not the container.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
-
-### container.cpu.utilization
-
-Percent of CPU used by the container.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
 
 ### container.memory.active_anon
 

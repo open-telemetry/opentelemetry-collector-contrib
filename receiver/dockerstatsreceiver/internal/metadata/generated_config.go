@@ -121,7 +121,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerCPUPercent: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUThrottlingDataPeriods: MetricConfig{
 			Enabled: false,
@@ -148,7 +148,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,

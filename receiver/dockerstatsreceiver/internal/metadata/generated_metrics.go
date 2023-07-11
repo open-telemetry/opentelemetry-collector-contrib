@@ -461,7 +461,7 @@ type metricContainerCPUPercent struct {
 // init fills container.cpu.percent metric with initial data.
 func (m *metricContainerCPUPercent) init() {
 	m.data.SetName("container.cpu.percent")
-	m.data.SetDescription("Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.")
+	m.data.SetDescription("[DEPRECATED] Use `container.cpu.utilization` metric instead. Percent of CPU used by the container.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -3560,11 +3560,8 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if mbc.Metrics.ContainerCPUPercent.Enabled {
-		settings.Logger.Warn("[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.")
-	}
-	if !mbc.Metrics.ContainerCPUUtilization.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.")
+	if mbc.Metrics.ContainerCPUPercent.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `container.cpu.percent` should not be configured: The metric is deprecated and will be removed in v0.85.0. Please use `container.cpu.utilization` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification for more details.")
 	}
 	mb := &MetricsBuilder{
 		startTime:                                        pcommon.NewTimestampFromTime(time.Now()),

@@ -43,7 +43,7 @@ var (
 		ContainerBlockioIoTimeRecursive:            metricEnabled,
 		ContainerBlockioIoWaitTimeRecursive:        metricEnabled,
 		ContainerBlockioSectorsRecursive:           metricEnabled,
-		ContainerCPUPercent:                        metricEnabled,
+		ContainerCPUUtilization:                    metricEnabled,
 		ContainerCPUThrottlingDataPeriods:          metricEnabled,
 		ContainerCPUThrottlingDataThrottledPeriods: metricEnabled,
 		ContainerCPUThrottlingDataThrottledTime:    metricEnabled,

@@ -201,14 +201,6 @@ resourceMetrics:
                   timeUnixNano: "1687762436071484000"
               isMonotonic: true
             unit: '{operations}'
-          - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
-            gauge:
-              dataPoints:
-                - asDouble: 0.0002888012543185477
-                  startTimeUnixNano: "1687762436059456000"
-                  timeUnixNano: "1687762436071484000"
-            name: container.cpu.percent
-            unit: "1"
           - description: Number of periods with throttling active.
             name: container.cpu.throttling_data.periods
             sum:
@@ -342,6 +334,14 @@ resourceMetrics:
                   timeUnixNano: "1687762436071484000"
               isMonotonic: true
             unit: ns
+          - description: 'Percent of CPU used by the container.'
+            gauge:
+              dataPoints:
+                - asDouble: 0.0002888012543185477
+                  startTimeUnixNano: "1687762436059456000"
+                  timeUnixNano: "1687762436071484000"
+            name: container.cpu.utilization
+            unit: "1"
           - description: The amount of anonymous memory that has been identified as active by the kernel.
             name: container.memory.active_anon
             sum:
