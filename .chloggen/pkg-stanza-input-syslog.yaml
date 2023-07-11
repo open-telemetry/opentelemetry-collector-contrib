@@ -6,10 +6,10 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: pkg/stanza/input/syslog
+component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: ensure octetmultiplinebuilder is initialized
+note: Fix issue where syslog input ignored enable_octet_counting setting
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [24073]
