@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -25,14 +24,6 @@ const (
 	defaultServerWorkers    = 10
 	defaultSocketBufferSize = 0
 )
-
-// RemoteSamplingConfig defines config key for remote sampling fetch endpoint
-type RemoteSamplingConfig struct {
-	HostEndpoint                  string        `mapstructure:"host_endpoint"`
-	StrategyFile                  string        `mapstructure:"strategy_file"`
-	StrategyFileReloadInterval    time.Duration `mapstructure:"strategy_file_reload_interval"`
-	configgrpc.GRPCClientSettings `mapstructure:",squash"`
-}
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
@@ -68,8 +59,7 @@ func DefaultServerConfigUDP() ServerConfigUDP {
 
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	Protocols      `mapstructure:"protocols"`
-	RemoteSampling *RemoteSamplingConfig `mapstructure:"remote_sampling"`
+	Protocols `mapstructure:"protocols"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -105,20 +95,6 @@ func (cfg *Config) Validate() error {
 	if cfg.ThriftCompact != nil {
 		if err := checkPortFromEndpoint(cfg.ThriftCompact.Endpoint); err != nil {
 			return fmt.Errorf("invalid port number for the Thrift UDP Compact endpoint: %w", err)
-		}
-	}
-
-	if cfg.RemoteSampling != nil {
-		if err := checkPortFromEndpoint(cfg.RemoteSampling.HostEndpoint); err != nil {
-			return fmt.Errorf("invalid port number for the Remote Sampling endpoint: %w", err)
-		}
-
-		if len(cfg.RemoteSampling.StrategyFile) != 0 && cfg.GRPC == nil {
-			return fmt.Errorf("strategy file requires the gRPC protocol to be enabled")
-		}
-
-		if cfg.RemoteSampling.StrategyFileReloadInterval < 0 {
-			return fmt.Errorf("strategy file reload interval should be great or equal zero")
 		}
 	}
 

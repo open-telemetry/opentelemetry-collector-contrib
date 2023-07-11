@@ -6,7 +6,6 @@ package jaegerreceiver
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,14 +60,6 @@ func TestLoadConfig(t *testing.T) {
 							SocketBufferSize: 0,
 						},
 					},
-				},
-				RemoteSampling: &RemoteSamplingConfig{
-					HostEndpoint: "0.0.0.0:5778",
-					GRPCClientSettings: configgrpc.GRPCClientSettings{
-						Endpoint: "jaeger-collector:1234",
-					},
-					StrategyFile:               "/etc/strategies.json",
-					StrategyFileReloadInterval: time.Second * 10,
 				},
 			},
 		},
@@ -208,15 +199,6 @@ func TestInvalidConfig(t *testing.T) {
 			err: "receiver creation with no port number for Thrift UDP - Binary must fail",
 		},
 		{
-			desc: "remote-sampling-http-no-port",
-			apply: func(cfg *Config) {
-				cfg.RemoteSampling = &RemoteSamplingConfig{
-					HostEndpoint: "localhost:",
-				}
-			},
-			err: "receiver creation with no port number for the remote sampling HTTP endpoint must fail",
-		},
-		{
 			desc: "grpc-invalid-host",
 			apply: func(cfg *Config) {
 				cfg.GRPC = &configgrpc.GRPCServerSettings{
@@ -251,29 +233,8 @@ func TestInvalidConfig(t *testing.T) {
 				cfg.ThriftCompact = &ProtocolUDP{
 					Endpoint: defaultThriftCompactBindEndpoint,
 				}
-				cfg.RemoteSampling = &RemoteSamplingConfig{
-					HostEndpoint: "localhost:5778",
-					StrategyFile: "strategies.json",
-				}
 			},
-			err: "receiver creation without gRPC and with remote sampling config",
-		},
-		{
-			desc: "reload-interval-outside-of-range",
-			apply: func(cfg *Config) {
-				cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "1234",
-						Transport: "tcp",
-					},
-				}
-				cfg.RemoteSampling = &RemoteSamplingConfig{
-					HostEndpoint:               "localhost:5778",
-					StrategyFile:               "strategies.json",
-					StrategyFileReloadInterval: -time.Second,
-				}
-			},
-			err: "strategy file reload interval should be great zero",
+			err: "receiver creation without gRPC",
 		},
 	}
 	for _, tC := range testCases {
