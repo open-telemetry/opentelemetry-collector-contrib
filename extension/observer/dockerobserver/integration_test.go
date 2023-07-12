@@ -36,6 +36,7 @@ func (h *testHost) ReportFatalError(err error) {
 var _ component.Host = (*testHost)(nil)
 
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
+	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	image := "docker.io/library/nginx"
 	tag := "1.17"
 
@@ -82,6 +83,7 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 }
 
 func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
+	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	image := "docker.io/library/nginx"
 	tag := "1.17"
 
@@ -143,6 +145,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 }
 
 func TestObserverRemovesEndpointsIntegration(t *testing.T) {
+	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	image := "docker.io/library/nginx"
 	tag := "1.17"
 
@@ -185,6 +188,7 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 }
 
 func TestObserverExcludesImagesIntegration(t *testing.T) {
+	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "docker.io/library/nginx:1.17",
