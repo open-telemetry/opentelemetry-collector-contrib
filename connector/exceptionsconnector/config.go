@@ -57,7 +57,7 @@ func validateDimensions(dimensions []Dimension) error {
 
 	for _, key := range dimensions {
 		if _, ok := labelNames[key.Name]; ok {
-			return fmt.Errorf("duplicate dimension name %s", key.Name)
+			return fmt.Errorf("duplicate dimension name %q", key.Name)
 		}
 		labelNames[key.Name] = struct{}{}
 	}
