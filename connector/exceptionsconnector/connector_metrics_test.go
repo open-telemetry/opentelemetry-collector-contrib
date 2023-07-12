@@ -138,7 +138,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 				assert.NoError(t, err)
 
 				metrics := msink.AllMetrics()
-				assert.True(t, len(metrics) > 0)
+				assert.Greater(t, len(metrics), 0)
 				tc.verifier(t, metrics[len(metrics)-1])
 			}
 		})
