@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -37,6 +38,16 @@ func valueFor(x any) value {
 		case strings.Contains(v, "ENUM"):
 			// if the string contains ENUM construct an EnumSymbol from it.
 			val.Enum = (*EnumSymbol)(ottltest.Strp(v))
+		case v == "time1" || v == "time2":
+			val.Literal = &mathExprLiteral{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: v,
+						},
+					},
+				},
+			}
 		default:
 			val.String = ottltest.Strp(v)
 		}
@@ -76,12 +87,14 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
+	JanFirst2023 := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
+
 	var tests = []struct {
 		name string
 		l    any
 		r    any
 		op   string
-		item string
+		item any
 		want bool
 	}{
 		{name: "literals match", l: "hello", r: "hello", op: "==", want: true},
@@ -106,6 +119,13 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		{name: "[]byte('a') < []byte('b')", l: []byte("a"), r: []byte("b"), op: "<", want: true},
 		{name: "nil == nil", op: "==", want: true},
 		{name: "nil == []byte(nil)", r: []byte(nil), op: "==", want: true},
+		{name: "compare equal times", l: "time1", r: "time2", op: "==", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": JanFirst2023}},
+		{name: "compare unequal times", l: "time1", r: "time2", op: "==", want: false, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2023, 1, 2, 0, 0, 0, 0, time.Local)}},
+		{name: "compare for inequality w/ times", l: "time1", r: "time2", op: "!=", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2002, 11, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare less than w/ times", l: "time1", r: "time2", op: "<", want: true, item: map[string]time.Time{"time1": JanFirst2023, "time2": time.Date(2023, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare less than equal to w/ times", l: "time1", r: "time2", op: "<=", want: true, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare greater than equal to w/ times", l: "time1", r: "time2", op: ">=", want: false, item: map[string]time.Time{"time1": time.Date(2002, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
+		{name: "compare greater than w/ times", l: "time1", r: "time2", op: ">", want: true, item: map[string]time.Time{"time1": time.Date(2022, 5, 2, 01, 01, 01, 01, time.Local), "time2": time.Date(2003, 5, 2, 01, 01, 01, 01, time.Local)}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -536,6 +556,42 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
+		// 	{"p", false,
+		// 	&booleanExpression{
+		// 		Left: &term{
+		// 			Left: &booleanValue{
+		// 				Negation: ottltest.Strp("not"),
+		// 				ConstExpr: &constExpr{
+		// 					Boolean: booleanp(true),
+		// 				},
+		// 			},
+		// 			Right: []*opAndBooleanValue{
+		// 				{
+		// 					Operator: "and",
+		// 					Value: &booleanValue{
+		// 						Negation: ottltest.Strp("not"),
+		// 						ConstExpr: &constExpr{
+		// 							Boolean: booleanp(false),
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 		Right: []*opOrTerm{
+		// 			{
+		// 				Operator: "or",
+		// 				Term: &term{
+		// 					Left: &booleanValue{
+		// 						Negation: ottltest.Strp("not"),
+		// 						ConstExpr: &constExpr{
+		// 							Boolean: booleanp(true),
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

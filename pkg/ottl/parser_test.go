@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -867,6 +868,21 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return tCtx, nil
+			},
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
+			},
+		}, nil
+	}
+	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				m, ok := tCtx.(map[string]time.Time)
+				if !ok {
+					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+				}
+				return m[val.Fields[0].Name], nil
 			},
 			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 				reflect.DeepEqual(tCtx, val)
