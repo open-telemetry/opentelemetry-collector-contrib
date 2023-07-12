@@ -21,16 +21,44 @@ type chainProvider struct {
 	priorityList []string
 }
 
+type providerReply struct {
+	src source.Source
+	err error
+}
+
 func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
-	for _, source := range p.priorityList {
-		zapProvider := zap.String("provider", source)
+	// Cancel all providers when exiting
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Run all providers in parallel
+	providerReplies := make([]chan providerReply, len(p.priorityList))
+	for i, source := range p.priorityList {
 		provider := p.providers[source]
-		src, err := provider.Source(ctx)
-		if err == nil {
-			p.logger.Info("Resolved source", zapProvider, zap.Any("source", src))
-			return src, nil
+		providerReplies[i] = make(chan providerReply)
+
+		go func(i int, source string) {
+			zapProvider := zap.String("provider", source)
+			p.logger.Debug("Trying out source provider", zapProvider)
+
+			src, err := provider.Source(ctx)
+			if err != nil {
+				p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(err))
+			}
+
+			providerReplies[i] <- providerReply{src: src, err: err}
+		}(i, source)
+	}
+
+	// Check provider responses in order to ensure priority
+	for i, ch := range providerReplies {
+		reply := <-ch
+		if reply.err == nil {
+			p.logger.Info("Resolved source",
+				zap.String("provider", p.priorityList[i]), zap.Any("source", reply.src),
+			)
+			return reply.src, nil
 		}
-		p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(err))
 	}
 
 	return source.Source{}, fmt.Errorf("no source provider was available")
