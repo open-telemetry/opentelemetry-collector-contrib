@@ -85,8 +85,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 			}
 		}
 	}
-	c.exportLogs(ctx)
-	return nil
+	return c.exportLogs(ctx)
 }
 
 func (c *logsConnector) exportLogs(ctx context.Context) error {

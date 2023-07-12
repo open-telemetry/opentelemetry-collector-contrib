@@ -35,7 +35,7 @@ With the provided default config, each **metric** and **log** will also have the
 
 Each log will additionally have the following attributes:
 - Exception stacktrace
-- HTTP attributes (if available), such as `http.method` and `http.url`.
+- HTTP attributes (if available), such as `http.method` and `http.host` among others.
 
 ## Configurations
 

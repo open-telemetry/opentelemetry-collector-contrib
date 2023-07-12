@@ -111,8 +111,7 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 			}
 		}
 	}
-	c.exportMetrics(ctx)
-	return nil
+	return c.exportMetrics(ctx)
 }
 
 func (c *metricsConnector) exportMetrics(ctx context.Context) error {
