@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -39,7 +40,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
 		withSplitterFunc(old.lineSplitFunc).
-		withHeaderAttributes(mapCopy(old.FileAttributes.HeaderAttributes)).
+		withHeaderAttributes(util.MapCopy(old.FileAttributes.HeaderAttributes)).
 		withHeaderFinalized(old.HeaderFinalized).
 		build()
 }

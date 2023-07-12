@@ -201,19 +201,3 @@ func min0(a, b int) int {
 	}
 	return b
 }
-
-// mapCopy deep copies the provided attributes map.
-func mapCopy(m map[string]any) map[string]any {
-	newMap := make(map[string]any, len(m))
-	for k, v := range m {
-		switch typedVal := v.(type) {
-		case map[string]any:
-			newMap[k] = mapCopy(typedVal)
-		default:
-			// Assume any other values are safe to directly copy.
-			// Struct types and slice types shouldn't appear in attribute maps from pipelines
-			newMap[k] = v
-		}
-	}
-	return newMap
-}
