@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -1363,6 +1364,33 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 		return nil, fmt.Errorf("enum symbol not found")
 	}
 	return nil, fmt.Errorf("enum symbol not provided")
+}
+
+func Test_ParseStatements_Error(t *testing.T) {
+	statements := []string{
+		`set(`,
+		`set("foo)`,
+		`set(name.)`,
+	}
+
+	p, _ := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath,
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	_, err := p.ParseStatements(statements)
+
+	assert.Error(t, err)
+
+	multiErrs := multierr.Errors(err)
+
+	assert.Len(t, multiErrs, len(statements), "ParseStatements didn't return an error per statement")
+
+	for i, statementErr := range multiErrs {
+		assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL statement %q", statements[i]))
+	}
 }
 
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.

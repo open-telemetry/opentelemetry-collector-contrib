@@ -43,7 +43,7 @@ jobs:
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.10
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-mod-cache
