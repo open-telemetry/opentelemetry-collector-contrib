@@ -139,6 +139,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 							for l := 0; l < dps.Len(); l++ {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
+						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
 						}
 					}
 				}
