@@ -132,7 +132,12 @@ func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
 
 	for iter.Next() {
 		if iter.Attribute().Key == conventions.AttributeHostID {
-			return iter.Attribute().Value.Emit(), nil
+			v := iter.Attribute().Value.Emit()
+
+			if v == "" {
+				return "", fmt.Errorf("empty host id")
+			}
+			return v, nil
 		}
 	}
 
