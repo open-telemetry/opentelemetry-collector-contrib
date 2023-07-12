@@ -158,16 +158,7 @@ issues:
     # in order to enable the exhaustive lint check.
     # We should not add more exclude-rules.
     # The progress of solving existing exclude-rules will be tracked in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23266
-    - path: googlecloudspannerreceiver
-      linters:
-        - exhaustive
     - path: prometheusreceiver
-      linters:
-        - exhaustive
-    - path: statsdreceiver
-      linters:
-        - exhaustive
-    - path: cumulativetodeltaprocessor
       linters:
         - exhaustive
     - path: deltatorateprocessor
@@ -290,9 +281,6 @@ issues:
     - path: opencensus
       linters:
         - exhaustive
-    - path: signalfx
-      linters:
-        - exhaustive
     - path: zipkin
       linters:
         - exhaustive
@@ -302,3 +290,7 @@ issues:
     - path: testbed
       linters:
         - exhaustive
+    # Preserve original source code in attributed package.
+    - path: ctimefmt
+      linters:
+        - revive
