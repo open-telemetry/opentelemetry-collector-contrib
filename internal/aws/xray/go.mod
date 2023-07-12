@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.255
+	github.com/aws/aws-sdk-go v1.44.293
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.77.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector/component v0.77.0
@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230712194013-e85dd5f17ce4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -40,6 +41,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../../../internal/aws/awsutil
+
+replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../../override/aws
 
 retract (
 	v0.76.2

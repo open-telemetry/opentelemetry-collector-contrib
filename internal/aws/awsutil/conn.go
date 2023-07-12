@@ -23,11 +23,13 @@ import (
 	"os"
 	"time"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -165,13 +167,42 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 	}
 
 	config := &aws.Config{
-		Region:                 aws.String(awsRegion),
-		DisableParamValidation: aws.Bool(true),
-		MaxRetries:             aws.Int(cfg.MaxRetries),
-		Endpoint:               aws.String(cfg.Endpoint),
-		HTTPClient:             http,
+		Region:                        aws.String(awsRegion),
+		DisableParamValidation:        aws.Bool(true),
+		MaxRetries:                    aws.Int(cfg.MaxRetries),
+		Endpoint:                      aws.String(cfg.Endpoint),
+		HTTPClient:                    http,
+		CredentialsChainVerboseErrors: aws.Bool(true),
+	}
+	// do not overwrite for sts assume role
+	if cfg.RoleARN == "" && len(override.GetCredentialsChainOverride().GetCredentialsChain()) > 0 {
+		config.Credentials = credentials.NewCredentials(&credentials.ChainProvider{
+			Providers: customCredentialProvider(cfg, config),
+		})
 	}
 	return config, s, nil
+}
+
+func customCredentialProvider(cfg *AWSSessionSettings, config *aws.Config) []credentials.Provider {
+	defaultCredProviders := defaults.CredProviders(config, defaults.Handlers())
+	overrideCredProviders := override.GetCredentialsChainOverride().GetCredentialsChain()
+	credProviders := make([]credentials.Provider, 0)
+	// if is for differently configured shared creds file location
+	// else if is for diff profile but no change in creds file ex run in containers
+	if cfg.SharedCredentialsFile != nil && len(cfg.SharedCredentialsFile) > 0 {
+		for _, file := range cfg.SharedCredentialsFile {
+			credProviders = append(credProviders, &credentials.SharedCredentialsProvider{Filename: file, Profile: cfg.Profile})
+		}
+	} else if cfg.Profile != "" {
+		credProviders = append(credProviders, &credentials.SharedCredentialsProvider{Filename: "", Profile: cfg.Profile})
+	}
+	credProviders = append(credProviders, defaultCredProviders...)
+	for _, provider := range overrideCredProviders {
+		for _, file := range cfg.SharedCredentialsFile {
+			credProviders = append(credProviders, provider(file))
+		}
+	}
+	return credProviders
 }
 
 // ProxyServerTransport configures HTTP transport for TCP Proxy Server.
