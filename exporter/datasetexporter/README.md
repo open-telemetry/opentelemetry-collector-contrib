@@ -34,6 +34,10 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
 - `logs`:
   - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
+- `server_host`:
+  - `use_attributes` (default = []): Use the value in the specified attributes as server host in events.
+  - `server_host` (default = ''): Use the specified value as server host in events.
+  - `use_host_name` (default = true): Use the `hostname` of the node as server host used in events.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
@@ -55,6 +59,17 @@ exporters:
       # Group data based on these attributes
       group_by:
         - attributes.container_id
+    server_host:
+      # Search for the server host in attributes.
+      # Use the value from server and then from hostname
+      use_attributes:
+        - server
+        - hostname
+      # If these attributes are not specified or empty,
+      # use the value from the env variable SERVER_HOST
+      use_host: ${env:SERVER_HOST}
+      # If it's not set, use the hostname value
+      use_host_name: true
 
 service:
   pipelines:
