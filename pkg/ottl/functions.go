@@ -20,7 +20,7 @@ type Enum int64
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
-		return Expr[K]{}, fmt.Errorf("undefined function %v", ed.Function)
+		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
 	}
 	args := f.CreateDefaultArguments()
 
@@ -30,12 +30,12 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
 		if reflect.TypeOf(args).Kind() != reflect.Pointer {
-			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
+			return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
 
 		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
-			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", ed.Function, err)
+			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to %q: %w", ed.Function, err)
 		}
 	}
 
@@ -61,17 +61,17 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		fieldTag, ok := argsType.Field(i).Tag.Lookup("ottlarg")
 
 		if !ok {
-			return fmt.Errorf("no `ottlarg` struct tag on Arguments field '%s'", argsType.Field(i).Name)
+			return fmt.Errorf("no `ottlarg` struct tag on Arguments field %q", argsType.Field(i).Name)
 		}
 
 		argNum, err := strconv.Atoi(fieldTag)
 
 		if err != nil {
-			return fmt.Errorf("ottlarg struct tag on field '%s' is not a valid integer: %w", argsType.Field(i).Name, err)
+			return fmt.Errorf("ottlarg struct tag on field %q is not a valid integer: %w", argsType.Field(i).Name, err)
 		}
 
 		if argNum < 0 || argNum >= len(ed.Arguments) {
-			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(ed.Arguments))
+			return fmt.Errorf("ottlarg struct tag on field %q has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(ed.Arguments))
 		}
 
 		argVal := ed.Arguments[argNum]
@@ -167,7 +167,7 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 		}
 		return arg, nil
 	default:
-		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
+		return nil, fmt.Errorf("unsupported slice type %q for function", argType.Elem().Name())
 	}
 }
 
