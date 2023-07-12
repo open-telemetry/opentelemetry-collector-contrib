@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.20"
+          go-version: "~1.20.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -138,7 +138,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.10
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -160,7 +160,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -308,7 +308,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -328,7 +328,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -353,7 +353,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -416,7 +416,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.11
           cache: false
       - name: Cache Go
         id: go-cache
@@ -547,7 +547,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.11
           cache: false
       - name: Mkdir bin and dist
         run: |
