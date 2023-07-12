@@ -21,21 +21,22 @@ type chainProvider struct {
 	priorityList []string
 }
 
-type providerReply struct {
-	src source.Source
-	err error
-}
-
 func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
+	// Auxiliary type for storing source provider replies
+	type reply struct {
+		src source.Source
+		err error
+	}
+
 	// Cancel all providers when exiting
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	// Run all providers in parallel
-	providerReplies := make([]chan providerReply, len(p.priorityList))
+	replies := make([]chan reply, len(p.priorityList))
 	for i, source := range p.priorityList {
 		provider := p.providers[source]
-		providerReplies[i] = make(chan providerReply)
+		replies[i] = make(chan reply)
 
 		go func(i int, source string) {
 			zapProvider := zap.String("provider", source)
@@ -46,12 +47,12 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 				p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(err))
 			}
 
-			providerReplies[i] <- providerReply{src: src, err: err}
+			replies[i] <- reply{src: src, err: err}
 		}(i, source)
 	}
 
 	// Check provider responses in order to ensure priority
-	for i, ch := range providerReplies {
+	for i, ch := range replies {
 		reply := <-ch
 		if reply.err == nil {
 			p.logger.Info("Resolved source",
