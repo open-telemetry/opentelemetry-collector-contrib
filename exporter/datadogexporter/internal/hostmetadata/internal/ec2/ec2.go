@@ -23,6 +23,7 @@ import (
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -63,12 +64,9 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 		return
 	}
 
-	meta := ec2metadata.New(sess)
-
-	if !meta.Available() {
-		logger.Debug("EC2 Metadata not available")
-		return
-	}
+	meta := ec2metadata.New(sess, &aws.Config{
+		Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+	})
 
 	if idDoc, err := meta.GetInstanceIdentityDocument(); err == nil {
 		hostInfo.InstanceID = idDoc.InstanceID

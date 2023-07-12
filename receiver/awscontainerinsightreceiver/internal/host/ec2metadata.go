@@ -18,6 +18,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"go.uber.org/zap"
@@ -52,7 +54,9 @@ type ec2MetadataOption func(*ec2Metadata)
 func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
 	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
 	emd := &ec2Metadata{
-		client:           awsec2metadata.New(session),
+		client: awsec2metadata.New(session, &aws.Config{
+			Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+		}),
 		refreshInterval:  refreshInterval,
 		instanceIDReadyC: instanceIDReadyC,
 		instanceIPReadyC: instanceIPReadyC,
