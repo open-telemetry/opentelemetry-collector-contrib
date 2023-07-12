@@ -4,8 +4,12 @@
 package main
 
 import (
+	"fmt"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -99,5 +103,40 @@ func TestValidate(t *testing.T) {
 			require.Error(t, err)
 			require.EqualError(t, err, tt.wantErr)
 		})
+	}
+}
+
+func TestMetricCollision(t *testing.T) {
+	allMetrics := map[string][]string{}
+	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, err error) error {
+		if info.Name() == "metadata.yaml" {
+			// TODO: Remove once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/24011 is merged.
+			if path == "../../receiver/googlecloudspannerreceiver/internal/metadataconfig/metadata.yaml" {
+				return nil
+			}
+			md, err := loadMetadata(path)
+			assert.NoError(t, err)
+			if len(md.Metrics) > 0 {
+				for metricName := range md.Metrics {
+					allMetrics[md.Type] = append(allMetrics[md.Type], string(metricName))
+				}
+			}
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+
+	seen := make(map[string]string)
+	for receiver, metrics := range allMetrics {
+		for _, metricName := range metrics {
+			// TODO: Remove one https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24009 and
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24008 have been addressed.
+			if metricName == "container.cpu.utilization" || metricName == "container.memory.rss" {
+				continue
+			}
+			val, ok := seen[metricName]
+			assert.False(t, ok, fmt.Sprintf("Collision for metric %v in receivers %v and %v \n", metricName, receiver, val))
+			seen[metricName] = receiver
+		}
 	}
 }
