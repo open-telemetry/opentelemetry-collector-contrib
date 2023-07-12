@@ -224,8 +224,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 
 func (m *Manager) checkDuplicates(fp *fingerprint.Fingerprint) bool {
 	for i := 0; i < len(m.currentFps); i++ {
-		fp2 := m.currentFps[i]
-		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
+		if fp.Equal(m.currentFps[i]) {
 			return true
 		}
 	}
