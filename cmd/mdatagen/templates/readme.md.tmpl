@@ -3,6 +3,7 @@
 | Status        |           |
 | ------------- |-----------|
 {{- $class := .Status.Class }}
+{{- $shortName := .ShortFolderName }}
 {{- if ne $class "connector" }}
 {{- $idx := 0 }}
 {{- range $stability, $value := .Status.Stability }}
@@ -15,6 +16,9 @@
 {{- end }}
 {{- if .Status.Warnings }}
 | Warnings      | [{{ stringsJoin .Status.Warnings ", " }}](#warnings) |
+{{- end }}
+{{- if ne $class "" }}
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3A{{ $class }}%2F{{ $shortName }}%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3A{{ $class }}%2F{{ $shortName }}%20&label=closed&color=blue&logo=opentelemetry) |
 {{- end }}
 {{range $stability, $val := .Status.Stability}}
 [{{ $stability }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ $stability }}
