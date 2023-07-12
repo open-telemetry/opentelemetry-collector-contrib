@@ -29,6 +29,13 @@ type Codeowners struct {
 	Emeritus []string `mapstructure:"emeritus"`
 }
 
+type Codeowners struct {
+	// Active codeowners
+	Active []string `mapstructure:"active"`
+	// Emeritus codeowners
+	Emeritus []string `mapstructure:"emeritus"`
+}
+
 type Status struct {
 	Stability     map[string][]string `mapstructure:"stability"`
 	Distributions []string            `mapstructure:"distributions"`
