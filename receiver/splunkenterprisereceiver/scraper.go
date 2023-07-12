@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
@@ -21,21 +20,19 @@ import (
 var (
     errMaxSearchWaitTimeExceeded = errors.New("Maximum search wait time exceeded for metric")
 )
+
 type splunkScraper struct {
     splunkClient *splunkEntClient
     settings     component.TelemetrySettings
     conf         *Config
-    wg           *sync.WaitGroup
     mb           *metadata.MetricsBuilder
     mfg          metadata.MetricsConfig
 }
 
 func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunkScraper {
-    var wg sync.WaitGroup
     return splunkScraper{
         settings: params.TelemetrySettings,
         conf:     cfg,
-        wg:       &wg,
         mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
         mfg:      metadata.DefaultMetricsConfig(),
     }
@@ -70,31 +67,6 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
         return
     }
 
-    // This doesn't work here
-
-    //s.wg.Add(1)
-    //go func(s *splunkScraper, sr *searchResponse) {
-    //    start := time.Now()
-    //    _, err := s.splunkClient.makeRequest(sr)
-    //    if err != nil {
-    //        errs.Add(err)
-    //    }
-    //    for ok := true; ok; ok = (sr.Return == 204) {
-    //        _, err := s.splunkClient.makeRequest(sr)
-    //        if err != nil {
-    //            errs.Add(err)
-    //        }
-    //        time.Sleep(2 * time.Second)
-    //        if time.Since(start) > s.conf.MaxSearchWaitTime {
-    //            errs.Add(errMaxSearchWaitTimeExceeded)
-    //            return
-    //        }
-    //    }
-    //} (s, &sr) 
-    //s.wg.Wait()
-
-    // but it does work really well here
-
     start := time.Now()
     _, err := s.splunkClient.makeRequest(&sr)
     if err != nil {
@@ -126,6 +98,35 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
                 continue
             }
             s.mb.RecordSplunkLicenseIndexUsageDataPoint(now, v, indexName)
+        }
+    }
+}
+
+func (s *splunkScraper) scrapeAverageDiskIO(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+    var sr searchResponse
+
+    if s.mfg.SplunkLicenseIndexUsage.Enabled {
+        sr = searchResponse{
+            search: searchDict[`SplunkLicenseIndexUsageSearch`],
+        }
+    } else {
+        return
+    }
+
+    start := time.Now()
+    _, err := s.splunkClient.makeRequest(&sr)
+    if err != nil {
+        errs.Add(err)
+    }
+    for ok := true; ok; ok = (sr.Return == 204) {
+        _, err := s.splunkClient.makeRequest(&sr)
+        if err != nil {
+            errs.Add(err)
+        }
+        time.Sleep(2 * time.Second)
+        if time.Since(start) > s.conf.MaxSearchWaitTime {
+            errs.Add(errMaxSearchWaitTimeExceeded)
+            return
         }
     }
 }

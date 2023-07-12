@@ -43,6 +43,7 @@ func newSplunkEntClient(cfg *Config) splunkEntClient {
     } 
 }
 
+// For running ad hoc searches only
 func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, error) {
     // Running searches via Splunk's REST API is a two step process: First you submit the job to run
     // this returns a jobid which is then used in the second part to retrieve the search results
