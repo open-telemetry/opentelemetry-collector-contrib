@@ -58,14 +58,15 @@ The following settings can be optionally configured:
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
-    - `use_keytab`:  Use of keytab instead of password, if this is true, keytab file will be used instead of password
+    - `use_keytab`: Use of keytab instead of password, if this is true, keytab file will be used instead of password
     - `username`: The Kerberos username used for authenticate with KDC
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. 
-                                    When disabled the client does not make the initial request to broker at the startup.
+  - `full` (default = true): Whether to maintain a full set of metadata. When
+    disabled, the client does not make the initial request to broker at the
+    startup.
   - `retry`
     - `max` (default = 3): The number of retries to get metadata
     - `backoff` (default = 250ms): How long to wait between metadata retries
