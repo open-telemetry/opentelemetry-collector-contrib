@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -79,7 +80,9 @@ var newAWSSession = func(roleArn string, region string, log *zap.Logger) (*sessi
 }
 
 var getEC2Region = func(s *session.Session) (string, error) {
-	return ec2metadata.New(s).Region()
+	return ec2metadata.New(s, &aws.Config{
+		Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+	}).Region()
 }
 
 func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.Session, error) {

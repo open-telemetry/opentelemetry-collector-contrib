@@ -17,6 +17,8 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
@@ -35,7 +37,9 @@ var _ Provider = (*metadataClient)(nil)
 
 func NewProvider(sess *session.Session) Provider {
 	return &metadataClient{
-		metadata: ec2metadata.New(sess),
+		metadata: ec2metadata.New(sess, &aws.Config{
+			Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+		}),
 	}
 }
 
