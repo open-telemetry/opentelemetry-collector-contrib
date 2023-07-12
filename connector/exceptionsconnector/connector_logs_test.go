@@ -58,7 +58,14 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 }
 
 func newTestLogsConnector(t *testing.T, lcon consumer.Logs, logger *zap.Logger) (*logsConnector, error) {
-	c, err := newLogsConnector(logger)
+	cfg := &Config{
+		Dimensions: []Dimension{
+			{Name: "exception.type"},
+			{Name: "exception.message"},
+		},
+	}
+
+	c, err := newLogsConnector(logger, cfg)
 	c.logsConsumer = lcon
 	return c, err
 }

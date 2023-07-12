@@ -18,6 +18,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,6 +29,11 @@ import (
 )
 
 type logsConnector struct {
+	config Config
+
+	// Additional dimensions to add to logs.
+	dimensions []dimension
+
 	logsConsumer consumer.Logs
 	component.StartFunc
 	component.ShutdownFunc
@@ -36,10 +42,14 @@ type logsConnector struct {
 	ld     plog.Logs
 }
 
-func newLogsConnector(logger *zap.Logger) (*logsConnector, error) {
+func newLogsConnector(logger *zap.Logger, config component.Config) (*logsConnector, error) {
+	cfg := config.(*Config)
+
 	return &logsConnector{
-		logger: logger,
-		ld:     plog.NewLogs(),
+		logger:     logger,
+		config:     *cfg,
+		dimensions: newDimensions(cfg.Dimensions),
+		ld:         plog.NewLogs(),
 	}, nil
 }
 
@@ -69,7 +79,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					if event.Name() == "exception" {
-						c.attrToLogRecord(sl, serviceName, span.Attributes(), event.Attributes(), event.Timestamp())
+						c.attrToLogRecord(sl, serviceName, span, event)
 					}
 				}
 			}
@@ -80,7 +90,6 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 }
 
 func (c *logsConnector) exportLogs(ctx context.Context) error {
-	c.logger.Debug("Exporting logs")
 	if err := c.logsConsumer.ConsumeLogs(ctx, c.ld); err != nil {
 		c.logger.Error("failed to convert exceptions to logs", zap.Error(err))
 		return err
@@ -95,19 +104,32 @@ func (c *logsConnector) newScopeLogs() plog.ScopeLogs {
 	return sl
 }
 
-func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, spanAttr, eventAttr pcommon.Map, eventTs pcommon.Timestamp) plog.LogRecord {
+func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, span ptrace.Span, event ptrace.SpanEvent) plog.LogRecord {
 	logRecord := sl.LogRecords().AppendEmpty()
 
-	logRecord.SetTimestamp(eventTs)
+	logRecord.SetTimestamp(event.Timestamp())
 	logRecord.SetSeverityNumber(plog.SeverityNumberError)
 	logRecord.SetSeverityText("ERROR")
+	eventAttrs := event.Attributes()
+	spanAttrs := span.Attributes()
 
-	logRecord.Attributes().PutStr("service.name", serviceName)
-	logRecord.Attributes().PutStr("exception.stacktrace", getValue(eventAttr, "exception.stacktrace"))
-	logRecord.Attributes().PutStr("exception.type", getValue(eventAttr, "exception.type"))
-	logRecord.Attributes().PutStr("exception.message", getValue(eventAttr, "exception.message"))
+	// Add common attributes to the log record.
+	logRecord.Attributes().PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
+	logRecord.Attributes().PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
+	logRecord.Attributes().PutStr(serviceNameKey, serviceName)
 
-	for k, v := range extractHTTP(spanAttr) {
+	// Add configured dimension attributes to the log record.
+	for _, d := range c.dimensions {
+		if v, ok := getDimensionValue(d, spanAttrs, eventAttrs); ok {
+			logRecord.Attributes().PutStr(d.name, v.Str())
+		}
+	}
+
+	// Add stacktrace to the log record.
+	logRecord.Attributes().PutStr("exception.stacktrace", getValue(eventAttrs, "exception.stacktrace"))
+
+	// Add HTTP context to the log record.
+	for k, v := range extractHTTP(spanAttrs) {
 		logRecord.Attributes().PutStr(k, v)
 	}
 	return logRecord

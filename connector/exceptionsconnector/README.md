@@ -22,12 +22,20 @@
 
 ## Overview
 
-Each metric will have _at least_ the following dimensions because they are common across all spans:
+Generate metrics and logs from record [application exceptions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/exceptions/exceptions-spans.md/) associated with spans.
+
+Each **metric** and **log** will have _at least_ the following dimensions:
 - Service name
 - Span kind
 - Status code
+
+With the provided default config, each **metric** and **log** will also have the following dimensions:
 - Exception message
 - Exception type
+
+Each log will additionally have the following attributes:
+- Exception stacktrace
+- HTTP attributes (if available), such as `http.method` and `http.url`.
 
 ## Configurations
 
@@ -37,6 +45,8 @@ The following settings can be optionally configured:
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
   
   Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or resource attributes.
+
+  The provided default config includes `exception.type` and `exception.message` as additional dimensions.
 
 ## Examples
 

@@ -31,10 +31,6 @@ import (
 )
 
 const (
-	serviceNameKey = conventions.AttributeServiceName
-	// TODO(marctc): formalize these constants in the OpenTelemetry specification.
-	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
-	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 )
 
@@ -62,26 +58,6 @@ type metricsConnector struct {
 type excVal struct {
 	count int
 	attrs pcommon.Map
-}
-
-type dimension struct {
-	name  string
-	value *pcommon.Value
-}
-
-func newDimensions(cfgDims []Dimension) []dimension {
-	if len(cfgDims) == 0 {
-		return nil
-	}
-	dims := make([]dimension, len(cfgDims))
-	for i := range cfgDims {
-		dims[i].name = cfgDims[i].Name
-		if cfgDims[i].Default != nil {
-			val := pcommon.NewValueStr(*cfgDims[i].Default)
-			dims[i].value = &val
-		}
-	}
-	return dims
 }
 
 func newMetricsConnector(logger *zap.Logger, config component.Config) (*metricsConnector, error) {
@@ -122,13 +98,13 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					if event.Name() == "exception" {
-						attr := event.Attributes()
+						eventAttrs := event.Attributes()
 
 						c.keyBuf.Reset()
-						buildKey(c.keyBuf, serviceName, span, c.dimensions, attr)
+						buildKey(c.keyBuf, serviceName, span, c.dimensions, eventAttrs)
 						key := c.keyBuf.String()
 
-						attrs := buildDimensionKVs(c.dimensions, serviceName, span, attr)
+						attrs := buildDimensionKVs(c.dimensions, serviceName, span, eventAttrs)
 						c.addException(key, attrs)
 					}
 				}
@@ -189,14 +165,14 @@ func (c *metricsConnector) addException(excKey string, attrs pcommon.Map) {
 	exc.count++
 }
 
-func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
+func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(3 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
 	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	for _, d := range dimensions {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs); ok {
 			v.CopyTo(dims.PutEmpty(d.name))
 		}
 	}
@@ -208,14 +184,14 @@ func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.S
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []dimension, resourceAttrs pcommon.Map) {
+func buildKey(dest *bytes.Buffer, serviceName string, span ptrace.Span, optionalDims []dimension, eventAttrs pcommon.Map) {
 	concatDimensionValue(dest, serviceName, false)
 	concatDimensionValue(dest, span.Name(), true)
 	concatDimensionValue(dest, traceutil.SpanKindStr(span.Kind()), true)
 	concatDimensionValue(dest, traceutil.StatusCodeStr(span.Status().Code()), true)
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+		if v, ok := getDimensionValue(d, span.Attributes(), eventAttrs); ok {
 			concatDimensionValue(dest, v.AsString(), true)
 		}
 	}
@@ -226,26 +202,4 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 		dest.WriteString(metricKeySeparator)
 	}
 	dest.WriteString(value)
-}
-
-// getDimensionValue gets the dimension value for the given configured dimension.
-// It searches through the span's attributes first, being the more specific;
-// falling back to searching in resource attributes if it can't be found in the span.
-// Finally, falls back to the configured default value if provided.
-//
-// The ok flag indicates if a dimension value was fetched in order to differentiate
-// an empty string value from a state where no value was found.
-func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
-	// The more specific span attribute should take precedence.
-	if attr, exists := spanAttr.Get(d.name); exists {
-		return attr, true
-	}
-	if attr, exists := resourceAttr.Get(d.name); exists {
-		return attr, true
-	}
-	// Set the default if configured, otherwise this metric will have no value set for the dimension.
-	if d.value != nil {
-		return *d.value, true
-	}
-	return v, ok
 }

@@ -54,7 +54,7 @@ func createTracesToMetricsConnector(ctx context.Context, params connector.Create
 }
 
 func createTracesToLogsConnector(ctx context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
-	lc, err := newLogsConnector(params.Logger)
+	lc, err := newLogsConnector(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}

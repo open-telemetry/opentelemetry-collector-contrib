@@ -3,6 +3,15 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_SERVER
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
+              - key: service.name
+                value:
+                  stringValue: service-a
               - key: service.name
                 value:
                   stringValue: service-a
@@ -21,6 +30,12 @@ resourceLogs:
             spanId: ""
             traceId: ""
           - attributes:
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_CLIENT
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
               - key: service.name
                 value:
                   stringValue: service-a
@@ -39,6 +54,12 @@ resourceLogs:
             spanId: ""
             traceId: ""
           - attributes:
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_SERVER
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
               - key: service.name
                 value:
                   stringValue: service-b
