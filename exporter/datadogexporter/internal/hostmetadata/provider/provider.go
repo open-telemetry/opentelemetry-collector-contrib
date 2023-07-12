@@ -54,12 +54,14 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 	// Check provider responses in order to ensure priority
 	for i, ch := range replies {
 		reply := <-ch
-		if reply.err == nil {
-			p.logger.Info("Resolved source",
-				zap.String("provider", p.priorityList[i]), zap.Any("source", reply.src),
-			)
-			return reply.src, nil
+		if reply.err != nil {
+			continue
 		}
+
+		p.logger.Info("Resolved source",
+			zap.String("provider", p.priorityList[i]), zap.Any("source", reply.src),
+		)
+		return reply.src, nil
 	}
 
 	return source.Source{}, fmt.Errorf("no source provider was available")
