@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +35,7 @@ import (
 var errUnavailable = errors.New("ec2metadata unavailable")
 
 type mockMetadata struct {
-	retIDDoc    imds.InstanceIdentityDocument
+	retIDDoc    ec2metadata.EC2InstanceIdentityDocument
 	retErrIDDoc error
 
 	retHostname    string
@@ -53,9 +53,9 @@ func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
 	return "", nil
 }
 
-func (mm mockMetadata) Get(_ context.Context) (imds.InstanceIdentityDocument, error) {
+func (mm mockMetadata) Get(_ context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
 	if mm.retErrIDDoc != nil {
-		return imds.InstanceIdentityDocument{}, mm.retErrIDDoc
+		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
 }
@@ -65,10 +65,6 @@ func (mm mockMetadata) Hostname(_ context.Context) (string, error) {
 		return "", mm.retErrHostname
 	}
 	return mm.retHostname, nil
-}
-
-func (mm mockMetadata) GetMetadataClient() *ec2provider.MetadataClient {
-	return nil
 }
 
 func TestNewDetector(t *testing.T) {
@@ -128,7 +124,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc: imds.InstanceIdentityDocument{
+				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
 					Region:           "us-west-2",
 					AccountID:        "account1234",
 					AvailabilityZone: "us-west-2a",
@@ -156,7 +152,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "endpoint not available",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:    imds.InstanceIdentityDocument{},
+				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
@@ -166,7 +162,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "get fails",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:    imds.InstanceIdentityDocument{},
+				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
@@ -176,7 +172,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "hostname fails",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:       imds.InstanceIdentityDocument{},
+				retIDDoc:       ec2metadata.EC2InstanceIdentityDocument{},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,

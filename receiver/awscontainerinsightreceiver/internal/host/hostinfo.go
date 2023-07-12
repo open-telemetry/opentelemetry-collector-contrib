@@ -19,12 +19,11 @@ import (
 	"fmt"
 	"time"
 
-	awsSDKV2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"go.uber.org/zap"
 
-	awsutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 // Info contains information about a host
@@ -47,9 +46,8 @@ type Info struct {
 	ec2Tags      ec2TagsProvider
 
 	awsSessionCreator   func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error)
-	awsConfigCreator    func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*awsSDKV2.Config, error)
 	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
-	ec2MetadataCreator  func(context.Context, *awsSDKV2.Config, time.Duration, chan bool, chan bool, bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
+	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
 	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
 	ec2TagsCreator      func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
@@ -74,7 +72,6 @@ func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrato
 
 		containerOrchestrator: containerOrchestrator,
 		awsSessionCreator:     awsutil.GetAWSConfigSession,
-		awsConfigCreator:      awsutil.GetAWSConfig,
 		nodeCapacityCreator:   newNodeCapacity,
 		ec2MetadataCreator:    newEC2Metadata,
 		ebsVolumeCreator:      newEBSVolume,
@@ -101,12 +98,7 @@ func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrato
 	}
 	mInfo.awsSession = session
 
-	cfg, err := mInfo.awsConfigCreator(logger, &awsutil.Conn{}, &awsSessionSettings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create aws config: %w", err)
-	}
-
-	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, cfg, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, awsSessionSettings.LocalMode, logger)
+	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, session, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, awsSessionSettings.LocalMode, logger)
 
 	go mInfo.lazyInitEBSVolume(ctx)
 	go mInfo.lazyInitEC2Tags(ctx)

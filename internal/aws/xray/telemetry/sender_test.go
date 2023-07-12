@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	awsmock "github.com/aws/aws-sdk-go/awstesting/mock"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -79,19 +79,19 @@ func TestRotateRace(t *testing.T) {
 
 func TestIncludeMetadata(t *testing.T) {
 	cfg := Config{IncludeMetadata: false}
-	awsConfig, _ := awsconfig.LoadDefaultConfig(context.Background())
+	sess := awsmock.Session
 	set := &awsutil.AWSSessionSettings{ResourceARN: "session_arn"}
-	opts := ToOptions(cfg, &awsConfig, set, zap.NewNop())
+	opts := ToOptions(cfg, sess, set)
 	assert.Empty(t, opts)
 	cfg.IncludeMetadata = true
-	opts = ToOptions(cfg, &awsConfig, set, zap.NewNop())
+	opts = ToOptions(cfg, sess, set)
 	sender := newSender(&mockClient{}, opts...)
 	assert.Equal(t, "", sender.hostname)
 	assert.Equal(t, "", sender.instanceID)
 	assert.Equal(t, "session_arn", sender.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
-	opts = ToOptions(cfg, &awsConfig, &awsutil.AWSSessionSettings{}, zap.NewNop())
+	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
 	sender = newSender(&mockClient{}, opts...)
 	assert.Equal(t, "env_hostname", sender.hostname)
 	assert.Equal(t, "env_instance_id", sender.instanceID)
@@ -99,7 +99,7 @@ func TestIncludeMetadata(t *testing.T) {
 	cfg.Hostname = "cfg_hostname"
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
-	opts = ToOptions(cfg, &awsConfig, &awsutil.AWSSessionSettings{}, zap.NewNop())
+	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
 	sender = newSender(&mockClient{}, opts...)
 	assert.Equal(t, "cfg_hostname", sender.hostname)
 	assert.Equal(t, "cfg_instance_id", sender.instanceID)
@@ -110,7 +110,7 @@ func TestIncludeMetadataLocalMode(t *testing.T) {
 	cfg := Config{IncludeMetadata: true}
 	set := &awsutil.AWSSessionSettings{ResourceARN: "session_arn", LocalMode: true}
 	assert.NotPanics(t, func() {
-		opts := ToOptions(cfg, nil, set, zap.NewNop())
+		opts := ToOptions(cfg, nil, set)
 		sender := newSender(&mockClient{}, opts...)
 		assert.Equal(t, "", sender.hostname)
 		assert.Equal(t, "", sender.instanceID)
