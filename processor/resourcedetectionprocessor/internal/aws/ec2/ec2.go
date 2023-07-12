@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"regexp"
 
-	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -50,7 +49,7 @@ type Detector struct {
 
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	awsConfig, err := awsConfig.LoadDefaultConfig(context.Background())
+	sess, err := session.NewSession()
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +58,7 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 		return nil, err
 	}
 	return &Detector{
-		metadataProvider: ec2provider.NewProvider(awsConfig),
+		metadataProvider: ec2provider.NewProvider(sess),
 		tagKeyRegexes:    tagKeyRegexes,
 		logger:           set.Logger,
 	}, nil
