@@ -164,8 +164,8 @@ var testLEventRaw = &add_events.Event{
 	Ts:         "1581452773000000789",
 	ServerHost: testServerHost,
 	Attrs: map[string]interface{}{
-		"attributes.app":           "server",
-		"attributes.instance_num":  int64(1),
+		"app":                      "server",
+		"instance_num":             int64(1),
 		"dropped_attributes_count": uint32(1),
 		"message":                  "This is a log message",
 		"span_id":                  "0102040800000000",
@@ -180,8 +180,8 @@ var testLEventRawWithScopeInfo = &add_events.Event{
 	Ts:         "1581452773000000789",
 	ServerHost: testServerHost,
 	Attrs: map[string]interface{}{
-		"attributes.app":           "server",
-		"attributes.instance_num":  int64(1),
+		"app":                      "server",
+		"instance_num":             int64(1),
 		"dropped_attributes_count": uint32(1),
 		"scope.name":               "test-scope",
 		"message":                  "This is a log message",
@@ -197,8 +197,8 @@ var testLEventReq = &add_events.Event{
 	Ts:     testLEventRaw.Ts,
 	Attrs: map[string]interface{}{
 		add_events.AttrOrigServerHost: testServerHost,
-		"attributes.app":              "server",
-		"attributes.instance_num":     float64(1),
+		"app":                         "server",
+		"instance_num":                float64(1),
 		"dropped_attributes_count":    float64(1),
 		"message":                     "This is a log message",
 		"span_id":                     "0102040800000000",
@@ -414,15 +414,27 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
 		},
-		LogsSettings:       newDefaultLogsSettings(),
-		TracesSettings:     newDefaultTracesSettings(),
-		ServerHostSettings: testServerHostSettings,
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+		LogsSettings:   newDefaultLogsSettings(),
+		TracesSettings: newDefaultTracesSettings(),
+		ServerHostSettings: ServerHostSettings{
+			ServerHost:    testServerHost,
+			UseAttributes: []string{"attrServerHost"},
+		},
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr1 := testdata.GenerateLogsOneLogRecord()
+	lr2 := testdata.GenerateLogsOneLogRecord()
+	// set attribute for the hostname
+	lr2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("attrServerHost", "serverHostFromAttribute")
+
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty()
+	ld.ResourceLogs().AppendEmpty()
+	lr1.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(0))
+	lr2.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(1))
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
 	if assert.NoError(t, err) {
@@ -430,7 +442,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.NotNil(t, logs)
-		err = logs.ConsumeLogs(context.Background(), lr)
+		err = logs.ConsumeLogs(context.Background(), ld)
 		assert.Nil(t, err)
 		time.Sleep(time.Second)
 		err = logs.Shutdown(context.Background())
@@ -446,9 +458,28 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			AddEventsRequestParams: add_events.AddEventsRequestParams{
 				Session:     addRequest.Session,
 				SessionInfo: addRequest.SessionInfo,
-				Events:      []*add_events.Event{testLEventReq},
-				Threads:     []*add_events.Thread{testLThread},
-				Logs:        []*add_events.Log{testLLog},
+				Events: []*add_events.Event{
+					testLEventReq,
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: "serverHostFromAttribute",
+							"attrServerHost":              "serverHostFromAttribute",
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+						},
+					},
+				},
+				Threads: []*add_events.Thread{testLThread},
+				Logs:    []*add_events.Log{testLLog},
 			},
 		},
 		addRequest,

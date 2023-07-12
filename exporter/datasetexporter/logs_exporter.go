@@ -210,8 +210,6 @@ func buildEventFromLog(
 		}
 	}
 
-	updateWithPrefixedValues(attrs, "attributes.", ".", log.Attributes().AsRaw(), 0)
-
 	if logSettings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
@@ -222,6 +220,8 @@ func buildEventFromLog(
 		}
 		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
 	}
+
+	updateWithPrefixedValues(attrs, "", "_", log.Attributes().AsRaw(), 0)
 
 	event.Attrs = attrs
 	event.Log = "LL"

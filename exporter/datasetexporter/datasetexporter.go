@@ -123,7 +123,10 @@ func inferServerHost(attrs map[string]interface{}, hostSettings ServerHostSettin
 	for _, key := range hostSettings.UseAttributes {
 		val, ok := attrs[key]
 		if ok {
-			return fmt.Sprintf("%v", val)
+			host := fmt.Sprintf("%v", val)
+			if len(host) > 0 {
+				return host
+			}
 		}
 	}
 

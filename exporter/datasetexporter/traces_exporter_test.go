@@ -41,10 +41,11 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func generateTEvent1Raw() *add_events.Event {
 	return &add_events.Event{
-		Thread: "TT",
-		Log:    "LT",
-		Sev:    9,
-		Ts:     "1581452772000000321",
+		Thread:     "TT",
+		Log:        "LT",
+		Sev:        9,
+		Ts:         "1581452772000000321",
+		ServerHost: "foo",
 		Attrs: map[string]interface{}{
 			"sca:schemVer": 1,
 			"sca:schema":   "tracing",
@@ -69,10 +70,11 @@ func generateTEvent1Raw() *add_events.Event {
 
 func generateTEvent2Raw() *add_events.Event {
 	return &add_events.Event{
-		Thread: "TT",
-		Log:    "LT",
-		Sev:    9,
-		Ts:     "1581452772000000321",
+		Thread:     "TT",
+		Log:        "LT",
+		Sev:        9,
+		Ts:         "1581452772000000321",
+		ServerHost: "foo",
 		Attrs: map[string]interface{}{
 			"sca:schemVer": 1,
 			"sca:schema":   "tracing",
@@ -91,16 +93,18 @@ func generateTEvent2Raw() *add_events.Event {
 			"status_message": "",
 			"resource_name":  "",
 			"resource_type":  "process",
+			"attrServerHost": "",
 		},
 	}
 }
 
 func generateTEvent3Raw() *add_events.Event {
 	return &add_events.Event{
-		Thread: "TT",
-		Log:    "LT",
-		Sev:    9,
-		Ts:     "1581452772000000321",
+		Thread:     "TT",
+		Log:        "LT",
+		Sev:        9,
+		Ts:         "1581452772000000321",
+		ServerHost: "valServerHost",
 		Attrs: map[string]interface{}{
 			"sca:schemVer": 1,
 			"sca:schema":   "tracing",
@@ -120,6 +124,7 @@ func generateTEvent3Raw() *add_events.Event {
 			"status_message": "",
 			"resource_name":  "",
 			"resource_type":  "process",
+			"attrServerHost": "valServerHost",
 		},
 	}
 }
@@ -148,7 +153,7 @@ func TestBuildEventFromSpanOne(t *testing.T) {
 			traces.ResourceSpans().At(0).Resource(),
 			traces.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
 		},
-		newDefaultServerHostSettings(),
+		testServerHostSettings,
 	)
 
 	assert.Equal(t, expected, was)
@@ -206,7 +211,12 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 
 func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T) {
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
-	was := buildEventsFromTraces(traces, newDefaultServerHostSettings())
+	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("attrServerHost", "")
+	traces.ResourceSpans().At(1).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("attrServerHost", "valServerHost")
+	was := buildEventsFromTraces(traces, ServerHostSettings{
+		ServerHost:    testServerHost,
+		UseAttributes: []string{"attrServerHost"},
+	})
 
 	expected := []*add_events.EventBundle{
 		{
