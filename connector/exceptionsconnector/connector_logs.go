@@ -85,7 +85,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 func (c *logsConnector) exportLogs(ctx context.Context) error {
 	c.logger.Debug("Exporting logs")
 	if err := c.logsConsumer.ConsumeLogs(ctx, c.ld); err != nil {
-		c.logger.Error("Failed ConsumeLogs", zap.Error(err))
+		c.logger.Error("failed to convert exceptions to logs", zap.Error(err))
 		return err
 	}
 	return nil
