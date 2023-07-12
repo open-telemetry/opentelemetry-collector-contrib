@@ -1206,6 +1206,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
+				pt0.BucketCounts().FromRaw([]uint64{10})
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetStartTimestamp(startTimestamp)
 				pt0.Attributes().PutStr("foo", "bar")

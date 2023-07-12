@@ -233,6 +233,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetSum(1004.78)
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.BucketCounts().FromRaw([]uint64{66})
 				attributes := point.Attributes()
 				attributes.PutStr("a", "A")
 				attributes.PutStr("b", "B")

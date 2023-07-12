@@ -1123,7 +1123,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(ts1),
 						compareHistogramTimestamp(ts1),
-						compareHistogram(10, 100, nil),
+						compareHistogram(10, 100, []uint64{10}),
 					},
 				},
 			}),
@@ -1185,7 +1185,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(ts1),
 						compareHistogramTimestamp(ts2),
-						compareHistogram(15, 101, nil),
+						compareHistogram(15, 101, []uint64{15}),
 					},
 				},
 			}),
