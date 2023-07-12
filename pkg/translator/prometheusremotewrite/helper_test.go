@@ -216,6 +216,7 @@ func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
 		resource       pcommon.Resource
+		scope          pcommon.InstrumentationScope
 		orig           pcommon.Map
 		externalLabels map[string]string
 		extras         []string
@@ -224,6 +225,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_clean",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -237,6 +239,7 @@ func Test_createLabelSet(t *testing.T) {
 				res.Attributes().PutStr("service.instance.id", "127.0.0.1:8080")
 				return res
 			}(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -250,14 +253,57 @@ func Test_createLabelSet(t *testing.T) {
 				res.Attributes().PutBool("service.instance.id", true)
 				return res
 			}(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
 		},
 		{
+			"labels_with_scope",
+			pcommon.NewResource(),
+			func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("inst.scope.name")
+				scope.SetVersion("v1.2.3")
+				return scope
+			}(),
+			lbs1,
+			map[string]string{},
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "otel_scope_name", "inst.scope.name", "otel_scope_version", "v1.2.3"),
+		},
+		{
+			"labels_with_empty_scope",
+			pcommon.NewResource(),
+			func() pcommon.InstrumentationScope {
+				return pcommon.NewInstrumentationScope()
+			}(),
+			lbs1,
+			map[string]string{},
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+		},
+		{
+			"labels_with_scope_attributes",
+			pcommon.NewResource(),
+			func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("inst.scope.name")
+				scope.Attributes().PutStr("foo", "bar")
+				scope.Attributes().PutInt("num", 555)
+				scope.SetVersion("v1.2.3")
+				return scope
+			}(),
+			lbs1,
+			map[string]string{},
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "otel_scope_name", "inst.scope.name", "otel_scope_version", "v1.2.3"),
+		},
+		{
 			"labels_duplicate_in_extras",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			map[string]string{},
 			[]string{label11, value31},
@@ -266,6 +312,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_dirty",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
@@ -274,6 +321,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"no_original_case",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			pcommon.NewMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
@@ -282,6 +330,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"empty_extra_case",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			map[string]string{},
 			[]string{"", ""},
@@ -290,6 +339,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"single_left_over_case",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32},
@@ -298,6 +348,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"valid_external_labels",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -306,6 +357,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"overwritten_external_labels",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			exlbs2,
 			[]string{label31, value31, label32, value32},
@@ -314,6 +366,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"colliding attributes",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbsColliding,
 			nil,
 			[]string{label31, value31, label32, value32},
@@ -322,6 +375,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"sanitize_labels_starts_with_underscore",
 			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
 			lbs3,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -331,13 +385,14 @@ func Test_createLabelSet(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.scope, tt.orig, tt.externalLabels, tt.extras...))
 		})
 	}
 }
 
 func BenchmarkCreateAttributes(b *testing.B) {
 	r := pcommon.NewResource()
+	s := pcommon.NewInstrumentationScope()
 	ext := map[string]string{}
 
 	m := pcommon.NewMap()
@@ -349,7 +404,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		createAttributes(r, m, ext)
+		createAttributes(r, s, m, ext)
 	}
 }
 
@@ -631,6 +686,116 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	}
 }
 
+func TestAddScopeTargetInfo(t *testing.T) {
+	for _, tc := range []struct {
+		desc      string
+		resource  pcommon.Resource
+		scope     pcommon.InstrumentationScope
+		settings  Settings
+		timestamp pcommon.Timestamp
+		expected  map[string]*prompb.TimeSeries
+	}{
+		{
+			"disable scope info metric",
+			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
+			Settings{DisableScopeInfo: true},
+			testdata.TestMetricStartTimestamp,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"empty scope attributes",
+			pcommon.NewResource(),
+			pcommon.NewInstrumentationScope(),
+			Settings{},
+			testdata.TestMetricStartTimestamp,
+			map[string]*prompb.TimeSeries{},
+		},
+		{
+			"with scope attributes",
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().PutStr("service.name", "prometheus")
+				res.Attributes().PutStr("service.instance.id", "127.0.0.1:8080")
+				res.Attributes().PutStr("res.foo", "res.bar")
+				return res
+			}(),
+			func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.Attributes().PutStr("foo", "bar")
+				return scope
+			}(),
+			Settings{},
+			testdata.TestMetricStartTimestamp,
+			map[string]*prompb.TimeSeries{
+				"info-__name__-otel_scope_info-foo-bar-instance-127.0.0.1:8080-job-prometheus": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "otel_scope_info",
+						},
+						{
+							Name:  "foo",
+							Value: "bar",
+						},
+						{
+							Name:  "instance",
+							Value: "127.0.0.1:8080",
+						},
+						{
+							Name:  "job",
+							Value: "prometheus",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			},
+		},
+		{
+			"with namespace and scope attributes",
+			pcommon.NewResource(),
+			func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.Attributes().PutStr("foo", "bar")
+				return scope
+			}(),
+			Settings{Namespace: "foo"},
+			testdata.TestMetricStartTimestamp,
+			map[string]*prompb.TimeSeries{
+				"info-__name__-foo_otel_scope_info-foo-bar": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "foo_otel_scope_info",
+						},
+						{
+							Name:  "foo",
+							Value: "bar",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			tsMap := map[string]*prompb.TimeSeries{}
+			addScopeTargetInfo(tc.scope, tc.resource, tc.settings, tc.timestamp, tsMap)
+			assert.Exactly(t, tc.expected, tsMap)
+		})
+	}
+}
+
 func TestMostRecentTimestampInMetric(t *testing.T) {
 	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
 	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -756,6 +921,7 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 				addSingleSummaryDataPoint(
 					metric.Summary().DataPoints().At(x),
 					pcommon.NewResource(),
+					pcommon.NewInstrumentationScope(),
 					metric,
 					Settings{
 						ExportCreatedMetric: true,
@@ -867,6 +1033,7 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 				addSingleHistogramDataPoint(
 					metric.Histogram().DataPoints().At(x),
 					pcommon.NewResource(),
+					pcommon.NewInstrumentationScope(),
 					metric,
 					Settings{
 						ExportCreatedMetric: true,

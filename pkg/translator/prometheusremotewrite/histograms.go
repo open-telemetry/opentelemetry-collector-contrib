@@ -20,11 +20,13 @@ func addSingleExponentialHistogramDataPoint(
 	metric string,
 	pt pmetric.ExponentialHistogramDataPoint,
 	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
 	settings Settings,
 	series map[string]*prompb.TimeSeries,
 ) error {
 	labels := createAttributes(
 		resource,
+		scope,
 		pt.Attributes(),
 		settings.ExternalLabels,
 		model.MetricNameLabel, metric,

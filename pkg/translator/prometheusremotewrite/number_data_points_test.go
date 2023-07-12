@@ -57,6 +57,7 @@ func TestAddSingleGaugeNumberDataPoint(t *testing.T) {
 				addSingleGaugeNumberDataPoint(
 					metric.Gauge().DataPoints().At(x),
 					pcommon.NewResource(),
+					pcommon.NewInstrumentationScope(),
 					metric,
 					Settings{},
 					gotSeries,
@@ -233,6 +234,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 				addSingleSumNumberDataPoint(
 					metric.Sum().DataPoints().At(x),
 					pcommon.NewResource(),
+					pcommon.NewInstrumentationScope(),
 					metric,
 					Settings{ExportCreatedMetric: true},
 					got,

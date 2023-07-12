@@ -21,6 +21,7 @@ import (
 func addSingleGaugeNumberDataPoint(
 	pt pmetric.NumberDataPoint,
 	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
 	metric pmetric.Metric,
 	settings Settings,
 	series map[string]*prompb.TimeSeries,
@@ -28,6 +29,7 @@ func addSingleGaugeNumberDataPoint(
 	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 	labels := createAttributes(
 		resource,
+		scope,
 		pt.Attributes(),
 		settings.ExternalLabels,
 		model.MetricNameLabel, name,
@@ -54,6 +56,7 @@ func addSingleGaugeNumberDataPoint(
 func addSingleSumNumberDataPoint(
 	pt pmetric.NumberDataPoint,
 	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
 	metric pmetric.Metric,
 	settings Settings,
 	series map[string]*prompb.TimeSeries,
@@ -61,6 +64,7 @@ func addSingleSumNumberDataPoint(
 	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 	labels := createAttributes(
 		resource,
+		scope,
 		pt.Attributes(),
 		settings.ExternalLabels,
 		model.MetricNameLabel, name,
@@ -91,6 +95,7 @@ func addSingleSumNumberDataPoint(
 		if startTimestamp != 0 {
 			createdLabels := createAttributes(
 				resource,
+				scope,
 				pt.Attributes(),
 				settings.ExternalLabels,
 				nameStr,

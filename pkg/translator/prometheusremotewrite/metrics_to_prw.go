@@ -19,6 +19,7 @@ type Settings struct {
 	Namespace           string
 	ExternalLabels      map[string]string
 	DisableTargetInfo   bool
+	DisableScopeInfo    bool
 	ExportCreatedMetric bool
 }
 
@@ -36,6 +37,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 		var mostRecentTimestamp pcommon.Timestamp
 		for j := 0; j < scopeMetricsSlice.Len(); j++ {
 			scopeMetrics := scopeMetricsSlice.At(j)
+			scope := scopeMetrics.Scope()
 			metricSlice := scopeMetrics.Metrics()
 
 			// TODO: decide if instrumentation library information should be exported as labels
@@ -56,7 +58,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleGaugeNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleGaugeNumberDataPoint(dataPoints.At(x), resource, scope, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
@@ -64,7 +66,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleSumNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleSumNumberDataPoint(dataPoints.At(x), resource, scope, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
@@ -72,7 +74,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleHistogramDataPoint(dataPoints.At(x), resource, scope, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
@@ -87,6 +89,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 								name,
 								dataPoints.At(x),
 								resource,
+								scope,
 								settings,
 								tsMap,
 							),
@@ -98,12 +101,13 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleSummaryDataPoint(dataPoints.At(x), resource, scope, metric, settings, tsMap)
 					}
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
 			}
+			addScopeTargetInfo(scope, resource, settings, mostRecentTimestamp, tsMap)
 		}
 		addResourceTargetInfo(resource, settings, mostRecentTimestamp, tsMap)
 	}

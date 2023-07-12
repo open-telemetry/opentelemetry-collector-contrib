@@ -375,6 +375,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 					prometheustranslator.BuildPromCompliantName(metric, ""),
 					metric.ExponentialHistogram().DataPoints().At(x),
 					pcommon.NewResource(),
+					pcommon.NewInstrumentationScope(),
 					Settings{},
 					gotSeries,
 				)
