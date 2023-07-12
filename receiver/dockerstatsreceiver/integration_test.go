@@ -53,6 +53,7 @@ func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, conte
 }
 
 func createNginxContainer(ctx context.Context, t *testing.T) testcontainers.Container {
+	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	req := testcontainers.ContainerRequest{
 		Image:        "docker.io/library/nginx:1.17",
 		ExposedPorts: []string{"80/tcp"},

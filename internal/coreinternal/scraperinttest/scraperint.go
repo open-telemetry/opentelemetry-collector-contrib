@@ -143,6 +143,7 @@ func (it *IntegrationTest) Run(t *testing.T) {
 }
 
 func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
+	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	var errs error
 
 	var network testcontainers.Network
