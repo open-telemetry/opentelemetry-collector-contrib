@@ -24,7 +24,6 @@ type DatasetExporter struct {
 	limiter     *rate.Limiter
 	logger      *zap.Logger
 	session     string
-	spanTracker *spanTracker
 	exporterCfg *ExporterConfig
 }
 
@@ -58,17 +57,11 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 		return nil, fmt.Errorf("cannot create newDatasetExporter: %w", err)
 	}
 
-	tracker := newSpanTracker(exporterCfg.tracesSettings.MaxWait)
-	if !exporterCfg.tracesSettings.Aggregate {
-		tracker = nil
-	}
-
 	return &DatasetExporter{
 		client:      client,
 		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
 		session:     uuid.New().String(),
 		logger:      logger,
-		spanTracker: tracker,
 		exporterCfg: exporterCfg,
 	}, nil
 }
@@ -126,7 +119,7 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 	}
 }
 
-func serverHostFromAttrs(attrs map[string]interface{}, hostSettings ServerHostSettings) string {
+func inferServerHost(attrs map[string]interface{}, hostSettings ServerHostSettings) string {
 	for _, key := range hostSettings.UseAttributes {
 		val, ok := attrs[key]
 		if ok {
@@ -134,5 +127,5 @@ func serverHostFromAttrs(attrs map[string]interface{}, hostSettings ServerHostSe
 		}
 	}
 
-	return ""
+	return hostSettings.ServerHost
 }

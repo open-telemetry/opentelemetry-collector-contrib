@@ -23,10 +23,10 @@ dataset/full:
     retry_initial_interval: 21s
     retry_max_interval: 22s
     retry_max_elapsed_time: 23s
-  traces:
-    max_wait: 3s
   logs:
     export_resource_info_on_event: true
+    export_scope_info_on_event: true
+    decompose_complex_message_field: true
   server_host:
     use_host_name: false
     server_host: "server-host"
