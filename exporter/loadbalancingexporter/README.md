@@ -21,9 +21,17 @@ Note that either the Trace ID or Service name is used for the decision on which 
 
 This load balancer is especially useful for backends configured with tail-based samplers or red-metrics-collectors, which make a decision based on the view of the full trace.
 
-When a list of backends is updated, around 1/n of the space will be changed, so that the same trace ID might be directed to a different backend, where n is the number of backends. This should be stable enough for most cases, and the higher the number of backends, the less disruption it should cause. Still, if routing stability is important for your use case and your list of backends are constantly changing, consider using the `groupbytrace` processor. This way, traces are dispatched atomically to this exporter, and the same decision about the backend is made for the trace as a whole.
+When a list of backends is updated, some of the signals will be rerouted to different backends. 
+Around R/N of the "routes" will be rerouted differently, where:
+
+* A "route" is either a trace ID or a service name mapped to a certain backend.
+* "R" is the total number of routes.
+* "N" is the total number of backends.
+
+This should be stable enough for most cases, and the larger the number of backends, the less disruption it should cause. Still, if routing stability is important for your use case and your list of backends are constantly changing, consider using the `groupbytrace` processor. This way, traces are dispatched atomically to this exporter, and the same decision about the backend is made for the trace as a whole.
 
 This also supports service name based exporting for traces. If you have two or more collectors that collect traces and then use spanmetrics processor to generate metrics and push to prometheus, there is a high chance of facing label collisions on prometheus if the routing is based on `traceID` because every collector sees the `service+operation` label. With service name based routing, each collector can only see one service name and can push metrics without any label collisions.
+
 ## Configuration
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
