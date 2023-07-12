@@ -21,11 +21,19 @@ var distros = map[string]string{
 	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
 }
 
+type Codeowners struct {
+	// Active codeowners
+	Active []string `mapstructure:"active"`
+	// Emeritus codeowners
+	Emeritus []string `mapstructure:"emeritus"`
+}
+
 type Status struct {
 	Stability     map[string][]string `mapstructure:"stability"`
 	Distributions []string            `mapstructure:"distributions"`
 	Class         string              `mapstructure:"class"`
 	Warnings      []string            `mapstructure:"warnings"`
+	Codeowners    *Codeowners         `mapstructure:"codeowners"`
 }
 
 func (s Status) SortedDistributions() []string {
