@@ -34,25 +34,22 @@ func truncate[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K], e
 		return nil, fmt.Errorf("invalid limit for truncate function, %d cannot be negative", limit)
 	}
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
-		if limit < 0 {
-			return nil, nil
-		}
-
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if val == nil {
-			return nil, nil
-		}
 		if valStr, ok := val.(string); ok {
-			if int64(len(valStr)) > limit {
-				err = target.Set(ctx, tCtx, valStr[:limit])
-				if err != nil {
-					return nil, err
-				}
+			if truncatedVal, isTruncated := maybeTruncate(valStr, limit); isTruncated {
+				return nil, target.Set(ctx, tCtx, truncatedVal)
 			}
 		}
 		return nil, nil
 	}, nil
+}
+
+func maybeTruncate(value string, limit int64) (string, bool) {
+	if int64(len(value)) > limit {
+		return value[:limit], true
+	}
+	return value, false
 }

@@ -36,18 +36,13 @@ func TruncateAll[K any](target ottl.PMapGetter[K], limit int64) (ottl.ExprFunc[K
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
-		if limit < 0 {
-			return nil, nil
-		}
-
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		val.Range(func(key string, value pcommon.Value) bool {
-			stringVal := value.Str()
-			if int64(len(stringVal)) > limit {
-				value.SetStr(stringVal[:limit])
+			if truncatedVal, isTruncated := maybeTruncate(value.Str(), limit); isTruncated {
+				value.SetStr(truncatedVal)
 			}
 			return true
 		})
