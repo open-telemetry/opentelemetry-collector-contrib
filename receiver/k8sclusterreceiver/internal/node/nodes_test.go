@@ -21,7 +21,26 @@ import (
 
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
-	m := GetMetrics(receivertest.NewNopCreateSettings(), n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage", "storage"})
+	m := GetMetrics(receivertest.NewNopCreateSettings(), n,
+		[]string{
+			"Ready",
+			"MemoryPressure",
+			"DiskPressure",
+			"NetworkUnavailable",
+			"PIDPressure",
+			"OutOfDisk",
+		},
+		[]string{
+			"cpu",
+			"memory",
+			"ephemeral-storage",
+			"storage",
+			"pods",
+			"hugepages-1Gi",
+			"hugepages-2Mi",
+			"not-present",
+		},
+	)
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,

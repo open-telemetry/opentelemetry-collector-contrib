@@ -82,8 +82,41 @@ func applyCurrentTime(md pmetric.Metrics, t pcommon.Timestamp) {
 					applyCurrentTimeNumberDataPoint(ms.At(k).Gauge().DataPoints(), t)
 				case pmetric.MetricTypeSum:
 					applyCurrentTimeNumberDataPoint(ms.At(k).Sum().DataPoints(), t)
+				case pmetric.MetricTypeEmpty:
+				case pmetric.MetricTypeHistogram:
+					applyCurrentTimeHistogramDataPoint(ms.At(k).Histogram().DataPoints(), t)
+				case pmetric.MetricTypeExponentialHistogram:
+					applyCurrentTimeExponentialHistogramDataPoint(ms.At(k).ExponentialHistogram().DataPoints(), t)
+				case pmetric.MetricTypeSummary:
+					applyCurrentTimeSummaryDataPoint(ms.At(k).Summary().DataPoints(), t)
 				}
 			}
+		}
+	}
+}
+
+func applyCurrentTimeSummaryDataPoint(dps pmetric.SummaryDataPointSlice, t pcommon.Timestamp) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		dp.SetTimestamp(t)
+	}
+}
+func applyCurrentTimeHistogramDataPoint(dps pmetric.HistogramDataPointSlice, t pcommon.Timestamp) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		dp.SetTimestamp(t)
+		for j := 0; j < dp.Exemplars().Len(); j++ {
+			dp.Exemplars().At(j).SetTimestamp(t)
+		}
+	}
+}
+
+func applyCurrentTimeExponentialHistogramDataPoint(dps pmetric.ExponentialHistogramDataPointSlice, t pcommon.Timestamp) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		dp.SetTimestamp(t)
+		for j := 0; j < dp.Exemplars().Len(); j++ {
+			dp.Exemplars().At(j).SetTimestamp(t)
 		}
 	}
 }
@@ -95,6 +128,7 @@ func applyCurrentTimeNumberDataPoint(dps pmetric.NumberDataPointSlice, t pcommon
 			dps.At(i).SetTimestamp(t)
 		case pmetric.NumberDataPointValueTypeInt:
 			dps.At(i).SetTimestamp(t)
+		case pmetric.NumberDataPointValueTypeEmpty:
 		}
 	}
 }

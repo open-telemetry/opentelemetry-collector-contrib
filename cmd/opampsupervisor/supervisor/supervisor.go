@@ -178,19 +178,6 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 	var supportedCapabilities protobufs.AgentCapabilities
 
 	if c := s.config.Capabilities; c != nil {
-		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
-		}
-		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-		}
-
-		// AcceptsRestartCommand is set if unspecified or explicitly set to true.
-		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
-		} else if c.AcceptsRestartCommand == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
-		}
 
 		// ReportsEffectiveConfig is set if unspecified or explicitly set to true.
 		if c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig {
@@ -216,9 +203,6 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
-		if c.ReportsStatus != nil && *c.ReportsStatus {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus
-		}
 	}
 
 	return supportedCapabilities
@@ -227,8 +211,14 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(s.logger.Sugar())
 
+	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return err
+	}
+
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
+		TLSConfig:      tlsConfig,
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func() {
@@ -267,8 +257,7 @@ func (s *Supervisor) startOpAMP() error {
 		},
 		Capabilities: s.Capabilities(),
 	}
-	s.logger.Debug("Using capabilities", zap.String("capabilities", s.Capabilities().String()))
-	err := s.opampClient.SetAgentDescription(s.createAgentDescription())
+	err = s.opampClient.SetAgentDescription(s.createAgentDescription())
 	if err != nil {
 		return err
 	}

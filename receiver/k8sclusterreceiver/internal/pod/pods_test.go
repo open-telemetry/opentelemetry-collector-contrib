@@ -5,15 +5,14 @@ package pod
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -22,8 +21,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
@@ -41,68 +41,21 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
 	)
 
-	actualResourceMetrics := GetMetrics(pod, zap.NewNop())
-
-	require.Len(t, actualResourceMetrics, 2)
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.pod.uid":        "test-pod-1-uid",
-			"k8s.pod.name":       "test-pod-1",
-			"k8s.node.name":      "test-node",
-			"k8s.namespace.name": "test-namespace",
-		},
+	m := GetMetrics(receivertest.NewNopCreateSettings(), pod)
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	require.Len(t, actualResourceMetrics[0].Metrics, 1)
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.pod.phase",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
-
-	require.Len(t, actualResourceMetrics[1].Metrics, 4)
-	testutils.AssertResource(t, actualResourceMetrics[1].Resource, "container",
-		map[string]string{
-			"container.id":         "container-id",
-			"k8s.container.name":   "container-name",
-			"container.image.name": "container-image-name",
-			"container.image.tag":  "latest",
-			"k8s.pod.uid":          "test-pod-1-uid",
-			"k8s.pod.name":         "test-pod-1",
-			"k8s.node.name":        "test-node",
-			"k8s.namespace.name":   "test-namespace",
-		},
-	)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[1].Metrics[0], "k8s.container.restarts",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[1].Metrics[1], "k8s.container.ready",
-		metricspb.MetricDescriptor_GAUGE_INT64, 1)
-
-	testutils.AssertMetricsDouble(t, actualResourceMetrics[1].Metrics[2], "k8s.container.cpu_request",
-		metricspb.MetricDescriptor_GAUGE_DOUBLE, 10.0)
-
-	testutils.AssertMetricsDouble(t, actualResourceMetrics[1].Metrics[3], "k8s.container.cpu_limit",
-		metricspb.MetricDescriptor_GAUGE_DOUBLE, 20.0)
 }
 
 var containerIDWithPreifx = func(containerID string) string {
 	return "docker://" + containerID
-}
-
-func TestListResourceMetrics(t *testing.T) {
-	rms := map[string]*agentmetricspb.ExportMetricsServiceRequest{
-		"resource-1": {Resource: &resourcepb.Resource{Type: "type-1"}},
-		"resource-2": {Resource: &resourcepb.Resource{Type: "type-2"}},
-		"resource-3": {Resource: &resourcepb.Resource{Type: "type-1"}},
-	}
-
-	actual := listResourceMetrics(rms)
-	expected := []*agentmetricspb.ExportMetricsServiceRequest{
-		{Resource: &resourcepb.Resource{Type: "type-1"}},
-		{Resource: &resourcepb.Resource{Type: "type-2"}},
-		{Resource: &resourcepb.Resource{Type: "type-1"}},
-	}
-
-	require.ElementsMatch(t, expected, actual)
 }
 
 func TestPhaseToInt(t *testing.T) {

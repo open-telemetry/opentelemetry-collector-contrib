@@ -718,8 +718,10 @@ Time elapsed since container start time.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| container.command_line | The full command executed by the container. | Any Str | false |
 | container.hostname | The hostname of the container. | Any Str | true |
 | container.id | The ID of the container. | Any Str | true |
+| container.image.id | The ID of the container image. | Any Str | false |
 | container.image.name | The name of the docker image in use by the container. | Any Str | true |
 | container.name | The name of the container. | Any Str | true |
 | container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true |

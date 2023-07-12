@@ -146,18 +146,34 @@ func NewNode(id string) *corev1.Node {
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
 				{
-					Type:   corev1.NodeReady,
-					Status: corev1.ConditionTrue,
+					Type:   corev1.NodeDiskPressure,
+					Status: corev1.ConditionFalse,
 				},
 				{
-					Status: corev1.ConditionFalse,
 					Type:   corev1.NodeMemoryPressure,
+					Status: corev1.ConditionFalse,
+				},
+				{
+					Type:   corev1.NodeNetworkUnavailable,
+					Status: corev1.ConditionFalse,
+				},
+				{
+					Type:   corev1.NodePIDPressure,
+					Status: corev1.ConditionFalse,
+				},
+				{
+					Type:   corev1.NodeReady,
+					Status: corev1.ConditionTrue,
 				},
 			},
 			Allocatable: corev1.ResourceList{
 				corev1.ResourceCPU:              *resource.NewMilliQuantity(123, resource.DecimalSI),
 				corev1.ResourceMemory:           *resource.NewQuantity(456, resource.DecimalSI),
 				corev1.ResourceEphemeralStorage: *resource.NewQuantity(1234, resource.DecimalSI),
+				corev1.ResourcePods:             *resource.NewQuantity(12, resource.DecimalSI),
+				"hugepages-1Gi":                 *resource.NewQuantity(2, resource.DecimalSI),
+				"hugepages-2Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
+				"hugepages-5Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
 			},
 		},
 	}

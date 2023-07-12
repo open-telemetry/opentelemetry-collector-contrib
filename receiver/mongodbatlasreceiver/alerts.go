@@ -101,14 +101,14 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 
 	recv := &alertsReceiver{
 		addr:          cfg.Endpoint,
-		secret:        cfg.Secret,
+		secret:        string(cfg.Secret),
 		tlsSettings:   cfg.TLS,
 		consumer:      consumer,
 		mode:          cfg.Mode,
 		projects:      cfg.Projects,
 		retrySettings: baseConfig.RetrySettings,
 		publicKey:     baseConfig.PublicKey,
-		privateKey:    baseConfig.PrivateKey,
+		privateKey:    string(baseConfig.PrivateKey),
 		wg:            &sync.WaitGroup{},
 		pollInterval:  baseConfig.Alerts.PollInterval,
 		maxPages:      baseConfig.Alerts.MaxPages,

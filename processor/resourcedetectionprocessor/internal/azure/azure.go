@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/internal/metadata"
 )
 
 const (
@@ -24,15 +25,18 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Azure metadata detector
 type Detector struct {
-	provider azure.Provider
-	logger   *zap.Logger
+	provider           azure.Provider
+	logger             *zap.Logger
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 // NewDetector creates a new Azure metadata detector
-func NewDetector(p processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
 	return &Detector{
-		provider: azure.NewProvider(),
-		logger:   p.Logger,
+		provider:           azure.NewProvider(),
+		logger:             p.Logger,
+		resourceAttributes: cfg.ResourceAttributes,
 	}, nil
 }
 
@@ -47,13 +51,24 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		// return an empty Resource and no error
 		return res, "", nil
 	}
-
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
-	attrs.PutStr(conventions.AttributeHostName, compute.Name)
-	attrs.PutStr(conventions.AttributeCloudRegion, compute.Location)
-	attrs.PutStr(conventions.AttributeHostID, compute.VMID)
-	attrs.PutStr(conventions.AttributeCloudAccountID, compute.SubscriptionID)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	}
+	if d.resourceAttributes.CloudPlatform.Enabled {
+		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
+	}
+	if d.resourceAttributes.HostName.Enabled {
+		attrs.PutStr(conventions.AttributeHostName, compute.Name)
+	}
+	if d.resourceAttributes.CloudRegion.Enabled {
+		attrs.PutStr(conventions.AttributeCloudRegion, compute.Location)
+	}
+	if d.resourceAttributes.HostID.Enabled {
+		attrs.PutStr(conventions.AttributeHostID, compute.VMID)
+	}
+	if d.resourceAttributes.CloudAccountID.Enabled {
+		attrs.PutStr(conventions.AttributeCloudAccountID, compute.SubscriptionID)
+	}
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.
 	attrs.PutStr("azure.vm.name", compute.Name)
