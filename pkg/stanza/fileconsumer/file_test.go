@@ -218,7 +218,8 @@ func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
 	op1, emitCalls1 := buildTestManager(t, cfg)
 
 	// Create a file, then start
-	temp := openTemp(t, tempDir)
+	temp, err := os.CreateTemp(tempDir, "")
+	require.NoError(t, err)
 	writeString(t, temp, "testlog1\n")
 
 	persister := testutil.NewUnscopedMockPersister()
@@ -230,10 +231,12 @@ func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
 	assert.Equal(t, temp.Name(), emitCall1.attrs.Path)
 
 	require.NoError(t, op1.Stop())
+	temp.Close() // On windows, we must close the file before renaming it
 
 	newPath := temp.Name() + "_renamed"
 	require.NoError(t, os.Rename(temp.Name(), newPath))
 
+	temp = openFile(t, newPath)
 	writeString(t, temp, "testlog2\n")
 
 	op2, emitCalls2 := buildTestManager(t, cfg)
