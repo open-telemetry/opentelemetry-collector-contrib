@@ -28,6 +28,7 @@ var (
 var (
     errMaxSearchWaitTimeExceeded = errors.New("Maximum search wait time exceeded for metric")
 )
+
 type splunkScraper struct {
 	splunkClient *splunkEntClient
 	settings     component.TelemetrySettings
@@ -191,4 +192,33 @@ func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Tim
 	}
 
 	s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, it.Entries[0].Content.AvgKb, it.Entries[0].Content.Status)
+}
+
+func (s *splunkScraper) scrapeAverageDiskIO(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+    var sr searchResponse
+
+    if s.mfg.SplunkLicenseIndexUsage.Enabled {
+        sr = searchResponse{
+            search: searchDict[`SplunkLicenseIndexUsageSearch`],
+        }
+    } else {
+        return
+    }
+
+    start := time.Now()
+    _, err := s.splunkClient.makeRequest(&sr)
+    if err != nil {
+        errs.Add(err)
+    }
+    for ok := true; ok; ok = (sr.Return == 204) {
+        _, err := s.splunkClient.makeRequest(&sr)
+        if err != nil {
+            errs.Add(err)
+        }
+        time.Sleep(2 * time.Second)
+        if time.Since(start) > s.conf.MaxSearchWaitTime {
+            errs.Add(errMaxSearchWaitTimeExceeded)
+            return
+        }
+    }
 }
