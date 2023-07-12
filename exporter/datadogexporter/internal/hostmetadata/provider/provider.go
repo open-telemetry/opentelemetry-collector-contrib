@@ -55,6 +55,7 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 	for i, ch := range replies {
 		reply := <-ch
 		if reply.err != nil {
+			// Provider was unavailable, error was logged on goroutine
 			continue
 		}
 
