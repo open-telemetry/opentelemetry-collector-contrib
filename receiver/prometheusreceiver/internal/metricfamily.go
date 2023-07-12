@@ -147,7 +147,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
-	point.CopyTo(dest.AppendEmpty())
+	point.MoveTo(dest.AppendEmpty())
 }
 
 func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
