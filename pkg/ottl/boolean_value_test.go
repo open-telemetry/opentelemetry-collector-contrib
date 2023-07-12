@@ -556,42 +556,6 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
-		// 	{"p", false,
-		// 	&booleanExpression{
-		// 		Left: &term{
-		// 			Left: &booleanValue{
-		// 				Negation: ottltest.Strp("not"),
-		// 				ConstExpr: &constExpr{
-		// 					Boolean: booleanp(true),
-		// 				},
-		// 			},
-		// 			Right: []*opAndBooleanValue{
-		// 				{
-		// 					Operator: "and",
-		// 					Value: &booleanValue{
-		// 						Negation: ottltest.Strp("not"),
-		// 						ConstExpr: &constExpr{
-		// 							Boolean: booleanp(false),
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 		Right: []*opOrTerm{
-		// 			{
-		// 				Operator: "or",
-		// 				Term: &term{
-		// 					Left: &booleanValue{
-		// 						Negation: ottltest.Strp("not"),
-		// 						ConstExpr: &constExpr{
-		// 							Boolean: booleanp(true),
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
