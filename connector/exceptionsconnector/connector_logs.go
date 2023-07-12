@@ -37,8 +37,6 @@ type logsConnector struct {
 }
 
 func newLogsConnector(logger *zap.Logger) (*logsConnector, error) {
-	logger.Info("Building logs exceptionsconnector")
-
 	return &logsConnector{
 		logger: logger,
 		ld:     plog.NewLogs(),
@@ -53,7 +51,6 @@ func (c *logsConnector) Capabilities() consumer.Capabilities {
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate logs.
 func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	c.logger.Debug("Consume traces")
 	sl := c.newScopeLogs()
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)

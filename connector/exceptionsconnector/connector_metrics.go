@@ -85,7 +85,6 @@ func newDimensions(cfgDims []Dimension) []dimension {
 }
 
 func newMetricsConnector(logger *zap.Logger, config component.Config) (*metricsConnector, error) {
-	logger.Info("Building metrics exceptionsconnector")
 	cfg := config.(*Config)
 
 	return &metricsConnector{
@@ -106,7 +105,6 @@ func (c *metricsConnector) Capabilities() consumer.Capabilities {
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate metrics.
 func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	c.logger.Debug("Consume traces")
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -143,7 +141,6 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 
 func (c *metricsConnector) exportMetrics(ctx context.Context) error {
 	c.lock.Lock()
-	c.logger.Debug("Exporting metrics")
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("exceptionsconnector")
