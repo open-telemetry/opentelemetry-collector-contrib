@@ -26,6 +26,8 @@ import (
 )
 
 func TestIntegration(t *testing.T) {
+	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
+	// nolint:staticcheck
 	testCases := []struct {
 		desc                    string
 		configFilename          string
@@ -94,6 +96,7 @@ var (
 )
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
+	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	require.NoError(t, req.Validate())
 	container, err := testcontainers.GenericContainer(
 		context.Background(),
