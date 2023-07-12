@@ -128,7 +128,7 @@ func (c *metricsConnector) exportMetrics(ctx context.Context) error {
 	c.lock.Unlock()
 
 	if err := c.metricsConsumer.ConsumeMetrics(ctx, m); err != nil {
-		c.logger.Error("Failed ConsumeMetrics", zap.Error(err))
+		c.logger.Error("failed to convert exceptions into metrics", zap.Error(err))
 		return err
 	}
 	return nil
