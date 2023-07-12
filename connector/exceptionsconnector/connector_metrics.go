@@ -122,6 +122,7 @@ func (c *metricsConnector) exportMetrics(ctx context.Context) error {
 	ilm.Scope().SetName("exceptionsconnector")
 
 	if err := c.collectExceptions(ilm); err != nil {
+		c.lock.Unlock()
 		return err
 	}
 	c.lock.Unlock()
