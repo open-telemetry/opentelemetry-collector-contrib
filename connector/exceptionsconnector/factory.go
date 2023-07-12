@@ -12,30 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mdatagen metadata.yaml
+
 package exceptionsconnector
 
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "exceptions"
-	// The stability level of the processor.
-	stability = component.StabilityLevelDevelopment
-)
-
 // NewFactory creates a factory for the exceptions connector.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, stability),
-		connector.WithTracesToLogs(createTracesToLogsConnector, stability),
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+		connector.WithTracesToLogs(createTracesToLogsConnector, metadata.TracesToLogsStability),
 	)
 }
 

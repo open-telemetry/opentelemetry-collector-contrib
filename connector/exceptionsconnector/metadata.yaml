@@ -4,4 +4,4 @@ status:
   class: connector
   stability:
     alpha: [traces_to_metrics, traces_to_logs]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
