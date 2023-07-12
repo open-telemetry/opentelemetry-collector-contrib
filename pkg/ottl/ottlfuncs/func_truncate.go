@@ -39,17 +39,10 @@ func truncate[K any](target ottl.GetSetter[K], limit int64) (ottl.ExprFunc[K], e
 			return nil, err
 		}
 		if valStr, ok := val.(string); ok {
-			if truncatedVal, isTruncated := maybeTruncate(valStr, limit); isTruncated {
-				return nil, target.Set(ctx, tCtx, truncatedVal)
+			if int64(len(valStr)) > limit {
+				return nil, target.Set(ctx, tCtx, valStr[:limit])
 			}
 		}
 		return nil, nil
 	}, nil
-}
-
-func maybeTruncate(value string, limit int64) (string, bool) {
-	if int64(len(value)) > limit {
-		return value[:limit], true
-	}
-	return value, false
 }
