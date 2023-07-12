@@ -86,6 +86,8 @@ func hasResourceScopeMetrics(containerID string, metrics []pmetric.Metrics) bool
 
 func TestDefaultMetricsIntegration(t *testing.T) {
 	t.Parallel()
+	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
+	// nolint:staticcheck
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 
@@ -140,6 +142,8 @@ func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	t.Parallel()
+	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
+	// nolint:staticcheck
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 
