@@ -71,7 +71,7 @@ var perUnitMap = map[string]string{
 	"y":  "year",
 }
 
-var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
+var NormalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.NormalizeName",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
@@ -90,7 +90,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
-	if normalizeNameGate.IsEnabled() {
+	if NormalizeNameGate.IsEnabled() {
 		return normalizeName(metric, namespace)
 	}
 
@@ -177,33 +177,12 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	return normalizedName
 }
 
-type Normalizer struct {
-	gate *featuregate.Gate
-}
-
-func NewNormalizer(registry *featuregate.Registry) *Normalizer {
-	var normalizeGate *featuregate.Gate
-	registry.VisitAll(func(gate *featuregate.Gate) {
-		if gate.ID() == normalizeNameGate.ID() {
-			normalizeGate = gate
-		}
-	})
-	// the registry didn't contain the flag, fallback to the global
-	// flag. Overriding the registry is really only done in tests
-	if normalizeGate == nil {
-		normalizeGate = normalizeNameGate
-	}
-	return &Normalizer{
-		gate: normalizeGate,
-	}
-}
-
 // TrimPromSuffixes trims type and unit prometheus suffixes from a metric name.
 // Following the [OpenTelemetry specs] for converting Prometheus Metric points to OTLP.
 //
 // [OpenTelemetry specs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#metric-metadata
-func (n *Normalizer) TrimPromSuffixes(promName string, metricType pmetric.MetricType, unit string) string {
-	if !n.gate.IsEnabled() {
+func TrimPromSuffixes(promName string, metricType pmetric.MetricType, unit string) string {
+	if !NormalizeNameGate.IsEnabled() {
 		return promName
 	}
 

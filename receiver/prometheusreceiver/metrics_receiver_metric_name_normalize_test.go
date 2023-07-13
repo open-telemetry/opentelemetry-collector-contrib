@@ -7,9 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 var normalizeMetric = `# HELP http_connected connected clients
@@ -35,6 +36,7 @@ foo_gauge_seconds{method="get",port="6380"} 5
 
 // TestMetricNormalize validates that type's and unit's suffixes are correctly trimmed.
 func TestMetricNormalize(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, prometheus.NormalizeNameGate, true)()
 	targets := []*testData{
 		{
 			name: "target1",
@@ -46,11 +48,7 @@ func TestMetricNormalize(t *testing.T) {
 		},
 	}
 
-	registry := featuregate.NewRegistry()
-	_, err := registry.Register("pkg.translator.prometheus.NormalizeName", featuregate.StageBeta)
-	require.NoError(t, err)
-
-	testComponent(t, targets, false, "", registry)
+	testComponent(t, targets, false, "")
 }
 
 func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

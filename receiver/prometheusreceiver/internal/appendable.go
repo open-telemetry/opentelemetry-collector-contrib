@@ -11,7 +11,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 )
@@ -26,7 +25,6 @@ type appendable struct {
 
 	settings receiver.CreateSettings
 	obsrecv  *obsreport.Receiver
-	registry *featuregate.Registry
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
@@ -37,8 +35,7 @@ func NewAppendable(
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
 	useCreatedMetric bool,
-	externalLabels labels.Labels,
-	registry *featuregate.Registry) (storage.Appendable, error) {
+	externalLabels labels.Labels) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
 		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
@@ -59,10 +56,9 @@ func NewAppendable(
 		startTimeMetricRegex: startTimeMetricRegex,
 		externalLabels:       externalLabels,
 		obsrecv:              obsrecv,
-		registry:             registry,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.registry)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv)
 }
