@@ -56,6 +56,8 @@ func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
 		return notUsefulLabelsHistogram
 	case pmetric.MetricTypeSummary:
 		return notUsefulLabelsSummary
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		return notUsefulLabelsOther
 	}
@@ -84,6 +86,8 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 		if val == "" {
 			return 0, errEmptyQuantileLabel
 		}
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		return 0, errNoBoundaryLabel
 	}
@@ -110,6 +114,8 @@ func convToMetricType(metricType textparse.MetricType) (pmetric.MetricType, bool
 		return pmetric.MetricTypeSummary, true
 	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
 		return pmetric.MetricTypeSum, false
+	case textparse.MetricTypeGaugeHistogram:
+		fallthrough
 	default:
 		// including: textparse.MetricTypeGaugeHistogram
 		return pmetric.MetricTypeEmpty, false
