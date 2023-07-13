@@ -33,8 +33,6 @@ const (
 // Config defines configuration for Prometheus receiver.
 type Config struct {
 	PrometheusConfig *promconfig.Config `mapstructure:"-"`
-	BufferPeriod     time.Duration      `mapstructure:"buffer_period"`
-	BufferCount      int                `mapstructure:"buffer_count"`
 	// UseStartTimeMetric enables retrieving the start time of all counter metrics
 	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
 	// started after the process start time, and the process is the only actor exporting the metric after
