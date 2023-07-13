@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
@@ -23,6 +24,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
+)
+
+// Upgrade to StageBeta in v0.83.0
+var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.rfc3339",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, uses RFC3339 format for k8s.pod.start_time value"),
+	featuregate.WithRegisterFromVersion("v0.82.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -343,7 +352,15 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
 		if !ts.IsZero() {
-			tags[tagStartTime] = ts.String()
+			if enableRFC3339Timestamp.IsEnabled() {
+				if rfc3339ts, err := ts.MarshalText(); err != nil {
+					c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
+				} else {
+					tags[tagStartTime] = string(rfc3339ts)
+				}
+			} else {
+				tags[tagStartTime] = ts.String()
+			}
 		}
 	}
 
@@ -759,6 +776,8 @@ func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, er
 			selectors = append(selectors, fields.OneTermEqualSelector(f.Key, f.Value))
 		case selection.NotEquals:
 			selectors = append(selectors, fields.OneTermNotEqualSelector(f.Key, f.Value))
+		case selection.DoesNotExist, selection.DoubleEquals, selection.In, selection.NotIn, selection.Exists, selection.GreaterThan, selection.LessThan:
+			fallthrough
 		default:
 			return nil, nil, fmt.Errorf("field filters don't support operator: '%s'", f.Op)
 		}
