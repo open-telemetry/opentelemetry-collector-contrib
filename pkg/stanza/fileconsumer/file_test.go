@@ -1630,7 +1630,6 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	})
 
 	require.NoError(t, op2.Stop())
-
 }
 
 func TestStalePartialFingerprintDiscarded(t *testing.T) {
