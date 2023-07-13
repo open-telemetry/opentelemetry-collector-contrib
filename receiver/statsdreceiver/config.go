@@ -39,9 +39,12 @@ func (c *Config) Validate() error {
 		}
 
 		switch eachMap.StatsdType {
-		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName, protocol.CounterTypeName, protocol.GaugeTypeName:
+		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName:
+			// do nothing
+		case protocol.CounterTypeName, protocol.GaugeTypeName:
+			fallthrough
 		default:
-			errs = multierr.Append(errs, fmt.Errorf("statsd_type is not a supported mapping: %s", eachMap.StatsdType))
+			errs = multierr.Append(errs, fmt.Errorf("statsd_type is not a supported mapping for histogram and timing metrics: %s", eachMap.StatsdType))
 		}
 
 		if eachMap.ObserverType == "" {
@@ -50,9 +53,12 @@ func (c *Config) Validate() error {
 		}
 
 		switch eachMap.ObserverType {
-		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver, protocol.DisableObserver:
+		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver:
+			// do nothing
+		case protocol.DisableObserver:
+			fallthrough
 		default:
-			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
+			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported for histogram and timing metrics: %s", eachMap.ObserverType))
 		}
 
 		if eachMap.ObserverType == protocol.HistogramObserver {
