@@ -4,10 +4,17 @@
 package influxdbexporter
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/influxdata/influxdb-observability/common"
+	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_influxHTTPWriterBatch_optimizeTags(t *testing.T) {
@@ -63,6 +70,74 @@ func Test_influxHTTPWriterBatch_optimizeTags(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			gotTags := batch.optimizeTags(testCase.m)
 			assert.Equal(t, testCase.expectedTags, gotTags)
+		})
+	}
+}
+
+func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
+	for _, testCase := range []struct {
+		name            string
+		payloadMaxLines int
+		payloadMaxBytes int
+
+		expectMultipleRequests bool
+	}{{
+		name:            "default",
+		payloadMaxLines: 10_000,
+		payloadMaxBytes: 10_000_000,
+
+		expectMultipleRequests: false,
+	}, {
+		name:            "limit-lines",
+		payloadMaxLines: 1,
+		payloadMaxBytes: 10_000_000,
+
+		expectMultipleRequests: true,
+	}, {
+		name:            "limit-bytes",
+		payloadMaxLines: 10_000,
+		payloadMaxBytes: 1,
+
+		expectMultipleRequests: true,
+	}} {
+		t.Run(testCase.name, func(t *testing.T) {
+			var httpRequests []*http.Request
+
+			mockHTTPService := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				httpRequests = append(httpRequests, r)
+			}))
+			t.Cleanup(mockHTTPService.Close)
+
+			batch := &influxHTTPWriterBatch{
+				influxHTTPWriter: &influxHTTPWriter{
+					encoderPool: sync.Pool{
+						New: func() interface{} {
+							e := new(lineprotocol.Encoder)
+							e.SetLax(false)
+							e.SetPrecision(lineprotocol.Nanosecond)
+							return e
+						},
+					},
+					httpClient:      &http.Client{},
+					writeURL:        mockHTTPService.URL,
+					payloadMaxLines: testCase.payloadMaxLines,
+					payloadMaxBytes: testCase.payloadMaxBytes,
+					logger:          common.NoopLogger{},
+				},
+			}
+
+			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]interface{}{"f": int64(1)}, time.Unix(1, 0), 0)
+			require.NoError(t, err)
+			err = batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]interface{}{"f": int64(2)}, time.Unix(2, 0), 0)
+			require.NoError(t, err)
+			err = batch.WriteBatch(context.Background())
+			require.NoError(t, err)
+
+			if testCase.expectMultipleRequests {
+				assert.Equal(t, 2, len(httpRequests))
+			} else {
+				assert.Equal(t, 1, len(httpRequests))
+			}
 		})
 	}
 }
