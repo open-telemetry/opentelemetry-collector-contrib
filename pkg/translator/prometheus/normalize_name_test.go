@@ -138,8 +138,6 @@ func TestOtelReceivers(t *testing.T) {
 }
 
 func TestTrimPromSuffixes(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, NormalizeNameGate, true)()
-
 	assert.Equal(t, "active_directory_ds_replication_network_io", TrimPromSuffixes("active_directory_ds_replication_network_io_bytes_total", pmetric.MetricTypeSum, "bytes"))
 	assert.Equal(t, "active_directory_ds_name_cache_hit_rate", TrimPromSuffixes("active_directory_ds_name_cache_hit_rate_percent", pmetric.MetricTypeGauge, "percent"))
 	assert.Equal(t, "active_directory_ds_ldap_bind_last_successful_time", TrimPromSuffixes("active_directory_ds_ldap_bind_last_successful_time_milliseconds", pmetric.MetricTypeGauge, "milliseconds"))
@@ -168,12 +166,6 @@ func TestTrimPromSuffixes(t *testing.T) {
 	assert.Equal(t, "active_directory_ds_replication_object_rate_per_second", TrimPromSuffixes("active_directory_ds_replication_object_rate_per_second", pmetric.MetricTypeGauge, "{objects}/s"))
 	assert.Equal(t, "system_disk_operation_time_seconds", TrimPromSuffixes("system_disk_operation_time_seconds_total", pmetric.MetricTypeSum, "s"))
 
-}
-
-func TestTrimPromSuffixesWithFeatureGateDisabled(t *testing.T) {
-	defer testutil.SetFeatureGateForTest(t, NormalizeNameGate, false)()
-	assert.Equal(t, "apache_current_connections", TrimPromSuffixes("apache_current_connections", pmetric.MetricTypeGauge, "connections"))
-	assert.Equal(t, "apache_requests_total", TrimPromSuffixes("apache_requests_total", pmetric.MetricTypeSum, "1"))
 }
 
 func TestNamespace(t *testing.T) {
@@ -220,7 +212,7 @@ func TestRemoveItem(t *testing.T) {
 
 func TestBuildPromCompliantNameWithNormalize(t *testing.T) {
 
-	defer testutil.SetFeatureGateForTest(t, NormalizeNameGate, true)()
+	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, true)()
 	require.Equal(t, "system_io_bytes_total", BuildPromCompliantName(createCounter("system.io", "By"), ""))
 	require.Equal(t, "system_network_io_bytes_total", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
 	require.Equal(t, "_3_14_digits", BuildPromCompliantName(createGauge("3.14 digits", ""), ""))
@@ -232,7 +224,7 @@ func TestBuildPromCompliantNameWithNormalize(t *testing.T) {
 
 func TestBuildPromCompliantNameWithoutNormalize(t *testing.T) {
 
-	defer testutil.SetFeatureGateForTest(t, NormalizeNameGate, false)()
+	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, false)()
 	require.Equal(t, "system_io", BuildPromCompliantName(createCounter("system.io", "By"), ""))
 	require.Equal(t, "system_network_io", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
 	require.Equal(t, "system_network_I_O", BuildPromCompliantName(createCounter("network (I/O)", "By"), "system"))

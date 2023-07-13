@@ -33,6 +33,7 @@ const (
 
 type transaction struct {
 	isNew          bool
+	trimSuffixes   bool
 	ctx            context.Context
 	families       map[string]*metricFamily
 	mc             scrape.MetricMetadataStore
@@ -53,11 +54,13 @@ func newTransaction(
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings receiver.CreateSettings,
-	obsrecv *obsreport.Receiver) *transaction {
+	obsrecv *obsreport.Receiver,
+	trimSuffixes bool) *transaction {
 	return &transaction{
 		ctx:            ctx,
 		families:       make(map[string]*metricFamily),
 		isNew:          true,
+		trimSuffixes:   trimSuffixes,
 		sink:           sink,
 		metricAdjuster: metricAdjuster,
 		externalLabels: externalLabels,
@@ -200,7 +203,7 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	metrics := ils.Metrics()
 
 	for _, mf := range t.families {
-		mf.appendMetric(metrics)
+		mf.appendMetric(metrics, t.trimSuffixes)
 	}
 
 	return md, nil

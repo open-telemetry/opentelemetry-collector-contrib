@@ -576,7 +576,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
+func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, trimMetricSuffixes bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
@@ -590,6 +590,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex,
+		TrimMetricSuffixes:   trimMetricSuffixes,
 	}, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))

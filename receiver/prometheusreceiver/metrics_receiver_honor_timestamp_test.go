@@ -150,7 +150,7 @@ func TestHonorTimeStampsWithTrue(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, false, "")
 }
 
 // TestHonorTimeStampsWithFalse validates that with honor_timestamp config set to false,
@@ -168,7 +168,7 @@ func TestHonorTimeStampsWithFalse(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.HonorTimestamps = false
 		}

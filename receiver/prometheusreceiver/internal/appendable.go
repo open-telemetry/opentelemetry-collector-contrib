@@ -20,6 +20,7 @@ type appendable struct {
 	sink                 consumer.Metrics
 	metricAdjuster       MetricsAdjuster
 	useStartTimeMetric   bool
+	trimSuffixes         bool
 	startTimeMetricRegex *regexp.Regexp
 	externalLabels       labels.Labels
 
@@ -35,7 +36,8 @@ func NewAppendable(
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
 	useCreatedMetric bool,
-	externalLabels labels.Labels) (storage.Appendable, error) {
+	externalLabels labels.Labels,
+	trimSuffixes bool) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
 		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
@@ -56,9 +58,10 @@ func NewAppendable(
 		startTimeMetricRegex: startTimeMetricRegex,
 		externalLabels:       externalLabels,
 		obsrecv:              obsrecv,
+		trimSuffixes:         trimSuffixes,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes)
 }

@@ -260,6 +260,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
+		r.cfg.TrimMetricSuffixes,
 	)
 	if err != nil {
 		return err

@@ -71,7 +71,7 @@ var perUnitMap = map[string]string{
 	"y":  "year",
 }
 
-var NormalizeNameGate = featuregate.GlobalRegistry().MustRegister(
+var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.translator.prometheus.NormalizeName",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
@@ -90,7 +90,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
-	if NormalizeNameGate.IsEnabled() {
+	if normalizeNameGate.IsEnabled() {
 		return normalizeName(metric, namespace)
 	}
 
@@ -182,10 +182,6 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 //
 // [OpenTelemetry specs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#metric-metadata
 func TrimPromSuffixes(promName string, metricType pmetric.MetricType, unit string) string {
-	if !NormalizeNameGate.IsEnabled() {
-		return promName
-	}
-
 	nameTokens := strings.Split(promName, "_")
 	if len(nameTokens) == 1 {
 		return promName
