@@ -161,16 +161,10 @@ issues:
     - path: fluentforwardreceiver
       linters:
         - exhaustive
-    - path: googlecloudspannerreceiver
-      linters:
-        - exhaustive
     - path: prometheusreceiver
       linters:
         - exhaustive
     - path: deltatorateprocessor
-      linters:
-        - exhaustive
-    - path: groupbyattrsprocessor
       linters:
         - exhaustive
     - path: filterprocessor

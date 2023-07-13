@@ -160,11 +160,15 @@ func createExporterTests() []CreateTest {
 					RetryMaxInterval:     time.Minute,
 					RetryMaxElapsedTime:  time.Hour,
 				},
+<<<<<<< HEAD
 				TracesSettings: newDefaultTracesSettings(),
 				LogsSettings:   newDefaultLogsSettings(),
 				ServerHostSettings: ServerHostSettings{
 					UseHostName: true,
 				},
+=======
+				TracesSettings:  TracesSettings{},
+>>>>>>> datasetexporter-latest
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),

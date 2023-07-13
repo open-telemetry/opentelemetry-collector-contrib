@@ -49,25 +49,27 @@ If the attribute `serverHost` is not specified or empty, then the value from `se
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
-
 ### Example
 
 ```yaml
+<<<<<<< HEAD
 processors:
   attributes:
     - key: serverHost
       action: insert
       from_attribute: container_id
 
+=======
+>>>>>>> datasetexporter-latest
 exporters:
-  dataset:
-    # DataSet API URL
+  dataset/logs:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
     dataset_url: https://app.scalyr.com
     # API Key
     api_key: your_api_key
     buffer:
-      # Send buffer to the API at least every 10s
-      max_lifetime: 10s
+      # Send buffer to the API at least every 5s
+      max_lifetime: 5s
       # Group data based on these attributes
       group_by:
         - container_id
@@ -78,16 +80,26 @@ exporters:
       # If it's not set, use the hostname value
       use_host_name: true
 
+  dataset/traces:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
+    dataset_url: https://app.scalyr.com
+    # API Key
+    api_key: your_api_key
+    buffer:
+      max_lifetime: 15s
+      group_by:
+        - resource_service.instance.id
+
 service:
   pipelines:
     logs:
       receivers: [otlp]
       processors: [batch, attributes]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/logs]
     traces:
       receivers: [otlp]
       processors: [batch]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/traces]
 ```
