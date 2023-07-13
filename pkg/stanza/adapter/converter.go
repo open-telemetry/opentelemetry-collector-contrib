@@ -243,7 +243,10 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	}
 
 	upsertToMap(ent.Attributes, dest.Attributes())
-	upsertToAttributeVal(ent.Body, dest.Body())
+
+	if ent.Body != nil {
+		upsertToAttributeVal(ent.Body, dest.Body())
+	}
 
 	if ent.TraceID != nil {
 		var buffer [16]byte

@@ -3,6 +3,6 @@ type: servicegraph
 status:
   class: processor
   stability:
-    alpha: [traces]
+    deprecated: [traces]
   distributions: [contrib, sumo]
   warnings: []
