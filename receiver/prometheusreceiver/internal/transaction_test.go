@@ -1428,6 +1428,7 @@ func (s *startTimeAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
 				}
 			}
 		}
