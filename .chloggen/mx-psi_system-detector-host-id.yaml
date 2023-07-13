@@ -22,7 +22,7 @@ subtext: |
   
   ```
   resourcedetection:
-    detectors: [ec2, system]
+    detectors: [system]
     system:
       resource_attributes:
         host.id:
