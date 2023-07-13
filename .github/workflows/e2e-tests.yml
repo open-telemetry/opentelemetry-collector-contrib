@@ -20,7 +20,6 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -57,7 +56,6 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
