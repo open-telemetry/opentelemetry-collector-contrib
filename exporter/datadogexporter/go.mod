@@ -261,3 +261,7 @@ replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../../receiver/dockerstatsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
