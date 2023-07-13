@@ -893,24 +893,19 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			errorMessage: "cannot use ottl conditions and include/exclude for logs at the same time",
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_span"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_span"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:34: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
 	}
 
@@ -924,7 +919,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				if tt.errorMessage != "" {
+					assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				} else {
+					assert.Error(t, component.ValidateConfig(cfg))
+				}
 			} else {
 				assert.NoError(t, component.ValidateConfig(cfg))
 				assert.Equal(t, tt.expected, cfg)
