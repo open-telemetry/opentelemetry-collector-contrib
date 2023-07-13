@@ -5,7 +5,6 @@ package loki // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
@@ -212,8 +211,13 @@ func addLogLevelAttributeAndHint(log plog.LogRecord) {
 }
 
 func addHint(log plog.LogRecord) {
-	if value, found := log.Attributes().Get(hintAttributes); found && !strings.Contains(value.AsString(), levelAttributeName) {
-		log.Attributes().PutStr(hintAttributes, fmt.Sprintf("%s,%s", value.AsString(), levelAttributeName))
+	if value, found := log.Attributes().Get(hintAttributes); found {
+		switch value.Type() {
+		case pcommon.ValueTypeSlice:
+			value.Slice().AppendEmpty().SetStr(levelAttributeName)
+		case pcommon.ValueTypeStr:
+			log.Attributes().PutStr(hintAttributes, fmt.Sprintf("%s,%s", value.AsString(), levelAttributeName))
+		}
 	} else {
 		log.Attributes().PutStr(hintAttributes, levelAttributeName)
 	}

@@ -199,6 +199,8 @@ type metadata struct {
 	Metrics map[metricName]metric `mapstructure:"metrics"`
 	// ScopeName of the metrics emitted by the component.
 	ScopeName string `mapstructure:"-"`
+	// ShortFolderName is the shortened folder name of the component, removing class if present
+	ShortFolderName string `mapstructure:"-"`
 }
 
 type templateContext struct {
@@ -218,7 +220,7 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{ScopeName: scopeName(filePath)}
+	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
 	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
 		return md, err
 	}
@@ -228,6 +230,26 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	return md, nil
+}
+
+func shortFolderName(filePath string) string {
+	parentFolder := filepath.Base(filepath.Dir(filePath))
+	if strings.HasSuffix(parentFolder, "connector") {
+		return strings.TrimSuffix(parentFolder, "connector")
+	}
+	if strings.HasSuffix(parentFolder, "exporter") {
+		return strings.TrimSuffix(parentFolder, "exporter")
+	}
+	if strings.HasSuffix(parentFolder, "extension") {
+		return strings.TrimSuffix(parentFolder, "extension")
+	}
+	if strings.HasSuffix(parentFolder, "processor") {
+		return strings.TrimSuffix(parentFolder, "processor")
+	}
+	if strings.HasSuffix(parentFolder, "receiver") {
+		return strings.TrimSuffix(parentFolder, "receiver")
+	}
+	return parentFolder
 }
 
 func scopeName(filePath string) string {

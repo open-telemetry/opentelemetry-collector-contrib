@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -66,7 +67,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -76,10 +77,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		default:
 		}
 
-		ok := scanner.Scan()
+		ok := s.Scan()
 		if !ok {
 			r.eof = true
-			if err := scanner.getError(); err != nil {
+			if err := s.Error(); err != nil {
 				// If Scan returned an error then we are not guaranteed to be at the end of the file
 				r.eof = false
 				r.Errorw("Failed during scan", zap.Error(err))
@@ -87,7 +88,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(scanner.Bytes())
+		token, err := r.encoding.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else {
@@ -105,10 +106,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				return
 			}
 
-			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+			s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 		}
 
-		r.Offset = scanner.Pos()
+		r.Offset = s.Pos()
 	}
 }
 
@@ -199,20 +200,4 @@ func min0(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// mapCopy deep copies the provided attributes map.
-func mapCopy(m map[string]any) map[string]any {
-	newMap := make(map[string]any, len(m))
-	for k, v := range m {
-		switch typedVal := v.(type) {
-		case map[string]any:
-			newMap[k] = mapCopy(typedVal)
-		default:
-			// Assume any other values are safe to directly copy.
-			// Struct types and slice types shouldn't appear in attribute maps from pipelines
-			newMap[k] = v
-		}
-	}
-	return newMap
 }

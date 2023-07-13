@@ -155,7 +155,11 @@ func (s *Supervisor) loadConfig(configFile string) error {
 		return err
 	}
 
-	if err := k.Unmarshal("", &s.config); err != nil {
+	decodeConf := koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	}
+
+	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
 		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
 
@@ -173,8 +177,14 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(s.logger.Sugar())
 
+	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return err
+	}
+
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
+		TLSConfig:      tlsConfig,
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func() {
@@ -218,7 +228,7 @@ func (s *Supervisor) startOpAMP() error {
 			protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
 			protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
 	}
-	err := s.opampClient.SetAgentDescription(s.createAgentDescription())
+	err = s.opampClient.SetAgentDescription(s.createAgentDescription())
 	if err != nil {
 		return err
 	}
