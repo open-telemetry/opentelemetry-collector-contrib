@@ -75,3 +75,9 @@ metrics:
     unit: "By"
     gauge:
       value_type: int
+  k8s.node.allocatable_pods:
+    enabled: true
+    description: How many pods remaining the node can allocate
+    unit: "{pods}"
+    gauge:
+      value_type: int

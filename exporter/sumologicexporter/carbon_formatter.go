@@ -69,6 +69,8 @@ func carbon2NumberRecord(record metricPair, dataPoint pmetric.NumberDataPoint) s
 			dataPoint.IntValue(),
 			dataPoint.Timestamp()/1e9,
 		)
+	case pmetric.NumberDataPointValueTypeEmpty:
+		return ""
 	}
 	return ""
 }
@@ -93,6 +95,8 @@ func carbon2Metric2String(record metricPair) string {
 	// Skip complex metrics
 	case pmetric.MetricTypeHistogram:
 	case pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeExponentialHistogram:
 	}
 
 	return strings.Join(nextLines, "\n")

@@ -4,6 +4,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Distributions | [contrib], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fspanmetrics%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fspanmetrics%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -75,6 +76,7 @@ The following settings can be optionally configured:
 
 - `histogram` (default: `explicit`): Use to configure the type of histogram to record
   calculated from spans duration measurements. Must be either `explicit` or `exponential`.
+  - `disable` (default: `false`): Disable all histogram metrics.
   - `unit` (default: `ms`): The time unit for recording duration measurements.
   calculated from spans duration measurements. One of either: `ms` or `s`.
   - `explicit`:
@@ -90,6 +92,7 @@ The following settings can be optionally configured:
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
+- `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
 - `dimensions_cache_size` (default: `1000`): the size of cache for storing Dimensions to improve collectors memory usage. Must be a positive number. 
 - `aggregation_temporality` (default: `AGGREGATION_TEMPORALITY_CUMULATIVE`): Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
@@ -120,6 +123,7 @@ connectors:
       - name: http.method
         default: GET
       - name: http.status_code
+    exclude_dimensions: ['status.code']
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
     metrics_flush_interval: 15s 
