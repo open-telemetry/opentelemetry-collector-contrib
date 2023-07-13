@@ -155,15 +155,17 @@ func Test_loadMetadata(t *testing.T) {
 						},
 					},
 				},
-				ScopeName: "otelcol",
+				ScopeName:       "otelcol",
+				ShortFolderName: ".",
 			},
 		},
 		{
 			name: "testdata/parent.yaml",
 			want: metadata{
-				Type:      "subcomponent",
-				Parent:    "parentComponent",
-				ScopeName: "otelcol",
+				Type:            "subcomponent",
+				Parent:          "parentComponent",
+				ScopeName:       "otelcol",
+				ShortFolderName: "testdata",
 			},
 		},
 		{
