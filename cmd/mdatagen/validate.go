@@ -77,7 +77,19 @@ func (s *Status) validateStability() error {
 			errs = multierr.Append(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
 		for _, c := range component {
-			if c != "metrics" && c != "traces" && c != "logs" && c != "traces_to_metrics" && c != "metrics_to_metrics" && c != "logs_to_metrics" && c != "extension" {
+			if c != "metrics" &&
+				c != "traces" &&
+				c != "logs" &&
+				c != "traces_to_traces" &&
+				c != "traces_to_metrics" &&
+				c != "traces_to_logs" &&
+				c != "metrics_to_traces" &&
+				c != "metrics_to_metrics" &&
+				c != "metrics_to_logs" &&
+				c != "logs_to_traces" &&
+				c != "logs_to_metrics" &&
+				c != "logs_to_logs" &&
+				c != "extension" {
 				errs = multierr.Append(errs, fmt.Errorf("invalid component: %v", c))
 			}
 		}

@@ -1,0 +1,7 @@
+type: routing
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_traces, metrics_to_metrics, logs_to_logs]
+  distributions: [contrib]

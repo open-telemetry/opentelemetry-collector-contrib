@@ -430,14 +430,6 @@ The number of joins that perform table scans.
 | ---- | ----------- | ------ |
 | kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` |
 
-### mysql.locked_connects
-
-[DEPRECATED] The number of attempts to connect to locked user accounts.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
 ### mysql.mysqlx_worker_threads
 
 The number of worker threads available.

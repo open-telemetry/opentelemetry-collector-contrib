@@ -7,12 +7,15 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
@@ -23,7 +26,7 @@ var (
 )
 
 type httpcheckScraper struct {
-	client   *http.Client
+	clients  []*http.Client
 	cfg      *Config
 	settings component.TelemetrySettings
 	mb       *metadata.MetricsBuilder
@@ -31,42 +34,62 @@ type httpcheckScraper struct {
 
 // start starts the scraper by creating a new HTTP Client on the scraper
 func (h *httpcheckScraper) start(_ context.Context, host component.Host) (err error) {
-	h.client, err = h.cfg.ToClient(host, h.settings)
+	for _, target := range h.cfg.Targets {
+		client, clentErr := target.ToClient(host, h.settings)
+		if clentErr != nil {
+			err = multierr.Append(err, clentErr)
+		}
+		h.clients = append(h.clients, client)
+	}
 	return
 }
 
 // scrape connects to the endpoint and produces metrics based on the response
 func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	if h.client == nil {
+	if h.clients == nil || len(h.clients) == 0 {
 		return pmetric.NewMetrics(), errClientNotInit
 	}
 
-	now := pcommon.NewTimestampFromTime(time.Now())
+	var wg sync.WaitGroup
+	wg.Add(len(h.clients))
+	var mux sync.Mutex
 
-	req, err := http.NewRequestWithContext(ctx, h.cfg.Method, h.cfg.Endpoint, http.NoBody)
-	if err != nil {
-		return pmetric.Metrics{}, err
+	for idx, client := range h.clients {
+		go func(targetClient *http.Client, targetIndex int) {
+			defer wg.Done()
+
+			now := pcommon.NewTimestampFromTime(time.Now())
+
+			req, err := http.NewRequestWithContext(ctx, h.cfg.Targets[targetIndex].Method, h.cfg.Targets[targetIndex].Endpoint, http.NoBody)
+			if err != nil {
+				h.settings.Logger.Error("failed to create request", zap.Error(err))
+				return
+			}
+
+			start := time.Now()
+			resp, err := targetClient.Do(req)
+			mux.Lock()
+			h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Targets[targetIndex].Endpoint)
+
+			statusCode := 0
+			if err != nil {
+				h.mb.RecordHttpcheckErrorDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, err.Error())
+			} else {
+				statusCode = resp.StatusCode
+			}
+
+			for class, intVal := range httpResponseClasses {
+				if statusCode/100 == intVal {
+					h.mb.RecordHttpcheckStatusDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, int64(statusCode), req.Method, class)
+				} else {
+					h.mb.RecordHttpcheckStatusDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint, int64(statusCode), req.Method, class)
+				}
+			}
+			mux.Unlock()
+		}(client, idx)
 	}
 
-	start := time.Now()
-	resp, err := h.client.Do(req)
-	h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Endpoint)
-
-	statusCode := 0
-	if err != nil {
-		h.mb.RecordHttpcheckErrorDataPoint(now, int64(1), h.cfg.Endpoint, err.Error())
-	} else {
-		statusCode = resp.StatusCode
-	}
-
-	for class, intVal := range httpResponseClasses {
-		if statusCode/100 == intVal {
-			h.mb.RecordHttpcheckStatusDataPoint(now, int64(1), h.cfg.Endpoint, int64(statusCode), req.Method, class)
-		} else {
-			h.mb.RecordHttpcheckStatusDataPoint(now, int64(0), h.cfg.Endpoint, int64(statusCode), req.Method, class)
-		}
-
-	}
+	wg.Wait()
 
 	return h.mb.Emit(), nil
 }
