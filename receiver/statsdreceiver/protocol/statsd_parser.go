@@ -168,6 +168,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 		case TimingTypeName, TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+		case CounterTypeName, GaugeTypeName:
 		}
 	}
 	return nil
@@ -258,6 +259,7 @@ func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 		return p.histogramEvents
 	case TimingType:
 		return p.timerEvents
+	case CounterType, GaugeType:
 	}
 	return defaultObserverCategory
 }

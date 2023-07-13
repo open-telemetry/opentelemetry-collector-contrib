@@ -15,12 +15,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 const (
 	serviceNameStaticStatement        = `resource.attributes["service.name"] == "%v"`
-	spanNameStaticStatement           = `name == "%v"`
+	nameStaticStatement               = `name == "%v"`
 	spanKindStaticStatement           = `kind.deprecated_string == "%v"`
 	scopeNameStaticStatement          = `instrumentation_scope.name == "%v"`
 	scopeVersionStaticStatement       = `instrumentation_scope.version == "%v"`
@@ -30,7 +32,7 @@ const (
 	severityTextStaticStatement       = `severity_text == "%v"`
 
 	serviceNameRegexStatement        = `IsMatch(resource.attributes["service.name"], "%v")`
-	spanNameRegexStatement           = `IsMatch(name, "%v")`
+	nameRegexStatement               = `IsMatch(name, "%v")`
 	spanKindRegexStatement           = `IsMatch(kind.deprecated_string, "%v")`
 	scopeNameRegexStatement          = `IsMatch(instrumentation_scope.name, "%v")`
 	scopeVersionRegexStatement       = `IsMatch(instrumentation_scope.version, "%v")`
@@ -81,6 +83,35 @@ func NewLogSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottllog.T
 	}
 
 	return NewBoolExprForLog(statements, StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+}
+
+func NewResourceSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottlresource.TransformContext], error) {
+	statements := make([]string, 0, 2)
+	if mc.Include != nil {
+		// OTTL treats resource attributes as attributes for the resource context.
+		mc.Include.Attributes = mc.Include.Resources
+		mc.Include.Resources = nil
+
+		statement, err := createStatement(*mc.Include)
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, fmt.Sprintf("not (%v)", statement))
+	}
+
+	if mc.Exclude != nil {
+		// OTTL treats resource attributes as attributes for the resource context.
+		mc.Exclude.Attributes = mc.Exclude.Resources
+		mc.Exclude.Resources = nil
+
+		statement, err := createStatement(*mc.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, fmt.Sprintf("%v", statement))
+	}
+
+	return NewBoolExprForResource(statements, StandardResourceFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 }
 
 func NewSpanSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan.TransformContext], error) {
@@ -239,7 +270,7 @@ func createStatementTemplates(matchType filterset.MatchType) (statementTemplates
 	case filterset.Strict:
 		return statementTemplates{
 			serviceNameStatement:  serviceNameStaticStatement,
-			spanNameStatement:     spanNameStaticStatement,
+			spanNameStatement:     nameStaticStatement,
 			spanKindStatement:     spanKindStaticStatement,
 			scopeNameStatement:    scopeNameStaticStatement,
 			scopeVersionStatement: scopeVersionStaticStatement,
@@ -251,7 +282,7 @@ func createStatementTemplates(matchType filterset.MatchType) (statementTemplates
 	case filterset.Regexp:
 		return statementTemplates{
 			serviceNameStatement:  serviceNameRegexStatement,
-			spanNameStatement:     spanNameRegexStatement,
+			spanNameStatement:     nameRegexStatement,
 			spanKindStatement:     spanKindRegexStatement,
 			scopeNameStatement:    scopeNameRegexStatement,
 			scopeVersionStatement: scopeVersionRegexStatement,
@@ -314,4 +345,60 @@ func createSeverityNumberConditions(severityNumberProperties *filterconfig.LogSe
 	}
 	severityNumberCondition := fmt.Sprintf(severityNumberStatement, severityNumberProperties.MatchUndefined, severityNumberProperties.Min)
 	return &severityNumberCondition
+}
+
+func NewMetricSkipExprBridge(include *filterconfig.MetricMatchProperties, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlmetric.TransformContext], error) {
+	statements := make([]string, 0, 2)
+	if include != nil {
+		statement, err := createMetricStatement(*include)
+		if err != nil {
+			return nil, err
+		}
+		if statement != nil {
+			statements = append(statements, fmt.Sprintf("not (%v)", *statement))
+		}
+	}
+
+	if exclude != nil {
+		statement, err := createMetricStatement(*exclude)
+		if err != nil {
+			return nil, err
+		}
+		if statement != nil {
+			statements = append(statements, fmt.Sprintf("%v", *statement))
+		}
+	}
+
+	if len(statements) == 0 {
+		return nil, nil
+	}
+
+	return NewBoolExprForMetric(statements, StandardMetricFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+}
+
+func createMetricStatement(mp filterconfig.MetricMatchProperties) (*string, error) {
+	if mp.MatchType == filterconfig.MetricExpr {
+		if len(mp.Expressions) == 0 {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("expressions configuration cannot be converted to OTTL - see https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#configuration for OTTL configuration")
+	}
+
+	if len(mp.MetricNames) == 0 {
+		return nil, nil
+	}
+
+	metricNameStatement := nameStaticStatement
+	if mp.MatchType == filterconfig.MetricRegexp {
+		metricNameStatement = nameRegexStatement
+	}
+	metricNameConditions := createBasicConditions(metricNameStatement, mp.MetricNames)
+	var format string
+	if len(metricNameConditions) > 1 {
+		format = "(%v)"
+	} else {
+		format = "%v"
+	}
+	statement := fmt.Sprintf(format, strings.Join(metricNameConditions, " or "))
+	return &statement, nil
 }
