@@ -22,6 +22,7 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 	tempDir := t.TempDir()
 	temp, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
+	defer temp.Close()
 
 	_, err = temp.WriteString(fileContents)
 	require.NoError(t, err)
@@ -114,6 +115,7 @@ func TestNew(t *testing.T) {
 			tempDir := t.TempDir()
 			temp, err := os.CreateTemp(tempDir, "")
 			require.NoError(t, err)
+			defer temp.Close()
 
 			_, err = temp.WriteString(string(tokenWithLength(tc.fileSize)))
 			require.NoError(t, err)

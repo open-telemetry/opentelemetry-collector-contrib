@@ -158,11 +158,19 @@ func TestScaperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
-				cfg.Targets[0].Endpoint = tc.endpoint
+				cfg.Targets = []*targetConfig{{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: tc.endpoint,
+					}},
+				}
 			} else {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
-				cfg.Targets[0].Endpoint = ms.URL
+				cfg.Targets = []*targetConfig{{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: ms.URL,
+					}},
+				}
 			}
 			scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))

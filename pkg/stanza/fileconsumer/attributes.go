@@ -8,6 +8,8 @@ import (
 	"runtime"
 
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 )
 
 type FileAttributes struct {
@@ -20,7 +22,7 @@ type FileAttributes struct {
 
 // HeaderAttributesCopy gives a copy of the HeaderAttributes, in order to restrict mutation of the HeaderAttributes.
 func (f *FileAttributes) HeaderAttributesCopy() map[string]any {
-	return mapCopy(f.HeaderAttributes)
+	return util.MapCopy(f.HeaderAttributes)
 }
 
 // resolveFileAttributes resolves file attributes

@@ -20,6 +20,7 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
@@ -73,6 +74,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder

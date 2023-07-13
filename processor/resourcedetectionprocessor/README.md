@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib], [aws], [observiq], [redhat], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresourcedetection%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresourcedetection%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -424,6 +425,17 @@ Queries the OpenShift and Kubernetes API to retrieve the following resource attr
     * cloud.platform
     * cloud.region
     * k8s.cluster.name
+
+The following permissions are required:
+```yaml
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+- apiGroups: ["config.openshift.io"]
+  resources: ["infrastructures"]
+  verbs: ["get", "watch", "list"]
+```
 
 By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
 If TLS is not explicit disabled and no `ca_file` is configured `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` is used.

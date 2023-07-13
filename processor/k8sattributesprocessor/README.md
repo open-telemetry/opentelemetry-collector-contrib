@@ -4,6 +4,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [observiq], [redhat], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -272,3 +273,11 @@ The processor does not support detecting containers from the same pods when runn
 as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 downward API to inject environment variables into the pods and directly use their values
 as tags.
+
+## Timestamp Format
+
+By default, the `k8s.pod.start_time` uses [Time.String()](https://pkg.go.dev/time#Time.String) to format the
+timestamp value. 
+
+The `k8sattr.rfc3339` feature gate can be enabled to format the `k8s.pod.start_time` timestamp value with an RFC3339 
+compliant timestamp. See [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) for more information.

@@ -3,6 +3,10 @@
 
 package config
 
+import (
+	"go.opentelemetry.io/collector/config/configtls"
+)
+
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
 	Server *OpAMPServer
@@ -10,7 +14,8 @@ type Supervisor struct {
 }
 
 type OpAMPServer struct {
-	Endpoint string
+	Endpoint   string
+	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }
 
 type Agent struct {
