@@ -65,6 +65,28 @@ config:
           enabled: true
         container.uptime:
           enabled: true
+        container.blockio.io_service_bytes_recursive:
+          enabled: true
+        container.cpu.utilization:
+          enabled: true
+        container.cpu.percent:
+          enabled: true
+        container.memory.hierarchical_memory_limit:
+          enabled: true
+        container.memory.active_anon:
+          enabled: true
+        container.network.io.usage.tx_bytes:
+          enabled: true
+        container.network.io.usage.tx_packets:
+          enabled: true
+        container.network.io.usage.rx_bytes:
+          enabled: true
+        container.network.io.usage.rx_packets:
+          enabled: true
+        container.cpu.usage.total:
+          enabled: true
+        container.cpu.usage.usermode:
+          enabled: true
     hostmetrics:
       scrapers:
         paging:
