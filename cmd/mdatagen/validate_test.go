@@ -134,8 +134,8 @@ func TestMetricCollision(t *testing.T) {
 			if metricName == "container.cpu.utilization" || metricName == "container.memory.rss" {
 				continue
 			}
-			val, ok := seen[metricName]
-			assert.False(t, ok, fmt.Sprintf("Collision for metric %v in receivers %v and %v \n", metricName, receiver, val))
+			val, exists := seen[metricName]
+			assert.False(t, exists, fmt.Sprintf("Collision for metric %v in receivers %v and %v \n", metricName, receiver, val))
 			seen[metricName] = receiver
 		}
 	}
