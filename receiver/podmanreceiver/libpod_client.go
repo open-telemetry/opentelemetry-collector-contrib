@@ -28,7 +28,7 @@ type libpodClient struct {
 }
 
 func newLibpodClient(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
-	connection, err := newPodmanConnection(logger, cfg.Endpoint, cfg.SSHKey, cfg.SSHPassphrase)
+	connection, err := newPodmanConnection(logger, cfg.Endpoint, cfg.SSHKey, string(cfg.SSHPassphrase))
 	if err != nil {
 		return nil, err
 	}

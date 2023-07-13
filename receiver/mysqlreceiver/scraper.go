@@ -56,10 +56,6 @@ func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 	}
 	m.sqlclient = sqlclient
 
-	if m.config.MetricsBuilderConfig.Metrics.MysqlLockedConnects.Enabled {
-		m.logger.Warn("`mysql.locked_connects` is deprecated and is going to be and removed in `v0.82.0`. Please use `mysql.connection.errors` instead")
-	}
-
 	return nil
 }
 
@@ -196,7 +192,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorAborted))
 		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorLocked))
 
