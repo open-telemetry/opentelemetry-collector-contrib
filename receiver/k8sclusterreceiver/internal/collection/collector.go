@@ -116,7 +116,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *appsv1.Deployment:
 		md = deployment.GetMetrics(dc.settings, o)
 	case *appsv1.ReplicaSet:
-		md = ocsToMetrics(replicaset.GetMetrics(o))
+		md = replicaset.GetMetrics(dc.settings, o)
 	case *appsv1.DaemonSet:
 		md = ocsToMetrics(demonset.GetMetrics(o))
 	case *appsv1.StatefulSet:
