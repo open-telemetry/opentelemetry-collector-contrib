@@ -86,9 +86,7 @@ func TestLoadConfig(t *testing.T) {
 					RetryMaxInterval:     22 * time.Second,
 					RetryMaxElapsedTime:  23 * time.Second,
 				},
-				TracesSettings: TracesSettings{
-					MaxWait: 3 * time.Second,
-				},
+				TracesSettings: TracesSettings{},
 				LogsSettings: LogsSettings{
 					ExportResourceInfo: true,
 				},
@@ -138,7 +136,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:false MaxWait:0s}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; LogsSettings: {ExportResourceInfo:false}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; LogsSettings: {ExportResourceInfo:false}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
@@ -152,10 +150,7 @@ func createExporterTests() []CreateTest {
 					RetryMaxInterval:     time.Minute,
 					RetryMaxElapsedTime:  time.Hour,
 				},
-				TracesSettings: TracesSettings{
-					Aggregate: true,
-					MaxWait:   5 * time.Second,
-				},
+				TracesSettings:  TracesSettings{},
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
