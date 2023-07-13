@@ -23,7 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		id       component.ID
 		expected component.Config
-		errorLen int64
+		errorLen int
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -111,7 +111,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
+			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
+			errorLen: 3,
 		},
 	}
 	for _, tt := range tests {
