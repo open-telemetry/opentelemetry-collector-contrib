@@ -16,7 +16,9 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// The topic of pulsar to consume logs,metrics,traces. (default = "otlp_traces" for traces,
 	// "otlp_metrics" for metrics, "otlp_logs" for logs)
-	Topic string `mapstructure:"topic"`
+	//deprecated
+	Topic  string            `mapstructure:"topic"`
+	Topics map[string]string `mapstructure:"topics"`
 
 	// The Subscription that receiver will be consuming messages from (default "otlp_subscription")
 	Subscription string `mapstructure:"subscription"`

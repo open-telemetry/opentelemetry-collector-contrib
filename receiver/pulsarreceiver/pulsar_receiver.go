@@ -48,9 +48,14 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 		return nil, err
 	}
 
+	topic := config.Topic
+	if _, ok := config.Topics["traces"]; ok {
+		topic = config.Topics["traces"]
+	}
+
 	return &pulsarTracesConsumer{
 		tracesConsumer:  nextConsumer,
-		topic:           config.Topic,
+		topic:           topic,
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
@@ -146,9 +151,14 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 		return nil, err
 	}
 
+	topic := config.Topic
+	if _, ok := config.Topics["metrics"]; ok {
+		topic = config.Topics["metrics"]
+	}
+
 	return &pulsarMetricsConsumer{
 		metricsConsumer: nextConsumer,
-		topic:           config.Topic,
+		topic:           topic,
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
@@ -247,9 +257,14 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		return nil, err
 	}
 
+	topic := config.Topic
+	if _, ok := config.Topics["logs"]; ok {
+		topic = config.Topics["logs"]
+	}
+
 	return &pulsarLogsConsumer{
 		logsConsumer:    nextConsumer,
-		topic:           config.Topic,
+		topic:           topic,
 		cancel:          nil,
 		unmarshaler:     unmarshaler,
 		settings:        set,
