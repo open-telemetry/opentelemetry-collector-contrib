@@ -176,35 +176,30 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 	var supportedCapabilities protobufs.AgentCapabilities
-
 	if c := s.config.Capabilities; c != nil {
-
 		// ReportsEffectiveConfig is set if unspecified or explicitly set to true.
-		if c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
-		} else if c.ReportsEffectiveConfig == nil {
+		if (c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig) || c.ReportsEffectiveConfig == nil {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
 		}
 
 		// ReportsHealth is set if unspecified or explicitly set to true.
-		if c.ReportsHealth != nil && *c.ReportsHealth {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
-		} else if c.ReportsHealth == nil {
+		if (c.ReportsHealth != nil && *c.ReportsHealth) || c.ReportsHealth == nil {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
 		}
 
 		// ReportsOwnMetrics is set if unspecified or explicitly set to true.
-		if c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics {
+		if (c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics) || c.ReportsOwnMetrics == nil {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
-		} else if c.ReportsOwnMetrics == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
+		}
+
+		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
 		}
 
 		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
 	}
-
 	return supportedCapabilities
 }
 
