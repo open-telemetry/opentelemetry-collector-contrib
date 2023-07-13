@@ -5,6 +5,7 @@
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
 | Warnings      | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -292,6 +293,18 @@ transform:
     - context: resource
       statements:
         - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
+``` 
+
+### Move field to attribute
+Set attribute `body` to the value of the log body:
+
+```yaml
+transform:
+  error_mode: ignore
+  log_statements:
+    - context: log
+      statements: 
+        - set(attributes["body"], body)
 ``` 
 
 ### Comnbine two attributes

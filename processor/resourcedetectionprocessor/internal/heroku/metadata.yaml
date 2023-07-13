@@ -1,0 +1,37 @@
+type: resourcedetectionprocessor/heroku
+
+parent: resourcedetection
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    enabled: true
+    type: string
+  heroku.app.id:
+    description: The heroku.app.id
+    enabled: true
+    type: string
+  heroku.app.name:
+    description: The heroku.app.name
+    enabled: true
+    type: string
+  heroku.dyno.id:
+    description: The heroku.dyno.id
+    enabled: true
+    type: string
+  heroku.release.commit:
+    description: The heroku.release.commit
+    enabled: true
+    type: string
+  heroku.release.creation_timestamp:
+    description: The heroku.release.creation_timestamp
+    enabled: true
+    type: string
+  heroku.release.version:
+    description: The heroku.release.version
+    enabled: true
+    type: string
+  service.instance.id:
+    description: The service.instance.id
+    type: string
+    enabled: true

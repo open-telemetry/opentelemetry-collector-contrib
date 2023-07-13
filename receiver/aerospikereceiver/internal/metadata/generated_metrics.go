@@ -1029,7 +1029,7 @@ type metricAerospikeNodeQueryTracked struct {
 func (m *metricAerospikeNodeQueryTracked) init() {
 	m.data.SetName("aerospike.node.query.tracked")
 	m.data.SetDescription("Number of queries tracked by the system.")
-	m.data.SetUnit("")
+	m.data.SetUnit("{queries}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

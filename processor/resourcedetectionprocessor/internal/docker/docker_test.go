@@ -37,7 +37,8 @@ func TestDetect(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("darwin", nil)
 
-	detector := &Detector{provider: md, logger: zap.NewNop()}
+	dcfg := CreateDefaultConfig()
+	detector := &Detector{provider: md, logger: zap.NewNop(), resourceAttributes: dcfg.ResourceAttributes}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)

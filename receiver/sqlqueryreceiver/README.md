@@ -6,6 +6,7 @@
 | Stability     | [alpha]: metrics   |
 |               | [development]: logs   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsqlquery%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsqlquery%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
@@ -111,7 +112,12 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
   to `cumulative`.
 - `description` (optional): the description applied to the metric.
 - `unit` (optional): the units applied to the metric.
-- `static_attributes` (optional): static attributes applied to the metrics
+- `static_attributes` (optional): static attributes applied to the metrics.
+- `start_ts_column` (optional): the name of the column containing the start timestamp, the value of which is applied to 
+  the metric's start timestamp (otherwise the current time is used). Only applies if the metric is of type cumulative 
+  sum.
+- `ts_column` (optional): the name of the column containing the timestamp, the value of which is applied to the 
+  metric's timestamp. This can be current timestamp depending upon the time of last recorded metric's datapoint.
 
 ### Example
 

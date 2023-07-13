@@ -111,10 +111,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlLockedConnectsDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordMysqlLocksDataPoint(ts, "1", AttributeLocks(1))
 
 			defaultMetricsCount++
@@ -508,20 +504,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
 					assert.Equal(t, "full", attrVal.Str())
-				case "mysql.locked_connects":
-					assert.False(t, validatedMetrics["mysql.locked_connects"], "Found a duplicate in the metrics slice: mysql.locked_connects")
-					validatedMetrics["mysql.locked_connects"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "[DEPRECATED] The number of attempts to connect to locked user accounts.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.locks":
 					assert.False(t, validatedMetrics["mysql.locks"], "Found a duplicate in the metrics slice: mysql.locks")
 					validatedMetrics["mysql.locks"] = true
