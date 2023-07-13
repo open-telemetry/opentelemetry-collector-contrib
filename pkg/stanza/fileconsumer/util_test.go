@@ -24,11 +24,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
+func nopEmitFunc(_ context.Context, _ []byte, _ map[string]any) error {
+	return nil
+}
+
 func testEmitFunc(emitChan chan *emitParams) emit.Callback {
-	return func(_ context.Context, token []byte, attrs map[string]any) {
+	return func(_ context.Context, token []byte, attrs map[string]any) error {
 		copied := make([]byte, len(token))
 		copy(copied, token)
 		emitChan <- &emitParams{attrs, copied}
+		return nil
 	}
 }
 
@@ -56,8 +61,9 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 }
 
 func emitOnChan(received chan []byte) emit.Callback {
-	return func(_ context.Context, token []byte, _ map[string]any) {
+	return func(_ context.Context, token []byte, _ map[string]any) error {
 		received <- token
+		return nil
 	}
 }
 

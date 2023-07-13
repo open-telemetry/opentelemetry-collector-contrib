@@ -73,7 +73,7 @@ func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configu
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
 		l, err = logsUnmarshaler.UnmarshalLogs(token)
@@ -85,6 +85,7 @@ func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configu
 			}
 			obsrecv.EndLogsOp(ctx, metadata.Type, l.LogRecordCount(), err)
 		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -104,7 +105,7 @@ func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, conf
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
@@ -116,6 +117,7 @@ func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, conf
 			}
 			obsrecv.EndMetricsOp(ctx, metadata.Type, m.MetricCount(), err)
 		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -135,7 +137,7 @@ func createTracesReceiver(_ context.Context, settings rcvr.CreateSettings, confi
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
 		t, err = tracesUnmarshaler.UnmarshalTraces(token)
@@ -147,6 +149,7 @@ func createTracesReceiver(_ context.Context, settings rcvr.CreateSettings, confi
 			}
 			obsrecv.EndTracesOp(ctx, metadata.Type, t.SpanCount(), err)
 		}
+		return nil
 	})
 	if err != nil {
 		return nil, err

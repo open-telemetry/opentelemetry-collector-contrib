@@ -5,6 +5,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -33,15 +34,14 @@ func (f *Input) Stop() error {
 	return f.fileConsumer.Stop()
 }
 
-func (f *Input) emit(ctx context.Context, token []byte, attrs map[string]any) {
+func (f *Input) emit(ctx context.Context, token []byte, attrs map[string]any) error {
 	if len(token) == 0 {
-		return
+		return nil
 	}
 
 	ent, err := f.NewEntry(f.toBody(token))
 	if err != nil {
-		f.Errorf("create entry: %w", err)
-		return
+		return fmt.Errorf("create entry: %w", err)
 	}
 
 	for k, v := range attrs {
@@ -50,4 +50,5 @@ func (f *Input) emit(ctx context.Context, token []byte, attrs map[string]any) {
 		}
 	}
 	f.Write(ctx, ent)
+	return nil
 }

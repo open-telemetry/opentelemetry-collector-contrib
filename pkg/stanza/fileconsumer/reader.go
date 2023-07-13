@@ -96,8 +96,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		token, err := r.encoding.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
-		} else {
-			r.processFunc(ctx, token, r.FileAttributes)
+		} else if err = r.processFunc(ctx, token, r.FileAttributes); err != nil {
+			r.Errorw("process: %w", zap.Error(err))
 		}
 
 		if r.recreateScanner {
@@ -121,14 +121,14 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 // consumeHeaderLine checks if the given token is a line of the header, and consumes it if it is.
 // The return value dictates whether the given line was a header line or not.
 // If false is returned, the full header can be assumed to be read.
-func (r *Reader) consumeHeaderLine(ctx context.Context, token []byte, _ map[string]any) {
+func (r *Reader) consumeHeaderLine(ctx context.Context, token []byte, _ map[string]any) error {
 	if !r.headerSettings.matchRegex.Match(token) {
 		// Finalize and cleanup the pipeline
 		r.HeaderFinalized = true
 
 		// Stop and drop the header pipeline.
 		if err := r.headerPipeline.Stop(); err != nil {
-			r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+			return fmt.Errorf("stop header pipeline: %w", err)
 		}
 		r.headerPipeline = nil
 		r.headerPipelineOutput = nil
@@ -138,7 +138,7 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, token []byte, _ map[stri
 		r.processFunc = r.emit
 		// Mark that we should recreate the scanner, since we changed the split function
 		r.recreateScanner = true
-		return
+		return nil
 	}
 
 	firstOperator := r.headerPipeline.Operators()[0]
@@ -147,20 +147,19 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, token []byte, _ map[stri
 	newEntry.Body = string(token)
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		r.Errorw("Failed to process header entry", zap.Error(err))
-		return
+		return fmt.Errorf("process header entry: %w", err)
 	}
 
 	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
 	if err != nil {
-		r.Errorw("while waiting for header entry", zap.Error(err))
-		return
+		return fmt.Errorf("wait for header entry: %w", err)
 	}
 
 	// Copy resultant attributes over current set of attributes (upsert)
 	for k, v := range ent.Attributes {
 		r.FileAttributes[k] = v
 	}
+	return nil
 }
 
 // Close will close the file
