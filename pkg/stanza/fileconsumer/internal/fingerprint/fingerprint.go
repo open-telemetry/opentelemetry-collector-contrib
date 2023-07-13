@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+package fingerprint // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 
 import (
 	"bytes"
@@ -11,24 +11,18 @@ import (
 	"os"
 )
 
-// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
-const DefaultFingerprintSize = 1000 // bytes
+const DefaultSize = 1000 // bytes
 
-// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
-const MinFingerprintSize = 16 // bytes
+const MinSize = 16 // bytes
 
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
-//
-// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
 type Fingerprint struct {
 	FirstBytes []byte
 }
 
-// NewFingerprint creates a new fingerprint from an open file
-//
-// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
-func NewFingerprint(file *os.File, size int) (*Fingerprint, error) {
+// New creates a new fingerprint from an open file
+func New(file *os.File, size int) (*Fingerprint, error) {
 	buf := make([]byte, size)
 
 	n, err := file.ReadAt(buf, 0)

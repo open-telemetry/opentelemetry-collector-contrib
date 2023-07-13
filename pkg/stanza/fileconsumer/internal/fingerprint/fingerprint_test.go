@@ -1,19 +1,18 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package fileconsumer
+package fingerprint
 
 import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
+func TestNewDoesNotModifyOffset(t *testing.T) {
 	fingerprint := "this is the fingerprint"
 	next := "this comes after the fingerprint and is substantially longer than the fingerprint"
 	extra := "fin"
@@ -21,15 +20,12 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	fileContents := fmt.Sprintf("%s%s%s\n", fingerprint, next, extra)
 
 	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, _ := buildTestManager(t, cfg)
+	temp, err := os.CreateTemp(tempDir, "")
+	require.NoError(t, err)
+	defer temp.Close()
 
-	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
-
-	// Create a new file
-	temp := openTemp(t, tempDir)
-	writeString(t, temp, fileContents)
+	_, err = temp.WriteString(fileContents)
+	require.NoError(t, err)
 
 	// Validate that the file is actually the expected size after writing
 	info, err := temp.Stat()
@@ -40,7 +36,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	_, err = temp.Seek(0, 0)
 	require.NoError(t, err)
 
-	fp, err := operator.readerFactory.newFingerprint(temp)
+	fp, err := New(temp, len(fingerprint))
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
@@ -55,7 +51,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	require.Equal(t, fileContents[:len(allButExtra)], string(allButExtra))
 }
 
-func TestNewFingerprint(t *testing.T) {
+func TestNew(t *testing.T) {
 	cases := []struct {
 		name            string
 		fingerprintSize int
@@ -64,39 +60,39 @@ func TestNewFingerprint(t *testing.T) {
 	}{
 		{
 			name:            "defaultExactFileSize",
-			fingerprintSize: DefaultFingerprintSize,
-			fileSize:        DefaultFingerprintSize,
-			expectedLen:     DefaultFingerprintSize,
+			fingerprintSize: DefaultSize,
+			fileSize:        DefaultSize,
+			expectedLen:     DefaultSize,
 		},
 		{
 			name:            "defaultWithFileHalfOfFingerprint",
-			fingerprintSize: DefaultFingerprintSize,
-			fileSize:        DefaultFingerprintSize / 2,
-			expectedLen:     DefaultFingerprintSize / 2,
+			fingerprintSize: DefaultSize,
+			fileSize:        DefaultSize / 2,
+			expectedLen:     DefaultSize / 2,
 		},
 		{
 			name:            "defaultWithFileTwiceFingerprint",
-			fingerprintSize: DefaultFingerprintSize,
-			fileSize:        DefaultFingerprintSize * 2,
-			expectedLen:     DefaultFingerprintSize,
+			fingerprintSize: DefaultSize,
+			fileSize:        DefaultSize * 2,
+			expectedLen:     DefaultSize,
 		},
 		{
 			name:            "minFingerprintExactFileSize",
-			fingerprintSize: MinFingerprintSize,
-			fileSize:        MinFingerprintSize,
-			expectedLen:     MinFingerprintSize,
+			fingerprintSize: MinSize,
+			fileSize:        MinSize,
+			expectedLen:     MinSize,
 		},
 		{
 			name:            "minFingerprintWithSmallerFileSize",
-			fingerprintSize: MinFingerprintSize,
-			fileSize:        MinFingerprintSize / 2,
-			expectedLen:     MinFingerprintSize / 2,
+			fingerprintSize: MinSize,
+			fileSize:        MinSize / 2,
+			expectedLen:     MinSize / 2,
 		},
 		{
 			name:            "minFingerprintWithLargerFileSize",
-			fingerprintSize: MinFingerprintSize,
-			fileSize:        DefaultFingerprintSize,
-			expectedLen:     MinFingerprintSize,
+			fingerprintSize: MinSize,
+			fileSize:        DefaultSize,
+			expectedLen:     MinSize,
 		},
 		{
 			name:            "largeFingerprintSmallFile",
@@ -117,22 +113,19 @@ func TestNewFingerprint(t *testing.T) {
 			t.Parallel()
 
 			tempDir := t.TempDir()
-			cfg := NewConfig().includeDir(tempDir)
-			cfg.StartAt = "beginning"
-			operator, _ := buildTestManager(t, cfg)
+			temp, err := os.CreateTemp(tempDir, "")
+			require.NoError(t, err)
+			defer temp.Close()
 
-			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
-
-			// Create a new file
-			temp := openTemp(t, tempDir)
-			writeString(t, temp, string(tokenWithLength(tc.fileSize)))
+			_, err = temp.WriteString(string(tokenWithLength(tc.fileSize)))
+			require.NoError(t, err)
 
 			// Validate that the file is actually the expected size after writing
 			info, err := temp.Stat()
 			require.NoError(t, err)
 			require.Equal(t, tc.fileSize, int(info.Size()))
 
-			fp, err := operator.readerFactory.newFingerprint(temp)
+			fp, err := New(temp, tc.fingerprintSize)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedLen, len(fp.FirstBytes))
@@ -146,8 +139,8 @@ func TestFingerprintCopy(t *testing.T) {
 		"",
 		"hello",
 		"asdfsfaddsfas",
-		string(tokenWithLength(MinFingerprintSize)),
-		string(tokenWithLength(DefaultFingerprintSize)),
+		string(tokenWithLength(MinSize)),
+		string(tokenWithLength(DefaultSize)),
 		string(tokenWithLength(1234)),
 	}
 
@@ -174,43 +167,23 @@ func TestFingerprintCopy(t *testing.T) {
 }
 
 func TestFingerprintStartsWith(t *testing.T) {
-	cases := []struct {
-		name string
-		a    string
-		b    string
-	}{
-		{
-			name: "same",
-			a:    "hello",
-			b:    "hello",
-		},
-		{
-			name: "aStartsWithB",
-			a:    "helloworld",
-			b:    "hello",
-		},
-		{
-			name: "bStartsWithA",
-			a:    "hello",
-			b:    "helloworld",
-		},
-		{
-			name: "neither",
-			a:    "hello",
-			b:    "world",
-		},
-	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			fa := &Fingerprint{FirstBytes: []byte(tc.a)}
-			fb := &Fingerprint{FirstBytes: []byte(tc.b)}
+	empty := &Fingerprint{FirstBytes: []byte("")}
+	hello := &Fingerprint{FirstBytes: []byte("hello")}
+	world := &Fingerprint{FirstBytes: []byte("world")}
+	helloworld := &Fingerprint{FirstBytes: []byte("helloworld")}
 
-			require.Equal(t, strings.HasPrefix(tc.a, tc.b), fa.StartsWith(fb))
-			require.Equal(t, strings.HasPrefix(tc.b, tc.a), fb.StartsWith(fa))
-		})
-	}
+	// Empty never matches
+	require.False(t, hello.StartsWith(empty))
+	require.False(t, empty.StartsWith(hello))
+
+	require.True(t, hello.StartsWith(hello))
+	require.False(t, hello.StartsWith(helloworld))
+
+	require.True(t, helloworld.StartsWith(hello))
+	require.True(t, helloworld.StartsWith(helloworld))
+	require.False(t, helloworld.StartsWith(world))
+
 }
 
 // Generates a file filled with many random bytes, then
@@ -222,15 +195,10 @@ func TestFingerprintStartsWith(t *testing.T) {
 // a possible state of the same file at a previous time.
 func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	r := rand.New(rand.NewSource(112358))
+	fingerprintSize := 10
+	fileLength := 12 * fingerprintSize
 
 	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, _ := buildTestManager(t, cfg)
-
-	operator.readerFactory.readerConfig.fingerprintSize *= 10
-
-	fileLength := 12 * operator.readerFactory.readerConfig.fingerprintSize
 
 	// Make a []byte we can write one at a time
 	content := make([]byte, fileLength)
@@ -253,7 +221,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	_, err = fullFile.Write(content)
 	require.NoError(t, err)
 
-	fff, err := operator.readerFactory.newFingerprint(fullFile)
+	fff, err := New(fullFile, fingerprintSize)
 	require.NoError(t, err)
 
 	partialFile, err := os.CreateTemp(tempDir, "")
@@ -271,11 +239,18 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 		_, err = partialFile.Write(content[i:i])
 		require.NoError(t, err)
 
-		pff, err := operator.readerFactory.newFingerprint(partialFile)
+		pff, err := New(partialFile, fingerprintSize)
 		require.NoError(t, err)
 
 		require.True(t, fff.StartsWith(pff))
 	}
 }
 
-// TODO TestConfig (config_test.go) - sets defaults, errors appropriately, etc
+func tokenWithLength(length int) []byte {
+	charset := "abcdefghijklmnopqrstuvwxyz"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return b
+}
