@@ -42,6 +42,9 @@ type Config struct {
 
 	// CreatedMetric allows customizing creation of _created metrics
 	CreatedMetric *CreatedMetric `mapstructure:"export_created_metric,omitempty"`
+
+	// AddMetricSuffixes, controls whether unit and type suffixes are added to metrics on export
+	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes,omitempty"`
 }
 
 type CreatedMetric struct {
