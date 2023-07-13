@@ -93,7 +93,7 @@ func generateTEvent2Raw() *add_events.Event {
 			"status_message": "",
 			"resource_name":  "",
 			"resource_type":  "process",
-			"attrServerHost": "",
+			"serverHost":     "",
 		},
 	}
 }
@@ -124,7 +124,7 @@ func generateTEvent3Raw() *add_events.Event {
 			"status_message": "",
 			"resource_name":  "",
 			"resource_type":  "process",
-			"attrServerHost": "valServerHost",
+			"serverHost":     "valServerHost",
 		},
 	}
 }
@@ -211,11 +211,10 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 
 func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T) {
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
-	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("attrServerHost", "")
-	traces.ResourceSpans().At(1).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("attrServerHost", "valServerHost")
+	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("serverHost", "")
+	traces.ResourceSpans().At(1).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("serverHost", "valServerHost")
 	was := buildEventsFromTraces(traces, ServerHostSettings{
-		ServerHost:    testServerHost,
-		UseAttributes: []string{"attrServerHost"},
+		ServerHost: testServerHost,
 	})
 
 	expected := []*add_events.EventBundle{

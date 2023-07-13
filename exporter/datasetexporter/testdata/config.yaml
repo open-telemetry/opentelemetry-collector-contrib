@@ -30,9 +30,6 @@ dataset/full:
   server_host:
     use_host_name: false
     server_host: "server-host"
-    use_attributes:
-      - attr1
-      - attr2
   retry_on_failure:
     enabled: true
     initial_interval: 11

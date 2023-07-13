@@ -24,6 +24,14 @@ See the [Getting Started](https://app.scalyr.com/help/getting-started) guide.
 
 If you do not want to specify `api_key` in the file, you can use the [builtin functionality](https://opentelemetry.io/docs/collector/configuration/#configuration-environment-variables) and use `api_key: ${env:DATASET_API_KEY}`.
 
+### Server Host Settings
+
+Specifying server host is important for the correct functionality. DataSet expects that 
+the value will be set in the `serverHost` attribute. You can use [attributesprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor),
+if you have stored the value in some different attribute, or `server_host` settings.
+
+If the attribute `serverHost` is not specified or empty, then the value from `server_host.server_host` is used. If it's also not empty, then as fallback the host name can be used.
+
 ### Optional Settings
 
 - `buffer`:
@@ -35,9 +43,8 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 - `logs`:
   - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
 - `server_host`:
-  - `use_attributes` (default = []): Use the value in the specified attributes as server host in events.
-  - `server_host` (default = ''): Use the specified value as server host in events.
-  - `use_host_name` (default = true): Use the `hostname` of the node as server host used in events.
+  - `server_host` (default = ''): Use the specified value as server host for the event.
+  - `use_host_name` (default = true): Use the `hostname` of the node as server host used for the event.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
@@ -46,6 +53,11 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 ### Example
 
 ```yaml
+processors:
+  attributes:
+    - key: serverHost
+      action: insert
+      from_attribute: container_id
 
 exporters:
   dataset:
@@ -58,14 +70,9 @@ exporters:
       max_lifetime: 10s
       # Group data based on these attributes
       group_by:
-        - attributes.container_id
+        - container_id
     server_host:
-      # Search for the server host in attributes.
-      # Use the value from server and then from hostname
-      use_attributes:
-        - server
-        - hostname
-      # If these attributes are not specified or empty,
+      # If these attribute serverHost is not specified or empty,
       # use the value from the env variable SERVER_HOST
       use_host: ${env:SERVER_HOST}
       # If it's not set, use the hostname value
@@ -75,7 +82,7 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [batch, attributes]
       # add dataset among your exporters
       exporters: [dataset]
     traces:

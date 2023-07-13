@@ -120,13 +120,11 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 }
 
 func inferServerHost(attrs map[string]interface{}, hostSettings ServerHostSettings) string {
-	for _, key := range hostSettings.UseAttributes {
-		val, ok := attrs[key]
-		if ok {
-			host := fmt.Sprintf("%v", val)
-			if len(host) > 0 {
-				return host
-			}
+	val, ok := attrs[add_events.AttrServerHost]
+	if ok {
+		host := fmt.Sprintf("%v", val)
+		if len(host) > 0 {
+			return host
 		}
 	}
 

@@ -5,7 +5,6 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
-	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"time"
 
@@ -81,17 +80,15 @@ func newDefaultBufferSettings() BufferSettings {
 }
 
 type ServerHostSettings struct {
-	UseHostName   bool     `mapstructure:"use_host_name"`
-	ServerHost    string   `mapstructure:"server_host"`
-	UseAttributes []string `mapstructure:"use_attributes"`
+	UseHostName bool   `mapstructure:"use_host_name"`
+	ServerHost  string `mapstructure:"server_host"`
 }
 
 // newDefaultBufferSettings returns the default settings for BufferSettings.
 func newDefaultServerHostSettings() ServerHostSettings {
 	return ServerHostSettings{
-		UseHostName:   true,
-		ServerHost:    "",
-		UseAttributes: []string{},
+		UseHostName: true,
+		ServerHost:  "",
 	}
 }
 
@@ -149,11 +146,6 @@ func (c *Config) convert() (*ExporterConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("config is not valid: %w", err)
 	}
-	// update ServerHostSettings attributes
-	c.ServerHostSettings.UseAttributes = append(
-		c.ServerHostSettings.UseAttributes,
-		[]string{add_events.AttrOrigServerHost, add_events.AttrServerHost}...,
-	)
 
 	return &ExporterConfig{
 			datasetConfig: &datasetConfig.DataSetConfig{

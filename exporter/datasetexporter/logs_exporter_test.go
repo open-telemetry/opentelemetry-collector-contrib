@@ -417,8 +417,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		LogsSettings:   newDefaultLogsSettings(),
 		TracesSettings: newDefaultTracesSettings(),
 		ServerHostSettings: ServerHostSettings{
-			ServerHost:    testServerHost,
-			UseAttributes: []string{"attrServerHost"},
+			ServerHost: testServerHost,
 		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
@@ -428,7 +427,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	lr1 := testdata.GenerateLogsOneLogRecord()
 	lr2 := testdata.GenerateLogsOneLogRecord()
 	// set attribute for the hostname
-	lr2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("attrServerHost", "serverHostFromAttribute")
+	lr2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(add_events.AttrServerHost, "serverHostFromAttribute")
 
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty()
@@ -467,7 +466,6 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Ts:     testLEventReq.Ts,
 						Attrs: map[string]interface{}{
 							add_events.AttrOrigServerHost: "serverHostFromAttribute",
-							"attrServerHost":              "serverHostFromAttribute",
 							"app":                         "server",
 							"instance_num":                float64(1),
 							"dropped_attributes_count":    float64(1),

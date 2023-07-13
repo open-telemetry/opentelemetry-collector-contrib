@@ -108,9 +108,8 @@ func TestConfigString(t *testing.T) {
 		},
 		TracesSettings: TracesSettings{},
 		ServerHostSettings: ServerHostSettings{
-			ServerHost:    "foo-bar",
-			UseHostName:   false,
-			UseAttributes: []string{"aaa", "bbb"},
+			ServerHost:  "foo-bar",
+			UseHostName: false,
 		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
@@ -118,7 +117,7 @@ func TestConfigString(t *testing.T) {
 	}
 
 	assert.Equal(t,
-		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; LogsSettings: {ExportResourceInfo:false ExportScopeInfo:false DecomposeComplexMessageField:false}; TracesSettings: {}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar UseAttributes:[aaa bbb]}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; LogsSettings: {ExportResourceInfo:false ExportScopeInfo:false DecomposeComplexMessageField:false}; TracesSettings: {}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 		config.String(),
 	)
 }
