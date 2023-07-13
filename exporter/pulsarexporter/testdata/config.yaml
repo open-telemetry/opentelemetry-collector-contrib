@@ -1,5 +1,9 @@
 pulsar:
   topic: spans
+  topics:
+    metrics: otel_metrics
+    traces: otel_traces
+    logs: otel_logs
   endpoint: pulsar://localhost:6650
   encoding: otlp-spans
   tls_trust_certs_file_path: ca.pem

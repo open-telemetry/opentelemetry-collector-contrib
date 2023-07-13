@@ -150,11 +150,15 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 	if err != nil {
 		return nil, err
 	}
+	topic := config.Topic
+	if _, ok := config.Topics["metrics"]; ok {
+		topic = config.Topics["metrics"]
+	}
 
 	return &PulsarMetricsProducer{
 		client:    client,
 		producer:  producer,
-		topic:     config.Topic,
+		topic:     topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil
@@ -170,10 +174,14 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	if err != nil {
 		return nil, err
 	}
+	topic := config.Topic
+	if _, ok := config.Topics["traces"]; ok {
+		topic = config.Topics["traces"]
+	}
 	return &PulsarTracesProducer{
 		client:    client,
 		producer:  producer,
-		topic:     config.Topic,
+		topic:     topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil
@@ -188,11 +196,15 @@ func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[
 	if err != nil {
 		return nil, err
 	}
+	topic := config.Topic
+	if _, ok := config.Topics["logs"]; ok {
+		topic = config.Topics["logs"]
+	}
 
 	return &PulsarLogsProducer{
 		client:    client,
 		producer:  producer,
-		topic:     config.Topic,
+		topic:     topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil

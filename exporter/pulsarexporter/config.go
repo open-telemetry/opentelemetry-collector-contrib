@@ -22,7 +22,8 @@ type Config struct {
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
 	Endpoint string `mapstructure:"endpoint"`
 	// The name of the pulsar topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
-	Topic string `mapstructure:"topic"`
+	Topic  string            `mapstructure:"topic"`
+	Topics map[string]string `mapstructure:"topics"`
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 	// Producer configuration of the Pulsar producer

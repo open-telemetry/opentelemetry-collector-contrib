@@ -64,6 +64,7 @@ func createDefaultConfig() component.Config {
 		Endpoint:        defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:                   "",
+		Topics:                  make(map[string]string),
 		Encoding:                defaultEncoding,
 		Authentication:          Authentication{},
 		MaxConnectionsPerBroker: 1,

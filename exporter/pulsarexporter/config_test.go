@@ -24,6 +24,10 @@ func TestLoadConfig(t *testing.T) {
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
+	topics := make(map[string]string)
+	topics["metrics"] = "otel_metrics"
+	topics["traces"] = "otel_traces"
+	topics["logs"] = "otel_logs"
 
 	tests := []struct {
 		id       component.ID
@@ -50,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Endpoint:                "pulsar://localhost:6650",
 				Topic:                   "spans",
+				Topics:                  topics,
 				Encoding:                "otlp-spans",
 				TLSTrustCertsFilePath:   "ca.pem",
 				Authentication:          Authentication{TLS: &TLS{CertFile: "cert.pem", KeyFile: "key.pem"}},
