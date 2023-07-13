@@ -154,7 +154,6 @@ func createExporterTests() []CreateTest {
 					RetryMaxElapsedTime:  time.Hour,
 				},
 				TracesSettings:  TracesSettings{},
-				LogsSettings:    newDefaultLogsSettings(),
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
