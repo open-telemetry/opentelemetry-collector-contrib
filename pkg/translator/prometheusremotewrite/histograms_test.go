@@ -583,24 +583,16 @@ func validateNativeHistogramCount(t *testing.T, h prompb.Histogram) {
 	want := h.Count.(*prompb.Histogram_CountInt).CountInt
 	var (
 		actualCount uint64
-		prevCount   int64
+		prevBucket  int64
 	)
-	for i, delta := range h.PositiveDeltas {
-		if i == 0 {
-			actualCount += uint64(delta)
-		} else {
-			actualCount += uint64(prevCount + delta)
-		}
-		prevCount += delta
+	for _, delta := range h.PositiveDeltas {
+		prevBucket += delta
+		actualCount += uint64(prevBucket)
 	}
-	prevCount = 0
-	for i, delta := range h.NegativeDeltas {
-		if i == 0 {
-			actualCount += uint64(delta)
-		} else {
-			actualCount += uint64(prevCount + delta)
-		}
-		prevCount += delta
+	prevBucket = 0
+	for _, delta := range h.NegativeDeltas {
+		prevBucket += delta
+		actualCount += uint64(prevBucket)
 	}
 	assert.Equal(t, want, actualCount, "native histogram count mismatch")
 }
