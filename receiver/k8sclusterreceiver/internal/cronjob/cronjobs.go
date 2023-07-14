@@ -30,8 +30,12 @@ func GetMetrics(set receiver.CreateSettings, cj *batchv1.CronJob) pmetric.Metric
 
 	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
-	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(cj.Namespace), imetadataphase.WithK8sCronjobUID(string(cj.UID)), imetadataphase.WithK8sCronjobName(cj.Name), imetadataphase.WithOpencensusResourcetype("k8s"))
-	return metrics
+	return mbphase.Emit(
+		imetadataphase.WithK8sNamespaceName(cj.Namespace),
+		imetadataphase.WithK8sCronjobUID(string(cj.UID)),
+		imetadataphase.WithK8sCronjobName(cj.Name),
+		imetadataphase.WithOpencensusResourcetype("k8s"),
+	)
 }
 
 func GetMetricsBeta(set receiver.CreateSettings, cj *batchv1beta1.CronJob) pmetric.Metrics {
@@ -40,8 +44,13 @@ func GetMetricsBeta(set receiver.CreateSettings, cj *batchv1beta1.CronJob) pmetr
 
 	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
-	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(cj.Namespace), imetadataphase.WithK8sCronjobUID(string(cj.UID)), imetadataphase.WithK8sCronjobName(cj.Name), imetadataphase.WithOpencensusResourcetype("k8s"))
-	return metrics
+	return mbphase.Emit(
+		imetadataphase.WithK8sNamespaceName(cj.Namespace),
+		imetadataphase.WithK8sCronjobUID(string(cj.UID)),
+		imetadataphase.WithK8sCronjobName(cj.Name),
+		imetadataphase.WithOpencensusResourcetype("k8s"),
+	)
+
 }
 
 func GetMetadata(cj *batchv1.CronJob) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
