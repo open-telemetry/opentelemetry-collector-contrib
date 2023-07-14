@@ -8,6 +8,6 @@ import (
 
 const (
 	Type                     = "exceptions"
-	TracesToMetricsStability = component.StabilityLevelAlpha
-	TracesToLogsStability    = component.StabilityLevelAlpha
+	TracesToMetricsStability = component.StabilityLevelDevelopment
+	TracesToLogsStability    = component.StabilityLevelDevelopment
 )
