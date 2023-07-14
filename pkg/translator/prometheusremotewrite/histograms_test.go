@@ -536,7 +536,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			},
 			wantNativeHist: func() prompb.Histogram {
 				return prompb.Histogram{
-					Count:          &prompb.Histogram_CountInt{CountInt: 4},
+					Count:          &prompb.Histogram_CountInt{CountInt: 6},
 					Sum:            10.1,
 					Schema:         8,
 					ZeroThreshold:  defaultZeroThreshold,
@@ -552,7 +552,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validateHistogramCount(t, tt.exponentialHist()) // Sanity check.
+			validateExponentialHistogramCount(t, tt.exponentialHist()) // Sanity check.
 			got, err := exponentialToNativeHistogram(tt.exponentialHist())
 			if tt.wantErrMessage != "" {
 				assert.ErrorContains(t, err, tt.wantErrMessage)
@@ -566,22 +566,43 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 	}
 }
 
-func validateHistogramCount(t *testing.T, h pmetric.ExponentialHistogramDataPoint) {
-	require.Equal(t, h.Count(), uint64(h.Positive().BucketCounts().Len())+uint64(h.Negative().BucketCounts().Len()))
+func validateExponentialHistogramCount(t *testing.T, h pmetric.ExponentialHistogramDataPoint) {
+	actualCount := uint64(0)
+	for _, bucket := range h.Positive().BucketCounts().AsRaw() {
+		actualCount += bucket
+	}
+	for _, bucket := range h.Negative().BucketCounts().AsRaw() {
+		actualCount += bucket
+	}
+	require.Equal(t, h.Count(), actualCount, "exponential histogram count mismatch")
 }
 
 func validateNativeHistogramCount(t *testing.T, h prompb.Histogram) {
 	require.NotNil(t, h.Count)
 	require.IsType(t, &prompb.Histogram_CountInt{}, h.Count)
 	want := h.Count.(*prompb.Histogram_CountInt).CountInt
-	actualCount := uint64(0)
-	for _, span := range h.PositiveSpans {
-		actualCount += uint64(span.Length)
+	var (
+		actualCount uint64
+		prevCount   int64
+	)
+	for i, delta := range h.PositiveDeltas {
+		if i == 0 {
+			actualCount += uint64(delta)
+		} else {
+			actualCount += uint64(prevCount + delta)
+		}
+		prevCount += delta
 	}
-	for _, span := range h.NegativeSpans {
-		actualCount += uint64(span.Length)
+	prevCount = 0
+	for i, delta := range h.NegativeDeltas {
+		if i == 0 {
+			actualCount += uint64(delta)
+		} else {
+			actualCount += uint64(prevCount + delta)
+		}
+		prevCount += delta
 	}
-	assert.Equal(t, want, actualCount)
+	assert.Equal(t, want, actualCount, "native histogram count mismatch")
 }
 
 func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {

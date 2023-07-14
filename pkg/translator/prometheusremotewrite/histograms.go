@@ -96,11 +96,7 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		if p.HasSum() {
 			h.Sum = p.Sum()
 		}
-		if scaleDown > 0 {
-			h.Count = &prompb.Histogram_CountInt{CountInt: nativeHistogramBucketCount(&h)}
-		} else {
-			h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
-		}
+		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
 	}
 	return h, nil
 }
