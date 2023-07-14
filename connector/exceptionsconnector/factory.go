@@ -38,8 +38,8 @@ func NewFactory() connector.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Dimensions: []Dimension{
-			{Name: "exception.type"},
-			{Name: "exception.message"},
+			{Name: exceptionTypeKey},
+			{Name: exceptionMessageKey},
 		},
 	}
 }

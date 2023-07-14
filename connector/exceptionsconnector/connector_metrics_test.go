@@ -132,8 +132,8 @@ func newTestMetricsConnector(t *testing.T, mcon consumer.Metrics, defaultNullVal
 			{notInSpanAttrName1, nil},
 
 			// Exception specific dimensions
-			{exceptionTypeAttrName, nil},
-			{exceptionMessageAttrName, nil},
+			{exceptionTypeKey, nil},
+			{exceptionMessageKey, nil},
 		},
 	}
 	c, err := newMetricsConnector(logger, cfg)
@@ -194,16 +194,16 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pcommon.Value{
-		stringAttrName:           pcommon.NewValueStr("stringAttrValue"),
-		intAttrName:              pcommon.NewValueInt(99),
-		doubleAttrName:           pcommon.NewValueDouble(99.99),
-		boolAttrName:             pcommon.NewValueBool(true),
-		nullAttrName:             pcommon.NewValueEmpty(),
-		arrayAttrName:            pcommon.NewValueSlice(),
-		mapAttrName:              pcommon.NewValueMap(),
-		notInSpanAttrName0:       pcommon.NewValueStr("defaultNotInSpanAttrVal"),
-		exceptionTypeAttrName:    pcommon.NewValueStr("Exception"),
-		exceptionMessageAttrName: pcommon.NewValueStr("Exception message"),
+		stringAttrName:      pcommon.NewValueStr("stringAttrValue"),
+		intAttrName:         pcommon.NewValueInt(99),
+		doubleAttrName:      pcommon.NewValueDouble(99.99),
+		boolAttrName:        pcommon.NewValueBool(true),
+		nullAttrName:        pcommon.NewValueEmpty(),
+		arrayAttrName:       pcommon.NewValueSlice(),
+		mapAttrName:         pcommon.NewValueMap(),
+		notInSpanAttrName0:  pcommon.NewValueStr("defaultNotInSpanAttrVal"),
+		exceptionTypeKey:    pcommon.NewValueStr("Exception"),
+		exceptionMessageKey: pcommon.NewValueStr("Exception message"),
 	}
 	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {

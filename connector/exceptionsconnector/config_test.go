@@ -43,8 +43,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				Dimensions: []Dimension{
-					{Name: "exception.type"},
-					{Name: "exception.message"},
+					{Name: exceptionTypeKey},
+					{Name: exceptionMessageKey},
 				},
 			},
 		},

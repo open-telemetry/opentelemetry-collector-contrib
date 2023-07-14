@@ -9,17 +9,15 @@ import (
 )
 
 const (
-	stringAttrName           = "stringAttrName"
-	intAttrName              = "intAttrName"
-	doubleAttrName           = "doubleAttrName"
-	boolAttrName             = "boolAttrName"
-	nullAttrName             = "nullAttrName"
-	mapAttrName              = "mapAttrName"
-	arrayAttrName            = "arrayAttrName"
-	notInSpanAttrName0       = "shouldBeInMetric"
-	notInSpanAttrName1       = "shouldNotBeInMetric"
-	exceptionTypeAttrName    = "exception.type"
-	exceptionMessageAttrName = "exception.message"
+	stringAttrName     = "stringAttrName"
+	intAttrName        = "intAttrName"
+	doubleAttrName     = "doubleAttrName"
+	boolAttrName       = "boolAttrName"
+	nullAttrName       = "nullAttrName"
+	mapAttrName        = "mapAttrName"
+	arrayAttrName      = "arrayAttrName"
+	notInSpanAttrName0 = "shouldBeInMetric"
+	notInSpanAttrName1 = "shouldNotBeInMetric"
 
 	sampleLatency         = float64(11)
 	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
@@ -101,7 +99,7 @@ func initSpan(span span, s ptrace.Span) {
 
 	e := s.Events().AppendEmpty()
 	e.SetName("exception")
-	e.Attributes().PutStr("exception.type", "Exception")
-	e.Attributes().PutStr("exception.message", "Exception message")
-	e.Attributes().PutStr("exception.stacktrace", "Exception stacktrace")
+	e.Attributes().PutStr(exceptionTypeKey, "Exception")
+	e.Attributes().PutStr(exceptionMessageKey, "Exception message")
+	e.Attributes().PutStr(exceptionStacktraceKey, "Exception stacktrace")
 }

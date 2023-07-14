@@ -124,7 +124,7 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 	}
 
 	// Add stacktrace to the log record.
-	logRecord.Attributes().PutStr("exception.stacktrace", getValue(eventAttrs, "exception.stacktrace"))
+	logRecord.Attributes().PutStr(exceptionStacktraceKey, getValue(eventAttrs, exceptionStacktraceKey))
 
 	// Add HTTP context to the log record.
 	for k, v := range extractHTTP(spanAttrs) {
