@@ -51,7 +51,7 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 		assert.NoError(t, err)
 
 		logs := lsink.AllLogs()
-		assert.Greater(t, len(logs), 0)
+		assert.Len(t, logs, 1)
 		err = plogtest.CompareLogs(expectedLogs, logs[len(logs)-1])
 		assert.NoError(t, err)
 	}
