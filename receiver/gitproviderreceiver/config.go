@@ -61,7 +61,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	for key := range scrapersSection.ToStringMap() {
 		factory, ok := getScraperFactory(key)
 		if !ok {
-			return fmt.Errorf("invalid scraper key: %s", key)
+			return fmt.Errorf("invalid scraper key: %q", key)
 		}
 
 		collectorCfg := factory.CreateDefaultConfig()
