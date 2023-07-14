@@ -7,4 +7,3 @@ status:
   distributions: [contrib, splunk, sumo]
   codeowners:
     active: ["dmitryax"]
-    emeritus:
