@@ -17,12 +17,13 @@ package datadogexporter
 import (
 	"testing"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestValidate(t *testing.T) {
-
+	override.IMDSRetryer = nil
 	tests := []struct {
 		name string
 		cfg  *Config

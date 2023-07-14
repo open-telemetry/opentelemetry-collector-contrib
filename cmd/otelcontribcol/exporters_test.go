@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"testing"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -496,6 +497,7 @@ func TestDefaultExporters(t *testing.T) {
 		expectedExporters[k] = struct{}{}
 	}
 	for _, tt := range tests {
+		override.IMDSRetryer = nil
 		_, ok := expFactories[tt.exporter]
 		if !ok {
 			// not part of the distro, skipping.
