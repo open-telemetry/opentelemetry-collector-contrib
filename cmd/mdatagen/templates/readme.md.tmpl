@@ -4,8 +4,6 @@
 | ------------- |-----------|
 {{- $class := .Status.Class }}
 {{- $shortName := .ShortFolderName }}
-{{- $codeowners := userLinks .Status.Codeowners.Active }}
-{{- $emeritus := userLinks .Status.Codeowners.Emeritus }}
 {{- if ne $class "connector" }}
 {{- $idx := 0 }}
 {{- range $stability, $value := .Status.Stability }}

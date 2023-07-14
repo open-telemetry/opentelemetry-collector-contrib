@@ -192,7 +192,12 @@ Some info about a component
 			componentClass: "receiver",
 			distros:        []string{"contrib"},
 			codeowners: &Codeowners{
+<<<<<<< HEAD
 				Active: []string{"foo"},
+=======
+				Active:   []string{"foo"},
+				Emeritus: []string{"bar"},
+>>>>>>> 409c7fe427 (add test and make sure all tests pass)
 			},
 		},
 		{
