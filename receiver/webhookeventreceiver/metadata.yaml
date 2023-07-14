@@ -6,5 +6,5 @@ status:
     alpha: [logs]
   distributions:
   codeowners:
-    active: ["@atoulme", "@shalper2"]
+    active: ["atoulme", "shalper2"]
     emeritus:

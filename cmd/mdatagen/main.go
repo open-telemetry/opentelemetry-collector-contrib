@@ -136,7 +136,14 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"stringsJoin":  strings.Join,
 				"stringsSplit": strings.Split,
-				"casesTitle":   cases.Title(language.English).String,
+				"userLinks": func(elems []string) []string {
+					result := make([]string, len(elems))
+					for i, elem := range elems {
+						result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
+					}
+					return result
+				},
+				"casesTitle": cases.Title(language.English).String,
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")

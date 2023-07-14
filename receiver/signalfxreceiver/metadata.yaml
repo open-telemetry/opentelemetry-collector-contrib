@@ -6,5 +6,5 @@ status:
     beta: [metrics, logs]
   distributions: [contrib, splunk, sumo]
   codeowners:
-    active: ["@dmitryax"]
+    active: ["dmitryax"]
     emeritus:
