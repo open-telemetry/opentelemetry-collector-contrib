@@ -332,6 +332,66 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				`{"traceid":"03000000000000000000000000000000"}`,
 			},
 		},
+		{
+			desc: "with existing level and hint attributes contain level",
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+			},
+			hints: map[string]interface{}{
+				hintAttributes: "level, host.name",
+			},
+			levelAttribute: "dummy",
+			expectedLabel:  `{exporter="OTLP", host_name="guarana", level="dummy"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
+		{
+			desc: "with hint attributes and resource attributes as string",
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+				"host.ip":   "127.0.0.1",
+			},
+			res: map[string]interface{}{
+				"service.name":      "my-service",
+				"service.namespace": "my-namespace",
+			},
+			hints: map[string]interface{}{
+				hintAttributes: "host.name, host.ip",
+				hintResources:  "service.name, service.namespace",
+			},
+			severity:      plog.SeverityNumberDebug4,
+			expectedLabel: `{exporter="OTLP", host_ip="127.0.0.1", host_name="guarana", job="my-namespace/my-service", level="DEBUG4", service_name="my-service", service_namespace="my-namespace"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
+		{
+			desc: "with hint attributes as slice",
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+				"host.ip":   "127.0.0.1",
+			},
+			res: map[string]interface{}{
+				"service.name":      "my-service",
+				"service.namespace": "my-namespace",
+			},
+			hints: map[string]interface{}{
+				hintAttributes: []any{"host.name", "host.ip"},
+				hintResources:  []any{"service.name", "service.namespace"},
+			},
+			severity:      plog.SeverityNumberDebug4,
+			expectedLabel: `{exporter="OTLP", host_ip="127.0.0.1", host_name="guarana", job="my-namespace/my-service", level="DEBUG4", service_name="my-service", service_namespace="my-namespace"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -346,7 +406,11 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			if len(tt.res) > 0 {
-				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res))
+				res := tt.res
+				if val, ok := tt.hints[hintResources]; ok {
+					res[hintResources] = val
+				}
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(res))
 			}
 
 			rlogs := ld.ResourceLogs()
@@ -356,14 +420,22 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 					logs := slogs.At(j).LogRecords()
 					for k := 0; k < logs.Len(); k++ {
 						log := logs.At(k)
+						attrs := map[string]interface{}{}
 						if len(tt.attrs) > 0 {
-							assert.NoError(t, log.Attributes().FromRaw(tt.attrs))
+							attrs = tt.attrs
 						}
+
 						if len(tt.levelAttribute) > 0 {
-							log.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
+							attrs[levelAttributeName] = tt.levelAttribute
 						}
-						for k, v := range tt.hints {
-							log.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+						if val, ok := tt.hints[hintAttributes]; ok {
+							attrs[hintAttributes] = val
+						}
+						if val, ok := tt.hints[hintFormat]; ok {
+							attrs[hintFormat] = val
+						}
+						if len(attrs) > 0 {
+							assert.NoError(t, log.Attributes().FromRaw(attrs))
 						}
 					}
 				}

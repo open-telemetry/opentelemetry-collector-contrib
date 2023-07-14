@@ -122,7 +122,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *appsv1.StatefulSet:
 		md = statefulset.GetMetrics(dc.settings, o)
 	case *batchv1.Job:
-		md = ocsToMetrics(jobs.GetMetrics(o))
+		md = jobs.GetMetrics(dc.settings, o)
 	case *batchv1.CronJob:
 		md = ocsToMetrics(cronjob.GetMetrics(o))
 	case *batchv1beta1.CronJob:
