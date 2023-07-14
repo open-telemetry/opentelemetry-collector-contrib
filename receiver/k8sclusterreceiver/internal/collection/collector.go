@@ -110,7 +110,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *corev1.Namespace:
 		md = namespace.GetMetrics(dc.settings, o)
 	case *corev1.ReplicationController:
-		md = ocsToMetrics(replicationcontroller.GetMetrics(o))
+		md = replicationcontroller.GetMetrics(dc.settings, o)
 	case *corev1.ResourceQuota:
 		md = resourcequota.GetMetrics(dc.settings, o)
 	case *appsv1.Deployment:
