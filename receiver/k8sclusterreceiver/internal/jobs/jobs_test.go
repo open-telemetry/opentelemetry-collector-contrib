@@ -4,65 +4,50 @@
 package jobs
 
 import (
+	"path/filepath"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestJobMetrics(t *testing.T) {
 	j := testutils.NewJob("1")
 
-	actualResourceMetrics := GetMetrics(j)
+	m := GetMetrics(receivertest.NewNopCreateSettings(), j)
 
-	require.Equal(t, 1, len(actualResourceMetrics))
-
-	require.Equal(t, 5, len(actualResourceMetrics[0].Metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.job.uid":        "test-job-1-uid",
-			"k8s.job.name":       "test-job-1",
-			"k8s.namespace.name": "test-namespace",
-		},
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.job.active_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[1], "k8s.job.failed_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 0)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[2], "k8s.job.successful_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[3], "k8s.job.desired_successful_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 10)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[4], "k8s.job.max_parallel_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
-
 	// Test with nil values.
 	j.Spec.Completions = nil
 	j.Spec.Parallelism = nil
-	actualResourceMetrics = GetMetrics(j)
-	require.Equal(t, 1, len(actualResourceMetrics))
-	require.Equal(t, 3, len(actualResourceMetrics[0].Metrics))
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.job.active_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[1], "k8s.job.failed_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 0)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[2], "k8s.job.successful_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+	m = GetMetrics(receivertest.NewNopCreateSettings(), j)
+	expected, err = golden.ReadMetrics(filepath.Join("testdata", "expected_empty.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
 }
 
 func TestTransform(t *testing.T) {
