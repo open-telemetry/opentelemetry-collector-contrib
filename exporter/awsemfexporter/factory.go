@@ -9,12 +9,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
+
+var defaultNoRollupfg = featuregate.GlobalRegistry().MustRegister("awsemf.nodimrollupdefault", featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.82.0"),
+	featuregate.WithRegisterDescription("Changes the default AWS EMF Exporter Dimension rollup option to "+
+		"NoDimensionRollup"))
 
 // NewFactory creates a factory for AWS EMF exporter.
 func NewFactory() exporter.Factory {
@@ -26,12 +32,18 @@ func NewFactory() exporter.Factory {
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
+	var defaultDimensionRollupOption string
+	if defaultNoRollupfg.IsEnabled() {
+		defaultDimensionRollupOption = "NoDimensionRollup"
+	} else {
+		defaultDimensionRollupOption = "ZeroAndSingleDimensionRollup"
+	}
 	return &Config{
 		AWSSessionSettings:              awsutil.CreateDefaultSessionConfig(),
 		LogGroupName:                    "",
 		LogStreamName:                   "",
 		Namespace:                       "",
-		DimensionRollupOption:           "ZeroAndSingleDimensionRollup",
+		DimensionRollupOption:           defaultDimensionRollupOption,
 		Version:                         "1",
 		RetainInitialValueOfDeltaMetric: false,
 		OutputDestination:               "cloudwatch",

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
@@ -259,4 +260,13 @@ func TestValidateTags(t *testing.T) {
 			assert.NoError(t, component.ValidateConfig(cfg))
 		})
 	}
+}
+
+func TestNoDimensionRollupFeatureGate(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", true)
+	require.NoError(t, err)
+	cfg := createDefaultConfig()
+
+	assert.Equal(t, cfg.(*Config).DimensionRollupOption, "NoDimensionRollup")
+	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
 }
