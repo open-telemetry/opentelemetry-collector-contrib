@@ -147,7 +147,7 @@ func (p *Parser[K]) compareTime(a time.Time, b any, op compareOp) bool {
 		case LT:
 			return a.Before(v)
 		case LTE:
-			return a.Before(v) == true || a.Equal(v) == true
+			return a.Before(v) || a.Equal(v)
 		case GTE:
 			return a.After(v) || a.Equal(v)
 		case GT:
