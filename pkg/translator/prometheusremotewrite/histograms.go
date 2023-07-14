@@ -194,13 +194,3 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 
 	return spans, deltas
 }
-
-func nativeHistogramBucketCount(h *prompb.Histogram) (count uint64) {
-	for _, span := range h.PositiveSpans {
-		count += uint64(span.Length)
-	}
-	for _, span := range h.NegativeSpans {
-		count += uint64(span.Length)
-	}
-	return
-}
