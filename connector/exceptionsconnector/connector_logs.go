@@ -39,7 +39,6 @@ type logsConnector struct {
 	component.ShutdownFunc
 
 	logger *zap.Logger
-	ld     plog.Logs
 }
 
 func newLogsConnector(logger *zap.Logger, config component.Config) (*logsConnector, error) {
@@ -49,7 +48,6 @@ func newLogsConnector(logger *zap.Logger, config component.Config) (*logsConnect
 		logger:     logger,
 		config:     *cfg,
 		dimensions: newDimensions(cfg.Dimensions),
-		ld:         plog.NewLogs(),
 	}, nil
 }
 
@@ -61,6 +59,7 @@ func (c *logsConnector) Capabilities() consumer.Capabilities {
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate logs.
 func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+	ld := plog.NewLogs()
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -71,7 +70,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
 		for j := 0; j < ilsSlice.Len(); j++ {
-			sl := c.newScopeLogs()
+			sl := c.newScopeLogs(ld)
 			ils := ilsSlice.At(j)
 			ils.Scope().CopyTo(sl.Scope())
 			spans := ils.Spans()
@@ -86,19 +85,19 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 			}
 		}
 	}
-	return c.exportLogs(ctx)
+	return c.exportLogs(ctx, ld)
 }
 
-func (c *logsConnector) exportLogs(ctx context.Context) error {
-	if err := c.logsConsumer.ConsumeLogs(ctx, c.ld); err != nil {
+func (c *logsConnector) exportLogs(ctx context.Context, ld plog.Logs) error {
+	if err := c.logsConsumer.ConsumeLogs(ctx, ld); err != nil {
 		c.logger.Error("failed to convert exceptions to logs", zap.Error(err))
 		return err
 	}
 	return nil
 }
 
-func (c *logsConnector) newScopeLogs() plog.ScopeLogs {
-	rl := c.ld.ResourceLogs().AppendEmpty()
+func (c *logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
+	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	return sl
 }
