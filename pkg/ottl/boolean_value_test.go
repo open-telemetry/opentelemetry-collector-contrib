@@ -87,7 +87,6 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
-	JanFirst2023 := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
 	twelveNanoseconds, err := time.ParseDuration("12ns")
 	if err != nil {
 		t.Error()
@@ -116,7 +115,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		l    any
 		r    any
 		op   string
-		item string
+		item any
 		want bool
 	}{
 		{name: "literals match", l: "hello", r: "hello", op: "==", want: true},
