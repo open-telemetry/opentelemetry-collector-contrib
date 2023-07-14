@@ -141,35 +141,17 @@ func (p *Parser[K]) compareTime(a time.Time, b any, op compareOp) bool {
 	case time.Time:
 		switch op {
 		case EQ:
-			if a.Equal(v) == true {
-				return true
-			}
-			return false
+			return a.Equal(v)
 		case NE:
-			if a.Equal(v) == false {
-				return true
-			}
-			return false
+			return !a.Equal(v)
 		case LT:
-			if a.Before(v) == true {
-				return true
-			}
-			return false
+			return a.Before(v)
 		case LTE:
-			if a.Before(v) == true || a.Equal(v) == true {
-				return true
-			}
-			return false
+			return a.Before(v) == true || a.Equal(v) == true
 		case GTE:
-			if a.After(v) == true || a.Equal(v) == true {
-				return true
-			}
-			return false
+			return a.After(v) == true || a.Equal(v) == true
 		case GT:
-			if a.After(v) == true {
-				return true
-			}
-			return false
+			return a.After(v)
 		default:
 			return p.invalidComparison("invalid comparison operator", op)
 		}
