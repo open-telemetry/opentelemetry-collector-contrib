@@ -536,7 +536,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 			},
 			wantNativeHist: func() prompb.Histogram {
 				return prompb.Histogram{
-					Count:          &prompb.Histogram_CountInt{CountInt: 6},
+					Count:          &prompb.Histogram_CountInt{CountInt: 4},
 					Sum:            10.1,
 					Schema:         8,
 					ZeroThreshold:  defaultZeroThreshold,
@@ -552,6 +552,7 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			validateHistogramCount(t, tt.exponentialHist()) // Sanity check.
 			got, err := exponentialToNativeHistogram(tt.exponentialHist())
 			if tt.wantErrMessage != "" {
 				assert.ErrorContains(t, err, tt.wantErrMessage)
@@ -560,8 +561,27 @@ func TestExponentialToNativeHistogram(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantNativeHist(), got)
+			validateNativeHistogramCount(t, got)
 		})
 	}
+}
+
+func validateHistogramCount(t *testing.T, h pmetric.ExponentialHistogramDataPoint) {
+	require.Equal(t, h.Count(), uint64(h.Positive().BucketCounts().Len())+uint64(h.Negative().BucketCounts().Len()))
+}
+
+func validateNativeHistogramCount(t *testing.T, h prompb.Histogram) {
+	require.NotNil(t, h.Count)
+	require.IsType(t, &prompb.Histogram_CountInt{}, h.Count)
+	want := h.Count.(*prompb.Histogram_CountInt).CountInt
+	actualCount := uint64(0)
+	for _, span := range h.PositiveSpans {
+		actualCount += uint64(span.Length)
+	}
+	for _, span := range h.NegativeSpans {
+		actualCount += uint64(span.Length)
+	}
+	assert.Equal(t, want, actualCount)
 }
 
 func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {

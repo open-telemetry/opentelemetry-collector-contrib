@@ -96,7 +96,11 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		if p.HasSum() {
 			h.Sum = p.Sum()
 		}
-		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
+		if scaleDown > 0 {
+			h.Count = &prompb.Histogram_CountInt{CountInt: nativeHistogramBucketCount(&h)}
+		} else {
+			h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
+		}
 	}
 	return h, nil
 }
@@ -193,4 +197,14 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 	appendDelta(count)
 
 	return spans, deltas
+}
+
+func nativeHistogramBucketCount(h *prompb.Histogram) (count uint64) {
+	for _, span := range h.PositiveSpans {
+		count += uint64(span.Length)
+	}
+	for _, span := range h.NegativeSpans {
+		count += uint64(span.Length)
+	}
+	return
 }
