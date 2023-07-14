@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	strptime "github.com/observiq/ctimefmt"
 	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -80,7 +79,7 @@ func (t *TimeParser) Validate() error {
 	case NativeKey, GotimeKey: // ok
 	case StrptimeKey:
 		var err error
-		t.Layout, err = strptime.ToNative(t.Layout)
+		t.Layout, err = timeutils.StrptimeToGotime(t.Layout)
 		if err != nil {
 			return errors.Wrap(err, "parse strptime layout")
 		}

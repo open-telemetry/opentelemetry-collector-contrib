@@ -161,16 +161,10 @@ issues:
     - path: fluentforwardreceiver
       linters:
         - exhaustive
-    - path: googlecloudspannerreceiver
-      linters:
-        - exhaustive
     - path: prometheusreceiver
       linters:
         - exhaustive
     - path: deltatorateprocessor
-      linters:
-        - exhaustive
-    - path: groupbyattrsprocessor
       linters:
         - exhaustive
     - path: filterprocessor
@@ -287,9 +281,6 @@ issues:
     - path: opencensus
       linters:
         - exhaustive
-    - path: signalfx
-      linters:
-        - exhaustive
     - path: zipkin
       linters:
         - exhaustive
@@ -299,3 +290,7 @@ issues:
     - path: testbed
       linters:
         - exhaustive
+    # Preserve original source code in attributed package.
+    - path: ctimefmt
+      linters:
+        - revive
