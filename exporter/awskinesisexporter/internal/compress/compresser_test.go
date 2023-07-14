@@ -4,7 +4,12 @@
 package compress_test
 
 import (
+	"bytes"
+	"compress/flate"
+	"compress/gzip"
+	"compress/zlib"
 	"fmt"
+	"io"
 	"math/rand"
 	"testing"
 	"time"
@@ -15,17 +20,69 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 )
 
+func GzipDecompress(data []byte) ([]byte, error) {
+	buf := bytes.NewBuffer(data)
+
+	zr, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	out := bytes.Buffer{}
+	if _, err = io.Copy(&out, zr); err != nil {
+		zr.Close()
+		return nil, err
+	}
+	zr.Close()
+	return out.Bytes(), nil
+}
+
+func NoopDecompress(data []byte) ([]byte, error) {
+	return data, nil
+}
+
+func ZlibDecompress(data []byte) ([]byte, error) {
+	buf := bytes.NewBuffer(data)
+
+	zr, err := zlib.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	out := bytes.Buffer{}
+	if _, err = io.Copy(&out, zr); err != nil {
+		zr.Close()
+		return nil, err
+	}
+	zr.Close()
+	return out.Bytes(), nil
+}
+
+func FlateDecompress(data []byte) ([]byte, error) {
+	var err error
+	buf := bytes.NewBuffer(data)
+	zr := flate.NewReader(buf)
+	out := bytes.Buffer{}
+	if _, err = io.Copy(&out, zr); err != nil {
+		zr.Close()
+		return nil, err
+	}
+	zr.Close()
+	return out.Bytes(), nil
+}
+
 func TestCompressorFormats(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		format string
+		format     string
+		decompress func(data []byte) ([]byte, error)
 	}{
-		{format: "none"},
-		{format: "noop"},
-		{format: "gzip"},
-		{format: "zlib"},
-		{format: "flate"},
+		{format: "none", decompress: NoopDecompress},
+		{format: "noop", decompress: NoopDecompress},
+		{format: "gzip", decompress: GzipDecompress},
+		{format: "zlib", decompress: ZlibDecompress},
+		{format: "flate", decompress: FlateDecompress},
 	}
 
 	const data = "You know nothing Jon Snow"
@@ -38,6 +95,10 @@ func TestCompressorFormats(t *testing.T) {
 			out, err := c.Do([]byte(data))
 			assert.NoError(t, err, "Must not error when processing data")
 			assert.NotNil(t, out, "Must have a valid record")
+			outDecompress, err := tc.decompress(out)
+			assert.NoError(t, err, "Decompression has no error")
+			assert.Equal(t, []byte(data), outDecompress, "Data input should be the same after compression and decompression")
+
 		})
 	}
 	_, err := compress.NewCompressor("invalid-format")

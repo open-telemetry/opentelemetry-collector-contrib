@@ -14,7 +14,7 @@ import (
 
 type bufferedResetWriter interface {
 	Write(p []byte) (int, error)
-	Flush() error
+	Close() error
 	Reset(new io.Writer)
 }
 
@@ -70,7 +70,7 @@ func (c *compressor) Do(in []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := c.compression.Flush(); err != nil {
+	if err := c.compression.Close(); err != nil {
 		return nil, err
 	}
 

@@ -23,6 +23,6 @@ func (n noop) Write(p []byte) (int, error) {
 	return n.data.Write(p)
 }
 
-func (n noop) Flush() error {
+func (n noop) Close() error {
 	return nil
 }
