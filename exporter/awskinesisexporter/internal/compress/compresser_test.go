@@ -96,7 +96,7 @@ func TestCompressorFormats(t *testing.T) {
 			assert.NoError(t, err, "Must not error when processing data")
 			assert.NotNil(t, out, "Must have a valid record")
 			outDecompress, err := tc.decompress(out)
-			assert.NoError(t, err, "Decompression has no error")
+			assert.NoError(t, err, "Decompression must have no errors")
 			assert.Equal(t, []byte(data), outDecompress, "Data input should be the same after compression and decompression")
 
 		})
