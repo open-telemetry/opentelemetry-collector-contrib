@@ -58,7 +58,7 @@ func (w worker) simulateTraces() {
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			attribute.String("span.kind", "client"), // is there a semantic convention for this?
 			semconv.NetPeerIPKey.String(fakeIP),
-			semconv.PeerServiceKey.String(w.serviceName),
+			semconv.PeerServiceKey.String("telemetrygen-server"),
 		))
 		for j := 0; j < w.loadSize; j++ {
 			sp.SetAttributes(attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
@@ -77,7 +77,7 @@ func (w worker) simulateTraces() {
 		_, child := tracer.Start(childCtx, "okey-dokey", trace.WithAttributes(
 			attribute.String("span.kind", "server"),
 			semconv.NetPeerIPKey.String(fakeIP),
-			semconv.PeerServiceKey.String(w.serviceName),
+			semconv.PeerServiceKey.String("telemetrygen-client"),
 		))
 
 		if err := limiter.Wait(context.Background()); err != nil {
