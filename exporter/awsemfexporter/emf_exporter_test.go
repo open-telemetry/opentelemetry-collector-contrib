@@ -590,6 +590,12 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	// Test output warning logs
 	expectedLogs := []observer.LoggedEntry{
 		{
+			Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "the default value for value for DimensionRollupOption will be changing to NoDimensionRollup" +
+				"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
+				"information"},
+			Context: []zapcore.Field{},
+		},
+		{
 			Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric declaration."},
 			Context: []zapcore.Field{zap.Error(errors.New("invalid metric declaration: no metric name selectors defined"))},
 		},
@@ -598,7 +604,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 			Context: []zapcore.Field{zap.String("dimensions", "a,b,c,d,e,f,g,h,i,j,k")},
 		},
 	}
-	assert.Equal(t, 2, logs.Len())
+	assert.Equal(t, len(expectedLogs), logs.Len())
 	assert.Equal(t, expectedLogs, logs.AllUntimed())
 }
 

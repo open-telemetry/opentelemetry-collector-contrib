@@ -70,6 +70,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		collectorID:      collectorIdentifier.String(),
 		pusherMap:        map[cwlogs.PusherKey]cwlogs.Pusher{},
 	}
+
 	config.logger.Warn("the default value for value for DimensionRollupOption will be changing to NoDimensionRollup" +
 		"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
 		"information")
