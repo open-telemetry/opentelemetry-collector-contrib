@@ -56,7 +56,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordK8sCronjobActiveJobDataPoint(ts, 1)
+			mb.RecordK8sCronjobActiveJobsDataPoint(ts, 1)
 
 			metrics := mb.Emit(WithK8sCronjobName("attr-val"), WithK8sCronjobUID("attr-val"), WithK8sNamespaceName("attr-val"), WithK8sNodeName("attr-val"), WithOpencensusResourcetype("attr-val"))
 
@@ -118,9 +118,9 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "k8s.cronjob.active_job":
-					assert.False(t, validatedMetrics["k8s.cronjob.active_job"], "Found a duplicate in the metrics slice: k8s.cronjob.active_job")
-					validatedMetrics["k8s.cronjob.active_job"] = true
+				case "k8s.cronjob.active_jobs":
+					assert.False(t, validatedMetrics["k8s.cronjob.active_jobs"], "Found a duplicate in the metrics slice: k8s.cronjob.active_jobs")
+					validatedMetrics["k8s.cronjob.active_jobs"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The number of actively running jobs for a cronjob", ms.At(i).Description())

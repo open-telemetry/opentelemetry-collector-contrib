@@ -25,12 +25,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for k8s/cronjob metrics.
 type MetricsConfig struct {
-	K8sCronjobActiveJob MetricConfig `mapstructure:"k8s.cronjob.active_job"`
+	K8sCronjobActiveJobs MetricConfig `mapstructure:"k8s.cronjob.active_jobs"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		K8sCronjobActiveJob: MetricConfig{
+		K8sCronjobActiveJobs: MetricConfig{
 			Enabled: true,
 		},
 	}

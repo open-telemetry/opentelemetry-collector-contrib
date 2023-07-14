@@ -28,7 +28,7 @@ func GetMetrics(set receiver.CreateSettings, cj *batchv1.CronJob) pmetric.Metric
 	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
-	mbphase.RecordK8sCronjobActiveJobDataPoint(ts, int64(len(cj.Status.Active)))
+	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
 	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(cj.Namespace), imetadataphase.WithK8sCronjobUID(string(cj.UID)), imetadataphase.WithK8sCronjobName(cj.Name), imetadataphase.WithOpencensusResourcetype("k8s"))
 	return metrics
@@ -38,7 +38,7 @@ func GetMetricsBeta(set receiver.CreateSettings, cj *batchv1beta1.CronJob) pmetr
 	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
-	mbphase.RecordK8sCronjobActiveJobDataPoint(ts, int64(len(cj.Status.Active)))
+	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
 	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(cj.Namespace), imetadataphase.WithK8sCronjobUID(string(cj.UID)), imetadataphase.WithK8sCronjobName(cj.Name), imetadataphase.WithOpencensusResourcetype("k8s"))
 	return metrics

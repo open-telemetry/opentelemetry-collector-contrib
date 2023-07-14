@@ -12,21 +12,21 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
-type metricK8sCronjobActiveJob struct {
+type metricK8sCronjobActiveJobs struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills k8s.cronjob.active_job metric with initial data.
-func (m *metricK8sCronjobActiveJob) init() {
-	m.data.SetName("k8s.cronjob.active_job")
+// init fills k8s.cronjob.active_jobs metric with initial data.
+func (m *metricK8sCronjobActiveJobs) init() {
+	m.data.SetName("k8s.cronjob.active_jobs")
 	m.data.SetDescription("The number of actively running jobs for a cronjob")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricK8sCronjobActiveJob) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricK8sCronjobActiveJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -37,14 +37,14 @@ func (m *metricK8sCronjobActiveJob) recordDataPoint(start pcommon.Timestamp, ts 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sCronjobActiveJob) updateCapacity() {
+func (m *metricK8sCronjobActiveJobs) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sCronjobActiveJob) emit(metrics pmetric.MetricSlice) {
+func (m *metricK8sCronjobActiveJobs) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -52,8 +52,8 @@ func (m *metricK8sCronjobActiveJob) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sCronjobActiveJob(cfg MetricConfig) metricK8sCronjobActiveJob {
-	m := metricK8sCronjobActiveJob{config: cfg}
+func newMetricK8sCronjobActiveJobs(cfg MetricConfig) metricK8sCronjobActiveJobs {
+	m := metricK8sCronjobActiveJobs{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -64,13 +64,13 @@ func newMetricK8sCronjobActiveJob(cfg MetricConfig) metricK8sCronjobActiveJob {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                 pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity           int                 // maximum observed number of metrics per resource.
-	resourceCapacity          int                 // maximum observed number of resource attributes.
-	metricsBuffer             pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                 component.BuildInfo // contains version information
-	resourceAttributesConfig  ResourceAttributesConfig
-	metricK8sCronjobActiveJob metricK8sCronjobActiveJob
+	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity            int                 // maximum observed number of metrics per resource.
+	resourceCapacity           int                 // maximum observed number of resource attributes.
+	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                  component.BuildInfo // contains version information
+	resourceAttributesConfig   ResourceAttributesConfig
+	metricK8sCronjobActiveJobs metricK8sCronjobActiveJobs
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -85,11 +85,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                 pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:             pmetric.NewMetrics(),
-		buildInfo:                 settings.BuildInfo,
-		resourceAttributesConfig:  mbc.ResourceAttributes,
-		metricK8sCronjobActiveJob: newMetricK8sCronjobActiveJob(mbc.Metrics.K8sCronjobActiveJob),
+		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:              pmetric.NewMetrics(),
+		buildInfo:                  settings.BuildInfo,
+		resourceAttributesConfig:   mbc.ResourceAttributes,
+		metricK8sCronjobActiveJobs: newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
 	}
 	for _, op := range options {
 		op(mb)
@@ -188,7 +188,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/k8sclusterreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricK8sCronjobActiveJob.emit(ils.Metrics())
+	mb.metricK8sCronjobActiveJobs.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(mb.resourceAttributesConfig, rm)
@@ -209,9 +209,9 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordK8sCronjobActiveJobDataPoint adds a data point to k8s.cronjob.active_job metric.
-func (mb *MetricsBuilder) RecordK8sCronjobActiveJobDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sCronjobActiveJob.recordDataPoint(mb.startTime, ts, val)
+// RecordK8sCronjobActiveJobsDataPoint adds a data point to k8s.cronjob.active_jobs metric.
+func (mb *MetricsBuilder) RecordK8sCronjobActiveJobsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sCronjobActiveJobs.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

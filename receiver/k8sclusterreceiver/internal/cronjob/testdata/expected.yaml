@@ -20,7 +20,7 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asInt: "2"
-            name: k8s.cronjob.active_job
+            name: k8s.cronjob.active_jobs
             unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver

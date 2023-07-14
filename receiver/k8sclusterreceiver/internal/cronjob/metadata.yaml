@@ -6,7 +6,7 @@ parent: k8s_cluster
 
 resource_attributes:
   k8s.cronjob.uid:
-    description: THe k8s CronJob uid.
+    description: The k8s CronJob uid.
     type: string
     enabled: true
 
@@ -31,7 +31,7 @@ resource_attributes:
     enabled: true
 
 metrics:
-  k8s.cronjob.active_job:
+  k8s.cronjob.active_jobs:
     enabled: true
     description: The number of actively running jobs for a cronjob
     unit: "1"

@@ -14,7 +14,7 @@ metrics:
     enabled: false
 ```
 
-### k8s.cronjob.active_job
+### k8s.cronjob.active_jobs
 
 The number of actively running jobs for a cronjob
 
@@ -27,7 +27,7 @@ The number of actively running jobs for a cronjob
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | k8s.cronjob.name | The k8s CronJob name | Any Str | true |
-| k8s.cronjob.uid | THe k8s CronJob uid. | Any Str | true |
+| k8s.cronjob.uid | The k8s CronJob uid. | Any Str | true |
 | k8s.namespace.name | The k8s namespace name | Any Str | true |
 | k8s.node.name | The k8s node name | Any Str | true |
 | opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |

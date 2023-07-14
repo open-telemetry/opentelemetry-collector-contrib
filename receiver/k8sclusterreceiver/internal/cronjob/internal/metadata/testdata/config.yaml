@@ -1,7 +1,7 @@
 default:
 all_set:
   metrics:
-    k8s.cronjob.active_job:
+    k8s.cronjob.active_jobs:
       enabled: true
   resource_attributes:
     k8s.cronjob.name:
@@ -16,7 +16,7 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    k8s.cronjob.active_job:
+    k8s.cronjob.active_jobs:
       enabled: false
   resource_attributes:
     k8s.cronjob.name:

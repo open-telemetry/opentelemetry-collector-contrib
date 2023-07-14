@@ -26,7 +26,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sCronjobActiveJob: MetricConfig{Enabled: true},
+					K8sCronjobActiveJobs: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					K8sCronjobName:         ResourceAttributeConfig{Enabled: true},
@@ -41,7 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sCronjobActiveJob: MetricConfig{Enabled: false},
+					K8sCronjobActiveJobs: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					K8sCronjobName:         ResourceAttributeConfig{Enabled: false},
