@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1689342006478,
+  "lastUpdate": 1689345647137,
   "repoUrl": "https://github.com/open-telemetry/opentelemetry-collector-contrib",
   "entries": {
     "Benchmark": [
@@ -97504,6 +97504,1440 @@ window.BENCHMARK_DATA = {
           {
             "name": "ram_mib_max",
             "value": 90,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Dropped Span Count"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "gabriel.aszalos@gmail.com",
+            "name": "Gabriel Aszalos",
+            "username": "gbbr"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e51f5c116b3607ed99293937faf0a30d8d740fbf",
+          "message": "exporter/datadogexporter: enhance example (#24231)\n\nThis change improves the collector.yaml example to contain information\r\nabout container tags and metrics.",
+          "timestamp": "2023-07-14T16:24:00+02:00",
+          "tree_id": "0d890d7b12e7783ea5b8ee3e9e0b6209333c0e25",
+          "url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/e51f5c116b3607ed99293937faf0a30d8d740fbf"
+        },
+        "date": 1689345609370,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "cpu_percentage_avg",
+            "value": 10.465990216227821,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 11.665117698459586,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 56,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/OTLP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 8.666145384155978,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 10.665122044151094,
+            "unit": "%",
+            "extra": "Log10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 53,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 75,
+            "unit": "MiB",
+            "extra": "Log10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/OTLP-HTTP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 12.932878147754046,
+            "unit": "%",
+            "extra": "Log10kDPS/filelog - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 13.996663801871733,
+            "unit": "%",
+            "extra": "Log10kDPS/filelog - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 57,
+            "unit": "MiB",
+            "extra": "Log10kDPS/filelog - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 83,
+            "unit": "MiB",
+            "extra": "Log10kDPS/filelog - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/filelog - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 12.999614342174596,
+            "unit": "%",
+            "extra": "Log10kDPS/filelog_checkpoints - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 14.33225456841906,
+            "unit": "%",
+            "extra": "Log10kDPS/filelog_checkpoints - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 57,
+            "unit": "MiB",
+            "extra": "Log10kDPS/filelog_checkpoints - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 81,
+            "unit": "MiB",
+            "extra": "Log10kDPS/filelog_checkpoints - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/filelog_checkpoints - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 37.063800216601834,
+            "unit": "%",
+            "extra": "Log10kDPS/kubernetes_containers - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 37.99636187368151,
+            "unit": "%",
+            "extra": "Log10kDPS/kubernetes_containers - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 58,
+            "unit": "MiB",
+            "extra": "Log10kDPS/kubernetes_containers - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 86,
+            "unit": "MiB",
+            "extra": "Log10kDPS/kubernetes_containers - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/kubernetes_containers - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 33.865072287775,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 34.98870728975611,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 59,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 85,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/k8s_CRI-Containerd - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 25.26540872049444,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 27.325749508769167,
+            "unit": "%",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 56,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 82,
+            "unit": "MiB",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/k8s_CRI-Containerd_no_attr_ops - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 13.732345658174602,
+            "unit": "%",
+            "extra": "Log10kDPS/CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 14.665095673181042,
+            "unit": "%",
+            "extra": "Log10kDPS/CRI-Containerd - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 56,
+            "unit": "MiB",
+            "extra": "Log10kDPS/CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 79,
+            "unit": "MiB",
+            "extra": "Log10kDPS/CRI-Containerd - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/CRI-Containerd - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 13.931913349071468,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 15.32907975385722,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 78,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/syslog-tcp-batch-1 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 4.73298406940011,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 6.665143397020996,
+            "unit": "%",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 56,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/syslog-tcp-batch-100 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 21.264714959939397,
+            "unit": "%",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 22.665540310196132,
+            "unit": "%",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/FluentForward-SplunkHEC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 14.731784649561453,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 16.331942690189187,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-1 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-1 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/tcp-batch-1 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 4.799584375191445,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 6.664826483636838,
+            "unit": "%",
+            "extra": "Log10kDPS/tcp-batch-100 - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 56,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 79,
+            "unit": "MiB",
+            "extra": "Log10kDPS/tcp-batch-100 - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Log10kDPS/tcp-batch-100 - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0.33330571486630656,
+            "unit": "%",
+            "extra": "IdleMode - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 1.6662900606740336,
+            "unit": "%",
+            "extra": "IdleMode - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 46,
+            "unit": "MiB",
+            "extra": "IdleMode - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 64,
+            "unit": "MiB",
+            "extra": "IdleMode - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "IdleMode - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 41.92769330668028,
+            "unit": "%",
+            "extra": "Metric10kDPS/OpenCensus - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 42.65794790822892,
+            "unit": "%",
+            "extra": "Metric10kDPS/OpenCensus - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 57,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OpenCensus - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OpenCensus - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/OpenCensus - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 25.597455909813053,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 27.332237037305767,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 57,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 81,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/OTLP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 23.79852170722711,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 25.33101473489262,
+            "unit": "%",
+            "extra": "Metric10kDPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 53,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 76,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/OTLP-HTTP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 55.5314544154669,
+            "unit": "%",
+            "extra": "Metric10kDPS/SignalFx - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 56.64648173142052,
+            "unit": "%",
+            "extra": "Metric10kDPS/SignalFx - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 56,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/SignalFx - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Metric10kDPS/SignalFx - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Metric10kDPS/SignalFx - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 39.53060039845165,
+            "unit": "%",
+            "extra": "MetricsFromFile - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 41.65620993045428,
+            "unit": "%",
+            "extra": "MetricsFromFile - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 56,
+            "unit": "MiB",
+            "extra": "MetricsFromFile - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "MetricsFromFile - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricsFromFile - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricResourceProcessor/update_and_rename_existing_attributes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "MetricResourceProcessor/set_attribute_on_empty_resource - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 17.130965037946247,
+            "unit": "%",
+            "extra": "Trace10kSPS/JaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 19.66432069354361,
+            "unit": "%",
+            "extra": "Trace10kSPS/JaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/JaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/JaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/JaegerGRPC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 17.066019954391436,
+            "unit": "%",
+            "extra": "Trace10kSPS/OpenCensus - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 18.66453596057048,
+            "unit": "%",
+            "extra": "Trace10kSPS/OpenCensus - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OpenCensus - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 79,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OpenCensus - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OpenCensus - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 11.332157542663179,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 13.665680633146263,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 57,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 82,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-gRPC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 14.798690045608225,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 16.330774828946023,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 79,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-gRPC-gzip - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 8.666204038118753,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 10.666106429426462,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 52,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 75,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-HTTP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 12.59962846719561,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 15.328933444018675,
+            "unit": "%",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/OTLP-HTTP-gzip - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 13.06560407767072,
+            "unit": "%",
+            "extra": "Trace10kSPS/SAPM - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 15.327773750532955,
+            "unit": "%",
+            "extra": "Trace10kSPS/SAPM - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/SAPM - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 80,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/SAPM - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/SAPM - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 17.06484735484875,
+            "unit": "%",
+            "extra": "Trace10kSPS/SAPM-gzip - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 18.994450644614506,
+            "unit": "%",
+            "extra": "Trace10kSPS/SAPM-gzip - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 64,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/SAPM-gzip - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 93,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/SAPM-gzip - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/SAPM-gzip - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 13.198547276376834,
+            "unit": "%",
+            "extra": "Trace10kSPS/SAPM-zstd - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 17.33279328971521,
+            "unit": "%",
+            "extra": "Trace10kSPS/SAPM-zstd - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 144,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/SAPM-zstd - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 224,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/SAPM-zstd - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/SAPM-zstd - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 38.998416292513625,
+            "unit": "%",
+            "extra": "Trace10kSPS/Zipkin - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 40.00370894387473,
+            "unit": "%",
+            "extra": "Trace10kSPS/Zipkin - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 58,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/Zipkin - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 84,
+            "unit": "MiB",
+            "extra": "Trace10kSPS/Zipkin - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace10kSPS/Zipkin - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessor/JaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessor/JaegerGRPC - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessor/JaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessor/JaegerGRPC - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceAttributesProcessor/JaegerGRPC - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessor/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 0,
+            "unit": "%",
+            "extra": "TraceAttributesProcessor/OTLP - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessor/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 0,
+            "unit": "MiB",
+            "extra": "TraceAttributesProcessor/OTLP - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceAttributesProcessor/OTLP - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 13.132239293481653,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 33.65957572726665,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 800,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 1138,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSWithAttrs/0*0bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 19.398352594905877,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 21.329861578413524,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 442,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 831,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSWithAttrs/100*50bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 15.666117661150537,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 17.33264002195491,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 347,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 747,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSWithAttrs/10*1000bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 37.06552244410467,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 38.66503467999454,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 514,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 845,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSWithAttrs/20*5000bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 8.73291043981651,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 10.998013454491748,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 94,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 154,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSAddAttrs/0*0bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 18.866142287272762,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 20.9946236827709,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 430,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 838,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSAddAttrs/100*50bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 14.065583853011793,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 16.995812696303844,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 293,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 621,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSAddAttrs/10*1000bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 36.930332935820026,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 37.6652498757375,
+            "unit": "%",
+            "extra": "TraceBallast1kSPSAddAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 513,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 849,
+            "unit": "MiB",
+            "extra": "TraceBallast1kSPSAddAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "TraceBallast1kSPSAddAttrs/20*5000bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 26.99671412733605,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 30.322600850912828,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 65,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 91,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 141220,
+            "unit": "spans",
+            "extra": "TraceNoBackend10kSPS/NoMemoryLimit - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 31.46585392044169,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 32.66216617945096,
+            "unit": "%",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 55,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 78,
+            "unit": "MiB",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 139170,
+            "unit": "spans",
+            "extra": "TraceNoBackend10kSPS/MemoryLimit - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 7.332950028791473,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 8.332221653875088,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 53,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 76,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/0*0bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 19.666235502808423,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 20.66570578712182,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 57,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 81,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/100*50bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 14.598660073664066,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 15.995697280065341,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 57,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 81,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - RAM (MiB)"
+          },
+          {
+            "name": "dropped_span_count",
+            "value": 0,
+            "unit": "spans",
+            "extra": "Trace1kSPSWithAttrs/10*1000bytes - Dropped Span Count"
+          },
+          {
+            "name": "cpu_percentage_avg",
+            "value": 40.72958137317274,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "cpu_percentage_max",
+            "value": 41.624288784009,
+            "unit": "%",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - Cpu Percentage"
+          },
+          {
+            "name": "ram_mib_avg",
+            "value": 62,
+            "unit": "MiB",
+            "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
+          },
+          {
+            "name": "ram_mib_max",
+            "value": 89,
             "unit": "MiB",
             "extra": "Trace1kSPSWithAttrs/20*5000bytes - RAM (MiB)"
           },
