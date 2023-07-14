@@ -12,18 +12,15 @@ resourceLogs:
               - key: service.name
                 value:
                   stringValue: service-a
-              - key: service.name
-                value:
-                  stringValue: service-a
-              - key: exception.stacktrace
-                value:
-                  stringValue: Exception stacktrace
               - key: exception.type
                 value:
                   stringValue: Exception
               - key: exception.message
                 value:
                   stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
             body: {}
             severityNumber: 17
             severityText: ERROR
@@ -39,20 +36,24 @@ resourceLogs:
               - key: service.name
                 value:
                   stringValue: service-a
-              - key: exception.stacktrace
-                value:
-                  stringValue: Exception stacktrace
               - key: exception.type
                 value:
                   stringValue: Exception
               - key: exception.message
                 value:
                   stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
             body: {}
             severityNumber: 17
             severityText: ERROR
             spanId: ""
             traceId: ""
+        scope: {}
+  - resource: {}
+    scopeLogs:
+      - logRecords:
           - attributes:
               - key: span.kind
                 value:
@@ -63,19 +64,18 @@ resourceLogs:
               - key: service.name
                 value:
                   stringValue: service-b
-              - key: exception.stacktrace
-                value:
-                  stringValue: Exception stacktrace
               - key: exception.type
                 value:
                   stringValue: Exception
               - key: exception.message
                 value:
                   stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
             body: {}
             severityNumber: 17
             severityText: ERROR
             spanId: ""
             traceId: ""
-        scope:
-          name: exceptionsconnector
+        scope: {}
