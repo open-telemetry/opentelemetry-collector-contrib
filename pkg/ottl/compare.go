@@ -5,6 +5,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"bytes"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/exp/constraints"
@@ -135,6 +136,17 @@ func (p *Parser[K]) compareFloat64(a float64, b any, op compareOp) bool {
 	}
 }
 
+func (p *Parser[K]) compareDuration(a time.Duration, b any, op compareOp) bool {
+	switch v := b.(type) {
+	case time.Duration:
+		ansecs := a.Nanoseconds()
+		vnsecs := v.Nanoseconds()
+		return comparePrimitives(ansecs, vnsecs, op)
+	default:
+		return p.invalidComparison("cannot compare invalid duration", op)
+	}
+}
+
 // a and b are the return values from a Getter; we try to compare them
 // according to the given operator.
 func (p *Parser[K]) compare(a any, b any, op compareOp) bool {
@@ -162,6 +174,8 @@ func (p *Parser[K]) compare(a any, b any, op compareOp) bool {
 			return p.compare(b, nil, op)
 		}
 		return p.compareByte(v, b, op)
+	case time.Duration:
+		return p.compareDuration(v, b, op)
 	default:
 		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
 		// use Go's standard equality.

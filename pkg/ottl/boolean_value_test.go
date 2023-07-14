@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -37,6 +38,16 @@ func valueFor(x any) value {
 		case strings.Contains(v, "ENUM"):
 			// if the string contains ENUM construct an EnumSymbol from it.
 			val.Enum = (*EnumSymbol)(ottltest.Strp(v))
+		case v == "dur1" || v == "dur2":
+			val.Literal = &mathExprLiteral{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: v,
+						},
+					},
+				},
+			}
 		default:
 			val.String = ottltest.Strp(v)
 		}
@@ -76,6 +87,30 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		WithEnumParser[any](testParseEnum),
 	)
 
+	JanFirst2023 := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
+	twelveNanoseconds, err := time.ParseDuration("12ns")
+	if err != nil {
+		t.Error()
+	}
+	oneMillisecond, err := time.ParseDuration("1ms")
+	if err != nil {
+		t.Error()
+	}
+	threeSeconds, err := time.ParseDuration("3s")
+	if err != nil {
+		t.Error()
+	}
+
+	twentyTwoMinutes, err := time.ParseDuration("22m")
+	if err != nil {
+		t.Error()
+	}
+
+	oneHundredThirtyFiveHours, err := time.ParseDuration("135h")
+	if err != nil {
+		t.Error()
+	}
+
 	var tests = []struct {
 		name string
 		l    any
@@ -106,6 +141,18 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		{name: "[]byte('a') < []byte('b')", l: []byte("a"), r: []byte("b"), op: "<", want: true},
 		{name: "nil == nil", op: "==", want: true},
 		{name: "nil == []byte(nil)", r: []byte(nil), op: "==", want: true},
+		{name: "compare equal durations", l: "dur1", r: "dur2", op: "==", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": oneMillisecond}},
+		{name: "compare unequal durations", l: "dur1", r: "dur2", op: "==", want: false, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": threeSeconds}},
+		{name: "compare not equal durations", l: "dur1", r: "dur2", op: "!=", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": threeSeconds}},
+		{name: "compare not equal durations", l: "dur1", r: "dur2", op: "!=", want: false, item: map[string]time.Duration{"dur1": threeSeconds, "dur2": threeSeconds}},
+		{name: "compare less than durations", l: "dur1", r: "dur2", op: "<", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": twentyTwoMinutes}},
+		{name: "compare not less than durations", l: "dur1", r: "dur2", op: "<", want: false, item: map[string]time.Duration{"dur1": twentyTwoMinutes, "dur2": twentyTwoMinutes}},
+		{name: "compare less than equal to durations", l: "dur1", r: "dur2", op: "<=", want: true, item: map[string]time.Duration{"dur1": threeSeconds, "dur2": threeSeconds}},
+		{name: "compare not less than equal to durations", l: "dur1", r: "dur2", op: "<=", want: false, item: map[string]time.Duration{"dur1": oneHundredThirtyFiveHours, "dur2": threeSeconds}},
+		{name: "compare greater than durations", l: "dur1", r: "dur2", op: ">", want: true, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": twelveNanoseconds}},
+		{name: "compare not greater than durations", l: "dur1", r: "dur2", op: ">", want: false, item: map[string]time.Duration{"dur1": twelveNanoseconds, "dur2": twentyTwoMinutes}},
+		{name: "compare greater than equal to durations", l: "dur1", r: "dur2", op: ">=", want: true, item: map[string]time.Duration{"dur1": oneHundredThirtyFiveHours, "dur2": threeSeconds}},
+		{name: "compare not greater than equal to durations", l: "dur1", r: "dur2", op: ">=", want: false, item: map[string]time.Duration{"dur1": oneMillisecond, "dur2": threeSeconds}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
