@@ -6,4 +6,4 @@ status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: []
+  distributions: [liatrio]
