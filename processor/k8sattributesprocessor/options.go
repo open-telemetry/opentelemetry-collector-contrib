@@ -50,6 +50,9 @@ func withPassthrough() option {
 // enabledAttributes returns the list of resource attributes enabled by default.
 func enabledAttributes() (attributes []string) {
 	defaultConfig := metadata.DefaultResourceAttributesConfig()
+	if defaultConfig.K8sClusterUID.Enabled {
+		attributes = append(attributes, "k8s.cluster.uid")
+	}
 	if defaultConfig.ContainerID.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerID)
 	}
@@ -167,6 +170,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageName = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
+			case "k8s.cluster.uid":
+				p.rules.ClusterUID = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
