@@ -60,7 +60,7 @@ func (ghs *githubScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	ghs.logger.Sugar().Debugf("current time: %v", now)
+	ghs.logger.Sugar().Debug("current time", zap.Time("now", now.AsTime()))
 
 	currentDate := time.Now().Day()
 	ghs.logger.Sugar().Debugf("current date: %v", currentDate)
