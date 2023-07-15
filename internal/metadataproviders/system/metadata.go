@@ -60,10 +60,11 @@ type Provider interface {
 
 type systemMetadataProvider struct {
 	nameInfoProvider
+	newResource func(context.Context, ...resource.Option) (*resource.Resource, error)
 }
 
 func NewProvider() Provider {
-	return systemMetadataProvider{nameInfoProvider: newNameInfoProvider()}
+	return systemMetadataProvider{nameInfoProvider: newNameInfoProvider(), newResource: resource.New}
 }
 
 func (systemMetadataProvider) OSType() (string, error) {
@@ -120,7 +121,7 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 }
 
 func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
-	res, err := resource.New(ctx,
+	res, err := p.newResource(ctx,
 		resource.WithHostID(),
 	)
 
@@ -132,7 +133,12 @@ func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
 
 	for iter.Next() {
 		if iter.Attribute().Key == conventions.AttributeHostID {
-			return iter.Attribute().Value.Emit(), nil
+			v := iter.Attribute().Value.Emit()
+
+			if v == "" {
+				return "", fmt.Errorf("empty host id")
+			}
+			return v, nil
 		}
 	}
 
