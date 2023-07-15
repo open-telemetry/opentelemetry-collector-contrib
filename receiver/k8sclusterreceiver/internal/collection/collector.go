@@ -104,7 +104,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		md = ocsToMetrics(pod.GetMetrics(o, dc.settings.TelemetrySettings.Logger))
+		md = pod.GetMetrics(dc.settings, o)
 	case *corev1.Node:
 		md = node.GetMetrics(dc.settings, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
 	case *corev1.Namespace:
@@ -122,7 +122,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *appsv1.StatefulSet:
 		md = statefulset.GetMetrics(dc.settings, o)
 	case *batchv1.Job:
-		md = ocsToMetrics(jobs.GetMetrics(o))
+		md = jobs.GetMetrics(dc.settings, o)
 	case *batchv1.CronJob:
 		md = ocsToMetrics(cronjob.GetMetrics(o))
 	case *batchv1beta1.CronJob:

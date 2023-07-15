@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -45,7 +47,7 @@ func NewConfig() *Config {
 		PollInterval:            200 * time.Millisecond,
 		Splitter:                helper.NewSplitterConfig(),
 		StartAt:                 "end",
-		FingerprintSize:         DefaultFingerprintSize,
+		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
 		MaxBatches:              0,
@@ -54,7 +56,7 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	Finder                  `mapstructure:",squash"`
+	MatchingCriteria        `mapstructure:",squash"`
 	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
@@ -71,15 +73,7 @@ type Config struct {
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
-	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
-		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
-	}
-
-	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
-		return nil, fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
-	}
-
+func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -94,8 +88,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
-func (c Config) BuildWithSplitFunc(
-	logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
+func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -113,7 +106,7 @@ func (c Config) BuildWithSplitFunc(
 	return c.buildManager(logger, emit, factory)
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory splitterFactory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitterFactory) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -146,16 +139,20 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		readerFactory: readerFactory{
 			SugaredLogger: logger.With("component", "fileconsumer"),
 			readerConfig: &readerConfig{
-				fingerprintSize: int(c.FingerprintSize),
-				maxLogSize:      int(c.MaxLogSize),
-				emit:            emit,
+				fingerprintSize:         int(c.FingerprintSize),
+				maxLogSize:              int(c.MaxLogSize),
+				emit:                    emit,
+				includeFileName:         c.IncludeFileName,
+				includeFilePath:         c.IncludeFilePath,
+				includeFileNameResolved: c.IncludeFileNameResolved,
+				includeFilePathResolved: c.IncludeFilePathResolved,
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
 			encodingConfig:  c.Splitter.EncodingConfig,
 			headerSettings:  hs,
 		},
-		finder:          c.Finder,
+		finder:          c.MatchingCriteria,
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
@@ -167,6 +164,14 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 }
 
 func (c Config) validate() error {
+	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
+		return fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
+	}
+
+	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
+		return fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
+	}
+
 	if len(c.Include) == 0 {
 		return fmt.Errorf("required argument `include` is empty")
 	}
@@ -187,6 +192,16 @@ func (c Config) validate() error {
 		}
 	}
 
+	if len(c.OrderingCriteria.SortBy) != 0 && c.OrderingCriteria.Regex == "" {
+		return fmt.Errorf("`regex` must be specified when `sort_by` is specified")
+	}
+
+	for _, sr := range c.OrderingCriteria.SortBy {
+		if err := sr.validate(); err != nil {
+			return err
+		}
+	}
+
 	if c.MaxLogSize <= 0 {
 		return fmt.Errorf("`max_log_size` must be positive")
 	}
@@ -195,8 +210,8 @@ func (c Config) validate() error {
 		return fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
-	if c.FingerprintSize < MinFingerprintSize {
-		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	if c.FingerprintSize < fingerprint.MinSize {
+		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", fingerprint.MinSize)
 	}
 
 	if c.DeleteAfterRead && c.StartAt == "end" {

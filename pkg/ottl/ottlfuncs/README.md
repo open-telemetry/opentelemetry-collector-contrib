@@ -278,6 +278,7 @@ Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [FNV](#fnv)
+- [Duration](#duration)
 - [Int](#int)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
@@ -288,6 +289,7 @@ Available Converters:
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
+- [Time](#time)
 - [TraceID](#traceid)
 - [Substring](#substring)
 - [UUID](#UUID)
@@ -334,6 +336,22 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### Duration
+
+`Duration(duration)`
+
+The `Duration` Converter takes a string representation of a duration and converts it to a Golang `time.duration`.
+
+`duration` is a string.
+
+If either `duration` is nil or is in a format that cannot be converted to Golang `time.duration`, an error is returned.
+
+Examples:
+
+- `Duration("3s")`
+- `Duration("333ms")`
+- `Duration("1000000h")`
 
 ### FNV
 
@@ -568,6 +586,18 @@ There is currently a bug with OTTL that does not allow the target string to end 
 Examples:
 
 - ```Split("A|B|C", "|")```
+
+### Time
+
+The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
+
+`time` is a string. `format` is a string.
+
+If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
+
+Examples:
+
+- `Time("02/04/2023", "%m/%d/%Y")`
 
 ### TraceID
 

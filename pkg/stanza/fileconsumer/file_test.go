@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
@@ -53,6 +54,8 @@ func TestAddFileFields(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.IncludeFileName = true
 	cfg.IncludeFilePath = true
+	cfg.IncludeFileNameResolved = false
+	cfg.IncludeFilePathResolved = false
 	operator, emitCalls := buildTestManager(t, cfg)
 
 	// Create a file, then start
@@ -65,8 +68,10 @@ func TestAddFileFields(t *testing.T) {
 	}()
 
 	emitCall := waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(temp.Name()), emitCall.attrs.Name)
-	require.Equal(t, temp.Name(), emitCall.attrs.Path)
+	require.Equal(t, filepath.Base(temp.Name()), emitCall.attrs[logFileName])
+	require.Equal(t, temp.Name(), emitCall.attrs[logFilePath])
+	require.Nil(t, emitCall.attrs[logFileNameResolved])
+	require.Nil(t, emitCall.attrs[logFilePathResolved])
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -115,10 +120,10 @@ func TestAddFileResolvedFields(t *testing.T) {
 	}()
 
 	emitCall := waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
-	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved), emitCall.attrs.NameResolved)
-	require.Equal(t, resolved, emitCall.attrs.PathResolved)
+	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs[logFileName])
+	require.Equal(t, symLinkPath, emitCall.attrs[logFilePath])
+	require.Equal(t, filepath.Base(resolved), emitCall.attrs[logFileNameResolved])
+	require.Equal(t, resolved, emitCall.attrs[logFilePathResolved])
 }
 
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
@@ -185,10 +190,10 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	}()
 
 	emitCall := waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
-	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved1), emitCall.attrs.NameResolved)
-	require.Equal(t, resolved1, emitCall.attrs.PathResolved)
+	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs[logFileName])
+	require.Equal(t, symLinkPath, emitCall.attrs[logFilePath])
+	require.Equal(t, filepath.Base(resolved1), emitCall.attrs[logFileNameResolved])
+	require.Equal(t, resolved1, emitCall.attrs[logFilePathResolved])
 
 	// Change middleSymLink to point to file2
 	err = os.Remove(middleSymLinkPath)
@@ -200,10 +205,58 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	writeString(t, file2, "testlog2\n")
 
 	emitCall = waitForEmit(t, emitCalls)
-	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs.Name)
-	require.Equal(t, symLinkPath, emitCall.attrs.Path)
-	require.Equal(t, filepath.Base(resolved2), emitCall.attrs.NameResolved)
-	require.Equal(t, resolved2, emitCall.attrs.PathResolved)
+	require.Equal(t, filepath.Base(symLinkPath), emitCall.attrs[logFileName])
+	require.Equal(t, symLinkPath, emitCall.attrs[logFilePath])
+	require.Equal(t, filepath.Base(resolved2), emitCall.attrs[logFileNameResolved])
+	require.Equal(t, resolved2, emitCall.attrs[logFilePathResolved])
+}
+
+func TestFileFieldsUpdatedAfterRestart(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.IncludeFileName = true
+	cfg.IncludeFilePath = true
+	op1, emitCalls1 := buildTestManager(t, cfg)
+
+	// Create a file, then start
+	temp, err := os.CreateTemp(tempDir, "")
+	require.NoError(t, err)
+	writeString(t, temp, "testlog1\n")
+
+	persister := testutil.NewUnscopedMockPersister()
+	require.NoError(t, op1.Start(persister))
+
+	emitCall1 := waitForEmit(t, emitCalls1)
+	assert.Equal(t, []byte("testlog1"), emitCall1.token)
+	assert.Equal(t, filepath.Base(temp.Name()), emitCall1.attrs[logFileName])
+	assert.Equal(t, temp.Name(), emitCall1.attrs[logFilePath])
+	assert.Nil(t, emitCall1.attrs[logFileNameResolved])
+	assert.Nil(t, emitCall1.attrs[logFilePathResolved])
+
+	require.NoError(t, op1.Stop())
+	temp.Close() // On windows, we must close the file before renaming it
+
+	newPath := temp.Name() + "_renamed"
+	require.NoError(t, os.Rename(temp.Name(), newPath))
+
+	temp = openFile(t, newPath)
+	writeString(t, temp, "testlog2\n")
+
+	op2, emitCalls2 := buildTestManager(t, cfg)
+
+	require.NoError(t, op2.Start(persister))
+
+	emitCall2 := waitForEmit(t, emitCalls2)
+	assert.Equal(t, []byte("testlog2"), emitCall2.token)
+	assert.Equal(t, filepath.Base(newPath), emitCall2.attrs[logFileName])
+	assert.Equal(t, newPath, emitCall2.attrs[logFilePath])
+	assert.Nil(t, emitCall2.attrs[logFileNameResolved])
+	assert.Nil(t, emitCall2.attrs[logFilePathResolved])
+
+	require.NoError(t, op2.Stop())
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we
@@ -669,6 +722,76 @@ func TestMultiFileSimple(t *testing.T) {
 	}()
 
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
+}
+
+func TestMultiFileSort(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.MatchingCriteria.OrderingCriteria.Regex = `.*(?P<value>\d)`
+	cfg.MatchingCriteria.OrderingCriteria.SortBy = []SortRuleImpl{
+		{
+			&NumericSortRule{
+				BaseSortRule: BaseSortRule{
+					RegexKey: `value`,
+				},
+			},
+		},
+	}
+
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	temp1 := openTempWithPattern(t, tempDir, ".*log1")
+	temp2 := openTempWithPattern(t, tempDir, ".*log2")
+
+	writeString(t, temp1, "testlog1\n")
+	writeString(t, temp2, "testlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	expectNoTokens(t, emitCalls)
+}
+
+func TestMultiFileSortTimestamp(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.MatchingCriteria.OrderingCriteria.Regex = `.(?P<value>\d{10})\.log`
+	cfg.MatchingCriteria.OrderingCriteria.SortBy = []SortRuleImpl{
+		{
+			&TimestampSortRule{
+				BaseSortRule: BaseSortRule{
+					RegexKey: `value`,
+					SortType: "timestamp",
+				},
+				Layout: "%Y%m%d%H",
+			},
+		},
+	}
+
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	temp1 := openTempWithPattern(t, tempDir, ".*2023020602.log")
+	temp2 := openTempWithPattern(t, tempDir, ".*2023020603.log")
+
+	writeString(t, temp1, "testlog1\n")
+	writeString(t, temp2, "testlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2")})
+	expectNoTokens(t, emitCalls)
 }
 
 func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
@@ -1342,9 +1465,10 @@ func TestReadExistingLogsWithHeader(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	waitForTokenHeaderAttributes(t, emitCalls, []byte("testlog"), map[string]any{
+	waitForTokenWithAttributes(t, emitCalls, []byte("testlog"), map[string]any{
 		"header_key":   "headerField",
 		"header_value": "headerValue",
+		logFileName:    filepath.Base(temp.Name()),
 	})
 }
 
@@ -1440,9 +1564,10 @@ func TestHeaderPersistance(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
 	require.NoError(t, op1.Start(persister))
 
-	waitForTokenHeaderAttributes(t, emitCalls1, []byte("log line"), map[string]any{
+	waitForTokenWithAttributes(t, emitCalls1, []byte("log line"), map[string]any{
 		"header_key":   "headerField",
 		"header_value": "headerValue",
+		logFileName:    filepath.Base(temp.Name()),
 	})
 
 	require.NoError(t, op1.Stop())
@@ -1453,13 +1578,13 @@ func TestHeaderPersistance(t *testing.T) {
 
 	require.NoError(t, op2.Start(persister))
 
-	waitForTokenHeaderAttributes(t, emitCalls2, []byte("log line 2"), map[string]any{
+	waitForTokenWithAttributes(t, emitCalls2, []byte("log line 2"), map[string]any{
 		"header_key":   "headerField",
 		"header_value": "headerValue",
+		logFileName:    filepath.Base(temp.Name()),
 	})
 
 	require.NoError(t, op2.Stop())
-
 }
 
 func TestHeaderPersistanceInHeader(t *testing.T) {
@@ -1498,9 +1623,10 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 
 	require.NoError(t, op2.Start(persister))
 
-	waitForTokenHeaderAttributes(t, emitCalls, []byte("log line"), map[string]any{
+	waitForTokenWithAttributes(t, emitCalls, []byte("log line"), map[string]any{
 		"header_value_1": "headerValue1",
 		"header_value_2": "headerValue2",
+		logFileName:      filepath.Base(temp.Name()),
 	})
 
 	require.NoError(t, op2.Stop())

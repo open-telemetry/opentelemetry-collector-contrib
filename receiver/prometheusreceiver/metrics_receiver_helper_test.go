@@ -282,6 +282,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 					return false
 				}
 			}
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 		}
 	}
 	return true
@@ -411,6 +412,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 				}
 			}
 		}
@@ -682,6 +684,7 @@ func getTS(ms pmetric.MetricSlice) pcommon.Timestamp {
 		return m.Summary().DataPoints().At(0).Timestamp()
 	case pmetric.MetricTypeExponentialHistogram:
 		return m.ExponentialHistogram().DataPoints().At(0).Timestamp()
+	case pmetric.MetricTypeEmpty:
 	}
 	return 0
 }

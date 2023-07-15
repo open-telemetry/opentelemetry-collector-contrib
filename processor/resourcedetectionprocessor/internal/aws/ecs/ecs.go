@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs/internal/metadata"
 )
 
 const (
@@ -27,10 +28,12 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	provider ecsutil.MetadataProvider
+	provider           ecsutil.MetadataProvider
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
-func NewDetector(params processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(params processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
@@ -40,7 +43,7 @@ func NewDetector(params processor.CreateSettings, _ internal.DetectorConfig) (in
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
 	}
-	return &Detector{provider: provider}, nil
+	return &Detector{provider: provider, resourceAttributes: cfg.ResourceAttributes}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
@@ -60,36 +63,49 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	}
 
 	attr := res.Attributes()
-	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attr.PutStr(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
-	attr.PutStr(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
-	attr.PutStr(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
+
+	if d.resourceAttributes.CloudProvider.Enabled {
+		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	}
+	if d.resourceAttributes.CloudPlatform.Enabled {
+		attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	}
+	if d.resourceAttributes.AwsEcsTaskArn.Enabled {
+		attr.PutStr(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
+	}
+	if d.resourceAttributes.AwsEcsTaskFamily.Enabled {
+		attr.PutStr(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
+	}
+	if d.resourceAttributes.AwsEcsTaskRevision.Enabled {
+		attr.PutStr(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
+	}
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
-	if account != "" {
+	if account != "" && d.resourceAttributes.CloudAccountID.Enabled {
 		attr.PutStr(conventions.AttributeCloudAccountID, account)
 	}
 
-	if region != "" {
+	if region != "" && d.resourceAttributes.CloudRegion.Enabled {
 		attr.PutStr(conventions.AttributeCloudRegion, region)
 	}
 
-	// TMDE returns the cluster short name or ARN, so we need to construct the ARN if necessary
-	attr.PutStr(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
+	if d.resourceAttributes.AwsEcsClusterArn.Enabled {
+		// TMDE returns the cluster short name or ARN, so we need to construct the ARN if necessary
+		attr.PutStr(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
+	}
 
-	// The Availability Zone is not available in all Fargate runtimes
-	if tmdeResp.AvailabilityZone != "" {
+	if tmdeResp.AvailabilityZone != "" && d.resourceAttributes.CloudAvailabilityZone.Enabled {
 		attr.PutStr(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
 	}
 
-	// The launch type and log data attributes are only available in TMDE v4
-	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
-	case "ec2":
-		attr.PutStr(conventions.AttributeAWSECSLaunchtype, "ec2")
-
-	case "fargate":
-		attr.PutStr(conventions.AttributeAWSECSLaunchtype, "fargate")
+	if d.resourceAttributes.AwsEcsLaunchtype.Enabled {
+		// The launch type and log data attributes are only available in TMDE v4
+		switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
+		case "ec2":
+			attr.PutStr(conventions.AttributeAWSECSLaunchtype, "ec2")
+		case "fargate":
+			attr.PutStr(conventions.AttributeAWSECSLaunchtype, "fargate")
+		}
 	}
 
 	selfMetaData, err := d.provider.FetchContainerMetadata()
@@ -98,7 +114,7 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		return res, "", err
 	}
 
-	addValidLogData(tmdeResp.Containers, selfMetaData, account, attr)
+	addValidLogData(tmdeResp.Containers, selfMetaData, account, attr, d.resourceAttributes)
 
 	return res, conventions.SchemaURL, nil
 }
@@ -127,7 +143,7 @@ func parseRegionAndAccount(taskARN string) (region string, account string) {
 // "init" containers which only run at startup then shutdown (as indicated by the "KnownStatus" attribute),
 // containers not using AWS Logs, and those without log group metadata to get the final lists of valid log data
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html#task-metadata-endpoint-v4-response
-func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.ContainerMetadata, account string, dest pcommon.Map) {
+func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.ContainerMetadata, account string, dest pcommon.Map, resourceAttributes metadata.ResourceAttributesConfig) {
 	initialized := false
 	var logGroupNames pcommon.Slice
 	var logGroupArns pcommon.Slice
@@ -142,16 +158,32 @@ func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 			self.DockerID != container.DockerID &&
 			logData != (ecsutil.LogOptions{}) {
 			if !initialized {
-				logGroupNames = dest.PutEmptySlice(conventions.AttributeAWSLogGroupNames)
-				logGroupArns = dest.PutEmptySlice(conventions.AttributeAWSLogGroupARNs)
-				logStreamNames = dest.PutEmptySlice(conventions.AttributeAWSLogStreamNames)
-				logStreamArns = dest.PutEmptySlice(conventions.AttributeAWSLogStreamARNs)
+				if resourceAttributes.AwsLogGroupNames.Enabled {
+					logGroupNames = dest.PutEmptySlice(conventions.AttributeAWSLogGroupNames)
+				}
+				if resourceAttributes.AwsEcsTaskArn.Enabled {
+					logGroupArns = dest.PutEmptySlice(conventions.AttributeAWSLogGroupARNs)
+				}
+				if resourceAttributes.AwsLogStreamNames.Enabled {
+					logStreamNames = dest.PutEmptySlice(conventions.AttributeAWSLogStreamNames)
+				}
+				if resourceAttributes.AwsLogStreamArns.Enabled {
+					logStreamArns = dest.PutEmptySlice(conventions.AttributeAWSLogStreamARNs)
+				}
 				initialized = true
 			}
-			logGroupNames.AppendEmpty().SetStr(logData.LogGroup)
-			logGroupArns.AppendEmpty().SetStr(constructLogGroupArn(logData.Region, account, logData.LogGroup))
-			logStreamNames.AppendEmpty().SetStr(logData.Stream)
-			logStreamArns.AppendEmpty().SetStr(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
+			if resourceAttributes.AwsLogGroupNames.Enabled {
+				logGroupNames.AppendEmpty().SetStr(logData.LogGroup)
+			}
+			if resourceAttributes.AwsEcsTaskArn.Enabled {
+				logGroupArns.AppendEmpty().SetStr(constructLogGroupArn(logData.Region, account, logData.LogGroup))
+			}
+			if resourceAttributes.AwsLogStreamNames.Enabled {
+				logStreamNames.AppendEmpty().SetStr(logData.Stream)
+			}
+			if resourceAttributes.AwsLogStreamArns.Enabled {
+				logStreamArns.AppendEmpty().SetStr(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
+			}
 		}
 	}
 }

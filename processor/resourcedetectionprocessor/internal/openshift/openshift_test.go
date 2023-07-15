@@ -53,6 +53,7 @@ func (m *mockProvider) Infrastructure(context.Context) (*ocp.InfrastructureAPIRe
 }
 
 func newTestDetector(t *testing.T, res *providerResponse, ocpCVErr, k8sCVErr, infraErr error) internal.Detector {
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	return &detector{
 		logger: zaptest.NewLogger(t),
 		provider: &mockProvider{
@@ -61,6 +62,7 @@ func newTestDetector(t *testing.T, res *providerResponse, ocpCVErr, k8sCVErr, in
 			k8sCVErr: k8sCVErr,
 			infraErr: infraErr,
 		},
+		resourceAttributes: resourceAttributes,
 	}
 }
 
