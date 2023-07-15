@@ -31,7 +31,7 @@ type githubScraper struct {
 }
 
 func (ghs *githubScraper) start(_ context.Context, host component.Host) (err error) {
-	ghs.logger.Sugar().Info("Starting the scraper inside scraper.go")
+	ghs.logger.Sugar().Info("starting the GitHub scraper")
 	ghs.client, err = ghs.cfg.ToClient(host, ghs.settings)
 	return
 }
@@ -65,6 +65,6 @@ func (ghs *githubScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	currentDate := time.Now().Day()
 	ghs.logger.Sugar().Debugf("current date: %v", currentDate)
 
-	ghs.logger.Sugar().Info("github scraper has started")
+	ghs.logger.Sugar().Debug("github scraper has started")
 	return ghs.mb.Emit(), nil
 }
