@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -108,10 +109,16 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 				batchMetrics := r.parser.GetMetrics()
 				for _, batch := range batchMetrics {
 					batchCtx := client.NewContext(ctx, batch.Info)
-					r.Flush(batchCtx, batch.Metrics, r.nextConsumer)
+					err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer)
+					if err != nil {
+						r.reporter.OnDebugf("Error flushing metrics", zap.Error(err))
+					}
 				}
 			case metric := <-transferChan:
-				_ = r.parser.Aggregate(metric.Raw, metric.Addr)
+				err := r.parser.Aggregate(metric.Raw, metric.Addr)
+				if err != nil {
+					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
+				}
 			case <-ctx.Done():
 				ticker.Stop()
 				return
