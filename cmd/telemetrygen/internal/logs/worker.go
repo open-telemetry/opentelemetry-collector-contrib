@@ -5,6 +5,10 @@ package logs
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
+	"regexp"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,6 +30,23 @@ type worker struct {
 	index          int             // worker index
 }
 
+var reRandom = regexp.MustCompile(`\${random:(\d+)-(\d+)}`)
+
+func replaceRandoms(inp string) string {
+	indices := reRandom.FindStringSubmatch(inp)
+	lower, err := strconv.Atoi(indices[1])
+	if err != nil {
+		panic(err)
+	}
+	upper, err := strconv.Atoi(indices[2])
+	if err != nil {
+		panic(err)
+	}
+	num := lower + rand.Intn(upper-lower)
+
+	return fmt.Sprintf("%d", num)
+}
+
 func (w worker) simulateLogs(res *resource.Resource, exporter exporter) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
@@ -35,7 +56,9 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter) {
 		nRes := logs.ResourceLogs().AppendEmpty().Resource()
 		attrs := res.Attributes()
 		for _, attr := range attrs {
-			nRes.Attributes().PutStr(string(attr.Key), attr.Value.AsString())
+			val := attr.Value.AsString()
+			val = reRandom.ReplaceAllStringFunc(val, replaceRandoms)
+			nRes.Attributes().PutStr(string(attr.Key), val)
 		}
 		log := logs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))

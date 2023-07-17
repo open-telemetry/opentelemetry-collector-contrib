@@ -4,6 +4,7 @@
 package logs
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -78,4 +79,53 @@ func TestUnthrottled(t *testing.T) {
 	require.NoError(t, Run(cfg, exp, logger))
 
 	assert.True(t, len(exp.logs) > 100, "there should have been more than 100 logs, had %d", len(exp.logs))
+}
+
+func TestRandomAttributes(t *testing.T) {
+	minV := 2
+	maxV := 4
+	cfg := &Config{
+		Config: common.Config{
+			TotalDuration: 1 * time.Second,
+			WorkerCount:   1,
+			ResourceAttributes: common.KeyValue{
+				"attrA": fmt.Sprintf("a-${random:%d-%d}", minV, maxV),
+				"attrB": fmt.Sprintf("b-${random:%d-%d}-${random:%d-%d}", minV, maxV, minV, maxV),
+			},
+		},
+	}
+	exp := &mockExporter{}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	assert.True(t, len(exp.logs) > 100, "there should have been more than 100 logs, had %d", len(exp.logs))
+
+	seenA := make(map[string]bool)
+	seenB := make(map[string]bool)
+	for _, log := range exp.logs {
+		val, ok := log.ResourceLogs().At(0).Resource().Attributes().Get("attrA")
+		if ok {
+			seenA[val.AsString()] = true
+		}
+
+		val, ok = log.ResourceLogs().At(0).Resource().Attributes().Get("attrB")
+		if ok {
+			seenB[val.AsString()] = true
+		}
+	}
+
+	expSeenA := make(map[string]bool)
+	expSeenB := make(map[string]bool)
+	for i := minV; i < maxV; i++ {
+		expSeenA[fmt.Sprintf("a-%d", i)] = true
+		for j := minV; j < maxV; j++ {
+			expSeenB[fmt.Sprintf("b-%d-%d", i, j)] = true
+		}
+
+	}
+
+	assert.Equal(t, expSeenA, seenA)
+	assert.Equal(t, expSeenB, seenB)
 }
