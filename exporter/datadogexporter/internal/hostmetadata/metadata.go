@@ -138,7 +138,7 @@ type pusher struct {
 	httpClient *http.Client
 }
 
-// NewPusher creates a new inframetadata.Pusher that pushes
+// NewPusher creates a new inframetadata.Pusher that pushes metadata payloads
 func NewPusher(params exporter.CreateSettings, pcfg PusherConfig) inframetadata.Pusher {
 	return &pusher{
 		params:     params,
@@ -171,7 +171,11 @@ func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherC
 	fillHostMetadata(params, pcfg, p, &hostMetadata)
 
 	// Run one first time at startup
-	pusher.Push(ctx, hostMetadata)
+	if err := pusher.Push(ctx, hostMetadata); err != nil {
+		params.Logger.Warn("Initial host metadata failed", zap.Error(err))
+	} else {
+		params.Logger.Info("Sent initial host metadata")
+	}
 
 	for {
 		select {
