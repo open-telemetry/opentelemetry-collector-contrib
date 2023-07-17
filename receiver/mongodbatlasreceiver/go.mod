@@ -26,7 +26,7 @@ require (
 )
 
 require (
-	github.com/antonmedv/expr v1.12.5 // indirect
+	github.com/antonmedv/expr v1.12.6 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
