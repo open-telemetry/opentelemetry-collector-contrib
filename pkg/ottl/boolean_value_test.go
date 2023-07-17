@@ -113,6 +113,8 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	oneHundredThirtyFiveHours, err := time.ParseDuration("135h")
 	require.NoError(t, err)
 
+	JanFirst2023 := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local)
+
 	var tests = []struct {
 		name string
 		l    any
