@@ -247,7 +247,7 @@ The `time.Time` and `time.Duration` types are compared using comparison function
 | string        | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              | not equal                                                    | not equal                                            |
 | Bytes         | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | []byte(nil) == nil     | not equal                                                    | not equal                                            |
 | nil           | not equal   | not equal           | not equal           | not equal                       | []byte(nil) == nil       | true for equality only | not equal                                                    | not equal                                            |
-| time.Time     | not equal   | not equal           | not equal           | not equal                       | not equal                | not equal              | uses `time.Equal()`to check equality regardless of time zone | not equal                                            |
+| time.Time     | not equal   | not equal           | not equal           | not equal                       | not equal                | not equal              | uses `time.Equal()`to check equality | not equal                                            |
 | time.Duration | not equal   | not equal           | not equal           | not equal                       | not equal                | not equal              | not equal                                                    | uses `time.Before()` and `time.After` for comparison |
 
 Examples:
