@@ -312,6 +312,13 @@ func generateSpanDescriptors(name string, attrs pcommon.Map, spanKind ptrace.Spa
 			opBuilder.WriteString(".client")
 		case ptrace.SpanKindServer:
 			opBuilder.WriteString(".server")
+		case ptrace.SpanKindUnspecified:
+		case ptrace.SpanKindInternal:
+			opBuilder.WriteString(".internal")
+		case ptrace.SpanKindProducer:
+			opBuilder.WriteString(".producer")
+		case ptrace.SpanKindConsumer:
+			opBuilder.WriteString(".consumer")
 		}
 
 		// Ex. description="GET /api/users/{user_id}".
@@ -376,6 +383,10 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 			tags[key] = strconv.FormatFloat(attr.Double(), 'g', -1, 64)
 		case pcommon.ValueTypeInt:
 			tags[key] = strconv.FormatInt(attr.Int(), 10)
+		case pcommon.ValueTypeEmpty:
+		case pcommon.ValueTypeMap:
+		case pcommon.ValueTypeSlice:
+		case pcommon.ValueTypeBytes:
 		}
 		return true
 	})

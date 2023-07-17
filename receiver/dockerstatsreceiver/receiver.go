@@ -132,7 +132,10 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 		metadata.WithContainerHostname(container.Config.Hostname),
 		metadata.WithContainerID(container.ID),
 		metadata.WithContainerImageName(container.Config.Image),
-		metadata.WithContainerName(strings.TrimPrefix(container.Name, "/")))
+		metadata.WithContainerName(strings.TrimPrefix(container.Name, "/")),
+		metadata.WithContainerImageID(container.Image),
+		metadata.WithContainerCommandLine(strings.Join(container.Config.Cmd, " ")),
+	)
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		label := label
@@ -198,6 +201,8 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 		"total_unevictable":         r.mb.RecordContainerMemoryTotalUnevictableDataPoint,
 		"hierarchical_memory_limit": r.mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint,
 		"hierarchical_memsw_limit":  r.mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint,
+		"anon":                      r.mb.RecordContainerMemoryAnonDataPoint,
+		"file":                      r.mb.RecordContainerMemoryFileDataPoint,
 	}
 
 	for name, val := range memoryStats.Stats {

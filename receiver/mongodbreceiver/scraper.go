@@ -30,10 +30,12 @@ type mongodbScraper struct {
 }
 
 func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
+	v, _ := version.NewVersion("0.0")
 	return &mongodbScraper{
-		logger: settings.Logger,
-		config: config,
-		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		logger:       settings.Logger,
+		config:       config,
+		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion: v,
 	}
 }
 

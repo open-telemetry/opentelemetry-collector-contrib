@@ -28,6 +28,7 @@ type MetricsConfig struct {
 	K8sNodeAllocatableCPU              MetricConfig `mapstructure:"k8s.node.allocatable_cpu"`
 	K8sNodeAllocatableEphemeralStorage MetricConfig `mapstructure:"k8s.node.allocatable_ephemeral_storage"`
 	K8sNodeAllocatableMemory           MetricConfig `mapstructure:"k8s.node.allocatable_memory"`
+	K8sNodeAllocatablePods             MetricConfig `mapstructure:"k8s.node.allocatable_pods"`
 	K8sNodeAllocatableStorage          MetricConfig `mapstructure:"k8s.node.allocatable_storage"`
 	K8sNodeConditionDiskPressure       MetricConfig `mapstructure:"k8s.node.condition_disk_pressure"`
 	K8sNodeConditionMemoryPressure     MetricConfig `mapstructure:"k8s.node.condition_memory_pressure"`
@@ -45,6 +46,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeAllocatableMemory: MetricConfig{
+			Enabled: true,
+		},
+		K8sNodeAllocatablePods: MetricConfig{
 			Enabled: true,
 		},
 		K8sNodeAllocatableStorage: MetricConfig{
