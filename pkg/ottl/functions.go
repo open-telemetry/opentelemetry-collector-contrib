@@ -192,6 +192,12 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "FunctionGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardFunctionGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "StringGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {

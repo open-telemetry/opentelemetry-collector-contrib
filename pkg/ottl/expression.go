@@ -245,6 +245,18 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 	}
 }
 
+type FunctionGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (ExprFunc[K], error)
+}
+
+type StandardFunctionGetter[K any] struct {
+	Getter ExprFunc[K]
+}
+
+func (g StandardFunctionGetter[K]) Get(_ context.Context, _ K) (ExprFunc[K], error) {
+	return g.Getter, nil
+}
+
 // PMapGetter is a Getter that must return a pcommon.Map.
 type PMapGetter[K any] interface {
 	// Get retrieves a pcommon.Map value.
@@ -481,7 +493,8 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	if val.Enum != nil {
 		enum, err := p.enumParser(val.Enum)
 		if err != nil {
-			return nil, err
+			// This is a hack, which assumes a literal function name when the enum parsing fails
+			return &literal[K]{value: string(*val.Enum)}, nil
 		}
 		return &literal[K]{value: int64(*enum)}, nil
 	}

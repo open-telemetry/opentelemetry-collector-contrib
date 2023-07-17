@@ -676,6 +676,41 @@ func Test_StandardStringGetter(t *testing.T) {
 	}
 }
 
+func Test_StandardFunctionGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardFunctionGetter[any]
+		want             ExprFunc[any]
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "function type",
+			getter: StandardFunctionGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			want:  func(context.Context, any) (interface{}, error) { return "str", nil },
+			valid: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			function, err := tt.getter.Get(context.Background(), nil)
+			funcVal, err := function(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, "str", funcVal)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
 // nolint:errorlint
 func Test_StandardStringGetter_WrappedError(t *testing.T) {
 	getter := StandardStringGetter[interface{}]{
