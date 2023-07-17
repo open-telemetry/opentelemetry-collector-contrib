@@ -144,7 +144,7 @@ func (p *Parser[K]) compareDuration(a time.Duration, b any, op compareOp) bool {
 		return comparePrimitives(ansecs, vnsecs, op)
 	default:
 		return p.invalidComparison("cannot compare invalid duration", op)
-  }
+	}
 }
 
 func (p *Parser[K]) compareTime(a time.Time, b any, op compareOp) bool {

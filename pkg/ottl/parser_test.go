@@ -880,7 +880,7 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				m, ok := tCtx.(map[string]time.Duration)
-          if !ok {
+				if !ok {
 					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
 				}
 				return m[val.Fields[0].Name], nil
@@ -890,7 +890,7 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 				return nil
 			},
 		}, nil
-  }
+	}
 	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
