@@ -26,11 +26,19 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 
 ### Server Host Settings
 
-Specifying server host is important for the correct functionality. DataSet expects that 
-the value will be set in the `serverHost` attribute. You can use [attributesprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor),
-if you have stored the value in some different attribute, or `server_host` settings.
+Specifying the server host is crucial for ensuring the correct functionality of DataSet. 
+DataSet expects the server host value to be provided in the `serverHost` attribute. 
+If the server host value is stored in a different attribute, you can use the [attributesprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) to copy it into the serverHost attribute.
 
-If the attribute `serverHost` is not specified or empty, then the value from `server_host.server_host` is used. If it's also not empty, then as fallback the host name can be used.
+You can also utilize the `server_host` settings (described below) to populate the serverHost attribute with different values.
+
+The process of populating the serverHost attribute works as follows:
+
+If the `serverHost` attribute is specified and not empty, it remains unchanged.
+If the `serverHost` attribute is not specified or empty, the value from the `server_host.server_host` setting is used.
+If the `serverHost` attribute is still not specified or empty, and the `server_host.use_host_name` setting is set to `true`, the `hostname` of the node is used as a fallback value.
+
+Make sure to provide the appropriate server host value in the `serverHost` attribute to ensure the proper functionality of DataSet and accurate handling of events.
 
 ### Optional Settings
 
@@ -43,8 +51,8 @@ If the attribute `serverHost` is not specified or empty, then the value from `se
 - `logs`:
   - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
 - `server_host`:
-  - `server_host` (default = ''): Use the specified value as server host for the event.
-  - `use_host_name` (default = true): Use the `hostname` of the node as server host used for the event.
+  - `server_host` (default = ''): Specifies the server host to be used for the events. By default, no specific value is set.
+  - `use_host_name` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
@@ -52,15 +60,12 @@ If the attribute `serverHost` is not specified or empty, then the value from `se
 ### Example
 
 ```yaml
-<<<<<<< HEAD
 processors:
   attributes:
     - key: serverHost
       action: insert
       from_attribute: container_id
 
-=======
->>>>>>> datasetexporter-latest
 exporters:
   dataset/logs:
     # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
@@ -103,3 +108,19 @@ service:
       # add dataset among your exporters
       exporters: [dataset/traces]
 ```
+
+## Examples
+
+### Handling `serverHost` Attribute
+
+Based on the given configuration and scenarios, here's the expected behavior:
+
+1. Log: `{'container_id': 'cont-payment-01'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
+   * Since the attribute `container_id` is set, `attributesprocessor` will copy this value to the `serverHost`.
+   * The resulting event will be: `{'container_id': 'cont-payment-01', 'serverHost': 'cont-payment-01'}`.
+2. Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
+   * Since the attribute `container_id` is not set, the value from the environmental variable `SERVER_HOST`  will be copied to the `serverHost`.
+   * The resulting event will be: `{'attribute.foo': 'Bar', 'serverHost': 'payments-01'}`.
+3. Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
+   * Since the attribute `container_id` is not set and the environmental variable `SERVER_HOST` is empty, the `hostname` of the node (`ip-172-31-27-19`) will be used as the fallback value for `serverHost`. 
+   * The resulting event will be: `{'attribute.foo': 'Bar', 'serverHost': 'ip-172-31-27-19'}`.
