@@ -10,7 +10,7 @@ resource_attributes:
   host.id:
     description: The host.id
     type: string
-    enabled: true
+    enabled: false
   os.type:
     description: The os.type
     type: string
