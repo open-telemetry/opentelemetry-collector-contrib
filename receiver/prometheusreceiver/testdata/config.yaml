@@ -2,6 +2,7 @@ prometheus:
 prometheus/customname:
   buffer_period: 234
   buffer_count: 45
+  trim_metric_suffixes: true
   use_start_time_metric: true
   start_time_metric_regex: '^(.+_)*process_start_time_seconds$'
   report_extra_scrape_metrics: true
