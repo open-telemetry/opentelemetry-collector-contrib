@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -88,27 +89,19 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	)
 
 	twelveNanoseconds, err := time.ParseDuration("12ns")
-	if err != nil {
-		t.Error()
-	}
+	require.NoError(t, err)
+
 	oneMillisecond, err := time.ParseDuration("1ms")
-	if err != nil {
-		t.Error()
-	}
+	require.NoError(t, err)
+
 	threeSeconds, err := time.ParseDuration("3s")
-	if err != nil {
-		t.Error()
-	}
+	require.NoError(t, err)
 
 	twentyTwoMinutes, err := time.ParseDuration("22m")
-	if err != nil {
-		t.Error()
-	}
+	require.NoError(t, err)
 
 	oneHundredThirtyFiveHours, err := time.ParseDuration("135h")
-	if err != nil {
-		t.Error()
-	}
+	require.NoError(t, err)
 
 	var tests = []struct {
 		name string
