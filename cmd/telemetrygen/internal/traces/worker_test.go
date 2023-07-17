@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
@@ -95,6 +96,31 @@ func TestUnthrottled(t *testing.T) {
 	// verify
 	// the minimum acceptable number of spans -- the real number should be > 10k, but CI env might be slower
 	assert.True(t, len(syncer.spans) > 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
+}
+
+func TestSpanKind(t *testing.T) {
+	// prepare
+	syncer := &mockSyncer{}
+
+	tracerProvider := sdktrace.NewTracerProvider()
+	sp := sdktrace.NewSimpleSpanProcessor(syncer)
+	tracerProvider.RegisterSpanProcessor(sp)
+	otel.SetTracerProvider(tracerProvider)
+
+	cfg := &Config{
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumTraces: 1,
+	}
+
+	// test
+	require.NoError(t, Run(cfg, zap.NewNop()))
+
+	// verify that the default Span Kind is being overridden
+	for _, span := range syncer.spans {
+		assert.NotEqual(t, span.SpanKind(), trace.SpanKindInternal)
+	}
 }
 
 var _ sdktrace.SpanExporter = (*mockSyncer)(nil)
