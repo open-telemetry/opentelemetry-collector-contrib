@@ -274,6 +274,32 @@ func Test_createLabelSet(t *testing.T) {
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "otel_scope_name", "inst.scope.name", "otel_scope_version", "v1.2.3"),
 		},
 		{
+			"labels_with_scope_name_and_no_version",
+			pcommon.NewResource(),
+			func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("inst.scope.name")
+				return scope
+			}(),
+			lbs1,
+			map[string]string{},
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "otel_scope_name", "inst.scope.name"),
+		},
+		{
+			"labels_with_scope_version_and_no_name",
+			pcommon.NewResource(),
+			func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetVersion("v1.2.3")
+				return scope
+			}(),
+			lbs1,
+			map[string]string{},
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "otel_scope_version", "v1.2.3"),
+		},
+		{
 			"labels_with_empty_scope",
 			pcommon.NewResource(),
 			func() pcommon.InstrumentationScope {
