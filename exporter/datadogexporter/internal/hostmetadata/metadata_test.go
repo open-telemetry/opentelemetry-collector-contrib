@@ -25,6 +25,7 @@ import (
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/azure"
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -64,6 +65,7 @@ var (
 )
 
 func TestFillHostMetadata(t *testing.T) {
+	override.IMDSRetryer = nil
 	params := exportertest.NewNopCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
