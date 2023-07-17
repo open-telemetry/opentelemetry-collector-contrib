@@ -236,7 +236,7 @@ For values that are not one of the basic primitive types, the only valid compari
 
 A `not equal` notation in the table below means that the "!=" operator returns true, but any other operator returns false. Note that a nil byte array is considered equivalent to nil.
 
-The `time.Time` and `time.Duration` types are compared using comparison functions from their respective packages. For more details on how those comparisons work, see the golang Time package.
+The `time.Time` and `time.Duration` types are compared using comparison functions from their respective packages. For more details on how those comparisons work, see the [Golang Time package](https://pkg.go.dev/time).
 
 
 | base type     | bool        | int64               | float64             | string                          | Bytes                    | nil                    | time.Time                                                    | time.Duration                                        |
