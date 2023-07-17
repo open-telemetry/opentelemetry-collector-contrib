@@ -4,7 +4,6 @@
 package fileconsumer
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -636,9 +635,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
-
-			input, err := cfg.Build(testutil.Logger(t), nopEmit)
+			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -708,7 +705,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
 			splitNone := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 				if !atEOF {
 					return 0, nil, nil
@@ -719,7 +715,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return len(data), data, nil
 			}
 
-			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmit, splitNone)
+			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmitFunc, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -809,9 +805,7 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
-
-			input, err := cfg.Build(testutil.Logger(t), nopEmit)
+			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
