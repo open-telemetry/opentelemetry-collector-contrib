@@ -590,7 +590,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	// Test output warning logs
 	expectedLogs := []observer.LoggedEntry{
 		{
-			Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "the default value for value for DimensionRollupOption will be changing to NoDimensionRollup" +
+			Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
 				"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
 				"information"},
 			Context: []zapcore.Field{},
