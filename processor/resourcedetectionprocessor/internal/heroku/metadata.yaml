@@ -11,10 +11,6 @@ resource_attributes:
     description: The heroku.app.id
     enabled: true
     type: string
-  heroku.app.name:
-    description: The heroku.app.name
-    enabled: true
-    type: string
   heroku.dyno.id:
     description: The heroku.dyno.id
     enabled: true
@@ -27,11 +23,15 @@ resource_attributes:
     description: The heroku.release.creation_timestamp
     enabled: true
     type: string
-  heroku.release.version:
-    description: The heroku.release.version
-    enabled: true
-    type: string
   service.instance.id:
     description: The service.instance.id
     type: string
     enabled: true
+  service.name:
+    description: Heroku app name recorded as service.name.
+    enabled: true
+    type: string
+  service.version:
+    description: Heroku relese version set as service.version.
+    enabled: true
+    type: string
