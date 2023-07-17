@@ -94,8 +94,8 @@ func NewStringAttributeFilter(settings component.TelemetrySettings, key string, 
 func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
 	trace.Lock()
+	defer trace.Unlock()
 	batches := trace.ReceivedBatches
-	trace.Unlock()
 
 	if saf.invertMatch {
 		// Invert Match returns true by default, except when key and value are matched
