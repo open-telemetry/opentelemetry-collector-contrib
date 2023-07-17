@@ -124,9 +124,9 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *batchv1.Job:
 		md = jobs.GetMetrics(dc.settings, o)
 	case *batchv1.CronJob:
-		md = ocsToMetrics(cronjob.GetMetrics(o))
+		md = cronjob.GetMetrics(dc.settings, o)
 	case *batchv1beta1.CronJob:
-		md = ocsToMetrics(cronjob.GetMetricsBeta(o))
+		md = cronjob.GetMetricsBeta(dc.settings, o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
 		md = hpa.GetMetrics(dc.settings, o)
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
