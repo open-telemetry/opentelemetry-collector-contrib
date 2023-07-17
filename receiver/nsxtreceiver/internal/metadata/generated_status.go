@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "nsxtreceiver"
+	Type             = "nsxt"
 	MetricsStability = component.StabilityLevelAlpha
 )

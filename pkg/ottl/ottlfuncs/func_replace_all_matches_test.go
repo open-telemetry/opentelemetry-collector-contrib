@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -30,7 +19,7 @@ func Test_replaceAllMatches(t *testing.T) {
 	input.PutStr("test2", "hello")
 	input.PutStr("test3", "goodbye")
 
-	target := &ottl.StandardTypeGetter[pcommon.Map, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -40,14 +29,18 @@ func Test_replaceAllMatches(t *testing.T) {
 		name        string
 		target      ottl.PMapGetter[pcommon.Map]
 		pattern     string
-		replacement string
+		replacement ottl.StringGetter[pcommon.Map]
 		want        func(pcommon.Map)
 	}{
 		{
-			name:        "replace only matches",
-			target:      target,
-			pattern:     "hello*",
-			replacement: "hello {universe}",
+			name:    "replace only matches",
+			target:  target,
+			pattern: "hello*",
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
+					return "hello {universe}", nil
+				},
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello {universe}")
 				expectedMap.PutStr("test2", "hello {universe}")
@@ -55,10 +48,14 @@ func Test_replaceAllMatches(t *testing.T) {
 			},
 		},
 		{
-			name:        "no matches",
-			target:      target,
-			pattern:     "nothing*",
-			replacement: "nothing {matches}",
+			name:    "no matches",
+			target:  target,
+			pattern: "nothing*",
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
+					return "nothing {matches}", nil
+				},
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("test2", "hello")
@@ -88,26 +85,36 @@ func Test_replaceAllMatches(t *testing.T) {
 
 func Test_replaceAllMatches_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{replacement}", nil
+		},
+	}
 
-	exprFunc, err := replaceAllMatches[interface{}](target, "*", "{replacement}")
+	exprFunc, err := replaceAllMatches[interface{}](target, "*", replacement)
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
 }
 
 func Test_replaceAllMatches_get_nil(t *testing.T) {
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{anything}", nil
+		},
+	}
 
-	exprFunc, err := replaceAllMatches[interface{}](target, "*", "{anything}")
+	exprFunc, err := replaceAllMatches[interface{}](target, "*", replacement)
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)

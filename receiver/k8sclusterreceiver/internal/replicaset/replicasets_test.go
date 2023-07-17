@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package replicaset
 
@@ -18,7 +7,11 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
@@ -46,4 +39,69 @@ func TestReplicasetMetrics(t *testing.T) {
 
 	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.replicaset.available",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
+}
+
+func TestTransform(t *testing.T) {
+	originalRS := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-replicaset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: func() *int32 { replicas := int32(3); return &replicas }(),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "my-app",
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "my-app",
+					},
+				},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name:            "my-container",
+							Image:           "nginx:latest",
+							ImagePullPolicy: v1.PullAlways,
+							Ports: []v1.ContainerPort{
+								{
+									Name:          "http",
+									ContainerPort: 80,
+									Protocol:      v1.ProtocolTCP,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Status: appsv1.ReplicaSetStatus{
+			Replicas:             3,
+			FullyLabeledReplicas: 3,
+			ReadyReplicas:        3,
+			AvailableReplicas:    3,
+		},
+	}
+	wantRS := &appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-replicaset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: func() *int32 { replicas := int32(3); return &replicas }(),
+		},
+		Status: appsv1.ReplicaSetStatus{
+			AvailableReplicas: 3,
+		},
+	}
+	assert.Equal(t, wantRS, Transform(originalRS))
 }

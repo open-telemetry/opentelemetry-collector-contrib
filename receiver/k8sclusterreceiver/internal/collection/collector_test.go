@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package collection
 
@@ -18,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -69,22 +59,6 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 					Metadata: map[string]string{
 						"container.status": "running",
 					},
-				},
-			},
-		},
-		{
-			name:          "Empty container id skips container resource",
-			metadataStore: &metadata.Store{},
-			resource: testutils.NewPodWithContainer(
-				"0",
-				testutils.NewPodSpecWithContainer("container-name"),
-				testutils.NewPodStatusWithContainer("container-name", ""),
-			),
-			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
-				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
-					ResourceIDKey: "k8s.pod.uid",
-					ResourceID:    "test-pod-0-uid",
-					Metadata:      commonPodMetadata,
 				},
 			},
 		},
@@ -274,10 +248,11 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		logger := zap.New(observedLogger)
+		set := receivertest.NewNopCreateSettings()
+		set.TelemetrySettings.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &DataCollector{
-				logger:                 logger,
+				settings:               set,
 				metadataStore:          tt.metadataStore,
 				nodeConditionsToReport: []string{},
 			}

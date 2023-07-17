@@ -6,67 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for chrony receiver metrics.
-type MetricsConfig struct {
-	NtpFrequencyOffset MetricConfig `mapstructure:"ntp.frequency.offset"`
-	NtpSkew            MetricConfig `mapstructure:"ntp.skew"`
-	NtpStratum         MetricConfig `mapstructure:"ntp.stratum"`
-	NtpTimeCorrection  MetricConfig `mapstructure:"ntp.time.correction"`
-	NtpTimeLastOffset  MetricConfig `mapstructure:"ntp.time.last_offset"`
-	NtpTimeRmsOffset   MetricConfig `mapstructure:"ntp.time.rms_offset"`
-	NtpTimeRootDelay   MetricConfig `mapstructure:"ntp.time.root_delay"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		NtpFrequencyOffset: MetricConfig{
-			Enabled: false,
-		},
-		NtpSkew: MetricConfig{
-			Enabled: true,
-		},
-		NtpStratum: MetricConfig{
-			Enabled: false,
-		},
-		NtpTimeCorrection: MetricConfig{
-			Enabled: true,
-		},
-		NtpTimeLastOffset: MetricConfig{
-			Enabled: true,
-		},
-		NtpTimeRmsOffset: MetricConfig{
-			Enabled: false,
-		},
-		NtpTimeRootDelay: MetricConfig{
-			Enabled: false,
-		},
-	}
-}
 
 // AttributeLeapStatus specifies the a value leap.status attribute.
 type AttributeLeapStatus int
@@ -455,11 +398,6 @@ func newMetricNtpTimeRootDelay(cfg MetricConfig) metricNtpTimeRootDelay {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics MetricsConfig `mapstructure:"metrics"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -484,12 +422,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics: DefaultMetricsConfig(),
 	}
 }
 
@@ -554,7 +486,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/chrony receiver")
+	ils.Scope().SetName("otelcol/chronyreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricNtpFrequencyOffset.emit(ils.Metrics())

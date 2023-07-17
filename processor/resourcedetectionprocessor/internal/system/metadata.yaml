@@ -1,0 +1,17 @@
+type: resourcedetectionprocessor/system
+
+parent: resourcedetection
+
+resource_attributes:
+  host.name:
+    description: The host.name
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: false
+  os.type:
+    description: The os.type
+    type: string
+    enabled: true

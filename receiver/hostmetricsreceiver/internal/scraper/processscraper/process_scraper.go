@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
@@ -29,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handlecount"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
@@ -42,6 +32,7 @@ const (
 	threadMetricsLen            = 1
 	contextSwitchMetricsLen     = 1
 	fileDescriptorMetricsLen    = 1
+	handleMetricsLen            = 1
 	signalMetricsLen            = 1
 
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
@@ -59,6 +50,8 @@ type scraper struct {
 	// for mocking
 	getProcessCreateTime func(p processHandle) (int64, error)
 	getProcessHandles    func() (processHandles, error)
+
+	handleCountManager handlecount.Manager
 }
 
 // newProcessScraper creates a Process Scraper
@@ -70,6 +63,7 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 		getProcessHandles:    getProcessHandlesInternal,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
+		handleCountManager:   handlecount.NewManager(),
 	}
 
 	var err error
@@ -148,6 +142,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(fileDescriptorMetricsLen, fmt.Errorf("error reading open file descriptor count for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
+		if err = s.scrapeAndAppendHandlesMetric(now, int64(md.pid)); err != nil {
+			errs.AddPartial(handleMetricsLen, fmt.Errorf("error reading handle count for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
 		if err = s.scrapeAndAppendSignalsPendingMetric(now, md.handle); err != nil {
 			errs.AddPartial(signalMetricsLen, fmt.Errorf("error reading pending signals for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
@@ -177,6 +175,10 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	}
 
 	var errs scrapererror.ScrapeErrors
+
+	if err := s.refreshHandleCounts(); err != nil {
+		errs.Add(err)
+	}
 
 	data := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
@@ -248,7 +250,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 }
 
 func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle, pid int32) error {
-	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled && !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 		return nil
 	}
 
@@ -257,7 +259,14 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 		return err
 	}
 
-	s.recordCPUTimeMetric(now, times)
+	if s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
+		s.recordCPUTimeMetric(now, times)
+	}
+
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
+		return nil
+	}
+
 	if _, ok := s.ucals[pid]; !ok {
 		s.ucals[pid] = &ucal.CPUUtilizationCalculator{}
 	}
@@ -375,6 +384,29 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(now pcommon.Timestamp
 	}
 
 	s.mb.RecordProcessOpenFileDescriptorsDataPoint(now, int64(fds))
+
+	return nil
+}
+
+func (s *scraper) refreshHandleCounts() error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
+		return nil
+	}
+
+	return s.handleCountManager.Refresh()
+}
+
+func (s *scraper) scrapeAndAppendHandlesMetric(now pcommon.Timestamp, pid int64) error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
+		return nil
+	}
+
+	count, err := s.handleCountManager.GetProcessHandleCount(pid)
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessHandlesDataPoint(now, int64(count))
 
 	return nil
 }

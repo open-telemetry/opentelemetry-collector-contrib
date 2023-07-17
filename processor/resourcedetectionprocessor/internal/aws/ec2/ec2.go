@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 
@@ -31,6 +20,7 @@ import (
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
 
 const (
@@ -42,9 +32,10 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	metadataProvider ec2provider.Provider
-	tagKeyRegexes    []*regexp.Regexp
-	logger           *zap.Logger
+	metadataProvider   ec2provider.Provider
+	tagKeyRegexes      []*regexp.Regexp
+	logger             *zap.Logger
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -57,10 +48,12 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 	if err != nil {
 		return nil, err
 	}
+
 	return &Detector{
-		metadataProvider: ec2provider.NewProvider(sess),
-		tagKeyRegexes:    tagKeyRegexes,
-		logger:           set.Logger,
+		metadataProvider:   ec2provider.NewProvider(sess),
+		tagKeyRegexes:      tagKeyRegexes,
+		logger:             set.Logger,
+		resourceAttributes: cfg.ResourceAttributes,
 	}, nil
 }
 
@@ -82,15 +75,33 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	attr := res.Attributes()
-	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attr.PutStr(conventions.AttributeCloudRegion, meta.Region)
-	attr.PutStr(conventions.AttributeCloudAccountID, meta.AccountID)
-	attr.PutStr(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
-	attr.PutStr(conventions.AttributeHostID, meta.InstanceID)
-	attr.PutStr(conventions.AttributeHostImageID, meta.ImageID)
-	attr.PutStr(conventions.AttributeHostType, meta.InstanceType)
-	attr.PutStr(conventions.AttributeHostName, hostname)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	}
+	if d.resourceAttributes.CloudPlatform.Enabled {
+		attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	}
+	if d.resourceAttributes.CloudRegion.Enabled {
+		attr.PutStr(conventions.AttributeCloudRegion, meta.Region)
+	}
+	if d.resourceAttributes.CloudAccountID.Enabled {
+		attr.PutStr(conventions.AttributeCloudAccountID, meta.AccountID)
+	}
+	if d.resourceAttributes.CloudAvailabilityZone.Enabled {
+		attr.PutStr(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
+	}
+	if d.resourceAttributes.HostID.Enabled {
+		attr.PutStr(conventions.AttributeHostID, meta.InstanceID)
+	}
+	if d.resourceAttributes.HostImageID.Enabled {
+		attr.PutStr(conventions.AttributeHostImageID, meta.ImageID)
+	}
+	if d.resourceAttributes.HostType.Enabled {
+		attr.PutStr(conventions.AttributeHostType, meta.InstanceType)
+	}
+	if d.resourceAttributes.HostName.Enabled {
+		attr.PutStr(conventions.AttributeHostName, hostname)
+	}
 
 	if len(d.tagKeyRegexes) != 0 {
 		client := getHTTPClientSettings(ctx, d.logger)

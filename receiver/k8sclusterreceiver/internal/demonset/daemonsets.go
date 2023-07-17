@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package demonset // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
 
@@ -53,6 +42,20 @@ var daemonSetReadyMetric = &metricspb.MetricDescriptor{
 	Description: "Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+// Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new daemonset fields.
+func Transform(ds *appsv1.DaemonSet) *appsv1.DaemonSet {
+	return &appsv1.DaemonSet{
+		ObjectMeta: metadata.TransformObjectMeta(ds.ObjectMeta),
+		Status: appsv1.DaemonSetStatus{
+			CurrentNumberScheduled: ds.Status.CurrentNumberScheduled,
+			DesiredNumberScheduled: ds.Status.DesiredNumberScheduled,
+			NumberMisscheduled:     ds.Status.NumberMisscheduled,
+			NumberReady:            ds.Status.NumberReady,
+		},
+	}
 }
 
 func GetMetrics(ds *appsv1.DaemonSet) []*agentmetricspb.ExportMetricsServiceRequest {

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
@@ -31,6 +20,8 @@ const (
 	// this constant was set to 1 hour - max allowed interval by Prometheus.
 	backfillIntervalDuration = time.Hour
 	topLockStatsMetricName   = "top minute lock stats"
+	topQueryStatsMetricName  = "top minute query stats"
+	maxLengthTruncateText    = 1024
 )
 
 type intervalStatsReader struct {
@@ -38,6 +29,7 @@ type intervalStatsReader struct {
 	timestampsGenerator               *timestampsGenerator
 	lastPullTimestamp                 time.Time
 	hideTopnLockstatsRowrangestartkey bool
+	truncateText                      bool
 }
 
 func newIntervalStatsReader(
@@ -62,6 +54,7 @@ func newIntervalStatsReader(
 		currentStatsReader:                reader,
 		timestampsGenerator:               tsGenerator,
 		hideTopnLockstatsRowrangestartkey: config.HideTopnLockstatsRowrangestartkey,
+		truncateText:                      config.TruncateText,
 	}
 }
 
@@ -89,6 +82,11 @@ func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.Metric
 		if reader.hideTopnLockstatsRowrangestartkey && metricMetadata != nil && metricMetadata.Name == topLockStatsMetricName {
 			for _, dataPoint := range dataPoints {
 				dataPoint.HideLockStatsRowrangestartkeyPII()
+			}
+		}
+		if reader.truncateText && metricMetadata != nil && metricMetadata.Name == topQueryStatsMetricName {
+			for _, dataPoint := range dataPoints {
+				dataPoint.TruncateQueryText(maxLengthTruncateText)
 			}
 		}
 

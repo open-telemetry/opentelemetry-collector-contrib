@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package testutil contains the test util functions
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
@@ -108,7 +97,7 @@ type validateAPIKeyResponse struct {
 	Valid bool `json:"valid"`
 }
 
-func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: true}
 	resJSON, _ := json.Marshal(res)
 
@@ -119,7 +108,7 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpointInvalid(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: false}
 	resJSON, _ := json.Marshal(res)
 
@@ -134,7 +123,7 @@ type metricsResponse struct {
 	Status string `json:"status"`
 }
 
-func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
+func metricsEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 
@@ -146,7 +135,7 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func metricsV2Endpoint(w http.ResponseWriter, r *http.Request) {
+func metricsV2Endpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 
@@ -229,7 +218,7 @@ type MockSourceProvider struct {
 	Src source.Source
 }
 
-func (s *MockSourceProvider) Source(ctx context.Context) (source.Source, error) {
+func (s *MockSourceProvider) Source(_ context.Context) (source.Source, error) {
 	return s.Src, nil
 }
 
@@ -237,7 +226,7 @@ type MockStatsProcessor struct {
 	In []pb.ClientStatsPayload
 }
 
-func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, lang, tracerVersion string) {
+func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, _, _ string) {
 	s.In = append(s.In, in)
 }
 

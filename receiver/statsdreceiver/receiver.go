@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
@@ -70,7 +59,9 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		reporter:     rep,
-		parser:       &protocol.StatsDParser{},
+		parser: &protocol.StatsDParser{
+			BuildInfo: set.BuildInfo,
+		},
 	}
 	return r, nil
 }
@@ -133,7 +124,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown stops the StatsD receiver.
 func (r *statsdReceiver) Shutdown(context.Context) error {
-	if r.cancel == nil {
+	if r.cancel == nil || r.server == nil {
 		return nil
 	}
 	err := r.server.Close()
@@ -142,10 +133,5 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 }
 
 func (r *statsdReceiver) Flush(ctx context.Context, metrics pmetric.Metrics, nextConsumer consumer.Metrics) error {
-	error := nextConsumer.ConsumeMetrics(ctx, metrics)
-	if error != nil {
-		return error
-	}
-
-	return nil
+	return nextConsumer.ConsumeMetrics(ctx, metrics)
 }

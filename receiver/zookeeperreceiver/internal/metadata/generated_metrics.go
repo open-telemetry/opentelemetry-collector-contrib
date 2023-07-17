@@ -6,121 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for zookeeperreceiver metrics.
-type MetricsConfig struct {
-	ZookeeperConnectionActive            MetricConfig `mapstructure:"zookeeper.connection.active"`
-	ZookeeperDataTreeEphemeralNodeCount  MetricConfig `mapstructure:"zookeeper.data_tree.ephemeral_node.count"`
-	ZookeeperDataTreeSize                MetricConfig `mapstructure:"zookeeper.data_tree.size"`
-	ZookeeperFileDescriptorLimit         MetricConfig `mapstructure:"zookeeper.file_descriptor.limit"`
-	ZookeeperFileDescriptorOpen          MetricConfig `mapstructure:"zookeeper.file_descriptor.open"`
-	ZookeeperFollowerCount               MetricConfig `mapstructure:"zookeeper.follower.count"`
-	ZookeeperFsyncExceededThresholdCount MetricConfig `mapstructure:"zookeeper.fsync.exceeded_threshold.count"`
-	ZookeeperLatencyAvg                  MetricConfig `mapstructure:"zookeeper.latency.avg"`
-	ZookeeperLatencyMax                  MetricConfig `mapstructure:"zookeeper.latency.max"`
-	ZookeeperLatencyMin                  MetricConfig `mapstructure:"zookeeper.latency.min"`
-	ZookeeperPacketCount                 MetricConfig `mapstructure:"zookeeper.packet.count"`
-	ZookeeperRequestActive               MetricConfig `mapstructure:"zookeeper.request.active"`
-	ZookeeperSyncPending                 MetricConfig `mapstructure:"zookeeper.sync.pending"`
-	ZookeeperWatchCount                  MetricConfig `mapstructure:"zookeeper.watch.count"`
-	ZookeeperZnodeCount                  MetricConfig `mapstructure:"zookeeper.znode.count"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		ZookeeperConnectionActive: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperDataTreeEphemeralNodeCount: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperDataTreeSize: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperFileDescriptorLimit: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperFileDescriptorOpen: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperFollowerCount: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperFsyncExceededThresholdCount: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperLatencyAvg: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperLatencyMax: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperLatencyMin: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperPacketCount: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperRequestActive: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperSyncPending: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperWatchCount: MetricConfig{
-			Enabled: true,
-		},
-		ZookeeperZnodeCount: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for zookeeperreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	ServerState ResourceAttributeConfig `mapstructure:"server.state"`
-	ZkVersion   ResourceAttributeConfig `mapstructure:"zk.version"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		ServerState: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ZkVersion: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeDirection specifies the a value direction attribute.
 type AttributeDirection int
@@ -782,6 +671,55 @@ func newMetricZookeeperRequestActive(cfg MetricConfig) metricZookeeperRequestAct
 	return m
 }
 
+type metricZookeeperRuok struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills zookeeper.ruok metric with initial data.
+func (m *metricZookeeperRuok) init() {
+	m.data.SetName("zookeeper.ruok")
+	m.data.SetDescription("Response from zookeeper ruok command")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricZookeeperRuok) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricZookeeperRuok) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricZookeeperRuok) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricZookeeperRuok(cfg MetricConfig) metricZookeeperRuok {
+	m := metricZookeeperRuok{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricZookeeperSyncPending struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -935,12 +873,6 @@ func newMetricZookeeperZnodeCount(cfg MetricConfig) metricZookeeperZnodeCount {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -962,6 +894,7 @@ type MetricsBuilder struct {
 	metricZookeeperLatencyMin                  metricZookeeperLatencyMin
 	metricZookeeperPacketCount                 metricZookeeperPacketCount
 	metricZookeeperRequestActive               metricZookeeperRequestActive
+	metricZookeeperRuok                        metricZookeeperRuok
 	metricZookeeperSyncPending                 metricZookeeperSyncPending
 	metricZookeeperWatchCount                  metricZookeeperWatchCount
 	metricZookeeperZnodeCount                  metricZookeeperZnodeCount
@@ -974,13 +907,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -1002,6 +928,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(mbc.Metrics.ZookeeperLatencyMin),
 		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(mbc.Metrics.ZookeeperPacketCount),
 		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(mbc.Metrics.ZookeeperRequestActive),
+		metricZookeeperRuok:                        newMetricZookeeperRuok(mbc.Metrics.ZookeeperRuok),
 		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(mbc.Metrics.ZookeeperSyncPending),
 		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(mbc.Metrics.ZookeeperWatchCount),
 		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(mbc.Metrics.ZookeeperZnodeCount),
@@ -1087,6 +1014,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricZookeeperLatencyMin.emit(ils.Metrics())
 	mb.metricZookeeperPacketCount.emit(ils.Metrics())
 	mb.metricZookeeperRequestActive.emit(ils.Metrics())
+	mb.metricZookeeperRuok.emit(ils.Metrics())
 	mb.metricZookeeperSyncPending.emit(ils.Metrics())
 	mb.metricZookeeperWatchCount.emit(ils.Metrics())
 	mb.metricZookeeperZnodeCount.emit(ils.Metrics())
@@ -1168,6 +1096,11 @@ func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pcommon.Timesta
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
 func (mb *MetricsBuilder) RecordZookeeperRequestActiveDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricZookeeperRequestActive.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordZookeeperRuokDataPoint adds a data point to zookeeper.ruok metric.
+func (mb *MetricsBuilder) RecordZookeeperRuokDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricZookeeperRuok.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperSyncPendingDataPoint adds a data point to zookeeper.sync.pending metric.

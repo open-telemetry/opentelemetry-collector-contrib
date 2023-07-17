@@ -1,22 +1,14 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package syslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 
 	"go.uber.org/zap"
 
@@ -70,6 +62,9 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if c.TCP != nil {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 		tcpInputCfg.BaseConfig = *c.TCP
+		if syslogParserCfg.EnableOctetCounting {
+			tcpInputCfg.MultiLineBuilder = OctetMultiLineBuilder
+		}
 
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
@@ -146,4 +141,42 @@ func (t *Input) Stop() error {
 func (t *Input) SetOutputs(operators []operator.Operator) error {
 	t.parser.SetOutputIDs(t.GetOutputIDs())
 	return t.parser.SetOutputs(operators)
+}
+
+func OctetMultiLineBuilder(_ helper.Encoding) (bufio.SplitFunc, error) {
+	return newOctetFrameSplitFunc(true), nil
+}
+
+func newOctetFrameSplitFunc(flushAtEOF bool) bufio.SplitFunc {
+	frameRegex := regexp.MustCompile(`^[1-9]\d*\s`)
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		frameLoc := frameRegex.FindIndex(data)
+		if frameLoc == nil {
+			// Flush if no more data is expected
+			if len(data) != 0 && atEOF && flushAtEOF {
+				token = data
+				advance = len(data)
+				return
+			}
+			return 0, nil, nil
+		}
+
+		frameMaxIndex := frameLoc[1]
+		// delimit space between length and log
+		frameLenValue, err := strconv.Atoi(string(data[:frameMaxIndex-1]))
+		if err != nil {
+			return 0, nil, err // read more data and try again.
+		}
+
+		advance = frameMaxIndex + frameLenValue
+		// the limitation here is that we can only line split within a single buffer
+		// the context of buffer length cannot be pass onto the next scan
+		capacity := cap(data)
+		if advance > capacity {
+			return capacity, data, nil
+		}
+		token = data[:advance]
+		err = nil
+		return
+	}
 }

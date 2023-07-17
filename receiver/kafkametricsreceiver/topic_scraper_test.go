@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkametricsreceiver
 
@@ -134,18 +123,17 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
-		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
 		case "kafka.topic.partitions":
-			assert.Equal(t, dp.IntValue(), int64(len(testPartitions)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testPartitions)))
 		case "kafka.partition.current_offset":
-			assert.Equal(t, dp.IntValue(), testOffset)
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
 		case "kafka.partition.oldest_offset":
-			assert.Equal(t, dp.IntValue(), testOffset)
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
 		case "kafka.partition.replicas":
-			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
 		case "kafka.partition.replicas_in_sync":
-			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
 		}
 	}
 }

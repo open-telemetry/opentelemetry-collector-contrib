@@ -1,0 +1,8 @@
+---
+type: encoding
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []

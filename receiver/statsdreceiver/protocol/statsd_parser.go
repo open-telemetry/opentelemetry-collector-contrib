@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
@@ -24,6 +13,8 @@ import (
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -59,6 +50,8 @@ const (
 	DisableObserver   ObserverType = "disabled"
 
 	DefaultObserverType = DisableObserver
+
+	receiverName = "otelcol/statsdreceiver"
 )
 
 type TimerHistogramMapping struct {
@@ -88,6 +81,7 @@ type StatsDParser struct {
 	timerEvents          ObserverCategory
 	histogramEvents      ObserverCategory
 	lastIntervalTime     time.Time
+	BuildInfo            component.BuildInfo
 }
 
 type instruments struct {
@@ -174,6 +168,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 		case TimingTypeName, TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+		case CounterTypeName, GaugeTypeName:
 		}
 	}
 	return nil
@@ -200,36 +195,42 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 		}
 		rm := batch.Metrics.ResourceMetrics().AppendEmpty()
 		for _, metric := range instrument.gauges {
-			metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
+			p.copyMetricAndScope(rm, metric)
 		}
 
 		for _, metric := range instrument.timersAndDistributions {
-			metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
+			p.copyMetricAndScope(rm, metric)
 		}
 
 		for _, metric := range instrument.counters {
 			setTimestampsForCounterMetric(metric, p.lastIntervalTime, now)
-			metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
+			p.copyMetricAndScope(rm, metric)
 		}
 
 		for desc, summaryMetric := range instrument.summaries {
+			ilm := rm.ScopeMetrics().AppendEmpty()
+			p.setVersionAndNameScope(ilm.Scope())
+
 			buildSummaryMetric(
 				desc,
 				summaryMetric,
 				p.lastIntervalTime,
 				now,
 				statsDDefaultPercentiles,
-				rm.ScopeMetrics().AppendEmpty(),
+				ilm,
 			)
 		}
 
 		for desc, histogramMetric := range instrument.histograms {
+			ilm := rm.ScopeMetrics().AppendEmpty()
+			p.setVersionAndNameScope(ilm.Scope())
+
 			buildHistogramMetric(
 				desc,
 				histogramMetric,
 				p.lastIntervalTime,
 				now,
-				rm.ScopeMetrics().AppendEmpty(),
+				ilm,
 			)
 		}
 
@@ -237,6 +238,17 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 	}
 	p.resetState(now)
 	return batchMetrics
+}
+
+func (p *StatsDParser) copyMetricAndScope(rm pmetric.ResourceMetrics, metric pmetric.ScopeMetrics) {
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	metric.CopyTo(ilm)
+	p.setVersionAndNameScope(ilm.Scope())
+}
+
+func (p *StatsDParser) setVersionAndNameScope(ilm pcommon.InstrumentationScope) {
+	ilm.SetVersion(p.BuildInfo.Version)
+	ilm.SetName(receiverName)
 }
 
 var timeNowFunc = time.Now
@@ -247,6 +259,7 @@ func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 		return p.histogramEvents
 	case TimingType:
 		return p.timerEvents
+	case CounterType, GaugeType:
 	}
 	return defaultObserverCategory
 }

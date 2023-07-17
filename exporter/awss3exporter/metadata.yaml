@@ -4,4 +4,4 @@ status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo]

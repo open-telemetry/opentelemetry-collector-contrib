@@ -1,20 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -22,7 +12,8 @@ import (
 	"strings"
 
 	"github.com/Showmax/go-fqdn"
-	"github.com/panta/machineid"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -64,15 +55,16 @@ type Provider interface {
 	ReverseLookupHost() (string, error)
 
 	// HostID returns Host Unique Identifier
-	HostID() (string, error)
+	HostID(ctx context.Context) (string, error)
 }
 
 type systemMetadataProvider struct {
 	nameInfoProvider
+	newResource func(context.Context, ...resource.Option) (*resource.Resource, error)
 }
 
 func NewProvider() Provider {
-	return systemMetadataProvider{nameInfoProvider: newNameInfoProvider()}
+	return systemMetadataProvider{nameInfoProvider: newNameInfoProvider(), newResource: resource.New}
 }
 
 func (systemMetadataProvider) OSType() (string, error) {
@@ -128,6 +120,27 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 	return "", fmt.Errorf("reverseLookup failed to convert IP addresses to name: %w", err)
 }
 
-func (p systemMetadataProvider) HostID() (string, error) {
-	return machineid.ID()
+func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
+	res, err := p.newResource(ctx,
+		resource.WithHostID(),
+	)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to obtain host id: %w", err)
+	}
+
+	iter := res.Iter()
+
+	for iter.Next() {
+		if iter.Attribute().Key == conventions.AttributeHostID {
+			v := iter.Attribute().Value.Emit()
+
+			if v == "" {
+				return "", fmt.Errorf("empty host id")
+			}
+			return v, nil
+		}
+	}
+
+	return "", fmt.Errorf("failed to obtain host id")
 }

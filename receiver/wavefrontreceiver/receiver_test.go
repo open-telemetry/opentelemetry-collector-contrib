@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package wavefrontreceiver
 
@@ -22,16 +11,15 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
@@ -55,73 +43,73 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	tests := []struct {
 		name string
 		msg  string
-		want []*metricspb.Metric
+		want []pmetric.Metric
 	}{
 		{
 			name: "single.line",
 			msg:  "single.metric 1 1582231120 source=e2e\n",
-			want: []*metricspb.Metric{
-				buildMetric(
-					metricspb.MetricDescriptor_GAUGE_INT64,
+			want: []pmetric.Metric{
+				buildIntMetric(
 					"single.metric",
-					[]string{"source"},
-					[]string{"e2e"},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{Seconds: 1582231120},
-						Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-					},
+					func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("source", "e2e")
+						return m
+					}(),
+					1582231120,
+					1,
 				),
 			},
 		},
 		{
 			name: "single.line.no.newline",
 			msg:  "single.metric 1 1582231120 source=e2e",
-			want: []*metricspb.Metric{
-				buildMetric(
-					metricspb.MetricDescriptor_GAUGE_INT64,
+			want: []pmetric.Metric{
+				buildIntMetric(
 					"single.metric",
-					[]string{"source"},
-					[]string{"e2e"},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{Seconds: 1582231120},
-						Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-					},
+					func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("source", "e2e")
+						return m
+					}(),
+					1582231120,
+					1,
 				),
 			},
 		},
 		{
 			name: "multiple.lines",
 			msg:  "m0 0 1582231120 source=s0\nm1 1 1582231121 source=s1\nm2 2 1582231122 source=s2\n",
-			want: []*metricspb.Metric{
-				buildMetric(
-					metricspb.MetricDescriptor_GAUGE_INT64,
+			want: []pmetric.Metric{
+				buildIntMetric(
 					"m0",
-					[]string{"source"},
-					[]string{"s0"},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{Seconds: 1582231120},
-						Value:     &metricspb.Point_Int64Value{Int64Value: 0},
-					},
+					func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("source", "s0")
+						return m
+					}(),
+					1582231120,
+					0,
 				),
-				buildMetric(
-					metricspb.MetricDescriptor_GAUGE_INT64,
+				buildIntMetric(
 					"m1",
-					[]string{"source"},
-					[]string{"s1"},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{Seconds: 1582231121},
-						Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-					},
+					func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("source", "s1")
+						return m
+					}(),
+					1582231121,
+					1,
 				),
-				buildMetric(
-					metricspb.MetricDescriptor_GAUGE_INT64,
+				buildIntMetric(
 					"m2",
-					[]string{"source"},
-					[]string{"s2"},
-					&metricspb.Point{
-						Timestamp: &timestamppb.Timestamp{Seconds: 1582231122},
-						Value:     &metricspb.Point_Int64Value{Int64Value: 2},
-					},
+					func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("source", "s2")
+						return m
+					}(),
+					1582231122,
+					2,
 				),
 			},
 		},
@@ -144,14 +132,19 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 		}, 10*time.Second, 5*time.Millisecond)
 
 		metrics := sink.AllMetrics()
-		var gotOldMetrics []*metricspb.Metric
+		var gotMetrics []pmetric.Metric
 		for _, md := range metrics {
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
-				_, _, metrics := internaldata.ResourceMetricsToOC(md.ResourceMetrics().At(i))
-				gotOldMetrics = append(gotOldMetrics, metrics...)
+				rm := md.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						gotMetrics = append(gotMetrics, sm.Metrics().At(k))
+					}
+				}
 			}
 		}
-		assert.Equal(t, tt.want, gotOldMetrics)
+		assert.Equal(t, tt.want, gotMetrics)
 		sink.Reset()
 	}
 }

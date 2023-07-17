@@ -4,5 +4,5 @@ status:
   class: processor
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo, aws]
   warnings: [Statefulness]

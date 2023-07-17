@@ -14,11 +14,13 @@ body:
       # Start Collector components list
       - cmd/configschema
       - cmd/mdatagen
+      - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
@@ -64,6 +66,7 @@ body:
       - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
+      - exporter/syslog
       - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
@@ -71,6 +74,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -92,6 +96,7 @@ body:
       - internal/docker
       - internal/filter
       - internal/k8sconfig
+      - internal/k8stest
       - internal/kubelet
       - internal/metadataproviders
       - internal/sharedcomponent
@@ -126,6 +131,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
+      - processor/remoteobserver
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -141,7 +147,9 @@ body:
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
+      - receiver/apachespark
       - receiver/awscloudwatch
+      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
@@ -210,6 +218,7 @@ body:
       - receiver/snmp
       - receiver/snowflake
       - receiver/solace
+      - receiver/splunkenterprise
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver

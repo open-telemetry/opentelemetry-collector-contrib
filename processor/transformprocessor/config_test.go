@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package transformprocessor
 
@@ -21,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -31,9 +21,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id           component.ID
-		expected     component.Config
-		errorMessage string
+		id       component.ID
+		expected component.Config
+		errorLen int
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -103,28 +93,26 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_trace"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_trace"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "unknown_function_trace"),
-			errorMessage: "undefined function not_a_function",
+			id: component.NewIDWithName(metadata.Type, "unknown_function_trace"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "unknown_function_metric"),
-			errorMessage: "undefined function not_a_function",
+			id: component.NewIDWithName(metadata.Type, "unknown_function_metric"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\" Key*)",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "unknown_function_log"),
-			errorMessage: "undefined function not_a_function",
+			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
+			errorLen: 3,
 		},
 	}
 	for _, tt := range tests {
@@ -140,7 +128,13 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				err = component.ValidateConfig(cfg)
+				assert.Error(t, err)
+
+				if tt.errorLen > 0 {
+					assert.Equal(t, tt.errorLen, len(multierr.Errors(err)))
+				}
+
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))

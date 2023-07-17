@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -119,6 +108,7 @@ type testData struct {
 	pages           []mockPrometheusResponse
 	attributes      pcommon.Map
 	validateScrapes bool
+	normalizedName  bool
 	validateFunc    func(t *testing.T, td *testData, result []pmetric.ResourceMetrics)
 }
 
@@ -233,13 +223,13 @@ func metricsCount(resourceMetric pmetric.ResourceMetrics) int {
 	return metricsCount
 }
 
-func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.ResourceMetrics {
+func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedNames bool) []pmetric.ResourceMetrics {
 	var out []pmetric.ResourceMetrics
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics) == expectedScrapeMetricCount {
-			if isFirstFailedScrape(allMetrics) {
+		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount {
+			if isFirstFailedScrape(allMetrics, normalizedNames) {
 				continue
 			}
 			assertUp(t, 1, allMetrics)
@@ -251,7 +241,7 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.Reso
 	return out
 }
 
-func isFirstFailedScrape(metrics []pmetric.Metric) bool {
+func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 	for _, m := range metrics {
 		if m.Name() == "up" {
 			if m.Gauge().DataPoints().At(0).DoubleValue() == 1 { // assumed up will not have multiple datapoints
@@ -261,7 +251,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 	}
 
 	for _, m := range metrics {
-		if isDefaultMetrics(m) {
+		if isDefaultMetrics(m, normalizedNames) {
 			continue
 		}
 
@@ -290,6 +280,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 					return false
 				}
 			}
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 		}
 	}
 	return true
@@ -305,13 +296,13 @@ func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 	t.Error("No 'up' metric found")
 }
 
-func countScrapeMetricsRM(got pmetric.ResourceMetrics) int {
+func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int {
 	n := 0
 	ilms := got.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		for i := 0; i < ilm.Metrics().Len(); i++ {
-			if isDefaultMetrics(ilm.Metrics().At(i)) {
+			if isDefaultMetrics(ilm.Metrics().At(i), normalizedNames) {
 				n++
 			}
 		}
@@ -319,23 +310,29 @@ func countScrapeMetricsRM(got pmetric.ResourceMetrics) int {
 	return n
 }
 
-func countScrapeMetrics(metrics []pmetric.Metric) int {
+func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
 	n := 0
 	for _, m := range metrics {
-		if isDefaultMetrics(m) {
+		if isDefaultMetrics(m, normalizedNames) {
 			n++
 		}
 	}
 	return n
 }
 
-func isDefaultMetrics(m pmetric.Metric) bool {
+func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	switch m.Name() {
-	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added", "scrape_duration":
+	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
 		return true
+
+	// if normalizedNames is true, we expect unit `_seconds` to be trimmed.
+	case "scrape_duration_seconds":
+		return !normalizedNames
+	case "scrape_duration":
+		return normalizedNames
 	default:
-		return false
 	}
+	return false
 }
 
 type metricTypeComparator func(*testing.T, pmetric.Metric)
@@ -352,8 +349,12 @@ type dataPointExpectation struct {
 type testExpectation func(*testing.T, pmetric.ResourceMetrics)
 
 func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation) {
+	doCompareNormalized(t, name, want, got, expectations, false)
+}
+
+func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation, normalizedNames bool) {
 	t.Run(name, func(t *testing.T) {
-		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
+		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got, normalizedNames))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
 		for k, v := range want.AsRaw() {
 			val, ok := got.Resource().Attributes().Get(k)
@@ -401,6 +402,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 				}
 			}
 		}
@@ -628,7 +630,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			}
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name])
+				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
 			}
 			target.validateFunc(t, target, scrapes)
 		})
@@ -672,6 +674,7 @@ func getTS(ms pmetric.MetricSlice) pcommon.Timestamp {
 		return m.Summary().DataPoints().At(0).Timestamp()
 	case pmetric.MetricTypeExponentialHistogram:
 		return m.ExponentialHistogram().DataPoints().At(0).Timestamp()
+	case pmetric.MetricTypeEmpty:
 	}
 	return 0
 }

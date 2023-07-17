@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
@@ -93,8 +82,41 @@ func applyCurrentTime(md pmetric.Metrics, t pcommon.Timestamp) {
 					applyCurrentTimeNumberDataPoint(ms.At(k).Gauge().DataPoints(), t)
 				case pmetric.MetricTypeSum:
 					applyCurrentTimeNumberDataPoint(ms.At(k).Sum().DataPoints(), t)
+				case pmetric.MetricTypeEmpty:
+				case pmetric.MetricTypeHistogram:
+					applyCurrentTimeHistogramDataPoint(ms.At(k).Histogram().DataPoints(), t)
+				case pmetric.MetricTypeExponentialHistogram:
+					applyCurrentTimeExponentialHistogramDataPoint(ms.At(k).ExponentialHistogram().DataPoints(), t)
+				case pmetric.MetricTypeSummary:
+					applyCurrentTimeSummaryDataPoint(ms.At(k).Summary().DataPoints(), t)
 				}
 			}
+		}
+	}
+}
+
+func applyCurrentTimeSummaryDataPoint(dps pmetric.SummaryDataPointSlice, t pcommon.Timestamp) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		dp.SetTimestamp(t)
+	}
+}
+func applyCurrentTimeHistogramDataPoint(dps pmetric.HistogramDataPointSlice, t pcommon.Timestamp) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		dp.SetTimestamp(t)
+		for j := 0; j < dp.Exemplars().Len(); j++ {
+			dp.Exemplars().At(j).SetTimestamp(t)
+		}
+	}
+}
+
+func applyCurrentTimeExponentialHistogramDataPoint(dps pmetric.ExponentialHistogramDataPointSlice, t pcommon.Timestamp) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		dp.SetTimestamp(t)
+		for j := 0; j < dp.Exemplars().Len(); j++ {
+			dp.Exemplars().At(j).SetTimestamp(t)
 		}
 	}
 }
@@ -106,6 +128,7 @@ func applyCurrentTimeNumberDataPoint(dps pmetric.NumberDataPointSlice, t pcommon
 			dps.At(i).SetTimestamp(t)
 		case pmetric.NumberDataPointValueTypeInt:
 			dps.At(i).SetTimestamp(t)
+		case pmetric.NumberDataPointValueTypeEmpty:
 		}
 	}
 }

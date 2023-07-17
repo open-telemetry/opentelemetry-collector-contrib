@@ -8,156 +8,60 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
+type metricOracledbConsistentGets struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
 }
 
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
+// init fills oracledb.consistent_gets metric with initial data.
+func (m *metricOracledbConsistentGets) init() {
+	m.data.SetName("oracledb.consistent_gets")
+	m.data.SetDescription("Number of times a consistent read was requested for a block from the buffer cache.")
+	m.data.SetUnit("{gets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbConsistentGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
 }
 
-// MetricsConfig provides config for oracledbreceiver metrics.
-type MetricsConfig struct {
-	OracledbCPUTime               MetricConfig `mapstructure:"oracledb.cpu_time"`
-	OracledbDmlLocksLimit         MetricConfig `mapstructure:"oracledb.dml_locks.limit"`
-	OracledbDmlLocksUsage         MetricConfig `mapstructure:"oracledb.dml_locks.usage"`
-	OracledbEnqueueDeadlocks      MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
-	OracledbEnqueueLocksLimit     MetricConfig `mapstructure:"oracledb.enqueue_locks.limit"`
-	OracledbEnqueueLocksUsage     MetricConfig `mapstructure:"oracledb.enqueue_locks.usage"`
-	OracledbEnqueueResourcesLimit MetricConfig `mapstructure:"oracledb.enqueue_resources.limit"`
-	OracledbEnqueueResourcesUsage MetricConfig `mapstructure:"oracledb.enqueue_resources.usage"`
-	OracledbExchangeDeadlocks     MetricConfig `mapstructure:"oracledb.exchange_deadlocks"`
-	OracledbExecutions            MetricConfig `mapstructure:"oracledb.executions"`
-	OracledbHardParses            MetricConfig `mapstructure:"oracledb.hard_parses"`
-	OracledbLogicalReads          MetricConfig `mapstructure:"oracledb.logical_reads"`
-	OracledbParseCalls            MetricConfig `mapstructure:"oracledb.parse_calls"`
-	OracledbPgaMemory             MetricConfig `mapstructure:"oracledb.pga_memory"`
-	OracledbPhysicalReads         MetricConfig `mapstructure:"oracledb.physical_reads"`
-	OracledbProcessesLimit        MetricConfig `mapstructure:"oracledb.processes.limit"`
-	OracledbProcessesUsage        MetricConfig `mapstructure:"oracledb.processes.usage"`
-	OracledbSessionsLimit         MetricConfig `mapstructure:"oracledb.sessions.limit"`
-	OracledbSessionsUsage         MetricConfig `mapstructure:"oracledb.sessions.usage"`
-	OracledbTablespaceSizeLimit   MetricConfig `mapstructure:"oracledb.tablespace_size.limit"`
-	OracledbTablespaceSizeUsage   MetricConfig `mapstructure:"oracledb.tablespace_size.usage"`
-	OracledbTransactionsLimit     MetricConfig `mapstructure:"oracledb.transactions.limit"`
-	OracledbTransactionsUsage     MetricConfig `mapstructure:"oracledb.transactions.usage"`
-	OracledbUserCommits           MetricConfig `mapstructure:"oracledb.user_commits"`
-	OracledbUserRollbacks         MetricConfig `mapstructure:"oracledb.user_rollbacks"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		OracledbCPUTime: MetricConfig{
-			Enabled: true,
-		},
-		OracledbDmlLocksLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbDmlLocksUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueDeadlocks: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueLocksLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueLocksUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueResourcesLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbEnqueueResourcesUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbExchangeDeadlocks: MetricConfig{
-			Enabled: true,
-		},
-		OracledbExecutions: MetricConfig{
-			Enabled: true,
-		},
-		OracledbHardParses: MetricConfig{
-			Enabled: true,
-		},
-		OracledbLogicalReads: MetricConfig{
-			Enabled: true,
-		},
-		OracledbParseCalls: MetricConfig{
-			Enabled: true,
-		},
-		OracledbPgaMemory: MetricConfig{
-			Enabled: true,
-		},
-		OracledbPhysicalReads: MetricConfig{
-			Enabled: true,
-		},
-		OracledbProcessesLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbProcessesUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbSessionsLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbSessionsUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTablespaceSizeLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTablespaceSizeUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTransactionsLimit: MetricConfig{
-			Enabled: true,
-		},
-		OracledbTransactionsUsage: MetricConfig{
-			Enabled: true,
-		},
-		OracledbUserCommits: MetricConfig{
-			Enabled: true,
-		},
-		OracledbUserRollbacks: MetricConfig{
-			Enabled: true,
-		},
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbConsistentGets) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for oracledbreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		OracledbInstanceName: ResourceAttributeConfig{
-			Enabled: true,
-		},
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbConsistentGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
 	}
+}
+
+func newMetricOracledbConsistentGets(cfg MetricConfig) metricOracledbConsistentGets {
+	m := metricOracledbConsistentGets{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricOracledbCPUTime struct {
@@ -204,6 +108,57 @@ func (m *metricOracledbCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricOracledbCPUTime(cfg MetricConfig) metricOracledbCPUTime {
 	m := metricOracledbCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricOracledbDbBlockGets struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.db_block_gets metric with initial data.
+func (m *metricOracledbDbBlockGets) init() {
+	m.data.SetName("oracledb.db_block_gets")
+	m.data.SetDescription("Number of times a current block was requested from the buffer cache.")
+	m.data.SetUnit("{gets}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbDbBlockGets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbDbBlockGets) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbDbBlockGets) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbDbBlockGets(cfg MetricConfig) metricOracledbDbBlockGets {
+	m := metricOracledbDbBlockGets{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1414,12 +1369,6 @@ func newMetricOracledbUserRollbacks(cfg MetricConfig) metricOracledbUserRollback
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1429,7 +1378,9 @@ type MetricsBuilder struct {
 	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo // contains version information
 	resourceAttributesConfig            ResourceAttributesConfig
+	metricOracledbConsistentGets        metricOracledbConsistentGets
 	metricOracledbCPUTime               metricOracledbCPUTime
+	metricOracledbDbBlockGets           metricOracledbDbBlockGets
 	metricOracledbDmlLocksLimit         metricOracledbDmlLocksLimit
 	metricOracledbDmlLocksUsage         metricOracledbDmlLocksUsage
 	metricOracledbEnqueueDeadlocks      metricOracledbEnqueueDeadlocks
@@ -1466,20 +1417,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
 		resourceAttributesConfig:            mbc.ResourceAttributes,
+		metricOracledbConsistentGets:        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
 		metricOracledbCPUTime:               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
+		metricOracledbDbBlockGets:           newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
 		metricOracledbDmlLocksLimit:         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
 		metricOracledbDmlLocksUsage:         newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
 		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
@@ -1565,7 +1511,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/oracledbreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricOracledbConsistentGets.emit(ils.Metrics())
 	mb.metricOracledbCPUTime.emit(ils.Metrics())
+	mb.metricOracledbDbBlockGets.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksLimit.emit(ils.Metrics())
 	mb.metricOracledbDmlLocksUsage.emit(ils.Metrics())
 	mb.metricOracledbEnqueueDeadlocks.emit(ils.Metrics())
@@ -1610,9 +1558,29 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
+// RecordOracledbConsistentGetsDataPoint adds a data point to oracledb.consistent_gets metric.
+func (mb *MetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbConsistentGets, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbConsistentGets.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordOracledbCPUTimeDataPoint adds a data point to oracledb.cpu_time metric.
 func (mb *MetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricOracledbCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
+func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbDbBlockGets, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbDbBlockGets.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbDmlLocksLimitDataPoint adds a data point to oracledb.dml_locks.limit metric.

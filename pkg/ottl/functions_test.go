@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl
 
@@ -110,18 +99,18 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  invocation
+		inv  editor
 	}{
 		{
 			name: "unknown function",
-			inv: invocation{
+			inv: editor{
 				Function:  "unknownfunc",
 				Arguments: []value{},
 			},
 		},
 		{
 			name: "not accessor",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getsetter",
 				Arguments: []value{
 					{
@@ -132,7 +121,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not reader (invalid function)",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -147,7 +136,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
@@ -169,7 +158,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
@@ -194,7 +183,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not enough args with telemetrySettings",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_telemetry_settings_first",
 				Arguments: []value{
 					{
@@ -214,7 +203,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "too many args with telemetrySettings",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_telemetry_settings_first",
 				Arguments: []value{
 					{
@@ -244,7 +233,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string",
 				Arguments: []value{
 					{
@@ -257,7 +246,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "not matching arg type when byte slice",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_byte_slice",
 				Arguments: []value{
 					{
@@ -274,7 +263,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "mismatching slice element type",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -296,7 +285,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "mismatching slice argument type",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -307,13 +296,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "function call returns error",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_error",
 			},
 		},
 		{
 			name: "Enum not found",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_enum",
 				Arguments: []value{
 					{
@@ -324,13 +313,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "factory definition uses a non-pointer Arguments value",
-			inv: invocation{
+			inv: editor{
 				Function: "non_pointer",
 			},
 		},
 		{
 			name: "no struct tags",
-			inv: invocation{
+			inv: editor{
 				Function: "no_struct_tag",
 				Arguments: []value{
 					{
@@ -341,7 +330,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "using the wrong struct tag",
-			inv: invocation{
+			inv: editor{
 				Function: "wrong_struct_tag",
 				Arguments: []value{
 					{
@@ -352,7 +341,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "non-integer struct tags",
-			inv: invocation{
+			inv: editor{
 				Function: "bad_struct_tag",
 				Arguments: []value{
 					{
@@ -363,7 +352,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "struct tag index too low",
-			inv: invocation{
+			inv: editor{
 				Function: "negative_struct_tag",
 				Arguments: []value{
 					{
@@ -374,7 +363,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		},
 		{
 			name: "struct tag index too high",
-			inv: invocation{
+			inv: editor{
 				Function: "out_of_bounds_struct_tag",
 				Arguments: []value{
 					{
@@ -404,12 +393,12 @@ func Test_NewFunctionCall(t *testing.T) {
 
 	tests := []struct {
 		name string
-		inv  invocation
+		inv  editor
 		want any
 	}{
 		{
 			name: "no arguments",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_noop",
 				Arguments: []value{
 					{
@@ -423,7 +412,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "empty slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -437,7 +426,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "string slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string_slice",
 				Arguments: []value{
 					{
@@ -461,7 +450,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "float slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_float_slice",
 				Arguments: []value{
 					{
@@ -491,7 +480,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "int slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_int_slice",
 				Arguments: []value{
 					{
@@ -521,7 +510,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter_slice",
 				Arguments: []value{
 					{
@@ -628,7 +617,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringgetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringgetter_slice",
 				Arguments: []value{
 					{
@@ -648,8 +637,56 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "floatgetter slice arg",
+			inv: editor{
+				Function: "testing_floatgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("1.1"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "intgetter slice arg",
+			inv: editor{
+				Function: "testing_intgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(1),
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(2),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "pmapgetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_pmapgetter_slice",
 				Arguments: []value{
 					{
@@ -686,7 +723,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringlikegetter slice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringlikegetter_slice",
 				Arguments: []value{
 					{
@@ -708,8 +745,54 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "floatlikegetter slice arg",
+			inv: editor{
+				Function: "testing_floatlikegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("1.1"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1.1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "intlikegetter slice arg",
+			inv: editor{
+				Function: "testing_intlikegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("1"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1.1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "setter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_setter",
 				Arguments: []value{
 					{
@@ -729,7 +812,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getsetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getsetter",
 				Arguments: []value{
 					{
@@ -749,7 +832,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -769,7 +852,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg with nil literal",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -781,7 +864,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "getter arg with list",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_getter",
 				Arguments: []value{
 					{
@@ -846,7 +929,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringgetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringgetter",
 				Arguments: []value{
 					{
@@ -858,7 +941,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "stringlikegetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_stringlikegetter",
 				Arguments: []value{
 					{
@@ -869,8 +952,32 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "floatgetter arg",
+			inv: editor{
+				Function: "testing_floatgetter",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("1.1"),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "floatlikegetter arg",
+			inv: editor{
+				Function: "testing_floatlikegetter",
+				Arguments: []value{
+					{
+						Bool: (*boolean)(ottltest.Boolp(false)),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "intgetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_intgetter",
 				Arguments: []value{
 					{
@@ -883,8 +990,22 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "intlikegetter arg",
+			inv: editor{
+				Function: "testing_intgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Float: ottltest.Floatp(1.1),
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "pmapgetter arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_pmapgetter",
 				Arguments: []value{
 					{
@@ -904,7 +1025,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "string arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_string",
 				Arguments: []value{
 					{
@@ -916,7 +1037,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "float arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_float",
 				Arguments: []value{
 					{
@@ -930,7 +1051,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "int arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_int",
 				Arguments: []value{
 					{
@@ -944,7 +1065,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "bool arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_bool",
 				Arguments: []value{
 					{
@@ -956,7 +1077,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "byteSlice arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_byte_slice",
 				Arguments: []value{
 					{
@@ -968,7 +1089,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "multiple args",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_multiple_args",
 				Arguments: []value{
 					{
@@ -1001,7 +1122,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		},
 		{
 			name: "Enum arg",
-			inv: invocation{
+			inv: editor{
 				Function: "testing_enum",
 				Arguments: []value{
 					{
@@ -1091,6 +1212,26 @@ func functionWithStringGetterSlice(getters []StringGetter[interface{}]) (ExprFun
 	}, nil
 }
 
+type floatGetterSliceArguments struct {
+	FloatGetters []FloatGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFloatGetterSlice(getters []FloatGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
+type intGetterSliceArguments struct {
+	IntGetters []IntGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntGetterSlice(getters []IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 type pMapGetterSliceArguments struct {
 	PMapGetters []PMapGetter[any] `ottlarg:"0"`
 }
@@ -1106,6 +1247,26 @@ type stringLikeGetterSliceArguments struct {
 }
 
 func functionWithStringLikeGetterSlice(getters []StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
+type floatLikeGetterSliceArguments struct {
+	FloatLikeGetters []FloatLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
+type intLikeGetterSliceArguments struct {
+	IntLikeGetters []IntLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntLikeGetterSlice(getters []IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return len(getters), nil
 	}, nil
@@ -1161,11 +1322,41 @@ func functionWithStringLikeGetter(StringLikeGetter[interface{}]) (ExprFunc[inter
 	}, nil
 }
 
+type floatGetterArguments struct {
+	FloatGetterArg FloatGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFloatGetter(FloatGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type floatLikeGetterArguments struct {
+	FloatLikeGetterArg FloatLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFloatLikeGetter(FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
 type intGetterArguments struct {
 	IntGetterArg IntGetter[any] `ottlarg:"0"`
 }
 
 func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type intLikeGetterArguments struct {
+	IntLikeGetterArg IntLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntLikeGetter(IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -1351,6 +1542,26 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithStringLikeGetterSlice,
 		),
 		createFactory[any](
+			"testing_floatgetter_slice",
+			&floatGetterSliceArguments{},
+			functionWithFloatGetterSlice,
+		),
+		createFactory[any](
+			"testing_floatlikegetter_slice",
+			&floatLikeGetterSliceArguments{},
+			functionWithFloatLikeGetterSlice,
+		),
+		createFactory[any](
+			"testing_intgetter_slice",
+			&intGetterSliceArguments{},
+			functionWithIntGetterSlice,
+		),
+		createFactory[any](
+			"testing_intlikegetter_slice",
+			&intLikeGetterSliceArguments{},
+			functionWithIntLikeGetterSlice,
+		),
+		createFactory[any](
 			"testing_pmapgetter_slice",
 			&pMapGetterSliceArguments{},
 			functionWithPMapGetterSlice,
@@ -1381,9 +1592,24 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithStringLikeGetter,
 		),
 		createFactory[any](
+			"testing_floatgetter",
+			&floatGetterArguments{},
+			functionWithFloatGetter,
+		),
+		createFactory[any](
+			"testing_floatlikegetter",
+			&floatLikeGetterArguments{},
+			functionWithFloatLikeGetter,
+		),
+		createFactory[any](
 			"testing_intgetter",
 			&intGetterArguments{},
 			functionWithIntGetter,
+		),
+		createFactory[any](
+			"testing_intlikegetter",
+			&intLikeGetterArguments{},
+			functionWithIntLikeGetter,
 		),
 		createFactory[any](
 			"testing_pmapgetter",

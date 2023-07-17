@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter
 
@@ -26,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 const defaultEndpoint = "clickhouse://127.0.0.1:9000"
@@ -45,11 +36,11 @@ func TestLoadConfig(t *testing.T) {
 	}{
 
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "full"),
+			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				Endpoint:         defaultEndpoint,
 				Database:         "otel",
@@ -156,7 +147,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Database: "otel",
 			},
 			args: args{
-				database: defaultDatabase,
+				database: "otel",
 			},
 			wantChOptions: ChOptions{
 				Secure: false,
@@ -210,7 +201,8 @@ func TestConfig_buildDSN(t *testing.T) {
 			},
 			args: args{},
 			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
-		}, {
+		},
+		{
 			name: "Parse clickhouse settings",
 			fields: fields{
 				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
@@ -234,6 +226,16 @@ func TestConfig_buildDSN(t *testing.T) {
 			},
 			args: args{},
 			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
+		},
+		{
+			name: "support replace database in DSN to default database",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000/otel",
+			},
+			args: args{
+				database: defaultDatabase,
+			},
+			want: "tcp://127.0.0.1:9000/default",
 		},
 	}
 	for _, tt := range tests {

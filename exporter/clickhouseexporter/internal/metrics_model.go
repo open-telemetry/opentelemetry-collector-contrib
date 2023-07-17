@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
@@ -148,8 +137,11 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 			return floatValue
 		case pmetric.ExemplarValueTypeInt:
 			return float64(intValue)
+		case pmetric.ExemplarValueTypeEmpty:
+			logger.Warn("Examplar value type is unset, use 0.0 as default")
+			return 0.0
 		default:
-			logger.Warn("Can't find a suitable value for ExemplarValueType, ues 0.0 as default")
+			logger.Warn("Can't find a suitable value for ExemplarValueType, use 0.0 as default")
 			return 0.0
 		}
 	case pmetric.NumberDataPointValueType:
@@ -158,8 +150,11 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 			return floatValue
 		case pmetric.NumberDataPointValueTypeInt:
 			return float64(intValue)
+		case pmetric.NumberDataPointValueTypeEmpty:
+			logger.Warn("DataPoint value type is unset, use 0.0 as default")
+			return 0.0
 		default:
-			logger.Warn("Can't find a suitable value for NumberDataPointValueType, ues 0.0 as default")
+			logger.Warn("Can't find a suitable value for NumberDataPointValueType, use 0.0 as default")
 			return 0.0
 		}
 	default:

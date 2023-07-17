@@ -1,61 +1,50 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package statefulset
 
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
-func TestStatefulsettMetrics(t *testing.T) {
+func TestStatefulsetMetrics(t *testing.T) {
 	ss := newStatefulset("1")
 
-	actualResourceMetrics := GetMetrics(ss)
+	actualResourceMetrics := GetMetrics(receivertest.NewNopCreateSettings(), ss)
 
-	require.Equal(t, 1, len(actualResourceMetrics))
-	require.Equal(t, 4, len(actualResourceMetrics[0].Metrics))
+	require.Equal(t, 1, actualResourceMetrics.ResourceMetrics().Len())
+	require.Equal(t, 4, actualResourceMetrics.MetricCount())
 
-	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, rm.Resource, constants.K8sType,
-		map[string]string{
-			"k8s.statefulset.uid":  "test-statefulset-1-uid",
-			"k8s.statefulset.name": "test-statefulset-1",
-			"k8s.namespace.name":   "test-namespace",
-		},
+	rm := actualResourceMetrics.ResourceMetrics().At(0)
+	assert.Equal(t,
+		map[string]interface{}{
+			"k8s.statefulset.uid":     "test-statefulset-1-uid",
+			"k8s.statefulset.name":    "test-statefulset-1",
+			"k8s.namespace.name":      "test-namespace",
+			"opencensus.resourcetype": "k8s",
+		}, rm.Resource().Attributes().AsRaw(),
 	)
 
-	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.statefulset.desired_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 10)
+	m1 := rm.ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, "k8s.statefulset.current_pods", m1.Name())
 
-	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.statefulset.ready_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 7)
+	m2 := rm.ScopeMetrics().At(0).Metrics().At(1)
+	assert.Equal(t, "k8s.statefulset.desired_pods", m2.Name())
 
-	testutils.AssertMetricsInt(t, rm.Metrics[2], "k8s.statefulset.current_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 5)
-
-	testutils.AssertMetricsInt(t, rm.Metrics[3], "k8s.statefulset.updated_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+	m3 := rm.ScopeMetrics().At(0).Metrics().At(2)
+	assert.Equal(t, "k8s.statefulset.ready_pods", m3.Name())
+	m4 := rm.ScopeMetrics().At(0).Metrics().At(3)
+	assert.Equal(t, "k8s.statefulset.updated_pods", m4.Name())
 }
 
 func TestStatefulsetMetadata(t *testing.T) {
@@ -106,4 +95,77 @@ func newStatefulset(id string) *appsv1.StatefulSet {
 			UpdateRevision:  "update_revision",
 		},
 	}
+}
+
+func TestTransform(t *testing.T) {
+	orig := &appsv1.StatefulSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "my-statefulset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: func() *int32 { i := int32(3); return &i }(),
+			Selector: &v1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "my-app",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: v1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "my-app",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            "my-container",
+							Image:           "nginx:latest",
+							ImagePullPolicy: corev1.PullAlways,
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									ContainerPort: 80,
+									Protocol:      corev1.ProtocolTCP,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Status: appsv1.StatefulSetStatus{
+			Replicas:        3,
+			ReadyReplicas:   3,
+			CurrentReplicas: 3,
+			UpdatedReplicas: 3,
+			Conditions: []appsv1.StatefulSetCondition{
+				{
+					Type:   "Ready",
+					Status: corev1.ConditionTrue,
+				},
+			},
+		},
+	}
+	want := &appsv1.StatefulSet{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "my-statefulset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: func() *int32 { i := int32(3); return &i }(),
+		},
+		Status: appsv1.StatefulSetStatus{
+			ReadyReplicas:   3,
+			CurrentReplicas: 3,
+			UpdatedReplicas: 3,
+		},
+	}
+	assert.Equal(t, want, Transform(orig))
 }

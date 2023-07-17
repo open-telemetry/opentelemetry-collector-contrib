@@ -1,0 +1,10 @@
+server:
+  endpoint: wss://127.0.0.1:4320/v1/opamp
+  tls:
+    # Disable verification to test locally.
+    # Don't do this in production.
+    insecure_skip_verify: true 
+    # For more TLS settings see config/configtls.TLSClientSetting
+
+agent:
+  executable: ../../bin/otelcontribcol_darwin_amd64

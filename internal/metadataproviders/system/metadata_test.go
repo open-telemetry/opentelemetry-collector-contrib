@@ -1,26 +1,18 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package system
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 func TestLookupCNAME_Linux(t *testing.T) {
@@ -49,6 +41,65 @@ func TestReverseLookupHost_Windows(t *testing.T) {
 	fqdn, err := p.ReverseLookupHost()
 	require.NoError(t, err)
 	assert.Equal(t, "my-windows-vm.abcdefghijklmnopqrstuvwxyz.xx.internal.foo.net", fqdn)
+}
+
+func TestHostID(t *testing.T) {
+	tests := []struct {
+		name         string
+		resValue     string
+		resError     error
+		fakeResource func(context.Context, ...resource.Option) (*resource.Resource, error)
+		err          string
+		expected     string
+	}{
+		{
+			name:     "valid host.id",
+			resValue: "my-linux-host-id",
+			resError: nil,
+			expected: "my-linux-host-id",
+		},
+		{
+			name:     "empty host.id",
+			resValue: "",
+			resError: nil,
+			err:      "failed to obtain host id",
+			expected: "",
+		},
+		{
+			name:     "error",
+			resValue: "",
+			resError: fmt.Errorf("some error"),
+			err:      "failed to obtain host id: some error",
+			expected: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := fakeLinuxSystemMetadataProvider()
+			p.newResource = func(ctx context.Context, o ...resource.Option) (*resource.Resource, error) {
+				if tt.resValue == "" {
+					return resource.NewSchemaless(), tt.resError
+				}
+
+				v := attribute.KeyValue{
+					Key:   "host.id",
+					Value: attribute.StringValue(tt.resValue),
+				}
+				ret := resource.NewSchemaless(v)
+
+				return ret, tt.resError
+			}
+			id, err := p.HostID(context.Background())
+
+			if tt.err != "" {
+				require.EqualError(t, err, tt.err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, id)
+		})
+	}
 }
 
 func fakeLinuxSystemMetadataProvider() *systemMetadataProvider {

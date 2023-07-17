@@ -6,229 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for vcenterreceiver metrics.
-type MetricsConfig struct {
-	VcenterClusterCPUEffective      MetricConfig `mapstructure:"vcenter.cluster.cpu.effective"`
-	VcenterClusterCPULimit          MetricConfig `mapstructure:"vcenter.cluster.cpu.limit"`
-	VcenterClusterHostCount         MetricConfig `mapstructure:"vcenter.cluster.host.count"`
-	VcenterClusterMemoryEffective   MetricConfig `mapstructure:"vcenter.cluster.memory.effective"`
-	VcenterClusterMemoryLimit       MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
-	VcenterClusterMemoryUsed        MetricConfig `mapstructure:"vcenter.cluster.memory.used"`
-	VcenterClusterVMCount           MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
-	VcenterDatastoreDiskUsage       MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
-	VcenterDatastoreDiskUtilization MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
-	VcenterHostCPUUsage             MetricConfig `mapstructure:"vcenter.host.cpu.usage"`
-	VcenterHostCPUUtilization       MetricConfig `mapstructure:"vcenter.host.cpu.utilization"`
-	VcenterHostDiskLatencyAvg       MetricConfig `mapstructure:"vcenter.host.disk.latency.avg"`
-	VcenterHostDiskLatencyMax       MetricConfig `mapstructure:"vcenter.host.disk.latency.max"`
-	VcenterHostDiskThroughput       MetricConfig `mapstructure:"vcenter.host.disk.throughput"`
-	VcenterHostMemoryUsage          MetricConfig `mapstructure:"vcenter.host.memory.usage"`
-	VcenterHostMemoryUtilization    MetricConfig `mapstructure:"vcenter.host.memory.utilization"`
-	VcenterHostNetworkPacketCount   MetricConfig `mapstructure:"vcenter.host.network.packet.count"`
-	VcenterHostNetworkPacketErrors  MetricConfig `mapstructure:"vcenter.host.network.packet.errors"`
-	VcenterHostNetworkThroughput    MetricConfig `mapstructure:"vcenter.host.network.throughput"`
-	VcenterHostNetworkUsage         MetricConfig `mapstructure:"vcenter.host.network.usage"`
-	VcenterResourcePoolCPUShares    MetricConfig `mapstructure:"vcenter.resource_pool.cpu.shares"`
-	VcenterResourcePoolCPUUsage     MetricConfig `mapstructure:"vcenter.resource_pool.cpu.usage"`
-	VcenterResourcePoolMemoryShares MetricConfig `mapstructure:"vcenter.resource_pool.memory.shares"`
-	VcenterResourcePoolMemoryUsage  MetricConfig `mapstructure:"vcenter.resource_pool.memory.usage"`
-	VcenterVMCPUUsage               MetricConfig `mapstructure:"vcenter.vm.cpu.usage"`
-	VcenterVMCPUUtilization         MetricConfig `mapstructure:"vcenter.vm.cpu.utilization"`
-	VcenterVMDiskLatencyAvg         MetricConfig `mapstructure:"vcenter.vm.disk.latency.avg"`
-	VcenterVMDiskLatencyMax         MetricConfig `mapstructure:"vcenter.vm.disk.latency.max"`
-	VcenterVMDiskThroughput         MetricConfig `mapstructure:"vcenter.vm.disk.throughput"`
-	VcenterVMDiskUsage              MetricConfig `mapstructure:"vcenter.vm.disk.usage"`
-	VcenterVMDiskUtilization        MetricConfig `mapstructure:"vcenter.vm.disk.utilization"`
-	VcenterVMMemoryBallooned        MetricConfig `mapstructure:"vcenter.vm.memory.ballooned"`
-	VcenterVMMemorySwapped          MetricConfig `mapstructure:"vcenter.vm.memory.swapped"`
-	VcenterVMMemorySwappedSsd       MetricConfig `mapstructure:"vcenter.vm.memory.swapped_ssd"`
-	VcenterVMMemoryUsage            MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
-	VcenterVMNetworkPacketCount     MetricConfig `mapstructure:"vcenter.vm.network.packet.count"`
-	VcenterVMNetworkThroughput      MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
-	VcenterVMNetworkUsage           MetricConfig `mapstructure:"vcenter.vm.network.usage"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		VcenterClusterCPUEffective: MetricConfig{
-			Enabled: true,
-		},
-		VcenterClusterCPULimit: MetricConfig{
-			Enabled: true,
-		},
-		VcenterClusterHostCount: MetricConfig{
-			Enabled: true,
-		},
-		VcenterClusterMemoryEffective: MetricConfig{
-			Enabled: true,
-		},
-		VcenterClusterMemoryLimit: MetricConfig{
-			Enabled: true,
-		},
-		VcenterClusterMemoryUsed: MetricConfig{
-			Enabled: true,
-		},
-		VcenterClusterVMCount: MetricConfig{
-			Enabled: true,
-		},
-		VcenterDatastoreDiskUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterDatastoreDiskUtilization: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostCPUUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostCPUUtilization: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostDiskLatencyAvg: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostDiskLatencyMax: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostDiskThroughput: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostMemoryUtilization: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostNetworkPacketCount: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostNetworkPacketErrors: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostNetworkThroughput: MetricConfig{
-			Enabled: true,
-		},
-		VcenterHostNetworkUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterResourcePoolCPUShares: MetricConfig{
-			Enabled: true,
-		},
-		VcenterResourcePoolCPUUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterResourcePoolMemoryShares: MetricConfig{
-			Enabled: true,
-		},
-		VcenterResourcePoolMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMCPUUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMCPUUtilization: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMDiskLatencyAvg: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMDiskLatencyMax: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMDiskThroughput: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMDiskUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMDiskUtilization: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMMemoryBallooned: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMMemorySwapped: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMMemorySwappedSsd: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMNetworkPacketCount: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMNetworkThroughput: MetricConfig{
-			Enabled: true,
-		},
-		VcenterVMNetworkUsage: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for vcenterreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	VcenterClusterName      ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
-	VcenterDatastoreName    ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
-	VcenterHostName         ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
-	VcenterResourcePoolName ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
-	VcenterVMID             ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
-	VcenterVMName           ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		VcenterClusterName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		VcenterDatastoreName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		VcenterHostName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		VcenterResourcePoolName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		VcenterVMID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		VcenterVMName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeDiskDirection specifies the a value disk_direction attribute.
 type AttributeDiskDirection int
@@ -2148,6 +1929,55 @@ func newMetricVcenterVMMemoryUsage(cfg MetricConfig) metricVcenterVMMemoryUsage 
 	return m
 }
 
+type metricVcenterVMMemoryUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.memory.utilization metric with initial data.
+func (m *metricVcenterVMMemoryUtilization) init() {
+	m.data.SetName("vcenter.vm.memory.utilization")
+	m.data.SetDescription("The memory utilization of the VM.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricVcenterVMMemoryUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMMemoryUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMMemoryUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMMemoryUtilization(cfg MetricConfig) metricVcenterVMMemoryUtilization {
+	m := metricVcenterVMMemoryUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMNetworkPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2305,12 +2135,6 @@ func newMetricVcenterVMNetworkUsage(cfg MetricConfig) metricVcenterVMNetworkUsag
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -2355,6 +2179,7 @@ type MetricsBuilder struct {
 	metricVcenterVMMemorySwapped          metricVcenterVMMemorySwapped
 	metricVcenterVMMemorySwappedSsd       metricVcenterVMMemorySwappedSsd
 	metricVcenterVMMemoryUsage            metricVcenterVMMemoryUsage
+	metricVcenterVMMemoryUtilization      metricVcenterVMMemoryUtilization
 	metricVcenterVMNetworkPacketCount     metricVcenterVMNetworkPacketCount
 	metricVcenterVMNetworkThroughput      metricVcenterVMNetworkThroughput
 	metricVcenterVMNetworkUsage           metricVcenterVMNetworkUsage
@@ -2367,13 +2192,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -2418,6 +2236,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricVcenterVMMemorySwapped:          newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
 		metricVcenterVMMemorySwappedSsd:       newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
 		metricVcenterVMMemoryUsage:            newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
+		metricVcenterVMMemoryUtilization:      newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
 		metricVcenterVMNetworkPacketCount:     newMetricVcenterVMNetworkPacketCount(mbc.Metrics.VcenterVMNetworkPacketCount),
 		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
 		metricVcenterVMNetworkUsage:           newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
@@ -2562,6 +2381,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterVMMemorySwapped.emit(ils.Metrics())
 	mb.metricVcenterVMMemorySwappedSsd.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
+	mb.metricVcenterVMMemoryUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkPacketCount.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
@@ -2758,6 +2578,11 @@ func (mb *MetricsBuilder) RecordVcenterVMMemorySwappedSsdDataPoint(ts pcommon.Ti
 // RecordVcenterVMMemoryUsageDataPoint adds a data point to vcenter.vm.memory.usage metric.
 func (mb *MetricsBuilder) RecordVcenterVMMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterVMMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterVMMemoryUtilizationDataPoint adds a data point to vcenter.vm.memory.utilization metric.
+func (mb *MetricsBuilder) RecordVcenterVMMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricVcenterVMMemoryUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterVMNetworkPacketCountDataPoint adds a data point to vcenter.vm.network.packet.count metric.

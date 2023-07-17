@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -96,7 +85,7 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 func (cfg *Config) buildDSN(database string) (string, error) {
 	dsnURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err)
+		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err.Error())
 	}
 
 	queryParams := dsnURL.Query()
@@ -114,8 +103,15 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	// Override database if specified in config.
 	if cfg.Database != "" {
 		dsnURL.Path = cfg.Database
-	} else if database == "" && cfg.Database == "" && dsnURL.Path == "" {
-		// Use default database if not specified in any other place.
+	}
+
+	// Override database if specified in database param.
+	if database != "" {
+		dsnURL.Path = database
+	}
+
+	// Use default database if not specified in any other place.
+	if database == "" && cfg.Database == "" && dsnURL.Path == "" {
 		dsnURL.Path = defaultDatabase
 	}
 

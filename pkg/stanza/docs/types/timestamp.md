@@ -145,7 +145,7 @@ but you could also use a `timestamp` block inside the `json_parser`.
 
 #### Parse a timestamp using a `strptime` layout
 
-The default `layout_type` is `strptime`, which uses "directives" such as `%Y` (4-digit year) and `%H` (2-digit hour). A full list of supported directives is found [here](https://github.com/observiq/ctimefmt/blob/3e07deba22cf7a753f197ef33892023052f26614/ctimefmt.go#L63).
+The default `layout_type` is `strptime`, which uses "directives" such as `%Y` (4-digit year) and `%H` (2-digit hour). A full list of supported directives is found [here](../../../../internal/coreinternal/timeutils/internal/ctimefmt/ctimefmt.go#L68).
 
 Configuration:
 ```yaml

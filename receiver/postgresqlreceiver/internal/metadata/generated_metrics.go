@@ -6,153 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for postgresqlreceiver metrics.
-type MetricsConfig struct {
-	PostgresqlBackends                 MetricConfig `mapstructure:"postgresql.backends"`
-	PostgresqlBgwriterBuffersAllocated MetricConfig `mapstructure:"postgresql.bgwriter.buffers.allocated"`
-	PostgresqlBgwriterBuffersWrites    MetricConfig `mapstructure:"postgresql.bgwriter.buffers.writes"`
-	PostgresqlBgwriterCheckpointCount  MetricConfig `mapstructure:"postgresql.bgwriter.checkpoint.count"`
-	PostgresqlBgwriterDuration         MetricConfig `mapstructure:"postgresql.bgwriter.duration"`
-	PostgresqlBgwriterMaxwritten       MetricConfig `mapstructure:"postgresql.bgwriter.maxwritten"`
-	PostgresqlBlocksRead               MetricConfig `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits                  MetricConfig `mapstructure:"postgresql.commits"`
-	PostgresqlConnectionMax            MetricConfig `mapstructure:"postgresql.connection.max"`
-	PostgresqlDatabaseCount            MetricConfig `mapstructure:"postgresql.database.count"`
-	PostgresqlDbSize                   MetricConfig `mapstructure:"postgresql.db_size"`
-	PostgresqlIndexScans               MetricConfig `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize                MetricConfig `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations               MetricConfig `mapstructure:"postgresql.operations"`
-	PostgresqlReplicationDataDelay     MetricConfig `mapstructure:"postgresql.replication.data_delay"`
-	PostgresqlRollbacks                MetricConfig `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows                     MetricConfig `mapstructure:"postgresql.rows"`
-	PostgresqlTableCount               MetricConfig `mapstructure:"postgresql.table.count"`
-	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
-	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
-	PostgresqlWalAge                   MetricConfig `mapstructure:"postgresql.wal.age"`
-	PostgresqlWalLag                   MetricConfig `mapstructure:"postgresql.wal.lag"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		PostgresqlBackends: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBgwriterBuffersAllocated: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBgwriterBuffersWrites: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBgwriterCheckpointCount: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBgwriterDuration: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBgwriterMaxwritten: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlBlocksRead: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlCommits: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlConnectionMax: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlDatabaseCount: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlDbSize: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlIndexScans: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlIndexSize: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlOperations: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlReplicationDataDelay: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlRollbacks: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlRows: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlTableCount: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlTableSize: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlTableVacuumCount: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlWalAge: MetricConfig{
-			Enabled: true,
-		},
-		PostgresqlWalLag: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for postgresqlreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	PostgresqlDatabaseName ResourceAttributeConfig `mapstructure:"postgresql.database.name"`
-	PostgresqlIndexName    ResourceAttributeConfig `mapstructure:"postgresql.index.name"`
-	PostgresqlTableName    ResourceAttributeConfig `mapstructure:"postgresql.table.name"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		PostgresqlDatabaseName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		PostgresqlIndexName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		PostgresqlTableName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeBgBufferSource specifies the a value bg_buffer_source attribute.
 type AttributeBgBufferSource int
@@ -653,7 +510,7 @@ type metricPostgresqlBgwriterMaxwritten struct {
 func (m *metricPostgresqlBgwriterMaxwritten) init() {
 	m.data.SetName("postgresql.bgwriter.maxwritten")
 	m.data.SetDescription("Number of times the background writer stopped a cleaning scan because it had written too many buffers.")
-	m.data.SetUnit("")
+	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1279,7 +1136,7 @@ type metricPostgresqlTableCount struct {
 func (m *metricPostgresqlTableCount) init() {
 	m.data.SetName("postgresql.table.count")
 	m.data.SetDescription("Number of user tables in a database.")
-	m.data.SetUnit("")
+	m.data.SetUnit("{table}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1523,12 +1380,6 @@ func newMetricPostgresqlWalLag(cfg MetricConfig) metricPostgresqlWalLag {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1569,13 +1420,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 

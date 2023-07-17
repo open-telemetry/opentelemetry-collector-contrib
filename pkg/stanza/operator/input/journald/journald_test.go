@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
 // +build linux
@@ -21,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -33,7 +23,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-type fakeJournaldCmd struct{}
+type fakeJournaldCmd struct {
+	exitError *exec.ExitError
+	stdErr    string
+}
 
 func (f *fakeJournaldCmd) Start() error {
 	return nil
@@ -44,6 +37,19 @@ func (f *fakeJournaldCmd) StdoutPipe() (io.ReadCloser, error) {
 `
 	reader := bytes.NewReader([]byte(response))
 	return io.NopCloser(reader), nil
+}
+
+func (f *fakeJournaldCmd) StderrPipe() (io.ReadCloser, error) {
+	reader := bytes.NewReader([]byte(f.stdErr))
+	return io.NopCloser(reader), nil
+}
+
+func (f *fakeJournaldCmd) Wait() error {
+	if f.exitError == nil {
+		return nil
+	}
+
+	return f.exitError
 }
 
 func TestInputJournald(t *testing.T) {
@@ -67,7 +73,7 @@ func TestInputJournald(t *testing.T) {
 	}
 
 	err = op.Start(testutil.NewMockPersister("test"))
-	require.NoError(t, err)
+	assert.EqualError(t, err, "journalctl command exited")
 	defer func() {
 		require.NoError(t, op.Stop())
 	}()
@@ -177,6 +183,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "ssh", "--priority", "info", "_SYSTEMD_UNIT=dbus.service"},
 		},
+		{
+			Name: "grep",
+			Config: func(cfg *Config) {
+				cfg.Grep = "test_grep"
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--grep", "test_grep"},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -193,5 +206,41 @@ func TestBuildConfig(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.Expected, args)
 		})
+	}
+}
+
+func TestInputJournaldError(t *testing.T) {
+	cfg := NewConfigWithID("my_journald_input")
+	cfg.OutputIDs = []string{"output"}
+
+	op, err := cfg.Build(testutil.Logger(t))
+	require.NoError(t, err)
+
+	mockOutput := testutil.NewMockOperator("output")
+	received := make(chan *entry.Entry)
+	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		received <- args.Get(1).(*entry.Entry)
+	}).Return(nil)
+
+	err = op.SetOutputs([]operator.Operator{mockOutput})
+	require.NoError(t, err)
+
+	op.(*Input).newCmd = func(ctx context.Context, cursor []byte) cmd {
+		return &fakeJournaldCmd{
+			exitError: &exec.ExitError{},
+			stdErr:    "stderr output\n",
+		}
+	}
+
+	err = op.Start(testutil.NewMockPersister("test"))
+	assert.EqualError(t, err, "journalctl command failed (<nil>): stderr output\n")
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
+
+	select {
+	case <-received:
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be read")
 	}
 }

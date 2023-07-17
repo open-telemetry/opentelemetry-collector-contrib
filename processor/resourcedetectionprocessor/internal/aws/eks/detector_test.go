@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package eks
 
@@ -35,7 +24,8 @@ func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespac
 }
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }
@@ -48,7 +38,8 @@ func TestEKS(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{"cluster.name": "my-cluster"}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &detector{utils: detectorUtils, err: nil}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	eksResourceDetector := &detector{utils: detectorUtils, err: nil, resourceAttributes: resourceAttributes}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 

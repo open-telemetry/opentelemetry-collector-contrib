@@ -6,13 +6,12 @@
     "extends": [
       "config:base"
     ],
-    "schedule": ["every wednesday"],
+    "schedule": ["every tuesday"],
     "ignorePaths": [
-      "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_0_0",
+      "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_9_3",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_0",
-      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_2",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4.lpu",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.5_0"
     ],
@@ -33,5 +32,8 @@
         "matchManagers": ["gomod"],
         "enabled": false
       }
+    ],
+    "ignoreDeps": [
+      "github.com/mattn/go-ieproxy"
     ]
   }

@@ -6,130 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for hostmetricsreceiver/process metrics.
-type MetricsConfig struct {
-	ProcessContextSwitches     MetricConfig `mapstructure:"process.context_switches"`
-	ProcessCPUTime             MetricConfig `mapstructure:"process.cpu.time"`
-	ProcessCPUUtilization      MetricConfig `mapstructure:"process.cpu.utilization"`
-	ProcessDiskIo              MetricConfig `mapstructure:"process.disk.io"`
-	ProcessDiskOperations      MetricConfig `mapstructure:"process.disk.operations"`
-	ProcessMemoryUsage         MetricConfig `mapstructure:"process.memory.usage"`
-	ProcessMemoryUtilization   MetricConfig `mapstructure:"process.memory.utilization"`
-	ProcessMemoryVirtual       MetricConfig `mapstructure:"process.memory.virtual"`
-	ProcessOpenFileDescriptors MetricConfig `mapstructure:"process.open_file_descriptors"`
-	ProcessPagingFaults        MetricConfig `mapstructure:"process.paging.faults"`
-	ProcessSignalsPending      MetricConfig `mapstructure:"process.signals_pending"`
-	ProcessThreads             MetricConfig `mapstructure:"process.threads"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		ProcessContextSwitches: MetricConfig{
-			Enabled: false,
-		},
-		ProcessCPUTime: MetricConfig{
-			Enabled: true,
-		},
-		ProcessCPUUtilization: MetricConfig{
-			Enabled: false,
-		},
-		ProcessDiskIo: MetricConfig{
-			Enabled: true,
-		},
-		ProcessDiskOperations: MetricConfig{
-			Enabled: false,
-		},
-		ProcessMemoryUsage: MetricConfig{
-			Enabled: true,
-		},
-		ProcessMemoryUtilization: MetricConfig{
-			Enabled: false,
-		},
-		ProcessMemoryVirtual: MetricConfig{
-			Enabled: true,
-		},
-		ProcessOpenFileDescriptors: MetricConfig{
-			Enabled: false,
-		},
-		ProcessPagingFaults: MetricConfig{
-			Enabled: false,
-		},
-		ProcessSignalsPending: MetricConfig{
-			Enabled: false,
-		},
-		ProcessThreads: MetricConfig{
-			Enabled: false,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for hostmetricsreceiver/process resource attributes.
-type ResourceAttributesConfig struct {
-	ProcessCommand        ResourceAttributeConfig `mapstructure:"process.command"`
-	ProcessCommandLine    ResourceAttributeConfig `mapstructure:"process.command_line"`
-	ProcessExecutableName ResourceAttributeConfig `mapstructure:"process.executable.name"`
-	ProcessExecutablePath ResourceAttributeConfig `mapstructure:"process.executable.path"`
-	ProcessOwner          ResourceAttributeConfig `mapstructure:"process.owner"`
-	ProcessParentPid      ResourceAttributeConfig `mapstructure:"process.parent_pid"`
-	ProcessPid            ResourceAttributeConfig `mapstructure:"process.pid"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		ProcessCommand: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ProcessCommandLine: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ProcessExecutableName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ProcessExecutablePath: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ProcessOwner: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ProcessParentPid: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ProcessPid: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeContextSwitchType specifies the a value context_switch_type attribute.
 type AttributeContextSwitchType int
@@ -502,6 +383,57 @@ func newMetricProcessDiskOperations(cfg MetricConfig) metricProcessDiskOperation
 	return m
 }
 
+type metricProcessHandles struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.handles metric with initial data.
+func (m *metricProcessHandles) init() {
+	m.data.SetName("process.handles")
+	m.data.SetDescription("Number of handles held by the process.")
+	m.data.SetUnit("{count}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricProcessHandles) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessHandles) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessHandles) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessHandles(cfg MetricConfig) metricProcessHandles {
+	m := metricProcessHandles{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -859,12 +791,6 @@ func newMetricProcessThreads(cfg MetricConfig) metricProcessThreads {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -879,6 +805,7 @@ type MetricsBuilder struct {
 	metricProcessCPUUtilization      metricProcessCPUUtilization
 	metricProcessDiskIo              metricProcessDiskIo
 	metricProcessDiskOperations      metricProcessDiskOperations
+	metricProcessHandles             metricProcessHandles
 	metricProcessMemoryUsage         metricProcessMemoryUsage
 	metricProcessMemoryUtilization   metricProcessMemoryUtilization
 	metricProcessMemoryVirtual       metricProcessMemoryVirtual
@@ -898,13 +825,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
-	}
-}
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
@@ -916,6 +836,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(mbc.Metrics.ProcessCPUUtilization),
 		metricProcessDiskIo:              newMetricProcessDiskIo(mbc.Metrics.ProcessDiskIo),
 		metricProcessDiskOperations:      newMetricProcessDiskOperations(mbc.Metrics.ProcessDiskOperations),
+		metricProcessHandles:             newMetricProcessHandles(mbc.Metrics.ProcessHandles),
 		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(mbc.Metrics.ProcessMemoryUsage),
 		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(mbc.Metrics.ProcessMemoryUtilization),
 		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(mbc.Metrics.ProcessMemoryVirtual),
@@ -1044,6 +965,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessCPUUtilization.emit(ils.Metrics())
 	mb.metricProcessDiskIo.emit(ils.Metrics())
 	mb.metricProcessDiskOperations.emit(ils.Metrics())
+	mb.metricProcessHandles.emit(ils.Metrics())
 	mb.metricProcessMemoryUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryUtilization.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtual.emit(ils.Metrics())
@@ -1094,6 +1016,11 @@ func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val
 // RecordProcessDiskOperationsDataPoint adds a data point to process.disk.operations metric.
 func (mb *MetricsBuilder) RecordProcessDiskOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
 	mb.metricProcessDiskOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+}
+
+// RecordProcessHandlesDataPoint adds a data point to process.handles metric.
+func (mb *MetricsBuilder) RecordProcessHandlesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricProcessHandles.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordProcessMemoryUsageDataPoint adds a data point to process.memory.usage metric.

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticbeanstalk // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk"
 
@@ -25,6 +14,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk/internal/metadata"
 )
 
 const (
@@ -38,7 +28,8 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	fs fileSystem
+	fs                 fileSystem
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 type EbMetaData struct {
@@ -47,8 +38,9 @@ type EbMetaData struct {
 	VersionLabel    string `json:"version_label"`
 }
 
-func NewDetector(processor.CreateSettings, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{fs: &ebFileSystem{}}, nil
+func NewDetector(_ processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
+	return &Detector{fs: &ebFileSystem{}, resourceAttributes: cfg.ResourceAttributes}, nil
 }
 
 func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -77,10 +69,20 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 	}
 
 	attr := res.Attributes()
-	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	attr.PutStr(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
-	attr.PutStr(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
-	attr.PutStr(conventions.AttributeServiceVersion, ebmd.VersionLabel)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	}
+	if d.resourceAttributes.CloudPlatform.Enabled {
+		attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	}
+	if d.resourceAttributes.ServiceInstanceID.Enabled {
+		attr.PutStr(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
+	}
+	if d.resourceAttributes.DeploymentEnvironment.Enabled {
+		attr.PutStr(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
+	}
+	if d.resourceAttributes.ServiceVersion.Enabled {
+		attr.PutStr(conventions.AttributeServiceVersion, ebmd.VersionLabel)
+	}
 	return res, conventions.SchemaURL, nil
 }

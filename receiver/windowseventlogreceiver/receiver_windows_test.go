@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -19,6 +8,7 @@ package windowseventlogreceiver
 
 import (
 	"context"
+	"encoding/xml"
 	"path/filepath"
 	"testing"
 	"time"
@@ -36,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -51,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Equal(t, createTestConfig(), cfg)
@@ -134,6 +125,58 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	eventIDMap, ok := eventID.(map[string]interface{})
 	require.True(t, ok)
 	require.Equal(t, int64(10), eventIDMap["id"])
+}
+
+func TestReadWindowsEventLoggerRaw(t *testing.T) {
+	logMessage := "Test log"
+
+	ctx := context.Background()
+	factory := NewFactory()
+	createSettings := receivertest.NewNopCreateSettings()
+	cfg := createTestConfig()
+	cfg.InputConfig.Raw = true
+	sink := new(consumertest.LogsSink)
+
+	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	require.NoError(t, err)
+
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer receiver.Shutdown(ctx)
+
+	src := "otel"
+	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+	defer eventlog.Remove(src)
+	require.NoError(t, err)
+
+	logger, err := eventlog.Open(src)
+	require.NoError(t, err)
+	defer logger.Close()
+
+	err = logger.Info(10, logMessage)
+	require.NoError(t, err)
+
+	logsReceived := func() bool {
+		return sink.LogRecordCount() == 1
+	}
+
+	// logs sometimes take a while to be written, so a substantial wait buffer is needed
+	require.Eventually(t, logsReceived, 10*time.Second, 200*time.Millisecond)
+	results := sink.AllLogs()
+	require.Len(t, results, 1)
+
+	records := results[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 1, records.Len())
+
+	record := records.At(0)
+	body := record.Body().AsString()
+	bodyStruct := struct {
+		Data string `xml:"EventData>Data"`
+	}{}
+	err = xml.Unmarshal([]byte(body), &bodyStruct)
+	require.NoError(t, err)
+
+	require.Equal(t, logMessage, bodyStruct.Data)
 }
 
 func createTestConfig() *WindowsLogConfig {

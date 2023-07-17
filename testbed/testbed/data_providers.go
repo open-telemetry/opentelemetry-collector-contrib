@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
@@ -72,7 +61,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 	traceID := dp.traceIDSequence.Add(1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
-		startTime := time.Now()
+		startTime := time.Now().Add(time.Duration(i+int(traceID)*1000) * time.Second)
 		endTime := startTime.Add(time.Millisecond)
 
 		spanID := dp.dataItemsGenerated.Add(1)
@@ -82,7 +71,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 		// Create a span.
 		span.SetTraceID(idutils.UInt64ToTraceID(0, traceID))
 		span.SetSpanID(idutils.UInt64ToSpanID(spanID))
-		span.SetName("load-generator-span")
+		span.SetName("load-generator-span" + strconv.FormatUint(spanID+traceID*1000, 10))
 		span.SetKind(ptrace.SpanKindClient)
 		attrs := span.Attributes()
 		attrs.PutInt("load_generator.span_seq_num", int64(spanID))

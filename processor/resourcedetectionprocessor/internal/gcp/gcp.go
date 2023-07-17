@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 
@@ -27,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
 
 const (
@@ -40,16 +30,19 @@ const (
 // * Google App Engine (GAE).
 // * Cloud Run.
 // * Cloud Functions.
-func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
 	return &detector{
-		logger:   set.Logger,
-		detector: gcp.NewDetector(),
+		logger:             set.Logger,
+		detector:           gcp.NewDetector(),
+		resourceAttributes: cfg.ResourceAttributes,
 	}, nil
 }
 
 type detector struct {
-	logger   *zap.Logger
-	detector gcpDetector
+	logger             *zap.Logger
+	detector           gcpDetector
+	resourceAttributes localMetadata.ResourceAttributesConfig
 }
 
 func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -58,48 +51,110 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		return res, "", nil
 	}
 	b := &resourceBuilder{logger: d.logger, attrs: res.Attributes()}
-	b.attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
-	b.add(conventions.AttributeCloudAccountID, d.detector.ProjectID)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		b.attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
+	}
+	if d.resourceAttributes.CloudAccountID.Enabled {
+		b.add(conventions.AttributeCloudAccountID, d.detector.ProjectID)
+	}
 
 	switch d.detector.CloudPlatform() {
 	case gcp.GKE:
-		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
-		b.addZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion)
-		b.add(conventions.AttributeK8SClusterName, d.detector.GKEClusterName)
-		b.add(conventions.AttributeHostID, d.detector.GKEHostID)
+		if d.resourceAttributes.CloudPlatform.Enabled {
+			b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
+		}
+		if d.resourceAttributes.CloudAvailabilityZone.Enabled {
+			b.addZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion, d.resourceAttributes)
+		}
+		if d.resourceAttributes.K8sClusterName.Enabled {
+			b.add(conventions.AttributeK8SClusterName, d.detector.GKEClusterName)
+		}
+		if d.resourceAttributes.HostID.Enabled {
+			b.add(conventions.AttributeHostID, d.detector.GKEHostID)
+		}
 		// GCEHostname is fallible on GKE, since it's not available when using workload identity.
-		b.addFallible(conventions.AttributeHostName, d.detector.GCEHostName)
+		if d.resourceAttributes.HostName.Enabled {
+			b.addFallible(conventions.AttributeHostName, d.detector.GCEHostName)
+		}
 	case gcp.CloudRun:
-		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
-		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
-		b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
-		b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
-		b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
+		if d.resourceAttributes.CloudPlatform.Enabled {
+			b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
+		}
+		if d.resourceAttributes.FaasName.Enabled {
+			b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
+		}
+		if d.resourceAttributes.FaasVersion.Enabled {
+			b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
+		}
+		if d.resourceAttributes.FaasID.Enabled {
+			b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
+		}
+		if d.resourceAttributes.CloudRegion.Enabled {
+			b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
+		}
 	case gcp.CloudFunctions:
-		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudFunctions)
-		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
-		b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
-		b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
-		b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
+		if d.resourceAttributes.CloudPlatform.Enabled {
+			b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudFunctions)
+		}
+		if d.resourceAttributes.FaasName.Enabled {
+			b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
+		}
+		if d.resourceAttributes.FaasVersion.Enabled {
+			b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
+		}
+		if d.resourceAttributes.FaasID.Enabled {
+			b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
+		}
+		if d.resourceAttributes.CloudRegion.Enabled {
+			b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
+		}
 	case gcp.AppEngineFlex:
-		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
-		b.addZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion)
-		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
-		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
-		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
+		if d.resourceAttributes.CloudPlatform.Enabled {
+			b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
+		}
+		b.addZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion, d.resourceAttributes)
+		if d.resourceAttributes.FaasName.Enabled {
+			b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
+		}
+		if d.resourceAttributes.FaasVersion.Enabled {
+			b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
+		}
+		if d.resourceAttributes.FaasID.Enabled {
+			b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
+		}
 	case gcp.AppEngineStandard:
-		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
-		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
-		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
-		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
-		b.add(conventions.AttributeCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone)
-		b.add(conventions.AttributeCloudRegion, d.detector.AppEngineStandardCloudRegion)
+		if d.resourceAttributes.CloudPlatform.Enabled {
+			b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
+		}
+		if d.resourceAttributes.FaasName.Enabled {
+			b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
+		}
+		if d.resourceAttributes.FaasVersion.Enabled {
+			b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
+		}
+		if d.resourceAttributes.FaasID.Enabled {
+			b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
+		}
+		if d.resourceAttributes.CloudAvailabilityZone.Enabled {
+			b.add(conventions.AttributeCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone)
+		}
+		if d.resourceAttributes.CloudRegion.Enabled {
+			b.add(conventions.AttributeCloudRegion, d.detector.AppEngineStandardCloudRegion)
+		}
 	case gcp.GCE:
-		b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
-		b.addZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion)
-		b.add(conventions.AttributeHostType, d.detector.GCEHostType)
-		b.add(conventions.AttributeHostID, d.detector.GCEHostID)
-		b.add(conventions.AttributeHostName, d.detector.GCEHostName)
+		if d.resourceAttributes.CloudPlatform.Enabled {
+			b.attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
+		}
+		b.addZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion, d.resourceAttributes)
+		if d.resourceAttributes.HostType.Enabled {
+			b.add(conventions.AttributeHostType, d.detector.GCEHostType)
+		}
+		if d.resourceAttributes.HostID.Enabled {
+			b.add(conventions.AttributeHostID, d.detector.GCEHostID)
+		}
+		if d.resourceAttributes.HostName.Enabled {
+			b.add(conventions.AttributeHostName, d.detector.GCEHostName)
+		}
 	default:
 		// We don't support this platform yet, so just return with what we have
 	}
@@ -134,17 +189,21 @@ func (r *resourceBuilder) addFallible(key string, detect func() (string, error))
 }
 
 // zoneAndRegion functions are expected to return zone, region, err.
-func (r *resourceBuilder) addZoneAndRegion(detect func() (string, string, error)) {
+func (r *resourceBuilder) addZoneAndRegion(detect func() (string, string, error), resourceAttributes localMetadata.ResourceAttributesConfig) {
 	zone, region, err := detect()
 	if err != nil {
 		r.errs = append(r.errs, err)
 		return
 	}
-	r.attrs.PutStr(conventions.AttributeCloudAvailabilityZone, zone)
-	r.attrs.PutStr(conventions.AttributeCloudRegion, region)
+	if resourceAttributes.CloudAvailabilityZone.Enabled {
+		r.attrs.PutStr(conventions.AttributeCloudAvailabilityZone, zone)
+	}
+	if resourceAttributes.CloudRegion.Enabled {
+		r.attrs.PutStr(conventions.AttributeCloudRegion, region)
+	}
 }
 
-func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationType, error)) {
+func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationType, error), resourceAttributes localMetadata.ResourceAttributesConfig) {
 	v, locType, err := detect()
 	if err != nil {
 		r.errs = append(r.errs, err)
@@ -153,9 +212,13 @@ func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationTyp
 
 	switch locType {
 	case gcp.Zone:
-		r.attrs.PutStr(conventions.AttributeCloudAvailabilityZone, v)
+		if resourceAttributes.CloudAvailabilityZone.Enabled {
+			r.attrs.PutStr(conventions.AttributeCloudAvailabilityZone, v)
+		}
 	case gcp.Region:
-		r.attrs.PutStr(conventions.AttributeCloudRegion, v)
+		if resourceAttributes.CloudRegion.Enabled {
+			r.attrs.PutStr(conventions.AttributeCloudRegion, v)
+		}
 	default:
 		r.errs = append(r.errs, fmt.Errorf("location must be zone or region. Got %v", locType))
 	}

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -18,66 +17,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for {{ .Type }} metrics.
-type MetricsConfig struct {
-	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} MetricConfig `mapstructure:"{{ $name }}"`
-	{{- end }}
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		{{- range $name, $metric := .Metrics }}
-		{{ $name.Render }}: MetricConfig{
-			Enabled: {{ $metric.Enabled }},
-		},
-		{{- end }}
-	}
-}
-
-{{ if .ResourceAttributes -}}
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for {{ .Type }} resource attributes.
-type ResourceAttributesConfig struct {
-	{{- range $name, $attr := .ResourceAttributes }}
-	{{ $name.Render }} ResourceAttributeConfig `mapstructure:"{{ $name }}"`
-	{{- end }}
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		{{- range $name, $attr := .ResourceAttributes }}
-		{{ $name.Render }}: ResourceAttributeConfig {
-			Enabled: {{ $attr.Enabled }},
-		},
-		{{- end }}
-	}
-}
-{{- end }}
 
 {{ range $name, $info := .Attributes }}
 {{- if $info.Enum -}}
@@ -185,14 +124,6 @@ func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
 
 {{ end -}}
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-    Metrics MetricsConfig `mapstructure:"metrics"`
-    {{- if .ResourceAttributes }}
-    ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-    {{- end }}
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -217,15 +148,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
 	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-   return MetricsBuilderConfig {
-        Metrics: DefaultMetricsConfig(),
-        {{- if .ResourceAttributes }}
-        ResourceAttributes: DefaultResourceAttributesConfig(),
-        {{- end }}
-   }
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
@@ -336,7 +258,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	{{- end }}
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/{{ .Type }}")
+	ils.Scope().SetName("{{ .ScopeName }}")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	{{- range $name, $metric := .Metrics }}

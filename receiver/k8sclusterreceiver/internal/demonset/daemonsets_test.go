@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package demonset
 
@@ -18,7 +7,11 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
@@ -52,4 +45,74 @@ func TestDaemonsetMetrics(t *testing.T) {
 
 	testutils.AssertMetricsInt(t, rm.Metrics[3], "k8s.daemonset.ready_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
+}
+
+func TestTransform(t *testing.T) {
+	originalDS := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-daemonset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "my-app",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "my-app",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            "my-container",
+							Image:           "nginx:latest",
+							ImagePullPolicy: corev1.PullAlways,
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									ContainerPort: 80,
+									Protocol:      corev1.ProtocolTCP,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Status: appsv1.DaemonSetStatus{
+			CurrentNumberScheduled: 3,
+			NumberReady:            3,
+			DesiredNumberScheduled: 3,
+			NumberMisscheduled:     0,
+			Conditions: []appsv1.DaemonSetCondition{
+				{
+					Type:   "Available",
+					Status: corev1.ConditionTrue,
+				},
+			},
+		},
+	}
+	wantDS := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-daemonset",
+			Namespace: "default",
+			Labels: map[string]string{
+				"app": "my-app",
+			},
+		},
+		Status: appsv1.DaemonSetStatus{
+			CurrentNumberScheduled: 3,
+			NumberReady:            3,
+			DesiredNumberScheduled: 3,
+			NumberMisscheduled:     0,
+		},
+	}
+	assert.Equal(t, wantDS, Transform(originalDS))
 }

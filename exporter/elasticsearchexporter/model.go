@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -84,6 +74,8 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	document.AddString("Link", spanLinksToString(span.Links()))
 	document.AddAttributes("Attributes", span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
+	document.AddEvents("Events", span.Events())
+	document.AddInt("Duration", DurationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 
 	if m.dedup {
 		document.Dedup()
@@ -108,4 +100,10 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	}
 	linkArrayBytes, _ := json.Marshal(&linkArray)
 	return string(linkArrayBytes)
+}
+
+// DurationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,
+// which is the format the Duration field is stored in the Span.
+func DurationAsMicroseconds(start, end time.Time) int64 {
+	return (end.UnixNano() - start.UnixNano()) / 1000
 }

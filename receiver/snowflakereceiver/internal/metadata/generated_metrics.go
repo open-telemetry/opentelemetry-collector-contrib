@@ -6,197 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for snowflakereceiver metrics.
-type MetricsConfig struct {
-	SnowflakeBillingCloudServiceTotal              MetricConfig `mapstructure:"snowflake.billing.cloud_service.total"`
-	SnowflakeBillingTotalCreditTotal               MetricConfig `mapstructure:"snowflake.billing.total_credit.total"`
-	SnowflakeBillingVirtualWarehouseTotal          MetricConfig `mapstructure:"snowflake.billing.virtual_warehouse.total"`
-	SnowflakeBillingWarehouseCloudServiceTotal     MetricConfig `mapstructure:"snowflake.billing.warehouse.cloud_service.total"`
-	SnowflakeBillingWarehouseTotalCreditTotal      MetricConfig `mapstructure:"snowflake.billing.warehouse.total_credit.total"`
-	SnowflakeBillingWarehouseVirtualWarehouseTotal MetricConfig `mapstructure:"snowflake.billing.warehouse.virtual_warehouse.total"`
-	SnowflakeDatabaseBytesScannedAvg               MetricConfig `mapstructure:"snowflake.database.bytes_scanned.avg"`
-	SnowflakeDatabaseQueryCount                    MetricConfig `mapstructure:"snowflake.database.query.count"`
-	SnowflakeLoginsTotal                           MetricConfig `mapstructure:"snowflake.logins.total"`
-	SnowflakePipeCreditsUsedTotal                  MetricConfig `mapstructure:"snowflake.pipe.credits_used.total"`
-	SnowflakeQueryBlocked                          MetricConfig `mapstructure:"snowflake.query.blocked"`
-	SnowflakeQueryBytesDeletedAvg                  MetricConfig `mapstructure:"snowflake.query.bytes_deleted.avg"`
-	SnowflakeQueryBytesSpilledLocalAvg             MetricConfig `mapstructure:"snowflake.query.bytes_spilled.local.avg"`
-	SnowflakeQueryBytesSpilledRemoteAvg            MetricConfig `mapstructure:"snowflake.query.bytes_spilled.remote.avg"`
-	SnowflakeQueryBytesWrittenAvg                  MetricConfig `mapstructure:"snowflake.query.bytes_written.avg"`
-	SnowflakeQueryCompilationTimeAvg               MetricConfig `mapstructure:"snowflake.query.compilation_time.avg"`
-	SnowflakeQueryDataScannedCacheAvg              MetricConfig `mapstructure:"snowflake.query.data_scanned_cache.avg"`
-	SnowflakeQueryExecuted                         MetricConfig `mapstructure:"snowflake.query.executed"`
-	SnowflakeQueryExecutionTimeAvg                 MetricConfig `mapstructure:"snowflake.query.execution_time.avg"`
-	SnowflakeQueryPartitionsScannedAvg             MetricConfig `mapstructure:"snowflake.query.partitions_scanned.avg"`
-	SnowflakeQueryQueuedOverload                   MetricConfig `mapstructure:"snowflake.query.queued_overload"`
-	SnowflakeQueryQueuedProvision                  MetricConfig `mapstructure:"snowflake.query.queued_provision"`
-	SnowflakeQueuedOverloadTimeAvg                 MetricConfig `mapstructure:"snowflake.queued_overload_time.avg"`
-	SnowflakeQueuedProvisioningTimeAvg             MetricConfig `mapstructure:"snowflake.queued_provisioning_time.avg"`
-	SnowflakeQueuedRepairTimeAvg                   MetricConfig `mapstructure:"snowflake.queued_repair_time.avg"`
-	SnowflakeRowsDeletedAvg                        MetricConfig `mapstructure:"snowflake.rows_deleted.avg"`
-	SnowflakeRowsInsertedAvg                       MetricConfig `mapstructure:"snowflake.rows_inserted.avg"`
-	SnowflakeRowsProducedAvg                       MetricConfig `mapstructure:"snowflake.rows_produced.avg"`
-	SnowflakeRowsUnloadedAvg                       MetricConfig `mapstructure:"snowflake.rows_unloaded.avg"`
-	SnowflakeRowsUpdatedAvg                        MetricConfig `mapstructure:"snowflake.rows_updated.avg"`
-	SnowflakeSessionIDCount                        MetricConfig `mapstructure:"snowflake.session_id.count"`
-	SnowflakeStorageFailsafeBytesTotal             MetricConfig `mapstructure:"snowflake.storage.failsafe_bytes.total"`
-	SnowflakeStorageStageBytesTotal                MetricConfig `mapstructure:"snowflake.storage.stage_bytes.total"`
-	SnowflakeStorageStorageBytesTotal              MetricConfig `mapstructure:"snowflake.storage.storage_bytes.total"`
-	SnowflakeTotalElapsedTimeAvg                   MetricConfig `mapstructure:"snowflake.total_elapsed_time.avg"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		SnowflakeBillingCloudServiceTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingTotalCreditTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingVirtualWarehouseTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseCloudServiceTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseTotalCreditTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeBillingWarehouseVirtualWarehouseTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeDatabaseBytesScannedAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeDatabaseQueryCount: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeLoginsTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakePipeCreditsUsedTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryBlocked: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryBytesDeletedAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryBytesSpilledLocalAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryBytesSpilledRemoteAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryBytesWrittenAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryCompilationTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryDataScannedCacheAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryExecuted: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryExecutionTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryPartitionsScannedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeQueryQueuedOverload: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueryQueuedProvision: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueuedOverloadTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueuedProvisioningTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeQueuedRepairTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeRowsDeletedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsInsertedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsProducedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsUnloadedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeRowsUpdatedAvg: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeSessionIDCount: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeStorageFailsafeBytesTotal: MetricConfig{
-			Enabled: false,
-		},
-		SnowflakeStorageStageBytesTotal: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeStorageStorageBytesTotal: MetricConfig{
-			Enabled: true,
-		},
-		SnowflakeTotalElapsedTimeAvg: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for snowflakereceiver resource attributes.
-type ResourceAttributesConfig struct {
-	SnowflakeAccountName ResourceAttributeConfig `mapstructure:"snowflake.account.name"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		SnowflakeAccountName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 type metricSnowflakeBillingCloudServiceTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -2093,12 +1906,6 @@ func newMetricSnowflakeTotalElapsedTimeAvg(cfg MetricConfig) metricSnowflakeTota
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -2152,13 +1959,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 

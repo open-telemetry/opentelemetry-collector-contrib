@@ -1,27 +1,19 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -210,7 +202,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
-			fingerprintSize: DefaultFingerprintSize,
+			fingerprintSize: fingerprint.DefaultSize,
 			maxLogSize:      defaultMaxLogSize,
 			emit:            testEmitFunc(emitChan),
 		},
@@ -230,23 +222,53 @@ func readToken(t *testing.T, c chan *emitParams) []byte {
 	return nil
 }
 
-func TestMapCopy(t *testing.T) {
-	initMap := map[string]any{
-		"mapVal": map[string]any{
-			"nestedVal": "value1",
+func TestEncodingDecode(t *testing.T) {
+	testFile := openTemp(t, t.TempDir())
+	testToken := tokenWithLength(2 * fingerprint.DefaultSize)
+	_, err := testFile.Write(testToken)
+	require.NoError(t, err)
+	fp, err := fingerprint.New(testFile, fingerprint.DefaultSize)
+	require.NoError(t, err)
+
+	f := readerFactory{
+		SugaredLogger: testutil.Logger(t),
+		readerConfig: &readerConfig{
+			fingerprintSize: fingerprint.DefaultSize,
+			maxLogSize:      defaultMaxLogSize,
 		},
-		"intVal": 1,
-		"strVal": "OrigStr",
+		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
+		fromBeginning:   false,
 	}
+	r, err := f.newReader(testFile, fp)
+	require.NoError(t, err)
 
-	copyMap := mapCopy(initMap)
-	// Mutate values on the copied map
-	copyMap["mapVal"].(map[string]any)["nestedVal"] = "overwrittenValue"
-	copyMap["intVal"] = 2
-	copyMap["strVal"] = "CopyString"
+	// Just faking out these properties
+	r.HeaderFinalized = true
+	r.FileAttributes = map[string]any{"foo": "bar"}
 
-	// Assert that the original map should have the same values
-	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
-	assert.Equal(t, 1, initMap["intVal"])
-	assert.Equal(t, "OrigStr", initMap["strVal"])
+	assert.Equal(t, testToken[:fingerprint.DefaultSize], r.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*fingerprint.DefaultSize), r.Offset)
+
+	// Encode
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	require.NoError(t, enc.Encode(r))
+
+	// Decode
+	dec := json.NewDecoder(bytes.NewReader(buf.Bytes()))
+	decodedReader, err := f.unsafeReader()
+	require.NoError(t, err)
+	require.NoError(t, dec.Decode(decodedReader))
+
+	// Assert decoded reader has values persisted
+	assert.Equal(t, testToken[:fingerprint.DefaultSize], decodedReader.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*fingerprint.DefaultSize), decodedReader.Offset)
+	assert.True(t, decodedReader.HeaderFinalized)
+	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes)
+
+	// These fields are intentionally excluded, as they may have changed
+	assert.Empty(t, decodedReader.FileAttributes[logFileName])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePath])
+	assert.Empty(t, decodedReader.FileAttributes[logFileNameResolved])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePathResolved])
 }

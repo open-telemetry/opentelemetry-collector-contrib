@@ -8,229 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricConfig provides common config for a particular metric.
-type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsConfig provides config for mysqlreceiver metrics.
-type MetricsConfig struct {
-	MysqlBufferPoolDataPages     MetricConfig `mapstructure:"mysql.buffer_pool.data_pages"`
-	MysqlBufferPoolLimit         MetricConfig `mapstructure:"mysql.buffer_pool.limit"`
-	MysqlBufferPoolOperations    MetricConfig `mapstructure:"mysql.buffer_pool.operations"`
-	MysqlBufferPoolPageFlushes   MetricConfig `mapstructure:"mysql.buffer_pool.page_flushes"`
-	MysqlBufferPoolPages         MetricConfig `mapstructure:"mysql.buffer_pool.pages"`
-	MysqlBufferPoolUsage         MetricConfig `mapstructure:"mysql.buffer_pool.usage"`
-	MysqlClientNetworkIo         MetricConfig `mapstructure:"mysql.client.network.io"`
-	MysqlCommands                MetricConfig `mapstructure:"mysql.commands"`
-	MysqlConnectionCount         MetricConfig `mapstructure:"mysql.connection.count"`
-	MysqlConnectionErrors        MetricConfig `mapstructure:"mysql.connection.errors"`
-	MysqlDoubleWrites            MetricConfig `mapstructure:"mysql.double_writes"`
-	MysqlHandlers                MetricConfig `mapstructure:"mysql.handlers"`
-	MysqlIndexIoWaitCount        MetricConfig `mapstructure:"mysql.index.io.wait.count"`
-	MysqlIndexIoWaitTime         MetricConfig `mapstructure:"mysql.index.io.wait.time"`
-	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
-	MysqlLockedConnects          MetricConfig `mapstructure:"mysql.locked_connects"`
-	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
-	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
-	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
-	MysqlMysqlxWorkerThreads     MetricConfig `mapstructure:"mysql.mysqlx_worker_threads"`
-	MysqlOpenedResources         MetricConfig `mapstructure:"mysql.opened_resources"`
-	MysqlOperations              MetricConfig `mapstructure:"mysql.operations"`
-	MysqlPageOperations          MetricConfig `mapstructure:"mysql.page_operations"`
-	MysqlPreparedStatements      MetricConfig `mapstructure:"mysql.prepared_statements"`
-	MysqlQueryClientCount        MetricConfig `mapstructure:"mysql.query.client.count"`
-	MysqlQueryCount              MetricConfig `mapstructure:"mysql.query.count"`
-	MysqlQuerySlowCount          MetricConfig `mapstructure:"mysql.query.slow.count"`
-	MysqlReplicaSQLDelay         MetricConfig `mapstructure:"mysql.replica.sql_delay"`
-	MysqlReplicaTimeBehindSource MetricConfig `mapstructure:"mysql.replica.time_behind_source"`
-	MysqlRowLocks                MetricConfig `mapstructure:"mysql.row_locks"`
-	MysqlRowOperations           MetricConfig `mapstructure:"mysql.row_operations"`
-	MysqlSorts                   MetricConfig `mapstructure:"mysql.sorts"`
-	MysqlStatementEventCount     MetricConfig `mapstructure:"mysql.statement_event.count"`
-	MysqlStatementEventWaitTime  MetricConfig `mapstructure:"mysql.statement_event.wait.time"`
-	MysqlTableIoWaitCount        MetricConfig `mapstructure:"mysql.table.io.wait.count"`
-	MysqlTableIoWaitTime         MetricConfig `mapstructure:"mysql.table.io.wait.time"`
-	MysqlTableLockWaitReadCount  MetricConfig `mapstructure:"mysql.table.lock_wait.read.count"`
-	MysqlTableLockWaitReadTime   MetricConfig `mapstructure:"mysql.table.lock_wait.read.time"`
-	MysqlTableLockWaitWriteCount MetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
-	MysqlTableLockWaitWriteTime  MetricConfig `mapstructure:"mysql.table.lock_wait.write.time"`
-	MysqlTableOpenCache          MetricConfig `mapstructure:"mysql.table_open_cache"`
-	MysqlThreads                 MetricConfig `mapstructure:"mysql.threads"`
-	MysqlTmpResources            MetricConfig `mapstructure:"mysql.tmp_resources"`
-}
-
-func DefaultMetricsConfig() MetricsConfig {
-	return MetricsConfig{
-		MysqlBufferPoolDataPages: MetricConfig{
-			Enabled: true,
-		},
-		MysqlBufferPoolLimit: MetricConfig{
-			Enabled: true,
-		},
-		MysqlBufferPoolOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlBufferPoolPageFlushes: MetricConfig{
-			Enabled: true,
-		},
-		MysqlBufferPoolPages: MetricConfig{
-			Enabled: true,
-		},
-		MysqlBufferPoolUsage: MetricConfig{
-			Enabled: true,
-		},
-		MysqlClientNetworkIo: MetricConfig{
-			Enabled: false,
-		},
-		MysqlCommands: MetricConfig{
-			Enabled: false,
-		},
-		MysqlConnectionCount: MetricConfig{
-			Enabled: false,
-		},
-		MysqlConnectionErrors: MetricConfig{
-			Enabled: false,
-		},
-		MysqlDoubleWrites: MetricConfig{
-			Enabled: true,
-		},
-		MysqlHandlers: MetricConfig{
-			Enabled: true,
-		},
-		MysqlIndexIoWaitCount: MetricConfig{
-			Enabled: true,
-		},
-		MysqlIndexIoWaitTime: MetricConfig{
-			Enabled: true,
-		},
-		MysqlJoins: MetricConfig{
-			Enabled: false,
-		},
-		MysqlLockedConnects: MetricConfig{
-			Enabled: true,
-		},
-		MysqlLocks: MetricConfig{
-			Enabled: true,
-		},
-		MysqlLogOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlMysqlxConnections: MetricConfig{
-			Enabled: true,
-		},
-		MysqlMysqlxWorkerThreads: MetricConfig{
-			Enabled: false,
-		},
-		MysqlOpenedResources: MetricConfig{
-			Enabled: true,
-		},
-		MysqlOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlPageOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlPreparedStatements: MetricConfig{
-			Enabled: true,
-		},
-		MysqlQueryClientCount: MetricConfig{
-			Enabled: false,
-		},
-		MysqlQueryCount: MetricConfig{
-			Enabled: false,
-		},
-		MysqlQuerySlowCount: MetricConfig{
-			Enabled: false,
-		},
-		MysqlReplicaSQLDelay: MetricConfig{
-			Enabled: false,
-		},
-		MysqlReplicaTimeBehindSource: MetricConfig{
-			Enabled: false,
-		},
-		MysqlRowLocks: MetricConfig{
-			Enabled: true,
-		},
-		MysqlRowOperations: MetricConfig{
-			Enabled: true,
-		},
-		MysqlSorts: MetricConfig{
-			Enabled: true,
-		},
-		MysqlStatementEventCount: MetricConfig{
-			Enabled: false,
-		},
-		MysqlStatementEventWaitTime: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableIoWaitCount: MetricConfig{
-			Enabled: true,
-		},
-		MysqlTableIoWaitTime: MetricConfig{
-			Enabled: true,
-		},
-		MysqlTableLockWaitReadCount: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableLockWaitReadTime: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableLockWaitWriteCount: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableLockWaitWriteTime: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableOpenCache: MetricConfig{
-			Enabled: false,
-		},
-		MysqlThreads: MetricConfig{
-			Enabled: true,
-		},
-		MysqlTmpResources: MetricConfig{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeConfig provides common config for a particular resource attribute.
-type ResourceAttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-// ResourceAttributesConfig provides config for mysqlreceiver resource attributes.
-type ResourceAttributesConfig struct {
-	MysqlInstanceEndpoint ResourceAttributeConfig `mapstructure:"mysql.instance.endpoint"`
-}
-
-func DefaultResourceAttributesConfig() ResourceAttributesConfig {
-	return ResourceAttributesConfig{
-		MysqlInstanceEndpoint: ResourceAttributeConfig{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeBufferPoolData specifies the a value buffer_pool_data attribute.
 type AttributeBufferPoolData int
@@ -409,6 +190,9 @@ const (
 	AttributeConnectionErrorPeerAddress
 	AttributeConnectionErrorSelect
 	AttributeConnectionErrorTcpwrap
+	AttributeConnectionErrorAborted
+	AttributeConnectionErrorAbortedClients
+	AttributeConnectionErrorLocked
 )
 
 // String returns the string representation of the AttributeConnectionError.
@@ -426,6 +210,12 @@ func (av AttributeConnectionError) String() string {
 		return "select"
 	case AttributeConnectionErrorTcpwrap:
 		return "tcpwrap"
+	case AttributeConnectionErrorAborted:
+		return "aborted"
+	case AttributeConnectionErrorAbortedClients:
+		return "aborted_clients"
+	case AttributeConnectionErrorLocked:
+		return "locked"
 	}
 	return ""
 }
@@ -438,6 +228,9 @@ var MapAttributeConnectionError = map[string]AttributeConnectionError{
 	"peer_address":    AttributeConnectionErrorPeerAddress,
 	"select":          AttributeConnectionErrorSelect,
 	"tcpwrap":         AttributeConnectionErrorTcpwrap,
+	"aborted":         AttributeConnectionErrorAborted,
+	"aborted_clients": AttributeConnectionErrorAbortedClients,
+	"locked":          AttributeConnectionErrorLocked,
 }
 
 // AttributeConnectionStatus specifies the a value connection_status attribute.
@@ -1985,57 +1778,6 @@ func newMetricMysqlJoins(cfg MetricConfig) metricMysqlJoins {
 	return m
 }
 
-type metricMysqlLockedConnects struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills mysql.locked_connects metric with initial data.
-func (m *metricMysqlLockedConnects) init() {
-	m.data.SetName("mysql.locked_connects")
-	m.data.SetDescription("The number of attempts to connect to locked user accounts.")
-	m.data.SetUnit("1")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricMysqlLockedConnects) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlLockedConnects) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlLockedConnects) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlLockedConnects(cfg MetricConfig) metricMysqlLockedConnects {
-	m := metricMysqlLockedConnects{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricMysqlLocks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3474,10 +3216,55 @@ func newMetricMysqlTmpResources(cfg MetricConfig) metricMysqlTmpResources {
 	return m
 }
 
-// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
-type MetricsBuilderConfig struct {
-	Metrics            MetricsConfig            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+type metricMysqlUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.uptime metric with initial data.
+func (m *metricMysqlUptime) init() {
+	m.data.SetName("mysql.uptime")
+	m.data.SetDescription("The number of seconds that the server has been up.")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlUptime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlUptime(cfg MetricConfig) metricMysqlUptime {
+	m := metricMysqlUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -3504,7 +3291,6 @@ type MetricsBuilder struct {
 	metricMysqlIndexIoWaitCount        metricMysqlIndexIoWaitCount
 	metricMysqlIndexIoWaitTime         metricMysqlIndexIoWaitTime
 	metricMysqlJoins                   metricMysqlJoins
-	metricMysqlLockedConnects          metricMysqlLockedConnects
 	metricMysqlLocks                   metricMysqlLocks
 	metricMysqlLogOperations           metricMysqlLogOperations
 	metricMysqlMysqlxConnections       metricMysqlMysqlxConnections
@@ -3532,6 +3318,7 @@ type MetricsBuilder struct {
 	metricMysqlTableOpenCache          metricMysqlTableOpenCache
 	metricMysqlThreads                 metricMysqlThreads
 	metricMysqlTmpResources            metricMysqlTmpResources
+	metricMysqlUptime                  metricMysqlUptime
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3541,13 +3328,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return MetricsBuilderConfig{
-		Metrics:            DefaultMetricsConfig(),
-		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
 
@@ -3572,7 +3352,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
 		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
 		metricMysqlJoins:                   newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
-		metricMysqlLockedConnects:          newMetricMysqlLockedConnects(mbc.Metrics.MysqlLockedConnects),
 		metricMysqlLocks:                   newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
 		metricMysqlLogOperations:           newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
 		metricMysqlMysqlxConnections:       newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
@@ -3600,6 +3379,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
+		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3676,7 +3456,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
 	mb.metricMysqlJoins.emit(ils.Metrics())
-	mb.metricMysqlLockedConnects.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
 	mb.metricMysqlMysqlxConnections.emit(ils.Metrics())
@@ -3704,6 +3483,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
+	mb.metricMysqlUptime.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(mb.resourceAttributesConfig, rm)
@@ -3851,16 +3631,6 @@ func (mb *MetricsBuilder) RecordMysqlJoinsDataPoint(ts pcommon.Timestamp, inputV
 		return fmt.Errorf("failed to parse int64 for MysqlJoins, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlJoins.recordDataPoint(mb.startTime, ts, val, joinKindAttributeValue.String())
-	return nil
-}
-
-// RecordMysqlLockedConnectsDataPoint adds a data point to mysql.locked_connects metric.
-func (mb *MetricsBuilder) RecordMysqlLockedConnectsDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for MysqlLockedConnects, value was %s: %w", inputVal, err)
-	}
-	mb.metricMysqlLockedConnects.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -4081,6 +3851,16 @@ func (mb *MetricsBuilder) RecordMysqlTmpResourcesDataPoint(ts pcommon.Timestamp,
 		return fmt.Errorf("failed to parse int64 for MysqlTmpResources, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlTmpResources.recordDataPoint(mb.startTime, ts, val, tmpResourceAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlUptimeDataPoint adds a data point to mysql.uptime metric.
+func (mb *MetricsBuilder) RecordMysqlUptimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlUptime, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlUptime.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

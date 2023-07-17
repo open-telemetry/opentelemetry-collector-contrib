@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
@@ -139,9 +128,9 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 
 func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*taskAnnotated, error) {
 	// taskAnnotated
-	rawTasks, err := f.getAllTasks(ctx)
+	rawTasks, err := f.getDiscoverableTasks(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("getAllTasks failed: %w", err)
+		return nil, fmt.Errorf("getDiscoverableTasks failed: %w", err)
 	}
 	tasks, err := f.attachTaskDefinition(ctx, rawTasks)
 	if err != nil {
@@ -162,9 +151,10 @@ func (f *taskFetcher) fetchAndDecorate(ctx context.Context) ([]*taskAnnotated, e
 	return tasks, nil
 }
 
-// getAllTasks get arns of all running tasks and describe those tasks.
+// getDiscoverableTasks get arns of all running tasks and describe those tasks
+// and filter only fargate tasks or EC2 task which container instance is known.
 // There is no API to list task detail without arn so we need to call two APIs.
-func (f *taskFetcher) getAllTasks(ctx context.Context) ([]*ecs.Task, error) {
+func (f *taskFetcher) getDiscoverableTasks(ctx context.Context) ([]*ecs.Task, error) {
 	svc := f.ecs
 	cluster := aws.String(f.cluster)
 	req := ecs.ListTasksInput{Cluster: cluster}
@@ -182,7 +172,16 @@ func (f *taskFetcher) getAllTasks(ctx context.Context) ([]*ecs.Task, error) {
 		if err != nil {
 			return nil, fmt.Errorf("ecs.DescribeTasks failed: %w", err)
 		}
-		tasks = append(tasks, descRes.Tasks...)
+
+		for _, task := range descRes.Tasks {
+			// Preserve only fargate tasks or EC2 tasks with non-nil ContainerInstanceArn.
+			// When ECS task of EC2 launch type is in state Provisioning/Pending, it may
+			// not have EC2 instance. Such tasks have `nil` instance arn and the
+			// attachContainerInstance call will fail
+			if task.ContainerInstanceArn != nil || aws.StringValue(task.LaunchType) != ecs.LaunchTypeEc2 {
+				tasks = append(tasks, task)
+			}
+		}
 		if listRes.NextToken == nil {
 			break
 		}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -49,6 +38,15 @@ type perfCounter struct {
 // NewWatcher creates new PerfCounterWatcher by provided parts of its path.
 func NewWatcher(object, instance, counterName string) (PerfCounterWatcher, error) {
 	path := counterPath(object, instance, counterName)
+	counter, err := newPerfCounter(path, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
+	}
+	return counter, nil
+}
+
+// NewWatcherFromPath creates new PerfCounterWatcher by provided path.
+func NewWatcherFromPath(path string) (PerfCounterWatcher, error) {
 	counter, err := newPerfCounter(path, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
@@ -127,6 +125,11 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 
 	vals = removeTotalIfMultipleValues(vals)
 	return vals, nil
+}
+
+// ExpandWildCardPath examines the local computer and returns those counter paths that match the given counter path which contains wildcard characters.
+func ExpandWildCardPath(counterPath string) ([]string, error) {
+	return win_perf_counters.ExpandWildCardPath(counterPath)
 }
 
 func removeTotalIfMultipleValues(vals []CounterValue) []CounterValue {

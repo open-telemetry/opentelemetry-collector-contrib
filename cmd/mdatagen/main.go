@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -48,10 +37,14 @@ func run(ymlPath string) error {
 	if ymlPath == "" {
 		return errors.New("argument must be metadata.yaml file")
 	}
+	ymlPath, err := filepath.Abs(ymlPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %v: %w", ymlPath, err)
+	}
 
 	ymlDir := filepath.Dir(ymlPath)
 
-	md, err := loadMetadata(filepath.Clean(ymlPath))
+	md, err := loadMetadata(ymlPath)
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
@@ -62,7 +55,7 @@ func run(ymlPath string) error {
 	if err = os.MkdirAll(codeDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
-	if len(md.Status.Stability) > 0 {
+	if md.Status != nil {
 		if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
 			filepath.Join(codeDir, "generated_status.go"), md); err != nil {
 			return err
@@ -75,24 +68,40 @@ func run(ymlPath string) error {
 			return err
 		}
 	}
-	if len(md.Metrics) == 0 {
+	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
 		return nil
 	}
+
 	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
 	}
-	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
-		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
-		return err
-	}
 	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
 		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
+		return err
+	}
+
+	if err = generateFile(filepath.Join(tmplDir, "config.go.tmpl"),
+		filepath.Join(codeDir, "generated_config.go"), md); err != nil {
+		return err
+	}
+	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
+		filepath.Join(codeDir, "generated_config_test.go"), md); err != nil {
+		return err
+	}
+
+	if len(md.Metrics) == 0 {
+		return nil
+	}
+
+	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
+		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
 		return err
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics_test.go.tmpl"),
 		filepath.Join(codeDir, "generated_metrics_test.go"), md); err != nil {
 		return err
 	}
+
 	return generateFile(filepath.Join(tmplDir, "documentation.md.tmpl"), filepath.Join(ymlDir, "documentation.md"), md)
 }
 
@@ -125,9 +134,19 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return false
 				},
-				"stringsJoin": strings.Join,
-				"casesTitle":  cases.Title(language.English).String,
-				"inc":         func(i int) int { return i + 1 },
+				"stringsJoin":  strings.Join,
+				"stringsSplit": strings.Split,
+				"casesTitle":   cases.Title(language.English).String,
+				"toCamelCase": func(s string) string {
+					caser := cases.Title(language.English).String
+					parts := strings.Split(s, "_")
+					result := ""
+					for _, part := range parts {
+						result += caser(part)
+					}
+					return result
+				},
+				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
 				},

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ecs
 
@@ -24,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs/internal/metadata"
 )
 
 type mockMetaDataProvider struct {
@@ -59,14 +49,14 @@ func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMeta
 
 func Test_ecsNewDetector(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
-	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, d)
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
-	d, _ := NewDetector(processortest.NewNopCreateSettings(), nil)
+	d, _ := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
 	res, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -91,7 +81,23 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 	containers := []ecsutil.ContainerMetadata{c1, c2, c3, c4}
 
 	dest := pcommon.NewMap()
-	addValidLogData(containers, &c4, "123", dest)
+	resourceAttributes := metadata.ResourceAttributesConfig{
+		AwsEcsClusterArn:      metadata.ResourceAttributeConfig{Enabled: true},
+		AwsEcsLaunchtype:      metadata.ResourceAttributeConfig{Enabled: true},
+		AwsEcsTaskArn:         metadata.ResourceAttributeConfig{Enabled: true},
+		AwsEcsTaskFamily:      metadata.ResourceAttributeConfig{Enabled: true},
+		AwsEcsTaskRevision:    metadata.ResourceAttributeConfig{Enabled: true},
+		AwsLogGroupArns:       metadata.ResourceAttributeConfig{Enabled: true},
+		AwsLogGroupNames:      metadata.ResourceAttributeConfig{Enabled: true},
+		AwsLogStreamArns:      metadata.ResourceAttributeConfig{Enabled: true},
+		AwsLogStreamNames:     metadata.ResourceAttributeConfig{Enabled: true},
+		CloudAccountID:        metadata.ResourceAttributeConfig{Enabled: true},
+		CloudAvailabilityZone: metadata.ResourceAttributeConfig{Enabled: true},
+		CloudPlatform:         metadata.ResourceAttributeConfig{Enabled: true},
+		CloudProvider:         metadata.ResourceAttributeConfig{Enabled: true},
+		CloudRegion:           metadata.ResourceAttributeConfig{Enabled: true},
+	}
+	addValidLogData(containers, &c4, "123", dest, resourceAttributes)
 	assert.Equal(t, 0, dest.Len())
 }
 
@@ -115,7 +121,8 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
 	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
-	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	d := Detector{provider: &mockMetaDataProvider{isV4: true}, resourceAttributes: resourceAttributes}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -138,7 +145,8 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.PutStr("cloud.availability_zone", "us-west-2a")
 	attr.PutStr("cloud.account.id", "123456789123")
 
-	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	d := Detector{provider: &mockMetaDataProvider{isV4: false}, resourceAttributes: resourceAttributes}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
