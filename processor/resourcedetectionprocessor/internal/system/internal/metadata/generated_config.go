@@ -17,7 +17,7 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		HostID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostName: ResourceAttributeConfig{
 			Enabled: true,
