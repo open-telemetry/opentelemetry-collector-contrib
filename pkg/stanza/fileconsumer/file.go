@@ -18,6 +18,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
+const (
+	logFileName         = "log.file.name"
+	logFilePath         = "log.file.path"
+	logFileNameResolved = "log.file.name_resolved"
+	logFilePathResolved = "log.file.path_resolved"
+)
+
+// Deprecated: [v0.82.0] Use emit.Callback instead. This will be removed in a future release, tentatively v0.84.0.
 type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 
 type Manager struct {
@@ -224,8 +232,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 
 func (m *Manager) checkDuplicates(fp *fingerprint.Fingerprint) bool {
 	for i := 0; i < len(m.currentFps); i++ {
-		fp2 := m.currentFps[i]
-		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
+		if fp.Equal(m.currentFps[i]) {
 			return true
 		}
 	}
@@ -369,6 +376,21 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 		if err = dec.Decode(unsafeReader); err != nil {
 			return err
 		}
+
+		// Migrate readers that used FileAttributes.HeaderAttributes
+		// This block can be removed in a future release, tentatively v0.90.0
+		if ha, ok := unsafeReader.FileAttributes["HeaderAttributes"]; ok {
+			switch hat := ha.(type) {
+			case map[string]any:
+				for k, v := range hat {
+					unsafeReader.FileAttributes[k] = v
+				}
+				delete(unsafeReader.FileAttributes, "HeaderAttributes")
+			default:
+				m.Errorw("migrate header attributes: unexpected format")
+			}
+		}
+
 		m.knownFiles = append(m.knownFiles, unsafeReader)
 	}
 
