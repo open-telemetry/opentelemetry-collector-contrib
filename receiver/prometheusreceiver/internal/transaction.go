@@ -19,14 +19,11 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -36,6 +33,7 @@ const (
 
 type transaction struct {
 	isNew          bool
+	trimSuffixes   bool
 	ctx            context.Context
 	families       map[string]*metricFamily
 	mc             scrape.MetricMetadataStore
@@ -47,8 +45,7 @@ type transaction struct {
 	metricAdjuster MetricsAdjuster
 	obsrecv        *obsreport.Receiver
 	// Used as buffer to calculate series ref hash.
-	bufBytes   []byte
-	normalizer *prometheustranslator.Normalizer
+	bufBytes []byte
 }
 
 func newTransaction(
@@ -58,11 +55,12 @@ func newTransaction(
 	externalLabels labels.Labels,
 	settings receiver.CreateSettings,
 	obsrecv *obsreport.Receiver,
-	registry *featuregate.Registry) *transaction {
+	trimSuffixes bool) *transaction {
 	return &transaction{
 		ctx:            ctx,
 		families:       make(map[string]*metricFamily),
 		isNew:          true,
+		trimSuffixes:   trimSuffixes,
 		sink:           sink,
 		metricAdjuster: metricAdjuster,
 		externalLabels: externalLabels,
@@ -70,7 +68,6 @@ func newTransaction(
 		buildInfo:      settings.BuildInfo,
 		obsrecv:        obsrecv,
 		bufBytes:       make([]byte, 0, 1024),
-		normalizer:     prometheustranslator.NewNormalizer(registry),
 	}
 }
 
@@ -206,7 +203,7 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	metrics := ils.Metrics()
 
 	for _, mf := range t.families {
-		mf.appendMetric(metrics, t.normalizer)
+		mf.appendMetric(metrics, t.trimSuffixes)
 	}
 
 	return md, nil
