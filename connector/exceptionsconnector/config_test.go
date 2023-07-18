@@ -87,7 +87,7 @@ func TestValidateDimensions(t *testing.T) {
 			dimensions: []Dimension{
 				{Name: "service.name"},
 			},
-			expectedErr: "duplicate dimension name service.name",
+			expectedErr: "duplicate dimension name \"service.name\"",
 		},
 		{
 			name: "duplicate additional dimensions",
@@ -95,7 +95,7 @@ func TestValidateDimensions(t *testing.T) {
 				{Name: "service_name"},
 				{Name: "service_name"},
 			},
-			expectedErr: "duplicate dimension name service_name",
+			expectedErr: "duplicate dimension name \"service_name\"",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
