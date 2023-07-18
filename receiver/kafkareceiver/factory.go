@@ -111,6 +111,7 @@ func createDefaultConfig() component.Config {
 			After:   false,
 			OnError: false,
 		},
+		HeaderExtraction: false,
 	}
 }
 
