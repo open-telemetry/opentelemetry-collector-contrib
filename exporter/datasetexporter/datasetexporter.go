@@ -15,6 +15,7 @@ import (
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/client"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -118,10 +119,22 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 	}
 }
 
-func inferServerHost(attrs map[string]interface{}, hostSettings ServerHostSettings) string {
-	val, ok := attrs[add_events.AttrServerHost]
-	if ok {
-		host := fmt.Sprintf("%v", val)
+func inferServerHost(
+	resource pcommon.Resource,
+	attrs map[string]interface{},
+	hostSettings ServerHostSettings,
+) string {
+	valA, okA := attrs[add_events.AttrServerHost]
+	if okA {
+		host := fmt.Sprintf("%v", valA)
+		if len(host) > 0 {
+			return host
+		}
+	}
+
+	valR, okR := resource.Attributes().Get(add_events.AttrServerHost)
+	if okR {
+		host := valR.AsString()
 		if len(host) > 0 {
 			return host
 		}

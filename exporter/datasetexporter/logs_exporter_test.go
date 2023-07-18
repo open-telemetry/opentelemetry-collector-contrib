@@ -426,14 +426,20 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 
 	lr1 := testdata.GenerateLogsOneLogRecord()
 	lr2 := testdata.GenerateLogsOneLogRecord()
-	// set attribute for the hostname
+	// set attribute for the hostname, it should beat value from resource
 	lr2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(add_events.AttrServerHost, "serverHostFromAttribute")
+	lr2.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResource")
+	// set attribute for the hostname in the resource
+	lr3 := testdata.GenerateLogsOneLogRecord()
+	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResource")
 
 	ld := plog.NewLogs()
 	ld.ResourceLogs().AppendEmpty()
 	ld.ResourceLogs().AppendEmpty()
+	ld.ResourceLogs().AppendEmpty()
 	lr1.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(0))
 	lr2.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(1))
+	lr3.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(2))
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
 	if assert.NoError(t, err) {
@@ -466,6 +472,22 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Ts:     testLEventReq.Ts,
 						Attrs: map[string]interface{}{
 							add_events.AttrOrigServerHost: "serverHostFromAttribute",
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+						},
+					},
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: "serverHostFromResource",
 							"app":                         "server",
 							"instance_num":                float64(1),
 							"dropped_attributes_count":    float64(1),

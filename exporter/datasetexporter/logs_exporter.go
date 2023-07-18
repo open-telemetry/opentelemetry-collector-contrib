@@ -226,7 +226,7 @@ func buildEventFromLog(
 	event.Attrs = attrs
 	event.Log = "LL"
 	event.Thread = "TL"
-	event.ServerHost = inferServerHost(attrs, hostSettings)
+	event.ServerHost = inferServerHost(resource, attrs, hostSettings)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TL", Name: "logs"},

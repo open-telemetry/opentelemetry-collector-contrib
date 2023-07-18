@@ -28,13 +28,14 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 
 Specifying the server host is crucial for ensuring the correct functionality of DataSet. 
 DataSet expects the server host value to be provided in the `serverHost` attribute. 
-If the server host value is stored in a different attribute, you can use the [attributesprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) to copy it into the serverHost attribute.
+If the server host value is stored in a different attribute, you can use the [resourceprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourceprocessor/README.md) or [attributesprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) to copy it into the `serverHost` attribute.
 
 You can also utilize the `server_host` settings (described below) to populate the serverHost attribute with different values.
 
 The process of populating the serverHost attribute works as follows:
 
-If the `serverHost` attribute is specified and not empty, it remains unchanged.
+If the `serverHost` attribute is specified and not empty in the log or trace, then it's used.
+If the `serverHost` attribute is specified and not empty in the [resource](https://opentelemetry.io/docs/specs/otel/resource/sdk/), then it is used.
 If the `serverHost` attribute is not specified or empty, the value from the `server_host.server_host` setting is used.
 If the `serverHost` attribute is still not specified or empty, and the `server_host.use_host_name` setting is set to `true`, the `hostname` of the node is used as a fallback value.
 
@@ -65,6 +66,11 @@ processors:
     - key: serverHost
       action: insert
       from_attribute: container_id
+  resource:
+    attributes:
+      - key: serverHost
+        from_attribute: node_id
+        action: insert      
 
 exporters:
   dataset/logs:
@@ -115,12 +121,15 @@ service:
 
 Based on the given configuration and scenarios, here's the expected behavior:
 
-1. Log: `{'container_id': 'cont-payment-01'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
+1. Resource: `{'node_id:' 'node-pay-01'}`, Log: `{'container_id': 'cont-payment-01'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
    * Since the attribute `container_id` is set, `attributesprocessor` will copy this value to the `serverHost`.
    * The resulting event will be: `{'container_id': 'cont-payment-01', 'serverHost': 'cont-payment-01'}`.
-2. Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
+2. Resource: `{'node_id': 'node_pay_01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
+    * Since the resource attribute `node_id` is set, `resourceprocessor` will copy this value to the `serverHost`. 
+    * The resulting event will be: `{'serverHost': 'node-pay-01', 'attribute.foo': 'Bar'}`.
+3. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
    * Since the attribute `container_id` is not set, the value from the environmental variable `SERVER_HOST`  will be copied to the `serverHost`.
-   * The resulting event will be: `{'attribute.foo': 'Bar', 'serverHost': 'payments-01'}`.
-3. Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
+   * The resulting event will be: `{'serverHost': 'payments-01', 'attribute.foo': 'Bar'}`.
+4. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
    * Since the attribute `container_id` is not set and the environmental variable `SERVER_HOST` is empty, the `hostname` of the node (`ip-172-31-27-19`) will be used as the fallback value for `serverHost`. 
-   * The resulting event will be: `{'attribute.foo': 'Bar', 'serverHost': 'ip-172-31-27-19'}`.
+   * The resulting event will be: `{'serverHost': 'ip-172-31-27-19', 'attribute.foo': 'Bar'}`.

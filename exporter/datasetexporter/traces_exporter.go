@@ -6,6 +6,8 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -13,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"strings"
 )
 
 const ServiceNameKey = "service.name"
@@ -79,7 +80,7 @@ func buildEventFromSpan(
 	event.Attrs = attrs
 	event.Log = "LT"
 	event.Thread = "TT"
-	event.ServerHost = inferServerHost(attrs, hostSettings)
+	event.ServerHost = inferServerHost(bundle.resource, attrs, hostSettings)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TT", Name: "traces"},
