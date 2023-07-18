@@ -52,5 +52,5 @@ func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 	cfg := &Config{Scrapers: map[string]internal.Config{errorKey: &mockConfig{}}}
 
 	_, err := factory.CreateMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
-    assert.EqualError(t, err, fmt.Sprintf("failed to create scraper %q: factory not found for scraper %q", errorKey, errorKey))
+	assert.EqualError(t, err, fmt.Sprintf("failed to create scraper %q: factory not found for scraper %q", errorKey, errorKey))
 }
