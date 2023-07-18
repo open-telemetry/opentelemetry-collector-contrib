@@ -50,6 +50,14 @@ func enableZorkianMetricExport() error {
 	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
 }
 
+const metadataReporterPeriod = 30 * time.Minute
+
+func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
+	if err := metadataReporter.ConsumeResource(res); err != nil {
+		logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
+	}
+}
+
 type factory struct {
 	onceMetadata sync.Once
 
@@ -78,8 +86,7 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 func (f *factory) Reporter(params exporter.CreateSettings, pcfg hostmetadata.PusherConfig) (*inframetadata.Reporter, error) {
 	f.onceReporter.Do(func() {
 		pusher := hostmetadata.NewPusher(params, pcfg)
-		period := 30 * time.Minute
-		f.reporter, f.reporterErr = inframetadata.NewReporter(params.Logger, pusher, period)
+		f.reporter, f.reporterErr = inframetadata.NewReporter(params.Logger, pusher, metadataReporterPeriod)
 		if f.reporterErr == nil {
 			go func() {
 				if err := f.reporter.Run(context.Background()); err != nil {
@@ -244,9 +251,7 @@ func (f *factory) createMetricsExporter(
 			// Consume resources for host metadata
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				res := md.ResourceMetrics().At(i).Resource()
-				if err2 := metadataReporter.ConsumeResource(res); err2 != nil {
-					set.Logger.Warn("failed to consume resource for host metadata", zap.Error(err2), zap.Any("resource", res))
-				}
+				consumeResource(metadataReporter, res, set.Logger)
 			}
 			return nil
 		}
@@ -328,9 +333,7 @@ func (f *factory) createTracesExporter(
 			// Consume resources for host metadata
 			for i := 0; i < td.ResourceSpans().Len(); i++ {
 				res := td.ResourceSpans().At(i).Resource()
-				if err := metadataReporter.ConsumeResource(res); err != nil {
-					set.Logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
-				}
+				consumeResource(metadataReporter, res, set.Logger)
 			}
 			return nil
 		}
@@ -400,9 +403,7 @@ func (f *factory) createLogsExporter(
 			})
 			for i := 0; i < td.ResourceLogs().Len(); i++ {
 				res := td.ResourceLogs().At(i).Resource()
-				if err := metadataReporter.ConsumeResource(res); err != nil {
-					set.Logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
-				}
+				consumeResource(metadataReporter, res, set.Logger)
 			}
 			return nil
 		}

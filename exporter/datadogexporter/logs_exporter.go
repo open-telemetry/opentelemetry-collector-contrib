@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
@@ -97,9 +96,7 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 		// Consume resources for host metadata
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			res := ld.ResourceLogs().At(i).Resource()
-			if err := exp.metadataReporter.ConsumeResource(res); err != nil {
-				exp.params.Logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
-			}
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}
 	}
 

@@ -195,9 +195,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		// Consume resources for host metadata
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			res := md.ResourceMetrics().At(i).Resource()
-			if err := exp.metadataReporter.ConsumeResource(res); err != nil {
-				exp.params.Logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
-			}
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}
 	}
 	var consumer otlpmetrics.Consumer

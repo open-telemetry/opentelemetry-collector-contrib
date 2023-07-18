@@ -109,9 +109,7 @@ func (exp *traceExporter) consumeTraces(
 		// Consume resources for host metadata
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
 			res := td.ResourceSpans().At(i).Resource()
-			if err := exp.metadataReporter.ConsumeResource(res); err != nil {
-				exp.params.Logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
-			}
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}
 	}
 	rspans := td.ResourceSpans()
