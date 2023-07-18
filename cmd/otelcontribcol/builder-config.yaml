@@ -196,7 +196,6 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.81.0
 
 connectors:
-<<<<<<< HEAD
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.80.0
@@ -205,13 +204,11 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.80.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/exconnector v0.80.0
 
-=======
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.81.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.81.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.81.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.81.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.81.0
->>>>>>> 02f688dd0e96cd10bb23a030739887570533e61d
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
@@ -423,11 +420,8 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ../../connector/countconnector
-<<<<<<< HEAD
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exampleconnector => ../../connector/exampleconnector
-=======
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../../connector/routingconnector
->>>>>>> 02f688dd0e96cd10bb23a030739887570533e61d
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ../../connector/datadogconnector
