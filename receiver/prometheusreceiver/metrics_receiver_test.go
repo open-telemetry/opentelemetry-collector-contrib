@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1275,7 +1274,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 var startTimeMetricPage = `
@@ -1344,6 +1343,7 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.Reso
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
+			case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 			}
 		}
 		assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
@@ -1361,7 +1361,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, true, false, "")
 }
 
 var startTimeMetricRegexPage = `
@@ -1410,7 +1410,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", featuregate.GlobalRegistry())
+	testComponent(t, targets, true, false, "^(.+_)*process_start_time_seconds$")
 }
 
 // metric type is defined as 'untyped' in the first metric
@@ -1439,7 +1439,7 @@ func TestUntypedMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -1557,7 +1557,7 @@ scrape_configs:
 	set := receivertest.NewNopCreateSettings()
 	receiver := newPrometheusReceiver(set, &Config{
 		PrometheusConfig: cfg,
-	}, new(consumertest.MetricsSink), featuregate.GlobalRegistry())
+	}, new(consumertest.MetricsSink))
 
 	ctx := context.Background()
 

@@ -167,9 +167,6 @@ issues:
     - path: deltatorateprocessor
       linters:
         - exhaustive
-    - path: groupbyattrsprocessor
-      linters:
-        - exhaustive
     - path: filterprocessor
       linters:
         - exhaustive
