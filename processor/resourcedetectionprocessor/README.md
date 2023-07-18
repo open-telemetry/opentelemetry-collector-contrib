@@ -515,8 +515,6 @@ resourcedetection:
         enabled: false
 ```
 
-NOTE: Currently all attributes are enabled by default for backwards compatibility purposes, but it will change in the future.
-
 ## Ordering
 
 Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
