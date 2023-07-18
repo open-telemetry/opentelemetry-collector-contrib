@@ -8,7 +8,9 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
+
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Config defines configuration for Google Cloud Managed Service for Prometheus exporter.
@@ -54,6 +56,12 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	cfg.ProjectID = c.ProjectID
 	cfg.UserAgent = c.UserAgent
 	cfg.MetricConfig.ClientConfig = c.MetricConfig.ClientConfig
+	// add target_info and scope_info metrics
+	cfg.MetricConfig.ExtraMetrics = func(m pmetric.Metrics) pmetric.ResourceMetricsSlice {
+		googlemanagedprometheus.AddScopeInfoMetric(m)
+		googlemanagedprometheus.AddTargetInfoMetric(m)
+		return m.ResourceMetrics()
+	}
 	return cfg
 }
 
