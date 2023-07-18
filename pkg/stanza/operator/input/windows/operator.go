@@ -47,6 +47,7 @@ type Config struct {
 	StartAt            string        `mapstructure:"start_at,omitempty"`
 	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
 	Raw                bool          `mapstructure:"raw,omitempty"`
+	ExcludeProviders   []string      `mapstructure:"exclude_providers,omitempty"`
 }
 
 // Build will build a windows event log operator.
@@ -69,30 +70,32 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	return &Input{
-		InputOperator: inputOperator,
-		buffer:        NewBuffer(),
-		channel:       c.Channel,
-		maxReads:      c.MaxReads,
-		startAt:       c.StartAt,
-		pollInterval:  c.PollInterval,
-		raw:           c.Raw,
+		InputOperator:    inputOperator,
+		buffer:           NewBuffer(),
+		channel:          c.Channel,
+		maxReads:         c.MaxReads,
+		startAt:          c.StartAt,
+		pollInterval:     c.PollInterval,
+		raw:              c.Raw,
+		excludeProviders: c.ExcludeProviders,
 	}, nil
 }
 
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark     Bookmark
-	subscription Subscription
-	buffer       Buffer
-	channel      string
-	maxReads     int
-	startAt      string
-	raw          bool
-	pollInterval time.Duration
-	persister    operator.Persister
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
+	bookmark         Bookmark
+	subscription     Subscription
+	buffer           Buffer
+	channel          string
+	maxReads         int
+	startAt          string
+	raw              bool
+	excludeProviders []string
+	pollInterval     time.Duration
+	persister        operator.Persister
+	cancel           context.CancelFunc
+	wg               sync.WaitGroup
 }
 
 // Start will start reading events from a subscription.
@@ -193,6 +196,21 @@ func (e *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (e *Input) processEvent(ctx context.Context, event Event) {
+	if len(e.excludeProviders) > 0 {
+		simpleEvent, err := event.RenderSimple(e.buffer)
+		if err != nil {
+			e.Errorf("Failed to render simple event: %s", err)
+			return
+		}
+
+		for _, excludeProvider := range e.excludeProviders {
+			if simpleEvent.Provider.Name == excludeProvider {
+				e.Debug("Stopped processing event with excluded provider ", excludeProvider)
+				return
+			}
+		}
+	}
+
 	if e.raw {
 		rawEvent, err := event.RenderRaw(e.buffer)
 		if err != nil {
