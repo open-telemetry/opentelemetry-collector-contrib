@@ -15,6 +15,7 @@ var (
 	errMissingEndpointFromConfig   = errors.New("missing receiver server endpoint from config")
 	errReadTimeoutExceedsMaxValue  = errors.New("The duration specified for read_timeout exceeds the maximum allowed value of 10s")
 	errWriteTimeoutExceedsMaxValue = errors.New("The duration specified for write_timeout exceeds the maximum allowed value of 10s")
+	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 )
 
 // Config defines configuration for the Generic Webhook receiver.
@@ -24,6 +25,12 @@ type Config struct {
 	WriteTimeout                  string                   `mapstructure:"write_timeout"` // wait time for writing request response in ms. Default is twenty seconds.
 	Path                          string                   `mapstructure:"path"`          // path for data collection. Default is <host>:<port>/services/collector
 	HealthPath                    string                   `mapstructure:"health_path"`   // path for health check api. Default is /services/collector/health
+	RequiredHeader                RequiredHeader                   `mapstructure:"required_header"`   // optional setting to set a required header for all requests to have
+}
+
+type RequiredHeader struct {
+	Key													string `mapstructure:"key"`
+	Value													string `mapstructure:"value"`
 }
 
 func (cfg *Config) Validate() error {
@@ -57,6 +64,10 @@ func (cfg *Config) Validate() error {
 		if writeTimeout > maxReadWriteTimeout {
 			errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 		}
+	}
+
+	if (cfg.RequiredHeader.Key != "" && cfg.RequiredHeader.Value == "") || (cfg.RequiredHeader.Value != "" && cfg.RequiredHeader.Key == "") {
+		errs = multierr.Append(errs, errRequiredHeader)
 	}
 
 	return errs
