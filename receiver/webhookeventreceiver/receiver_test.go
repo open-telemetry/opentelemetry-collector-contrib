@@ -48,6 +48,10 @@ func TestCreateNewLogReceiver(t *testing.T) {
 				WriteTimeout: "210",
 				Path:         "/event",
 				HealthPath:   "/health",
+				RequiredHeader:     RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
 			},
 			consumer: consumertest.NewNop(),
 		},
@@ -147,6 +151,10 @@ func TestHandleReq(t *testing.T) {
 func TestFailedReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0"
+	headerCfg := createDefaultConfig().(*Config)
+	headerCfg.Endpoint = "localhost:0" 
+	headerCfg.RequiredHeader.Key = "key-present"
+	headerCfg.RequiredHeader.Value = "value-present"
 
 	tests := []struct {
 		desc   string
@@ -185,6 +193,16 @@ func TestFailedReq(t *testing.T) {
 				return req
 			}(),
 			status: http.StatusBadRequest,
+		},
+		{
+			desc: "Invalid required header value",
+			cfg:  *headerCfg,
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost/events", strings.NewReader("test"))
+				req.Header.Set("key-present", "incorrect-value")
+				return req
+			}(),
+			status: http.StatusUnauthorized,
 		},
 	}
 	for _, test := range tests {

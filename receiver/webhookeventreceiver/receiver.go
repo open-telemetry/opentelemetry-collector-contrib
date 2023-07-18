@@ -30,6 +30,7 @@ var (
 	errInvalidRequestMethod = errors.New("invalid method. Valid method is POST")
 	errInvalidEncodingType  = errors.New("invalid encoding type")
 	errEmptyResponseBody    = errors.New("request body content length is zero")
+	errMissingRequiredHeader    = errors.New("request was missing required header or incorrect header value")	
 )
 
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
@@ -151,6 +152,14 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	if r.Method != http.MethodPost {
 		er.failBadReq(ctx, w, http.StatusBadRequest, errInvalidRequestMethod)
 		return
+	}
+
+	if er.cfg.RequiredHeader.Key != "" {
+		requiredHeaderValue := r.Header.Get(er.cfg.RequiredHeader.Key)
+		if requiredHeaderValue != er.cfg.RequiredHeader.Value {
+			er.failBadReq(ctx, w, http.StatusUnauthorized, errMissingRequiredHeader)
+		return
+		}
 	}
 
 	encoding := r.Header.Get("Content-Encoding")
