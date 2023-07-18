@@ -44,6 +44,7 @@ Note: use the Docker detector (see below) if running the Collector as a Docker c
 
 Queries the host machine to retrieve the following resource attributes:
 
+    * host.arch
     * host.name
     * host.id
     * os.type
