@@ -14,7 +14,7 @@
 
 //go:generate mdatagen metadata.yaml
 
-package exceptionsconnector
+package exceptionsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
 
 import (
 	"context"
