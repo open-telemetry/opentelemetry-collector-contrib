@@ -1,7 +1,7 @@
 name: New component proposal
 description: Suggest a new component for the project
 title: "New component: "
-labels: ["new component", "needs triage"]
+labels: ["Sponsor Needed", "needs triage"]
 body:
   - type: textarea
     attributes:
