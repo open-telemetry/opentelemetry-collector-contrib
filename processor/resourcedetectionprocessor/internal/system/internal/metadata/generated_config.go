@@ -9,6 +9,7 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/system resource attributes.
 type ResourceAttributesConfig struct {
+	HostArch ResourceAttributeConfig `mapstructure:"host.arch"`
 	HostID   ResourceAttributeConfig `mapstructure:"host.id"`
 	HostName ResourceAttributeConfig `mapstructure:"host.name"`
 	OsType   ResourceAttributeConfig `mapstructure:"os.type"`
@@ -16,8 +17,11 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		HostArch: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		HostID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostName: ResourceAttributeConfig{
 			Enabled: true,
