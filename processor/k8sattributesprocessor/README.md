@@ -4,6 +4,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [observiq], [redhat], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -21,23 +22,28 @@ running in a cluster, keeps a record of their IP addresses, pod UIDs and interes
 The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
 It represents a list of associations that are executed in the specified order until the first one is able to do the match.
 
+
 ## Configuration
 
-Each association is specified as a list of sources of associations. Sources represent list of rules. All rules are going
-to be executed, and combination of result is going to be a pod metadata cache key.
-In order to get an association applied, all the data defined in each source has to be successfully fetched from a log, trace or metric.
+The processor stores the list of running pods and the associated metadata. When it sees a datapoint (log, trace or metric), it will try to associate the datapoint
+to the pod from where the datapoint originated, so we can add the relevant pod metadata to the datapoint. By default, it associates the incoming connection IP
+to the Pod IP. But for cases where this approach doesn't work (sending through a proxy, etc.), a custom association rule can be specified.
 
-Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `From` is set to `resource_attribute`).
-Following rule types are available:
+Each association is specified as a list of sources of associations. A source is a rule that matches metadata from the datapoint to pod metadata.
+In order to get an association applied, all the sources specified need to match.
 
-**from: "connection"** - takes the IP attribute from connection context (if available)
-**from: "resource_attribute"** - allows to specify the attribute name to lookup up in the list of attributes of the received Resource.
-                                 Semantic convention should be used for naming.
+Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `from` is set to `resource_attribute`).
+The following rule types are available:
+
+  - `connection`: Takes the IP attribute from connection context (if available). In this case the processor must appear before any batching or tail sampling, which remove this information.
+  - `resource_attribute`: Allows specifying the attribute name to lookup in the list of attributes of the received Resource. Semantic convention should be used for naming.
 
 Pod association configuration.
 
 ```yaml
 pod_association:
+  # below association takes a look at the datapoint's k8s.pod.ip resource attribute and tries to match it with
+  # the pod having the same attribute.
   - sources:
       - from: resource_attribute
         name: k8s.pod.ip
@@ -266,3 +272,11 @@ The processor does not support detecting containers from the same pods when runn
 as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 downward API to inject environment variables into the pods and directly use their values
 as tags.
+
+## Timestamp Format
+
+By default, the `k8s.pod.start_time` uses [Time.String()](https://pkg.go.dev/time#Time.String) to format the
+timestamp value. 
+
+The `k8sattr.rfc3339` feature gate can be enabled to format the `k8s.pod.start_time` timestamp value with an RFC3339 
+compliant timestamp. See [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) for more information.

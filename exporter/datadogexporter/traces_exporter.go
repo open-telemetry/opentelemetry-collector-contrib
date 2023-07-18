@@ -92,7 +92,7 @@ func (exp *traceExporter) consumeTraces(
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}
-			go hostmetadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
 	rspans := td.ResourceSpans()
@@ -106,6 +106,7 @@ func (exp *traceExporter) consumeTraces(
 			hosts[src.Identifier] = struct{}{}
 		case source.AWSECSFargateKind:
 			tags[src.Tag()] = struct{}{}
+		case source.InvalidKind:
 		}
 	}
 

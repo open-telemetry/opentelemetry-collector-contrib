@@ -91,5 +91,6 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
+	case pmetric.MetricTypeEmpty:
 	}
 }

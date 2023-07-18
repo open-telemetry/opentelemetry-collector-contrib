@@ -332,6 +332,66 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				`{"traceid":"03000000000000000000000000000000"}`,
 			},
 		},
+		{
+			desc: "with existing level and hint attributes contain level",
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+			},
+			hints: map[string]interface{}{
+				hintAttributes: "level, host.name",
+			},
+			levelAttribute: "dummy",
+			expectedLabel:  `{exporter="OTLP", host_name="guarana", level="dummy"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
+		{
+			desc: "with hint attributes and resource attributes as string",
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+				"host.ip":   "127.0.0.1",
+			},
+			res: map[string]interface{}{
+				"service.name":      "my-service",
+				"service.namespace": "my-namespace",
+			},
+			hints: map[string]interface{}{
+				hintAttributes: "host.name, host.ip",
+				hintResources:  "service.name, service.namespace",
+			},
+			severity:      plog.SeverityNumberDebug4,
+			expectedLabel: `{exporter="OTLP", host_ip="127.0.0.1", host_name="guarana", job="my-namespace/my-service", level="DEBUG4", service_name="my-service", service_namespace="my-namespace"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
+		{
+			desc: "with hint attributes as slice",
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+				"host.ip":   "127.0.0.1",
+			},
+			res: map[string]interface{}{
+				"service.name":      "my-service",
+				"service.namespace": "my-namespace",
+			},
+			hints: map[string]interface{}{
+				hintAttributes: []any{"host.name", "host.ip"},
+				hintResources:  []any{"service.name", "service.namespace"},
+			},
+			severity:      plog.SeverityNumberDebug4,
+			expectedLabel: `{exporter="OTLP", host_ip="127.0.0.1", host_name="guarana", job="my-namespace/my-service", level="DEBUG4", service_name="my-service", service_namespace="my-namespace"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -346,7 +406,11 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			if len(tt.res) > 0 {
-				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res))
+				res := tt.res
+				if val, ok := tt.hints[hintResources]; ok {
+					res[hintResources] = val
+				}
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(res))
 			}
 
 			rlogs := ld.ResourceLogs()
@@ -356,14 +420,22 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 					logs := slogs.At(j).LogRecords()
 					for k := 0; k < logs.Len(); k++ {
 						log := logs.At(k)
+						attrs := map[string]interface{}{}
 						if len(tt.attrs) > 0 {
-							assert.NoError(t, log.Attributes().FromRaw(tt.attrs))
+							attrs = tt.attrs
 						}
+
 						if len(tt.levelAttribute) > 0 {
-							log.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
+							attrs[levelAttributeName] = tt.levelAttribute
 						}
-						for k, v := range tt.hints {
-							log.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+						if val, ok := tt.hints[hintAttributes]; ok {
+							attrs[hintAttributes] = val
+						}
+						if val, ok := tt.hints[hintFormat]; ok {
+							attrs[hintFormat] = val
+						}
+						if len(attrs) > 0 {
+							assert.NoError(t, log.Attributes().FromRaw(attrs))
 						}
 					}
 				}
@@ -385,237 +457,6 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			for i := 0; i < len(entries); i++ {
 				assert.Equal(t, tt.expectedLines[i], entries[i].Line)
 			}
-		})
-	}
-}
-
-func TestLogsToLoki(t *testing.T) {
-	testCases := []struct {
-		desc                 string
-		hints                map[string]interface{}
-		attrs                map[string]interface{}
-		res                  map[string]interface{}
-		severity             plog.SeverityNumber
-		instrumentationScope *instrumentationScope
-		levelAttribute       string
-		expectedLabel        string
-		expectedLines        []string
-	}{
-		{
-			desc: "with attribute to label and regular attribute",
-			attrs: map[string]interface{}{
-				"host.name":   "guarana",
-				"http.status": 200,
-			},
-			hints: map[string]interface{}{
-				hintAttributes: "host.name",
-			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
-			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000","attributes":{"http.status":200}}`,
-				`{"traceid":"01020304050000000000000000000000","attributes":{"http.status":200}}`,
-				`{"traceid":"01020304050600000000000000000000","attributes":{"http.status":200}}`,
-			},
-		},
-		{
-			desc: "with resource to label and regular resource",
-			res: map[string]interface{}{
-				"host.name": "guarana",
-				"region.az": "eu-west-1a",
-			},
-			hints: map[string]interface{}{
-				hintResources: "host.name",
-			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
-			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"01020304050000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
-				`{"traceid":"01020304050600000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
-			},
-		},
-		{
-			desc: "with logfmt format",
-			res: map[string]interface{}{
-				"host.name": "guarana",
-				"region.az": "eu-west-1a",
-			},
-			hints: map[string]interface{}{
-				hintResources: "host.name",
-				hintFormat:    formatLogfmt,
-			},
-			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
-			expectedLines: []string{
-				`traceID=01020304000000000000000000000000 resource_region.az=eu-west-1a`,
-				`traceID=01020304050000000000000000000000 resource_region.az=eu-west-1a`,
-				`traceID=01020304050600000000000000000000 resource_region.az=eu-west-1a`,
-			},
-		},
-		{
-			desc:          "with severity to label",
-			severity:      plog.SeverityNumberDebug4,
-			expectedLabel: `{exporter="OTLP", level="DEBUG4"}`,
-			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000"}`,
-				`{"traceid":"01020304050000000000000000000000"}`,
-				`{"traceid":"01020304050600000000000000000000"}`,
-			},
-		},
-		{
-			desc:           "with severity, already existing level",
-			severity:       plog.SeverityNumberDebug4,
-			levelAttribute: "dummy",
-			expectedLabel:  `{exporter="OTLP", level="dummy"}`,
-			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000"}`,
-				`{"traceid":"01020304050000000000000000000000"}`,
-				`{"traceid":"01020304050600000000000000000000"}`,
-			},
-		},
-		{
-			desc: "with instrumentation_scope contains name",
-			instrumentationScope: &instrumentationScope{
-				Name: "example-name",
-			},
-			expectedLabel: `{exporter="OTLP"}`,
-			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000","instrumentation_scope":{"name":"example-name"}}`,
-				`{"traceid":"01020304050000000000000000000000","instrumentation_scope":{"name":"example-name"}}`,
-				`{"traceid":"01020304050600000000000000000000","instrumentation_scope":{"name":"example-name"}}`,
-			},
-		},
-		{
-			desc: "with instrumentation_scope contains name and version",
-			instrumentationScope: &instrumentationScope{
-				Name:    "example-name",
-				Version: "v1",
-			},
-			expectedLabel: `{exporter="OTLP"}`,
-			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000","instrumentation_scope":{"name":"example-name","version":"v1"}}`,
-				`{"traceid":"01020304050000000000000000000000","instrumentation_scope":{"name":"example-name","version":"v1"}}`,
-				`{"traceid":"01020304050600000000000000000000","instrumentation_scope":{"name":"example-name","version":"v1"}}`,
-			},
-		},
-		{
-			desc: "with instrumentation_scope contains only version",
-			instrumentationScope: &instrumentationScope{
-				Version: "v1",
-			},
-			expectedLabel: `{exporter="OTLP"}`,
-			expectedLines: []string{
-				`{"traceid":"01020304000000000000000000000000"}`,
-				`{"traceid":"01020304050000000000000000000000"}`,
-				`{"traceid":"01020304050600000000000000000000"}`,
-			},
-		},
-		{
-			desc: "with instrumentation_scope contains name and with logfmt format",
-			instrumentationScope: &instrumentationScope{
-				Name: "example-name",
-			},
-			hints: map[string]interface{}{
-				hintFormat: formatLogfmt,
-			},
-			expectedLabel: `{exporter="OTLP"}`,
-			expectedLines: []string{
-				`traceID=01020304000000000000000000000000 instrumentation_scope_name=example-name`,
-				`traceID=01020304050000000000000000000000 instrumentation_scope_name=example-name`,
-				`traceID=01020304050600000000000000000000 instrumentation_scope_name=example-name`,
-			},
-		},
-		{
-			desc: "with instrumentation_scope contains name and version with logfmt format",
-			instrumentationScope: &instrumentationScope{
-				Name:    "example-name",
-				Version: "v1",
-			},
-			hints: map[string]interface{}{
-				hintFormat: formatLogfmt,
-			},
-			expectedLabel: `{exporter="OTLP"}`,
-			expectedLines: []string{
-				`traceID=01020304000000000000000000000000 instrumentation_scope_name=example-name instrumentation_scope_version=v1`,
-				`traceID=01020304050000000000000000000000 instrumentation_scope_name=example-name instrumentation_scope_version=v1`,
-				`traceID=01020304050600000000000000000000 instrumentation_scope_name=example-name instrumentation_scope_version=v1`,
-			},
-		},
-		{
-			desc: "with instrumentation_scope contains only version with logfmt format",
-			instrumentationScope: &instrumentationScope{
-				Version: "v1",
-			},
-			hints: map[string]interface{}{
-				hintFormat: formatLogfmt,
-			},
-			expectedLabel: `{exporter="OTLP"}`,
-			expectedLines: []string{
-				`traceID=01020304000000000000000000000000`,
-				`traceID=01020304050000000000000000000000`,
-				`traceID=01020304050600000000000000000000`,
-			},
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			// prepare
-			ld := plog.NewLogs()
-			ld.ResourceLogs().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityNumber(tC.severity)
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetSeverityNumber(tC.severity)
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5}))
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).SetSeverityNumber(tC.severity)
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6}))
-
-			// copy the attributes from the test case to the log entry
-			if len(tC.attrs) > 0 {
-				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs))
-				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs))
-				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs))
-			}
-			if len(tC.res) > 0 {
-				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res))
-			}
-			if len(tC.levelAttribute) > 0 {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
-			}
-
-			if tC.instrumentationScope != nil {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().SetName(tC.instrumentationScope.Name)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().SetVersion(tC.instrumentationScope.Version)
-			}
-
-			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now
-			for k, v := range tC.hints {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(k, fmt.Sprintf("%v", v))
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr(k, fmt.Sprintf("%v", v))
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().PutStr(k, fmt.Sprintf("%v", v))
-			}
-
-			// test
-			pushRequest, report := LogsToLoki(ld)
-			entries := pushRequest.Streams[0].Entries
-
-			var entriesLines []string
-			for i := 0; i < len(entries); i++ {
-				entriesLines = append(entriesLines, entries[i].Line)
-			}
-
-			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
-			// end of the test function
-			assert.Empty(t, report.Errors)
-			assert.Equal(t, 0, report.NumDropped)
-			assert.Equal(t, ld.LogRecordCount(), report.NumSubmitted)
-			assert.Len(t, pushRequest.Streams, 1)
-			assert.Equal(t, tC.expectedLabel, pushRequest.Streams[0].Labels)
-			assert.Len(t, entries, ld.LogRecordCount())
-			assert.ElementsMatch(t, tC.expectedLines, entriesLines)
 		})
 	}
 }

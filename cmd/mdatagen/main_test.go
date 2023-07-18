@@ -31,10 +31,12 @@ func Test_runContents(t *testing.T) {
 			yml:                  "metrics_and_type.yaml",
 			wantMetricsGenerated: true,
 			wantConfigGenerated:  true,
+			wantStatusGenerated:  true,
 		},
 		{
 			yml:                 "resource_attributes_only.yaml",
 			wantConfigGenerated: true,
+			wantStatusGenerated: true,
 		},
 		{
 			yml:                 "status_only.yaml",
@@ -232,6 +234,8 @@ Some info about a component
 				stability = tt.stability
 			}
 			md := metadata{
+				Type:            "foo",
+				ShortFolderName: "foo",
 				Status: &Status{
 					Stability:     stability,
 					Distributions: tt.distros,

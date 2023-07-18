@@ -63,7 +63,7 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 			attrs.PutStr(herokuAppID, v)
 		}
 	}
-	if d.resourceAttributes.HerokuAppName.Enabled {
+	if d.resourceAttributes.ServiceName.Enabled {
 		if v, ok := os.LookupEnv("HEROKU_APP_NAME"); ok {
 			attrs.PutStr(conventions.AttributeServiceName, v)
 		}
@@ -73,7 +73,7 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 			attrs.PutStr(herokuReleaseCreationTimestamp, v)
 		}
 	}
-	if d.resourceAttributes.HerokuReleaseVersion.Enabled {
+	if d.resourceAttributes.ServiceVersion.Enabled {
 		if v, ok := os.LookupEnv("HEROKU_RELEASE_VERSION"); ok {
 			attrs.PutStr(conventions.AttributeServiceVersion, v)
 		}
