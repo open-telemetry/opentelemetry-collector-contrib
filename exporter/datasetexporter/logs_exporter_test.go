@@ -429,17 +429,23 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 	// set attribute for the hostname, it should beat value from resource
 	lr2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(add_events.AttrServerHost, "serverHostFromAttribute")
 	lr2.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResource")
-	// set attribute for the hostname in the resource
+	// set attribute serverHost and host.name attributes in the resource, serverHost will win
 	lr3 := testdata.GenerateLogsOneLogRecord()
-	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResource")
+	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResourceServer")
+	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
+	// set attribute host.name in the resource attribute
+	lr4 := testdata.GenerateLogsOneLogRecord()
+	lr4.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
 
 	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty()
 	ld.ResourceLogs().AppendEmpty()
 	ld.ResourceLogs().AppendEmpty()
 	ld.ResourceLogs().AppendEmpty()
 	lr1.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(0))
 	lr2.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(1))
 	lr3.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(2))
+	lr4.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(3))
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
 	if assert.NoError(t, err) {
@@ -487,7 +493,23 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 						Sev:    testLEventReq.Sev,
 						Ts:     testLEventReq.Ts,
 						Attrs: map[string]interface{}{
-							add_events.AttrOrigServerHost: "serverHostFromResource",
+							add_events.AttrOrigServerHost: "serverHostFromResourceServer",
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+						},
+					},
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: "serverHostFromResourceHost",
 							"app":                         "server",
 							"instance_num":                float64(1),
 							"dropped_attributes_count":    float64(1),

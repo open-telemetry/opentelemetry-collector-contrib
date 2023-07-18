@@ -124,6 +124,7 @@ func inferServerHost(
 	attrs map[string]interface{},
 	hostSettings ServerHostSettings,
 ) string {
+	// first use value from the attribute serverHost
 	valA, okA := attrs[add_events.AttrServerHost]
 	if okA {
 		host := fmt.Sprintf("%v", valA)
@@ -132,11 +133,14 @@ func inferServerHost(
 		}
 	}
 
-	valR, okR := resource.Attributes().Get(add_events.AttrServerHost)
-	if okR {
-		host := valR.AsString()
-		if len(host) > 0 {
-			return host
+	// then use value from resource attributes - serverHost and host.name
+	for _, resKey := range []string{add_events.AttrServerHost, "host.name"} {
+		valR, okR := resource.Attributes().Get(resKey)
+		if okR {
+			host := valR.AsString()
+			if len(host) > 0 {
+				return host
+			}
 		}
 	}
 

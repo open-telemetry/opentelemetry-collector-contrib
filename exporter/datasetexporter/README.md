@@ -34,10 +34,11 @@ You can also utilize the `server_host` settings (described below) to populate th
 
 The process of populating the serverHost attribute works as follows:
 
-If the `serverHost` attribute is specified and not empty in the log or trace, then it's used.
-If the `serverHost` attribute is specified and not empty in the [resource](https://opentelemetry.io/docs/specs/otel/resource/sdk/), then it is used.
-If the `serverHost` attribute is not specified or empty, the value from the `server_host.server_host` setting is used.
-If the `serverHost` attribute is still not specified or empty, and the `server_host.use_host_name` setting is set to `true`, the `hostname` of the node is used as a fallback value.
+* If the `serverHost` attribute is specified and not empty in the log or trace, then it is used.
+* If the `serverHost` attribute is specified and not empty in the [resource](https://opentelemetry.io/docs/specs/otel/resource/sdk/), then it is used.
+* If the `host.name` attribute is specified and not empty in the [resource](https://opentelemetry.io/docs/specs/otel/resource/sdk/), then it is used.
+* If the `server_host.server_host` setting is specified and not empty, then it is used.
+* If `server_host.use_host_name` setting is set to `true`, the `hostname` of the node is used.
 
 Make sure to provide the appropriate server host value in the `serverHost` attribute to ensure the proper functionality of DataSet and accurate handling of events.
 
@@ -121,15 +122,18 @@ service:
 
 Based on the given configuration and scenarios, here's the expected behavior:
 
-1. Resource: `{'node_id:' 'node-pay-01'}`, Log: `{'container_id': 'cont-payment-01'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
+1. Resource: `{'node_id:' 'node-pay-01', 'host.name': 'host-pay-01'}`, Log: `{'container_id': 'cont-pay-01'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
    * Since the attribute `container_id` is set, `attributesprocessor` will copy this value to the `serverHost`.
-   * The resulting event will be: `{'container_id': 'cont-payment-01', 'serverHost': 'cont-payment-01'}`.
-2. Resource: `{'node_id': 'node_pay_01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
-    * Since the resource attribute `node_id` is set, `resourceprocessor` will copy this value to the `serverHost`. 
-    * The resulting event will be: `{'serverHost': 'node-pay-01', 'attribute.foo': 'Bar'}`.
-3. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='payments-01'`, Hostname: `ip-172-31-27-19`
+   * Used `serverHost` will be `cont-pay-01`.
+2. Resource: `{'node_id': 'node-pay-01', 'host.name': 'host-pay-01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
+   * Since the resource attribute `node_id` is set, `resourceprocessor` will copy this value to the `serverHost`. 
+   * Used `serverHost` will be `node-pay-01`.
+3. Resource: `{'host.name': 'host-pay-01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
+   * Since the resource attribute `host.name` is set, it will be used.
+   * Used `serverHost` will be `host-pay-01`.
+4. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
    * Since the attribute `container_id` is not set, the value from the environmental variable `SERVER_HOST`  will be copied to the `serverHost`.
-   * The resulting event will be: `{'serverHost': 'payments-01', 'attribute.foo': 'Bar'}`.
-4. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
-   * Since the attribute `container_id` is not set and the environmental variable `SERVER_HOST` is empty, the `hostname` of the node (`ip-172-31-27-19`) will be used as the fallback value for `serverHost`. 
-   * The resulting event will be: `{'serverHost': 'ip-172-31-27-19', 'attribute.foo': 'Bar'}`.
+   * Used `serverHost` will be `server-pay-01`.
+5. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
+   * Since the attribute `container_id` is not set and the environmental variable `SERVER_HOST` is empty, the `hostname` of the node (`ip-172-31-27-19`) will be used as the fallback value for `serverHost`.
+   * Used `serverHost` will be `ip-172-31-27-19`.
