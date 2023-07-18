@@ -256,14 +256,15 @@ go.etcd.io/etcd/api/v3 v3.5.4/go.mod h1:5GB2vv4A4AOn3yk7MftYGHkUfGtDHnEraIjym4dY
 go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
 go.opentelemetry.io/collector v0.81.0 h1:pF+sB8xNXlg/W0a0QTLz4mUWyool1a9toVj8LmLoFqg=
+go.opentelemetry.io/collector v0.81.0/go.mod h1:thuOTBMusXwcTPTwLbs3zwwCOLaaQX2g+Hjf8OObc/w=
 go.opentelemetry.io/collector/component v0.81.0 h1:AKsl6bss/SRrW248GFpmGiiI/4kdemW92Ai/X82CCqY=
 go.opentelemetry.io/collector/component v0.81.0/go.mod h1:+m6/yPiJ7O7Oc/OLfmgUB2mrY1xoUqRj4BsoOtIVpGs=
 go.opentelemetry.io/collector/config/configtelemetry v0.81.0 h1:j3dhWbAcrfL1n0RmShRJf99X/xIMoPfEShN/5Z8bY0k=
 go.opentelemetry.io/collector/config/configtelemetry v0.81.0/go.mod h1:KEYQRiYJdx38iZkvcLKBZWH9fK4NeafxBwGRrRKMgyA=
 go.opentelemetry.io/collector/confmap v0.81.0 h1:AqweoBGdF3jGM2/KgP5GS6bmN+1aVrEiCy4nPf7IBE4=
 go.opentelemetry.io/collector/confmap v0.81.0/go.mod h1:iCTnTqGgZZJumhJxpY7rrJz9UQ/0zjPmsJz2Z7Tp4RY=
-go.opentelemetry.io/collector/connector v0.80.0 h1:25kCO4FrvJIcJ2mm1rJnZW1rwbywWKin9g9rIe4tnaM=
-go.opentelemetry.io/collector/connector v0.80.0/go.mod h1:Eg46LNt0UHiNB3H80TVYiKmDK+hdrRZsF9aPHMqEReM=
+go.opentelemetry.io/collector/connector v0.81.0 h1:5jYYjQwxxgJKFtVvvbFLd0+2QHsvS0z+lVDxzmRv8uk=
+go.opentelemetry.io/collector/connector v0.81.0/go.mod h1:rQsgBsEfxcBj0Wdp6a9z8E9NBxybolOfKheXBcosC2c=
 go.opentelemetry.io/collector/consumer v0.81.0 h1:8R2iCrSzD7T0RtC2Wh4GXxDiqla2vNhDokGW6Bcrfas=
 go.opentelemetry.io/collector/consumer v0.81.0/go.mod h1:jS7+gAKdOx3lD3SnaBztBjUVpUYL3ee7fpoqI4p/gT8=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 h1:tiTUG9X/gEDN1oDYQOBVUFYQfhUG2CvgW9VhBc2uk1U=
