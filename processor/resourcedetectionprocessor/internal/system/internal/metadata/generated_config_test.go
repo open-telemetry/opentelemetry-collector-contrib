@@ -25,6 +25,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				HostArch: ResourceAttributeConfig{Enabled: true},
 				HostID:   ResourceAttributeConfig{Enabled: true},
 				HostName: ResourceAttributeConfig{Enabled: true},
 				OsType:   ResourceAttributeConfig{Enabled: true},
@@ -33,6 +34,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				HostArch: ResourceAttributeConfig{Enabled: false},
 				HostID:   ResourceAttributeConfig{Enabled: false},
 				HostName: ResourceAttributeConfig{Enabled: false},
 				OsType:   ResourceAttributeConfig{Enabled: false},
