@@ -8,10 +8,11 @@ package exceptionsconnector // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector/internal/metadata"
 )
 
 // NewFactory creates a factory for the exceptions connector.
@@ -33,20 +34,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesToMetricsConnector(ctx context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	mc, err := newMetricsConnector(params.Logger, cfg)
-	if err != nil {
-		return nil, err
-	}
+func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
+	mc := newMetricsConnector(params.Logger, cfg)
 	mc.metricsConsumer = nextConsumer
 	return mc, nil
 }
 
-func createTracesToLogsConnector(ctx context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
-	lc, err := newLogsConnector(params.Logger, cfg)
-	if err != nil {
-		return nil, err
-	}
+func createTracesToLogsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
+	lc := newLogsConnector(params.Logger, cfg)
 	lc.logsConsumer = nextConsumer
 	return lc, nil
 }

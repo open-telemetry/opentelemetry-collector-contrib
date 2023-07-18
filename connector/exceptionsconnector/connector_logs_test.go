@@ -7,8 +7,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -18,17 +16,19 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestConnectorLogConsumeTraces(t *testing.T) {
 	traces := []ptrace.Traces{buildSampleTrace()}
 	lsink := new(consumertest.LogsSink)
 
-	p, err := newTestLogsConnector(t, lsink, zaptest.NewLogger(t))
-	require.NoError(t, err)
+	p := newTestLogsConnector(lsink, zaptest.NewLogger(t))
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
-	err = p.Start(ctx, componenttest.NewNopHost())
+	err := p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
 
@@ -46,7 +46,7 @@ func TestConnectorLogConsumeTraces(t *testing.T) {
 	}
 }
 
-func newTestLogsConnector(t *testing.T, lcon consumer.Logs, logger *zap.Logger) (*logsConnector, error) {
+func newTestLogsConnector(lcon consumer.Logs, logger *zap.Logger) *logsConnector {
 	cfg := &Config{
 		Dimensions: []Dimension{
 			{Name: exceptionTypeKey},
@@ -54,7 +54,7 @@ func newTestLogsConnector(t *testing.T, lcon consumer.Logs, logger *zap.Logger) 
 		},
 	}
 
-	c, err := newLogsConnector(logger, cfg)
+	c := newLogsConnector(logger, cfg)
 	c.logsConsumer = lcon
-	return c, err
+	return c
 }

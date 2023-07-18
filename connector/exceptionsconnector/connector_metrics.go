@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -49,7 +50,7 @@ type excVal struct {
 	attrs pcommon.Map
 }
 
-func newMetricsConnector(logger *zap.Logger, config component.Config) (*metricsConnector, error) {
+func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsConnector {
 	cfg := config.(*Config)
 
 	return &metricsConnector{
@@ -59,7 +60,7 @@ func newMetricsConnector(logger *zap.Logger, config component.Config) (*metricsC
 		keyBuf:         bytes.NewBuffer(make([]byte, 0, 1024)),
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 		exceptions:     make(map[string]*excVal),
-	}, nil
+	}
 }
 
 // Capabilities implements the consumer interface.

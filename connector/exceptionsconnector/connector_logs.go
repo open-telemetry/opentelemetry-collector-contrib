@@ -7,7 +7,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -15,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type logsConnector struct {
@@ -30,14 +31,14 @@ type logsConnector struct {
 	logger *zap.Logger
 }
 
-func newLogsConnector(logger *zap.Logger, config component.Config) (*logsConnector, error) {
+func newLogsConnector(logger *zap.Logger, config component.Config) *logsConnector {
 	cfg := config.(*Config)
 
 	return &logsConnector{
 		logger:     logger,
 		config:     *cfg,
 		dimensions: newDimensions(cfg.Dimensions),
-	}, nil
+	}
 }
 
 // Capabilities implements the consumer interface.

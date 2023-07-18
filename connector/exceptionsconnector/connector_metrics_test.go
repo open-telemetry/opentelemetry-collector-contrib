@@ -70,11 +70,10 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msink := &consumertest.MetricsSink{}
 
-			p, err := newTestMetricsConnector(t, msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
-			require.NoError(t, err)
+			p := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(t))
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
-			err = p.Start(ctx, componenttest.NewNopHost())
+			err := p.Start(ctx, componenttest.NewNopHost())
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
 
@@ -93,8 +92,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	msink := &consumertest.MetricsSink{}
 
-	conn, err := newTestMetricsConnector(nil, msink, stringp("defaultNullValue"), zaptest.NewLogger(b))
-	require.NoError(b, err)
+	conn := newTestMetricsConnector(msink, stringp("defaultNullValue"), zaptest.NewLogger(b))
 	traces := buildSampleTrace()
 
 	// Test
@@ -104,7 +102,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newTestMetricsConnector(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, logger *zap.Logger) (*metricsConnector, error) {
+func newTestMetricsConnector(mcon consumer.Metrics, defaultNullValue *string, logger *zap.Logger) *metricsConnector {
 	cfg := &Config{
 		Dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
@@ -125,9 +123,9 @@ func newTestMetricsConnector(t *testing.T, mcon consumer.Metrics, defaultNullVal
 			{exceptionMessageKey, nil},
 		},
 	}
-	c, err := newMetricsConnector(logger, cfg)
+	c := newMetricsConnector(logger, cfg)
 	c.metricsConsumer = mcon
-	return c, err
+	return c
 }
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
@@ -135,7 +133,7 @@ func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bo
 	return verifyConsumeMetricsInput(t, input, 1)
 }
 
-func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
+func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
 	return true // Validating no exception
 }
 
