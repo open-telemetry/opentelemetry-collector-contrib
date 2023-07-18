@@ -60,6 +60,10 @@ type Config struct {
 
 	// Controls the way the messages are marked as consumed
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
+
+	// Extract headers
+	HeaderExtraction bool     `mapstructure:"header_extraction"`
+	Headers          []string `mapstructure:"headers"`
 }
 
 const (
