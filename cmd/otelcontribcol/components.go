@@ -22,6 +22,7 @@ import (
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 	datadogconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	exampleconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exampleconnector"
+	exconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exconnector"
 	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	alibabacloudlogserviceexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -413,6 +414,7 @@ func components() (otelcol.Factories, error) {
 		spanmetricsconnector.NewFactory(),
 		exampleconnector.NewFactory(),
 		datadogconnector.NewFactory(),
+		exconnector.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
