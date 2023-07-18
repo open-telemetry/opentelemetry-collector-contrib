@@ -117,12 +117,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"attributeInfo": func(an attributeName) attribute {
 					return md.Attributes[an]
 				},
-				"attributeName": func(an attributeName) string {
-					if md.Attributes[an].NameOverride != "" {
-						return md.Attributes[an].NameOverride
-					}
-					return string(an)
-				},
 				"metricInfo": func(mn metricName) metric {
 					return md.Metrics[mn]
 				},
