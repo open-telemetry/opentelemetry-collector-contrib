@@ -91,6 +91,7 @@ func TestNewDetector(t *testing.T) {
 func allEnabledConfig() metadata.ResourceAttributesConfig {
 	cfg := metadata.DefaultResourceAttributesConfig()
 	cfg.HostArch.Enabled = true
+	cfg.HostID.Enabled = true
 	return cfg
 }
 
@@ -124,6 +125,28 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("Hostname").Return("hostname", nil)
 	mdHostname.On("FQDN").Return("", errors.New("err"))
 	mdHostname.On("OSType").Return("darwin", nil)
+	mdHostname.On("HostID").Return("3", nil)
+	mdHostname.On("HostArch").Return("amd64", nil)
+
+	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"}, resourceAttributes: resourceAttributes}
+	res, schemaURL, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	mdHostname.AssertExpectations(t)
+
+	expected := map[string]any{
+		conventions.AttributeHostName: "hostname",
+		conventions.AttributeOSType:   "darwin",
+	}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}
+
+func TestEnableHostID(t *testing.T) {
+	mdHostname := &mockMetadata{}
+	mdHostname.On("Hostname").Return("hostname", nil)
+	mdHostname.On("FQDN").Return("", errors.New("err"))
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)

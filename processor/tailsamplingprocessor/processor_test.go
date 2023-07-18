@@ -30,6 +30,27 @@ const (
 )
 
 var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
+var testLatencyPolicy = []PolicyCfg{
+	{
+		sharedPolicyCfg: sharedPolicyCfg{
+			Name:       "test-policy",
+			Type:       Latency,
+			LatencyCfg: LatencyCfg{ThresholdMs: 1},
+		},
+	},
+}
+
+type TestPolicyEvaluator struct {
+	Started       chan struct{}
+	CouldContinue chan struct{}
+	pe            sampling.PolicyEvaluator
+}
+
+func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *sampling.TraceData) (sampling.Decision, error) {
+	close(t.Started)
+	<-t.CouldContinue
+	return t.pe.Evaluate(ctx, traceID, trace)
+}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
@@ -61,7 +82,6 @@ func TestSequentialTraceArrival(t *testing.T) {
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10205")
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
@@ -100,6 +120,51 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
+}
+
+func TestConcurrentArrivalAndEvaluation(t *testing.T) {
+	traceIds, batches := generateIdsAndBatches(1)
+	evalStarted := make(chan struct{})
+	continueEvaluation := make(chan struct{})
+
+	var wg sync.WaitGroup
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIds)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testLatencyPolicy,
+	}
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp.tickerFrequency = 1 * time.Millisecond
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	tpe := &TestPolicyEvaluator{
+		Started:       evalStarted,
+		CouldContinue: continueEvaluation,
+		pe:            tsp.policies[0].evaluator,
+	}
+	tsp.policies[0].evaluator = tpe
+
+	for _, batch := range batches {
+		wg.Add(1)
+		go func(td ptrace.Traces) {
+			for i := 0; i < 10; i++ {
+				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+			}
+			<-evalStarted
+			close(continueEvaluation)
+			for i := 0; i < 10; i++ {
+				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+			}
+			wg.Done()
+		}(batch)
+	}
+
+	wg.Wait()
 }
 
 func TestSequentialTraceMapSize(t *testing.T) {

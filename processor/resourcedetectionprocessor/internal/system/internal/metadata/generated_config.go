@@ -21,7 +21,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		HostID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostName: ResourceAttributeConfig{
 			Enabled: true,

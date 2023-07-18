@@ -165,6 +165,8 @@ func NewMetricValueMetadata(name string, columnName string, dataType MetricType,
 			var valueHolder spanner.NullFloat64
 			return &valueHolder
 		}
+	case UnknownValueType, StringValueType, BoolValueType, StringSliceValueType, ByteSliceValueType, LockRequestSliceValueType:
+		fallthrough
 	default:
 		return nil, fmt.Errorf("invalid value type received for metric value %q", name)
 	}

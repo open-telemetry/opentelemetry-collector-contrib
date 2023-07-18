@@ -26,6 +26,7 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
@@ -79,6 +80,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -135,6 +137,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
+      - processor/remoteobserver
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -147,7 +150,6 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
-      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
