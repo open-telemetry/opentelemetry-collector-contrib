@@ -96,15 +96,11 @@ func createAddScraperOpts(
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(cfg.Scrapers))
 
 	for key, cfg := range cfg.Scrapers {
-		gitProviderScraper, ok, err := createGitProviderScraper(ctx, params, key, cfg, factories)
+		gitProviderScraper, err := createGitProviderScraper(ctx, params, key, cfg, factories)
 
-		if err != nil {
-			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
-		}
-
-		if !ok {
-			return nil, fmt.Errorf("git provider scraper factory not found for key: %q", key)
-		}
+        if err != nil {
+            return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
+        }
 
 		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(gitProviderScraper))
 	}
@@ -118,17 +114,15 @@ func createGitProviderScraper(
 	key string,
 	cfg internal.Config,
 	factories map[string]internal.ScraperFactory,
-) (scraper scraperhelper.Scraper, ok bool, err error) {
+) (scraper scraperhelper.Scraper,  err error) {
 	factory := factories[key]
 	if factory == nil {
-		ok = false
-		return
+        return nil, fmt.Errorf("factory not found for scraper %q", key)
 	}
 
-	ok = true
 	scraper, err = factory.CreateMetricsScraper(ctx, params, cfg)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	return
