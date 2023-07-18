@@ -102,9 +102,9 @@ func createAddScraperOpts(
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-        if !ok {
-            return nil, fmt.Errorf("git provider scraper factory not found for key: %q", key)
-        }
+		if !ok {
+			return nil, fmt.Errorf("git provider scraper factory not found for key: %q", key)
+		}
 
 		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(gitProviderScraper))
 	}

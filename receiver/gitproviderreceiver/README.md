@@ -14,7 +14,7 @@
 The Git Provider receiver scrapes data from Git vendors.
 
 As a starting point, this receiver can infer many of the same core git
-metrics accross vendors, while being able to receive additional data specific to
+metrics across vendors, while being able to receive additional data specific to
 vendors. 
 
 The current default set of metrics common across all vendors can be found in
