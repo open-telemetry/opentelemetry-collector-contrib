@@ -36,7 +36,7 @@ With the provided default config, each **metric** and **log** will also have the
 
 Each log will additionally have the following attributes:
 - Exception stacktrace
-- HTTP attributes (if available), such as `http.method` and `http.host` among others.
+- HTTP attributes from spans starting with `http.`.
 
 ## Configurations
 
@@ -52,11 +52,6 @@ The following settings can be optionally configured:
 ## Examples
 
 The following is a simple example usage of the `exceptions` connector.
-
-For configuration examples on other use cases, please refer to [More Examples](#more-examples).
-
-The full list of settings exposed for this connector are documented [here](../../connector/exceptionsconnector/config.go).
-
 
 ```yaml
 receivers:
@@ -81,6 +76,38 @@ service:
       exporters: [nop]      
 ```
 
+The following is a more complex example usage of the `exceptions` connector using Prometheus and Loki as exporters.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  prometheusremotewrite:
+    endpoint: http://prometheus:9090/api/v1/write
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+
+connectors:
+  exceptions:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [exceptions]
+    metrics:
+      receivers: [exceptions]
+      exporters: [prometheusremotewrite]
+    logs:
+      receivers: [exceptions]
+      exporters: [loki]
+```
+
+The full list of settings exposed for this connector are documented [here](../../connector/exceptionsconnector/config.go).
 ### More Examples
 
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/exceptionsconnector/testdata).
