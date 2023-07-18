@@ -198,10 +198,6 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnuG+zWp9L0Uk=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.81.0 h1:mPkMu2Dx9QrGmZxnfwcSSvAyUZzBtaeYIdvmFSrC0KA=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.81.0/go.mod h1:HGW+MymIh+h0Gc9TBCsh/R7X+wauRpNtV34sqNd4YG0=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.81.0 h1:qUNZEYelezsSH6KrbE4u1TrzXCggSFPZqFI1m29gJFQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.81.0/go.mod h1:OUF0FMVFQQnlqc+QUMyQScszuBnqO9pO7xL7/kK1PM0=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=
