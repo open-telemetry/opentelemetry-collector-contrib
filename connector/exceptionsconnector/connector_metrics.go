@@ -97,7 +97,7 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 				span := spans.At(k)
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
-					if event.Name() == "exception" {
+					if event.Name() == eventNameExc {
 						eventAttrs := event.Attributes()
 
 						c.keyBuf.Reset()
@@ -146,6 +146,7 @@ func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 		dpCalls := dps.AppendEmpty()
 		dpCalls.SetStartTimestamp(c.startTimestamp)
 		dpCalls.SetTimestamp(timestamp)
+
 		dpCalls.SetIntValue(int64(val.count))
 
 		val.attrs.CopyTo(dpCalls.Attributes())

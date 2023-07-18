@@ -78,7 +78,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 				span := spans.At(k)
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
-					if event.Name() == "exception" {
+					if event.Name() == eventNameExc {
 						c.attrToLogRecord(sl, serviceName, span, event)
 					}
 				}
