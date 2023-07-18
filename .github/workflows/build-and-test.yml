@@ -213,7 +213,6 @@ jobs:
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
     strategy:
-      fail-fast: false
       matrix:
         go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
         group:

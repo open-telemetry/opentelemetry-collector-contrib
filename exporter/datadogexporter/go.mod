@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 
 go 1.19
 
-replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../override/aws
-
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.83
 	github.com/DataDog/datadog-agent/pkg/trace v0.45.0-rc.4
@@ -14,8 +12,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.0
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230714201444-77612b3cbeab
-	github.com/aws/aws-sdk-go v1.44.293
+	github.com/aws/aws-sdk-go v1.44.255
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0

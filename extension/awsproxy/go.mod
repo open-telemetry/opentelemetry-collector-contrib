@@ -13,8 +13,7 @@ require (
 )
 
 require (
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230714201444-77612b3cbeab // indirect
-	github.com/aws/aws-sdk-go v1.44.293 // indirect
+	github.com/aws/aws-sdk-go v1.44.255 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

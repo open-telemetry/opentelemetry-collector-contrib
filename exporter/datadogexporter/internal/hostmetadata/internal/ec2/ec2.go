@@ -22,8 +22,8 @@ import (
 	"sync"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
-	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -65,7 +65,7 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 	}
 
 	meta := ec2metadata.New(sess, &aws.Config{
-		Retryer: override.IMDSRetryer,
+		Retryer: client.DefaultRetryer{NumMaxRetries: 5},
 	})
 
 	if idDoc, err := meta.GetInstanceIdentityDocument(); err == nil {

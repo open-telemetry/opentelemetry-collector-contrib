@@ -26,6 +26,7 @@ import (
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
@@ -47,7 +48,7 @@ type Conn struct{}
 
 func (c *Conn) getEC2Region(s *session.Session) (string, error) {
 	return ec2metadata.New(s, &aws.Config{
-		Retryer: override.IMDSRetryer,
+		Retryer: client.DefaultRetryer{NumMaxRetries: 5},
 	}).Region()
 }
 

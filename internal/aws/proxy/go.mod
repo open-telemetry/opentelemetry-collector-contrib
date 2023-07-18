@@ -2,11 +2,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/pr
 
 go 1.19
 
-replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../../override/aws
-
 require (
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230714201444-77612b3cbeab
-	github.com/aws/aws-sdk-go v1.44.293
+	github.com/aws/aws-sdk-go v1.44.255
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
 	github.com/stretchr/testify v1.8.2
 	go.opentelemetry.io/collector v0.77.0

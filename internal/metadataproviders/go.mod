@@ -2,12 +2,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/metada
 
 go 1.19
 
-replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../override/aws
-
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230714201444-77612b3cbeab
-	github.com/aws/aws-sdk-go v1.44.293
+	github.com/aws/aws-sdk-go v1.44.255
 	github.com/docker/docker v23.0.5+incompatible
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/panta/machineid v1.0.2
