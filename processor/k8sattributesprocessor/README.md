@@ -33,11 +33,10 @@ Each association is specified as a list of sources of associations. A source is 
 In order to get an association applied, all the sources specified need to match.
 
 Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `from` is set to `resource_attribute`).
-Following rule types are available:
+The following rule types are available:
 
-**from: "connection"** - takes the IP attribute from connection context (if available)
-**from: "resource_attribute"** - allows to specify the attribute name to lookup up in the list of attributes of the received Resource.
-                                 Semantic convention should be used for naming.
+  - `connection`: Takes the IP attribute from connection context (if available). In this case the processor must appear before any batching or tail sampling, which remove this information.
+  - `resource_attribute`: Allows specifying the attribute name to lookup in the list of attributes of the received Resource. Semantic convention should be used for naming.
 
 Pod association configuration.
 
