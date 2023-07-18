@@ -109,13 +109,12 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 				batchMetrics := r.parser.GetMetrics()
 				for _, batch := range batchMetrics {
 					batchCtx := client.NewContext(ctx, batch.Info)
-					err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer)
+
 					if err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer); err != nil {
 						r.reporter.OnDebugf("Error flushing metrics", zap.Error(err))
 					}
 				}
 			case metric := <-transferChan:
-				err := r.parser.Aggregate(metric.Raw, metric.Addr)
 				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
 					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
 				}
