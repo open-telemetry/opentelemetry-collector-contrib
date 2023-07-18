@@ -19,17 +19,21 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	configutil "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/model/relabel"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 const (
@@ -37,56 +41,128 @@ const (
 	collectionInterval = 60 * time.Second
 )
 
+var (
+	controlPlaneMetricAllowList = []string{
+		"apiserver_storage_oapiserver_storage_objectsbjects",
+		"apiserver_request_total",
+		"apiserver_request_duration_seconds.*",
+		"apiserver_admission_controller_admission_duration_seconds.*",
+		"rest_client_request_duration_seconds.*",
+		"rest_client_requests_total",
+		"etcd_request_duration_seconds.*",
+		"etcd_db_total_size_in_bytes.*",
+	}
+)
+
 type PrometheusScraper struct {
-	ctx                      context.Context
-	settings                 component.TelemetrySettings
-	host                     component.Host
-	clusterNameProvider      clusterNameProvider
-	simplePrometheusReceiver receiver.Metrics
-	leaderElection           *LeaderElection
-	running                  bool
+	ctx                 context.Context
+	settings            component.TelemetrySettings
+	host                component.Host
+	clusterNameProvider clusterNameProvider
+	prometheusReceiver  receiver.Metrics
+	leaderElection      *LeaderElection
+	running             bool
 }
 
-func NewPrometheusScraper(ctx context.Context, telemetrySettings component.TelemetrySettings, endpoint string, nextConsumer consumer.Metrics, host component.Host, clusterNameProvider clusterNameProvider, leaderElection *LeaderElection) (*PrometheusScraper, error) {
-	if leaderElection == nil {
-		return nil, errors.New("leader election cannot be null")
+type PrometheusScraperOpts struct {
+	Ctx                 context.Context
+	TelemetrySettings   component.TelemetrySettings
+	Endpoint            string
+	Consumer            consumer.Metrics
+	Host                component.Host
+	ClusterNameProvider clusterNameProvider
+	LeaderElection      *LeaderElection
+	BearerToken         string
+}
+
+func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error) {
+	if opts.Consumer == nil {
+		return nil, errors.New("consumer cannot be nil")
+	}
+	if opts.Host == nil {
+		return nil, errors.New("host cannot be nil")
+	}
+	if opts.LeaderElection == nil {
+		return nil, errors.New("leader election cannot be nil")
+	}
+	if opts.ClusterNameProvider == nil {
+		return nil, errors.New("cluster name provider cannot be nil")
 	}
 
-	spConfig := simpleprometheusreceiver.Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: endpoint,
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile: caFile,
-				},
-				Insecure:           false,
+	controlPlaneMetricsAllowRegex := ""
+	for _, item := range controlPlaneMetricAllowList {
+		controlPlaneMetricsAllowRegex += item + "|"
+	}
+	controlPlaneMetricsAllowRegex = strings.TrimSuffix(controlPlaneMetricsAllowRegex, "|")
+
+	scrapeConfig := &config.ScrapeConfig{
+		HTTPClientConfig: configutil.HTTPClientConfig{
+			TLSConfig: configutil.TLSConfig{
+				CAFile:             caFile,
 				InsecureSkipVerify: false,
 			},
 		},
-		MetricsPath:        "/metrics",
-		CollectionInterval: collectionInterval,
-		UseServiceAccount:  true,
+		ScrapeInterval:  model.Duration(collectionInterval),
+		ScrapeTimeout:   model.Duration(collectionInterval),
+		JobName:         fmt.Sprintf("%s/%s", "containerInsightsKubeAPIServerScraper", opts.Endpoint),
+		HonorTimestamps: true,
+		Scheme:          "https",
+		MetricsPath:     "/metrics",
+		ServiceDiscoveryConfigs: discovery.Configs{
+			&discovery.StaticConfig{
+				{
+					Targets: []model.LabelSet{
+						{
+							model.AddressLabel: model.LabelValue(opts.Endpoint),
+							"ClusterName":      model.LabelValue(opts.ClusterNameProvider.GetClusterName()),
+							"Version":          model.LabelValue("0"),
+							"Sources":          model.LabelValue("[\"apiserver\"]"),
+							"NodeName":         model.LabelValue(os.Getenv("HOST_NAME")),
+							"Type":             model.LabelValue("control_plane"),
+						},
+					},
+				},
+			},
+		},
+		MetricRelabelConfigs: []*relabel.Config{
+			{
+				// allow list filter for the control plane metrics we care about
+				SourceLabels: model.LabelNames{"__name__"},
+				Regex:        relabel.MustNewRegexp(controlPlaneMetricsAllowRegex),
+				Action:       relabel.Keep,
+			},
+		},
 	}
 
-	consumer := newPrometheusConsumer(telemetrySettings.Logger, nextConsumer, clusterNameProvider.GetClusterName(), os.Getenv("HOST_NAME"))
+	if opts.BearerToken != "" {
+		scrapeConfig.HTTPClientConfig.BearerToken = configutil.Secret(opts.BearerToken)
+	} else {
+		opts.TelemetrySettings.Logger.Warn("bearer token is not set, control plane metrics will not be published")
+	}
+
+	promConfig := prometheusreceiver.Config{
+		PrometheusConfig: &config.Config{
+			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
+		},
+	}
 
 	params := receiver.CreateSettings{
-		TelemetrySettings: telemetrySettings,
+		TelemetrySettings: opts.TelemetrySettings,
 	}
 
-	spFactory := simpleprometheusreceiver.NewFactory()
-	spr, err := spFactory.CreateMetricsReceiver(ctx, params, &spConfig, consumer)
+	promFactory := prometheusreceiver.NewFactory()
+	promReceiver, err := promFactory.CreateMetricsReceiver(opts.Ctx, params, &promConfig, opts.Consumer)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create simple prometheus receiver: %w", err)
+		return nil, fmt.Errorf("failed to create prometheus receiver: %w", err)
 	}
 
 	return &PrometheusScraper{
-		ctx:                      ctx,
-		settings:                 telemetrySettings,
-		host:                     host,
-		clusterNameProvider:      clusterNameProvider,
-		simplePrometheusReceiver: spr,
-		leaderElection:           leaderElection,
+		ctx:                 opts.Ctx,
+		settings:            opts.TelemetrySettings,
+		host:                opts.Host,
+		clusterNameProvider: opts.ClusterNameProvider,
+		prometheusReceiver:  promReceiver,
+		leaderElection:      opts.LeaderElection,
 	}, nil
 }
 
@@ -100,9 +176,9 @@ func (ps *PrometheusScraper) GetMetrics() []pmetric.Metrics {
 	// if we are leading, ensure we are running
 	if !ps.running {
 		ps.settings.Logger.Info("The scraper is not running, starting up the scraper")
-		err := ps.simplePrometheusReceiver.Start(ps.ctx, ps.host)
+		err := ps.prometheusReceiver.Start(ps.ctx, ps.host)
 		if err != nil {
-			ps.settings.Logger.Error("Unable to start SimplePrometheusReceiver", zap.Error(err))
+			ps.settings.Logger.Error("Unable to start PrometheusReceiver", zap.Error(err))
 		}
 		ps.running = err == nil
 	}
@@ -110,9 +186,9 @@ func (ps *PrometheusScraper) GetMetrics() []pmetric.Metrics {
 }
 func (ps *PrometheusScraper) Shutdown() {
 	if ps.running {
-		err := ps.simplePrometheusReceiver.Shutdown(ps.ctx)
+		err := ps.prometheusReceiver.Shutdown(ps.ctx)
 		if err != nil {
-			ps.settings.Logger.Error("Unable to shutdown SimplePrometheusReceiver", zap.Error(err))
+			ps.settings.Logger.Error("Unable to shutdown PrometheusReceiver", zap.Error(err))
 		}
 		ps.running = false
 	}

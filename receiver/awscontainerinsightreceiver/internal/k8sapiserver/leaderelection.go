@@ -240,7 +240,7 @@ func (le *LeaderElection) startLeaderElection(ctx context.Context, lock resource
 					le.mu.Lock()
 					defer le.mu.Unlock()
 					le.leading = false
-					// node and pod are only used for cluster level metrics, endpoint is used for decorator too.
+					// node and pod are only used for cluster level metrics, Endpoint is used for decorator too.
 					le.k8sClient.ShutdownNodeClient()
 					le.k8sClient.ShutdownPodClient()
 				},
