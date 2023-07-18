@@ -742,7 +742,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 
 			for x := 0; x < metric.ExponentialHistogram().DataPoints().Len(); x++ {
 				err := addSingleExponentialHistogramDataPoint(
-					prometheustranslator.BuildPromCompliantName(metric, ""),
+					prometheustranslator.BuildCompliantName(metric, "", true),
 					metric.ExponentialHistogram().DataPoints().At(x),
 					pcommon.NewResource(),
 					Settings{},
