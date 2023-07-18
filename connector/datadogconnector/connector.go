@@ -79,6 +79,7 @@ func (c *connectorImp) Shutdown(context.Context) error {
 }
 
 // Capabilities implements the consumer interface.
+// tells use whether the component(connector) will mutate the data passed into it. if set to true the processor does modify the data
 func (c *connectorImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
