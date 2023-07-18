@@ -23,7 +23,7 @@
 
 ## Overview
 
-Generate metrics and logs from record [application exceptions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/exceptions/exceptions-spans.md/) associated with spans.
+Generate metrics and logs from recorded [application exceptions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/exceptions/exceptions-spans.md/) associated with spans.
 
 Each **metric** and **log** will have _at least_ the following dimensions:
 - Service name
