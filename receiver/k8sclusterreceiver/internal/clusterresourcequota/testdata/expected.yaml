@@ -1,0 +1,151 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: openshift.clusterquota.name
+          value:
+            stringValue: test-clusterquota-1-uid
+        - key: openshift.clusterquota.uid
+          value:
+            stringValue: test-clusterquota-1
+        - key: opencensus.resourcetype
+          value:
+            stringValue: requests.cpu
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The configured upper limit for a particular resource.
+            gauge:
+              dataPoints:
+                - asInt: "10000"
+            name: openshift.clusterquota.limit
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: openshift.clusterquota.name
+          value:
+            stringValue: test-clusterquota-1-uid
+        - key: openshift.clusterquota.uid
+          value:
+            stringValue: test-clusterquota-1
+        - key: opencensus.resourcetype
+          value:
+            stringValue: requests.cpu
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The usage for a particular resource with a configured limit.
+            gauge:
+              dataPoints:
+                - asInt: "6000"
+            name: openshift.clusterquota.used
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: openshift.clusterquota.name
+          value:
+            stringValue: test-clusterquota-1-uid
+        - key: openshift.clusterquota.uid
+          value:
+            stringValue: test-clusterquota-1
+        - key: opencensus.resourcetype
+          value:
+            stringValue: requests.cpu
+        - key: k8s.namespace.name
+          value:
+            stringValue: ns1
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The upper limit for a particular resource in a specific namespace.
+            gauge:
+              dataPoints:
+                - asInt: "6000"
+            name: openshift.appliedclusterquota.limit
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: openshift.clusterquota.name
+          value:
+            stringValue: test-clusterquota-1-uid
+        - key: openshift.clusterquota.uid
+          value:
+            stringValue: test-clusterquota-1
+        - key: opencensus.resourcetype
+          value:
+            stringValue: requests.cpu
+        - key: k8s.namespace.name
+          value:
+            stringValue: ns1
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The usage for a particular resource in a specific namespace.
+            gauge:
+              dataPoints:
+                - asInt: "6000"
+            name: openshift.appliedclusterquota.used
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: openshift.clusterquota.name
+          value:
+            stringValue: test-clusterquota-1-uid
+        - key: openshift.clusterquota.uid
+          value:
+            stringValue: test-clusterquota-1
+        - key: opencensus.resourcetype
+          value:
+            stringValue: requests.cpu
+        - key: k8s.namespace.name
+          value:
+            stringValue: ns2
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The upper limit for a particular resource in a specific namespace.
+            gauge:
+              dataPoints:
+                - asInt: "4000"
+            name: openshift.appliedclusterquota.limit
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: openshift.clusterquota.name
+          value:
+            stringValue: test-clusterquota-1-uid
+        - key: openshift.clusterquota.uid
+          value:
+            stringValue: test-clusterquota-1
+        - key: opencensus.resourcetype
+          value:
+            stringValue: requests.cpu
+        - key: k8s.namespace.name
+          value:
+            stringValue: ns2
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The usage for a particular resource in a specific namespace.
+            gauge:
+              dataPoints:
+                - asInt: "4000"
+            name: openshift.appliedclusterquota.used
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

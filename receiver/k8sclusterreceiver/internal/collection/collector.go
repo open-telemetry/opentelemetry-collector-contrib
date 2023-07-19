@@ -132,7 +132,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
 		md = hpa.GetMetricsBeta(dc.settings, o)
 	case *quotav1.ClusterResourceQuota:
-		md = ocsToMetrics(clusterresourcequota.GetMetrics(o))
+		md = clusterresourcequota.GetMetrics(dc.settings, o)
 	default:
 		return
 	}
