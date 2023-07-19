@@ -97,7 +97,7 @@ rules:
     resources: ["pods", "nodes", "endpoints"]
     verbs: ["list", "watch"]
   - apiGroups: ["apps"]
-    resources: ["replicasets"]
+    resources: ["replicasets", "daemonsets", "deployments"]
     verbs: ["list", "watch"]
   - apiGroups: ["batch"]
     resources: ["jobs"]
@@ -112,6 +112,8 @@ rules:
     resources: ["configmaps"]
     resourceNames: ["otel-container-insight-clusterleader"]
     verbs: ["get","update"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get", "list", "watch"]
 
 ---
 kind: ClusterRoleBinding
