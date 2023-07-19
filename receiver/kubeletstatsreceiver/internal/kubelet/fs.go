@@ -14,8 +14,13 @@ func addFilesystemMetrics(mb *metadata.MetricsBuilder, filesystemMetrics metadat
 	if s == nil {
 		return
 	}
-
-	recordIntDataPoint(mb, filesystemMetrics.Available, s.AvailableBytes, currentTime)
-	recordIntDataPoint(mb, filesystemMetrics.Capacity, s.CapacityBytes, currentTime)
-	recordIntDataPoint(mb, filesystemMetrics.Usage, s.UsedBytes, currentTime)
+	for _, recordDataPoint := range filesystemMetrics.Available {
+		recordIntDataPoint(mb, recordDataPoint, s.AvailableBytes, currentTime)
+	}
+	for _, recordDataPoint := range filesystemMetrics.Capacity {
+		recordIntDataPoint(mb, recordDataPoint, s.CapacityBytes, currentTime)
+	}
+	for _, recordDataPoint := range filesystemMetrics.Usage {
+		recordIntDataPoint(mb, recordDataPoint, s.UsedBytes, currentTime)
+	}
 }

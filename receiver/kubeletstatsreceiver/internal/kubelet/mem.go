@@ -14,11 +14,22 @@ func addMemoryMetrics(mb *metadata.MetricsBuilder, memoryMetrics metadata.Memory
 	if s == nil {
 		return
 	}
-
-	recordIntDataPoint(mb, memoryMetrics.Available, s.AvailableBytes, currentTime)
-	recordIntDataPoint(mb, memoryMetrics.Usage, s.UsageBytes, currentTime)
-	recordIntDataPoint(mb, memoryMetrics.Rss, s.RSSBytes, currentTime)
-	recordIntDataPoint(mb, memoryMetrics.WorkingSet, s.WorkingSetBytes, currentTime)
-	recordIntDataPoint(mb, memoryMetrics.PageFaults, s.PageFaults, currentTime)
-	recordIntDataPoint(mb, memoryMetrics.MajorPageFaults, s.MajorPageFaults, currentTime)
+	for _, recordDataPoint := range memoryMetrics.Available {
+		recordIntDataPoint(mb, recordDataPoint, s.AvailableBytes, currentTime)
+	}
+	for _, recordDataPoint := range memoryMetrics.Usage {
+		recordIntDataPoint(mb, recordDataPoint, s.UsageBytes, currentTime)
+	}
+	for _, recordDataPoint := range memoryMetrics.Rss {
+		recordIntDataPoint(mb, recordDataPoint, s.RSSBytes, currentTime)
+	}
+	for _, recordDataPoint := range memoryMetrics.WorkingSet {
+		recordIntDataPoint(mb, recordDataPoint, s.WorkingSetBytes, currentTime)
+	}
+	for _, recordDataPoint := range memoryMetrics.PageFaults {
+		recordIntDataPoint(mb, recordDataPoint, s.PageFaults, currentTime)
+	}
+	for _, recordDataPoint := range memoryMetrics.MajorPageFaults {
+		recordIntDataPoint(mb, recordDataPoint, s.MajorPageFaults, currentTime)
+	}
 }

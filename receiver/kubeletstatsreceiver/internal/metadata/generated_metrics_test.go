@@ -49,6 +49,50 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.cpu.time` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.cpu.utilization` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.filesystem.available` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.filesystem.capacity` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.filesystem.usage` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.memory.available` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.memory.major_page_faults` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.memory.page_faults` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.memory.rss` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.memory.usage` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.memory.working_set` should not be enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -97,6 +141,39 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerCPUTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerCPUUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerFilesystemAvailableDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerFilesystemCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerFilesystemUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerMemoryAvailableDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerMemoryMajorPageFaultsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerMemoryPageFaultsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerMemoryRssDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sContainerMemoryWorkingSetDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -357,7 +434,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.time"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Container CPU time", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.cpu.time` metric instead. Container CPU time", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -371,7 +448,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container CPU utilization", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.cpu.utilization` metric instead. Container CPU utilization", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -383,7 +460,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.filesystem.available"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem available", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.filesystem.available` metric instead. Container filesystem available", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -395,7 +472,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.filesystem.capacity"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem capacity", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.filesystem.capacity` metric instead. Container filesystem capacity", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -407,7 +484,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.filesystem.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container filesystem usage", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.filesystem.usage` metric instead. Container filesystem usage", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -419,7 +496,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.available"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory available", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.memory.available` metric instead. Container memory available", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -431,7 +508,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.major_page_faults"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory major_page_faults", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `container.memory.major_page_faults` metric instead. Container memory major_page_faults", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -443,7 +520,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.page_faults"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory page_faults", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.memory.page_faults` metric instead. Container memory page_faults", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -455,7 +532,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.rss"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory rss", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.memory.rss` metric instead. Container memory rss", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -467,7 +544,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.usage"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory usage", ms.At(i).Description())
+					assert.Equal(t, "Deprecated: use `k8s.container.memory.usage` metric instead. Container memory usage", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -477,6 +554,140 @@ func TestMetricsBuilder(t *testing.T) {
 				case "container.memory.working_set":
 					assert.False(t, validatedMetrics["container.memory.working_set"], "Found a duplicate in the metrics slice: container.memory.working_set")
 					validatedMetrics["container.memory.working_set"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Deprecated: use `k8s.container.memory.working_set` metric instead. Container memory working_set", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.cpu.time":
+					assert.False(t, validatedMetrics["k8s.container.cpu.time"], "Found a duplicate in the metrics slice: k8s.container.cpu.time")
+					validatedMetrics["k8s.container.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Container CPU time", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "k8s.container.cpu.utilization":
+					assert.False(t, validatedMetrics["k8s.container.cpu.utilization"], "Found a duplicate in the metrics slice: k8s.container.cpu.utilization")
+					validatedMetrics["k8s.container.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container CPU utilization", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "k8s.container.filesystem.available":
+					assert.False(t, validatedMetrics["k8s.container.filesystem.available"], "Found a duplicate in the metrics slice: k8s.container.filesystem.available")
+					validatedMetrics["k8s.container.filesystem.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.filesystem.capacity":
+					assert.False(t, validatedMetrics["k8s.container.filesystem.capacity"], "Found a duplicate in the metrics slice: k8s.container.filesystem.capacity")
+					validatedMetrics["k8s.container.filesystem.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem capacity", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.filesystem.usage":
+					assert.False(t, validatedMetrics["k8s.container.filesystem.usage"], "Found a duplicate in the metrics slice: k8s.container.filesystem.usage")
+					validatedMetrics["k8s.container.filesystem.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.memory.available":
+					assert.False(t, validatedMetrics["k8s.container.memory.available"], "Found a duplicate in the metrics slice: k8s.container.memory.available")
+					validatedMetrics["k8s.container.memory.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.memory.major_page_faults":
+					assert.False(t, validatedMetrics["k8s.container.memory.major_page_faults"], "Found a duplicate in the metrics slice: k8s.container.memory.major_page_faults")
+					validatedMetrics["k8s.container.memory.major_page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory major_page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.memory.page_faults":
+					assert.False(t, validatedMetrics["k8s.container.memory.page_faults"], "Found a duplicate in the metrics slice: k8s.container.memory.page_faults")
+					validatedMetrics["k8s.container.memory.page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.memory.rss":
+					assert.False(t, validatedMetrics["k8s.container.memory.rss"], "Found a duplicate in the metrics slice: k8s.container.memory.rss")
+					validatedMetrics["k8s.container.memory.rss"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory rss", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.memory.usage":
+					assert.False(t, validatedMetrics["k8s.container.memory.usage"], "Found a duplicate in the metrics slice: k8s.container.memory.usage")
+					validatedMetrics["k8s.container.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.memory.working_set":
+					assert.False(t, validatedMetrics["k8s.container.memory.working_set"], "Found a duplicate in the metrics slice: k8s.container.memory.working_set")
+					validatedMetrics["k8s.container.memory.working_set"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Container memory working_set", ms.At(i).Description())

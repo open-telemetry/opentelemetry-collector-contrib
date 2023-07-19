@@ -14,7 +14,7 @@ metrics:
 
 ### container.cpu.time
 
-Container CPU time
+Deprecated: use `k8s.container.cpu.time` metric instead. Container CPU time
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -22,7 +22,7 @@ Container CPU time
 
 ### container.cpu.utilization
 
-Container CPU utilization
+Deprecated: use `k8s.container.cpu.utilization` metric instead. Container CPU utilization
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -30,7 +30,7 @@ Container CPU utilization
 
 ### container.filesystem.available
 
-Container filesystem available
+Deprecated: use `k8s.container.filesystem.available` metric instead. Container filesystem available
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -38,7 +38,7 @@ Container filesystem available
 
 ### container.filesystem.capacity
 
-Container filesystem capacity
+Deprecated: use `k8s.container.filesystem.capacity` metric instead. Container filesystem capacity
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -46,7 +46,7 @@ Container filesystem capacity
 
 ### container.filesystem.usage
 
-Container filesystem usage
+Deprecated: use `k8s.container.filesystem.usage` metric instead. Container filesystem usage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -54,7 +54,7 @@ Container filesystem usage
 
 ### container.memory.available
 
-Container memory available
+Deprecated: use `k8s.container.memory.available` metric instead. Container memory available
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -62,7 +62,7 @@ Container memory available
 
 ### container.memory.major_page_faults
 
-Container memory major_page_faults
+Deprecated: use `container.memory.major_page_faults` metric instead. Container memory major_page_faults
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -70,7 +70,7 @@ Container memory major_page_faults
 
 ### container.memory.page_faults
 
-Container memory page_faults
+Deprecated: use `k8s.container.memory.page_faults` metric instead. Container memory page_faults
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -78,7 +78,7 @@ Container memory page_faults
 
 ### container.memory.rss
 
-Container memory rss
+Deprecated: use `k8s.container.memory.rss` metric instead. Container memory rss
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -86,7 +86,7 @@ Container memory rss
 
 ### container.memory.usage
 
-Container memory usage
+Deprecated: use `k8s.container.memory.usage` metric instead. Container memory usage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -94,7 +94,7 @@ Container memory usage
 
 ### container.memory.working_set
 
-Container memory working_set
+Deprecated: use `k8s.container.memory.working_set` metric instead. Container memory working_set
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -375,6 +375,104 @@ The inodes used by the filesystem. This may not equal inodes - free because file
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### k8s.container.cpu.time
+
+Container CPU time
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+### k8s.container.cpu.utilization
+
+Container CPU utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.container.filesystem.available
+
+Container filesystem available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.container.filesystem.capacity
+
+Container filesystem capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.container.filesystem.usage
+
+Container filesystem usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.container.memory.available
+
+Container memory available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.container.memory.major_page_faults
+
+Container memory major_page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.container.memory.page_faults
+
+Container memory page_faults
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.container.memory.rss
+
+Container memory rss
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.container.memory.usage
+
+Container memory usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.container.memory.working_set
+
+Container memory working_set
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
 
 ## Resource Attributes
 

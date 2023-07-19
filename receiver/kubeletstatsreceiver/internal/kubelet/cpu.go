@@ -14,8 +14,12 @@ func addCPUMetrics(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, 
 	if s == nil {
 		return
 	}
-	addCPUUsageMetric(mb, cpuMetrics.Utilization, s, currentTime)
-	addCPUTimeMetric(mb, cpuMetrics.Time, s, currentTime)
+	for _, recordDataPoint := range cpuMetrics.Utilization {
+		addCPUUsageMetric(mb, recordDataPoint, s, currentTime)
+	}
+	for _, recordDataPoint := range cpuMetrics.Time {
+		addCPUTimeMetric(mb, recordDataPoint, s, currentTime)
+	}
 }
 
 func addCPUUsageMetric(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, s *stats.CPUStats, currentTime pcommon.Timestamp) {

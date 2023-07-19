@@ -23,6 +23,28 @@ all_set:
       enabled: true
     container.memory.working_set:
       enabled: true
+    k8s.container.cpu.time:
+      enabled: true
+    k8s.container.cpu.utilization:
+      enabled: true
+    k8s.container.filesystem.available:
+      enabled: true
+    k8s.container.filesystem.capacity:
+      enabled: true
+    k8s.container.filesystem.usage:
+      enabled: true
+    k8s.container.memory.available:
+      enabled: true
+    k8s.container.memory.major_page_faults:
+      enabled: true
+    k8s.container.memory.page_faults:
+      enabled: true
+    k8s.container.memory.rss:
+      enabled: true
+    k8s.container.memory.usage:
+      enabled: true
+    k8s.container.memory.working_set:
+      enabled: true
     k8s.node.cpu.time:
       enabled: true
     k8s.node.cpu.utilization:
@@ -139,6 +161,28 @@ none_set:
     container.memory.usage:
       enabled: false
     container.memory.working_set:
+      enabled: false
+    k8s.container.cpu.time:
+      enabled: false
+    k8s.container.cpu.utilization:
+      enabled: false
+    k8s.container.filesystem.available:
+      enabled: false
+    k8s.container.filesystem.capacity:
+      enabled: false
+    k8s.container.filesystem.usage:
+      enabled: false
+    k8s.container.memory.available:
+      enabled: false
+    k8s.container.memory.major_page_faults:
+      enabled: false
+    k8s.container.memory.page_faults:
+      enabled: false
+    k8s.container.memory.rss:
+      enabled: false
+    k8s.container.memory.usage:
+      enabled: false
+    k8s.container.memory.working_set:
       enabled: false
     k8s.node.cpu.time:
       enabled: false

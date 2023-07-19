@@ -275,6 +275,15 @@ metrics:
     attributes: ["interface", "direction"]
   container.cpu.utilization:
     enabled: true
+    description: "Deprecated: use `k8s.container.cpu.utilization` metric instead. Container CPU utilization"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.cpu.utilization:
+    enabled: false
     description: "Container CPU utilization"
     unit: 1
     gauge:
@@ -282,6 +291,17 @@ metrics:
     attributes: [ ]
   container.cpu.time:
     enabled: true
+    description: "Deprecated: use `k8s.container.cpu.time` metric instead. Container CPU time"
+    unit: s
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ ]
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.cpu.time:
+    enabled: false
     description: "Container CPU time"
     unit: s
     sum:
@@ -291,6 +311,15 @@ metrics:
     attributes: [ ]
   container.memory.available:
     enabled: true
+    description: "Deprecated: use `k8s.container.memory.available` metric instead. Container memory available"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.memory.available:
+    enabled: false
     description: "Container memory available"
     unit: By
     gauge:
@@ -298,6 +327,15 @@ metrics:
     attributes: []
   container.memory.usage:
     enabled: true
+    description: "Deprecated: use `k8s.container.memory.usage` metric instead. Container memory usage"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.memory.usage:
+    enabled: false
     description: "Container memory usage"
     unit: By
     gauge:
@@ -305,6 +343,15 @@ metrics:
     attributes: []
   container.memory.rss:
     enabled: true
+    description: "Deprecated: use `k8s.container.memory.rss` metric instead. Container memory rss"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.memory.rss:
+    enabled: false
     description: "Container memory rss"
     unit: By
     gauge:
@@ -312,6 +359,15 @@ metrics:
     attributes: []
   container.memory.working_set:
     enabled: true
+    description: "Deprecated: use `k8s.container.memory.working_set` metric instead. Container memory working_set"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.memory.working_set:
+    enabled: false
     description: "Container memory working_set"
     unit: By
     gauge:
@@ -319,6 +375,15 @@ metrics:
     attributes: []
   container.memory.page_faults:
     enabled: true
+    description: "Deprecated: use `k8s.container.memory.page_faults` metric instead. Container memory page_faults"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.memory.page_faults:
+    enabled: false
     description: "Container memory page_faults"
     unit: 1
     gauge:
@@ -326,6 +391,15 @@ metrics:
     attributes: []
   container.memory.major_page_faults:
     enabled: true
+    description: "Deprecated: use `container.memory.major_page_faults` metric instead. Container memory major_page_faults"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.memory.major_page_faults:
+    enabled: false
     description: "Container memory major_page_faults"
     unit: 1
     gauge:
@@ -333,6 +407,15 @@ metrics:
     attributes: []
   container.filesystem.available:
     enabled: true
+    description: "Deprecated: use `k8s.container.filesystem.available` metric instead. Container filesystem available"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.filesystem.available:
+    enabled: false
     description: "Container filesystem available"
     unit: By
     gauge:
@@ -340,6 +423,15 @@ metrics:
     attributes: []
   container.filesystem.capacity:
     enabled: true
+    description: "Deprecated: use `k8s.container.filesystem.capacity` metric instead. Container filesystem capacity"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.filesystem.capacity:
+    enabled: false
     description: "Container filesystem capacity"
     unit: By
     gauge:
@@ -347,6 +439,15 @@ metrics:
     attributes: []
   container.filesystem.usage:
     enabled: true
+    description: "Deprecated: use `k8s.container.filesystem.usage` metric instead. Container filesystem usage"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled: This metric will be disabled in v0.84.0 and removed in v0.86.0.
+  k8s.container.filesystem.usage:
+    enabled: false
     description: "Container filesystem usage"
     unit: By
     gauge:

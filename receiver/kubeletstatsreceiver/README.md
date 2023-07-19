@@ -225,3 +225,70 @@ with detailed sample configurations [here](./testdata/config.yaml).
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
+
+## Deprecations
+
+### container.* metrics deprecated in favor of k8s.container.* metrics
+
+All `container.*` metrics have been deprecated in favor of their `k8s.container.*` counterparts
+
+The following process will be followed to phase out the old metrics:
+
+- In `v0.82.0`, the new metric is introduced and the old metric is marked as deprecated.
+  Only the old metric are emitted by default.
+- In `v0.84.0`, the old metric is disabled and the new one enabled by default.
+- In `v0.86.0` and up, the old metric is removed.
+
+To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
+
+Here's an example configuration to disable the old metrics and enable the new metrics:
+
+```yaml
+receivers:
+  kubeletstats:
+    metrics:
+      container.cpu.utilization:
+        enabled: false
+      k8s.container.cpu.utilization:
+        enabled: true
+      container.cpu.time:
+        enabled: false
+      k8s.container.cpu.time:
+        enabled: true
+      container.memory.available:
+        enabled: false
+      k8s.container.memory.available:
+        enabled: true
+      container.memory.usage:
+        enabled: false
+      k8s.container.memory.usage:
+        enabled: true
+      container.memory.rss:
+        enabled: false
+      k8s.container.memory.rss:
+        enabled: true
+      container.memory.working_set:
+        enabled: false
+      k8s.container.memory.working_set:
+        enabled: true
+      container.memory.page_faults:
+        enabled: false
+      k8s.container.memory.page_faults:
+        enabled: true
+      container.memory.major_page_faults:
+        enabled: false
+      k8s.container.memory.major_page_faults:
+        enabled: true
+      container.filesystem.available:
+        enabled: false
+      k8s.container.filesystem.available:
+        enabled: true
+      container.filesystem.capacity:
+        enabled: false
+      k8s.container.filesystem.capacity:
+        enabled: true
+      container.filesystem.usage:
+        enabled: false
+      k8s.container.filesystem.usage:
+        enabled: true
+```

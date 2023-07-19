@@ -1,0 +1,46 @@
+# Use this changelog template to create an entry for release notes.
+# If your change doesn't affect end users, such as a test fix or a tooling change,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: deprecation
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: kubestatsreceiver
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: container.* metrics will be deprecated in v0.82.0 in favor of their k8s.container.* counterparts
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [24238]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  This starts the process of phasing out container.* metrics:
+  - `container.cpu.utilization`
+  - `container.cpu.time`
+  - `container.memory.available`
+  - `container.memory.usage`
+  - `container.memory.rss`
+  - `container.memory.working_set`
+  - `container.memory.page_faults`
+  - `container.memory.major_page_faults`
+  - `container.filesystem.available`
+  - `container.filesystem.capacity`
+  - `container.filesystem.usage`
+  and replacing it with their k8s.container* counterparts:
+  - `k8s.container.cpu.utilization`
+  - `k8s.container.cpu.time`
+  - `k8s.container.memory.available`
+  - `k8s.container.memory.usage`
+  - `k8s.container.memory.rss`
+  - `k8s.container.memory.working_set`
+  - `k8s.container.memory.page_faults`
+  - `k8s.container.memory.major_page_faults`
+  - `k8s.container.filesystem.available`
+  - `k8s.container.filesystem.capacity`
+  - `k8s.container.filesystem.usage`
+  At this stage, the new metric is added, but is disabled by default.
+  See the "Deprecations" section of the Kubelet Stats receiver's README for details.
