@@ -30,6 +30,7 @@
 
 ### 💡 Enhancements 💡
 
+- `mdatagen`: Adds support for declaring feature gates in metadata.yaml file. (#21801)
 - `mdatagen`: Adds a parent field to metadata.yaml for subcomponents. (#23636)
 - `sqlqueryreceiver`: Add support of Start and End Timestamp Column in Metric Configuration. (#18925, #14146)
 - `postgresqlreceiver`: Adds unit to metrics where this was missing. (#23571)

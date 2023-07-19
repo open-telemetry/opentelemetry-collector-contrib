@@ -103,3 +103,79 @@ metrics:
       aggregation: delta
     warnings:
       if_enabled: This metric is deprecated and will be removed soon.
+
+feature-gates:
+  mertricExportNativeClientFeatureGate:
+    id: exporter.datadogexporter.metricexportnativeclient
+    description: When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs.
+    stage: Beta
+
+  useOTTLBridge:
+    id: filter.filtermetric.useOTTLBridge
+    description: When enabled, filterlog will convert filterlog configuration to OTTL and use filterottl evaluation
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18642
+
+  enableSha256Gate:
+    id: coreinternal.attraction.hash.sha256
+    description: When enabled, switches hashing algorithm from SHA-1 to SHA-2 256
+    stage: Beta
+
+  allowFileDeletion:
+    id: filelog.allowFileDeletion
+    description: When enabled, allows usage of the `delete_after_read` setting.
+    stage: Alpha
+    refereanceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314
+
+  AllowHeaderMetadataParsing:
+    id: filelog.allowHeaderMetadataParsing
+    description: When enabled, allows usage of the `header` setting.
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198
+
+  dropSanitizationGate:
+    id: pkg.translator.prometheus.PermissiveLabelSanitization
+    description: Controls whether to change labels starting with '_' to 'key_'.
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950
+
+  normalizeNameGate:
+    id: pkg.translator.prometheus.NormalizeName
+    description: Controls whether metrics names are automatically normalized to follow Prometheus naming convention
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950
+
+  enableRFC3339Timestamp:
+    id: k8sattr.rfc3339
+    description: When enabled, uses RFC3339 format for k8s.pod.start_time value
+    stage: Alpha
+    fromVersion: v0.82.0
+
+  virtualNodeFeatureGate:
+    id: processor.servicegraph.virtualNode
+    description: When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node.
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196
+
+  legacyMetricNamesFeatureGate:
+    id: processor.servicegraph.legacyLatencyMetricNames
+    description: When enabled, processor uses legacy latency metric names.
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578
+
+  dropSanitizationGate:
+    id: processor.spanmetrics.PermissiveLabelSanitization
+    description: Controls whether to change labels starting with '_' to 'key_'
+    stage: Alpha
+
+  connectorsAsSumGate:
+    id: receiver.nginx.emitConnectionsCurrentAsSum
+    description: When enabled, the receiver will emit the 'nginx.connections_current' metric as a nonmonotonic sum, rather than a gauge.
+    stage: Beta
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4326
+    fromVersion: v0.78.0
+
+  useCreatedMetricGate:
+    id: receiver.prometheusreceiver.UseCreatedMetric
+    description: When enabled, the Prometheus receiver will retrieve the start time for Summary, Histogram and Sum metrics from _created metric
+    stage: Alpha
