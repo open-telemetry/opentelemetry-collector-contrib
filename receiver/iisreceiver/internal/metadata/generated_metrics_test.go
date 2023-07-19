@@ -72,15 +72,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisNetworkFileCountDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordIisNetworkFileCountDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisNetworkIoDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordIisNetworkIoDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisRequestCountDataPoint(ts, 1, AttributeRequest(1))
+			mb.RecordIisRequestCountDataPoint(ts, 1, AttributeRequestDelete)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -102,7 +102,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordIisUptimeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithIisApplicationPool("attr-val"), WithIisSite("attr-val"))
+			metrics := mb.Emit(WithIisApplicationPool("iis.application_pool-val"), WithIisSite("iis.site-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -118,14 +118,14 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.IisApplicationPool.Enabled, ok)
 			if mb.resourceAttributesConfig.IisApplicationPool.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "iis.application_pool-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("iis.site")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.IisSite.Enabled, ok)
 			if mb.resourceAttributesConfig.IisSite.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "iis.site-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 2)
@@ -213,7 +213,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "iis.network.io":
 					assert.False(t, validatedMetrics["iis.network.io"], "Found a duplicate in the metrics slice: iis.network.io")
 					validatedMetrics["iis.network.io"] = true
@@ -230,7 +230,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "iis.request.count":
 					assert.False(t, validatedMetrics["iis.request.count"], "Found a duplicate in the metrics slice: iis.request.count")
 					validatedMetrics["iis.request.count"] = true
@@ -247,7 +247,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 				case "iis.request.queue.age.max":
 					assert.False(t, validatedMetrics["iis.request.queue.age.max"], "Found a duplicate in the metrics slice: iis.request.queue.age.max")
 					validatedMetrics["iis.request.queue.age.max"] = true
