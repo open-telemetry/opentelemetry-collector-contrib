@@ -23,6 +23,4 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
-exporter/carbonexporter/
-receiver/carbonreceiver/
 receiver/wavefrontreceiver/
