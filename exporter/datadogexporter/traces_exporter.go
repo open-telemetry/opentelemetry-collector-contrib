@@ -15,6 +15,7 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -30,29 +31,39 @@ import (
 )
 
 type traceExporter struct {
-	params         exporter.CreateSettings
-	cfg            *Config
-	ctx            context.Context       // ctx triggers shutdown upon cancellation
-	client         *zorkian.Client       // client sends runnimg metrics to backend & performs API validation
-	metricsAPI     *datadogV2.MetricsApi // client sends runnimg metrics to backend
-	scrubber       scrub.Scrubber        // scrubber scrubs sensitive information from error messages
-	onceMetadata   *sync.Once            // onceMetadata ensures that metadata is sent only once across all exporters
-	agent          *agent.Agent          // agent processes incoming traces
-	sourceProvider source.Provider       // is able to source the origin of a trace (hostname, container, etc)
-	retrier        *clientutil.Retrier   // retrier handles retries on requests
+	params           exporter.CreateSettings
+	cfg              *Config
+	ctx              context.Context         // ctx triggers shutdown upon cancellation
+	client           *zorkian.Client         // client sends runnimg metrics to backend & performs API validation
+	metricsAPI       *datadogV2.MetricsApi   // client sends runnimg metrics to backend
+	scrubber         scrub.Scrubber          // scrubber scrubs sensitive information from error messages
+	onceMetadata     *sync.Once              // onceMetadata ensures that metadata is sent only once across all exporters
+	agent            *agent.Agent            // agent processes incoming traces
+	sourceProvider   source.Provider         // is able to source the origin of a trace (hostname, container, etc)
+	metadataReporter *inframetadata.Reporter // reports host metadata from resource attributes and metrics
+	retrier          *clientutil.Retrier     // retrier handles retries on requests
 }
 
-func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, agent *agent.Agent) (*traceExporter, error) {
+func newTracesExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg *Config,
+	onceMetadata *sync.Once,
+	sourceProvider source.Provider,
+	agent *agent.Agent,
+	metadataReporter *inframetadata.Reporter,
+) (*traceExporter, error) {
 	scrubber := scrub.NewScrubber()
 	exp := &traceExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		agent:          agent,
-		onceMetadata:   onceMetadata,
-		scrubber:       scrubber,
-		sourceProvider: sourceProvider,
-		retrier:        clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		params:           params,
+		cfg:              cfg,
+		ctx:              ctx,
+		agent:            agent,
+		onceMetadata:     onceMetadata,
+		scrubber:         scrubber,
+		sourceProvider:   sourceProvider,
+		retrier:          clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		metadataReporter: metadataReporter,
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
@@ -92,8 +103,14 @@ func (exp *traceExporter) consumeTraces(
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}
-			go hostmetadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
+
+		// Consume resources for host metadata
+		for i := 0; i < td.ResourceSpans().Len(); i++ {
+			res := td.ResourceSpans().At(i).Resource()
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
+		}
 	}
 	rspans := td.ResourceSpans()
 	hosts := make(map[string]struct{})
