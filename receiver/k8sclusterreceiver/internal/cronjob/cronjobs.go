@@ -4,17 +4,18 @@
 package cronjob // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 
 import (
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 const (
@@ -23,71 +24,33 @@ const (
 	cronJobKeyConcurrencyPolicy = "concurrency_policy"
 )
 
-var activeJobs = &metricspb.MetricDescriptor{
-	Name:        "k8s.cronjob.active_jobs",
-	Description: "The number of actively running jobs for a cronjob",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+func GetMetrics(set receiver.CreateSettings, cj *batchv1.CronJob) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+	ts := pcommon.NewTimestampFromTime(time.Now())
+
+	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
+
+	return mbphase.Emit(
+		imetadataphase.WithK8sNamespaceName(cj.Namespace),
+		imetadataphase.WithK8sCronjobUID(string(cj.UID)),
+		imetadataphase.WithK8sCronjobName(cj.Name),
+		imetadataphase.WithOpencensusResourcetype("k8s"),
+	)
 }
 
-// TODO: All the CronJob related functions below can be de-duplicated using generics from go 1.19
+func GetMetricsBeta(set receiver.CreateSettings, cj *batchv1beta1.CronJob) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+	ts := pcommon.NewTimestampFromTime(time.Now())
 
-func GetMetrics(cj *batchv1.CronJob) []*agentmetricspb.ExportMetricsServiceRequest {
-	metrics := []*metricspb.Metric{
-		{
-			MetricDescriptor: activeJobs,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(len(cj.Status.Active))),
-			},
-		},
-	}
+	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResourceForCronJob(cj),
-			Metrics:  metrics,
-		},
-	}
-}
+	return mbphase.Emit(
+		imetadataphase.WithK8sNamespaceName(cj.Namespace),
+		imetadataphase.WithK8sCronjobUID(string(cj.UID)),
+		imetadataphase.WithK8sCronjobName(cj.Name),
+		imetadataphase.WithOpencensusResourcetype("k8s"),
+	)
 
-func GetMetricsBeta(cj *batchv1beta1.CronJob) []*agentmetricspb.ExportMetricsServiceRequest {
-	metrics := []*metricspb.Metric{
-		{
-			MetricDescriptor: activeJobs,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(len(cj.Status.Active))),
-			},
-		},
-	}
-
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResourceForCronJobBeta(cj),
-			Metrics:  metrics,
-		},
-	}
-}
-
-func getResourceForCronJob(cj *batchv1.CronJob) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			conventions.AttributeK8SCronJobUID:    string(cj.UID),
-			conventions.AttributeK8SCronJobName:   cj.Name,
-			conventions.AttributeK8SNamespaceName: cj.Namespace,
-		},
-	}
-}
-
-func getResourceForCronJobBeta(cj *batchv1beta1.CronJob) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			conventions.AttributeK8SCronJobUID:    string(cj.UID),
-			conventions.AttributeK8SCronJobName:   cj.Name,
-			conventions.AttributeK8SNamespaceName: cj.Namespace,
-		},
-	}
 }
 
 func GetMetadata(cj *batchv1.CronJob) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
