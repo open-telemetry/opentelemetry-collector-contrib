@@ -33,6 +33,7 @@ The following settings can be optionally configured:
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `enable_open_metrics`: (default = `false`): If true, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format, and only for histogram and monotonic sum (i.e. counter) metrics.
+- `add_metric_suffixes`: (default = `true`): If false, addition of type and unit suffixes is disabled.
 
 Example:
 
@@ -51,6 +52,7 @@ exporters:
     send_timestamps: true
     metric_expiration: 180m
     enable_open_metrics: true
+    add_metric_suffixes: false
     resource_to_telemetry_conversion:
       enabled: true
 ```

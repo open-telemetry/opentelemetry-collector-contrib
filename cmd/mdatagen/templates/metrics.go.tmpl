@@ -86,13 +86,13 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
 	{{- range $metric.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().PutEmptyBytes("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
-	dp.Attributes().PutEmptySlice("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
-	dp.Attributes().PutEmptyMap("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else }}
-	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ attributeName .}}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
 	{{- end }}
 	{{- end }}
 }
@@ -200,10 +200,10 @@ type ResourceMetricsOption func({{ if .ResourceAttributes }}ResourceAttributesCo
 
 {{- range $name, $attr := .ResourceAttributes }}
 {{- range $attr.Enum }}
-// With{{ $name.Render }}{{ . | publicVar }} sets "{{ $name }}={{ . }}" attribute for current resource.
+// With{{ $name.Render }}{{ . | publicVar }} sets "{{ $attr.Name }}={{ . }}" attribute for current resource.
 func With{{ $name.Render }}{{ . | publicVar }}(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 	if rac.{{ $name.Render }}.Enabled {
-		rm.Resource().Attributes().PutStr("{{ attributeName $name}}", "{{ . }}")
+		rm.Resource().Attributes().PutStr("{{ $attr.Name }}", "{{ . }}")
 	}
 }
 {{- else }}
@@ -212,13 +212,13 @@ func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOptio
 	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
 		if rac.{{ $name.Render }}.Enabled {
 			{{- if eq $attr.Type.Primitive "[]byte" }}
-			rm.Resource().Attributes().PutEmptyBytes("{{ attributeName $name}}").FromRaw(val)
+			rm.Resource().Attributes().PutEmptyBytes("{{ $attr.Name }}").FromRaw(val)
 			{{- else if eq $attr.Type.Primitive "[]any" }}
-			rm.Resource().Attributes().PutEmptySlice("{{ attributeName $name}}").FromRaw(val)
+			rm.Resource().Attributes().PutEmptySlice("{{ $attr.Name }}").FromRaw(val)
 			{{- else if eq $attr.Type.Primitive "map[string]any" }}
-			rm.Resource().Attributes().PutEmptyMap("{{ attributeName $name}}").FromRaw(val)
+			rm.Resource().Attributes().PutEmptyMap("{{ $attr.Name }}").FromRaw(val)
 			{{- else }}
-			rm.Resource().Attributes().Put{{ $attr.Type }}("{{ attributeName $name}}", val)
+			rm.Resource().Attributes().Put{{ $attr.Type }}("{{ $attr.Name }}", val)
 			{{- end }}
 		}
 	}
