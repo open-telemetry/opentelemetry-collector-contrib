@@ -66,6 +66,17 @@ internal/common
 
 `
 
+// Generates files specific to Github according to status metadata:
+// .github/CODEOWNERS
+// .github/ALLOWLIST
+func main() {
+	flag.Parse()
+	folder := flag.Arg(0)
+	if err := run(folder); err != nil {
+		log.Fatal(err)
+	}
+}
+
 type Codeowners struct {
 	// Active codeowners
 	Active []string `mapstructure:"active"`
@@ -107,14 +118,6 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-func main() {
-	flag.Parse()
-	folder := flag.Arg(0)
-	if err := run(folder); err != nil {
-		log.Fatal(err)
-	}
-}
-
 func run(folder string) error {
 	components := map[string]metadata{}
 	foldersList := []string{}
@@ -132,7 +135,8 @@ func run(folder string) error {
 			components[key] = m
 			foldersList = append(foldersList, key)
 			for stability, _ := range m.Status.Stability {
-				if stability == "unmaintained" || stability == "deprecated" {
+				if stability == "unmaintained" {
+					// do not account for unmaintained status to change the max length of the component line.
 					return nil
 				}
 			}
@@ -161,7 +165,6 @@ LOOP:
 			}
 			if stability == "deprecated" {
 				deprecatedList += key + "\n"
-				continue LOOP
 			}
 		}
 
