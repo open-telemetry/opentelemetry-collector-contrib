@@ -24,6 +24,12 @@ The following configuration options are supported:
 - `user_agent` (optional): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number. Defaults to `opentelemetry-collector-contrib {{version}}`.
 - `metric`(optional): Configuration for sending metrics to Cloud Monitoring.
   - `endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
+  - `extra_metrics_config` (optional): Enable or disable additional metrics.
+    - `enable_target_info` (default=`true`): Add `target_info` metric based on resource.
+    - `enable_scope_info` (default=`true`): Add `otel_scope_info` metric and `scope_name`/`scope_version` attributes to all other metrics.
+  - `resource_filters` (optional): Provides a list of filters to match resource attributes which will be included in metric labels.
+    - `prefix` (optional): Match resource attribute keys by prefix.
+    - `regex` (optional): Match resource attribute keys by regex.
 - `use_insecure` (optional): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = false)
