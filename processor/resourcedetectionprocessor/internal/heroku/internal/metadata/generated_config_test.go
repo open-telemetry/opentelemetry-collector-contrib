@@ -27,12 +27,12 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				CloudProvider:                  ResourceAttributeConfig{Enabled: true},
 				HerokuAppID:                    ResourceAttributeConfig{Enabled: true},
-				HerokuAppName:                  ResourceAttributeConfig{Enabled: true},
 				HerokuDynoID:                   ResourceAttributeConfig{Enabled: true},
 				HerokuReleaseCommit:            ResourceAttributeConfig{Enabled: true},
 				HerokuReleaseCreationTimestamp: ResourceAttributeConfig{Enabled: true},
-				HerokuReleaseVersion:           ResourceAttributeConfig{Enabled: true},
 				ServiceInstanceID:              ResourceAttributeConfig{Enabled: true},
+				ServiceName:                    ResourceAttributeConfig{Enabled: true},
+				ServiceVersion:                 ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -40,12 +40,12 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				CloudProvider:                  ResourceAttributeConfig{Enabled: false},
 				HerokuAppID:                    ResourceAttributeConfig{Enabled: false},
-				HerokuAppName:                  ResourceAttributeConfig{Enabled: false},
 				HerokuDynoID:                   ResourceAttributeConfig{Enabled: false},
 				HerokuReleaseCommit:            ResourceAttributeConfig{Enabled: false},
 				HerokuReleaseCreationTimestamp: ResourceAttributeConfig{Enabled: false},
-				HerokuReleaseVersion:           ResourceAttributeConfig{Enabled: false},
 				ServiceInstanceID:              ResourceAttributeConfig{Enabled: false},
+				ServiceName:                    ResourceAttributeConfig{Enabled: false},
+				ServiceVersion:                 ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

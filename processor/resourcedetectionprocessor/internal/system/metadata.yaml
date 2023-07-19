@@ -15,3 +15,7 @@ resource_attributes:
     description: The os.type
     type: string
     enabled: true
+  host.arch:
+    description: The host.arch
+    type: string
+    enabled: false

@@ -39,6 +39,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "string.resource.attr",
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
@@ -47,6 +48,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "string.enum.resource.attr",
 					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
@@ -54,6 +56,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "optional.resource.attr",
 					},
 					"slice.resource.attr": {
 						Description: "Resource attribute with a slice value.",
@@ -61,6 +64,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
+						FullName: "slice.resource.attr",
 					},
 					"map.resource.attr": {
 						Description: "Resource attribute with a map value.",
@@ -68,6 +72,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
+						FullName: "map.resource.attr",
 					},
 				},
 				Attributes: map[attributeName]attribute{
@@ -78,6 +83,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "enum_attr",
 					},
 					"string_attr": {
 						Description:  "Attribute with any string value.",
@@ -85,6 +91,7 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
+						FullName: "string_attr",
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -92,24 +99,28 @@ func Test_loadMetadata(t *testing.T) {
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeInt,
 						},
+						FullName: "overridden_int_attr",
 					},
 					"boolean_attr": {
 						Description: "Attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
+						FullName: "boolean_attr",
 					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeSlice,
 						},
+						FullName: "slice_attr",
 					},
 					"map_attr": {
 						Description: "Attribute with a map value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeMap,
 						},
+						FullName: "map_attr",
 					},
 				},
 				Metrics: map[metricName]metric{
