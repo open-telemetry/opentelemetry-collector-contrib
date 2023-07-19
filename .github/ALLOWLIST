@@ -21,6 +21,12 @@
 internal/common
 
 ## DEPRECATED components
+exporter/dynatraceexporter/
+exporter/jaegerexporter/
+exporter/jaegerthrifthttpexporter/
+processor/servicegraphprocessor/
+processor/spanmetricsprocessor/
+receiver/prometheusexecreceiver/
 
 ## UNMAINTAINED components
 exporter/carbonexporter/
