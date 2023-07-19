@@ -35,7 +35,7 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
 - `logs`:
   - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
   - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
-  - `decompose_complex_message_field` (default = true): Set this to false to disable decompossing complex body / message field types (e.g. a map) into separate fields.
+  - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
