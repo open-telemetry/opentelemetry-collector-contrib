@@ -5,9 +5,8 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -24,24 +23,17 @@ const (
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		typeStr,
-		createDefaultConfig,
+		newDefaultConfig,
 		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
 
-func createDefaultConfig() component.Config {
+func newDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: HTTPClientSettings{
-			Timeout: 90 * time.Second,
-		},
-		Namespace: "namespace",
-		Dataset:   "default",
-		Retry: RetrySettings{
-			Enabled:         true,
-			MaxRequests:     3,
-			InitialInterval: 100 * time.Millisecond,
-			MaxInterval:     1 * time.Minute,
-		},
+		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
+		Namespace:          "namespace",
+		Dataset:            "default",
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 	}
 }
 
