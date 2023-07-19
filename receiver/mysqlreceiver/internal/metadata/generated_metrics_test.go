@@ -56,7 +56,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolData(1))
+			mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolDataDirty)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -64,7 +64,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolOperationsDataPoint(ts, "1", AttributeBufferPoolOperations(1))
+			mb.RecordMysqlBufferPoolOperationsDataPoint(ts, "1", AttributeBufferPoolOperationsReadAheadRnd)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -72,73 +72,73 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolPagesDataPoint(ts, "1", AttributeBufferPoolPages(1))
+			mb.RecordMysqlBufferPoolPagesDataPoint(ts, "1", AttributeBufferPoolPagesData)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolData(1))
+			mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolDataDirty)
 
 			allMetricsCount++
-			mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
+			mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirectionReceived)
 
 			allMetricsCount++
-			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommand(1))
+			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
 
 			allMetricsCount++
 			mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
+			mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionErrorAccept)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWrites(1))
+			mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWritesPagesWritten)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandler(1))
+			mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandlerCommit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlIndexIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperations(1), "attr-val", "attr-val", "attr-val")
+			mb.RecordMysqlIndexIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperations(1), "attr-val", "attr-val", "attr-val")
+			mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
 
 			allMetricsCount++
-			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKind(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlLocksDataPoint(ts, "1", AttributeLocks(1))
+			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlLogOperationsDataPoint(ts, "1", AttributeLogOperations(1))
+			mb.RecordMysqlLocksDataPoint(ts, "1", AttributeLocksImmediate)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlMysqlxConnectionsDataPoint(ts, "1", AttributeConnectionStatus(1))
-
-			allMetricsCount++
-			mb.RecordMysqlMysqlxWorkerThreadsDataPoint(ts, "1", AttributeMysqlxThreads(1))
+			mb.RecordMysqlLogOperationsDataPoint(ts, "1", AttributeLogOperationsWaits)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlOpenedResourcesDataPoint(ts, "1", AttributeOpenedResources(1))
+			mb.RecordMysqlMysqlxConnectionsDataPoint(ts, "1", AttributeConnectionStatusAccepted)
+
+			allMetricsCount++
+			mb.RecordMysqlMysqlxWorkerThreadsDataPoint(ts, "1", AttributeMysqlxThreadsAvailable)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlOperationsDataPoint(ts, "1", AttributeOperations(1))
+			mb.RecordMysqlOpenedResourcesDataPoint(ts, "1", AttributeOpenedResourcesFile)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperations(1))
+			mb.RecordMysqlOperationsDataPoint(ts, "1", AttributeOperationsFsyncs)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
+			mb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperationsCreated)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommandExecute)
 
 			allMetricsCount++
 			mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
@@ -157,58 +157,58 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocks(1))
+			mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocksWaits)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperations(1))
+			mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperationsDeleted)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSorts(1))
+			mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSortsMergePasses)
 
 			allMetricsCount++
-			mb.RecordMysqlStatementEventCountDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", AttributeEventState(1))
+			mb.RecordMysqlStatementEventCountDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val", AttributeEventStateErrors)
 
 			allMetricsCount++
-			mb.RecordMysqlStatementEventWaitTimeDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlTableIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperations(1), "attr-val", "attr-val")
+			mb.RecordMysqlStatementEventWaitTimeDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlTableIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperations(1), "attr-val", "attr-val")
-
-			allMetricsCount++
-			mb.RecordMysqlTableLockWaitReadCountDataPoint(ts, 1, "attr-val", "attr-val", AttributeReadLockType(1))
-
-			allMetricsCount++
-			mb.RecordMysqlTableLockWaitReadTimeDataPoint(ts, 1, "attr-val", "attr-val", AttributeReadLockType(1))
-
-			allMetricsCount++
-			mb.RecordMysqlTableLockWaitWriteCountDataPoint(ts, 1, "attr-val", "attr-val", AttributeWriteLockType(1))
-
-			allMetricsCount++
-			mb.RecordMysqlTableLockWaitWriteTimeDataPoint(ts, 1, "attr-val", "attr-val", AttributeWriteLockType(1))
-
-			allMetricsCount++
-			mb.RecordMysqlTableOpenCacheDataPoint(ts, "1", AttributeCacheStatus(1))
+			mb.RecordMysqlTableIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreads(1))
+			mb.RecordMysqlTableIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
+
+			allMetricsCount++
+			mb.RecordMysqlTableLockWaitReadCountDataPoint(ts, 1, "schema-val", "table_name-val", AttributeReadLockTypeNormal)
+
+			allMetricsCount++
+			mb.RecordMysqlTableLockWaitReadTimeDataPoint(ts, 1, "schema-val", "table_name-val", AttributeReadLockTypeNormal)
+
+			allMetricsCount++
+			mb.RecordMysqlTableLockWaitWriteCountDataPoint(ts, 1, "schema-val", "table_name-val", AttributeWriteLockTypeAllowWrite)
+
+			allMetricsCount++
+			mb.RecordMysqlTableLockWaitWriteTimeDataPoint(ts, 1, "schema-val", "table_name-val", AttributeWriteLockTypeAllowWrite)
+
+			allMetricsCount++
+			mb.RecordMysqlTableOpenCacheDataPoint(ts, "1", AttributeCacheStatusHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlTmpResourcesDataPoint(ts, "1", AttributeTmpResource(1))
+			mb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreadsCached)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlTmpResourcesDataPoint(ts, "1", AttributeTmpResourceDiskTables)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlUptimeDataPoint(ts, "1")
 
-			metrics := mb.Emit(WithMysqlInstanceEndpoint("attr-val"))
+			metrics := mb.Emit(WithMysqlInstanceEndpoint("mysql.instance.endpoint-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -224,7 +224,7 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.MysqlInstanceEndpoint.Enabled, ok)
 			if mb.resourceAttributesConfig.MysqlInstanceEndpoint.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "mysql.instance.endpoint-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 1)
@@ -256,7 +256,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "dirty", attrVal.Str())
+					assert.EqualValues(t, "dirty", attrVal.Str())
 				case "mysql.buffer_pool.limit":
 					assert.False(t, validatedMetrics["mysql.buffer_pool.limit"], "Found a duplicate in the metrics slice: mysql.buffer_pool.limit")
 					validatedMetrics["mysql.buffer_pool.limit"] = true
@@ -287,7 +287,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "read_ahead_rnd", attrVal.Str())
+					assert.EqualValues(t, "read_ahead_rnd", attrVal.Str())
 				case "mysql.buffer_pool.page_flushes":
 					assert.False(t, validatedMetrics["mysql.buffer_pool.page_flushes"], "Found a duplicate in the metrics slice: mysql.buffer_pool.page_flushes")
 					validatedMetrics["mysql.buffer_pool.page_flushes"] = true
@@ -318,7 +318,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "data", attrVal.Str())
+					assert.EqualValues(t, "data", attrVal.Str())
 				case "mysql.buffer_pool.usage":
 					assert.False(t, validatedMetrics["mysql.buffer_pool.usage"], "Found a duplicate in the metrics slice: mysql.buffer_pool.usage")
 					validatedMetrics["mysql.buffer_pool.usage"] = true
@@ -335,7 +335,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "dirty", attrVal.Str())
+					assert.EqualValues(t, "dirty", attrVal.Str())
 				case "mysql.client.network.io":
 					assert.False(t, validatedMetrics["mysql.client.network.io"], "Found a duplicate in the metrics slice: mysql.client.network.io")
 					validatedMetrics["mysql.client.network.io"] = true
@@ -352,7 +352,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
+					assert.EqualValues(t, "received", attrVal.Str())
 				case "mysql.commands":
 					assert.False(t, validatedMetrics["mysql.commands"], "Found a duplicate in the metrics slice: mysql.commands")
 					validatedMetrics["mysql.commands"] = true
@@ -369,7 +369,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("command")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 				case "mysql.connection.count":
 					assert.False(t, validatedMetrics["mysql.connection.count"], "Found a duplicate in the metrics slice: mysql.connection.count")
 					validatedMetrics["mysql.connection.count"] = true
@@ -400,7 +400,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("error")
 					assert.True(t, ok)
-					assert.Equal(t, "accept", attrVal.Str())
+					assert.EqualValues(t, "accept", attrVal.Str())
 				case "mysql.double_writes":
 					assert.False(t, validatedMetrics["mysql.double_writes"], "Found a duplicate in the metrics slice: mysql.double_writes")
 					validatedMetrics["mysql.double_writes"] = true
@@ -417,7 +417,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "pages_written", attrVal.Str())
+					assert.EqualValues(t, "pages_written", attrVal.Str())
 				case "mysql.handlers":
 					assert.False(t, validatedMetrics["mysql.handlers"], "Found a duplicate in the metrics slice: mysql.handlers")
 					validatedMetrics["mysql.handlers"] = true
@@ -434,7 +434,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "commit", attrVal.Str())
+					assert.EqualValues(t, "commit", attrVal.Str())
 				case "mysql.index.io.wait.count":
 					assert.False(t, validatedMetrics["mysql.index.io.wait.count"], "Found a duplicate in the metrics slice: mysql.index.io.wait.count")
 					validatedMetrics["mysql.index.io.wait.count"] = true
@@ -451,16 +451,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("index")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "index_name-val", attrVal.Str())
 				case "mysql.index.io.wait.time":
 					assert.False(t, validatedMetrics["mysql.index.io.wait.time"], "Found a duplicate in the metrics slice: mysql.index.io.wait.time")
 					validatedMetrics["mysql.index.io.wait.time"] = true
@@ -477,16 +477,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("index")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "index_name-val", attrVal.Str())
 				case "mysql.joins":
 					assert.False(t, validatedMetrics["mysql.joins"], "Found a duplicate in the metrics slice: mysql.joins")
 					validatedMetrics["mysql.joins"] = true
@@ -503,7 +503,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "full", attrVal.Str())
+					assert.EqualValues(t, "full", attrVal.Str())
 				case "mysql.locks":
 					assert.False(t, validatedMetrics["mysql.locks"], "Found a duplicate in the metrics slice: mysql.locks")
 					validatedMetrics["mysql.locks"] = true
@@ -520,7 +520,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "immediate", attrVal.Str())
+					assert.EqualValues(t, "immediate", attrVal.Str())
 				case "mysql.log_operations":
 					assert.False(t, validatedMetrics["mysql.log_operations"], "Found a duplicate in the metrics slice: mysql.log_operations")
 					validatedMetrics["mysql.log_operations"] = true
@@ -537,7 +537,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "waits", attrVal.Str())
+					assert.EqualValues(t, "waits", attrVal.Str())
 				case "mysql.mysqlx_connections":
 					assert.False(t, validatedMetrics["mysql.mysqlx_connections"], "Found a duplicate in the metrics slice: mysql.mysqlx_connections")
 					validatedMetrics["mysql.mysqlx_connections"] = true
@@ -554,7 +554,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "accepted", attrVal.Str())
+					assert.EqualValues(t, "accepted", attrVal.Str())
 				case "mysql.mysqlx_worker_threads":
 					assert.False(t, validatedMetrics["mysql.mysqlx_worker_threads"], "Found a duplicate in the metrics slice: mysql.mysqlx_worker_threads")
 					validatedMetrics["mysql.mysqlx_worker_threads"] = true
@@ -571,7 +571,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "available", attrVal.Str())
+					assert.EqualValues(t, "available", attrVal.Str())
 				case "mysql.opened_resources":
 					assert.False(t, validatedMetrics["mysql.opened_resources"], "Found a duplicate in the metrics slice: mysql.opened_resources")
 					validatedMetrics["mysql.opened_resources"] = true
@@ -588,7 +588,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "file", attrVal.Str())
+					assert.EqualValues(t, "file", attrVal.Str())
 				case "mysql.operations":
 					assert.False(t, validatedMetrics["mysql.operations"], "Found a duplicate in the metrics slice: mysql.operations")
 					validatedMetrics["mysql.operations"] = true
@@ -605,7 +605,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "fsyncs", attrVal.Str())
+					assert.EqualValues(t, "fsyncs", attrVal.Str())
 				case "mysql.page_operations":
 					assert.False(t, validatedMetrics["mysql.page_operations"], "Found a duplicate in the metrics slice: mysql.page_operations")
 					validatedMetrics["mysql.page_operations"] = true
@@ -622,7 +622,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "created", attrVal.Str())
+					assert.EqualValues(t, "created", attrVal.Str())
 				case "mysql.prepared_statements":
 					assert.False(t, validatedMetrics["mysql.prepared_statements"], "Found a duplicate in the metrics slice: mysql.prepared_statements")
 					validatedMetrics["mysql.prepared_statements"] = true
@@ -639,7 +639,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("command")
 					assert.True(t, ok)
-					assert.Equal(t, "execute", attrVal.Str())
+					assert.EqualValues(t, "execute", attrVal.Str())
 				case "mysql.query.client.count":
 					assert.False(t, validatedMetrics["mysql.query.client.count"], "Found a duplicate in the metrics slice: mysql.query.client.count")
 					validatedMetrics["mysql.query.client.count"] = true
@@ -726,7 +726,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "waits", attrVal.Str())
+					assert.EqualValues(t, "waits", attrVal.Str())
 				case "mysql.row_operations":
 					assert.False(t, validatedMetrics["mysql.row_operations"], "Found a duplicate in the metrics slice: mysql.row_operations")
 					validatedMetrics["mysql.row_operations"] = true
@@ -743,7 +743,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "deleted", attrVal.Str())
+					assert.EqualValues(t, "deleted", attrVal.Str())
 				case "mysql.sorts":
 					assert.False(t, validatedMetrics["mysql.sorts"], "Found a duplicate in the metrics slice: mysql.sorts")
 					validatedMetrics["mysql.sorts"] = true
@@ -760,7 +760,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "merge_passes", attrVal.Str())
+					assert.EqualValues(t, "merge_passes", attrVal.Str())
 				case "mysql.statement_event.count":
 					assert.False(t, validatedMetrics["mysql.statement_event.count"], "Found a duplicate in the metrics slice: mysql.statement_event.count")
 					validatedMetrics["mysql.statement_event.count"] = true
@@ -777,16 +777,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("digest")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "digest-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("digest_text")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "digest_text-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "errors", attrVal.Str())
+					assert.EqualValues(t, "errors", attrVal.Str())
 				case "mysql.statement_event.wait.time":
 					assert.False(t, validatedMetrics["mysql.statement_event.wait.time"], "Found a duplicate in the metrics slice: mysql.statement_event.wait.time")
 					validatedMetrics["mysql.statement_event.wait.time"] = true
@@ -803,13 +803,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("digest")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "digest-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("digest_text")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "digest_text-val", attrVal.Str())
 				case "mysql.table.io.wait.count":
 					assert.False(t, validatedMetrics["mysql.table.io.wait.count"], "Found a duplicate in the metrics slice: mysql.table.io.wait.count")
 					validatedMetrics["mysql.table.io.wait.count"] = true
@@ -826,13 +826,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 				case "mysql.table.io.wait.time":
 					assert.False(t, validatedMetrics["mysql.table.io.wait.time"], "Found a duplicate in the metrics slice: mysql.table.io.wait.time")
 					validatedMetrics["mysql.table.io.wait.time"] = true
@@ -849,13 +849,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 				case "mysql.table.lock_wait.read.count":
 					assert.False(t, validatedMetrics["mysql.table.lock_wait.read.count"], "Found a duplicate in the metrics slice: mysql.table.lock_wait.read.count")
 					validatedMetrics["mysql.table.lock_wait.read.count"] = true
@@ -872,13 +872,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "mysql.table.lock_wait.read.time":
 					assert.False(t, validatedMetrics["mysql.table.lock_wait.read.time"], "Found a duplicate in the metrics slice: mysql.table.lock_wait.read.time")
 					validatedMetrics["mysql.table.lock_wait.read.time"] = true
@@ -895,13 +895,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "mysql.table.lock_wait.write.count":
 					assert.False(t, validatedMetrics["mysql.table.lock_wait.write.count"], "Found a duplicate in the metrics slice: mysql.table.lock_wait.write.count")
 					validatedMetrics["mysql.table.lock_wait.write.count"] = true
@@ -918,13 +918,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "allow_write", attrVal.Str())
+					assert.EqualValues(t, "allow_write", attrVal.Str())
 				case "mysql.table.lock_wait.write.time":
 					assert.False(t, validatedMetrics["mysql.table.lock_wait.write.time"], "Found a duplicate in the metrics slice: mysql.table.lock_wait.write.time")
 					validatedMetrics["mysql.table.lock_wait.write.time"] = true
@@ -941,13 +941,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "table_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "allow_write", attrVal.Str())
+					assert.EqualValues(t, "allow_write", attrVal.Str())
 				case "mysql.table_open_cache":
 					assert.False(t, validatedMetrics["mysql.table_open_cache"], "Found a duplicate in the metrics slice: mysql.table_open_cache")
 					validatedMetrics["mysql.table_open_cache"] = true
@@ -964,7 +964,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
+					assert.EqualValues(t, "hit", attrVal.Str())
 				case "mysql.threads":
 					assert.False(t, validatedMetrics["mysql.threads"], "Found a duplicate in the metrics slice: mysql.threads")
 					validatedMetrics["mysql.threads"] = true
@@ -981,7 +981,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
-					assert.Equal(t, "cached", attrVal.Str())
+					assert.EqualValues(t, "cached", attrVal.Str())
 				case "mysql.tmp_resources":
 					assert.False(t, validatedMetrics["mysql.tmp_resources"], "Found a duplicate in the metrics slice: mysql.tmp_resources")
 					validatedMetrics["mysql.tmp_resources"] = true
@@ -998,7 +998,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.Equal(t, "disk_tables", attrVal.Str())
+					assert.EqualValues(t, "disk_tables", attrVal.Str())
 				case "mysql.uptime":
 					assert.False(t, validatedMetrics["mysql.uptime"], "Found a duplicate in the metrics slice: mysql.uptime")
 					validatedMetrics["mysql.uptime"] = true

@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [core], [contrib], [aws], [observiq] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fprometheusremotewrite%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fprometheusremotewrite%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -49,6 +50,7 @@ The following settings can be optionally configured:
 - `headers`: additional headers attached to each HTTP request.
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
+- `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false`

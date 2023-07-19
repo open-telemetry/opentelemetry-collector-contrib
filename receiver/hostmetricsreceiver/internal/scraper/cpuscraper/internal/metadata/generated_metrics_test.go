@@ -56,10 +56,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemCPUTimeDataPoint(ts, 1, "attr-val", AttributeState(1))
+			mb.RecordSystemCPUTimeDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
 
 			allMetricsCount++
-			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "attr-val", AttributeState(1))
+			mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle)
 
 			metrics := mb.Emit()
 
@@ -102,10 +102,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("cpu")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "cpu-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "idle", attrVal.Str())
+					assert.EqualValues(t, "idle", attrVal.Str())
 				case "system.cpu.utilization":
 					assert.False(t, validatedMetrics["system.cpu.utilization"], "Found a duplicate in the metrics slice: system.cpu.utilization")
 					validatedMetrics["system.cpu.utilization"] = true
@@ -120,10 +120,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("cpu")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "cpu-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "idle", attrVal.Str())
+					assert.EqualValues(t, "idle", attrVal.Str())
 				}
 			}
 		})

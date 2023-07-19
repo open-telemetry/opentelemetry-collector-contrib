@@ -566,7 +566,8 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	require.NoError(t, recombine.Process(ctx, e))
 
 	go func() {
-		next := e.Copy()
+		next := entry.New()
+		next.Timestamp = time.Now()
 		next.Body = "next"
 		for {
 			time.Sleep(cfg.ForceFlushTimeout / 2)

@@ -4,38 +4,35 @@
 package cronjob
 
 import (
+	"path/filepath"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestCronJobMetrics(t *testing.T) {
 	cj := newCronJob("1")
 
-	actualResourceMetrics := GetMetrics(cj)
-
-	require.Equal(t, 1, len(actualResourceMetrics))
-
-	require.Equal(t, 1, len(actualResourceMetrics[0].Metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.cronjob.uid":    "test-cronjob-1-uid",
-			"k8s.cronjob.name":   "test-cronjob-1",
-			"k8s.namespace.name": "test-namespace",
-		},
+	m := GetMetrics(receivertest.NewNopCreateSettings(), cj)
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.cronjob.active_jobs",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
 func TestCronJobMetadata(t *testing.T) {
