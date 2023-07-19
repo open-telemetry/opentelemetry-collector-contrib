@@ -110,10 +110,6 @@ func TestMetricCollision(t *testing.T) {
 	allMetrics := map[string][]string{}
 	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, err error) error {
 		if info.Name() == "metadata.yaml" {
-			// TODO: Remove once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/24011 is merged.
-			if path == "../../receiver/googlecloudspannerreceiver/internal/metadataconfig/metadata.yaml" {
-				return nil
-			}
 			md, err := loadMetadata(path)
 			assert.NoError(t, err)
 			if len(md.Metrics) > 0 {
