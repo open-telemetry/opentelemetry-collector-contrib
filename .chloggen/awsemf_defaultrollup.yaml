@@ -19,4 +19,4 @@ issues: [23997]
 # Use pipe (|) for multiline entries.
 subtext: |
   Enabling the awsemf.nodimrollupdefault will cause the AWS EMF Exporter to use the NoDimensionRollup configuration
-  setting instead of ZeroAndSingleDimensionRollup.
+  setting by default instead of ZeroAndSingleDimensionRollup.
