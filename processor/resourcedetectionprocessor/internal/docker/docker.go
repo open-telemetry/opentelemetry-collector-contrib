@@ -47,25 +47,19 @@ func NewDetector(p processor.CreateSettings, cfg internal.DetectorConfig) (inter
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
-
 	osType, err := d.provider.OSType(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS type: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	hostname, err := d.provider.Hostname(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
-	if d.resourceAttributes.HostName.Enabled {
-		attrs.PutStr(conventions.AttributeHostName, hostname)
-	}
-	if d.resourceAttributes.OsType.Enabled {
-		attrs.PutStr(conventions.AttributeOSType, osType)
-	}
+	rb := metadata.NewResourceBuilder(d.resourceAttributes)
+	rb.SetHostName(hostname)
+	rb.SetOsType(osType)
 
-	return res, conventions.SchemaURL, nil
+	return rb.Emit(), conventions.SchemaURL, nil
 }
