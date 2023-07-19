@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 )
 
-//go:embed "internal/metadataconfig/metadata.yaml"
+//go:embed "internal/metadataconfig/metrics.yaml"
 var metadataYaml []byte
 
 var _ receiver.Metrics = (*googleCloudSpannerReceiver)(nil)

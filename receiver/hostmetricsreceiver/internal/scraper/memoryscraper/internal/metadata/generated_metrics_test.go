@@ -56,10 +56,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeState(1))
+			mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateBuffered)
 
 			allMetricsCount++
-			mb.RecordSystemMemoryUtilizationDataPoint(ts, 1, AttributeState(1))
+			mb.RecordSystemMemoryUtilizationDataPoint(ts, 1, AttributeStateBuffered)
 
 			metrics := mb.Emit()
 
@@ -102,7 +102,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "buffered", attrVal.Str())
+					assert.EqualValues(t, "buffered", attrVal.Str())
 				case "system.memory.utilization":
 					assert.False(t, validatedMetrics["system.memory.utilization"], "Found a duplicate in the metrics slice: system.memory.utilization")
 					validatedMetrics["system.memory.utilization"] = true
@@ -117,7 +117,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "buffered", attrVal.Str())
+					assert.EqualValues(t, "buffered", attrVal.Str())
 				}
 			}
 		})

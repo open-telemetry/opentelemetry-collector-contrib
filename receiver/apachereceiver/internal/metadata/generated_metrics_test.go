@@ -60,7 +60,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevel(1), AttributeCPUMode(1))
+			mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevelSelf, AttributeCPUModeSystem)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -88,7 +88,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardState(1))
+			mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardStateOpen)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -100,9 +100,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersState(1))
+			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)
 
-			metrics := mb.Emit(WithApacheServerName("attr-val"), WithApacheServerPort("attr-val"))
+			metrics := mb.Emit(WithApacheServerName("apache.server.name-val"), WithApacheServerPort("apache.server.port-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -118,14 +118,14 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.ApacheServerName.Enabled, ok)
 			if mb.resourceAttributesConfig.ApacheServerName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "apache.server.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("apache.server.port")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.ApacheServerPort.Enabled, ok)
 			if mb.resourceAttributesConfig.ApacheServerPort.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "apache.server.port-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 2)
@@ -169,10 +169,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("level")
 					assert.True(t, ok)
-					assert.Equal(t, "self", attrVal.Str())
+					assert.EqualValues(t, "self", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
+					assert.EqualValues(t, "system", attrVal.Str())
 				case "apache.current_connections":
 					assert.False(t, validatedMetrics["apache.current_connections"], "Found a duplicate in the metrics slice: apache.current_connections")
 					validatedMetrics["apache.current_connections"] = true
@@ -267,7 +267,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "open", attrVal.Str())
+					assert.EqualValues(t, "open", attrVal.Str())
 				case "apache.traffic":
 					assert.False(t, validatedMetrics["apache.traffic"], "Found a duplicate in the metrics slice: apache.traffic")
 					validatedMetrics["apache.traffic"] = true
@@ -312,7 +312,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "busy", attrVal.Str())
+					assert.EqualValues(t, "busy", attrVal.Str())
 				}
 			}
 		})

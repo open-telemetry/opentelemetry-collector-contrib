@@ -56,13 +56,13 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "attr-val")
+			mb.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "attr-val")
+			mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
 
-			metrics := mb.Emit(WithK8sNamespaceName("attr-val"), WithK8sResourcequotaName("attr-val"), WithK8sResourcequotaUID("attr-val"), WithOpencensusResourcetype("attr-val"))
+			metrics := mb.Emit(WithK8sNamespaceName("k8s.namespace.name-val"), WithK8sResourcequotaName("k8s.resourcequota.name-val"), WithK8sResourcequotaUID("k8s.resourcequota.uid-val"), WithOpencensusResourcetype("opencensus.resourcetype-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -78,28 +78,28 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.resourcequota.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.K8sResourcequotaName.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sResourcequotaName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.resourcequota.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.resourcequota.uid")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.K8sResourcequotaUID.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sResourcequotaUID.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.resourcequota.uid-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
 			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "opencensus.resourcetype-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 4)
@@ -129,7 +129,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "resource-val", attrVal.Str())
 				case "k8s.resource_quota.used":
 					assert.False(t, validatedMetrics["k8s.resource_quota.used"], "Found a duplicate in the metrics slice: k8s.resource_quota.used")
 					validatedMetrics["k8s.resource_quota.used"] = true
@@ -144,7 +144,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "resource-val", attrVal.Str())
 				}
 			}
 		})
