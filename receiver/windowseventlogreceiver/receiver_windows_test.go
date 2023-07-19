@@ -179,6 +179,45 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	require.Equal(t, logMessage, bodyStruct.Data)
 }
 
+func TestReadWindowsEventLoggerWithExcludeProvider(t *testing.T) {
+	logMessage := "Test log"
+	src := "otel"
+	
+	ctx := context.Background()
+	factory := NewFactory()
+	createSettings := receivertest.NewNopCreateSettings()
+	cfg := createTestConfig()
+	cfg.InputConfig.ExcludeProviders = []string{src}
+	sink := new(consumertest.LogsSink)
+
+	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	require.NoError(t, err)
+
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer receiver.Shutdown(ctx)
+
+	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+	require.NoError(t, err)
+	defer eventlog.Remove(src)
+
+	logger, err := eventlog.Open(src)
+	require.NoError(t, err)
+	defer logger.Close()
+
+	err = logger.Info(10, logMessage)
+	require.NoError(t, err)
+
+	logsReceived := func() bool {
+		return sink.LogRecordCount() == 0
+	}
+
+	// logs sometimes take a while to be written, so a substantial wait buffer is needed
+	require.Eventually(t, logsReceived, 10*time.Second, 200*time.Millisecond)
+	results := sink.AllLogs()
+	require.Len(t, results, 0)
+}
+
 func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
