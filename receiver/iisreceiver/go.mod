@@ -83,6 +83,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240
+replace github.com/testcontainers/testcontainers-go v0.21.0 => github.com/codeboten/testcontainers-go v0.0.0-20230719161455-0a89bd262701
+
 retract (
 	v0.76.2
 	v0.76.1

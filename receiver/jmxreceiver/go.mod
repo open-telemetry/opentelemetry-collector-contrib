@@ -120,3 +120,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.34.0 => cloud.google.com/go v0.110.2
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240
+replace github.com/testcontainers/testcontainers-go v0.21.0 => github.com/codeboten/testcontainers-go v0.0.0-20230719161455-0a89bd262701
