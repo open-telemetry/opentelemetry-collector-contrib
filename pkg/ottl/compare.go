@@ -136,6 +136,17 @@ func (p *Parser[K]) compareFloat64(a float64, b any, op compareOp) bool {
 	}
 }
 
+func (p *Parser[K]) compareDuration(a time.Duration, b any, op compareOp) bool {
+	switch v := b.(type) {
+	case time.Duration:
+		ansecs := a.Nanoseconds()
+		vnsecs := v.Nanoseconds()
+		return comparePrimitives(ansecs, vnsecs, op)
+	default:
+		return p.invalidComparison("cannot compare invalid duration", op)
+	}
+}
+
 func (p *Parser[K]) compareTime(a time.Time, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case time.Time:
@@ -187,6 +198,8 @@ func (p *Parser[K]) compare(a any, b any, op compareOp) bool {
 			return p.compare(b, nil, op)
 		}
 		return p.compareByte(v, b, op)
+	case time.Duration:
+		return p.compareDuration(v, b, op)
 	case time.Time:
 		return p.compareTime(v, b, op)
 	default:

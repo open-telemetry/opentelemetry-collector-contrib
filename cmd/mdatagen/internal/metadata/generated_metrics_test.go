@@ -68,16 +68,16 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDefaultMetricDataPoint(ts, 1, "attr-val", 1, AttributeEnumAttr(1), []any{"one", "two"}, map[string]any{"onek": "onev", "twok": "twov"})
+			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOptionalMetricDataPoint(ts, 1, "attr-val", true)
+			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true)
 
-			metrics := mb.Emit(WithMapResourceAttr(map[string]any{"onek": "onev", "twok": "twov"}), WithOptionalResourceAttr("attr-val"), WithSliceResourceAttr([]any{"one", "two"}), WithStringEnumResourceAttrOne, WithStringResourceAttr("attr-val"))
+			metrics := mb.Emit(WithMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}), WithOptionalResourceAttr("optional.resource.attr-val"), WithSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"}), WithStringEnumResourceAttrOne, WithStringResourceAttr("string.resource.attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -93,35 +93,35 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.MapResourceAttr.Enabled, ok)
 			if mb.resourceAttributesConfig.MapResourceAttr.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, map[string]any{"onek": "onev", "twok": "twov"}, attrVal.Map().AsRaw())
+				assert.EqualValues(t, map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}, attrVal.Map().AsRaw())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("optional.resource.attr")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.OptionalResourceAttr.Enabled, ok)
 			if mb.resourceAttributesConfig.OptionalResourceAttr.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "optional.resource.attr-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("slice.resource.attr")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.SliceResourceAttr.Enabled, ok)
 			if mb.resourceAttributesConfig.SliceResourceAttr.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, []any{"one", "two"}, attrVal.Slice().AsRaw())
+				assert.EqualValues(t, []any{"slice.resource.attr-item1", "slice.resource.attr-item2"}, attrVal.Slice().AsRaw())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("string.enum.resource.attr")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.StringEnumResourceAttr.Enabled, ok)
 			if mb.resourceAttributesConfig.StringEnumResourceAttr.Enabled {
 				enabledAttrCount++
-				assert.Equal(t, "one", attrVal.Str())
+				assert.EqualValues(t, "one", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("string.resource.attr")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.StringResourceAttr.Enabled, ok)
 			if mb.resourceAttributesConfig.StringResourceAttr.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "string.resource.attr-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 5)
@@ -153,19 +153,19 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("string_attr")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "string_attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 19, attrVal.Int())
 					attrVal, ok = dp.Attributes().Get("enum_attr")
 					assert.True(t, ok)
-					assert.Equal(t, "red", attrVal.Str())
+					assert.EqualValues(t, "red", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("slice_attr")
 					assert.True(t, ok)
-					assert.EqualValues(t, []any{"one", "two"}, attrVal.Slice().AsRaw())
+					assert.EqualValues(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
 					attrVal, ok = dp.Attributes().Get("map_attr")
 					assert.True(t, ok)
-					assert.EqualValues(t, map[string]any{"onek": "onev", "twok": "twov"}, attrVal.Map().AsRaw())
+					assert.EqualValues(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
 				case "default.metric.to_be_removed":
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true
@@ -194,7 +194,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("string_attr")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "string_attr-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
 					assert.EqualValues(t, true, attrVal.Bool())
