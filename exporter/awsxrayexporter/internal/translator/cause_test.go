@@ -188,7 +188,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
-func TestCauseWithZeroStatusMessage(t *testing.T) {
+func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "POST"
@@ -206,6 +206,99 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.Nil(t, cause)
+}
+
+func TestNonHttpUnsetCodeSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isError)
+	assert.False(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.Nil(t, cause)
+}
+
+func TestNonHttpOkCodeSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeOk)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isError)
+	assert.False(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.Nil(t, cause)
+}
+
+func TestNonHttpErrCodeSpan(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.False(t, isThrottle)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, cause)
+}
+
+func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
+	errorMsg := "this is a test"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[conventions.AttributeHTTPStatusCode] = 400
+	attributes["http.status_text"] = errorMsg
+
+	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeUnset)
+	filtered, _ := makeHTTP(span)
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
+	res := pcommon.NewResource()
+	isError, isFault, isThrottle, filtered, cause := makeCause(span, filtered, res)
+
+	assert.True(t, isError)
 	assert.False(t, isFault)
 	assert.False(t, isThrottle)
 	assert.NotNil(t, filtered)
