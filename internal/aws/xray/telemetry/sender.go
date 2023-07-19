@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/xray"
@@ -190,7 +190,7 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 	}
 	if !settings.LocalMode {
 		metadataClient := ec2metadata.New(sess, &aws.Config{
-			Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+			Retryer: override.IMDSRetryer,
 		})
 		hostnameProviders = append(hostnameProviders, ec2MetadataProvider{
 			client:      metadataClient,
