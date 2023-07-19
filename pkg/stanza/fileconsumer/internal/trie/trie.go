@@ -13,11 +13,11 @@
 package trie // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 
 type Trie struct {
-	_        interface{}
+	isEnd    bool
 	children map[byte]*Trie
 }
 
-// NewPathTrie allocates and returns a new *Trie.
+// NewTrie allocates and returns a new *Trie.
 func NewTrie() *Trie {
 	return &Trie{}
 }
@@ -52,6 +52,7 @@ func (trie *Trie) Put(key []byte) {
 		}
 		node = child
 	}
+	node.isEnd = true
 }
 
 // Delete removes keys from the Trie. Returns true if node was found for the given key.
@@ -68,6 +69,7 @@ func (trie *Trie) Delete(key []byte) bool {
 			return false
 		}
 	}
+	node.isEnd = false
 	// if leaf, remove it from its parent's children map. Repeat for ancestor path.
 	if node.isLeaf() {
 		// iterate backwards over path
@@ -80,6 +82,10 @@ func (trie *Trie) Delete(key []byte) bool {
 				break
 			}
 			parent.children = nil
+			if parent.isEnd {
+				// Parent has a value, stop
+				break
+			}
 		}
 	}
 	return true // node (internal or not) existed and its value was nil'd
