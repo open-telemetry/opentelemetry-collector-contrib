@@ -45,6 +45,7 @@ func TestCronJobMetadata(t *testing.T) {
 	// Assert metadata from Pod.
 	require.Equal(t,
 		metadata.KubernetesMetadata{
+			EntityType:    "k8s.cronjob",
 			ResourceIDKey: "k8s.cronjob.uid",
 			ResourceID:    "test-cronjob-1-uid",
 			Metadata: map[string]string{
