@@ -56,6 +56,14 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 			fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
 		case pmetric.MetricTypeSum:
 			fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
+		case pmetric.MetricTypeHistogram:
+			fallthrough
+		case pmetric.MetricTypeExponentialHistogram:
+			fallthrough
+		case pmetric.MetricTypeSummary:
+			fallthrough
+		case pmetric.MetricTypeEmpty:
+			return fmt.Errorf("unsupported metric type: %v", m.Type())
 		}
 		return nil
 	}
@@ -78,6 +86,9 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 		m.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
+
+	case model.MetricType_ENUM:
+		return fmt.Errorf("unsupported enum data-point (%d) in metric %q", sfxMetricType, sfxDataPoint.Metric)
 
 	default:
 		return fmt.Errorf("unknown data-point type (%d) in metric %q", sfxMetricType, sfxDataPoint.Metric)

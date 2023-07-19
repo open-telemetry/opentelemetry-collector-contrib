@@ -16,20 +16,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const tracesMaxWait = 5 * time.Second
-const tracesAggregate = false
-
 type TracesSettings struct {
-	Aggregate bool          `mapstructure:"aggregate"`
-	MaxWait   time.Duration `mapstructure:"max_wait"`
 }
 
 // newDefaultTracesSettings returns the default settings for TracesSettings.
 func newDefaultTracesSettings() TracesSettings {
-	return TracesSettings{
-		Aggregate: tracesAggregate,
-		MaxWait:   tracesMaxWait,
-	}
+	return TracesSettings{}
 }
 
 const logsExportResourceInfoDefault = false

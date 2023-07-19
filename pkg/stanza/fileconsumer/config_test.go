@@ -4,7 +4,6 @@
 package fileconsumer
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -167,7 +166,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`
 					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
-							TimestampSortRule{
+							&TimestampSortRule{
 								BaseSortRule: BaseSortRule{
 									SortType:  sortTypeTimestamp,
 									RegexKey:  "rotation_time",
@@ -188,7 +187,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.OrderingCriteria.Regex = `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`
 					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
-							NumericSortRule{
+							&NumericSortRule{
 								BaseSortRule: BaseSortRule{
 									SortType: sortTypeNumeric,
 									RegexKey: "file_num",
@@ -578,7 +577,7 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {
 				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
-						NumericSortRule{
+						&NumericSortRule{
 							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeNumeric,
@@ -590,6 +589,43 @@ func TestBuild(t *testing.T) {
 			require.Error,
 			nil,
 		},
+		{
+			"BasicOrderingCriteriaTimetsamp",
+			func(f *Config) {
+				f.OrderingCriteria.Regex = ".*"
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
+					{
+						&TimestampSortRule{
+							BaseSortRule: BaseSortRule{
+								RegexKey: "value",
+								SortType: sortTypeTimestamp,
+							},
+						},
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"GoodOrderingCriteriaTimestamp",
+			func(f *Config) {
+				f.OrderingCriteria.Regex = ".*"
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
+					{
+						&TimestampSortRule{
+							BaseSortRule: BaseSortRule{
+								RegexKey: "value",
+								SortType: sortTypeTimestamp,
+							},
+							Layout: "%Y%m%d%H",
+						},
+					},
+				}
+			},
+			require.NoError,
+			func(t *testing.T, f *Manager) {},
+		},
 	}
 
 	for _, tc := range cases {
@@ -599,9 +635,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
-
-			input, err := cfg.Build(testutil.Logger(t), nopEmit)
+			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -671,7 +705,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
 			splitNone := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 				if !atEOF {
 					return 0, nil, nil
@@ -682,7 +715,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return len(data), data, nil
 			}
 
-			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmit, splitNone)
+			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmitFunc, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -772,9 +805,7 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
-
-			input, err := cfg.Build(testutil.Logger(t), nopEmit)
+			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
