@@ -85,7 +85,9 @@ func (emd *ec2Metadata) refresh(ctx context.Context) {
 	}
 	emd.logger.Info("Fetch instance id and type from ec2 metadata")
 
-	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(ctx)
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(childCtx)
 	if err != nil {
 		emd.logger.Error("Failed to get ec2 metadata", zap.Error(err))
 		return

@@ -16,6 +16,7 @@
 package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
@@ -46,9 +47,11 @@ type ConnAttr interface {
 type Conn struct{}
 
 func (c *Conn) getEC2Region(s *session.Session) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
+	defer cancel()
 	return ec2metadata.New(s, &aws.Config{
 		Retryer: override.IMDSRetryer,
-	}).Region()
+	}).RegionWithContext(ctx)
 }
 
 // AWS STS endpoint constants

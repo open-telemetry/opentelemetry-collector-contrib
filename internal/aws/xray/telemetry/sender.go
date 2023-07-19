@@ -15,6 +15,7 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
+	"context"
 	"os"
 	"sync"
 	"time"
@@ -169,7 +170,9 @@ type ec2MetadataProvider struct {
 
 func (p ec2MetadataProvider) get() string {
 	var metadata string
-	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
+	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
+	defer cancel()
+	if result, err := p.client.GetMetadataWithContext(ctx, p.metadataKey); err == nil {
 		metadata = result
 	}
 	return metadata

@@ -64,17 +64,20 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 2*override.TimePerCall)
+	defer cancel()
+
 	meta := ec2metadata.New(sess, &aws.Config{
 		Retryer: override.IMDSRetryer,
 	})
 
-	if idDoc, err := meta.GetInstanceIdentityDocument(); err == nil {
+	if idDoc, err := meta.GetInstanceIdentityDocumentWithContext(ctx); err == nil {
 		hostInfo.InstanceID = idDoc.InstanceID
 	} else {
 		logger.Warn("Failed to get EC2 instance id document", zap.Error(err))
 	}
 
-	if ec2Hostname, err := meta.GetMetadata("hostname"); err == nil {
+	if ec2Hostname, err := meta.GetMetadataWithContext(ctx, "hostname"); err == nil {
 		hostInfo.EC2Hostname = ec2Hostname
 	} else {
 		logger.Warn("Failed to get EC2 hostname", zap.Error(err))

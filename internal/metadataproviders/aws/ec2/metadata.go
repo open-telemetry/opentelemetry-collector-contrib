@@ -44,13 +44,19 @@ func NewProvider(sess *session.Session) Provider {
 }
 
 func (c *metadataClient) InstanceID(ctx context.Context) (string, error) {
-	return c.metadata.GetMetadataWithContext(ctx, "instance-id")
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	return c.metadata.GetMetadataWithContext(childCtx, "instance-id")
 }
 
 func (c *metadataClient) Hostname(ctx context.Context) (string, error) {
-	return c.metadata.GetMetadataWithContext(ctx, "hostname")
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	return c.metadata.GetMetadataWithContext(childCtx, "hostname")
 }
 
 func (c *metadataClient) Get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
-	return c.metadata.GetInstanceIdentityDocumentWithContext(ctx)
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	return c.metadata.GetInstanceIdentityDocumentWithContext(childCtx)
 }

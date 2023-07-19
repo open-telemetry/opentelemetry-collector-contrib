@@ -32,6 +32,10 @@ import (
 // currently we set the var to nil in tests to mock
 var IMDSRetryer request.Retryer = newIMDSRetryer()
 
+const (
+	TimePerCall = 2 * time.Minute
+)
+
 type iMDSRetryer struct {
 	client.DefaultRetryer
 }
