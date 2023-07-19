@@ -74,7 +74,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sJobSuccessfulPodsDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithK8sJobName("attr-val"), WithK8sJobUID("attr-val"), WithK8sNamespaceName("attr-val"), WithOpencensusResourcetype("attr-val"))
+			metrics := mb.Emit(WithK8sJobName("k8s.job.name-val"), WithK8sJobUID("k8s.job.uid-val"), WithK8sNamespaceName("k8s.namespace.name-val"), WithOpencensusResourcetype("opencensus.resourcetype-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -90,28 +90,28 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.K8sJobName.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sJobName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.job.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.job.uid")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.K8sJobUID.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sJobUID.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.job.uid-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.namespace.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
 			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "opencensus.resourcetype-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 4)
