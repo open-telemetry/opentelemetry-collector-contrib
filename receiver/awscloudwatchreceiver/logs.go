@@ -225,7 +225,6 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 }
 
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
-	var logRecord plog.LogRecord
 	logs := plog.NewLogs()
 
 	resourceMap := map[string](map[string]*plog.ResourceLogs){}
@@ -246,33 +245,35 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			continue
 		}
 
-		resource := l.getResourceLogs(resourceMap, logGroupName, e.LogStreamName)
+		group, ok := resourceMap[logGroupName]
+		if !ok {
+			group = map[string]*plog.ResourceLogs{}
+			resourceMap[logGroupName] = group
+		}
 
-		if resource == nil {
+		logStreamName := noStreamName
+		if e.LogStreamName != nil {
+			logStreamName = *e.LogStreamName
+		}
+
+		resourceLogs, ok := group[logStreamName]
+		if !ok {
 			rl := logs.ResourceLogs().AppendEmpty()
-
-			resourceAttributes := rl.Resource().Attributes()
+			resourceLogs = &rl
+			resourceAttributes := resourceLogs.Resource().Attributes()
 			resourceAttributes.PutStr("aws.region", l.region)
 			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
+			resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
+			group[logStreamName] = resourceLogs
 
-			if _, ok := resourceMap[logGroupName]; !ok {
-				resourceMap[logGroupName] = map[string]*plog.ResourceLogs{}
-			}
-
-			if e.LogStreamName != nil {
-				resourceMap[logGroupName][*e.LogStreamName] = &rl
-				resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
-			} else {
-				resourceMap[logGroupName][noStreamName] = &rl
-			}
-
-			logRecord = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-		} else {
-			sls := resource.ScopeLogs()
-			sl := sls.At(0)
-			lrs := sl.LogRecords()
-			logRecord = lrs.AppendEmpty()
+			// Ensure one scopeLogs is initialized so we can handle in standardized way going forward.
+			_ = resourceLogs.ScopeLogs().AppendEmpty()
 		}
+
+		// Now we know resourceLogs is initialized and has one scopeLogs so we don't have to handle any special cases.
+
+		sl := resourceLogs.ScopeLogs()
+		logRecord := sl.At(0).LogRecords().AppendEmpty()
 
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
@@ -281,19 +282,6 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 		logRecord.Attributes().PutStr("id", *e.EventId)
 	}
 	return logs
-}
-
-func (*logsReceiver) getResourceLogs(m map[string](map[string]*plog.ResourceLogs), group string, logStream *string) *plog.ResourceLogs {
-	streamMap := m[group]
-	if streamMap == nil {
-		return nil
-	}
-
-	if logStream == nil {
-		return streamMap[noStreamName]
-	}
-
-	return streamMap[*logStream]
 }
 
 func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverConfig) ([]groupRequest, error) {
