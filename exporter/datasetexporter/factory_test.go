@@ -26,6 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		BufferSettings:  newDefaultBufferSettings(),
 		TracesSettings:  newDefaultTracesSettings(),
+		LogsSettings:    newDefaultLogsSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -88,7 +89,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 				TracesSettings: TracesSettings{},
 				LogsSettings: LogsSettings{
-					ExportResourceInfo: true,
+					ExportResourceInfo:           true,
+					ExportScopeInfo:              true,
+					DecomposeComplexMessageField: true,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             true,
@@ -136,7 +139,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; LogsSettings: {ExportResourceInfo:false}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; LogsSettings: {ExportResourceInfo:false ExportScopeInfo:false DecomposeComplexMessageField:false}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
@@ -150,6 +153,7 @@ func createExporterTests() []CreateTest {
 					RetryMaxInterval:     time.Minute,
 					RetryMaxElapsedTime:  time.Hour,
 				},
+				LogsSettings:    newDefaultLogsSettings(),
 				TracesSettings:  TracesSettings{},
 				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
