@@ -6,6 +6,7 @@ go 1.19
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.81.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.81.0
@@ -1108,6 +1109,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ../../connector/countconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ../../connector/exceptionsconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../../connector/routingconnector
 

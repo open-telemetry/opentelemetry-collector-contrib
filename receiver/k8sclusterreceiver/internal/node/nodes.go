@@ -136,6 +136,7 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	nodeID := experimentalmetricmetadata.ResourceID(node.UID)
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		nodeID: {
+			EntityType:    "k8s.node",
 			ResourceIDKey: conventions.AttributeK8SNodeUID,
 			ResourceID:    nodeID,
 			Metadata:      meta,
