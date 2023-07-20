@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -78,11 +77,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.SpanId,
     Exemplars.TraceId,
 	AggTemp,
-	IsMonotonic) VALUES `
-	sumValueCounts = 22
+	IsMonotonic) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
-
-var sumPlaceholders = newPlaceholder(sumValueCounts)
 
 type sumModel struct {
 	metricName        string
@@ -102,48 +98,46 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if s.count == 0 {
 		return nil
 	}
-
-	valueArgs := make([]any, s.count*sumValueCounts)
-	var b strings.Builder
-
-	index := 0
-	for _, model := range s.sumModel {
-		for i := 0; i < model.sum.DataPoints().Len(); i++ {
-			dp := model.sum.DataPoints().At(i)
-			b.WriteString(*sumPlaceholders)
-
-			valueArgs[index] = model.metadata.ResAttr
-			valueArgs[index+1] = model.metadata.ResURL
-			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
-			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
-			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
-			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
-			valueArgs[index+6] = model.metadata.ScopeURL
-			valueArgs[index+7] = model.metricName
-			valueArgs[index+8] = model.metricDescription
-			valueArgs[index+9] = model.metricUnit
-			valueArgs[index+10] = attributesToMap(dp.Attributes())
-			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
-			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
-			valueArgs[index+13] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
-			valueArgs[index+14] = uint32(dp.Flags())
-
-			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs[index+15] = attrs
-			valueArgs[index+16] = times
-			valueArgs[index+17] = values
-			valueArgs[index+18] = traceIDs
-			valueArgs[index+19] = spanIDs
-			valueArgs[index+20] = int32(model.sum.AggregationTemporality())
-			valueArgs[index+21] = model.sum.IsMonotonic()
-
-			index += sumValueCounts
-		}
-	}
-
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", s.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
+		batch, err := tx.PrepareContext(ctx, s.insertSQL)
+		if err != nil {
+			return err
+		}
+	batch:
+		for _, model := range s.sumModel {
+			for i := 0; i < model.sum.DataPoints().Len(); i++ {
+				dp := model.sum.DataPoints().At(i)
+				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+				_, err = batch.ExecContext(ctx,
+					model.metadata.ResAttr,
+					model.metadata.ResURL,
+					model.metadata.ScopeInstr.Name(),
+					model.metadata.ScopeInstr.Version(),
+					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					model.metadata.ScopeInstr.DroppedAttributesCount(),
+					model.metadata.ScopeURL,
+					model.metricName,
+					model.metricDescription,
+					model.metricUnit,
+					attributesToMap(dp.Attributes()),
+					dp.StartTimestamp().AsTime(),
+					dp.Timestamp().AsTime(),
+					getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()),
+					uint32(dp.Flags()),
+					attrs,
+					times,
+					values,
+					traceIDs,
+					spanIDs,
+					int32(model.sum.AggregationTemporality()),
+					model.sum.IsMonotonic(),
+				)
+				if err != nil {
+					break batch
+				}
+			}
+		}
 		return err
 	})
 	duration := time.Since(start)

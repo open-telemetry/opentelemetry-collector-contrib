@@ -31,7 +31,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
-		require.Equal(t, int32(5), items.Load())
+		require.Equal(t, int32(15), items.Load())
 	})
 	t.Run("push failure", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {

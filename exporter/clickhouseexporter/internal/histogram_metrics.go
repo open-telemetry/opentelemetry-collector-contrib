@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,7 +31,7 @@ CREATE TABLE IF NOT EXISTS %s_histogram (
     Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
 	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
 	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
-    Count Int64 CODEC(Delta, ZSTD(1)),
+    Count UInt64 CODEC(Delta, ZSTD(1)),
     Sum Float64 CODEC(ZSTD(1)),
     BucketCounts Array(UInt64) CODEC(ZSTD(1)),
     ExplicitBounds Array(Float64) CODEC(ZSTD(1)),
@@ -84,11 +83,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.TraceId,
 	Flags,
 	Min,
-	Max) VALUES `
-	histogramValueCounts = 25
+	Max) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
-
-var histogramPlaceholders = newPlaceholder(histogramValueCounts)
 
 type histogramModel struct {
 	metricName        string
@@ -108,51 +104,49 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if h.count == 0 {
 		return nil
 	}
-
-	valueArgs := make([]any, h.count*histogramValueCounts)
-	var b strings.Builder
-
-	index := 0
-	for _, model := range h.histogramModel {
-		for i := 0; i < model.histogram.DataPoints().Len(); i++ {
-			dp := model.histogram.DataPoints().At(i)
-			b.WriteString(*histogramPlaceholders)
-
-			valueArgs[index] = model.metadata.ResAttr
-			valueArgs[index+1] = model.metadata.ResURL
-			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
-			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
-			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
-			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
-			valueArgs[index+6] = model.metadata.ScopeURL
-			valueArgs[index+7] = model.metricName
-			valueArgs[index+8] = model.metricDescription
-			valueArgs[index+9] = model.metricUnit
-			valueArgs[index+10] = attributesToMap(dp.Attributes())
-			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
-			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
-			valueArgs[index+13] = dp.Count()
-			valueArgs[index+14] = dp.Sum()
-			valueArgs[index+15] = convertSliceToArraySet(dp.BucketCounts().AsRaw())
-			valueArgs[index+16] = convertSliceToArraySet(dp.ExplicitBounds().AsRaw())
-
-			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs[index+17] = attrs
-			valueArgs[index+18] = times
-			valueArgs[index+19] = values
-			valueArgs[index+20] = traceIDs
-			valueArgs[index+21] = spanIDs
-			valueArgs[index+22] = uint32(dp.Flags())
-			valueArgs[index+23] = dp.Min()
-			valueArgs[index+24] = dp.Max()
-
-			index += histogramValueCounts
-		}
-	}
-
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", h.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
+		batch, err := tx.PrepareContext(ctx, h.insertSQL)
+		if err != nil {
+			return err
+		}
+	batch:
+		for _, model := range h.histogramModel {
+			for i := 0; i < model.histogram.DataPoints().Len(); i++ {
+				dp := model.histogram.DataPoints().At(i)
+				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+				_, err = batch.ExecContext(ctx,
+					model.metadata.ResAttr,
+					model.metadata.ResURL,
+					model.metadata.ScopeInstr.Name(),
+					model.metadata.ScopeInstr.Version(),
+					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					model.metadata.ScopeInstr.DroppedAttributesCount(),
+					model.metadata.ScopeURL,
+					model.metricName,
+					model.metricDescription,
+					model.metricUnit,
+					attributesToMap(dp.Attributes()),
+					dp.StartTimestamp().AsTime(),
+					dp.Timestamp().AsTime(),
+					dp.Count(),
+					dp.Sum(),
+					convertSliceToArraySet(dp.BucketCounts().AsRaw()),
+					convertSliceToArraySet(dp.ExplicitBounds().AsRaw()),
+					attrs,
+					times,
+					values,
+					traceIDs,
+					spanIDs,
+					uint32(dp.Flags()),
+					dp.Min(),
+					dp.Max(),
+				)
+				if err != nil {
+					break batch
+				}
+			}
+		}
 		return err
 	})
 	duration := time.Since(start)

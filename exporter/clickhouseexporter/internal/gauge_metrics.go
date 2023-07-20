@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -74,11 +73,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	Exemplars.TimeUnix,
     Exemplars.Value,
     Exemplars.SpanId,
-    Exemplars.TraceId) VALUES `
-	gaugeValueCounts = 20
+    Exemplars.TraceId) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
-
-var gaugePlaceholders = newPlaceholder(gaugeValueCounts)
 
 type gaugeModel struct {
 	metricName        string
@@ -98,46 +94,44 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if g.count == 0 {
 		return nil
 	}
-
-	valueArgs := make([]any, g.count*gaugeValueCounts)
-	var b strings.Builder
-
-	index := 0
-	for _, model := range g.gaugeModels {
-		for i := 0; i < model.gauge.DataPoints().Len(); i++ {
-			dp := model.gauge.DataPoints().At(i)
-			b.WriteString(*gaugePlaceholders)
-
-			valueArgs[index] = model.metadata.ResAttr
-			valueArgs[index+1] = model.metadata.ResURL
-			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
-			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
-			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
-			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
-			valueArgs[index+6] = model.metadata.ScopeURL
-			valueArgs[index+7] = model.metricName
-			valueArgs[index+8] = model.metricDescription
-			valueArgs[index+9] = model.metricUnit
-			valueArgs[index+10] = attributesToMap(dp.Attributes())
-			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
-			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
-			valueArgs[index+13] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
-			valueArgs[index+14] = uint32(dp.Flags())
-
-			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs[index+15] = attrs
-			valueArgs[index+16] = times
-			valueArgs[index+17] = values
-			valueArgs[index+18] = traceIDs
-			valueArgs[index+19] = spanIDs
-
-			index += gaugeValueCounts
-		}
-	}
-
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", g.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
+		stat, err := tx.PrepareContext(ctx, g.insertSQL)
+		if err != nil {
+			return err
+		}
+	batch:
+		for _, model := range g.gaugeModels {
+			for i := 0; i < model.gauge.DataPoints().Len(); i++ {
+				dp := model.gauge.DataPoints().At(i)
+				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+				_, err = stat.ExecContext(ctx,
+					model.metadata.ResAttr,
+					model.metadata.ResURL,
+					model.metadata.ScopeInstr.Name(),
+					model.metadata.ScopeInstr.Version(),
+					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					model.metadata.ScopeInstr.DroppedAttributesCount(),
+					model.metadata.ScopeURL,
+					model.metricName,
+					model.metricDescription,
+					model.metricUnit,
+					attributesToMap(dp.Attributes()),
+					dp.StartTimestamp().AsTime(),
+					dp.Timestamp().AsTime(),
+					getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()),
+					uint32(dp.Flags()),
+					attrs,
+					times,
+					values,
+					traceIDs,
+					spanIDs,
+				)
+				if err != nil {
+					break batch
+				}
+			}
+		}
 		return err
 	})
 	duration := time.Since(start)
@@ -145,10 +139,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 		logger.Debug("insert gauge metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert gauge metrics fail:%w", err)
 	}
-
-	// TODO latency metrics
-	logger.Debug("insert gauge metrics", zap.Int("records", g.count),
-		zap.Duration("cost", duration))
+	println(fmt.Sprintf("insert gauge metrics %d, cost %s", g.count, duration))
 	return nil
 }
 
