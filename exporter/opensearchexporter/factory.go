@@ -5,6 +5,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
