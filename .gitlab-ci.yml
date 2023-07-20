@@ -45,10 +45,9 @@ prod-deploy-demo-eks:
   image: $CI_IMAGE
   dependencies:
     - build-image-demo
-  only:
-    refs:
-      - prod
-      - "*-staging"
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "prod"'
+    - if: '$CI_COMMIT_REF_NAME =~ /-staging$/'
   script:
     # # For debugging
     #- aws sts get-caller-identity
