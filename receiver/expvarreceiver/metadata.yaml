@@ -5,6 +5,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, sumo]
+  codeowners:
+    active: [jamesmoessis, MovieStoreGuy]
 
 metrics:
   process.runtime.memstats.total_alloc:

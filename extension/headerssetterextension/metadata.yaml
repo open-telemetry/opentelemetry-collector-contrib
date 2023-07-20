@@ -8,3 +8,5 @@ status:
   - contrib
   - grafana
   - sumo
+  codeowners:
+    active: [jpkrohling, kovrus]

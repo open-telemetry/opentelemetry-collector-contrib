@@ -6,4 +6,5 @@ status:
     beta: [metrics]
     development: [logs]
   distributions: [contrib, splunk, observiq, sumo]
-
+  codeowners:
+    active: [dmitryax]

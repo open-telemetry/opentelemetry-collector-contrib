@@ -5,3 +5,5 @@ status:
   stability:
     alpha: [traces]
   distributions: [contrib]
+  codeowners:
+    active: [jpkrohling, hickeyma]
