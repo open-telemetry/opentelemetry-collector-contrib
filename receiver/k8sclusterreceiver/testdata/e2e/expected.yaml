@@ -349,6 +349,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this replicaset
@@ -365,7 +366,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -380,6 +383,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this replicaset
@@ -396,7 +400,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -411,6 +417,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of desired pods in this replicaset
@@ -427,7 +434,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.replicaset.available
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.namespace.name
