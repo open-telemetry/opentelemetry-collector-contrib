@@ -16,7 +16,7 @@ func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext
 	datapointFunctions := ottl.CreateFactoryMap[ottldatapoint.TransformContext](
 		newConvertSumToGaugeFactory(),
 		newConvertGaugeToSumFactory(),
-		newConvertHistogramSumValToSumFactory(),
+		newextractSumMetricFactory(),
 		newConvertSummarySumValToSumFactory(),
 		newConvertSummaryCountValToSumFactory(),
 	)

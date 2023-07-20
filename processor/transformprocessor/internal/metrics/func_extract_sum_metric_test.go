@@ -96,7 +96,7 @@ type histogramTestCase struct {
 	want         func(pmetric.MetricSlice)
 }
 
-func Test_ConvertHistogramSumValToSum(t *testing.T) {
+func Test_extractSumMetric(t *testing.T) {
 	tests := []histogramTestCase{
 		{
 			name:         "histogram",
@@ -303,7 +303,7 @@ func Test_ConvertHistogramSumValToSum(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := convertHistogramSumValToSum(tt.temporality, tt.monotonicity)
+			evaluate, err := extractSumMetric(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
 
 			var datapoint interface{}
@@ -328,7 +328,7 @@ func Test_ConvertHistogramSumValToSum(t *testing.T) {
 	}
 }
 
-func Test_ConvertHistogramSumValToSum_validation(t *testing.T) {
+func Test_extractSumMetric_validation(t *testing.T) {
 	tests := []struct {
 		name          string
 		stringAggTemp string
@@ -340,7 +340,7 @@ func Test_ConvertHistogramSumValToSum_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := convertHistogramSumValToSum(tt.stringAggTemp, true)
+			_, err := extractSumMetric(tt.stringAggTemp, true)
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
 	}

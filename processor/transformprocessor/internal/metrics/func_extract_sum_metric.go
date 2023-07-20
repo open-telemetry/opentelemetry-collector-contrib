@@ -14,23 +14,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-type convertHistogramSumValToSumArguments struct {
+type extractSumMetricArguments struct {
 	StringAggTemp string `ottlarg:"0"`
 	Monotonic     bool   `ottlarg:"1"`
 }
 
-func newConvertHistogramSumValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
-	return ottl.NewFactory("convert_histogram_sum_val_to_sum", &convertHistogramSumValToSumArguments{}, createConvertHistogramSumValToSumFunction)
+func newextractSumMetricFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("extract_sum_metric", &extractSumMetricArguments{}, createExtractSumMetricFunction)
 }
 
-func createConvertHistogramSumValToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
-	args, ok := oArgs.(*convertHistogramSumValToSumArguments)
+func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	args, ok := oArgs.(*extractSumMetricArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("convertHistogramSumValToSumFactory args must be of type *convertHistogramSumValToSumArguments")
+		return nil, fmt.Errorf("extractSumMetricFactory args must be of type *extractSumMetricArguments")
 	}
 
-	return convertHistogramSumValToSum(args.StringAggTemp, args.Monotonic)
+	return extractSumMetric(args.StringAggTemp, args.Monotonic)
 }
 
 // this interface helps unify the logic for extracting data from different histogram types
@@ -42,7 +42,7 @@ type DataPoint interface {
 	Timestamp() pcommon.Timestamp
 }
 
-func convertHistogramSumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func extractSumMetric(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":

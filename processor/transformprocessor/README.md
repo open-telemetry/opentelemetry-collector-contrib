@@ -218,13 +218,13 @@ Examples:
 
 - `convert_gauge_to_sum("delta", true)`
 
-### convert_histogram_sum_val_to_sum
+### extract_sum_metric
 
 > **Note** This function supports Histograms, ExponentialHistograms and Summaries
 
-`convert_histogram_sum_val_to_sum(aggregation_temporality, is_monotonic)`
+`extract_sum_metric(aggregation_temporality, is_monotonic)`
 
-The `convert_histogram_sum_val_to_sum` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value.
+The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value.
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
@@ -234,10 +234,10 @@ The name for the new metric will be `<original metric name>_sum`. The fields tha
 
 Examples:
 
-- `convert_histogram_sum_val_to_sum("delta", true)`
+- `extract_sum_metric("delta", true)`
 
 
-- `convert_histogram_sum_val_to_sum("cumulative", false)`
+- `extract_sum_metric("cumulative", false)`
 
 ### convert_summary_count_val_to_sum
 
