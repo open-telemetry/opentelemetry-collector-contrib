@@ -274,6 +274,35 @@ func TestPodStore_decorateMem(t *testing.T) {
 	assert.Equal(t, float64(20), metric.GetField("container_memory_utilization_over_container_limit").(float64))
 }
 
+func TestPodStore_previousCleanupLocking(t *testing.T) {
+	podStore := getPodStore()
+	podStore.podClient = &mockPodClient{}
+	pod := getBaseTestPodInfo()
+	ctx := context.TODO()
+
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.K8sPodNameKey: "cpu-limit"}
+	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	metric := generateMetric(fields, tags)
+
+	running := true
+
+	go func() {
+		for running {
+			// manipulate last refreshed so that we are always forcing a refresh
+			podStore.lastRefreshed = time.Now().Add(-1 * time.Hour)
+			podStore.RefreshTick(ctx)
+		}
+	}()
+
+	for i := 0; i < 1000; i++ {
+		// status metrics push things to the previous list
+		podStore.addStatus(metric, pod)
+	}
+	running = false
+
+	// this test would crash without proper locking
+}
+
 func TestPodStore_addContainerCount(t *testing.T) {
 	pod := getBaseTestPodInfo()
 

@@ -144,26 +144,22 @@ func TestMapWithExpiryConcurrency(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		for i := 0; i < 30; i++ {
-			store.Lock()
 			sum, _ := store.Get(Key{MetricMetadata: "sum"})
 			newSum := MetricValue{
 				RawValue: sum.RawValue.(int) + 1,
 			}
 			store.Set(Key{MetricMetadata: "sum"}, newSum)
-			store.Unlock()
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		for i := 0; i < 30; i++ {
-			store.Lock()
 			sum, _ := store.Get(Key{MetricMetadata: "sum"})
 			newSum := MetricValue{
 				RawValue: sum.RawValue.(int) - 1,
 			}
 			store.Set(Key{MetricMetadata: "sum"}, newSum)
-			store.Unlock()
 		}
 		wg.Done()
 	}()

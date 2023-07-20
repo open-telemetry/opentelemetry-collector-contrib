@@ -22,7 +22,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -116,15 +115,14 @@ type podClient interface {
 }
 
 type PodStore struct {
-	cache            *mapWithExpiry
-	prevMeasurements map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
-	podClient        podClient
-	k8sClient        replicaSetInfoProvider
-	lastRefreshed    time.Time
-	nodeInfo         *nodeInfo
-	prefFullPodName  bool
-	logger           *zap.Logger
-	sync.Mutex
+	cache                     *mapWithExpiry
+	prevMeasurements          map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
+	podClient                 podClient
+	k8sClient                 replicaSetInfoProvider
+	lastRefreshed             time.Time
+	nodeInfo                  *nodeInfo
+	prefFullPodName           bool
+	logger                    *zap.Logger
 	addFullPodNameMetricLabel bool
 }
 
@@ -247,8 +245,6 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 }
 
 func (p *PodStore) getCachedEntry(podKey string) *cachedEntry {
-	p.Lock()
-	defer p.Unlock()
 	if content, ok := p.cache.Get(podKey); ok {
 		return content.(*cachedEntry)
 	}
@@ -256,8 +252,6 @@ func (p *PodStore) getCachedEntry(podKey string) *cachedEntry {
 }
 
 func (p *PodStore) setCachedEntry(podKey string, entry *cachedEntry) {
-	p.Lock()
-	defer p.Unlock()
 	p.cache.Set(podKey, entry)
 }
 
@@ -278,9 +272,6 @@ func (p *PodStore) cleanup(now time.Time) {
 	for _, prevMeasurement := range p.prevMeasurements {
 		prevMeasurement.CleanUp(now)
 	}
-
-	p.Lock()
-	defer p.Unlock()
 	p.cache.CleanUp(now)
 }
 
