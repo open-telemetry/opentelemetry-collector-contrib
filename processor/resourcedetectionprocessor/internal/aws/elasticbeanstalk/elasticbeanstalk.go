@@ -44,7 +44,6 @@ func NewDetector(_ processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 }
 
 func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
 	var conf io.ReadCloser
 
 	if d.fs.IsWindows() {
@@ -56,7 +55,7 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 	// Do not want to return error so it fails silently on non-EB instances
 	if err != nil {
 		// TODO: Log a more specific message with zap
-		return res, "", nil
+		return pcommon.NewResource(), "", nil
 	}
 
 	ebmd := &EbMetaData{}
@@ -65,24 +64,15 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 
 	if err != nil {
 		// TODO: Log a more specific error with zap
-		return res, "", err
+		return pcommon.NewResource(), "", err
 	}
 
-	attr := res.Attributes()
-	if d.resourceAttributes.CloudProvider.Enabled {
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	}
-	if d.resourceAttributes.CloudPlatform.Enabled {
-		attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	}
-	if d.resourceAttributes.ServiceInstanceID.Enabled {
-		attr.PutStr(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
-	}
-	if d.resourceAttributes.DeploymentEnvironment.Enabled {
-		attr.PutStr(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
-	}
-	if d.resourceAttributes.ServiceVersion.Enabled {
-		attr.PutStr(conventions.AttributeServiceVersion, ebmd.VersionLabel)
-	}
-	return res, conventions.SchemaURL, nil
+	rb := metadata.NewResourceBuilder(d.resourceAttributes)
+	rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	rb.SetServiceInstanceID(strconv.Itoa(ebmd.DeploymentID))
+	rb.SetDeploymentEnvironment(ebmd.EnvironmentName)
+	rb.SetServiceVersion(ebmd.VersionLabel)
+
+	return rb.Emit(), conventions.SchemaURL, nil
 }

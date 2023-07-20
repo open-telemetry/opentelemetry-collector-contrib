@@ -225,9 +225,30 @@ func defaultMockClient() client {
 		&cloudwatchlogs.FilterLogEventsOutput{
 			Events: []*cloudwatchlogs.FilteredLogEvent{
 				{
-					EventId:       &testEventID,
+					EventId:       &testEventIDs[0],
 					IngestionTime: aws.Int64(testIngestionTime),
 					LogStreamName: aws.String(testLogStreamName),
+					Message:       aws.String(testLogStreamMessage),
+					Timestamp:     aws.Int64(testTimeStamp),
+				},
+				{
+					EventId:       &testEventIDs[1],
+					IngestionTime: aws.Int64(testIngestionTime),
+					LogStreamName: aws.String(testLogStreamName),
+					Message:       aws.String(testLogStreamMessage),
+					Timestamp:     aws.Int64(testTimeStamp),
+				},
+				{
+					EventId:       &testEventIDs[2],
+					IngestionTime: aws.Int64(testIngestionTime),
+					LogStreamName: aws.String(testLogStreamName2),
+					Message:       aws.String(testLogStreamMessage),
+					Timestamp:     aws.Int64(testTimeStamp),
+				},
+				{
+					EventId:       &testEventIDs[3],
+					IngestionTime: aws.Int64(testIngestionTime),
+					LogStreamName: aws.String(testLogStreamName2),
 					Message:       aws.String(testLogStreamMessage),
 					Timestamp:     aws.Int64(testTimeStamp),
 				},
@@ -238,10 +259,16 @@ func defaultMockClient() client {
 }
 
 var (
-	testLogGroupName     = "test-log-group-name"
-	testLogStreamName    = "test-log-stream-name"
-	testLogStreamPrefix  = "test-log-stream"
-	testEventID          = "37134448277055698880077365577645869800162629528367333379"
+	testLogGroupName    = "test-log-group-name"
+	testLogStreamName   = "test-log-stream-name"
+	testLogStreamName2  = "test-log-stream-name-2"
+	testLogStreamPrefix = "test-log-stream"
+	testEventIDs        = []string{
+		"37134448277055698880077365577645869800162629528367333379",
+		"37134448277055698880077365577645869800162629528367333380",
+		"37134448277055698880077365577645869800162629528367333381",
+		"37134448277055698880077365577645869800162629528367333382",
+	}
 	testIngestionTime    = int64(1665166252124)
 	testTimeStamp        = int64(1665166251014)
 	testLogStreamMessage = `"time=\"2022-10-07T18:10:46Z\" level=info msg=\"access granted\" arn=\"arn:aws:iam::892146088969:role/AWSWesleyClusterManagerLambda-NodeManagerRole-16UPVDKA1KBGI\" client=\"127.0.0.1:50252\" groups=\"[]\" method=POST path=/authenticate uid=\"aws-iam-authenticator:892146088969:AROA47OAM7QE2NWPDFDCW\" username=\"eks:node-manager\""`
