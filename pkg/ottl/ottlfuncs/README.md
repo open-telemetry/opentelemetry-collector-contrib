@@ -459,6 +459,20 @@ Examples:
 
 - `IsString(attributes["maybe a string"])`
 
+### Len
+
+`Len(target)`
+
+The `Len` Converter returns the length of the target string.
+
+`target` is a `string`.
+
+If the `target` is not a string or does not exist, the `Len` Converter will return an error.
+
+Examples:
+
+- `Len(body)`
+
 ### Log
 
 `Log(value)`
