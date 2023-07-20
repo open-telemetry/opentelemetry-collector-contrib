@@ -19,7 +19,7 @@ type extractSumMetricArguments struct {
 	Monotonic     bool   `ottlarg:"1"`
 }
 
-func newextractSumMetricFactory() ottl.Factory[ottldatapoint.TransformContext] {
+func newExtractSumMetricFactory() ottl.Factory[ottldatapoint.TransformContext] {
 	return ottl.NewFactory("extract_sum_metric", &extractSumMetricArguments{}, createExtractSumMetricFunction)
 }
 
@@ -35,9 +35,10 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 
 // this interface helps unify the logic for extracting data from different histogram types
 // all supported metric types' datapoints implement it
-type DataPoint interface {
+type SumCountDataPoint interface {
 	Attributes() pcommon.Map
 	Sum() float64
+	Count() uint64
 	StartTimestamp() pcommon.Timestamp
 	Timestamp() pcommon.Timestamp
 }
@@ -72,7 +73,7 @@ func extractSumMetric(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottld
 			monotonic,
 		)
 
-		histogramDatapoint := tCtx.GetDataPoint().(DataPoint)
+		histogramDatapoint := tCtx.GetDataPoint().(SumCountDataPoint)
 		sumDp := sumMetric.Sum().DataPoints().AppendEmpty()
 		histogramDatapoint.Attributes().CopyTo(sumDp.Attributes())
 		sumDp.SetDoubleValue(histogramDatapoint.Sum())
