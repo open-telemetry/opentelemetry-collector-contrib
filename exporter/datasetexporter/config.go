@@ -35,7 +35,7 @@ type LogsSettings struct {
 	// Default value: false.
 	ExportResourceInfo bool `mapstructure:"export_resource_info_on_event"`
 
-	// ExportScopeInfo is optional flag that signals if scope info should be exported (when available) with each event. If scope
+	// ExportScopeInfo is an optional flag that signals if scope info should be exported (when available) with each event. If scope
 	// information is not utilized, it makes sense to disable exporting it since it will result in increased billable log volume.
 	ExportScopeInfo bool `mapstructure:"export_scope_info_on_event"`
 

@@ -27,9 +27,12 @@ dataset/full:
     export_resource_info_on_event: true
     export_scope_info_on_event: true
     decompose_complex_message_field: true
+<<<<<<< HEAD
   server_host:
     use_host_name: false
     server_host: "server-host"
+=======
+>>>>>>> main
   retry_on_failure:
     enabled: true
     initial_interval: 11

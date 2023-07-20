@@ -54,39 +54,36 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	var hostname string
 
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
-
 	osType, err := d.provider.OSType()
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS type: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	hostID, err := d.provider.HostID(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting host ID: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host ID: %w", err)
+	}
+
+	hostArch, err := d.provider.HostArch()
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
 	}
 
 	for _, source := range d.hostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
 		if err == nil {
-			if d.resourceAttributes.HostName.Enabled {
-				attrs.PutStr(conventions.AttributeHostName, hostname)
-			}
-			if d.resourceAttributes.OsType.Enabled {
-				attrs.PutStr(conventions.AttributeOSType, osType)
-			}
-			if d.resourceAttributes.HostID.Enabled {
-				attrs.PutStr(conventions.AttributeHostID, hostID)
-			}
-
-			return res, conventions.SchemaURL, nil
+			rb := metadata.NewResourceBuilder(d.resourceAttributes)
+			rb.SetHostName(hostname)
+			rb.SetOsType(osType)
+			rb.SetHostID(hostID)
+			rb.SetHostArch(hostArch)
+			return rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())
 	}
 
-	return res, "", errors.New("all hostname sources failed to get hostname")
+	return pcommon.NewResource(), "", errors.New("all hostname sources failed to get hostname")
 }
 
 // getHostname returns OS hostname

@@ -51,7 +51,8 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
 - `logs`:
-  - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
+    - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
+    - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
 - `server_host`:
   - `server_host` (default = ''): Specifies the server host to be used for the events. By default, no specific value is set.
   - `use_host_name` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.
