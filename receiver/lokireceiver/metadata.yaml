@@ -4,4 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib, sumo]
+  distributions:
+  - contrib
+  - grafana-agent
+  - sumo

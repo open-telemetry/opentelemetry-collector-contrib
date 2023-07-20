@@ -4,4 +4,7 @@ status:
   class: exporter
   stability:
     beta: [logs]
-  distributions: [contrib, observiq]
+  distributions:
+  - contrib
+  - grafana-agent
+  - observiq

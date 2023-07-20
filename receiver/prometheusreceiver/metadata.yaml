@@ -4,5 +4,11 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [core, contrib, splunk, observiq, sumo, aws]
-
+  distributions:
+  - core
+  - contrib
+  - aws
+  - grafana-agent
+  - observiq
+  - splunk
+  - sumo

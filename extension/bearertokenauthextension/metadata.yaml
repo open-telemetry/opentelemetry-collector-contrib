@@ -4,4 +4,9 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, observiq, sumo, redhat]
+  distributions:
+  - contrib
+  - grafana-agent
+  - observiq
+  - redhat
+  - sumo

@@ -4,4 +4,11 @@ status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [core, contrib, observiq, sumo, aws, redhat]
+  distributions:
+  - core
+  - contrib
+  - aws
+  - grafana-agent
+  - observiq
+  - redhat
+  - sumo
