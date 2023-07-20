@@ -80,8 +80,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 
 	containers := []ecsutil.ContainerMetadata{c1, c2, c3, c4}
 
-	dest := pcommon.NewMap()
-	resourceAttributes := metadata.ResourceAttributesConfig{
+	rb := metadata.NewResourceBuilder(metadata.ResourceAttributesConfig{
 		AwsEcsClusterArn:      metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsLaunchtype:      metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsTaskArn:         metadata.ResourceAttributeConfig{Enabled: true},
@@ -96,9 +95,9 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 		CloudPlatform:         metadata.ResourceAttributeConfig{Enabled: true},
 		CloudProvider:         metadata.ResourceAttributeConfig{Enabled: true},
 		CloudRegion:           metadata.ResourceAttributeConfig{Enabled: true},
-	}
-	addValidLogData(containers, &c4, "123", dest, resourceAttributes)
-	assert.Equal(t, 0, dest.Len())
+	})
+	addValidLogData(containers, &c4, "123", rb)
+	assert.Equal(t, 0, rb.Emit().Attributes().Len())
 }
 
 func Test_ecsDetectV4(t *testing.T) {

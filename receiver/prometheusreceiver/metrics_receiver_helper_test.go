@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -280,6 +279,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 					return false
 				}
 			}
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 		}
 	}
 	return true
@@ -401,6 +401,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 				}
 			}
 		}
@@ -575,7 +576,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, registry *featuregate.Registry, cfgMuts ...func(*promcfg.Config)) {
+func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, trimMetricSuffixes bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
@@ -589,7 +590,8 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex,
-	}, cms, registry)
+		TrimMetricSuffixes:   trimMetricSuffixes,
+	}, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called
@@ -672,6 +674,7 @@ func getTS(ms pmetric.MetricSlice) pcommon.Timestamp {
 		return m.Summary().DataPoints().At(0).Timestamp()
 	case pmetric.MetricTypeExponentialHistogram:
 		return m.ExponentialHistogram().DataPoints().At(0).Timestamp()
+	case pmetric.MetricTypeEmpty:
 	}
 	return 0
 }

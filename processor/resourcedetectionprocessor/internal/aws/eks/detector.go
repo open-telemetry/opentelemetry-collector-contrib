@@ -59,24 +59,18 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-
 	// Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)
 	if !isEKS {
 		detector.logger.Debug("Unable to identify EKS environment", zap.Error(err))
-		return res, "", err
+		return pcommon.NewResource(), "", err
 	}
 
-	attr := res.Attributes()
-	if detector.resourceAttributes.CloudProvider.Enabled {
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	}
-	if detector.resourceAttributes.CloudPlatform.Enabled {
-		attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
-	}
+	rb := metadata.NewResourceBuilder(detector.resourceAttributes)
+	rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
-	return res, conventions.SchemaURL, nil
+	return rb.Emit(), conventions.SchemaURL, nil
 }
 
 func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {

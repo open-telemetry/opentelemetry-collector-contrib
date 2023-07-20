@@ -80,27 +80,27 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponent(1))
+			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponentData)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryType(1), AttributeIndexType(1), AttributeQueryResult(1))
+			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryTypeAggregation, AttributeIndexTypePrimary, AttributeQueryResultAbort)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanType(1), AttributeScanResult(1))
+			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanTypeAggregation, AttributeScanResultAbort)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionType(1), AttributeTransactionResult(1))
+			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionTypeDelete, AttributeTransactionResultError)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionType(1), AttributeConnectionOp(1))
+			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionTypeClient, AttributeConnectionOpClose)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionType(1))
+			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionTypeClient)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -110,7 +110,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
 
-			metrics := mb.Emit(WithAerospikeNamespace("attr-val"), WithAerospikeNodeName("attr-val"))
+			metrics := mb.Emit(WithAerospikeNamespace("aerospike.namespace-val"), WithAerospikeNodeName("aerospike.node.name-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -126,14 +126,14 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.AerospikeNamespace.Enabled, ok)
 			if mb.resourceAttributesConfig.AerospikeNamespace.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "aerospike.namespace-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("aerospike.node.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.AerospikeNodeName.Enabled, ok)
 			if mb.resourceAttributesConfig.AerospikeNodeName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "aerospike.node.name-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 2)
@@ -245,7 +245,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("component")
 					assert.True(t, ok)
-					assert.Equal(t, "data", attrVal.Str())
+					assert.EqualValues(t, "data", attrVal.Str())
 				case "aerospike.namespace.query.count":
 					assert.False(t, validatedMetrics["aerospike.namespace.query.count"], "Found a duplicate in the metrics slice: aerospike.namespace.query.count")
 					validatedMetrics["aerospike.namespace.query.count"] = true
@@ -262,13 +262,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "aggregation", attrVal.Str())
+					assert.EqualValues(t, "aggregation", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("index")
 					assert.True(t, ok)
-					assert.Equal(t, "primary", attrVal.Str())
+					assert.EqualValues(t, "primary", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "abort", attrVal.Str())
+					assert.EqualValues(t, "abort", attrVal.Str())
 				case "aerospike.namespace.scan.count":
 					assert.False(t, validatedMetrics["aerospike.namespace.scan.count"], "Found a duplicate in the metrics slice: aerospike.namespace.scan.count")
 					validatedMetrics["aerospike.namespace.scan.count"] = true
@@ -285,10 +285,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "aggregation", attrVal.Str())
+					assert.EqualValues(t, "aggregation", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "abort", attrVal.Str())
+					assert.EqualValues(t, "abort", attrVal.Str())
 				case "aerospike.namespace.transaction.count":
 					assert.False(t, validatedMetrics["aerospike.namespace.transaction.count"], "Found a duplicate in the metrics slice: aerospike.namespace.transaction.count")
 					validatedMetrics["aerospike.namespace.transaction.count"] = true
@@ -305,10 +305,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "delete", attrVal.Str())
+					assert.EqualValues(t, "delete", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "error", attrVal.Str())
+					assert.EqualValues(t, "error", attrVal.Str())
 				case "aerospike.node.connection.count":
 					assert.False(t, validatedMetrics["aerospike.node.connection.count"], "Found a duplicate in the metrics slice: aerospike.node.connection.count")
 					validatedMetrics["aerospike.node.connection.count"] = true
@@ -325,10 +325,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "client", attrVal.Str())
+					assert.EqualValues(t, "client", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "close", attrVal.Str())
+					assert.EqualValues(t, "close", attrVal.Str())
 				case "aerospike.node.connection.open":
 					assert.False(t, validatedMetrics["aerospike.node.connection.open"], "Found a duplicate in the metrics slice: aerospike.node.connection.open")
 					validatedMetrics["aerospike.node.connection.open"] = true
@@ -345,7 +345,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "client", attrVal.Str())
+					assert.EqualValues(t, "client", attrVal.Str())
 				case "aerospike.node.memory.free":
 					assert.False(t, validatedMetrics["aerospike.node.memory.free"], "Found a duplicate in the metrics slice: aerospike.node.memory.free")
 					validatedMetrics["aerospike.node.memory.free"] = true
