@@ -8,9 +8,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
@@ -41,11 +41,16 @@ func newDefaultConfig() component.Config {
 func createTracesExporter(ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config) (exporter.Traces, error) {
+	c := cfg.(*Config)
+	te, e := newSSOTracesExporter(c, set)
+	if e != nil {
+		return nil, e
+	}
 
-	return exporterhelper.NewTracesExporter(ctx, set, cfg, func(ctx context.Context, ld ptrace.Traces) error {
-		return nil
-	},
-		exporterhelper.WithShutdown(func(ctx context.Context) error {
-			return nil
-		}))
+	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+		te.pushTraceData,
+		exporterhelper.WithStart(te.Start),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithShutdown(te.Shutdown),
+		exporterhelper.WithRetry(c.RetrySettings))
 }
