@@ -96,29 +96,44 @@ func TestTrie(t *testing.T) {
 				},
 				{
 					value:         []byte("ABCDEF"),
-					matchExpected: false,
+					matchExpected: true,
 				},
 				{
-					value:         []byte("ABCDEFG"),
+					value:         []byte("ABCDEFGHI"),
 					matchExpected: true,
 				},
 			},
 		},
 		{
-			name:         "TrieCase_SimilarKeys_3",
+			name:         "TrieCase_Different",
+			initialItems: []string{"ABCD", "XYZ"},
+			testCases: []testCase{
+				{
+					value: []byte("ABCEFG"),
+				},
+				{
+					value:         []byte("ABCDXYZ"),
+					matchExpected: true,
+				},
+				{
+					value: []byte("ABXE"),
+				},
+			},
+		},
+		{
+			name:         "TrieCase_Exact",
 			initialItems: []string{"ABCDEFG", "ABCD"},
 			testCases: []testCase{
 				{
-					value:          []byte("ABCDEFG"),
-					delete:         true,
-					deleteExpected: true,
+					value:         []byte("ABCDEFG"),
+					matchExpected: true,
 				},
 				{
 					value:         []byte("ABCD"),
 					matchExpected: true,
 				},
 				{
-					value:         []byte("ABCDEFG"),
+					value:         []byte("ABCDE"),
 					matchExpected: true,
 				},
 			},
@@ -140,6 +155,20 @@ func TestTrie(t *testing.T) {
 					delete: true,
 					// it should be false, as we haven't inserted such values
 					deleteExpected: false,
+				},
+			},
+		},
+		{
+			name:         "TrieCase_Complex",
+			initialItems: []string{"ABCDE", "ABC"},
+			testCases: []testCase{
+				{
+					value:         []byte("ABCDEXYZ"),
+					matchExpected: true,
+				},
+				{
+					value:         []byte("ABCXYZ"),
+					matchExpected: true,
 				},
 			},
 		},
@@ -165,7 +194,6 @@ func runTest(t *testing.T, trie *Trie, tc *testCase) {
 	} else {
 		assert.Equal(t, trie.HasKey(tc.value), tc.matchExpected)
 		if !tc.matchExpected {
-			assert.Equal(t, trie.HasKey(tc.value), false)
 			trie.Put(tc.value)
 		}
 	}

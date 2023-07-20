@@ -24,18 +24,21 @@ func NewTrie() *Trie {
 
 func (trie *Trie) HasKey(key []byte) bool {
 	node := trie
+	isEnd := false
 	for _, r := range key {
 		node = node.children[r]
 		if node == nil {
-			return false
+			return isEnd
 		}
 		// We have reached end of the current path and all the previous characters have matched
 		// Return if current node is leaf and it is not root
 		if node.isLeaf() && node != trie {
 			return true
 		}
+		// check for any ending node in our current path
+		isEnd = isEnd || node.isEnd
 	}
-	return false //  If it's an exact match, the final node will be a leaf.
+	return isEnd
 }
 
 // Put inserts the key into the trie
