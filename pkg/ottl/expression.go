@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
@@ -246,15 +247,25 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 }
 
 type FunctionGetter[K any] interface {
-	Get(ctx context.Context, tCtx K) (ExprFunc[K], error)
+	Get(ctx context.Context, tCtx K) (interface{}, error)
+	Caller(funcName interface{}, factoryMap map[string]Factory[K], params string) (Getter[K], error)
 }
 
 type StandardFunctionGetter[K any] struct {
 	Getter ExprFunc[K]
 }
 
-func (g StandardFunctionGetter[K]) Get(_ context.Context, _ K) (ExprFunc[K], error) {
-	return g.Getter, nil
+func (g StandardFunctionGetter[K]) Get(ctx context.Context, tctx K) (interface{}, error) {
+	return g.Getter(ctx, tctx)
+}
+
+func (g StandardFunctionGetter[K]) Caller(funcName interface{}, factoryMap map[string]Factory[K], params string) (Getter[K], error) {
+	parser, err := NewParser(factoryMap, nil, componenttest.NewNopTelemetrySettings())
+	if err != nil {
+		return nil, err
+	}
+	statement := funcName.(string) + "(\"" + params + "\")"
+	return parser.ConverterGetter(statement)
 }
 
 // PMapGetter is a Getter that must return a pcommon.Map.

@@ -680,7 +680,7 @@ func Test_StandardFunctionGetter(t *testing.T) {
 	tests := []struct {
 		name             string
 		getter           StandardFunctionGetter[any]
-		want             ExprFunc[any]
+		want             interface{}
 		valid            bool
 		expectedErrorMsg string
 	}{
@@ -688,10 +688,10 @@ func Test_StandardFunctionGetter(t *testing.T) {
 			name: "function type",
 			getter: StandardFunctionGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
-					return "str", nil
+					return "SHA256", nil
 				},
 			},
-			want:  func(context.Context, any) (interface{}, error) { return "str", nil },
+			want:  "SHA256",
 			valid: true,
 		},
 	}
@@ -699,10 +699,57 @@ func Test_StandardFunctionGetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			function, err := tt.getter.Get(context.Background(), nil)
-			funcVal, err := function(context.Background(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
-				assert.Equal(t, "str", funcVal)
+				assert.Equal(t, tt.want, function)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_FunctionGetter_Call(t *testing.T) {
+	factoryMap := CreateFactoryMap(
+		createFactory(
+			"SHA256",
+			&getterArguments{},
+			functionWithGetter,
+		),
+	)
+	tests := []struct {
+		name             string
+		getter           StandardFunctionGetter[any]
+		want             interface{}
+		params           string
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "function type",
+			getter: StandardFunctionGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
+					return "SHA256", nil
+				},
+			},
+			want:   "anything",
+			params: "test",
+			valid:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			function, err := tt.getter.Get(context.Background(), nil)
+			assert.NoError(t, err)
+			hashgetter, err := tt.getter.Caller(function, factoryMap, tt.params)
+			assert.NoError(t, err)
+			hashString, err := hashgetter.Get(context.Background(), nil)
+			assert.NoError(t, err)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, hashString)
 			} else {
 				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
