@@ -630,6 +630,12 @@ func (c *client) start(_ context.Context, host component.Host) (err error) {
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
 	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
+	if c.config.HeartbeatStartup {
+		pushLogFn := getPushLogFn(c)
+		if err := pushLogFn(context.Background(), generateHeartbeatLog(c.config.HecToOtelAttrs, c.buildInfo)); err != nil {
+			return fmt.Errorf("heartbeat on startup failed: %w", err)
+		}
+	}
 	return nil
 }
 

@@ -131,6 +131,9 @@ type Config struct {
 	// Heartbeat is the configuration to enable heartbeat
 	Heartbeat HecHeartbeat `mapstructure:"heartbeat"`
 
+	// HeartbeatStartup is used to send heartbeat events on exporter's startup
+	HeartbeatStartup bool `mapstructure:"heartbeat_startup"`
+
 	// Telemetry is the configuration for splunk hec exporter telemetry
 	Telemetry HecTelemetry `mapstructure:"telemetry"`
 }
