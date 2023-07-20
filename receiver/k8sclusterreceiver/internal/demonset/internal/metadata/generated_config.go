@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for k8s/job metrics.
+// MetricsConfig provides config for k8s/daemonset metrics.
 type MetricsConfig struct {
 	K8sDaemonsetCurrentScheduledNodes MetricConfig `mapstructure:"k8s.daemonset.current_scheduled_nodes"`
 	K8sDaemonsetDesiredScheduledNodes MetricConfig `mapstructure:"k8s.daemonset.desired_scheduled_nodes"`
@@ -53,7 +53,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for k8s/job resource attributes.
+// ResourceAttributesConfig provides config for k8s/daemonset resource attributes.
 type ResourceAttributesConfig struct {
 	K8sDaemonsetName       ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
 	K8sDaemonsetUID        ResourceAttributeConfig `mapstructure:"k8s.daemonset.uid"`
@@ -78,7 +78,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for k8s/job metrics builder.
+// MetricsBuilderConfig is a configuration for k8s/daemonset metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
