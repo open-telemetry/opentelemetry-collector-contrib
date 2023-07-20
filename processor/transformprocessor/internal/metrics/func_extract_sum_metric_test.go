@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
@@ -91,7 +92,7 @@ func getTestAttributes() pcommon.Map {
 type histogramTestCase struct {
 	name         string
 	input        pmetric.Metric
-	temporality  string
+	temporality  pmetric.AggregationTemporality
 	monotonicity bool
 	want         func(pmetric.MetricSlice)
 }
@@ -101,7 +102,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "histogram",
 			input:        getTestHistogramMetric(),
-			temporality:  "delta",
+			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				histogramMetric := getTestHistogramMetric()
@@ -122,7 +123,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "histogram (monotonic)",
 			input:        getTestHistogramMetric(),
-			temporality:  "delta",
+			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: true,
 			want: func(metrics pmetric.MetricSlice) {
 				histogramMetric := getTestHistogramMetric()
@@ -143,7 +144,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "histogram (cumulative)",
 			input:        getTestHistogramMetric(),
-			temporality:  "cumulative",
+			temporality:  pmetric.AggregationTemporalityCumulative,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				histogramMetric := getTestHistogramMetric()
@@ -164,7 +165,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "exponential histogram",
 			input:        getTestExponentialHistogramMetric(),
-			temporality:  "delta",
+			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				expHistogramMetric := getTestExponentialHistogramMetric()
@@ -185,7 +186,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "exponential histogram (monotonic)",
 			input:        getTestExponentialHistogramMetric(),
-			temporality:  "delta",
+			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: true,
 			want: func(metrics pmetric.MetricSlice) {
 				expHistogramMetric := getTestExponentialHistogramMetric()
@@ -206,7 +207,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "exponential histogram (cumulative)",
 			input:        getTestExponentialHistogramMetric(),
-			temporality:  "cumulative",
+			temporality:  pmetric.AggregationTemporalityCumulative,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				expHistogramMetric := getTestExponentialHistogramMetric()
@@ -227,7 +228,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "summary",
 			input:        getTestSummaryMetric(),
-			temporality:  "delta",
+			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				summaryMetric := getTestSummaryMetric()
@@ -248,7 +249,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "summary (monotonic)",
 			input:        getTestSummaryMetric(),
-			temporality:  "delta",
+			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: true,
 			want: func(metrics pmetric.MetricSlice) {
 				summaryMetric := getTestSummaryMetric()
@@ -269,7 +270,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "summary (cumulative)",
 			input:        getTestSummaryMetric(),
-			temporality:  "cumulative",
+			temporality:  pmetric.AggregationTemporalityCumulative,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				summaryMetric := getTestSummaryMetric()
@@ -290,7 +291,7 @@ func Test_extractSumMetric(t *testing.T) {
 		{
 			name:         "gauge (no op)",
 			input:        getTestGaugeMetric(),
-			temporality:  "delta",
+			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				gaugeMetric := getTestGaugeMetric()
@@ -303,7 +304,7 @@ func Test_extractSumMetric(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := extractSumMetric(tt.temporality, tt.monotonicity)
+			evaluate, err := extractSumMetric(ottl.Enum(tt.temporality), tt.monotonicity)
 			assert.NoError(t, err)
 
 			var datapoint interface{}
@@ -330,17 +331,17 @@ func Test_extractSumMetric(t *testing.T) {
 
 func Test_extractSumMetric_validation(t *testing.T) {
 	tests := []struct {
-		name          string
-		stringAggTemp string
+		name    string
+		aggTemp ottl.Enum
 	}{
 		{
-			name:          "invalid aggregation temporality",
-			stringAggTemp: "not a real aggregation temporality",
+			name:    "invalid aggregation temporality",
+			aggTemp: ottl.Enum(pmetric.MetricTypeEmpty),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := extractSumMetric(tt.stringAggTemp, true)
+			_, err := extractSumMetric(tt.aggTemp, true)
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
 	}

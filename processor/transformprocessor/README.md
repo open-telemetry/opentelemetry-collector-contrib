@@ -226,7 +226,7 @@ Examples:
 
 The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value.
 
-`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
+`aggregation_temporality` is an enum(`AGGREGATION_TEMPORALITY_DELTA` or `AGGREGATION_TEMPORALITY_CUMULATIVE`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
 The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 

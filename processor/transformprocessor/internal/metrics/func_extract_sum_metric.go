@@ -15,8 +15,8 @@ import (
 )
 
 type extractSumMetricArguments struct {
-	StringAggTemp string `ottlarg:"0"`
-	Monotonic     bool   `ottlarg:"1"`
+	AggTemp   ottl.Enum `ottlarg:"0"`
+	Monotonic bool      `ottlarg:"1"`
 }
 
 func newExtractSumMetricFactory() ottl.Factory[ottldatapoint.TransformContext] {
@@ -30,7 +30,7 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, fmt.Errorf("extractSumMetricFactory args must be of type *extractSumMetricArguments")
 	}
 
-	return extractSumMetric(args.StringAggTemp, args.Monotonic)
+	return extractSumMetric(args.AggTemp, args.Monotonic)
 }
 
 // this interface helps unify the logic for extracting data from different histogram types
@@ -43,16 +43,14 @@ type SumCountDataPoint interface {
 	Timestamp() pcommon.Timestamp
 }
 
-func extractSumMetric(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
-	var aggTemp pmetric.AggregationTemporality
-	switch stringAggTemp {
-	case "delta":
-		aggTemp = pmetric.AggregationTemporalityDelta
-	case "cumulative":
-		aggTemp = pmetric.AggregationTemporalityCumulative
+func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	aggTemp := pmetric.AggregationTemporality(aggTempEnum)
+	switch aggTemp {
+	case pmetric.AggregationTemporalityDelta, pmetric.AggregationTemporalityCumulative:
 	default:
-		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
+		return nil, fmt.Errorf("unknown aggregation temporality: %s", aggTemp.String())
 	}
+
 	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
 		metric := tCtx.GetMetric()
 

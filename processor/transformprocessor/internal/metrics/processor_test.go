@@ -283,7 +283,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 			},
 		},
 		{
-			statements: []string{`extract_sum_metric("delta", true) where metric.name == "operationB"`},
+			statements: []string{`extract_sum_metric(AGGREGATION_TEMPORALITY_DELTA, true) where metric.name == "operationB"`},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
 				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
