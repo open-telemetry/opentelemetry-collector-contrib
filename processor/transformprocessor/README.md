@@ -218,6 +218,27 @@ Examples:
 
 - `convert_gauge_to_sum("delta", true)`
 
+### convert_histogram_sum_val_to_sum
+
+> **Note** This function supports Histograms, ExponentialHistograms and Summaries
+
+`convert_histogram_sum_val_to_sum(aggregation_temporality, is_monotonic)`
+
+The `convert_histogram_sum_val_to_sum` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value.
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
+
+The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+
+> **Note** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+Examples:
+
+- `convert_histogram_sum_val_to_sum("delta", true)`
+
+
+- `convert_histogram_sum_val_to_sum("cumulative", false)`
+
 ### convert_summary_count_val_to_sum
 
 `convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)`
