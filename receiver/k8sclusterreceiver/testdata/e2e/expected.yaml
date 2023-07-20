@@ -157,6 +157,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
@@ -187,7 +188,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.ready_nodes
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.daemonset.name
@@ -202,6 +205,7 @@ resourceMetrics:
         - key: opencensus.resourcetype
           value:
             stringValue: k8s
+    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
     scopeMetrics:
       - metrics:
           - description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
@@ -232,7 +236,9 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.daemonset.ready_nodes
             unit: "1"
-        scope: {}
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
   - resource:
       attributes:
         - key: k8s.deployment.name
