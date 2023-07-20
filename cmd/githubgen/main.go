@@ -17,8 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
-const codeownersHeader = `
-#####################################################
+const codeownersHeader = `#####################################################
 #
 # List of approvers for OpenTelemetry Collector Contrib
 #
@@ -41,8 +40,14 @@ const codeownersHeader = `
 * @open-telemetry/collector-contrib-approvers
 `
 
-const allowlistHeader = `
-#####################################################
+const unmaintainedHeader = `
+
+## UNMAINTAINED components
+## The Github issue template generation code needs this to generate the corresponding labels.
+
+`
+
+const allowlistHeader = `#####################################################
 #
 # List of components in OpenTelemetry Collector Contrib
 # waiting on owners to be assigned
@@ -154,6 +159,7 @@ func run(folder string) error {
 	deprecatedList := "## DEPRECATED components\n"
 	unmaintainedList := "\n## UNMAINTAINED components\n"
 
+	unmaintainedCodeowners := unmaintainedHeader
 	currentFirstSegment := ""
 LOOP:
 	for _, key := range foldersList {
@@ -161,9 +167,10 @@ LOOP:
 		for stability, _ := range m.Status.Stability {
 			if stability == "unmaintained" {
 				unmaintainedList += key + "\n"
+				unmaintainedCodeowners += fmt.Sprintf("%s%s @open-telemetry/collector-contrib-approvers \n", key, strings.Repeat(" ", maxLength-len(key)))
 				continue LOOP
 			}
-			if stability == "deprecated" {
+			if stability == "deprecated" && (m.Status.Codeowners == nil || len(m.Status.Codeowners.Active) == 0) {
 				deprecatedList += key + "\n"
 			}
 		}
@@ -176,17 +183,15 @@ LOOP:
 				codeowners += "\n"
 			}
 			owners := ""
-			for i, owner := range m.Status.Codeowners.Active {
-				if i > 0 {
-					owners += " "
-				}
+			for _, owner := range m.Status.Codeowners.Active {
+				owners += " "
 				owners += "@" + owner
 			}
-			codeowners += fmt.Sprintf("%s%s @open-telemetry/collector-contrib-approvers %s\n", key, strings.Repeat(" ", maxLength-len(key)), owners)
+			codeowners += fmt.Sprintf("%s%s @open-telemetry/collector-contrib-approvers%s\n", key, strings.Repeat(" ", maxLength-len(key)), owners)
 		}
 	}
 
-	err = os.WriteFile(filepath.Join(".github", "CODEOWNERS"), []byte(codeowners), 0644)
+	err = os.WriteFile(filepath.Join(".github", "CODEOWNERS"), []byte(codeowners+unmaintainedCodeowners), 0644)
 	if err != nil {
 		return err
 	}
