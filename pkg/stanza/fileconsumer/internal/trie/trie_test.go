@@ -123,6 +123,26 @@ func TestTrie(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:         "TrieCase_DeleteFalse",
+			initialItems: []string{"ABCDEFG"},
+			testCases: []testCase{
+				{
+					value:          []byte("ABCDEFG"),
+					delete:         true,
+					deleteExpected: true,
+				},
+				{
+					value: []byte("ABCD"),
+				},
+				{
+					value:  []byte("XYZ"),
+					delete: true,
+					// it should be false, as we haven't inserted such values
+					deleteExpected: false,
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
