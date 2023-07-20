@@ -272,8 +272,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 
 		// Now we know resourceLogs is initialized and has one scopeLogs so we don't have to handle any special cases.
 
-		sl := resourceLogs.ScopeLogs()
-		logRecord := sl.At(0).LogRecords().AppendEmpty()
+		logRecord := resourceLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
 
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
