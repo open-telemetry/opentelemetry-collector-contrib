@@ -34,7 +34,7 @@ func NewMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
 	case SumoIC:
 		sumomarshaler := newSumoICMarshaler()
 		marshaler.logsMarshaler = &sumomarshaler
-		marshaler.fileFormat = "sumo_ic"
+		marshaler.fileFormat = "json.gz"
 	default:
 		return nil, ErrUnknownMarshaler
 	}
