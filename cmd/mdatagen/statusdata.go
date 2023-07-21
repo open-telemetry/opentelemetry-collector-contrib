@@ -36,7 +36,7 @@ type Status struct {
 	Codeowners    *Codeowners         `mapstructure:"codeowners"`
 }
 
-func (s Status) SortedDistributions() []string {
+func (s *Status) SortedDistributions() []string {
 	sorted := s.Distributions
 	sort.Slice(sorted, func(i, j int) bool {
 		if s.Distributions[i] == "core" {

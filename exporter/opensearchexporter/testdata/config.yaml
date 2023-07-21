@@ -1,0 +1,22 @@
+extensions:
+  basicauth/sample_basic_auth:
+    username: test
+    password: testtoo
+
+opensearch:
+  endpoint: https://opensearch.example.com:9200
+opensearch/trace:
+  dataset: ngnix
+  namespace: eu
+  tls:
+    insecure: false
+  endpoint: https://opensearch.example.com:9200
+  timeout: 2m
+  headers:
+    myheader: test
+  retry_on_failure:
+    enabled: true
+    initial_interval: 100000000
+    randomization_factor: 0.5
+  auth:
+    authenticator: sample_basic_auth

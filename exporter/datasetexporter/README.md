@@ -32,32 +32,39 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
   - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
-- `traces`:
-  - `aggregate` (default = false): Count the number of spans and errors belonging to a trace.
-  - `max_wait` (default = 5s): The maximum waiting for all spans from single trace to arrive; ignored if `aggregate` is false.
 - `logs`:
   - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
+  - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
+  - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
-
 ### Example
 
 ```yaml
-
 exporters:
-  dataset:
-    # DataSet API URL
+  dataset/logs:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
     dataset_url: https://app.scalyr.com
     # API Key
     api_key: your_api_key
     buffer:
-      # Send buffer to the API at least every 10s
-      max_lifetime: 10s
+      # Send buffer to the API at least every 5s
+      max_lifetime: 5s
       # Group data based on these attributes
       group_by:
         - attributes.container_id
+
+  dataset/traces:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
+    dataset_url: https://app.scalyr.com
+    # API Key
+    api_key: your_api_key
+    buffer:
+      max_lifetime: 15s
+      group_by:
+        - resource_service.instance.id
 
 service:
   pipelines:
@@ -65,10 +72,10 @@ service:
       receivers: [otlp]
       processors: [batch]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/logs]
     traces:
       receivers: [otlp]
       processors: [batch]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/traces]
 ```
