@@ -70,7 +70,6 @@ func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (expor
 	if err != nil {
 		return nil, err
 	}
-
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
 	if err != nil {
 		return nil, err

@@ -62,7 +62,6 @@ func fillLogOne(log plog.LogRecord) {
 	attNestedMap := attMap.PutEmptyMap("nested")
 	attNestedMap.PutStr("string", "v1")
 	attNestedMap.PutDouble("number", 499)
-
 }
 
 func fillLogTwo(log plog.LogRecord) {

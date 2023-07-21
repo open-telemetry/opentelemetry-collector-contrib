@@ -96,7 +96,6 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 	}
 
 }
-
 func TestSetTimeStamp(t *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

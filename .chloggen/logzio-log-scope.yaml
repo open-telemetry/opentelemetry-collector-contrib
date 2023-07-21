@@ -13,4 +13,4 @@ issues: [20659]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: when exists, scope name will be add to exported logs under the scopeName field.
+subtext: when it exists, scope name will be added to exported logs under the scopeName field.
