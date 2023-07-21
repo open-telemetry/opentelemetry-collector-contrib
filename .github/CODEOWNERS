@@ -96,6 +96,7 @@ extension/jaegerremotesampling/                          @open-telemetry/collect
 extension/oauth2clientauthextension/                     @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/dockerobserver/                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+extension/observer/ecsobserver/                          @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/ecstaskobserver/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/hostobserver/                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                          @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
