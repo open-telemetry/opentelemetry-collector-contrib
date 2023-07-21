@@ -24,7 +24,9 @@
 {{- $codeowners := userLinks .Status.Codeowners.Active }}
 {{- $emeritus := userLinks .Status.Codeowners.Emeritus }}
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | {{ stringsJoin $codeowners ", " }} |
+{{- if $emeritus }}
 | Emeritus      | {{ stringsJoin $emeritus ", " }} |
+{{- end }}
 {{- end }}
 {{range $stability, $val := .Status.Stability}}
 [{{ $stability }}]: https://github.com/open-telemetry/opentelemetry-collector#{{ $stability }}
