@@ -75,6 +75,16 @@ type EntityEvent struct {
 	orig plog.LogRecord
 }
 
+// Timestamp of the event.
+func (e EntityEvent) Timestamp() pcommon.Timestamp {
+	return e.orig.Timestamp()
+}
+
+// SetTimestamp sets the event timestamp.
+func (e EntityEvent) SetTimestamp(timestamp pcommon.Timestamp) {
+	e.orig.SetTimestamp(timestamp)
+}
+
 // ID of the entity.
 func (e EntityEvent) ID() pcommon.Map {
 	m, ok := e.orig.Attributes().Get(semconvOtelEntityID)
