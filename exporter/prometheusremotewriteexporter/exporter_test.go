@@ -5,12 +5,15 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"sync"
 	"testing"
+
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -289,13 +292,13 @@ func Test_export(t *testing.T) {
 			*ts1,
 			false,
 			http.StatusAccepted,
-			true,
+			false,
 		}, {
 			"error_status_code_case",
 			*ts1,
 			true,
 			http.StatusForbidden,
-			true,
+			false,
 		},
 	}
 
@@ -552,7 +555,7 @@ func Test_PushMetrics(t *testing.T) {
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusServiceUnavailable,
-			returnErr:          true,
+			returnErr:          false,
 			// When using the WAL, it returns success once the data is persisted to the WAL
 			skipForWAL: true,
 		},
@@ -977,4 +980,75 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// To ensure a deterministic ordering, sort the TimeSeries by Label Name.
 	assert.Equal(t, want, gotFromUpload)
 	assert.Equal(t, gotFromWAL, gotFromUpload)
+}
+
+func TestRetryOn5xx(t *testing.T) {
+	// Create a mock HTTP server with a counter to simulate a 5xx error on the first attempt and a 2xx success on the second attempt
+	attempts := 0
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if attempts == 0 {
+			attempts++
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer mockServer.Close()
+
+	endpointURL, err := url.Parse(mockServer.URL)
+	assert.NoError(t, err)
+
+	// Create the prwExporter
+	exporter := &prwExporter{
+		endpointURL: endpointURL,
+		client:      http.DefaultClient,
+	}
+
+	ctx := context.Background()
+
+	// Execute the write request and verify that the exporter returns a non-permanent error on the first attempt.
+	err = exporter.execute(ctx, &prompb.WriteRequest{})
+	assert.Error(t, err)
+	assert.True(t, strings.Contains(err.Error(), "remote write returned HTTP status 500"))
+	assert.False(t, consumererror.IsPermanent(err))
+
+	// Execute the write request again and verify that the exporter does not return an error on the second attempt
+	err = exporter.execute(ctx, &prompb.WriteRequest{})
+	assert.NoError(t, err)
+}
+
+func TestPartitionTimeSeries(t *testing.T) {
+	// Test input data
+	tsMap := map[string]*prompb.TimeSeries{
+		"cpu_usage_total": {
+			Labels: []prompb.Label{
+				{Name: "instance", Value: "node1"},
+				{Name: "job", Value: "webserver"},
+			},
+		},
+		"memory_usage_total": {
+			Labels: []prompb.Label{
+				{Name: "instance", Value: "node2"},
+				{Name: "job", Value: "webserver"},
+			},
+		},
+	}
+
+	concurrencyLimit := 2
+
+	partitions := partitionTimeSeries(tsMap, concurrencyLimit)
+
+	// Check the number of partitions
+	if len(partitions) != concurrencyLimit {
+		t.Errorf("Expected %d partitions, got %d", concurrencyLimit, len(partitions))
+	}
+
+	// Check the number of time series in each partition
+	totalTimeSeries := 0
+	for _, partition := range partitions {
+		totalTimeSeries += len(partition)
+	}
+	if totalTimeSeries != len(tsMap) {
+		t.Errorf("Expected %d time series in partitions, got %d", len(tsMap), totalTimeSeries)
+	}
 }
