@@ -6,6 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [observiq], [splunk], [sumo] |
 | Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fwindowseventlog%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fwindowseventlog%20&label=closed&color=blue&logo=opentelemetry) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski), [@armstrmi](https://www.github.com/armstrmi) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [observiq]: https://github.com/observIQ/observiq-otel-collector

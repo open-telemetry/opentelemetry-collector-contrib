@@ -3,6 +3,7 @@ type: resourcedetectionprocessor/azure
 parent: resourcedetection
 
 status:
+  class: processor
   codeowners:
     active: [mx-psi]
 
