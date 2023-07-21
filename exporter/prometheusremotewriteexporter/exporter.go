@@ -199,11 +199,20 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 				err = consumererror.NewPermanent(err)
 			}
 
-			// Submit each batch by calling the export function with the entire slice of WriteRequests
-			if errExecute := prwe.export(ctx, requests); errExecute != nil {
-				// We will log the error here, but not return it immediately.
-				// Instead, we'll let the worker complete its execution.
-				prwe.settings.Logger.Error("Failed to export data:", zap.Error(errExecute))
+			if !prwe.walEnabled() {
+				// WAL is not enabled, perform a direct export
+				if errExecute := prwe.export(ctx, requests); errExecute != nil {
+					// We will log the error here, but not return it immediately.
+					// Instead, we'll let the worker complete its execution.
+					prwe.settings.Logger.Error("Failed to export data:", zap.Error(errExecute))
+				}
+			} else {
+				// WAL is enabled, persist requests to the WAL for later export
+				if err := prwe.wal.persistToWAL(requests); err != nil {
+					// Log the error and return a permanent consumer error
+					err = consumererror.NewPermanent(err)
+					prwe.settings.Logger.Error("Failed to persist to WAL:", zap.Error(err))
+				}
 			}
 		}(partitions[i])
 	}
