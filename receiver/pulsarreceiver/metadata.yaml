@@ -6,4 +6,4 @@ status:
     alpha: [metrics, traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, tjiuming]
+    active: [dmitryax, dao-jun]
