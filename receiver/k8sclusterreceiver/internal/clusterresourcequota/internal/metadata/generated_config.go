@@ -55,7 +55,6 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for k8s/clusterresourcequota resource attributes.
 type ResourceAttributesConfig struct {
-	K8sNamespaceName          ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	OpencensusResourcetype    ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
 	OpenshiftClusterquotaName ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID  ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
@@ -63,9 +62,6 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		K8sNamespaceName: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		OpencensusResourcetype: ResourceAttributeConfig{
 			Enabled: true,
 		},

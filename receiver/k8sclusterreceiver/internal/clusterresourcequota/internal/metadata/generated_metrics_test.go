@@ -56,21 +56,21 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1)
+			mb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1)
+			mb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOpenshiftClusterquotaLimitDataPoint(ts, 1)
+			mb.RecordOpenshiftClusterquotaLimitDataPoint(ts, 1, "resource-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, 1)
+			mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, 1, "resource-val")
 
-			metrics := mb.Emit(WithK8sNamespaceName("k8s.namespace.name-val"), WithOpencensusResourcetype("opencensus.resourcetype-val"), WithOpenshiftClusterquotaName("openshift.clusterquota.name-val"), WithOpenshiftClusterquotaUID("openshift.clusterquota.uid-val"))
+			metrics := mb.Emit(WithOpencensusResourcetype("opencensus.resourcetype-val"), WithOpenshiftClusterquotaName("openshift.clusterquota.name-val"), WithOpenshiftClusterquotaUID("openshift.clusterquota.uid-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -81,14 +81,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
+			attrVal, ok := rm.Resource().Attributes().Get("opencensus.resourcetype")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
 			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
@@ -110,7 +103,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.EqualValues(t, "openshift.clusterquota.uid-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 4)
+			assert.Equal(t, attrCount, 3)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -135,6 +128,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("k8s.namespace.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("resource")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resource-val", attrVal.Str())
 				case "openshift.appliedclusterquota.used":
 					assert.False(t, validatedMetrics["openshift.appliedclusterquota.used"], "Found a duplicate in the metrics slice: openshift.appliedclusterquota.used")
 					validatedMetrics["openshift.appliedclusterquota.used"] = true
@@ -147,6 +146,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("k8s.namespace.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("resource")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resource-val", attrVal.Str())
 				case "openshift.clusterquota.limit":
 					assert.False(t, validatedMetrics["openshift.clusterquota.limit"], "Found a duplicate in the metrics slice: openshift.clusterquota.limit")
 					validatedMetrics["openshift.clusterquota.limit"] = true
@@ -159,6 +164,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("resource")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resource-val", attrVal.Str())
 				case "openshift.clusterquota.used":
 					assert.False(t, validatedMetrics["openshift.clusterquota.used"], "Found a duplicate in the metrics slice: openshift.clusterquota.used")
 					validatedMetrics["openshift.clusterquota.used"] = true
@@ -171,6 +179,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("resource")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resource-val", attrVal.Str())
 				}
 			}
 		})

@@ -22,6 +22,13 @@ The upper limit for a particular resource in a specific namespace.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| k8s.namespace.name | The k8s namespace name. | Any Str |
+| resource | The name of the resource on which the cluster quota is applied | Any Str |
+
 ### openshift.appliedclusterquota.used
 
 The usage for a particular resource in a specific namespace.
@@ -29,6 +36,13 @@ The usage for a particular resource in a specific namespace.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| k8s.namespace.name | The k8s namespace name. | Any Str |
+| resource | The name of the resource on which the cluster quota is applied | Any Str |
 
 ### openshift.clusterquota.limit
 
@@ -38,6 +52,12 @@ The configured upper limit for a particular resource.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| resource | The name of the resource on which the cluster quota is applied | Any Str |
+
 ### openshift.clusterquota.used
 
 The usage for a particular resource with a configured limit.
@@ -46,11 +66,16 @@ The usage for a particular resource with a configured limit.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| resource | The name of the resource on which the cluster quota is applied | Any Str |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| k8s.namespace.name | The k8s namespace name. | Any Str | true |
 | opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |

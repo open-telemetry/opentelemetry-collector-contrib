@@ -24,9 +24,10 @@ func (m *metricOpenshiftAppliedclusterquotaLimit) init() {
 	m.data.SetDescription("The upper limit for a particular resource in a specific namespace.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOpenshiftAppliedclusterquotaLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOpenshiftAppliedclusterquotaLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -34,6 +35,8 @@ func (m *metricOpenshiftAppliedclusterquotaLimit) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.namespace.name", k8sNamespaceNameAttributeValue)
+	dp.Attributes().PutStr("resource", resourceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -73,9 +76,10 @@ func (m *metricOpenshiftAppliedclusterquotaUsed) init() {
 	m.data.SetDescription("The usage for a particular resource in a specific namespace.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOpenshiftAppliedclusterquotaUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOpenshiftAppliedclusterquotaUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -83,6 +87,8 @@ func (m *metricOpenshiftAppliedclusterquotaUsed) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("k8s.namespace.name", k8sNamespaceNameAttributeValue)
+	dp.Attributes().PutStr("resource", resourceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -122,9 +128,10 @@ func (m *metricOpenshiftClusterquotaLimit) init() {
 	m.data.SetDescription("The configured upper limit for a particular resource.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOpenshiftClusterquotaLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOpenshiftClusterquotaLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -132,6 +139,7 @@ func (m *metricOpenshiftClusterquotaLimit) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("resource", resourceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -171,9 +179,10 @@ func (m *metricOpenshiftClusterquotaUsed) init() {
 	m.data.SetDescription("The usage for a particular resource with a configured limit.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricOpenshiftClusterquotaUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricOpenshiftClusterquotaUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -181,6 +190,7 @@ func (m *metricOpenshiftClusterquotaUsed) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("resource", resourceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -262,15 +272,6 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
-
-// WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
-func WithK8sNamespaceName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNamespaceName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
-		}
-	}
-}
 
 // WithOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute for current resource.
 func WithOpencensusResourcetype(val string) ResourceMetricsOption {
@@ -357,23 +358,23 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordOpenshiftAppliedclusterquotaLimitDataPoint adds a data point to openshift.appliedclusterquota.limit metric.
-func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOpenshiftAppliedclusterquotaLimit.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
+	mb.metricOpenshiftAppliedclusterquotaLimit.recordDataPoint(mb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
 }
 
 // RecordOpenshiftAppliedclusterquotaUsedDataPoint adds a data point to openshift.appliedclusterquota.used metric.
-func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOpenshiftAppliedclusterquotaUsed.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
+	mb.metricOpenshiftAppliedclusterquotaUsed.recordDataPoint(mb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
 }
 
 // RecordOpenshiftClusterquotaLimitDataPoint adds a data point to openshift.clusterquota.limit metric.
-func (mb *MetricsBuilder) RecordOpenshiftClusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOpenshiftClusterquotaLimit.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordOpenshiftClusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	mb.metricOpenshiftClusterquotaLimit.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordOpenshiftClusterquotaUsedDataPoint adds a data point to openshift.clusterquota.used metric.
-func (mb *MetricsBuilder) RecordOpenshiftClusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricOpenshiftClusterquotaUsed.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordOpenshiftClusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	mb.metricOpenshiftClusterquotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

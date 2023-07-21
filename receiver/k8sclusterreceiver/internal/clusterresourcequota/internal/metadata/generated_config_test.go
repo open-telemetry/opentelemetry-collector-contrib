@@ -32,7 +32,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OpenshiftClusterquotaUsed:         MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					K8sNamespaceName:          ResourceAttributeConfig{Enabled: true},
 					OpencensusResourcetype:    ResourceAttributeConfig{Enabled: true},
 					OpenshiftClusterquotaName: ResourceAttributeConfig{Enabled: true},
 					OpenshiftClusterquotaUID:  ResourceAttributeConfig{Enabled: true},
@@ -49,7 +48,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OpenshiftClusterquotaUsed:         MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					K8sNamespaceName:          ResourceAttributeConfig{Enabled: false},
 					OpencensusResourcetype:    ResourceAttributeConfig{Enabled: false},
 					OpenshiftClusterquotaName: ResourceAttributeConfig{Enabled: false},
 					OpenshiftClusterquotaUID:  ResourceAttributeConfig{Enabled: false},

@@ -10,8 +10,6 @@ all_set:
     openshift.clusterquota.used:
       enabled: true
   resource_attributes:
-    k8s.namespace.name:
-      enabled: true
     opencensus.resourcetype:
       enabled: true
     openshift.clusterquota.name:
@@ -29,8 +27,6 @@ none_set:
     openshift.clusterquota.used:
       enabled: false
   resource_attributes:
-    k8s.namespace.name:
-      enabled: false
     opencensus.resourcetype:
       enabled: false
     openshift.clusterquota.name:
