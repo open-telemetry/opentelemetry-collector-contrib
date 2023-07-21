@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -204,7 +205,7 @@ func getPodStore() *PodStore {
 	return &PodStore{
 		cache:            newMapWithExpiry(time.Minute),
 		nodeInfo:         nodeInfo,
-		prevMeasurements: make(map[string]*mapWithExpiry),
+		prevMeasurements: sync.Map{},
 		logger:           zap.NewNop(),
 	}
 }
@@ -284,13 +285,17 @@ func TestPodStore_previousCleanupLocking(t *testing.T) {
 	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	metric := generateMetric(fields, tags)
 
-	running := true
-
+	quit := make(chan bool)
 	go func() {
-		for running {
-			// manipulate last refreshed so that we are always forcing a refresh
-			podStore.lastRefreshed = time.Now().Add(-1 * time.Hour)
-			podStore.RefreshTick(ctx)
+		for {
+			select {
+			case <-quit:
+				return
+			default:
+				// manipulate last refreshed so that we are always forcing a refresh
+				podStore.lastRefreshed = time.Now().Add(-1 * time.Hour)
+				podStore.RefreshTick(ctx)
+			}
 		}
 	}()
 
@@ -298,8 +303,8 @@ func TestPodStore_previousCleanupLocking(t *testing.T) {
 		// status metrics push things to the previous list
 		podStore.addStatus(metric, pod)
 	}
-	running = false
 
+	quit <- true
 	// this test would crash without proper locking
 }
 
