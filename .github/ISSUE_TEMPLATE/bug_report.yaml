@@ -26,6 +26,7 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/exceptions
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -81,6 +82,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -88,6 +90,7 @@ body:
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
+      - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
