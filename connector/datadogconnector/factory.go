@@ -11,7 +11,7 @@ import (
 const (
 	defaultVal = 0
 	// this is the name used to refer to the connector in the config.yaml
-	typeStr = "datadconnector"
+	typeStr = "datadog"
 	// datadogComponent defines the default component that will be used for exporting metrics.
 )
 
@@ -27,8 +27,7 @@ func NewFactory() connector.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	// return &Config{}
-	return struct{}{}
+	return &struct{}{}
 }
 
 // defines the consumer type of the connector

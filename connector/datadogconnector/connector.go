@@ -16,7 +16,6 @@ import (
 
 // schema for connector
 type connectorImp struct {
-	config          Config
 	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest data after connector
 	count           int
 	logger          *zap.Logger
@@ -41,7 +40,6 @@ type connectorImp struct {
 // function to create a new connector
 func newConnector(logger *zap.Logger, config component.Config) (*connectorImp, error) {
 	logger.Info("Building simpleconnector connector")
-	cfg := config.(*Config)
 	in := make(chan pb.StatsPayload, 100)
 	trans, err := metrics.NewTranslator(logger)
 
@@ -54,7 +52,6 @@ func newConnector(logger *zap.Logger, config component.Config) (*connectorImp, e
 		agent:      newAgent(ctx, in),
 		translator: trans,
 		in:         in,
-		config:     *cfg,
 		exit:       make(chan struct{}),
 	}, nil
 }
