@@ -58,6 +58,60 @@ func Test_EntityEventsSlice(t *testing.T) {
 	assert.Equal(t, 1, slice.Len())
 }
 
+func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
+	// Prepare an event slice.
+	slice := NewEntityEventsSlice()
+	event := slice.AppendEmpty()
+
+	event.ID().PutStr("k8s.pod.uid", "123")
+	state := event.SetEntityState()
+	state.SetEntityType("k8s.pod")
+	state.Attributes().PutStr("label1", "value1")
+
+	event = slice.AppendEmpty()
+	event.ID().PutStr("k8s.node.uid", "abc")
+	event.SetEntityDelete()
+
+	// Convert to logs.
+	logs := slice.ConvertAndMoveToLogs()
+
+	// Check that all 2 events are moved.
+	assert.Equal(t, 0, slice.Len())
+	assert.Equal(t, 2, logs.LogRecordCount())
+
+	assert.Equal(t, 1, logs.ResourceLogs().Len())
+
+	scopeLogs := logs.ResourceLogs().At(0).ScopeLogs().At(0)
+
+	// Check the Scope
+	v, ok := scopeLogs.Scope().Attributes().Get(semconvOtelEntityEventAsScope)
+	assert.True(t, ok)
+	assert.Equal(t, true, v.Bool())
+
+	records := scopeLogs.LogRecords()
+	assert.Equal(t, 2, records.Len())
+
+	// Check the first event.
+	attrs := records.At(0).Attributes().AsRaw()
+	assert.EqualValues(
+		t, map[string]any{
+			semconvOtelEntityEventName:  semconvEventEntityEventState,
+			semconvOtelEntityType:       "k8s.pod",
+			semconvOtelEntityID:         map[string]any{"k8s.pod.uid": "123"},
+			semconvOtelEntityAttributes: map[string]any{"label1": "value1"},
+		}, attrs,
+	)
+
+	// Check the second event.
+	attrs = records.At(1).Attributes().AsRaw()
+	assert.EqualValues(
+		t, map[string]any{
+			semconvOtelEntityEventName: semconvEventEntityEventDelete,
+			semconvOtelEntityID:        map[string]any{"k8s.node.uid": "abc"},
+		}, attrs,
+	)
+}
+
 func Test_EntityEventType(t *testing.T) {
 	lr := plog.NewLogRecord()
 	e := EntityEvent{lr}
