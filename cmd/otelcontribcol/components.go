@@ -20,6 +20,8 @@ import (
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	exceptionsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
+	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	alibabacloudlogserviceexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -98,6 +100,7 @@ import (
 	metricstransformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	probabilisticsamplerprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	redactionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
+	remoteobserverprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor"
 	resourcedetectionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	resourceprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	routingprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
@@ -188,6 +191,7 @@ import (
 	udplogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	vcenterreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 	wavefrontreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
+	webhookeventreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 	windowseventlogreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	windowsperfcountersreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 	zipkinreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
@@ -308,6 +312,7 @@ func components() (otelcol.Factories, error) {
 		udplogreceiver.NewFactory(),
 		vcenterreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
+		webhookeventreceiver.NewFactory(),
 		snmpreceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
@@ -395,6 +400,7 @@ func components() (otelcol.Factories, error) {
 		spanprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
+		remoteobserverprocessor.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -403,6 +409,8 @@ func components() (otelcol.Factories, error) {
 	factories.Connectors, err = connector.MakeFactoryMap(
 		forwardconnector.NewFactory(),
 		countconnector.NewFactory(),
+		exceptionsconnector.NewFactory(),
+		routingconnector.NewFactory(),
 		servicegraphconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
 	)

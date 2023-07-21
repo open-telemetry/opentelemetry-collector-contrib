@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
 | Distributions | [contrib], [observiq], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fzookeeper%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fzookeeper%20&label=closed&color=blue&logo=opentelemetry) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -19,6 +20,7 @@ to be enabled for the receiver to be able to collect metrics.
 
 - `endpoint`: (default = `:2181`) Endpoint to connect to collect metrics. Takes the form `host:port`.
 - `timeout`: (default = `10s`) Timeout within which requests should be completed.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 Example configuration.
 
@@ -27,9 +29,13 @@ receivers:
   zookeeper:
     endpoint: "localhost:2181"
     collection_interval: 20s
+    initial_delay: 1s
 ```
 
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
+## Limitations
+
+This receiver does not support scraping metrics from Zookeeper's [New Metric System](https://zookeeper.apache.org/doc/r3.6.3/zookeeperMonitor.html#Metrics-System).

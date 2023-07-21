@@ -4,10 +4,12 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
-| Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Distributions | [contrib], [aws], [observiq], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fkafka%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fkafka%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[aws]: https://github.com/aws-observability/aws-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
@@ -25,7 +27,7 @@ The following settings can be optionally configured:
 - `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to export to.
 - `encoding` (default = otlp_proto): The encoding of the traces sent to kafka. All available encodings:
   - `otlp_proto`: payload is Protobuf serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs.
-  - `otlp_json`:  ** EXPERIMENTAL ** payload is JSON serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs. 
+  - `otlp_json`:  payload is JSON serialized from `ExportTraceServiceRequest` if set as a traces exporter or `ExportMetricsServiceRequest` for metrics or `ExportLogsServiceRequest` for logs. 
   - The following encodings are valid *only* for **traces**.
     - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
     - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.\
@@ -38,7 +40,8 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
-    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM or PLAIN)
+    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM or PLAIN)
+    - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM mechanism
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
   - `tls`
@@ -55,14 +58,15 @@ The following settings can be optionally configured:
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
-    - `use_keytab`:  Use of keytab instead of password, if this is true, keytab file will be used instead of password
+    - `use_keytab`: Use of keytab instead of password, if this is true, keytab file will be used instead of password
     - `username`: The Kerberos username used for authenticate with KDC
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
 - `metadata`
-  - `full` (default = true): Whether to maintain a full set of metadata. 
-                                    When disabled the client does not make the initial request to broker at the startup.
+  - `full` (default = true): Whether to maintain a full set of metadata. When
+    disabled, the client does not make the initial request to broker at the
+    startup.
   - `retry`
     - `max` (default = 3): The number of retries to get metadata
     - `backoff` (default = 250ms): How long to wait between metadata retries

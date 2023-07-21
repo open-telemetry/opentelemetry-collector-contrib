@@ -42,10 +42,13 @@ type MetricsConfig struct {
 	ContainerCPUUsageSystem                    MetricConfig `mapstructure:"container.cpu.usage.system"`
 	ContainerCPUUsageTotal                     MetricConfig `mapstructure:"container.cpu.usage.total"`
 	ContainerCPUUsageUsermode                  MetricConfig `mapstructure:"container.cpu.usage.usermode"`
+	ContainerCPUUtilization                    MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerMemoryActiveAnon                  MetricConfig `mapstructure:"container.memory.active_anon"`
 	ContainerMemoryActiveFile                  MetricConfig `mapstructure:"container.memory.active_file"`
+	ContainerMemoryAnon                        MetricConfig `mapstructure:"container.memory.anon"`
 	ContainerMemoryCache                       MetricConfig `mapstructure:"container.memory.cache"`
 	ContainerMemoryDirty                       MetricConfig `mapstructure:"container.memory.dirty"`
+	ContainerMemoryFile                        MetricConfig `mapstructure:"container.memory.file"`
 	ContainerMemoryHierarchicalMemoryLimit     MetricConfig `mapstructure:"container.memory.hierarchical_memory_limit"`
 	ContainerMemoryHierarchicalMemswLimit      MetricConfig `mapstructure:"container.memory.hierarchical_memsw_limit"`
 	ContainerMemoryInactiveAnon                MetricConfig `mapstructure:"container.memory.inactive_anon"`
@@ -88,6 +91,7 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
 	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
 	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
+	ContainerUptime                            MetricConfig `mapstructure:"container.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -143,10 +147,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerCPUUsageUsermode: MetricConfig{
 			Enabled: true,
 		},
+		ContainerCPUUtilization: MetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryActiveFile: MetricConfig{
+			Enabled: false,
+		},
+		ContainerMemoryAnon: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryCache: MetricConfig{
@@ -154,6 +164,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ContainerMemoryDirty: MetricConfig{
 			Enabled: false,
+		},
+		ContainerMemoryFile: MetricConfig{
+			Enabled: true,
 		},
 		ContainerMemoryHierarchicalMemoryLimit: MetricConfig{
 			Enabled: false,
@@ -281,6 +294,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerPidsLimit: MetricConfig{
 			Enabled: false,
 		},
+		ContainerUptime: MetricConfig{
+			Enabled: false,
+		},
 	}
 }
 
@@ -291,20 +307,28 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for docker_stats resource attributes.
 type ResourceAttributesConfig struct {
-	ContainerHostname  ResourceAttributeConfig `mapstructure:"container.hostname"`
-	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
-	ContainerImageName ResourceAttributeConfig `mapstructure:"container.image.name"`
-	ContainerName      ResourceAttributeConfig `mapstructure:"container.name"`
-	ContainerRuntime   ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerCommandLine ResourceAttributeConfig `mapstructure:"container.command_line"`
+	ContainerHostname    ResourceAttributeConfig `mapstructure:"container.hostname"`
+	ContainerID          ResourceAttributeConfig `mapstructure:"container.id"`
+	ContainerImageID     ResourceAttributeConfig `mapstructure:"container.image.id"`
+	ContainerImageName   ResourceAttributeConfig `mapstructure:"container.image.name"`
+	ContainerName        ResourceAttributeConfig `mapstructure:"container.name"`
+	ContainerRuntime     ResourceAttributeConfig `mapstructure:"container.runtime"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		ContainerCommandLine: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		ContainerHostname: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ContainerID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ContainerImageID: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		ContainerImageName: ResourceAttributeConfig{
 			Enabled: true,

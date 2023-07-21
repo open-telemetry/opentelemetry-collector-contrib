@@ -14,6 +14,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/api"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/exporter"
@@ -31,16 +32,17 @@ import (
 )
 
 type metricsExporter struct {
-	params         exporter.CreateSettings
-	cfg            *Config
-	ctx            context.Context
-	client         *zorkian.Client
-	metricsAPI     *datadogV2.MetricsApi
-	tr             *otlpmetrics.Translator
-	scrubber       scrub.Scrubber
-	retrier        *clientutil.Retrier
-	onceMetadata   *sync.Once
-	sourceProvider source.Provider
+	params           exporter.CreateSettings
+	cfg              *Config
+	ctx              context.Context
+	client           *zorkian.Client
+	metricsAPI       *datadogV2.MetricsApi
+	tr               *otlpmetrics.Translator
+	scrubber         scrub.Scrubber
+	retrier          *clientutil.Retrier
+	onceMetadata     *sync.Once
+	sourceProvider   source.Provider
+	metadataReporter *inframetadata.Reporter
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
 	getPushTime       func() uint64
@@ -52,6 +54,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
+		otlpmetrics.WithRemapping(),
 	}
 
 	if cfg.Metrics.HistConfig.SendAggregations {
@@ -85,7 +88,15 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	return otlpmetrics.NewTranslator(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, apmStatsProcessor api.StatsProcessor) (*metricsExporter, error) {
+func newMetricsExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg *Config,
+	onceMetadata *sync.Once,
+	sourceProvider source.Provider,
+	apmStatsProcessor api.StatsProcessor,
+	metadataReporter *inframetadata.Reporter,
+) (*metricsExporter, error) {
 	tr, err := translatorFromConfig(params.Logger, cfg, sourceProvider)
 	if err != nil {
 		return nil, err
@@ -103,6 +114,7 @@ func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg
 		sourceProvider:    sourceProvider,
 		getPushTime:       func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 		apmStatsProcessor: apmStatsProcessor,
+		metadataReporter:  metadataReporter,
 	}
 	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
@@ -169,16 +181,22 @@ func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmet
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	// Start host metadata with resource attributes from
-	// the first payload.
 	if exp.cfg.HostMetadata.Enabled {
+		// Start host metadata with resource attributes from
+		// the first payload.
 		exp.onceMetadata.Do(func() {
 			attrs := pcommon.NewMap()
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go hostmetadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
+
+		// Consume resources for host metadata
+		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			res := md.ResourceMetrics().At(i).Resource()
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
+		}
 	}
 	var consumer otlpmetrics.Consumer
 	if isMetricExportV2Enabled() {
@@ -186,7 +204,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	} else {
 		consumer = metrics.NewZorkianConsumer()
 	}
-	_, err := exp.tr.MapMetrics(ctx, md, consumer)
+	metadata, err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
@@ -203,10 +221,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	var sp []pb.ClientStatsPayload
 	if isMetricExportV2Enabled() {
 		var ms []datadogV2.MetricSeries
-		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
-		ms = metrics.PrepareSystemMetrics(ms)
-		ms = metrics.PrepareContainerMetrics(ms)
-
+		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)
 		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
@@ -220,9 +235,6 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	} else {
 		var ms []zorkian.Metric
 		ms, sl, sp = consumer.(*metrics.ZorkianConsumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
-		ms = metrics.PrepareZorkianSystemMetrics(ms)
-		ms = metrics.PrepareZorkianContainerMetrics(ms)
-
 		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting Zorkian Datadog payload", zap.Any("metric", ms))

@@ -19,10 +19,27 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
+			desc: "missing endpoint",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{},
+					},
+				},
+			},
+			expectedErr: multierr.Combine(
+				errMissingEndpoint,
+			),
+		},
+		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "invalid://endpoint:  12efg",
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "invalid://endpoint:  12efg",
+						},
+					},
 				},
 			},
 			expectedErr: multierr.Combine(
@@ -30,10 +47,54 @@ func TestValidate(t *testing.T) {
 			),
 		},
 		{
+			desc: "invalid config with multiple targets",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "https://localhost:80",
+						},
+					},
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "invalid://endpoint:  12efg",
+						},
+					},
+				},
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			),
+		},
+		{
+			desc: "missing scheme",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "www.opentelemetry.io/docs",
+						},
+					},
+				},
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "www.opentelemetry.io/docs": invalid URI for request`),
+			),
+		},
+		{
 			desc: "valid config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: defaultEndpoint,
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "https://opentelemetry.io",
+						},
+					},
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "https://opentelemetry.io:80/docs",
+						},
+					},
 				},
 			},
 			expectedErr: nil,

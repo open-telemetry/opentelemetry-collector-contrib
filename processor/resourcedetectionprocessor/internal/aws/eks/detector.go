@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
 
 const (
@@ -39,9 +40,10 @@ type eksDetectorUtils struct {
 
 // detector for EKS
 type detector struct {
-	utils  detectorUtils
-	logger *zap.Logger
-	err    error
+	utils              detectorUtils
+	logger             *zap.Logger
+	err                error
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 var _ internal.Detector = (*detector)(nil)
@@ -49,27 +51,26 @@ var _ internal.Detector = (*detector)(nil)
 var _ detectorUtils = (*eksDetectorUtils)(nil)
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
-func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
 	utils, err := newK8sDetectorUtils()
-	return &detector{utils: utils, logger: set.Logger, err: err}, nil
+	return &detector{utils: utils, logger: set.Logger, err: err, resourceAttributes: cfg.ResourceAttributes}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-
 	// Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)
 	if !isEKS {
 		detector.logger.Debug("Unable to identify EKS environment", zap.Error(err))
-		return res, "", err
+		return pcommon.NewResource(), "", err
 	}
 
-	attr := res.Attributes()
-	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
+	rb := metadata.NewResourceBuilder(detector.resourceAttributes)
+	rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 
-	return res, conventions.SchemaURL, nil
+	return rb.Emit(), conventions.SchemaURL, nil
 }
 
 func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {

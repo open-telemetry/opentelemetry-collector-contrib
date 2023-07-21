@@ -3,14 +3,17 @@
 
 module-sets:
   contrib-base:
-    version: v0.78.0
+    version: v0.81.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
@@ -65,6 +68,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
@@ -95,6 +99,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
@@ -137,7 +142,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor
-      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/remoteobserverprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
@@ -237,3 +242,4 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter

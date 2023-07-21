@@ -67,7 +67,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 }
 
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics]) //nolint:staticcheck
 	if err != nil {
 		return err
 	}

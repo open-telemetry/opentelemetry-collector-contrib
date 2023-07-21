@@ -56,7 +56,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocol(1), "attr-val")
+			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTcp, "state-val")
 
 			allMetricsCount++
 			mb.RecordSystemNetworkConntrackCountDataPoint(ts, 1)
@@ -66,19 +66,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkDroppedDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemNetworkDroppedDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkErrorsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemNetworkErrorsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemNetworkIoDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkPacketsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemNetworkPacketsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
 			metrics := mb.Emit()
 
@@ -121,10 +121,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("protocol")
 					assert.True(t, ok)
-					assert.Equal(t, "tcp", attrVal.Str())
+					assert.EqualValues(t, "tcp", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "state-val", attrVal.Str())
 				case "system.network.conntrack.count":
 					assert.False(t, validatedMetrics["system.network.conntrack.count"], "Found a duplicate in the metrics slice: system.network.conntrack.count")
 					validatedMetrics["system.network.conntrack.count"] = true
@@ -169,10 +169,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+					assert.EqualValues(t, "receive", attrVal.Str())
 				case "system.network.errors":
 					assert.False(t, validatedMetrics["system.network.errors"], "Found a duplicate in the metrics slice: system.network.errors")
 					validatedMetrics["system.network.errors"] = true
@@ -189,10 +189,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+					assert.EqualValues(t, "receive", attrVal.Str())
 				case "system.network.io":
 					assert.False(t, validatedMetrics["system.network.io"], "Found a duplicate in the metrics slice: system.network.io")
 					validatedMetrics["system.network.io"] = true
@@ -209,10 +209,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+					assert.EqualValues(t, "receive", attrVal.Str())
 				case "system.network.packets":
 					assert.False(t, validatedMetrics["system.network.packets"], "Found a duplicate in the metrics slice: system.network.packets")
 					validatedMetrics["system.network.packets"] = true
@@ -229,10 +229,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "receive", attrVal.Str())
+					assert.EqualValues(t, "receive", attrVal.Str())
 				}
 			}
 		})

@@ -32,9 +32,8 @@ const (
 
 // Config defines configuration for Prometheus receiver.
 type Config struct {
-	PrometheusConfig *promconfig.Config `mapstructure:"-"`
-	BufferPeriod     time.Duration      `mapstructure:"buffer_period"`
-	BufferCount      int                `mapstructure:"buffer_count"`
+	PrometheusConfig   *promconfig.Config `mapstructure:"-"`
+	TrimMetricSuffixes bool               `mapstructure:"trim_metric_suffixes"`
 	// UseStartTimeMetric enables retrieving the start time of all counter metrics
 	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
 	// started after the process start time, and the process is the only actor exporting the metric after
@@ -81,12 +80,6 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	}
 	if err := checkFile(tlsConfig.KeyFile); err != nil {
 		return fmt.Errorf("error checking client key file %q: %w", tlsConfig.KeyFile, err)
-	}
-	if len(tlsConfig.CertFile) > 0 && len(tlsConfig.KeyFile) == 0 {
-		return fmt.Errorf("client cert file %q specified without client key file", tlsConfig.CertFile)
-	}
-	if len(tlsConfig.KeyFile) > 0 && len(tlsConfig.CertFile) == 0 {
-		return fmt.Errorf("client key file %q specified without client cert file", tlsConfig.KeyFile)
 	}
 	return nil
 }

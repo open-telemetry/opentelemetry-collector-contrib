@@ -18,6 +18,7 @@ var distros = map[string]string{
 	"observiq": "https://github.com/observIQ/observiq-otel-collector",
 	"splunk":   "https://github.com/signalfx/splunk-otel-collector",
 	"sumo":     "https://github.com/SumoLogic/sumologic-otel-collector",
+	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
 }
 
 type Status struct {
@@ -27,7 +28,7 @@ type Status struct {
 	Warnings      []string            `mapstructure:"warnings"`
 }
 
-func (s Status) SortedDistributions() []string {
+func (s *Status) SortedDistributions() []string {
 	sorted := s.Distributions
 	sort.Slice(sorted, func(i, j int) bool {
 		if s.Distributions[i] == "core" {

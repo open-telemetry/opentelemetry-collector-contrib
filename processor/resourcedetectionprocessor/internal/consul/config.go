@@ -3,7 +3,11 @@
 
 package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 
-import "go.opentelemetry.io/collector/config/configopaque"
+import (
+	"go.opentelemetry.io/collector/config/configopaque"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
+)
 
 // The struct requires no user-specified fields by default as consul agent's default
 // configuration will be provided to the API client.
@@ -36,4 +40,13 @@ type Config struct {
 	// Metadata](https://www.consul.io/docs/agent/options#node_meta) keys to use as
 	// resource attributes.
 	MetaLabels map[string]interface{} `mapstructure:"meta"`
+
+	// ResourceAttributes configuration for Consul detector
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func CreateDefaultConfig() Config {
+	return Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

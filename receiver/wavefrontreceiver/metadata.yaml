@@ -3,7 +3,7 @@ type: wavefront
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib, sumo]
   
 

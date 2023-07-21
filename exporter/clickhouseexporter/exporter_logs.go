@@ -71,12 +71,17 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
+			resURL := logs.SchemaUrl()
 			resAttr := attributesToMap(res.Attributes())
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
+				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
+				scopeName := logs.ScopeLogs().At(j).Scope().Name()
+				scopeVersion := logs.ScopeLogs().At(j).Scope().Version()
+				scopeAttr := attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					logAttr := attributesToMap(r.Attributes())
@@ -89,7 +94,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						int32(r.SeverityNumber()),
 						serviceName,
 						r.Body().AsString(),
+						resURL,
 						resAttr,
+						scopeURL,
+						scopeName,
+						scopeVersion,
+						scopeAttr,
 						logAttr,
 					)
 					if err != nil {
@@ -101,7 +111,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
 }
@@ -127,11 +137,18 @@ CREATE TABLE IF NOT EXISTS %s (
      SeverityNumber Int32 CODEC(ZSTD(1)),
      ServiceName LowCardinality(String) CODEC(ZSTD(1)),
      Body String CODEC(ZSTD(1)),
+     ResourceSchemaUrl String CODEC(ZSTD(1)),
      ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+     ScopeSchemaUrl String CODEC(ZSTD(1)),
+     ScopeName String CODEC(ZSTD(1)),
+     ScopeVersion String CODEC(ZSTD(1)),
+     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      LogAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
      INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+     INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+     INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
@@ -151,9 +168,19 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SeverityNumber,
                         ServiceName,
                         Body,
+                        ResourceSchemaUrl,
                         ResourceAttributes,
+                        ScopeSchemaUrl,
+                        ScopeName,
+                        ScopeVersion,
+                        ScopeAttributes,
                         LogAttributes
                         ) VALUES (
+                                  ?,
+                                  ?,
+                                  ?,
+                                  ?,
+                                  ?,
                                   ?,
                                   ?,
                                   ?,

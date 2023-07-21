@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpostgresql%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpostgresql%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -46,6 +47,7 @@ The following settings are also optional and nested under `tls` to help configur
 - `ca_file` (default = ""): A set of certificate authorities used to validate the database server's SSL certificate.
 
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 ### Example Configuration
 

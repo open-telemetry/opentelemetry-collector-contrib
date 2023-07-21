@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fnsxt%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fnsxt%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -40,6 +41,8 @@ This receiver supports NSX-T Datacenter versions:
 - `password`: Password of the `Auditor` user
 
 - `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 - `timeout`: (default = `1m`) The timeout of running commands against the NSX REST API.
 

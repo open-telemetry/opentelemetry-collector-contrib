@@ -124,17 +124,17 @@ func setV3ClientConfigs(client goSNMPWrapper, cfg *Config) {
 		client.SetMsgFlags(gosnmp.AuthNoPriv)
 		protocol := getAuthProtocol(cfg.AuthType)
 		securityParams.AuthenticationProtocol = protocol
-		securityParams.AuthenticationPassphrase = cfg.AuthPassword
+		securityParams.AuthenticationPassphrase = string(cfg.AuthPassword)
 	case "AUTH_PRIV":
 		client.SetMsgFlags(gosnmp.AuthPriv)
 
 		authProtocol := getAuthProtocol(cfg.AuthType)
 		securityParams.AuthenticationProtocol = authProtocol
-		securityParams.AuthenticationPassphrase = cfg.AuthPassword
+		securityParams.AuthenticationPassphrase = string(cfg.AuthPassword)
 
 		privProtocol := getPrivacyProtocol(cfg.PrivacyType)
 		securityParams.PrivacyProtocol = privProtocol
-		securityParams.PrivacyPassphrase = cfg.PrivacyPassword
+		securityParams.PrivacyPassphrase = string(cfg.PrivacyPassword)
 	default:
 		client.SetMsgFlags(gosnmp.NoAuthNoPriv)
 	}
@@ -325,7 +325,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 	}
 
 	// Condense gosnmp data types to our client's simplified data types
-	switch pdu.Type {
+	switch pdu.Type { // nolint:exhaustive
 	// Integer types
 	case gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)

@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
 | Distributions | [contrib], [observiq], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsaphana%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsaphana%20&label=closed&color=blue&logo=opentelemetry) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -74,6 +75,7 @@ next consumer. The `collection_interval` configuration option tells this
 receiver the duration between runs. This value must be a string readable by
 Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `tls`:
   - `insecure` (default = true): whether to disable client transport security for the exporter's connection.
   - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.

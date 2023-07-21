@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/client"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -23,10 +24,11 @@ type DatasetExporter struct {
 	limiter     *rate.Limiter
 	logger      *zap.Logger
 	session     string
-	spanTracker *spanTracker
+	exporterCfg *ExporterConfig
 }
 
-func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*DatasetExporter, error) {
+func newDatasetExporter(entity string, config *Config, set exporter.CreateSettings) (*DatasetExporter, error) {
+	logger := set.Logger
 	logger.Info("Creating new DataSetExporter",
 		zap.String("config", config.String()),
 		zap.String("entity", entity),
@@ -38,20 +40,21 @@ func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*Dat
 			config.String(), err,
 		)
 	}
-
+	userAgent := fmt.Sprintf(
+		"%s;%s;%s",
+		"OtelCollector",
+		set.BuildInfo.Version,
+		entity,
+	)
 	client, err := client.NewClient(
 		exporterCfg.datasetConfig,
 		&http.Client{Timeout: time.Second * 60},
 		logger,
+		&userAgent,
 	)
 	if err != nil {
 		logger.Error("Cannot create DataSetClient: ", zap.Error(err))
 		return nil, fmt.Errorf("cannot create newDatasetExporter: %w", err)
-	}
-
-	tracker := newSpanTracker(exporterCfg.tracesSettings.MaxWait)
-	if !exporterCfg.tracesSettings.Aggregate {
-		tracker = nil
 	}
 
 	return &DatasetExporter{
@@ -59,13 +62,12 @@ func newDatasetExporter(entity string, config *Config, logger *zap.Logger) (*Dat
 		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
 		session:     uuid.New().String(),
 		logger:      logger,
-		spanTracker: tracker,
+		exporterCfg: exporterCfg,
 	}, nil
 }
 
 func (e *DatasetExporter) shutdown(context.Context) error {
-	e.client.SendAllAddEventsBuffers()
-	return nil
+	return e.client.Shutdown()
 }
 
 func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) error {

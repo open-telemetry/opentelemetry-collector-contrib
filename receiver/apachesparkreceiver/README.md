@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
 | Distributions | [contrib] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fapachespark%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fapachespark%20&label=closed&color=blue&logo=opentelemetry) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -29,6 +30,7 @@ These configuration options are for connecting to an Apache Spark application.
 The following settings are optional:
 
 - `collection_interval`: (default = `60s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `endpoint`: (default = `http://localhost:4040`): Apache Spark endpoint to connect to in the form of `[http][://]{host}[:{port}]`
 - `application_names`: An array of Spark application names for which metrics should be collected. If no application names are specified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
 

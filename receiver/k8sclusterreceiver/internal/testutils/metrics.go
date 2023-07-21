@@ -9,6 +9,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func AssertResource(t *testing.T, actualResource *resourcepb.Resource,
@@ -24,6 +25,34 @@ func AssertResource(t *testing.T, actualResource *resourcepb.Resource,
 		actualResource.Labels,
 		"mismatching resource labels",
 	)
+}
+
+func AssertMetricInt(t testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType, expectedValue any) {
+	dps := assertMetric(t, m, expectedMetric, expectedType)
+	require.EqualValues(t, expectedValue, dps.At(0).IntValue(), "mismatching metric values")
+}
+
+func assertMetric(t testing.TB, m pmetric.Metric, expectedMetric string, expectedType pmetric.MetricType) pmetric.NumberDataPointSlice {
+	require.Equal(t, expectedMetric, m.Name(), "mismatching metric names")
+	require.NotEmpty(t, m.Description(), "empty description on metric")
+	require.Equal(t, expectedType, m.Type(), "mismatching metric types")
+	var dps pmetric.NumberDataPointSlice
+	switch expectedType {
+	case pmetric.MetricTypeGauge:
+		dps = m.Gauge().DataPoints()
+	case pmetric.MetricTypeSum:
+		dps = m.Sum().DataPoints()
+	case pmetric.MetricTypeHistogram:
+		require.Fail(t, "unsupported")
+	case pmetric.MetricTypeExponentialHistogram:
+		require.Fail(t, "unsupported")
+	case pmetric.MetricTypeSummary:
+		require.Fail(t, "unsupported")
+	case pmetric.MetricTypeEmpty:
+		require.Fail(t, "unsupported")
+	}
+	require.Equal(t, 1, dps.Len())
+	return dps
 }
 
 func AssertMetricsWithLabels(t *testing.T, actualMetric *metricspb.Metric,

@@ -19,28 +19,28 @@ type Config struct {
 }
 
 type HeaderConfig struct {
-	Action      actionValue `mapstructure:"action"`
+	Action      ActionValue `mapstructure:"action"`
 	Key         *string     `mapstructure:"key"`
 	Value       *string     `mapstructure:"value"`
 	FromContext *string     `mapstructure:"from_context"`
 }
 
-// actionValue is the enum to capture the four types of actions to perform on a header
-type actionValue string
+// ActionValue is the enum to capture the four types of actions to perform on a header
+type ActionValue string
 
 const (
 	// INSERT inserts the new header if it does not exist
-	INSERT actionValue = "insert"
+	INSERT ActionValue = "insert"
 
 	// UPDATE updates the header value if it exists
-	UPDATE actionValue = "update"
+	UPDATE ActionValue = "update"
 
 	// UPSERT inserts a header if it does not exist and updates the header
 	// if it exists
-	UPSERT actionValue = "upsert"
+	UPSERT ActionValue = "upsert"
 
 	// DELETE deletes the header
-	DELETE actionValue = "delete"
+	DELETE ActionValue = "delete"
 )
 
 // Validate checks if the extension configuration is valid

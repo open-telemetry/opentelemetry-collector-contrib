@@ -110,6 +110,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
@@ -145,6 +146,7 @@ and the rest of contributors.
 - Add the sponsor for your component and yourself to a new line for your component in the
   [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
 - Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml) and use the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
 
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
@@ -172,7 +174,6 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
@@ -183,6 +184,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@MovieStoreGuy](https://github.com/MovieStoreGuy)
 * [@bogdandrutu](https://github.com/bogdandrutu)
 * [@jpkrohling](https://github.com/jpkrohling)
+* [@dashpole](https://github.com/dashpole)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 

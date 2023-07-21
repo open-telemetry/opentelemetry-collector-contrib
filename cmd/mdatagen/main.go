@@ -90,6 +90,16 @@ func run(ymlPath string) error {
 	}
 
 	if len(md.Metrics) == 0 {
+		if len(md.ResourceAttributes) > 0 {
+			if err = generateFile(filepath.Join(tmplDir, "resource.go.tmpl"),
+				filepath.Join(codeDir, "generated_resource.go"), md); err != nil {
+				return err
+			}
+			if err = generateFile(filepath.Join(tmplDir, "resource_test.go.tmpl"),
+				filepath.Join(codeDir, "generated_resource_test.go"), md); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
@@ -117,12 +127,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"attributeInfo": func(an attributeName) attribute {
 					return md.Attributes[an]
 				},
-				"attributeName": func(an attributeName) string {
-					if md.Attributes[an].NameOverride != "" {
-						return md.Attributes[an].NameOverride
-					}
-					return string(an)
-				},
 				"metricInfo": func(mn metricName) metric {
 					return md.Metrics[mn]
 				},
@@ -134,9 +138,19 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return false
 				},
-				"stringsJoin": strings.Join,
-				"casesTitle":  cases.Title(language.English).String,
-				"inc":         func(i int) int { return i + 1 },
+				"stringsJoin":  strings.Join,
+				"stringsSplit": strings.Split,
+				"casesTitle":   cases.Title(language.English).String,
+				"toCamelCase": func(s string) string {
+					caser := cases.Title(language.English).String
+					parts := strings.Split(s, "_")
+					result := ""
+					for _, part := range parts {
+						result += caser(part)
+					}
+					return result
+				},
+				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
 				},

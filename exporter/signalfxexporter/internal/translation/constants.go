@@ -21,7 +21,7 @@ translation_rules:
       k8s: true
       container: true
 
-- action: rename_metrics
+- action: copy_metrics
   mapping:
     # kubeletstats container cpu needed for calculation below
     container.cpu.time: sf_temp.container_cpu_utilization

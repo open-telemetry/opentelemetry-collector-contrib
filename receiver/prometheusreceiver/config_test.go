@@ -40,6 +40,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
+	assert.Equal(t, r1.TrimMetricSuffixes, true)
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
 
 	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
@@ -221,15 +222,11 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
@@ -240,15 +237,10 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client key file "./testdata/dummy-tls-key-file" specified without client cert file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of cert or cert_file must be configured when a client key is configured")
+	}
 }
 
 func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
@@ -259,15 +251,11 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
-
-	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	err = component.UnmarshalConfig(sub, cfg)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
+	}
 }
 
 func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {

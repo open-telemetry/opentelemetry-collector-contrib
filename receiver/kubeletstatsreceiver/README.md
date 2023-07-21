@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkubeletstats%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkubeletstats%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -33,6 +34,7 @@ endpoint will be used if `auth_type` set to any of the following values:
 to authenticate to the kubelet API.
 - `kubeConfig` tells this receiver to use the kubeconfig file (KUBECONFIG env variable or ~/.kube/config)
 to authenticate and use API server proxy to access the kubelet API.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 ### TLS Example
 
@@ -40,6 +42,7 @@ to authenticate and use API server proxy to access the kubelet API.
 receivers:
   kubeletstats:
     collection_interval: 20s
+    initial_delay: 1s
     auth_type: "tls"
     ca_file: "/path/to/ca.crt"
     key_file: "/path/to/apiserver.key"

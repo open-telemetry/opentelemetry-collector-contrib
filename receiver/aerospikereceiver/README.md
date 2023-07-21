@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib], [observiq], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Faerospike%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Faerospike%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -28,6 +29,7 @@ Configuration parameters:
 - `tlsname` Endpoint tls name. Used by the client during TLS connections. See [Aerospike authentication](https://docs.aerospike.com/server/guide/security/tls#standard-authentication) for mor details.
 - `collect_cluster_metrics` (default false): Whether discovered peer nodes should be collected.
 - `collection_interval` (default = 60s): This receiver collects metrics on an interval. Valid time units are ns, us (or µs), ms, s, m, h.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `username` (Enterprise Edition only.)
 - `password` (Enterprise Edition only.)
 - `tls` (default empty/no tls) tls configuration for connection to Aerospike nodes. More information at [OpenTelemetry's tls config page](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).

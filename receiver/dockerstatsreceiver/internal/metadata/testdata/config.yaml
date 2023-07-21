@@ -35,13 +35,19 @@ all_set:
       enabled: true
     container.cpu.usage.usermode:
       enabled: true
+    container.cpu.utilization:
+      enabled: true
     container.memory.active_anon:
       enabled: true
     container.memory.active_file:
       enabled: true
+    container.memory.anon:
+      enabled: true
     container.memory.cache:
       enabled: true
     container.memory.dirty:
+      enabled: true
+    container.memory.file:
       enabled: true
     container.memory.hierarchical_memory_limit:
       enabled: true
@@ -127,10 +133,16 @@ all_set:
       enabled: true
     container.pids.limit:
       enabled: true
+    container.uptime:
+      enabled: true
   resource_attributes:
+    container.command_line:
+      enabled: true
     container.hostname:
       enabled: true
     container.id:
+      enabled: true
+    container.image.id:
       enabled: true
     container.image.name:
       enabled: true
@@ -174,13 +186,19 @@ none_set:
       enabled: false
     container.cpu.usage.usermode:
       enabled: false
+    container.cpu.utilization:
+      enabled: false
     container.memory.active_anon:
       enabled: false
     container.memory.active_file:
       enabled: false
+    container.memory.anon:
+      enabled: false
     container.memory.cache:
       enabled: false
     container.memory.dirty:
+      enabled: false
+    container.memory.file:
       enabled: false
     container.memory.hierarchical_memory_limit:
       enabled: false
@@ -266,10 +284,16 @@ none_set:
       enabled: false
     container.pids.limit:
       enabled: false
+    container.uptime:
+      enabled: false
   resource_attributes:
+    container.command_line:
+      enabled: false
     container.hostname:
       enabled: false
     container.id:
+      enabled: false
+    container.image.id:
       enabled: false
     container.image.name:
       enabled: false

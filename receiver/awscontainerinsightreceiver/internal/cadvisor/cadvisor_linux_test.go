@@ -34,7 +34,7 @@ func (m *mockCadvisorManager) Start() error {
 }
 
 // Get information about all subcontainers of the specified container (includes self).
-func (m *mockCadvisorManager) SubcontainersInfo(containerName string, query *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
+func (m *mockCadvisorManager) SubcontainersInfo(_ string, _ *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
 	containerInfos := testutils.LoadContainerInfo(m.t, "./extractors/testdata/CurInfoContainer.json")
 	return containerInfos, nil
 }
@@ -46,7 +46,7 @@ func (m *mockCadvisorManager2) Start() error {
 	return errors.New("new error")
 }
 
-func (m *mockCadvisorManager2) SubcontainersInfo(containerName string, query *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
+func (m *mockCadvisorManager2) SubcontainersInfo(_ string, _ *info.ContainerInfoRequest) ([]*info.ContainerInfo, error) {
 	return nil, nil
 }
 

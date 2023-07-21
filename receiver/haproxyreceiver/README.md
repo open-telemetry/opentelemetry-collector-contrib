@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fhaproxy%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fhaproxy%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -24,6 +25,11 @@ Path to the endpoint exposed by HAProxy for communications. It can be a local fi
 The scraping collection interval can be configured.
 
 Default: 1 minute
+
+### Initial delay settings (optional)
+defines how long this receiver waits before starting.
+
+Default: `1s` 
 
 ### Example configuration
 

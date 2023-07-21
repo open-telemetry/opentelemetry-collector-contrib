@@ -12,30 +12,39 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type readerConfig struct {
-	fingerprintSize int
-	maxLogSize      int
-	emit            EmitFunc
+	fingerprintSize         int
+	maxLogSize              int
+	emit                    emit.Callback
+	includeFileName         bool
+	includeFilePath         bool
+	includeFileNameResolved bool
+	includeFilePathResolved bool
 }
 
 // Reader manages a single file
+//
+// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
 type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
 	encoding      helper.Encoding
-	processFunc   EmitFunc
+	processFunc   emit.Callback
 
-	Fingerprint    *Fingerprint
+	Fingerprint    *fingerprint.Fingerprint
 	Offset         int64
 	generation     int
 	file           *os.File
-	FileAttributes *FileAttributes
+	FileAttributes map[string]any
 	eof            bool
 
 	HeaderFinalized bool
@@ -63,7 +72,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -73,10 +82,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		default:
 		}
 
-		ok := scanner.Scan()
+		ok := s.Scan()
 		if !ok {
 			r.eof = true
-			if err := scanner.getError(); err != nil {
+			if err := s.Error(); err != nil {
 				// If Scan returned an error then we are not guaranteed to be at the end of the file
 				r.eof = false
 				r.Errorw("Failed during scan", zap.Error(err))
@@ -84,11 +93,11 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(scanner.Bytes())
+		token, err := r.encoding.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
-		} else {
-			r.processFunc(ctx, r.FileAttributes, token)
+		} else if err = r.processFunc(ctx, token, r.FileAttributes); err != nil {
+			r.Errorw("process: %w", zap.Error(err))
 		}
 
 		if r.recreateScanner {
@@ -102,24 +111,24 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				return
 			}
 
-			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+			s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 		}
 
-		r.Offset = scanner.Pos()
+		r.Offset = s.Pos()
 	}
 }
 
 // consumeHeaderLine checks if the given token is a line of the header, and consumes it if it is.
 // The return value dictates whether the given line was a header line or not.
 // If false is returned, the full header can be assumed to be read.
-func (r *Reader) consumeHeaderLine(ctx context.Context, _ *FileAttributes, token []byte) {
+func (r *Reader) consumeHeaderLine(ctx context.Context, token []byte, _ map[string]any) error {
 	if !r.headerSettings.matchRegex.Match(token) {
 		// Finalize and cleanup the pipeline
 		r.HeaderFinalized = true
 
 		// Stop and drop the header pipeline.
 		if err := r.headerPipeline.Stop(); err != nil {
-			r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+			return fmt.Errorf("stop header pipeline: %w", err)
 		}
 		r.headerPipeline = nil
 		r.headerPipelineOutput = nil
@@ -129,7 +138,7 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, _ *FileAttributes, token
 		r.processFunc = r.emit
 		// Mark that we should recreate the scanner, since we changed the split function
 		r.recreateScanner = true
-		return
+		return nil
 	}
 
 	firstOperator := r.headerPipeline.Operators()[0]
@@ -138,20 +147,19 @@ func (r *Reader) consumeHeaderLine(ctx context.Context, _ *FileAttributes, token
 	newEntry.Body = string(token)
 
 	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		r.Errorw("Failed to process header entry", zap.Error(err))
-		return
+		return fmt.Errorf("process header entry: %w", err)
 	}
 
 	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
 	if err != nil {
-		r.Errorw("Error while waiting for header entry", zap.Error(err))
-		return
+		return fmt.Errorf("wait for header entry: %w", err)
 	}
 
 	// Copy resultant attributes over current set of attributes (upsert)
 	for k, v := range ent.Attributes {
-		r.FileAttributes.HeaderAttributes[k] = v
+		r.FileAttributes[k] = v
 	}
+	return nil
 }
 
 // Close will close the file
@@ -196,20 +204,4 @@ func min0(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// mapCopy deep copies the provided attributes map.
-func mapCopy(m map[string]any) map[string]any {
-	newMap := make(map[string]any, len(m))
-	for k, v := range m {
-		switch typedVal := v.(type) {
-		case map[string]any:
-			newMap[k] = mapCopy(typedVal)
-		default:
-			// Assume any other values are safe to directly copy.
-			// Struct types and slice types shouldn't appear in attribute maps from pipelines
-			newMap[k] = v
-		}
-	}
-	return newMap
 }

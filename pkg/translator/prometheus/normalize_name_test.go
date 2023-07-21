@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -139,46 +138,34 @@ func TestOtelReceivers(t *testing.T) {
 }
 
 func TestTrimPromSuffixes(t *testing.T) {
-	normalizer := NewNormalizer(featuregate.NewRegistry())
-
-	assert.Equal(t, "active_directory_ds_replication_network_io", normalizer.TrimPromSuffixes("active_directory_ds_replication_network_io_bytes_total", pmetric.MetricTypeSum, "bytes"))
-	assert.Equal(t, "active_directory_ds_name_cache_hit_rate", normalizer.TrimPromSuffixes("active_directory_ds_name_cache_hit_rate_percent", pmetric.MetricTypeGauge, "percent"))
-	assert.Equal(t, "active_directory_ds_ldap_bind_last_successful_time", normalizer.TrimPromSuffixes("active_directory_ds_ldap_bind_last_successful_time_milliseconds", pmetric.MetricTypeGauge, "milliseconds"))
-	assert.Equal(t, "apache_requests", normalizer.TrimPromSuffixes("apache_requests_total", pmetric.MetricTypeSum, "1"))
-	assert.Equal(t, "system_cpu_utilization", normalizer.TrimPromSuffixes("system_cpu_utilization_ratio", pmetric.MetricTypeGauge, "ratio"))
-	assert.Equal(t, "mongodbatlas_process_journaling_data_files", normalizer.TrimPromSuffixes("mongodbatlas_process_journaling_data_files_mebibytes", pmetric.MetricTypeGauge, "mebibytes"))
-	assert.Equal(t, "mongodbatlas_process_network_io", normalizer.TrimPromSuffixes("mongodbatlas_process_network_io_bytes_per_second", pmetric.MetricTypeGauge, "bytes_per_second"))
-	assert.Equal(t, "mongodbatlas_process_oplog_rate", normalizer.TrimPromSuffixes("mongodbatlas_process_oplog_rate_gibibytes_per_hour", pmetric.MetricTypeGauge, "gibibytes_per_hour"))
-	assert.Equal(t, "nsxt_node_memory_usage", normalizer.TrimPromSuffixes("nsxt_node_memory_usage_kilobytes", pmetric.MetricTypeGauge, "kilobytes"))
-	assert.Equal(t, "redis_latest_fork", normalizer.TrimPromSuffixes("redis_latest_fork_microseconds", pmetric.MetricTypeGauge, "microseconds"))
-	assert.Equal(t, "up", normalizer.TrimPromSuffixes("up", pmetric.MetricTypeGauge, ""))
+	assert.Equal(t, "active_directory_ds_replication_network_io", TrimPromSuffixes("active_directory_ds_replication_network_io_bytes_total", pmetric.MetricTypeSum, "bytes"))
+	assert.Equal(t, "active_directory_ds_name_cache_hit_rate", TrimPromSuffixes("active_directory_ds_name_cache_hit_rate_percent", pmetric.MetricTypeGauge, "percent"))
+	assert.Equal(t, "active_directory_ds_ldap_bind_last_successful_time", TrimPromSuffixes("active_directory_ds_ldap_bind_last_successful_time_milliseconds", pmetric.MetricTypeGauge, "milliseconds"))
+	assert.Equal(t, "apache_requests", TrimPromSuffixes("apache_requests_total", pmetric.MetricTypeSum, "1"))
+	assert.Equal(t, "system_cpu_utilization", TrimPromSuffixes("system_cpu_utilization_ratio", pmetric.MetricTypeGauge, "ratio"))
+	assert.Equal(t, "mongodbatlas_process_journaling_data_files", TrimPromSuffixes("mongodbatlas_process_journaling_data_files_mebibytes", pmetric.MetricTypeGauge, "mebibytes"))
+	assert.Equal(t, "mongodbatlas_process_network_io", TrimPromSuffixes("mongodbatlas_process_network_io_bytes_per_second", pmetric.MetricTypeGauge, "bytes_per_second"))
+	assert.Equal(t, "mongodbatlas_process_oplog_rate", TrimPromSuffixes("mongodbatlas_process_oplog_rate_gibibytes_per_hour", pmetric.MetricTypeGauge, "gibibytes_per_hour"))
+	assert.Equal(t, "nsxt_node_memory_usage", TrimPromSuffixes("nsxt_node_memory_usage_kilobytes", pmetric.MetricTypeGauge, "kilobytes"))
+	assert.Equal(t, "redis_latest_fork", TrimPromSuffixes("redis_latest_fork_microseconds", pmetric.MetricTypeGauge, "microseconds"))
+	assert.Equal(t, "up", TrimPromSuffixes("up", pmetric.MetricTypeGauge, ""))
 
 	// These are not necessarily valid OM units, only tested for the sake of completeness.
-	assert.Equal(t, "active_directory_ds_replication_sync_object_pending", normalizer.TrimPromSuffixes("active_directory_ds_replication_sync_object_pending_total", pmetric.MetricTypeSum, "{objects}"))
-	assert.Equal(t, "apache_current", normalizer.TrimPromSuffixes("apache_current_connections", pmetric.MetricTypeGauge, "connections"))
-	assert.Equal(t, "bigip_virtual_server_request_count", normalizer.TrimPromSuffixes("bigip_virtual_server_request_count_total", pmetric.MetricTypeSum, "{requests}"))
-	assert.Equal(t, "mongodbatlas_process_db_query_targeting_scanned_per_returned", normalizer.TrimPromSuffixes("mongodbatlas_process_db_query_targeting_scanned_per_returned", pmetric.MetricTypeGauge, "{scanned}/{returned}"))
-	assert.Equal(t, "nginx_connections_accepted", normalizer.TrimPromSuffixes("nginx_connections_accepted", pmetric.MetricTypeGauge, "connections"))
-	assert.Equal(t, "apache_workers", normalizer.TrimPromSuffixes("apache_workers_connections", pmetric.MetricTypeGauge, "connections"))
-	assert.Equal(t, "nginx", normalizer.TrimPromSuffixes("nginx_requests", pmetric.MetricTypeGauge, "requests"))
+	assert.Equal(t, "active_directory_ds_replication_sync_object_pending", TrimPromSuffixes("active_directory_ds_replication_sync_object_pending_total", pmetric.MetricTypeSum, "{objects}"))
+	assert.Equal(t, "apache_current", TrimPromSuffixes("apache_current_connections", pmetric.MetricTypeGauge, "connections"))
+	assert.Equal(t, "bigip_virtual_server_request_count", TrimPromSuffixes("bigip_virtual_server_request_count_total", pmetric.MetricTypeSum, "{requests}"))
+	assert.Equal(t, "mongodbatlas_process_db_query_targeting_scanned_per_returned", TrimPromSuffixes("mongodbatlas_process_db_query_targeting_scanned_per_returned", pmetric.MetricTypeGauge, "{scanned}/{returned}"))
+	assert.Equal(t, "nginx_connections_accepted", TrimPromSuffixes("nginx_connections_accepted", pmetric.MetricTypeGauge, "connections"))
+	assert.Equal(t, "apache_workers", TrimPromSuffixes("apache_workers_connections", pmetric.MetricTypeGauge, "connections"))
+	assert.Equal(t, "nginx", TrimPromSuffixes("nginx_requests", pmetric.MetricTypeGauge, "requests"))
 
 	// Units shouldn't be trimmed if the unit is not a direct match with the suffix, i.e, a suffix "_seconds" shouldn't be removed if unit is "sec" or "s"
-	assert.Equal(t, "system_cpu_load_average_15m_ratio", normalizer.TrimPromSuffixes("system_cpu_load_average_15m_ratio", pmetric.MetricTypeGauge, "1"))
-	assert.Equal(t, "mongodbatlas_process_asserts_per_second", normalizer.TrimPromSuffixes("mongodbatlas_process_asserts_per_second", pmetric.MetricTypeGauge, "{assertions}/s"))
-	assert.Equal(t, "memcached_operation_hit_ratio_percent", normalizer.TrimPromSuffixes("memcached_operation_hit_ratio_percent", pmetric.MetricTypeGauge, "%"))
-	assert.Equal(t, "active_directory_ds_replication_object_rate_per_second", normalizer.TrimPromSuffixes("active_directory_ds_replication_object_rate_per_second", pmetric.MetricTypeGauge, "{objects}/s"))
-	assert.Equal(t, "system_disk_operation_time_seconds", normalizer.TrimPromSuffixes("system_disk_operation_time_seconds_total", pmetric.MetricTypeSum, "s"))
+	assert.Equal(t, "system_cpu_load_average_15m_ratio", TrimPromSuffixes("system_cpu_load_average_15m_ratio", pmetric.MetricTypeGauge, "1"))
+	assert.Equal(t, "mongodbatlas_process_asserts_per_second", TrimPromSuffixes("mongodbatlas_process_asserts_per_second", pmetric.MetricTypeGauge, "{assertions}/s"))
+	assert.Equal(t, "memcached_operation_hit_ratio_percent", TrimPromSuffixes("memcached_operation_hit_ratio_percent", pmetric.MetricTypeGauge, "%"))
+	assert.Equal(t, "active_directory_ds_replication_object_rate_per_second", TrimPromSuffixes("active_directory_ds_replication_object_rate_per_second", pmetric.MetricTypeGauge, "{objects}/s"))
+	assert.Equal(t, "system_disk_operation_time_seconds", TrimPromSuffixes("system_disk_operation_time_seconds_total", pmetric.MetricTypeSum, "s"))
 
-}
-
-func TestTrimPromSuffixesWithFeatureGateDisabled(t *testing.T) {
-	registry := featuregate.NewRegistry()
-	_, err := registry.Register(normalizeNameGate.ID(), featuregate.StageAlpha)
-	require.NoError(t, err)
-	normalizer := NewNormalizer(registry)
-
-	assert.Equal(t, "apache_current_connections", normalizer.TrimPromSuffixes("apache_current_connections", pmetric.MetricTypeGauge, "connections"))
-	assert.Equal(t, "apache_requests_total", normalizer.TrimPromSuffixes("apache_requests_total", pmetric.MetricTypeSum, "1"))
 }
 
 func TestNamespace(t *testing.T) {
@@ -223,27 +210,43 @@ func TestRemoveItem(t *testing.T) {
 
 }
 
-func TestBuildPromCompliantNameWithNormalize(t *testing.T) {
+func TestBuildCompliantNameWithNormalize(t *testing.T) {
 
 	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, true)()
-	require.Equal(t, "system_io_bytes_total", BuildPromCompliantName(createCounter("system.io", "By"), ""))
-	require.Equal(t, "system_network_io_bytes_total", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
-	require.Equal(t, "_3_14_digits", BuildPromCompliantName(createGauge("3.14 digits", ""), ""))
-	require.Equal(t, "envoy_rule_engine_zlib_buf_error", BuildPromCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), ""))
-	require.Equal(t, "foo_bar", BuildPromCompliantName(createGauge(":foo::bar", ""), ""))
-	require.Equal(t, "foo_bar_total", BuildPromCompliantName(createCounter(":foo::bar", ""), ""))
+	addUnitAndTypeSuffixes := true
+	require.Equal(t, "system_io_bytes_total", BuildCompliantName(createCounter("system.io", "By"), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "system_network_io_bytes_total", BuildCompliantName(createCounter("network.io", "By"), "system", addUnitAndTypeSuffixes))
+	require.Equal(t, "_3_14_digits", BuildCompliantName(createGauge("3.14 digits", ""), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "envoy_rule_engine_zlib_buf_error", BuildCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "foo_bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "foo_bar_total", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 
 }
 
-func TestBuildPromCompliantNameWithoutNormalize(t *testing.T) {
+func TestBuildCompliantNameWithSuffixesFeatureGateDisabled(t *testing.T) {
 
 	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, false)()
-	require.Equal(t, "system_io", BuildPromCompliantName(createCounter("system.io", "By"), ""))
-	require.Equal(t, "system_network_io", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
-	require.Equal(t, "system_network_I_O", BuildPromCompliantName(createCounter("network (I/O)", "By"), "system"))
-	require.Equal(t, "_3_14_digits", BuildPromCompliantName(createGauge("3.14 digits", "By"), ""))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildPromCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), ""))
-	require.Equal(t, ":foo::bar", BuildPromCompliantName(createGauge(":foo::bar", ""), ""))
-	require.Equal(t, ":foo::bar", BuildPromCompliantName(createCounter(":foo::bar", ""), ""))
+	addUnitAndTypeSuffixes := true
+	require.Equal(t, "system_io", BuildCompliantName(createCounter("system.io", "By"), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "system_network_io", BuildCompliantName(createCounter("network.io", "By"), "system", addUnitAndTypeSuffixes))
+	require.Equal(t, "system_network_I_O", BuildCompliantName(createCounter("network (I/O)", "By"), "system", addUnitAndTypeSuffixes))
+	require.Equal(t, "_3_14_digits", BuildCompliantName(createGauge("3.14 digits", "By"), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), "", addUnitAndTypeSuffixes))
+	require.Equal(t, ":foo::bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
+	require.Equal(t, ":foo::bar", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
+
+}
+
+func TestBuildCompliantNameWithoutSuffixes(t *testing.T) {
+
+	defer testutil.SetFeatureGateForTest(t, normalizeNameGate, false)()
+	addUnitAndTypeSuffixes := false
+	require.Equal(t, "system_io", BuildCompliantName(createCounter("system.io", "By"), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "system_network_io", BuildCompliantName(createCounter("network.io", "By"), "system", addUnitAndTypeSuffixes))
+	require.Equal(t, "system_network_I_O", BuildCompliantName(createCounter("network (I/O)", "By"), "system", addUnitAndTypeSuffixes))
+	require.Equal(t, "_3_14_digits", BuildCompliantName(createGauge("3.14 digits", "By"), "", addUnitAndTypeSuffixes))
+	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), "", addUnitAndTypeSuffixes))
+	require.Equal(t, ":foo::bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
+	require.Equal(t, ":foo::bar", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 
 }

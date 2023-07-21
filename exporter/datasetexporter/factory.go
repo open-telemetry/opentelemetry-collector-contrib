@@ -27,6 +27,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		BufferSettings:  newDefaultBufferSettings(),
 		TracesSettings:  newDefaultTracesSettings(),
+		LogsSettings:    newDefaultLogsSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),

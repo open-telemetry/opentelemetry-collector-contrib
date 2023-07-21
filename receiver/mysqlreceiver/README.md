@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [observiq], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmysql%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmysql%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -18,7 +19,7 @@ This receiver queries MySQL's global status and InnoDB tables.
 
 This receiver supports MySQL version 8.0
 
-Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`. The `buffer_pool_size` metric requires access to the `information_schema.innodb_metrics` table. Please refer to [setup.sh](./testdata/integration/scripts/setup.sh) for an example of how to configure these permissions. 
+Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`.
 
 ## Configuration
 
@@ -31,6 +32,7 @@ The following settings are optional:
 - `database`: The database name. If not specified, metrics will be collected for all databases.
 
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 - `transport`: (default = `tcp`): Defines the network to use for connecting to the server.
 - `statement_events`: Additional configuration for query to build `mysql.statement_events.count` and `mysql.statement_events.wait.time` metrics:
@@ -48,6 +50,7 @@ receivers:
     password: ${env:MYSQL_PASSWORD}
     database: otel
     collection_interval: 10s
+    initial_delay: 1s
     statement_events:
       digest_text_limit: 120
       time_limit: 24h

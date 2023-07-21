@@ -71,10 +71,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisCmdCallsDataPoint(ts, 1, "attr-val")
+			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
 
 			allMetricsCount++
-			mb.RecordRedisCmdUsecDataPoint(ts, 1, "attr-val")
+			mb.RecordRedisCmdUsecDataPoint(ts, 1, "cmd-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -94,19 +94,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisCPUTimeDataPoint(ts, 1, AttributeState(1))
+			mb.RecordRedisCPUTimeDataPoint(ts, 1, AttributeStateSys)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisDbAvgTTLDataPoint(ts, 1, "attr-val")
+			mb.RecordRedisDbAvgTTLDataPoint(ts, 1, "db-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisDbExpiresDataPoint(ts, 1, "attr-val")
+			mb.RecordRedisDbExpiresDataPoint(ts, 1, "db-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisDbKeysDataPoint(ts, 1, "attr-val")
+			mb.RecordRedisDbKeysDataPoint(ts, 1, "db-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -172,7 +172,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisReplicationOffsetDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisRoleDataPoint(ts, 1, AttributeRole(1))
+			mb.RecordRedisRoleDataPoint(ts, 1, AttributeRoleReplica)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -182,7 +182,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisUptimeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithRedisVersion("attr-val"))
+			metrics := mb.Emit(WithRedisVersion("redis.version-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -198,7 +198,7 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.RedisVersion.Enabled, ok)
 			if mb.resourceAttributesConfig.RedisVersion.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "redis.version-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 1)
@@ -220,7 +220,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of clients pending on a blocking call", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{client}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -234,7 +234,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of client connections (excluding connections from replicas)", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{client}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -248,7 +248,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Biggest input buffer among current client connections", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -260,7 +260,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Longest output list among current client connections", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -272,7 +272,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total number of calls for a command", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{call}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -282,7 +282,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cmd")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "cmd-val", attrVal.Str())
 				case "redis.cmd.usec":
 					assert.False(t, validatedMetrics["redis.cmd.usec"], "Found a duplicate in the metrics slice: redis.cmd.usec")
 					validatedMetrics["redis.cmd.usec"] = true
@@ -299,7 +299,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cmd")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "cmd-val", attrVal.Str())
 				case "redis.commands":
 					assert.False(t, validatedMetrics["redis.commands"], "Found a duplicate in the metrics slice: redis.commands")
 					validatedMetrics["redis.commands"] = true
@@ -318,7 +318,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total number of commands processed by the server", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{command}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -332,7 +332,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total number of connections accepted by the server", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{connection}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -346,7 +346,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of connections rejected because of maxclients limit", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{connection}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -370,7 +370,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "sys", attrVal.Str())
+					assert.EqualValues(t, "sys", attrVal.Str())
 				case "redis.db.avg_ttl":
 					assert.False(t, validatedMetrics["redis.db.avg_ttl"], "Found a duplicate in the metrics slice: redis.db.avg_ttl")
 					validatedMetrics["redis.db.avg_ttl"] = true
@@ -385,14 +385,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "db-val", attrVal.Str())
 				case "redis.db.expires":
 					assert.False(t, validatedMetrics["redis.db.expires"], "Found a duplicate in the metrics slice: redis.db.expires")
 					validatedMetrics["redis.db.expires"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of keyspace keys with an expiration", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{key}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -400,14 +400,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "db-val", attrVal.Str())
 				case "redis.db.keys":
 					assert.False(t, validatedMetrics["redis.db.keys"], "Found a duplicate in the metrics slice: redis.db.keys")
 					validatedMetrics["redis.db.keys"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of keyspace keys", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{key}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -415,14 +415,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "db-val", attrVal.Str())
 				case "redis.keys.evicted":
 					assert.False(t, validatedMetrics["redis.keys.evicted"], "Found a duplicate in the metrics slice: redis.keys.evicted")
 					validatedMetrics["redis.keys.evicted"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of evicted keys due to maxmemory limit", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{key}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -436,7 +436,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total number of key expiration events", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{event}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -450,7 +450,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of successful lookup of keys in the main dictionary", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{hit}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -464,7 +464,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of failed lookup of keys in the main dictionary", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{miss}", ms.At(i).Unit())
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -502,7 +502,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Ratio between used_memory_rss and used_memory", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -590,7 +590,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of changes since the last dump", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{change}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -604,7 +604,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The master offset of the replication backlog buffer", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -616,7 +616,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The server's current replication offset", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -628,7 +628,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Redis node's role", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{role}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -638,14 +638,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("role")
 					assert.True(t, ok)
-					assert.Equal(t, "replica", attrVal.Str())
+					assert.EqualValues(t, "replica", attrVal.Str())
 				case "redis.slaves.connected":
 					assert.False(t, validatedMetrics["redis.slaves.connected"], "Found a duplicate in the metrics slice: redis.slaves.connected")
 					validatedMetrics["redis.slaves.connected"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of connected replicas", ms.At(i).Description())
-					assert.Equal(t, "", ms.At(i).Unit())
+					assert.Equal(t, "{replica}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib], [observiq], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fvcenter%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fvcenter%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -34,6 +35,7 @@ A “Read Only” user assigned to a vSphere with permissions to the vCenter ser
 | password            |         | String           | Required                                                                                                                                                                                                                                        |
 | tls                 |         | TLSClientSetting | Not Required. Will use defaults for [configtls.TLSClientSetting](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). By default insecure settings are rejected and certificate verification is on. |
 | collection_interval | 2m      | Duration         | This receiver collects metrics on an interval. If the vCenter is fairly large, this value may need to be increased. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`                                                              |
+| initial_delay       | 1s      | Duration         | Defines how long this receiver waits before starting.                                                                                                                                                                                           |
 
 ### Example Configuration
 
@@ -44,6 +46,7 @@ receivers:
     username: otelu
     password: ${env:VCENTER_PASSWORD}
     collection_interval: 5m
+    initial_delay: 1s
     metrics: []
 ```
 

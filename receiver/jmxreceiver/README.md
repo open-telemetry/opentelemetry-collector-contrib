@@ -5,6 +5,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]: metrics   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fjmx%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fjmx%20&label=closed&color=blue&logo=opentelemetry) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -39,6 +40,7 @@ receivers:
     endpoint: my_jmx_host:12345
     target_system: jvm
     collection_interval: 10s
+    initial_delay: 1s
     # optional: the same as specifying OTLP receiver endpoint.
     otlp:
       endpoint: mycollectorotlpreceiver:4317
@@ -92,6 +94,10 @@ Corresponds to the `otel.jmx.target.system` property.
 The interval time for the Groovy script to be run and metrics to be exported by the JMX Metric Gatherer within the persistent JRE process.
 
 Corresponds to the `otel.jmx.interval.milliseconds` property.
+
+### initial_delay (default: `1s`)
+
+Defines how long this receiver waits before starting.
 
 ### username
 

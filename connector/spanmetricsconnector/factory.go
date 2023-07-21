@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
 import (
@@ -11,21 +13,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "spanmetrics"
-	// The stability level of the connector.
-	stability = component.StabilityLevelDevelopment
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 )
 
 // NewFactory creates a factory for the spanmetrics connector.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, stability),
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
 	)
 }
 
@@ -34,7 +31,7 @@ func createDefaultConfig() component.Config {
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
 		MetricsFlushInterval:   15 * time.Second,
-		Histogram:              HistogramConfig{Unit: defaultUnit},
+		Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit},
 	}
 }
 
