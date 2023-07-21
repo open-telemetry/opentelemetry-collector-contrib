@@ -8,15 +8,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"math"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -89,10 +92,19 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
+	retryClient := retryablehttp.NewClient()
+	retryClient.HTTPClient, err = prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
 		return err
 	}
+
+	// Configure retry settings
+	// Default settings reference - https://github.com/hashicorp/go-retryablehttp/blob/571a88bc9c3b7c64575f0e9b0f646af1510f2c76/client.go#L51-L53
+	retryClient.RetryWaitMin = 100 * time.Millisecond
+	retryClient.RetryWaitMax = 1 * time.Second
+	retryClient.RetryMax = 3
+
+	prwe.client = retryClient.HTTPClient
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
 
@@ -148,68 +160,108 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
+// labelsToString converts labels to a string representation.
+func labelsToString(labels []prompb.Label) string {
+	var sb strings.Builder
+	for _, l := range labels {
+		sb.WriteString(l.Name)
+		sb.WriteByte('=')
+		sb.WriteString(l.Value)
+		sb.WriteByte(',')
+	}
+	return sb.String()
+}
+
+// handleExport partitions the time series map into N arrays and creates N workers to process them.
 func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	// There are no metrics to export, so return.
 	if len(tsMap) == 0 {
 		return nil
 	}
 
-	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
-	if err != nil {
-		return err
-	}
-	if !prwe.walEnabled() {
-		// Perform a direct export otherwise.
-		return prwe.export(ctx, requests)
+	// Determine the number of partitions (N) based on the concurrency limit and the number of requests
+	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(tsMap))))
+
+	// Partition the time series map into N arrays
+	partitions := partitionTimeSeries(tsMap, concurrencyLimit)
+
+	// Create N workers
+	wg := sync.WaitGroup{}
+	wg.Add(concurrencyLimit)
+
+	for i := 0; i < concurrencyLimit; i++ {
+		// Submit one array per worker
+		go func(partition map[string]*prompb.TimeSeries) {
+			defer wg.Done()
+
+			requests, err := batchTimeSeries(partition, maxBatchByteSize)
+			if err != nil {
+				err = consumererror.NewPermanent(err)
+			}
+
+			// Submit each batch by calling the export function with the entire slice of WriteRequests
+			if errExecute := prwe.export(ctx, requests); errExecute != nil {
+				// We will log the error here, but not return it immediately.
+				// Instead, we'll let the worker complete its execution.
+				prwe.settings.Logger.Error("Failed to export data:", zap.Error(errExecute))
+			}
+		}(partitions[i])
 	}
 
-	// Otherwise the WAL is enabled, and just persist the requests to the WAL
-	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
-	if err = prwe.wal.persistToWAL(requests); err != nil {
-		return consumererror.NewPermanent(err)
-	}
+	// Wait for all workers to finish processing the requests
+	wg.Wait()
+
 	return nil
 }
 
-// export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
-	input := make(chan *prompb.WriteRequest, len(requests))
-	for _, request := range requests {
-		input <- request
+// partitionTimeSeries partitions the time series map into N arrays.
+func partitionTimeSeries(tsMap map[string]*prompb.TimeSeries, concurrencyLimit int) []map[string]*prompb.TimeSeries {
+	partitions := make([]map[string]*prompb.TimeSeries, concurrencyLimit)
+	i := 0
+	for _, ts := range tsMap {
+		if partitions[i] == nil {
+			partitions[i] = make(map[string]*prompb.TimeSeries)
+		}
+		partitions[i][labelsToString(ts.Labels)] = ts
+		i++
+		if i >= concurrencyLimit {
+			i = 0
+		}
 	}
-	close(input)
+	return partitions
+}
 
+func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
+	// Use a wait group to wait for the goroutine to finish processing the requests
 	var wg sync.WaitGroup
+	wg.Add(len(requests))
 
-	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(requests))))
-	wg.Add(concurrencyLimit) // used to wait for workers to be finished
-
+	// Use a mutex to handle concurrent errors
 	var mu sync.Mutex
 	var errs error
-	// Run concurrencyLimit of workers until there
-	// is no more requests to execute in the input channel.
-	for i := 0; i < concurrencyLimit; i++ {
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case <-ctx.Done(): // Check firstly to ensure that the context wasn't cancelled.
-					return
 
-				case request, ok := <-input:
-					if !ok {
-						return
-					}
-					if errExecute := prwe.execute(ctx, request); errExecute != nil {
-						mu.Lock()
-						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
-						mu.Unlock()
-					}
-				}
+	// Run the goroutine to process each WriteRequest in the slice
+	for _, request := range requests {
+		go func(request *prompb.WriteRequest) {
+			defer wg.Done()
+
+			// Check if the context is already cancelled
+			select {
+			case <-ctx.Done():
+				return
+			default:
 			}
-		}()
+
+			// Process the WriteRequest
+			if errExecute := prwe.execute(ctx, request); errExecute != nil {
+				mu.Lock()
+				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
+				mu.Unlock()
+			}
+		}(request)
 	}
+
+	// Wait for all goroutines to finish processing the requests
 	wg.Wait()
 
 	return errs
