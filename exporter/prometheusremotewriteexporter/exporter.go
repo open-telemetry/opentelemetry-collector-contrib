@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"math"
 	"net/http"
@@ -27,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
@@ -197,6 +197,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 			requests, err := batchTimeSeries(partition, maxBatchByteSize)
 			if err != nil {
 				err = consumererror.NewPermanent(err)
+				prwe.settings.Logger.Error("Failed to batch time series:", zap.Error(err))
 			}
 
 			if !prwe.walEnabled() {
@@ -241,37 +242,26 @@ func partitionTimeSeries(tsMap map[string]*prompb.TimeSeries, concurrencyLimit i
 }
 
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
-	// Use a wait group to wait for the goroutine to finish processing the requests
-	var wg sync.WaitGroup
-	wg.Add(len(requests))
-
 	// Use a mutex to handle concurrent errors
 	var mu sync.Mutex
 	var errs error
 
-	// Run the goroutine to process each WriteRequest in the slice
+	// Process each WriteRequest sequentially
 	for _, request := range requests {
-		go func(request *prompb.WriteRequest) {
-			defer wg.Done()
-
-			// Check if the context is already cancelled
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-
+		// Check if the context is already cancelled
+		select {
+		case <-ctx.Done():
+			// Even if the context is already cancelled, return the accumulated errors, if any.
+			return errs
+		default:
 			// Process the WriteRequest
 			if errExecute := prwe.execute(ctx, request); errExecute != nil {
 				mu.Lock()
 				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 				mu.Unlock()
 			}
-		}(request)
+		}
 	}
-
-	// Wait for all goroutines to finish processing the requests
-	wg.Wait()
 
 	return errs
 }

@@ -5,7 +5,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -29,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
