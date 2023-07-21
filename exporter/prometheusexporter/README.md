@@ -4,13 +4,14 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
-| Distributions | [core], [contrib], [aws], [observiq], [redhat], [sumo] |
+| Distributions | [core], [contrib], [aws], [grafana-agent], [observiq], [redhat], [sumo] |
 | Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fprometheus%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fprometheus%20&label=closed&color=blue&logo=opentelemetry) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [aws]: https://github.com/aws-observability/aws-otel-collector
+[grafana-agent]: https://github.com/grafana/agent
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [redhat]: https://github.com/os-observability/redhat-opentelemetry-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
