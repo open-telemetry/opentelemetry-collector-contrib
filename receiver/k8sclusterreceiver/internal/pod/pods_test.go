@@ -54,6 +54,26 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 }
 
+func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
+	pod := testutils.NewPodWithContainer(
+		"1",
+		testutils.NewPodSpecWithContainer("container-name"),
+		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+	)
+
+	m := GetMetrics(receivertest.NewNopCreateSettings(), pod)
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_evicted.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+}
+
 var containerIDWithPreifx = func(containerID string) string {
 	return "docker://" + containerID
 }

@@ -43,6 +43,7 @@ func TestReceiver(t *testing.T) {
 
 	// Setup k8s resources.
 	numPods := 2
+	numPodMetrics := 6
 	numNodes := 1
 	numQuotas := 2
 	numClusterQuotaMetrics := numQuotas * 4
@@ -55,10 +56,11 @@ func TestReceiver(t *testing.T) {
 
 	// Expects metric data from nodes and pods where each metric data
 	// struct corresponds to one resource.
-	expectedNumMetrics := numPods + numNodes + numClusterQuotaMetrics
+	expectedNumMetrics := numPods*numPodMetrics + numNodes + numClusterQuotaMetrics
 	var initialDataPointCount int
 	require.Eventually(t, func() bool {
 		initialDataPointCount = sink.DataPointCount()
+
 		return initialDataPointCount == expectedNumMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
@@ -67,10 +69,11 @@ func TestReceiver(t *testing.T) {
 	deletePods(t, client, numPodsToDelete)
 
 	// Expects metric data from a node, since other resources were deleted.
-	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes + numClusterQuotaMetrics
+	expectedNumMetrics = (numPods-numPodsToDelete)*numPodMetrics + numNodes + numClusterQuotaMetrics
 	var metricsCountDelta int
 	require.Eventually(t, func() bool {
 		metricsCountDelta = sink.DataPointCount() - initialDataPointCount
+
 		return metricsCountDelta == expectedNumMetrics
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
@@ -113,8 +116,9 @@ func TestReceiverWithManyResources(t *testing.T) {
 	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
 
 	numPods := 1000
+	numPodMetrics := 6
 	numQuotas := 2
-	numExpectedMetrics := numPods + numQuotas*4
+	numExpectedMetrics := numPods*numPodMetrics + numQuotas*4
 	createPods(t, client, numPods)
 	createClusterQuota(t, osQuotaClient, 2)
 

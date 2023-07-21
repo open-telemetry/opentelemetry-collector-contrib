@@ -470,6 +470,36 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -500,6 +530,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -530,6 +591,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -560,6 +652,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -590,6 +713,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -620,6 +774,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -650,6 +835,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -680,6 +896,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -710,6 +957,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -740,6 +1018,37 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: "1"
+          - description: Whether this pod status reason is Evicted (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_evicted
+            unit: "1"
+          - description: Whether this pod status reason is NodeAffinity (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_affinity
+            unit: "1"
+          - description: Whether this pod status reason is NodeLost (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_node_lost
+            unit: "1"
+          - description: Whether this pod status reason is Shutdown (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_shutdown
+            unit: "1"
+          - description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.status_reason_unexpected_admission_error
+            unit: "1"
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

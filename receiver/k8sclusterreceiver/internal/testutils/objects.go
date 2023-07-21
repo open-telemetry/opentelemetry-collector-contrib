@@ -233,6 +233,25 @@ func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodSta
 	}
 }
 
+func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
+	return &corev1.PodStatus{
+		Phase:  corev1.PodFailed,
+		Reason: "Evicted",
+		ContainerStatuses: []corev1.ContainerStatus{
+			{
+				Name:         containerName,
+				Ready:        true,
+				RestartCount: 3,
+				Image:        "container-image-name",
+				ContainerID:  containerID,
+				State: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{},
+				},
+			},
+		},
+	}
+}
+
 func WithOwnerReferences(or []v1.OwnerReference, obj interface{}) interface{} {
 	switch o := obj.(type) {
 	case *corev1.Pod:

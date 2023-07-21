@@ -22,6 +22,46 @@ Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
+### k8s.pod.status_reason_evicted
+
+Whether this pod status reason is Evicted (1), or not (0).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.pod.status_reason_node_affinity
+
+Whether this pod status reason is NodeAffinity (1), or not (0).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.pod.status_reason_node_lost
+
+Whether this pod status reason is NodeLost (1), or not (0).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.pod.status_reason_shutdown
+
+Whether this pod status reason is Shutdown (1), or not (0).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.pod.status_reason_unexpected_admission_error
+
+Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

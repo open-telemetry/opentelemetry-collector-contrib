@@ -37,3 +37,33 @@ metrics:
     unit: 1
     gauge:
       value_type: int
+  k8s.pod.status_reason_evicted:
+    enabled: true
+    description: Whether this pod status reason is Evicted (1), or not (0).
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.pod.status_reason_node_affinity:
+    enabled: true
+    description: Whether this pod status reason is NodeAffinity (1), or not (0).
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.pod.status_reason_node_lost:
+    enabled: true
+    description: Whether this pod status reason is NodeLost (1), or not (0).
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.pod.status_reason_shutdown:
+    enabled: true
+    description: Whether this pod status reason is Shutdown (1), or not (0).
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.pod.status_reason_unexpected_admission_error:
+    enabled: true
+    description: Whether this pod status reason is Unexpected Admission Error (1), or not (0).
+    unit: 1
+    gauge:
+      value_type: int

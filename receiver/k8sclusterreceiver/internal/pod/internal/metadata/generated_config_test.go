@@ -26,7 +26,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sPodPhase: MetricConfig{Enabled: true},
+					K8sPodPhase:                                MetricConfig{Enabled: true},
+					K8sPodStatusReasonEvicted:                  MetricConfig{Enabled: true},
+					K8sPodStatusReasonNodeAffinity:             MetricConfig{Enabled: true},
+					K8sPodStatusReasonNodeLost:                 MetricConfig{Enabled: true},
+					K8sPodStatusReasonShutdown:                 MetricConfig{Enabled: true},
+					K8sPodStatusReasonUnexpectedAdmissionError: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					K8sNamespaceName:       ResourceAttributeConfig{Enabled: true},
@@ -41,7 +46,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					K8sPodPhase: MetricConfig{Enabled: false},
+					K8sPodPhase:                                MetricConfig{Enabled: false},
+					K8sPodStatusReasonEvicted:                  MetricConfig{Enabled: false},
+					K8sPodStatusReasonNodeAffinity:             MetricConfig{Enabled: false},
+					K8sPodStatusReasonNodeLost:                 MetricConfig{Enabled: false},
+					K8sPodStatusReasonShutdown:                 MetricConfig{Enabled: false},
+					K8sPodStatusReasonUnexpectedAdmissionError: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					K8sNamespaceName:       ResourceAttributeConfig{Enabled: false},

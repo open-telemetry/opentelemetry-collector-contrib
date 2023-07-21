@@ -22,13 +22,13 @@ resourceMetrics:
           - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
             gauge:
               dataPoints:
-                - asInt: "3"
+                - asInt: "4"
             name: k8s.pod.phase
             unit: "1"
           - description: Whether this pod status reason is Evicted (1), or not (0).
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "1"
             name: k8s.pod.status_reason_evicted
             unit: "1"
           - description: Whether this pod status reason is NodeAffinity (1), or not (0).

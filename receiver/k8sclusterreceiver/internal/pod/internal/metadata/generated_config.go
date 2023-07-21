@@ -25,12 +25,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for k8s/pod metrics.
 type MetricsConfig struct {
-	K8sPodPhase MetricConfig `mapstructure:"k8s.pod.phase"`
+	K8sPodPhase                                MetricConfig `mapstructure:"k8s.pod.phase"`
+	K8sPodStatusReasonEvicted                  MetricConfig `mapstructure:"k8s.pod.status_reason_evicted"`
+	K8sPodStatusReasonNodeAffinity             MetricConfig `mapstructure:"k8s.pod.status_reason_node_affinity"`
+	K8sPodStatusReasonNodeLost                 MetricConfig `mapstructure:"k8s.pod.status_reason_node_lost"`
+	K8sPodStatusReasonShutdown                 MetricConfig `mapstructure:"k8s.pod.status_reason_shutdown"`
+	K8sPodStatusReasonUnexpectedAdmissionError MetricConfig `mapstructure:"k8s.pod.status_reason_unexpected_admission_error"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		K8sPodPhase: MetricConfig{
+			Enabled: true,
+		},
+		K8sPodStatusReasonEvicted: MetricConfig{
+			Enabled: true,
+		},
+		K8sPodStatusReasonNodeAffinity: MetricConfig{
+			Enabled: true,
+		},
+		K8sPodStatusReasonNodeLost: MetricConfig{
+			Enabled: true,
+		},
+		K8sPodStatusReasonShutdown: MetricConfig{
+			Enabled: true,
+		},
+		K8sPodStatusReasonUnexpectedAdmissionError: MetricConfig{
 			Enabled: true,
 		},
 	}

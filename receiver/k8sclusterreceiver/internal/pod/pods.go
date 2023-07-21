@@ -75,6 +75,46 @@ func GetMetrics(set receiver.CreateSettings, pod *corev1.Pod) pmetric.Metrics {
 	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mbphase.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
+
+	switch pod.Status.Reason {
+	case "Evicted":
+		mbphase.RecordK8sPodStatusReasonEvictedDataPoint(ts, 1)
+		mbphase.RecordK8sPodStatusReasonNodeAffinityDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeLostDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonShutdownDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonUnexpectedAdmissionErrorDataPoint(ts, 0)
+	case "NodeAffinity":
+		mbphase.RecordK8sPodStatusReasonEvictedDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeAffinityDataPoint(ts, 1)
+		mbphase.RecordK8sPodStatusReasonNodeLostDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonShutdownDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonUnexpectedAdmissionErrorDataPoint(ts, 0)
+	case "NodeLost":
+		mbphase.RecordK8sPodStatusReasonEvictedDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeAffinityDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeLostDataPoint(ts, 1)
+		mbphase.RecordK8sPodStatusReasonShutdownDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonUnexpectedAdmissionErrorDataPoint(ts, 0)
+	case "Shutdown":
+		mbphase.RecordK8sPodStatusReasonEvictedDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeAffinityDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeLostDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonShutdownDataPoint(ts, 1)
+		mbphase.RecordK8sPodStatusReasonUnexpectedAdmissionErrorDataPoint(ts, 0)
+	case "UnexpectedAdmissionError":
+		mbphase.RecordK8sPodStatusReasonEvictedDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeAffinityDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeLostDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonShutdownDataPoint(ts, 1)
+		mbphase.RecordK8sPodStatusReasonUnexpectedAdmissionErrorDataPoint(ts, 1)
+	default:
+		mbphase.RecordK8sPodStatusReasonEvictedDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeAffinityDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonNodeLostDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonShutdownDataPoint(ts, 0)
+		mbphase.RecordK8sPodStatusReasonUnexpectedAdmissionErrorDataPoint(ts, 0)
+	}
+
 	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(pod.Namespace), imetadataphase.WithK8sNodeName(pod.Spec.NodeName), imetadataphase.WithK8sPodName(pod.Name), imetadataphase.WithK8sPodUID(string(pod.UID)), imetadataphase.WithOpencensusResourcetype("k8s"))
 
 	for _, c := range pod.Spec.Containers {
