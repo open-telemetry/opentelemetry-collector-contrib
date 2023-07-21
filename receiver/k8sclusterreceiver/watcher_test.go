@@ -197,6 +197,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				client:        newFakeClientWithAllResources(),
 				logger:        obsLogger,
 				dataCollector: collection.NewDataCollector(receivertest.NewNopCreateSettings(), []string{}, []string{}),
+				config:        &Config{},
 			}
 
 			assert.NoError(t, rw.prepareSharedInformerFactory())
