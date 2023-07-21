@@ -125,12 +125,9 @@ func (md *metadata) validateMetrics() error {
 				"only one of the following has to be specified: sum, gauge", mn))
 			continue
 		}
-		// TODO: Remove once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23573 is merged.
-		if md.Type != "redis" {
-			if err := m.validate(); err != nil {
-				errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
-				continue
-			}
+		if err := m.validate(); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
+			continue
 		}
 		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
 		for _, attr := range m.Attributes {
