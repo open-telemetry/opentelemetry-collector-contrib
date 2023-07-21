@@ -12,7 +12,8 @@ and extend it with more fields if needed.
 | collection_interval |[time-Duration](#time-Duration)| 10s |  |
 | endpoint |string|  | Endpoint configures the address for this network connection. For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address, or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name. If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.  |
 | transport |string| tcp | Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".  |
-| password |string|  | Optional password. Must match the password specified in the requirepass server configuration option.  |
+| username |string|  | Optional username. Use the specified username to authenticate the current connection with one of the connections defined in the ACL list when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system. |
+| password |string|  | Optional password. Must match the password specified in the requirepass server configuration option or the user's password when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system. |
 | tls |[tls-TLSClientSetting](#tls-TLSClientSetting)| <no value> | TLSClientSetting contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.  |
 | metrics |[metrics-MetricsSettings](#metrics-MetricsSettings)| <no value> | MetricsSettings provides settings for redisreceiver metrics.  |
 

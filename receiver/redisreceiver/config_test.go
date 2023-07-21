@@ -38,6 +38,7 @@ func TestConfig(t *testing.T) {
 			TLS: configtls.TLSClientSetting{
 				Insecure: true,
 			},
+			Username: "test",
 			Password: "test",
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
