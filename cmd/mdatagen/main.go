@@ -61,11 +61,13 @@ func run(ymlPath string) error {
 			return err
 		}
 
-		if err = inlineReplace(
-			filepath.Join(tmplDir, "readme.md.tmpl"),
-			filepath.Join(ymlDir, "README.md"),
-			md, statusStart, statusEnd); err != nil {
-			return err
+		if _, err := os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
+			if err = inlineReplace(
+				filepath.Join(tmplDir, "readme.md.tmpl"),
+				filepath.Join(ymlDir, "README.md"),
+				md, statusStart, statusEnd); err != nil {
+				return err
+			}
 		}
 	}
 	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
