@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"math"
 	"net/http"
@@ -224,20 +225,27 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	return nil
 }
 
-// partitionTimeSeries partitions the time series map into N arrays.
+// partitionTimeSeries partitions the time series map into N arrays using hashing.
 func partitionTimeSeries(tsMap map[string]*prompb.TimeSeries, concurrencyLimit int) []map[string]*prompb.TimeSeries {
 	partitions := make([]map[string]*prompb.TimeSeries, concurrencyLimit)
-	i := 0
-	for _, ts := range tsMap {
-		if partitions[i] == nil {
-			partitions[i] = make(map[string]*prompb.TimeSeries)
-		}
-		partitions[i][labelsToString(ts.Labels)] = ts
-		i++
-		if i >= concurrencyLimit {
-			i = 0
-		}
+	for i := 0; i < concurrencyLimit; i++ {
+		partitions[i] = make(map[string]*prompb.TimeSeries)
 	}
+
+	// Consistent hash function using CRC32
+	consistentHash := func(key string) int {
+		// Use a hash function (e.g., CRC32) to convert the key to an integer value.
+		hash := crc32.ChecksumIEEE([]byte(key))
+		// Modulo the hash with the number of partitions to get the partition index.
+		return int(hash % uint32(concurrencyLimit))
+	}
+
+	for _, ts := range tsMap {
+		// Compute a hash for the labels of the time series and use it to determine the partition index.
+		hash := consistentHash(labelsToString(ts.Labels))
+		partitions[hash][labelsToString(ts.Labels)] = ts
+	}
+
 	return partitions
 }
 
