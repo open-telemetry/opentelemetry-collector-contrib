@@ -118,6 +118,7 @@ func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {
 	}
 
 	return &metadata.KubernetesMetadata{
+		EntityType:    "container",
 		ResourceIDKey: conventions.AttributeContainerID,
 		ResourceID:    metadataPkg.ResourceID(utils.StripContainerID(cs.ContainerID)),
 		Metadata:      mdata,

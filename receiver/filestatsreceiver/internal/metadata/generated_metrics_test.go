@@ -58,7 +58,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordFileAtimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordFileCtimeDataPoint(ts, 1, "attr-val")
+			mb.RecordFileCtimeDataPoint(ts, 1, "file.permissions-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -68,7 +68,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordFileSizeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithFileName("attr-val"), WithFilePath("attr-val"))
+			metrics := mb.Emit(WithFileName("file.name-val"), WithFilePath("file.path-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -84,14 +84,14 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.FileName.Enabled, ok)
 			if mb.resourceAttributesConfig.FileName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "file.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("file.path")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.FilePath.Enabled, ok)
 			if mb.resourceAttributesConfig.FilePath.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "file.path-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 2)
@@ -137,7 +137,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("file.permissions")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "file.permissions-val", attrVal.Str())
 				case "file.mtime":
 					assert.False(t, validatedMetrics["file.mtime"], "Found a duplicate in the metrics slice: file.mtime")
 					validatedMetrics["file.mtime"] = true
