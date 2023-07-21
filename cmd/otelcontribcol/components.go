@@ -20,13 +20,8 @@ import (
 	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
-<<<<<<< HEAD
 	datadogconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
-	exampleconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exampleconnector"
-	exconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exconnector"
-=======
 	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
->>>>>>> 02f688dd0e96cd10bb23a030739887570533e61d
 	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	alibabacloudlogserviceexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -417,9 +412,7 @@ func components() (otelcol.Factories, error) {
 		routingconnector.NewFactory(),
 		servicegraphconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
-		exampleconnector.NewFactory(),
 		datadogconnector.NewFactory(),
-		exconnector.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

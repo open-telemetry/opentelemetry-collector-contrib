@@ -27,7 +27,8 @@ func NewFactory() connector.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	// return &Config{}
+	return struct{}{}
 }
 
 // defines the consumer type of the connector
