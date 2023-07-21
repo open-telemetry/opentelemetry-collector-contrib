@@ -90,6 +90,16 @@ func run(ymlPath string) error {
 	}
 
 	if len(md.Metrics) == 0 {
+		if len(md.ResourceAttributes) > 0 {
+			if err = generateFile(filepath.Join(tmplDir, "resource.go.tmpl"),
+				filepath.Join(codeDir, "generated_resource.go"), md); err != nil {
+				return err
+			}
+			if err = generateFile(filepath.Join(tmplDir, "resource_test.go.tmpl"),
+				filepath.Join(codeDir, "generated_resource_test.go"), md); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
