@@ -13,12 +13,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
@@ -689,6 +691,29 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		require.EqualValues(t, expected, got)
 	}
+}
+
+func TestPolicyLoggerAddsPolicyName(t *testing.T) {
+	// prepare
+	zc, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(zc)
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = logger
+
+	cfg := &sharedPolicyCfg{
+		Type: AlwaysSample, // we test only one evaluator
+	}
+
+	evaluator, err := getSharedPolicyEvaluator(set, cfg)
+	require.NoError(t, err)
+
+	// test
+	evaluator.Evaluate(context.Background(), pcommon.TraceID{}, nil)
+
+	// verify
+	assert.Len(t, logs.All(), 1)
+	assert.Equal(t, AlwaysSample, logs.All()[0].ContextMap()["policy"])
 }
 
 func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {
