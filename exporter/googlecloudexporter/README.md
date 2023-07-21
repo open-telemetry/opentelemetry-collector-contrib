@@ -241,6 +241,54 @@ following proxy environment variables:
 If set at Collector start time then exporters, regardless of protocol,
 will or will not proxy traffic as defined by these environment variables.
 
+### Preventing metric label collisions
+
+The metrics exporter can add metric labels to timeseries, such as when setting
+`metric.service_resource_labels`, `metric.instrumentation_library_labels` (both
+on by default), or when using `metric.resource_filters` to convert resource
+attributes to metric labels.
+
+However, if your metrics already contain any of these labels they will fail to
+export to Google Cloud with a `Duplicate label key encountered` error. Such
+labels from the default features above include:
+
+* `service_name`
+* `service_namespace`
+* `service_instance_id`
+* `instrumentation_source`
+* `instrumentation_version`
+
+*(Note that these are the sanitized versions of OpenTelemetry attributes, with `.` replaced by `_` to be compatible with Cloud Monitoring. For example, `service_name` comes from the [`service.name` resource attribute](https://github.com/open-telemetry/opentelemetry-specification/blob/dc78006c12d9767fd2e35b691706c7572a76fd43/specification/resource/semantic_conventions/README.md#service).)*
+
+To prevent this, it's recommended to use the [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/c7bd50ce773e66be327ef7618775a884a774e5d1/processor/transformprocessor) in your collector config to rename existing metric labels to preserve them, for example:
+
+```yaml
+processors:
+  transform:
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(attributes["exported_service_name"], attributes["service_name"])
+      - delete_key(attributes, "service_name")
+      - set(attributes["exported_service_namespace"], attributes["service_namespace"])
+      - delete_key(attributes, "service_namespace")
+      - set(attributes["exported_service_instance_id"], attributes["service_instance_id"])
+      - delete_key(attributes, "service_instance_id")
+      - set(attributes["exported_instrumentation_source"], attributes["instrumentation_source"])
+      - delete_key(attributes, "instrumentation_source")
+      - set(attributes["exported_instrumentation_version"], attributes["instrumentation_version"])
+      - delete_key(attributes, "instrumentation_version")
+```
+
+The same method can be used for any resource attributes being filtered to metric
+labels, or metric labels which might collide with the GCP monitored resource
+used with resource detection.
+
+Keep in mind that your conflicting attributes may contain dots instead of
+underscores (eg, `service.name`), but these will still collide once all
+attributes are normalized to metric labels. In this case you will need to update
+the collector config above appropriately.
+
 ### Logging Example
 
 The logging exporter processes OpenTelemetry log entries and exports them to GCP Cloud Logging. Logs can be collected using one 
