@@ -9,7 +9,7 @@ change_type: 'bug_fix'
 component: 'vcenterreceiver'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Allows timeseries timestamps to scale without repeating."
+note: "Added new resource attribute, vcenter.system.device.id, to more accurately reflect emission of metrics"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [23669]
@@ -18,5 +18,5 @@ issues: [23669]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
- There was an issue where multiple same attribute values of a metric (time-series) would have the same timestamps.
- In particular, they would cycle through the same 5 timestamps. This will allow the timestamps of a time-series to scale correctly.
+ There was previously an issue with the vcenter receiver where multiple datapoints within a timeseries contained the same timestamps.
+ This was remedied by more accurately describing the metric emission by a resource attribute that differentiates the aforementioned same timestamps/datapoints.

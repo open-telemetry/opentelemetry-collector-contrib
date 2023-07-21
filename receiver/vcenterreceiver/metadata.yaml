@@ -33,6 +33,10 @@ resource_attributes:
     description: The instance UUID of the virtual machine.
     enabled: true
     type: string
+  vcenter.system.device.id:
+    description: The unique identifier of the specific hardware or virtual component being utilized in the vCenter environment.
+    enabled: true
+    type: string
 
 attributes:
   disk_state:
@@ -72,14 +76,6 @@ attributes:
     enum:
       - "on"
       - "off"
-  host_disk_instance:
-    name_override: disk_instance
-    description: The name of the storage device that is being recorded.
-    type: string
-  network_interface_instance:
-    name_override: network_interface
-    description: The name the network interface.
-    type: string
 
 metrics:
   vcenter.cluster.cpu.limit:

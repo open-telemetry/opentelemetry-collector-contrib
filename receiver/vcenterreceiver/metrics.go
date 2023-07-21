@@ -5,7 +5,9 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"sort"
 
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -135,6 +137,8 @@ var hostPerfMetricList = []string{
 func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 	ctx context.Context,
 	host mo.HostSystem,
+	clusterName string,
+	hostName string,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	spec := types.PerfQuerySpec{
@@ -152,7 +156,7 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 		errs.AddPartial(1, err)
 		return
 	}
-	v.processHostPerformance(info.results)
+	v.processHostPerformance(info.results, clusterName, hostName)
 }
 
 // vmPerfMetricList may be customizable in the future but here is the full list of Virtual Machine Performance Counters
@@ -176,6 +180,9 @@ var vmPerfMetricList = []string{
 func (v *vcenterMetricScraper) recordVMPerformance(
 	ctx context.Context,
 	vm mo.VirtualMachine,
+	vmMain *object.VirtualMachine,
+	clusterName string,
+	hostname string,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	spec := types.PerfQuerySpec{
@@ -193,26 +200,29 @@ func (v *vcenterMetricScraper) recordVMPerformance(
 		return
 	}
 
-	v.processVMPerformanceMetrics(info)
+	v.processVMPerformanceMetrics(info, vmMain, clusterName, hostname, vm.Config.InstanceUuid)
 }
 
-func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult) {
+func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult, vmMain *object.VirtualMachine, clusterName, hostname, vmUUID string) {
 	for _, m := range info.results {
-		for _, val := range m.Value {
+		sort.Slice(m.Value, func(i, j int) bool {
+			return m.Value[i].Instance < m.Value[j].Instance
+		})
+		for idx, val := range m.Value {
 			for j, nestedValue := range val.Value {
 				si := m.SampleInfo[j]
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.bytesTx.average":
-					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.bytesRx.average":
-					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.usage.average":
-					v.mb.RecordVcenterVMNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
+					v.mb.RecordVcenterVMNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				case "net.packetsTx.summation":
-					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.packetsRx.summation":
-					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Performance monitoring level 2 metrics required
 				case "disk.totalReadLatency.average":
@@ -227,27 +237,37 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}
 			}
+			if idx >= 1 && val.Instance != m.Value[idx-1].Instance {
+				v.mb.EmitForResource(metadata.WithVcenterClusterName(clusterName),
+					metadata.WithVcenterHostName(hostname),
+					metadata.WithVcenterVMID(vmUUID),
+					metadata.WithVcenterVMName(vmMain.Name()),
+					metadata.WithVcenterSystemDeviceID(m.Value[idx-1].Instance))
+			}
 		}
 	}
 }
 
-func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.EntityMetric) {
+func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.EntityMetric, clusterName, hostName string) {
 	for _, m := range metrics {
-		for _, val := range m.Value {
+		sort.Slice(m.Value, func(i, j int) bool {
+			return m.Value[i].Instance < m.Value[j].Instance
+		})
+		for idx, val := range m.Value {
 			for j, nestedValue := range val.Value {
 				si := m.SampleInfo[j]
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.usage.average":
-					v.mb.RecordVcenterHostNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
+					v.mb.RecordVcenterHostNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				case "net.bytesTx.average":
-					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.bytesRx.average":
-					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
+					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.packetsTx.summation":
-					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.packetsRx.summation":
-					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Following requires performance level 2
 				case "net.errorsRx.summation":
@@ -263,10 +283,15 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 
 				// Following requires performance level 4
 				case "disk.read.average":
-					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, val.Instance)
+					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
 				case "disk.write.average":
-					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
+					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
 				}
+			}
+			if idx >= 1 && val.Instance != m.Value[idx-1].Instance {
+				v.mb.EmitForResource(metadata.WithVcenterClusterName(clusterName),
+					metadata.WithVcenterHostName(hostName),
+					metadata.WithVcenterSystemDeviceID(m.Value[idx-1].Instance))
 			}
 		}
 	}
