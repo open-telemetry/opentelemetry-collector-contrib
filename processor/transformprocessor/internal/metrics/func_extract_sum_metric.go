@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
 type extractSumMetricArguments struct {
@@ -19,11 +19,11 @@ type extractSumMetricArguments struct {
 	Monotonic bool      `ottlarg:"1"`
 }
 
-func newExtractSumMetricFactory() ottl.Factory[ottldatapoint.TransformContext] {
+func newExtractSumMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
 	return ottl.NewFactory("extract_sum_metric", &extractSumMetricArguments{}, createExtractSumMetricFunction)
 }
 
-func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*extractSumMetricArguments)
 
 	if !ok {
@@ -43,7 +43,7 @@ type SumCountDataPoint interface {
 	Timestamp() pcommon.Timestamp
 }
 
-func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	aggTemp := pmetric.AggregationTemporality(aggTempEnum)
 	switch aggTemp {
 	case pmetric.AggregationTemporalityDelta, pmetric.AggregationTemporalityCumulative:
@@ -51,7 +51,7 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", aggTemp.String())
 	}
 
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
 		metric := tCtx.GetMetric()
 
 		switch metric.Type() {
@@ -60,9 +60,7 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 			return nil, nil
 		}
 
-		// We're in a datapoint context, but we don't want to create a new Metric for each datapoint
-		// so we first check if it doesn't already exist
-		sumMetric := getOrCreateSumMetric(
+		sumMetric := createSumMetric(
 			tCtx.GetMetrics(),
 			metric.Name()+"_sum",
 			metric.Description(),
@@ -71,19 +69,31 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 			monotonic,
 		)
 
-		histogramDatapoint := tCtx.GetDataPoint().(SumCountDataPoint)
-		sumDp := sumMetric.Sum().DataPoints().AppendEmpty()
-		histogramDatapoint.Attributes().CopyTo(sumDp.Attributes())
-		sumDp.SetDoubleValue(histogramDatapoint.Sum())
-		sumDp.SetStartTimestamp(histogramDatapoint.StartTimestamp())
-		sumDp.SetTimestamp(histogramDatapoint.Timestamp())
+		switch metric.Type() {
+		case pmetric.MetricTypeHistogram:
+			dataPoints := metric.Histogram().DataPoints()
+			for i := 0; i < dataPoints.Len(); i++ {
+				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
+			}
+		case pmetric.MetricTypeExponentialHistogram:
+			dataPoints := metric.ExponentialHistogram().DataPoints()
+			for i := 0; i < dataPoints.Len(); i++ {
+				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
+			}
+		case pmetric.MetricTypeSummary:
+			dataPoints := metric.Summary().DataPoints()
+			for i := 0; i < dataPoints.Len(); i++ {
+				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
+			}
+		default:
+			return nil, nil
+		}
 
 		return nil, nil
 	}, nil
 }
 
-// getOrCreateSumMetric looks for the sum metric in the metric slice, and creates one if it can't find it
-func getOrCreateSumMetric(
+func createSumMetric(
 	metrics pmetric.MetricSlice,
 	name string,
 	description string,
@@ -91,20 +101,6 @@ func getOrCreateSumMetric(
 	aggregationTemporality pmetric.AggregationTemporality,
 	isMonotonic bool,
 ) pmetric.Metric {
-	// try to find the metric in the slice
-	for i := 0; i < metrics.Len(); i++ {
-		metric := metrics.At(i)
-		found := (metric.Name() == name &&
-			metric.Description() == description &&
-			metric.Unit() == unit &&
-			metric.Type() == pmetric.MetricTypeSum &&
-			metric.Sum().IsMonotonic() == isMonotonic)
-		if found {
-			return metric
-		}
-	}
-
-	// couldn't find the metric, create it
 	sumMetric := metrics.AppendEmpty()
 	sumMetric.SetDescription(description)
 	sumMetric.SetName(name)
@@ -112,4 +108,12 @@ func getOrCreateSumMetric(
 	sumMetric.SetEmptySum().SetAggregationTemporality(aggregationTemporality)
 	sumMetric.Sum().SetIsMonotonic(isMonotonic)
 	return sumMetric
+}
+
+func addSumDataPoint(dataPoint SumCountDataPoint, destination pmetric.NumberDataPointSlice) {
+	newDp := destination.AppendEmpty()
+	dataPoint.Attributes().CopyTo(newDp.Attributes())
+	newDp.SetDoubleValue(dataPoint.Sum())
+	newDp.SetStartTimestamp(dataPoint.StartTimestamp())
+	newDp.SetTimestamp(dataPoint.Timestamp())
 }

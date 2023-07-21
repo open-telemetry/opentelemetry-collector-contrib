@@ -16,7 +16,6 @@ func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext
 	datapointFunctions := ottl.CreateFactoryMap[ottldatapoint.TransformContext](
 		newConvertSumToGaugeFactory(),
 		newConvertGaugeToSumFactory(),
-		newExtractSumMetricFactory(),
 		newConvertSummarySumValToSumFactory(),
 		newConvertSummaryCountValToSumFactory(),
 	)
@@ -29,5 +28,15 @@ func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext
 }
 
 func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
-	return ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
+	functions := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
+
+	metricFunctions := ottl.CreateFactoryMap(
+		newExtractSumMetricFactory(),
+	)
+
+	for k, v := range metricFunctions {
+		functions[k] = v
+
+	}
+	return functions
 }

@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
 func getTestHistogramMetric() pmetric.Metric {
@@ -307,19 +307,7 @@ func Test_extractSumMetric(t *testing.T) {
 			evaluate, err := extractSumMetric(ottl.Enum(tt.temporality), tt.monotonicity)
 			assert.NoError(t, err)
 
-			var datapoint interface{}
-			switch tt.input.Type() {
-			case pmetric.MetricTypeHistogram:
-				datapoint = tt.input.Histogram().DataPoints().At(0)
-			case pmetric.MetricTypeExponentialHistogram:
-				datapoint = tt.input.ExponentialHistogram().DataPoints().At(0)
-			case pmetric.MetricTypeSummary:
-				datapoint = tt.input.Summary().DataPoints().At(0)
-			case pmetric.MetricTypeGauge:
-				datapoint = tt.input.Gauge().DataPoints().At(0)
-			}
-
-			_, err = evaluate(nil, ottldatapoint.NewTransformContext(datapoint, tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 			assert.Nil(t, err)
 
 			expected := pmetric.NewMetricSlice()
