@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -49,12 +50,25 @@ func enableZorkianMetricExport() error {
 	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
 }
 
+const metadataReporterPeriod = 30 * time.Minute
+
+func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
+	if err := metadataReporter.ConsumeResource(res); err != nil {
+		logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
+	}
+}
+
 type factory struct {
 	onceMetadata sync.Once
 
 	onceProvider   sync.Once
 	sourceProvider source.Provider
 	providerErr    error
+
+	onceReporter     sync.Once
+	onceStopReporter sync.Once
+	reporter         *inframetadata.Reporter
+	reporterErr      error
 
 	wg sync.WaitGroup // waits for agent to exit
 
@@ -66,6 +80,34 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname)
 	})
 	return f.sourceProvider, f.providerErr
+}
+
+// Reporter builds and returns an *inframetadata.Reporter.
+func (f *factory) Reporter(params exporter.CreateSettings, pcfg hostmetadata.PusherConfig) (*inframetadata.Reporter, error) {
+	f.onceReporter.Do(func() {
+		pusher := hostmetadata.NewPusher(params, pcfg)
+		f.reporter, f.reporterErr = inframetadata.NewReporter(params.Logger, pusher, metadataReporterPeriod)
+		if f.reporterErr == nil {
+			go func() {
+				if err := f.reporter.Run(context.Background()); err != nil {
+					params.Logger.Error("Host metadata reporter failed at runtime", zap.Error(err))
+				}
+			}()
+		}
+	})
+	return f.reporter, f.reporterErr
+}
+
+// StopReporter stops the host metadata reporter.
+func (f *factory) StopReporter() {
+	// Use onceReporter or wait until it is done
+	f.onceReporter.Do(func() {})
+	// Stop the reporter
+	f.onceStopReporter.Do(func() {
+		if f.reporterErr == nil && f.reporter != nil {
+			f.reporter.Stop()
+		}
+	})
 }
 
 func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
@@ -187,6 +229,14 @@ func (f *factory) createMetricsExporter(
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
+
+	pcfg := newMetadataConfigfromConfig(cfg)
+	metadataReporter, err := f.Reporter(set, pcfg)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	}
+
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
@@ -195,13 +245,18 @@ func (f *factory) createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go hostmetadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
 			})
 
+			// Consume resources for host metadata
+			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+				res := md.ResourceMetrics().At(i).Resource()
+				consumeResource(metadataReporter, res, set.Logger)
+			}
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter)
 		if metricsErr != nil {
 			cancel()    // first cancel context
 			f.wg.Wait() // then wait for shutdown
@@ -222,6 +277,7 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
+			f.StopReporter()
 			return nil
 		}),
 	)
@@ -256,6 +312,14 @@ func (f *factory) createTracesExporter(
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
+
+	pcfg := newMetadataConfigfromConfig(cfg)
+	metadataReporter, err := f.Reporter(set, pcfg)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	}
+
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td ptrace.Traces) error {
@@ -264,16 +328,22 @@ func (f *factory) createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go hostmetadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
 			})
+			// Consume resources for host metadata
+			for i := 0; i < td.ResourceSpans().Len(); i++ {
+				res := td.ResourceSpans().At(i).Resource()
+				consumeResource(metadataReporter, res, set.Logger)
+			}
 			return nil
 		}
 		stop = func(context.Context) error {
 			cancel()
+			f.StopReporter()
 			return nil
 		}
 	} else {
-		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
+		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter)
 		if err2 != nil {
 			cancel()
 			f.wg.Wait() // then wait for shutdown
@@ -282,6 +352,7 @@ func (f *factory) createTracesExporter(
 		pusher = tracex.consumeTraces
 		stop = func(context.Context) error {
 			cancel() // first cancel context
+			f.StopReporter()
 			return nil
 		}
 	}
@@ -315,17 +386,29 @@ func (f *factory) createLogsExporter(
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
+
+	pcfg := newMetadataConfigfromConfig(cfg)
+	metadataReporter, err := f.Reporter(set, pcfg)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	}
+
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
 			f.onceMetadata.Do(func() {
 				attrs := pcommon.NewMap()
-				go hostmetadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
 			})
+			for i := 0; i < td.ResourceLogs().Len(); i++ {
+				res := td.ResourceLogs().At(i).Resource()
+				consumeResource(metadataReporter, res, set.Logger)
+			}
 			return nil
 		}
 	} else {
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
 			f.wg.Wait() // then wait for shutdown
@@ -344,6 +427,7 @@ func (f *factory) createLogsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
+			f.StopReporter()
 			return nil
 		}),
 	)

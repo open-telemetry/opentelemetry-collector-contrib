@@ -56,7 +56,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatus(1))
+			mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatusBlocked)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -103,7 +103,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "blocked", attrVal.Str())
+					assert.EqualValues(t, "blocked", attrVal.Str())
 				case "system.processes.created":
 					assert.False(t, validatedMetrics["system.processes.created"], "Found a duplicate in the metrics slice: system.processes.created")
 					validatedMetrics["system.processes.created"] = true

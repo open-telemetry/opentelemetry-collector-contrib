@@ -124,17 +124,17 @@ func setV3ClientConfigs(client goSNMPWrapper, cfg *Config) {
 		client.SetMsgFlags(gosnmp.AuthNoPriv)
 		protocol := getAuthProtocol(cfg.AuthType)
 		securityParams.AuthenticationProtocol = protocol
-		securityParams.AuthenticationPassphrase = cfg.AuthPassword
+		securityParams.AuthenticationPassphrase = string(cfg.AuthPassword)
 	case "AUTH_PRIV":
 		client.SetMsgFlags(gosnmp.AuthPriv)
 
 		authProtocol := getAuthProtocol(cfg.AuthType)
 		securityParams.AuthenticationProtocol = authProtocol
-		securityParams.AuthenticationPassphrase = cfg.AuthPassword
+		securityParams.AuthenticationPassphrase = string(cfg.AuthPassword)
 
 		privProtocol := getPrivacyProtocol(cfg.PrivacyType)
 		securityParams.PrivacyProtocol = privProtocol
-		securityParams.PrivacyPassphrase = cfg.PrivacyPassword
+		securityParams.PrivacyPassphrase = string(cfg.PrivacyPassword)
 	default:
 		client.SetMsgFlags(gosnmp.NoAuthNoPriv)
 	}

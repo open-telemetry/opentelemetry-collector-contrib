@@ -56,6 +56,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 
 	require.Equal(t,
 		metadata.KubernetesMetadata{
+			EntityType:    "k8s.statefulset",
 			ResourceIDKey: "k8s.statefulset.uid",
 			ResourceID:    "test-statefulset-1-uid",
 			Metadata: map[string]string{
