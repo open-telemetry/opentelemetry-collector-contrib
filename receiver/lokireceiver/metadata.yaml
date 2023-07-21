@@ -6,5 +6,4 @@ status:
     alpha: [logs]
   distributions:
   - contrib
-  - grafana
   - sumo
