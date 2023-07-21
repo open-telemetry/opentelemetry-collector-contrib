@@ -232,18 +232,12 @@ func partitionTimeSeries(tsMap map[string]*prompb.TimeSeries, concurrencyLimit i
 		partitions[i] = make(map[string]*prompb.TimeSeries)
 	}
 
-	// Consistent hash function using CRC32
-	consistentHash := func(key string) int {
-		// Use a hash function (e.g., CRC32) to convert the key to an integer value.
-		hash := crc32.ChecksumIEEE([]byte(key))
-		// Modulo the hash with the number of partitions to get the partition index.
-		return int(hash % uint32(concurrencyLimit))
-	}
-
 	for _, ts := range tsMap {
-		// Compute a hash for the labels of the time series and use it to determine the partition index.
-		hash := consistentHash(labelsToString(ts.Labels))
-		partitions[hash][labelsToString(ts.Labels)] = ts
+		// Use CRC32 hashing to convert the labels of the time series to an integer value,
+		// and then modulo the hash with the number of partitions to get the partition index.
+		hash := crc32.ChecksumIEEE([]byte(labelsToString(ts.Labels)))
+		partitionIndex := int(hash % uint32(concurrencyLimit))
+		partitions[partitionIndex][labelsToString(ts.Labels)] = ts
 	}
 
 	return partitions
