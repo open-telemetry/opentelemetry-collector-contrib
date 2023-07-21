@@ -709,7 +709,8 @@ func TestPolicyLoggerAddsPolicyName(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	evaluator.Evaluate(context.Background(), pcommon.TraceID{}, nil)
+	_, err = evaluator.Evaluate(context.Background(), pcommon.TraceID{}, nil)
+	require.NoError(t, err)
 
 	// verify
 	assert.Len(t, logs.All(), 1)
