@@ -72,7 +72,7 @@ exporter/opencensusexporter/                             @open-telemetry/collect
 exporter/parquetexporter/                                @open-telemetry/collector-contrib-approvers @atoulme
 exporter/prometheusexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/prometheusremotewriteexporter/                  @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil
-exporter/pulsarexporter/                                 @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
+exporter/pulsarexporter/                                 @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 exporter/sapmexporter/                                   @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 exporter/sentryexporter/                                 @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
@@ -222,7 +222,7 @@ receiver/podmanreceiver/                                 @open-telemetry/collect
 receiver/postgresqlreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                         @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
-receiver/pulsarreceiver/                                 @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
+receiver/pulsarreceiver/                                 @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/rabbitmqreceiver/                               @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
