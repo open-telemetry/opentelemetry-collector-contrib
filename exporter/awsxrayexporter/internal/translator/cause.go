@@ -49,6 +49,10 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.Str()
 		}
+		isRemote := false
+		if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
+			isRemote = true
+		}
 
 		var exceptions []awsxray.Exception
 		for i := 0; i < span.Events().Len(); i++ {
@@ -70,7 +74,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 					stacktrace = val.Str()
 				}
 
-				parsed := parseException(exceptionType, message, stacktrace, language)
+				parsed := parseException(exceptionType, message, stacktrace, isRemote, language)
 				exceptions = append(exceptions, parsed...)
 			}
 		}
@@ -155,12 +159,13 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	return isError, isFault, isThrottle, filtered, cause
 }
 
-func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {
+func parseException(exceptionType string, message string, stacktrace string, isRemote bool, language string) []awsxray.Exception {
 	exceptions := make([]awsxray.Exception, 0, 1)
 	segmentID := newSegmentID()
 	exceptions = append(exceptions, awsxray.Exception{
 		ID:      aws.String(hex.EncodeToString(segmentID[:])),
 		Type:    aws.String(exceptionType),
+		Remote:  aws.Bool(isRemote),
 		Message: aws.String(message),
 	})
 
@@ -192,6 +197,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 
 	// Skip first line containing top level message
 	exception := &exceptions[0]
+	isRemote := exception.Remote
 	_, err := r.ReadLine()
 	if err != nil {
 		return exceptions
@@ -250,16 +256,16 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 				if strings.HasPrefix(line, "\tat ") && strings.IndexByte(line, '(') >= 0 && line[len(line)-1] == ')' {
 					// Stack frame (hopefully, user can masquerade since we only have a string), process above.
 					break
-				} else {
-					// String append overhead in this case, but multiline messages should be far less common than single
-					// line ones.
-					causeMessage += line
 				}
+				// String append overhead in this case, but multiline messages should be far less common than single
+				// line ones.
+				causeMessage += line
 			}
 			segmentID := newSegmentID()
 			exceptions = append(exceptions, awsxray.Exception{
 				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
+				Remote:  isRemote,
 				Message: aws.String(causeMessage),
 				Stack:   nil,
 			})
@@ -299,6 +305,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	}
 	line := lines[lineIdx]
 	exception := &exceptions[0]
+	isRemote := exception.Remote
 
 	exception.Stack = nil
 	for {
@@ -356,6 +363,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			exceptions = append(exceptions, awsxray.Exception{
 				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
+				Remote:  isRemote,
 				Message: aws.String(causeMessage),
 			})
 			// when append causes `exceptions` to outgrow its existing
