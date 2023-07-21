@@ -7,11 +7,12 @@ import (
 	"strings"
 	"time"
 
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota/internal/metadata"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota/internal/metadata"
 )
 
 func GetMetrics(set receiver.CreateSettings, crq *quotav1.ClusterResourceQuota) pmetric.Metrics {
