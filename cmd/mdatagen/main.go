@@ -145,7 +145,11 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"userLinks": func(elems []string) []string {
 					result := make([]string, len(elems))
 					for i, elem := range elems {
-						result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
+						if elem == "open-telemetry/collector-approvers" {
+							result[i] = "[@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)"
+						} else {
+							result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
+						}
 					}
 					return result
 				},
