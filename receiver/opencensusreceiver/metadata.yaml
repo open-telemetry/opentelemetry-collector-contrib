@@ -7,7 +7,7 @@ status:
   distributions:
   - core
   - contrib
-  - grafana-agent
+  - grafana
   - observiq
   - redhat
   - sumo

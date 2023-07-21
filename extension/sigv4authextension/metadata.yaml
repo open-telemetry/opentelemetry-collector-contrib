@@ -7,5 +7,5 @@ status:
   distributions:
   - contrib
   - aws
-  - grafana-agent
+  - grafana
   - sumo

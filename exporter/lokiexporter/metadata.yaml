@@ -6,5 +6,5 @@ status:
     beta: [logs]
   distributions:
   - contrib
-  - grafana-agent
+  - grafana
   - observiq

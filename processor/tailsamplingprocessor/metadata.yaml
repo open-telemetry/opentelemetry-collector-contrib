@@ -7,7 +7,7 @@ status:
   distributions:
   - contrib
   - aws
-  - grafana-agent
+  - grafana
   - observiq
   - splunk
   - sumo

@@ -6,5 +6,5 @@ status:
     alpha: [extension]
   distributions:
   - contrib
-  - grafana-agent
+  - grafana
   - sumo

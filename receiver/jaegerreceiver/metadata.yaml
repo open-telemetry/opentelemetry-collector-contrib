@@ -8,7 +8,7 @@ status:
   - core
   - contrib
   - aws
-  - grafana-agent
+  - grafana
   - observiq
   - redhat
   - splunk

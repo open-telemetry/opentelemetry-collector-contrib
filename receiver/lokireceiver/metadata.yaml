@@ -6,5 +6,5 @@ status:
     alpha: [logs]
   distributions:
   - contrib
-  - grafana-agent
+  - grafana
   - sumo

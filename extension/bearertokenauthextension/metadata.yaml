@@ -6,7 +6,7 @@ status:
     beta: [extension]
   distributions:
   - contrib
-  - grafana-agent
+  - grafana
   - observiq
   - redhat
   - sumo

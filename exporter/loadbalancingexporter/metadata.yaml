@@ -6,6 +6,6 @@ status:
     beta: [traces, logs]
   distributions:
   - contrib
-  - grafana-agent
+  - grafana
   - observiq
   - sumo

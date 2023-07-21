@@ -7,5 +7,5 @@ status:
   distributions:
   - core
   - contrib
-  - grafana-agent
+  - grafana
   - redhat
