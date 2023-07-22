@@ -18,8 +18,8 @@ var format1 = "%Y-%m-%d %H:%M:%S.%f"
 var format2 = "%Y-%m-%d %l:%M:%S.%L %P, %a"
 var value1 = "2019-01-02 15:04:05.666666"
 var value2 = "2019-01-02 3:04:05.666 pm, Wed"
-var dt1 time.Time = time.Date(2019, 1, 2, 15, 4, 5, 666666000, time.UTC)
-var dt2 time.Time = time.Date(2019, 1, 2, 15, 4, 5, 666000000, time.UTC)
+var dt1 = time.Date(2019, 1, 2, 15, 4, 5, 666666000, time.UTC)
+var dt2 = time.Date(2019, 1, 2, 15, 4, 5, 666000000, time.UTC)
 
 func TestFormat(t *testing.T) {
 	s, err := Format(format1, dt1)
