@@ -61,7 +61,7 @@ func run(ymlPath string) error {
 			return err
 		}
 
-		if _, err := os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
+		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
 			if err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
