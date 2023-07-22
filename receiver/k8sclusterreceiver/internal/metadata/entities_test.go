@@ -5,9 +5,11 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -187,11 +189,13 @@ func Test_GetEntityEvents(t *testing.T) {
 				}
 
 				// Convert and test expected events.
-				events := GetEntityEvents(tt.old, tt.new)
+				timestamp := pcommon.NewTimestampFromTime(time.Now())
+				events := GetEntityEvents(tt.old, tt.new, timestamp)
 				require.Equal(t, tt.events.Len(), events.Len())
 				for i := 0; i < events.Len(); i++ {
 					actual := events.At(i)
 					expected := tt.events.At(i)
+					assert.EqualValues(t, timestamp, actual.Timestamp())
 					assert.EqualValues(t, expected.EventType(), actual.EventType())
 					assert.EqualValues(t, expected.ID().AsRaw(), actual.ID().AsRaw())
 					if expected.EventType() == metadataPkg.EventTypeState {

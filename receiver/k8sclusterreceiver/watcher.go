@@ -14,6 +14,7 @@ import (
 	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -343,6 +344,8 @@ func validateMetadataExporters(metadataExporters map[string]bool, exporters map[
 }
 
 func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) {
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+
 	metadataUpdate := metadata.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) != 0 {
 		for _, consume := range rw.metadataConsumers {
@@ -352,8 +355,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 
 	if rw.entityLogConsumer != nil {
 		// Represent metadata update as entity events.
-		// TODO: record the timestamp in the events.
-		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata)
+		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp)
 
 		// Convert entity events to log representation.
 		logs := entityEvents.ConvertAndMoveToLogs()

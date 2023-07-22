@@ -5,8 +5,10 @@ package experimentalmetricmetadata
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -125,4 +127,13 @@ func Test_EntityTypeEmpty(t *testing.T) {
 	lr := plog.NewLogRecord()
 	e := EntityStateDetails{lr}
 	assert.Equal(t, "", e.EntityType())
+}
+
+func Test_EntityEventTimestamp(t *testing.T) {
+	lr := plog.NewLogRecord()
+	e := EntityEvent{lr}
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	e.SetTimestamp(ts)
+	assert.EqualValues(t, ts, e.Timestamp())
+	assert.EqualValues(t, ts, lr.Timestamp())
 }

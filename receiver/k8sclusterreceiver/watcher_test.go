@@ -5,6 +5,7 @@ package k8sclusterreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -236,25 +237,32 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	rw := newResourceWatcher(receivertest.NewNopCreateSettings(), &Config{})
 	rw.entityLogConsumer = logsConsumer
 
+	step1 := time.Now()
+
 	// Make some changes to the pod. Each change should result in an entity event represented
 	// as a log record.
 
 	// Pod is created.
 	rw.syncMetadataUpdate(nil, rw.dataCollector.SyncMetadata(origPod))
+	step2 := time.Now()
 
 	// Pod is updated.
 	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(origPod), rw.dataCollector.SyncMetadata(updatedPod))
+	step3 := time.Now()
 
 	// Pod is updated again, but nothing changed in the pod.
 	// Should still result in entity event because they are emitted even
 	// if the entity is not changed.
 	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(updatedPod), rw.dataCollector.SyncMetadata(updatedPod))
+	step4 := time.Now()
 
 	// Change pod's state back to original
 	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(updatedPod), rw.dataCollector.SyncMetadata(origPod))
+	step5 := time.Now()
 
 	// Delete the pod
 	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(origPod), nil)
+	step6 := time.Now()
 
 	// Must have 5 entity events.
 	require.EqualValues(t, 5, logsConsumer.LogRecordCount())
@@ -268,22 +276,26 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z"},
 	}
 	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
 
 	// Event 2 should contain the updated state of the pod.
 	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	attrs := expected["otel.entity.attributes"].(map[string]any)
 	attrs["key"] = "value"
 	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
 
 	// Event 3 should be identical to the previous one since pod state didn't change.
 	lr = logsConsumer.AllLogs()[2].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step3, step4)
 
 	// Event 4 should contain the reverted state of the pod.
 	lr = logsConsumer.AllLogs()[3].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	attrs = expected["otel.entity.attributes"].(map[string]any)
 	delete(attrs, "key")
 	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step4, step5)
 
 	// Event 5 should indicate pod deletion.
 	lr = logsConsumer.AllLogs()[4].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
@@ -292,4 +304,5 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 	}
 	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
 }
