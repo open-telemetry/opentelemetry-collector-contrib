@@ -1,0 +1,45 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.daemonset.name
+          value:
+            stringValue: test-daemonset-1
+        - key: k8s.daemonset.uid
+          value:
+            stringValue: test-daemonset-1-uid
+        - key: opencensus.resourcetype
+          value:
+            stringValue: k8s
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod
+            gauge:
+              dataPoints:
+                - asInt: "3"
+            name: k8s.daemonset.current_scheduled_nodes
+            unit: "1"
+          - description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
+            gauge:
+              dataPoints:
+                - asInt: "5"
+            name: k8s.daemonset.desired_scheduled_nodes
+            unit: "1"
+          - description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
+            gauge:
+              dataPoints:
+                - asInt: "1"
+            name: k8s.daemonset.misscheduled_nodes
+            unit: "1"
+          - description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
+            gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.daemonset.ready_nodes
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

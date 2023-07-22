@@ -1,0 +1,20 @@
+# Use this changelog template to create an entry for release notes.
+# If your change doesn't affect end users, such as a test fix or a tooling change,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: exporter/datasetexporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Rename 'observed_timestamp' field on the DataSet event to 'sca:observedTimestamp' and ensure the value is nanoseconds since epoch, update serializing and handling of body / message field to ensure it's consistent with other DataSet integrations and allow user to disable exporting scope information with each event by setting 'export_scope_info_on_event' logs config option to false."
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [20660, 23826]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext:

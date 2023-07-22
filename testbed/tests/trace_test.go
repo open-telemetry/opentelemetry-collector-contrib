@@ -75,7 +75,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), ""),
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
@@ -84,11 +84,20 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP-gzip",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "gzip"),
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 25,
 				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			"OTLP-HTTP-zstd",
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "zstd"),
+			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("zstd"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 22,
+				ExpectedMaxRAM: 220,
 			},
 		},
 		{
