@@ -24,6 +24,13 @@ transform:
       statements:
         - set(attributes["name"], "bear")
 
+transform/ignore_errors:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
+
 transform/bad_syntax_log:
   log_statements:
     - context: log
@@ -43,6 +50,23 @@ transform/bad_syntax_trace:
     - context: span
       statements:
         - set(name, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+
+transform/bad_syntax_multi_signal:
+  trace_statements:
+    - context: span
+      statements:
+        - set(name, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+  metric_statements:
+    - context: datapoint
+      statements:
+        - set(name, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+  log_statements:
+    - context: log
+      statements:
+        - set(body, "bear" where attributes["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
 
 transform/unknown_function_log:
@@ -71,3 +95,6 @@ transform/unknown_context:
     - context: test
       statements:
         - set(name, "bear") where attributes["http.path"] == "/animal"
+
+transform/unknown_error_mode:
+  error_mode: test

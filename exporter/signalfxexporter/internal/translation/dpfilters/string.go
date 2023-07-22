@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dpfilters // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 
@@ -77,6 +66,9 @@ func NewStringFilter(items []string) (*StringFilter, error) {
 // if it is positively matched by a non-glob/regex pattern exactly
 // and is negated as well.  See the unit tests for examples.
 func (f *StringFilter) Matches(s string) bool {
+	if f == nil {
+		return true
+	}
 	negated, matched := f.staticSet[s]
 	// If a metric is negated and it matched it won't match anything else by
 	// definition.
@@ -100,4 +92,13 @@ func (f *StringFilter) Matches(s string) bool {
 		matched = matched || globMatched
 	}
 	return matched
+}
+
+func (f *StringFilter) UnmarshalText(in []byte) error {
+	sf, err := NewStringFilter([]string{string(in)})
+	if err != nil {
+		return err
+	}
+	*f = *sf
+	return nil
 }

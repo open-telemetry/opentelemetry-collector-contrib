@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,30 +13,30 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testConfigCollection int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name      string
+		configSet testConfigCollection
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name:      "default",
+			configSet: testSetDefault,
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:      "all_set",
+			configSet: testSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:      "none_set",
+			configSet: testSetNone,
 		},
 	}
 	for _, test := range tests {
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -60,15 +56,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "circuit_breaker_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "circuit_breaker_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "circuit_breaker_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -76,14 +72,14 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
+			mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatusGreen)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
+			mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -95,7 +91,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))
+			mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceStateIncompatible)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -103,64 +99,64 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardState(1))
+			mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueState(1))
+			mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueStatePending)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "cluster_state_update_state-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "attr-val", AttributeClusterStateUpdateType(1))
+			mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "cluster_state_update_state-val", AttributeClusterStateUpdateTypeComputation)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentState(1), AttributeIndexAggregationType(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
-
-			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationType(1), AttributeSegmentsMemoryObjectType(1))
-
-			allMetricsCount++
-			mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
+			mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards, AttributeSegmentsMemoryObjectTypeTerm)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -176,19 +172,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStage(1))
+			mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStageCoordinating)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountType(1))
+			mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountTypeHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
+			mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1))
+			mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata)
 
 			allMetricsCount++
 			mb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
@@ -199,7 +195,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirectionReceived)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -211,7 +207,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentState(1))
+			mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -247,32 +243,32 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperation(1))
+			mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperation(1))
+			mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperationIndex)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResult(1))
+			mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResultHit)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResult(1))
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperation(1))
+			mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResultHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperationIndex)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "ingest_pipeline_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "ingest_pipeline_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "ingest_pipeline_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -287,7 +283,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectType(1))
+			mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectTypeTerm)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -303,15 +299,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "attr-val", AttributeTaskState(1))
+			mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "thread_pool_name-val", AttributeTaskStateRejected)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "attr-val")
+			mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "thread_pool_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "attr-val", AttributeThreadState(1))
+			mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "thread_pool_name-val", AttributeThreadStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -343,7 +339,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryState(1))
+			mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryStateFree)
 
 			allMetricsCount++
 			mb.RecordElasticsearchProcessCPUTimeDataPoint(ts, 1)
@@ -360,11 +356,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "attr-val")
+			mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "collector_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "attr-val")
+			mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "collector_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -391,19 +387,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "attr-val")
+			mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "memory_pool_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "attr-val")
+			mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "memory_pool_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordJvmThreadsCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithElasticsearchClusterName("attr-val"), WithElasticsearchIndexName("attr-val"), WithElasticsearchNodeName("attr-val"), WithElasticsearchNodeVersion("attr-val"))
+			metrics := mb.Emit(WithElasticsearchClusterName("elasticsearch.cluster.name-val"), WithElasticsearchIndexName("elasticsearch.index.name-val"), WithElasticsearchNodeName("elasticsearch.node.name-val"), WithElasticsearchNodeVersion("elasticsearch.node.version-val"))
 
-			if test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -414,41 +410,41 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("elasticsearch.cluster.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchClusterName.Enabled, ok)
-			if mb.resourceAttributesSettings.ElasticsearchClusterName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchClusterName.Enabled, ok)
+			if mb.resourceAttributesConfig.ElasticsearchClusterName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "elasticsearch.cluster.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.index.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchIndexName.Enabled, ok)
-			if mb.resourceAttributesSettings.ElasticsearchIndexName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchIndexName.Enabled, ok)
+			if mb.resourceAttributesConfig.ElasticsearchIndexName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "elasticsearch.index.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.name")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.ElasticsearchNodeName.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchNodeName.Enabled, ok)
+			if mb.resourceAttributesConfig.ElasticsearchNodeName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "elasticsearch.node.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.version")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchNodeVersion.Enabled, ok)
-			if mb.resourceAttributesSettings.ElasticsearchNodeVersion.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchNodeVersion.Enabled, ok)
+			if mb.resourceAttributesConfig.ElasticsearchNodeVersion.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "elasticsearch.node.version-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 4)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -468,7 +464,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "circuit_breaker_name-val", attrVal.Str())
 				case "elasticsearch.breaker.memory.limit":
 					assert.False(t, validatedMetrics["elasticsearch.breaker.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.limit")
 					validatedMetrics["elasticsearch.breaker.memory.limit"] = true
@@ -485,7 +481,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "circuit_breaker_name-val", attrVal.Str())
 				case "elasticsearch.breaker.tripped":
 					assert.False(t, validatedMetrics["elasticsearch.breaker.tripped"], "Found a duplicate in the metrics slice: elasticsearch.breaker.tripped")
 					validatedMetrics["elasticsearch.breaker.tripped"] = true
@@ -502,7 +498,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "circuit_breaker_name-val", attrVal.Str())
 				case "elasticsearch.cluster.data_nodes":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.data_nodes"], "Found a duplicate in the metrics slice: elasticsearch.cluster.data_nodes")
 					validatedMetrics["elasticsearch.cluster.data_nodes"] = true
@@ -533,7 +529,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "green", attrVal.Str())
+					assert.EqualValues(t, "green", attrVal.Str())
 				case "elasticsearch.cluster.in_flight_fetch":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.in_flight_fetch"], "Found a duplicate in the metrics slice: elasticsearch.cluster.in_flight_fetch")
 					validatedMetrics["elasticsearch.cluster.in_flight_fetch"] = true
@@ -564,7 +560,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cache_name")
 					assert.True(t, ok)
-					assert.Equal(t, "fielddata", attrVal.Str())
+					assert.EqualValues(t, "fielddata", attrVal.Str())
 				case "elasticsearch.cluster.nodes":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.nodes"], "Found a duplicate in the metrics slice: elasticsearch.cluster.nodes")
 					validatedMetrics["elasticsearch.cluster.nodes"] = true
@@ -609,7 +605,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "incompatible", attrVal.Str())
+					assert.EqualValues(t, "incompatible", attrVal.Str())
 				case "elasticsearch.cluster.published_states.full":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.full"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.full")
 					validatedMetrics["elasticsearch.cluster.published_states.full"] = true
@@ -640,7 +636,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "elasticsearch.cluster.state_queue":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.state_queue"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_queue")
 					validatedMetrics["elasticsearch.cluster.state_queue"] = true
@@ -657,7 +653,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "pending", attrVal.Str())
+					assert.EqualValues(t, "pending", attrVal.Str())
 				case "elasticsearch.cluster.state_update.count":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.count"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.count")
 					validatedMetrics["elasticsearch.cluster.state_update.count"] = true
@@ -674,7 +670,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "cluster_state_update_state-val", attrVal.Str())
 				case "elasticsearch.cluster.state_update.time":
 					assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.time"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.time")
 					validatedMetrics["elasticsearch.cluster.state_update.time"] = true
@@ -691,10 +687,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "cluster_state_update_state-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "computation", attrVal.Str())
+					assert.EqualValues(t, "computation", attrVal.Str())
 				case "elasticsearch.index.cache.evictions":
 					assert.False(t, validatedMetrics["elasticsearch.index.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.evictions")
 					validatedMetrics["elasticsearch.index.cache.evictions"] = true
@@ -711,10 +707,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cache_name")
 					assert.True(t, ok)
-					assert.Equal(t, "fielddata", attrVal.Str())
+					assert.EqualValues(t, "fielddata", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.cache.memory.usage":
 					assert.False(t, validatedMetrics["elasticsearch.index.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.memory.usage")
 					validatedMetrics["elasticsearch.index.cache.memory.usage"] = true
@@ -731,10 +727,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cache_name")
 					assert.True(t, ok)
-					assert.Equal(t, "fielddata", attrVal.Str())
+					assert.EqualValues(t, "fielddata", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.cache.size":
 					assert.False(t, validatedMetrics["elasticsearch.index.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.size")
 					validatedMetrics["elasticsearch.index.cache.size"] = true
@@ -751,7 +747,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.documents":
 					assert.False(t, validatedMetrics["elasticsearch.index.documents"], "Found a duplicate in the metrics slice: elasticsearch.index.documents")
 					validatedMetrics["elasticsearch.index.documents"] = true
@@ -768,10 +764,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.operations.completed":
 					assert.False(t, validatedMetrics["elasticsearch.index.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.completed")
 					validatedMetrics["elasticsearch.index.operations.completed"] = true
@@ -788,10 +784,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "index", attrVal.Str())
+					assert.EqualValues(t, "index", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.operations.merge.docs_count":
 					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.docs_count"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.docs_count")
 					validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = true
@@ -808,7 +804,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.operations.merge.size":
 					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.size"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.size")
 					validatedMetrics["elasticsearch.index.operations.merge.size"] = true
@@ -825,7 +821,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.operations.time":
 					assert.False(t, validatedMetrics["elasticsearch.index.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.time")
 					validatedMetrics["elasticsearch.index.operations.time"] = true
@@ -842,10 +838,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "index", attrVal.Str())
+					assert.EqualValues(t, "index", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.segments.count":
 					assert.False(t, validatedMetrics["elasticsearch.index.segments.count"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.count")
 					validatedMetrics["elasticsearch.index.segments.count"] = true
@@ -862,7 +858,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.segments.memory":
 					assert.False(t, validatedMetrics["elasticsearch.index.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.memory")
 					validatedMetrics["elasticsearch.index.segments.memory"] = true
@@ -879,10 +875,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("object")
 					assert.True(t, ok)
-					assert.Equal(t, "term", attrVal.Str())
+					assert.EqualValues(t, "term", attrVal.Str())
 				case "elasticsearch.index.segments.size":
 					assert.False(t, validatedMetrics["elasticsearch.index.segments.size"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.size")
 					validatedMetrics["elasticsearch.index.segments.size"] = true
@@ -899,7 +895,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.shards.size":
 					assert.False(t, validatedMetrics["elasticsearch.index.shards.size"], "Found a duplicate in the metrics slice: elasticsearch.index.shards.size")
 					validatedMetrics["elasticsearch.index.shards.size"] = true
@@ -916,7 +912,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.translog.operations":
 					assert.False(t, validatedMetrics["elasticsearch.index.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.operations")
 					validatedMetrics["elasticsearch.index.translog.operations"] = true
@@ -933,7 +929,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.index.translog.size":
 					assert.False(t, validatedMetrics["elasticsearch.index.translog.size"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.size")
 					validatedMetrics["elasticsearch.index.translog.size"] = true
@@ -950,7 +946,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("aggregation")
 					assert.True(t, ok)
-					assert.Equal(t, "primary_shards", attrVal.Str())
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
 				case "elasticsearch.indexing_pressure.memory.limit":
 					assert.False(t, validatedMetrics["elasticsearch.indexing_pressure.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.indexing_pressure.memory.limit")
 					validatedMetrics["elasticsearch.indexing_pressure.memory.limit"] = true
@@ -1007,7 +1003,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("stage")
 					assert.True(t, ok)
-					assert.Equal(t, "coordinating", attrVal.Str())
+					assert.EqualValues(t, "coordinating", attrVal.Str())
 				case "elasticsearch.node.cache.count":
 					assert.False(t, validatedMetrics["elasticsearch.node.cache.count"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.count")
 					validatedMetrics["elasticsearch.node.cache.count"] = true
@@ -1024,7 +1020,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
+					assert.EqualValues(t, "hit", attrVal.Str())
 				case "elasticsearch.node.cache.evictions":
 					assert.False(t, validatedMetrics["elasticsearch.node.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.evictions")
 					validatedMetrics["elasticsearch.node.cache.evictions"] = true
@@ -1041,7 +1037,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cache_name")
 					assert.True(t, ok)
-					assert.Equal(t, "fielddata", attrVal.Str())
+					assert.EqualValues(t, "fielddata", attrVal.Str())
 				case "elasticsearch.node.cache.memory.usage":
 					assert.False(t, validatedMetrics["elasticsearch.node.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.memory.usage")
 					validatedMetrics["elasticsearch.node.cache.memory.usage"] = true
@@ -1058,7 +1054,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cache_name")
 					assert.True(t, ok)
-					assert.Equal(t, "fielddata", attrVal.Str())
+					assert.EqualValues(t, "fielddata", attrVal.Str())
 				case "elasticsearch.node.cache.size":
 					assert.False(t, validatedMetrics["elasticsearch.node.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.size")
 					validatedMetrics["elasticsearch.node.cache.size"] = true
@@ -1103,7 +1099,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
+					assert.EqualValues(t, "received", attrVal.Str())
 				case "elasticsearch.node.disk.io.read":
 					assert.False(t, validatedMetrics["elasticsearch.node.disk.io.read"], "Found a duplicate in the metrics slice: elasticsearch.node.disk.io.read")
 					validatedMetrics["elasticsearch.node.disk.io.read"] = true
@@ -1148,7 +1144,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "elasticsearch.node.fs.disk.available":
 					assert.False(t, validatedMetrics["elasticsearch.node.fs.disk.available"], "Found a duplicate in the metrics slice: elasticsearch.node.fs.disk.available")
 					validatedMetrics["elasticsearch.node.fs.disk.available"] = true
@@ -1277,7 +1273,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "index", attrVal.Str())
+					assert.EqualValues(t, "index", attrVal.Str())
 				case "elasticsearch.node.operations.current":
 					assert.False(t, validatedMetrics["elasticsearch.node.operations.current"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.current")
 					validatedMetrics["elasticsearch.node.operations.current"] = true
@@ -1292,7 +1288,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "index", attrVal.Str())
+					assert.EqualValues(t, "index", attrVal.Str())
 				case "elasticsearch.node.operations.get.completed":
 					assert.False(t, validatedMetrics["elasticsearch.node.operations.get.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.completed")
 					validatedMetrics["elasticsearch.node.operations.get.completed"] = true
@@ -1309,7 +1305,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
+					assert.EqualValues(t, "hit", attrVal.Str())
 				case "elasticsearch.node.operations.get.time":
 					assert.False(t, validatedMetrics["elasticsearch.node.operations.get.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.time")
 					validatedMetrics["elasticsearch.node.operations.get.time"] = true
@@ -1326,7 +1322,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
+					assert.EqualValues(t, "hit", attrVal.Str())
 				case "elasticsearch.node.operations.time":
 					assert.False(t, validatedMetrics["elasticsearch.node.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.time")
 					validatedMetrics["elasticsearch.node.operations.time"] = true
@@ -1343,7 +1339,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "index", attrVal.Str())
+					assert.EqualValues(t, "index", attrVal.Str())
 				case "elasticsearch.node.pipeline.ingest.documents.current":
 					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.current")
 					validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = true
@@ -1360,7 +1356,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "ingest_pipeline_name-val", attrVal.Str())
 				case "elasticsearch.node.pipeline.ingest.documents.preprocessed":
 					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.preprocessed")
 					validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = true
@@ -1377,7 +1373,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "ingest_pipeline_name-val", attrVal.Str())
 				case "elasticsearch.node.pipeline.ingest.operations.failed":
 					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.operations.failed")
 					validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = true
@@ -1394,7 +1390,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "ingest_pipeline_name-val", attrVal.Str())
 				case "elasticsearch.node.script.cache_evictions":
 					assert.False(t, validatedMetrics["elasticsearch.node.script.cache_evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.script.cache_evictions")
 					validatedMetrics["elasticsearch.node.script.cache_evictions"] = true
@@ -1453,7 +1449,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("object")
 					assert.True(t, ok)
-					assert.Equal(t, "term", attrVal.Str())
+					assert.EqualValues(t, "term", attrVal.Str())
 				case "elasticsearch.node.shards.data_set.size":
 					assert.False(t, validatedMetrics["elasticsearch.node.shards.data_set.size"], "Found a duplicate in the metrics slice: elasticsearch.node.shards.data_set.size")
 					validatedMetrics["elasticsearch.node.shards.data_set.size"] = true
@@ -1512,10 +1508,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("thread_pool_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "thread_pool_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "rejected", attrVal.Str())
+					assert.EqualValues(t, "rejected", attrVal.Str())
 				case "elasticsearch.node.thread_pool.tasks.queued":
 					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.queued")
 					validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"] = true
@@ -1532,7 +1528,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("thread_pool_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "thread_pool_name-val", attrVal.Str())
 				case "elasticsearch.node.thread_pool.threads":
 					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.threads"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.threads")
 					validatedMetrics["elasticsearch.node.thread_pool.threads"] = true
@@ -1549,10 +1545,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("thread_pool_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "thread_pool_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "elasticsearch.node.translog.operations":
 					assert.False(t, validatedMetrics["elasticsearch.node.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.node.translog.operations")
 					validatedMetrics["elasticsearch.node.translog.operations"] = true
@@ -1657,7 +1653,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
+					assert.EqualValues(t, "free", attrVal.Str())
 				case "elasticsearch.process.cpu.time":
 					assert.False(t, validatedMetrics["elasticsearch.process.cpu.time"], "Found a duplicate in the metrics slice: elasticsearch.process.cpu.time")
 					validatedMetrics["elasticsearch.process.cpu.time"] = true
@@ -1726,7 +1722,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "collector_name-val", attrVal.Str())
 				case "jvm.gc.collections.elapsed":
 					assert.False(t, validatedMetrics["jvm.gc.collections.elapsed"], "Found a duplicate in the metrics slice: jvm.gc.collections.elapsed")
 					validatedMetrics["jvm.gc.collections.elapsed"] = true
@@ -1743,7 +1739,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "collector_name-val", attrVal.Str())
 				case "jvm.memory.heap.committed":
 					assert.False(t, validatedMetrics["jvm.memory.heap.committed"], "Found a duplicate in the metrics slice: jvm.memory.heap.committed")
 					validatedMetrics["jvm.memory.heap.committed"] = true
@@ -1830,7 +1826,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "memory_pool_name-val", attrVal.Str())
 				case "jvm.memory.pool.used":
 					assert.False(t, validatedMetrics["jvm.memory.pool.used"], "Found a duplicate in the metrics slice: jvm.memory.pool.used")
 					validatedMetrics["jvm.memory.pool.used"] = true
@@ -1845,7 +1841,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "memory_pool_name-val", attrVal.Str())
 				case "jvm.threads.count":
 					assert.False(t, validatedMetrics["jvm.threads.count"], "Found a duplicate in the metrics slice: jvm.threads.count")
 					validatedMetrics["jvm.threads.count"] = true
@@ -1862,14 +1858,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

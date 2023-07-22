@@ -1,86 +1,123 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/pkg/sftp"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-type opensshContainer struct {
-	testcontainers.Container
-	Endpoint string
+func setupSSHServer(t *testing.T) string {
+	config := &ssh.ServerConfig{
+		NoClientAuth: true,
+		PasswordCallback: func(c ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+			if c.User() == "otelu" && string(pass) == "otelp" {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("wrong username or password")
+		},
+	}
+
+	privateBytes, err := os.ReadFile("testdata/keys/id_rsa")
+	require.NoError(t, err)
+
+	private, err := ssh.ParsePrivateKey(privateBytes)
+	require.NoError(t, err)
+
+	config.AddHostKey(private)
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				break
+			}
+			_, chans, reqs, err := ssh.NewServerConn(conn, config)
+			if err != nil {
+				t.Logf("Failed to handshake: %v", err)
+				continue
+			}
+			go ssh.DiscardRequests(reqs)
+			go handleChannels(chans)
+		}
+	}()
+
+	return listener.Addr().String()
 }
 
-func setupSSHServer(t *testing.T) *opensshContainer {
-	ctx := context.Background()
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-	req := testcontainers.ContainerRequest{
-		Image: "linuxserver/openssh-server:version-8.8_p1-r1",
-		Files: []testcontainers.ContainerFile{
-			{
-				HostFilePath:      wd + "/testdata/config/sshd_config",
-				ContainerFilePath: "/config/sshd_config",
-			},
-		},
-		Env: map[string]string{
-			"USER_NAME":       "otelu",
-			"USER_PASSWORD":   "otelp",
-			"PASSWORD_ACCESS": "true",
-		},
-		ExposedPorts: []string{"2222/tcp"},
-		WaitingFor:   wait.ForExposedPort(),
+func handleChannels(chans <-chan ssh.NewChannel) {
+	for newChannel := range chans {
+		if t := newChannel.ChannelType(); t != "session" {
+			if err := newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t)); err != nil {
+				return
+			}
+			continue
+		}
+
+		channel, requests, err := newChannel.Accept()
+		if err != nil {
+			continue
+		}
+
+		go func(in <-chan *ssh.Request) {
+			for req := range in {
+				ok := false
+				if req.Type == "subsystem" && string(req.Payload[4:]) == "sftp" {
+					ok = true
+					go func() {
+						defer channel.Close()
+
+						server := sftp.NewRequestServer(channel, sftp.Handlers{
+							FileGet:  sftp.InMemHandler().FileGet,
+							FilePut:  sftp.InMemHandler().FilePut,
+							FileCmd:  sftp.InMemHandler().FileCmd,
+							FileList: sftp.InMemHandler().FileList,
+						})
+						if err != nil {
+							return
+						}
+
+						if err := server.Serve(); errors.Is(err, io.EOF) {
+							server.Close()
+						} else if err != nil {
+							return
+						}
+					}()
+				}
+				if err := req.Reply(ok, nil); err != nil {
+					return
+				}
+			}
+		}(requests)
 	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	endpoint, err := container.PortEndpoint(ctx, "2222", "")
-	require.NoError(t, err)
-
-	return &opensshContainer{Container: container, Endpoint: endpoint}
 }
 
 func TestScraper(t *testing.T) {
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
 	}
-	t.Parallel()
-	c := setupSSHServer(t)
-	defer func() {
-		require.NoError(t, c.Terminate(context.Background()), "terminating container")
-	}()
-	require.NotEmpty(t, c.Endpoint)
+	endpoint := setupSSHServer(t)
+	require.NotEmpty(t, endpoint)
 
 	testCases := []struct {
 		name       string
@@ -89,20 +126,20 @@ func TestScraper(t *testing.T) {
 	}{
 		{
 			name:     "metrics_golden",
-			filename: "metrics_golden.json",
+			filename: "metrics_golden.yaml",
 		},
 		{
 			name:       "metrics_golden_sftp",
-			filename:   "metrics_golden_sftp.json",
+			filename:   "metrics_golden_sftp.yaml",
 			enableSFTP: true,
 		},
 		{
 			name:     "cannot_authenticate",
-			filename: "cannot_authenticate.json",
+			filename: "cannot_authenticate.yaml",
 		},
 		{
 			name:     "invalid_endpoint",
-			filename: "invalid_endpoint.json",
+			filename: "invalid_endpoint.yaml",
 		},
 	}
 
@@ -117,11 +154,11 @@ func TestScraper(t *testing.T) {
 			cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 			cfg.Username = "otelu"
 			cfg.Password = "otelp"
-			cfg.Endpoint = c.Endpoint
+			cfg.Endpoint = endpoint
 			cfg.IgnoreHostKey = true
 			if tc.enableSFTP {
-				cfg.Metrics.SshcheckSftpStatus.Enabled = true
-				cfg.Metrics.SshcheckSftpDuration.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
+				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 			}
 
 			settings := receivertest.NewNopCreateSettings()
@@ -131,7 +168,6 @@ func TestScraper(t *testing.T) {
 
 			actualMetrics, err := scrpr.scrape(context.Background())
 			require.NoError(t, err, "failed scrape")
-
 			require.NoError(
 				t,
 				pmetrictest.CompareMetrics(
@@ -151,19 +187,15 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
 	}
-	t.Parallel()
-	c := setupSSHServer(t)
-	defer func() {
-		require.NoError(t, c.Terminate(context.Background()), "terminating container")
-	}()
-	require.NotEmpty(t, c.Endpoint)
+	endpoint := setupSSHServer(t)
+	require.NotEmpty(t, endpoint)
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 	cfg.Username = "not-the-user"
 	cfg.Password = "not-the-password"
-	cfg.Endpoint = c.Endpoint
+	cfg.Endpoint = endpoint
 	cfg.IgnoreHostKey = true
 
 	settings := receivertest.NewNopCreateSettings()
@@ -179,7 +211,6 @@ func TestTimeout(t *testing.T) {
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
 	}
-	t.Parallel()
 	testCases := []struct {
 		name     string
 		deadline time.Time
@@ -230,4 +261,26 @@ func TestCancellation(t *testing.T) {
 	require.Error(t, err, "should have returned error on canceled context")
 	require.EqualValues(t, err.Error(), ctx.Err().Error(), "scrape should return context's error")
 
+}
+
+// issue # 18193
+// init failures resulted in scrape panic for SFTP client
+func TestWithoutStartErrsNotPanics(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+	cfg.Username = "otelu"
+	cfg.Password = "otelp"
+	cfg.Endpoint = "localhost:22"
+	cfg.IgnoreHostKey = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
+
+	// create the scraper without starting it, so Client is nil
+	scrpr := newScraper(cfg, receivertest.NewNopCreateSettings())
+
+	// scrape should error not panic
+	var err error
+	require.NotPanics(t, func() { _, err = scrpr.scrape(context.Background()) }, "scrape should not panic")
+	require.Error(t, err, "expected scrape to err when without start")
 }

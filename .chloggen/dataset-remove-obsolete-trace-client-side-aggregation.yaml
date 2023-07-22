@@ -1,0 +1,29 @@
+# Use this changelog template to create an entry for release notes.
+# If your change doesn't affect end users, such as a test fix or a tooling change,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: exporter/datasetexporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Remove temporary client side attribute aggregation and corresponding traces.max_wait and traces.aggregate config options which are now redundant."
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [20660]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  This pull request removes the following attributes from the DataSet trace events: services, 
+  span_count, error_count. Those attributes were populated on the client side as part of the client
+  side aggregation code. This client side aggregation was meant as a temporary solution until a
+  proper solution is implement on the server side. Being a temporary solution meant it had many
+  edge cases and would only work under specific and limited circumstances (all spans which belong
+  to a trace are part of the same batch received by the plugin).
+
+  Corresponding config options (traces.aggregate and traces.max_wait) which are not redundant and
+  unused have also been removed.

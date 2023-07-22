@@ -1,25 +1,17 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclusterreceiver
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -181,9 +173,15 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 						},
 					},
 					{
-						GroupVersion: "autoscaling/v2beta2",
+						GroupVersion: "autoscaling/v2",
 						APIResources: []metav1.APIResource{
 							gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+						},
+					},
+					{
+						GroupVersion: "autoscaling/v2beta2",
+						APIResources: []metav1.APIResource{
+							gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 						},
 					},
 				}
@@ -199,7 +197,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 			rw := &resourceWatcher{
 				client:        newFakeClientWithAllResources(),
 				logger:        obsLogger,
-				dataCollector: collection.NewDataCollector(zap.NewNop(), []string{}, []string{}),
+				dataCollector: collection.NewDataCollector(receivertest.NewNopCreateSettings(), []string{}, []string{}),
 			}
 
 			assert.NoError(t, rw.prepareSharedInformerFactory())
@@ -223,4 +221,88 @@ func TestSetupInformerForKind(t *testing.T) {
 
 	assert.Equal(t, 1, logs.Len())
 	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Entry.Message)
+}
+
+func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
+	client := newFakeClientWithAllResources()
+
+	logsConsumer := new(consumertest.LogsSink)
+
+	// Setup k8s resources.
+	pods := createPods(t, client, 1)
+
+	origPod := pods[0]
+	updatedPod := getUpdatedPod(origPod)
+
+	rw := newResourceWatcher(receivertest.NewNopCreateSettings(), &Config{})
+	rw.entityLogConsumer = logsConsumer
+
+	step1 := time.Now()
+
+	// Make some changes to the pod. Each change should result in an entity event represented
+	// as a log record.
+
+	// Pod is created.
+	rw.syncMetadataUpdate(nil, rw.dataCollector.SyncMetadata(origPod))
+	step2 := time.Now()
+
+	// Pod is updated.
+	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(origPod), rw.dataCollector.SyncMetadata(updatedPod))
+	step3 := time.Now()
+
+	// Pod is updated again, but nothing changed in the pod.
+	// Should still result in entity event because they are emitted even
+	// if the entity is not changed.
+	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(updatedPod), rw.dataCollector.SyncMetadata(updatedPod))
+	step4 := time.Now()
+
+	// Change pod's state back to original
+	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(updatedPod), rw.dataCollector.SyncMetadata(origPod))
+	step5 := time.Now()
+
+	// Delete the pod
+	rw.syncMetadataUpdate(rw.dataCollector.SyncMetadata(origPod), nil)
+	step6 := time.Now()
+
+	// Must have 5 entity events.
+	require.EqualValues(t, 5, logsConsumer.LogRecordCount())
+
+	// Event 1 should contain the initial state of the pod.
+	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected := map[string]any{
+		"otel.entity.event.type": "entity_state",
+		"otel.entity.type":       "k8s.pod",
+		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
+		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z"},
+	}
+	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
+
+	// Event 2 should contain the updated state of the pod.
+	lr = logsConsumer.AllLogs()[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs := expected["otel.entity.attributes"].(map[string]any)
+	attrs["key"] = "value"
+	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step2, step3)
+
+	// Event 3 should be identical to the previous one since pod state didn't change.
+	lr = logsConsumer.AllLogs()[2].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step3, step4)
+
+	// Event 4 should contain the reverted state of the pod.
+	lr = logsConsumer.AllLogs()[3].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	attrs = expected["otel.entity.attributes"].(map[string]any)
+	delete(attrs, "key")
+	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step4, step5)
+
+	// Event 5 should indicate pod deletion.
+	lr = logsConsumer.AllLogs()[4].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	expected = map[string]any{
+		"otel.entity.event.type": "entity_delete",
+		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
+	}
+	assert.EqualValues(t, expected, lr.Attributes().AsRaw())
+	assert.WithinRange(t, lr.Timestamp().AsTime(), step5, step6)
 }

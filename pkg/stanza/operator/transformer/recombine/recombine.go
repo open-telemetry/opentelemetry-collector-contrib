@@ -1,23 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package recombine // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -60,15 +49,16 @@ func NewConfigWithID(operatorID string) *Config {
 // Config is the configuration of a recombine operator
 type Config struct {
 	helper.TransformerConfig `mapstructure:",squash"`
-	IsFirstEntry             string        `mapstructure:"is_first_entry"`
-	IsLastEntry              string        `mapstructure:"is_last_entry"`
-	MaxBatchSize             int           `mapstructure:"max_batch_size"`
-	CombineField             entry.Field   `mapstructure:"combine_field"`
-	CombineWith              string        `mapstructure:"combine_with"`
-	SourceIdentifier         entry.Field   `mapstructure:"source_identifier"`
-	OverwriteWith            string        `mapstructure:"overwrite_with"`
-	ForceFlushTimeout        time.Duration `mapstructure:"force_flush_period"`
-	MaxSources               int           `mapstructure:"max_sources"`
+	IsFirstEntry             string          `mapstructure:"is_first_entry"`
+	IsLastEntry              string          `mapstructure:"is_last_entry"`
+	MaxBatchSize             int             `mapstructure:"max_batch_size"`
+	CombineField             entry.Field     `mapstructure:"combine_field"`
+	CombineWith              string          `mapstructure:"combine_with"`
+	SourceIdentifier         entry.Field     `mapstructure:"source_identifier"`
+	OverwriteWith            string          `mapstructure:"overwrite_with"`
+	ForceFlushTimeout        time.Duration   `mapstructure:"force_flush_period"`
+	MaxSources               int             `mapstructure:"max_sources"`
+	MaxLogSize               helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 }
 
 // Build creates a new Transformer from a config
@@ -123,13 +113,22 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		maxBatchSize:        c.MaxBatchSize,
 		maxSources:          c.MaxSources,
 		overwriteWithOldest: overwriteWithOldest,
-		batchMap:            make(map[string][]*entry.Entry),
-		combineField:        c.CombineField,
-		combineWith:         c.CombineWith,
-		forceFlushTimeout:   c.ForceFlushTimeout,
-		ticker:              time.NewTicker(c.ForceFlushTimeout),
-		chClose:             make(chan struct{}),
-		sourceIdentifier:    c.SourceIdentifier,
+		batchMap:            make(map[string]*sourceBatch),
+		batchPool: sync.Pool{
+			New: func() interface{} {
+				return &sourceBatch{
+					entries:    []*entry.Entry{},
+					recombined: &bytes.Buffer{},
+				}
+			},
+		},
+		combineField:      c.CombineField,
+		combineWith:       c.CombineWith,
+		forceFlushTimeout: c.ForceFlushTimeout,
+		ticker:            time.NewTicker(c.ForceFlushTimeout),
+		chClose:           make(chan struct{}),
+		sourceIdentifier:  c.SourceIdentifier,
+		maxLogSize:        int64(c.MaxLogSize),
 	}, nil
 }
 
@@ -150,7 +149,16 @@ type Transformer struct {
 	sourceIdentifier    entry.Field
 
 	sync.Mutex
-	batchMap map[string][]*entry.Entry
+	batchPool  sync.Pool
+	batchMap   map[string]*sourceBatch
+	maxLogSize int64
+}
+
+// sourceBatch contains the status info of a batch
+type sourceBatch struct {
+	entries                []*entry.Entry
+	recombined             *bytes.Buffer
+	firstEntryObservedTime time.Time
 }
 
 func (r *Transformer) Start(_ operator.Persister) error {
@@ -165,18 +173,17 @@ func (r *Transformer) flushLoop() {
 		case <-r.ticker.C:
 			r.Lock()
 			timeNow := time.Now()
-			for source, entries := range r.batchMap {
-				lastEntryTs := entries[len(entries)-1].ObservedTimestamp
-				timeSinceLastEntry := timeNow.Sub(lastEntryTs)
-				if timeSinceLastEntry < r.forceFlushTimeout {
+			for source, batch := range r.batchMap {
+				timeSinceFirstEntry := timeNow.Sub(batch.firstEntryObservedTime)
+				if timeSinceFirstEntry < r.forceFlushTimeout {
 					continue
 				}
-				if err := r.flushSource(source); err != nil {
+				if err := r.flushSource(source, true); err != nil {
 					r.Errorf("there was error flushing combined logs %s", err)
 				}
 			}
-
-			r.ticker.Reset(r.forceFlushTimeout)
+			// check every 1/5 forceFlushTimeout
+			r.ticker.Reset(r.forceFlushTimeout / 5)
 			r.Unlock()
 		case <-r.chClose:
 			r.ticker.Stop()
@@ -234,7 +241,7 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// This is the first entry in the next batch
 	case matches && r.matchIndicatesFirst():
 		// Flush the existing batch
-		err := r.flushSource(s)
+		err := r.flushSource(s, true)
 		if err != nil {
 			return err
 		}
@@ -246,9 +253,9 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	case matches && r.matchIndicatesLast():
 		fallthrough
 	// When matching on first entry, never batch partial first. Just emit immediately
-	case !matches && r.matchIndicatesFirst() && len(r.batchMap[s]) == 0:
+	case !matches && r.matchIndicatesFirst() && r.batchMap[s] == nil:
 		r.addToBatch(ctx, e, s)
-		return r.flushSource(s)
+		return r.flushSource(s, true)
 	}
 
 	// This is neither the first entry of a new log,
@@ -267,21 +274,42 @@ func (r *Transformer) matchIndicatesLast() bool {
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
 func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source string) {
-	if _, ok := r.batchMap[source]; !ok {
-		r.batchMap[source] = []*entry.Entry{e}
+	batch, ok := r.batchMap[source]
+	if !ok {
+		batch = r.addNewBatch(source, e)
 		if len(r.batchMap) >= r.maxSources {
 			r.Error("Batched source exceeds max source size. Flushing all batched logs. Consider increasing max_sources parameter")
 			r.flushUncombined(context.Background())
+			return
 		}
-		return
+	} else {
+		// If the length of the batch is 0, this batch was flushed previously due to triggering size limit.
+		// In this case, the firstEntryObservedTime should be updated to reset the timeout
+		if len(batch.entries) == 0 {
+			batch.firstEntryObservedTime = e.ObservedTimestamp
+		}
+		batch.entries = append(batch.entries, e)
 	}
 
-	r.batchMap[source] = append(r.batchMap[source], e)
-	if len(r.batchMap[source]) >= r.maxBatchSize {
-		if err := r.flushSource(source); err != nil {
+	// Combine the combineField of each entry in the batch,
+	// separated by newlines
+	var s string
+	err := e.Read(r.combineField, &s)
+	if err != nil {
+		r.Errorf("entry does not contain the combine_field")
+		return
+	}
+	if batch.recombined.Len() > 0 {
+		batch.recombined.WriteString(r.combineWith)
+	}
+	batch.recombined.WriteString(s)
+
+	if (r.maxLogSize > 0 && int64(batch.recombined.Len()) > r.maxLogSize) || len(batch.entries) >= r.maxBatchSize {
+		if err := r.flushSource(source, false); err != nil {
 			r.Errorf("there was error flushing combined logs %s", err)
 		}
 	}
+
 }
 
 // flushUncombined flushes all the logs in the batch individually to the
@@ -289,25 +317,31 @@ func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source strin
 // or at shutdown to avoid dropping the logs.
 func (r *Transformer) flushUncombined(ctx context.Context) {
 	for source := range r.batchMap {
-		for _, entry := range r.batchMap[source] {
+		for _, entry := range r.batchMap[source].entries {
 			r.Write(ctx, entry)
 		}
+		r.removeBatch(source)
 	}
-	r.batchMap = make(map[string][]*entry.Entry)
 	r.ticker.Reset(r.forceFlushTimeout)
 }
 
 // flushSource combines the entries currently in the batch into a single entry,
 // then forwards them to the next operator in the pipeline
-func (r *Transformer) flushSource(source string) error {
+func (r *Transformer) flushSource(source string, deleteSource bool) error {
+	batch := r.batchMap[source]
 	// Skip flushing a combined log if the batch is empty
-	if len(r.batchMap[source]) == 0 {
+	if batch == nil {
+		return nil
+	}
+
+	if len(batch.entries) == 0 {
+		r.removeBatch(source)
 		return nil
 	}
 
 	// Choose which entry we want to keep the rest of the fields from
 	var base *entry.Entry
-	entries := r.batchMap[source]
+	entries := batch.entries
 
 	if r.overwriteWithOldest {
 		base = entries[0]
@@ -315,31 +349,36 @@ func (r *Transformer) flushSource(source string) error {
 		base = entries[len(entries)-1]
 	}
 
-	// Combine the combineField of each entry in the batch,
-	// separated by newlines
-	var recombined strings.Builder
-	for i, e := range entries {
-		var s string
-		err := e.Read(r.combineField, &s)
-		if err != nil {
-			r.Errorf("entry does not contain the combine_field, so is being dropped")
-			continue
-		}
-
-		recombined.WriteString(s)
-		if i != len(entries)-1 {
-			recombined.WriteString(r.combineWith)
-		}
-	}
-
 	// Set the recombined field on the entry
-	err := base.Set(r.combineField, recombined.String())
+	err := base.Set(r.combineField, batch.recombined.String())
 	if err != nil {
 		return err
 	}
 
 	r.Write(context.Background(), base)
+	if deleteSource {
+		r.removeBatch(source)
+	} else {
+		batch.entries = batch.entries[:0]
+		batch.recombined.Reset()
+	}
 
-	delete(r.batchMap, source)
 	return nil
+}
+
+// addNewBatch creates a new batch for the given source and adds the entry to it.
+func (r *Transformer) addNewBatch(source string, e *entry.Entry) *sourceBatch {
+	batch := r.batchPool.Get().(*sourceBatch)
+	batch.entries = append(batch.entries[:0], e)
+	batch.recombined.Reset()
+	batch.firstEntryObservedTime = e.ObservedTimestamp
+	r.batchMap[source] = batch
+	return batch
+}
+
+// removeBatch removes the batch for the given source.
+func (r *Transformer) removeBatch(source string) {
+	batch := r.batchMap[source]
+	delete(r.batchMap, source)
+	r.batchPool.Put(batch)
 }

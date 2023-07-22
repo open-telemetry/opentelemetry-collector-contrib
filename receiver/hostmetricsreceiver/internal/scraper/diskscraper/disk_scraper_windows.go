@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package diskscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 
@@ -97,7 +86,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	}
 
 	s.startTime = pcommon.Timestamp(bootTime * 1e9)
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings, metadata.WithStartTime(s.startTime))
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(s.startTime))
 
 	if err = s.perfCounterScraper.Initialize(logicalDisk); err != nil {
 		s.settings.Logger.Error("Failed to initialize performance counter, disk metrics will not be scraped", zap.Error(err))

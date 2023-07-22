@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
@@ -56,18 +45,18 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 	if cfg.TLS != nil {
 		tlsCfg, err = cfg.TLS.LoadTLSConfig()
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err)
+			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error())
 		}
 	}
 
 	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err)
+		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err.Error())
 	}
 
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errBadPort, err)
+		return nil, fmt.Errorf("%w: %s", errBadPort, err.Error())
 	}
 
 	ashost := as.NewHost(host, int(port))
@@ -82,7 +71,7 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 			conf := &clientConfig{
 				host:                  ashost,
 				username:              cfg.Username,
-				password:              cfg.Password,
+				password:              string(cfg.Password),
 				timeout:               cfg.Timeout,
 				logger:                sugaredLogger,
 				collectClusterMetrics: cfg.CollectClusterMetrics,
@@ -93,7 +82,7 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 				nodeGetterFactory,
 			)
 		},
-		mb: metadata.NewMetricsBuilder(cfg.Metrics, params),
+		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
 	}, nil
 }
 
@@ -120,7 +109,7 @@ func (r *aerospikeReceiver) shutdown(_ context.Context) error {
 
 // scrape scrapes both Node and Namespace metrics from the provided Aerospike node.
 // If CollectClusterMetrics is true, it then scrapes every discovered node
-func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (r *aerospikeReceiver) scrape(_ context.Context) (pmetric.Metrics, error) {
 	r.logger.Debug("beginning scrape")
 	errs := &scrapererror.ScrapeErrors{}
 

@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
@@ -35,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -127,8 +117,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 }
 
 func TestDefaultTranslationRules(t *testing.T) {
-	rules, err := loadDefaultTranslationRules()
-	require.NoError(t, err)
+	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
@@ -448,8 +437,7 @@ func TestDefaultDiskTranslations(t *testing.T) {
 }
 
 func testGetTranslator(t *testing.T) *translation.MetricTranslator {
-	rules, err := loadDefaultTranslationRules()
-	require.NoError(t, err)
+	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 3600)
 	require.NoError(t, err)
@@ -508,17 +496,12 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
-	jsonpb := &pmetric.JSONUnmarshaler{}
-	bytes1, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_1.json"))
-	require.NoError(t, err)
-	md1, err := jsonpb.UnmarshalMetrics(bytes1)
+	md1, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_1.yaml"))
 	require.NoError(t, err)
 
 	_ = converter.MetricsToSignalFxV2(md1)
 
-	bytes2, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_2.json"))
-	require.NoError(t, err)
-	md2, err := jsonpb.UnmarshalMetrics(bytes2)
+	md2, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_2.yaml"))
 	require.NoError(t, err)
 
 	translated2 := converter.MetricsToSignalFxV2(md2)
@@ -589,8 +572,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.
 func BenchmarkMetricConversion(b *testing.B) {
-	rules, err := loadDefaultTranslationRules()
-	require.NoError(b, err)
+	rules := defaultTranslationRules
 	require.NotNil(b, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(b, err)

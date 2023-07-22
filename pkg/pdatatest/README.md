@@ -3,7 +3,7 @@
 This module provides a test helpers for comparing metric, log and traces. The main functions are: 
 - `pmetrictest.CompareMetrics` 
 - `plogtest.CompareLogs` 
-- `ptrace.CompareTraces` 
+- `ptracetest.CompareTraces` 
 
 These functions compare the actual result with the expected result and return an error if they are not equal. 
 The error contains a detailed description of the differences. The module also provides several options to customize 
@@ -45,5 +45,20 @@ func TestLogsReceiver(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareLogs(expectedLogs, actualLogs))
+}
+```
+
+```go
+func TestTraceProcessor(t *testing.T) {
+	nextTrace := new(consumertest.TracesSink)
+	tp, err := newTracesProcessor(NewFactory().CreateDefaultConfig(), nextTrace)
+	traces := generateTraces()
+	tp.ConsumeTraces(ctx, traces)
+	actualTraces := nextTrace.AllTraces()[0]
+
+	expectedTraces, err := readTraces(filepath.Join("testdata", "traces", "expected.json"))
+	require.NoError(t, err)
+	
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, actualTraces))
 }
 ```

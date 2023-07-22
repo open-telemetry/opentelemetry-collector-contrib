@@ -1,27 +1,22 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -139,7 +134,11 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	mlc := helper.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
-	f.splitterFactory = newMultilineSplitterFactory(helper.NewEncodingConfig(), helper.NewFlusherConfig(), mlc)
+	f.splitterFactory = newMultilineSplitterFactory(helper.SplitterConfig{
+		EncodingConfig: helper.NewEncodingConfig(),
+		Flusher:        helper.NewFlusherConfig(),
+		Multiline:      mlc,
+	})
 	f.readerConfig.maxLogSize = 15
 
 	temp := openTemp(t, t.TempDir())
@@ -150,25 +149,66 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
+	require.True(t, r.eof)
 
 	for _, expected := range expected {
 		require.Equal(t, expected, readToken(t, emitChan))
 	}
 }
 
+func TestHeaderFingerprintIncluded(t *testing.T) {
+	fileContent := []byte("#header-line\naaa\n")
+
+	f, _ := testReaderFactory(t)
+	f.readerConfig.maxLogSize = 10
+
+	regexConf := regex.NewConfig()
+	regexConf.Regex = "^#(?P<header>.*)"
+
+	headerConf := &HeaderConfig{
+		Pattern: "^#",
+		MetadataOperators: []operator.Config{
+			{
+				Builder: regexConf,
+			},
+		},
+	}
+
+	enc, err := helper.EncodingConfig{
+		Encoding: "utf-8",
+	}.Build()
+	require.NoError(t, err)
+
+	h, err := headerConf.buildHeaderSettings(enc.Encoding)
+	require.NoError(t, err)
+	f.headerSettings = h
+
+	temp := openTemp(t, t.TempDir())
+
+	r, err := f.newReaderBuilder().withFile(temp).build()
+	require.NoError(t, err)
+
+	_, err = temp.Write(fileContent)
+	require.NoError(t, err)
+
+	r.ReadToEnd(context.Background())
+
+	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
+}
+
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
+	splitterConfig := helper.NewSplitterConfig()
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
-			fingerprintSize: DefaultFingerprintSize,
+			fingerprintSize: fingerprint.DefaultSize,
 			maxLogSize:      defaultMaxLogSize,
 			emit:            testEmitFunc(emitChan),
 		},
-		fromBeginning: true,
-		splitterFactory: newMultilineSplitterFactory(
-			helper.NewEncodingConfig(), helper.NewFlusherConfig(), helper.NewMultilineConfig()),
-		encodingConfig: helper.NewEncodingConfig(),
+		fromBeginning:   true,
+		splitterFactory: newMultilineSplitterFactory(splitterConfig),
+		encodingConfig:  splitterConfig.EncodingConfig,
 	}, emitChan
 }
 
@@ -180,4 +220,55 @@ func readToken(t *testing.T, c chan *emitParams) []byte {
 		require.FailNow(t, "Timed out waiting for token")
 	}
 	return nil
+}
+
+func TestEncodingDecode(t *testing.T) {
+	testFile := openTemp(t, t.TempDir())
+	testToken := tokenWithLength(2 * fingerprint.DefaultSize)
+	_, err := testFile.Write(testToken)
+	require.NoError(t, err)
+	fp, err := fingerprint.New(testFile, fingerprint.DefaultSize)
+	require.NoError(t, err)
+
+	f := readerFactory{
+		SugaredLogger: testutil.Logger(t),
+		readerConfig: &readerConfig{
+			fingerprintSize: fingerprint.DefaultSize,
+			maxLogSize:      defaultMaxLogSize,
+		},
+		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
+		fromBeginning:   false,
+	}
+	r, err := f.newReader(testFile, fp)
+	require.NoError(t, err)
+
+	// Just faking out these properties
+	r.HeaderFinalized = true
+	r.FileAttributes = map[string]any{"foo": "bar"}
+
+	assert.Equal(t, testToken[:fingerprint.DefaultSize], r.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*fingerprint.DefaultSize), r.Offset)
+
+	// Encode
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	require.NoError(t, enc.Encode(r))
+
+	// Decode
+	dec := json.NewDecoder(bytes.NewReader(buf.Bytes()))
+	decodedReader, err := f.unsafeReader()
+	require.NoError(t, err)
+	require.NoError(t, dec.Decode(decodedReader))
+
+	// Assert decoded reader has values persisted
+	assert.Equal(t, testToken[:fingerprint.DefaultSize], decodedReader.Fingerprint.FirstBytes)
+	assert.Equal(t, int64(2*fingerprint.DefaultSize), decodedReader.Offset)
+	assert.True(t, decodedReader.HeaderFinalized)
+	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes)
+
+	// These fields are intentionally excluded, as they may have changed
+	assert.Empty(t, decodedReader.FileAttributes[logFileName])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePath])
+	assert.Empty(t, decodedReader.FileAttributes[logFileNameResolved])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePathResolved])
 }

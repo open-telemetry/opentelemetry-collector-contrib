@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dimensions // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 
@@ -33,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
@@ -65,6 +55,8 @@ type DimensionClient struct {
 	logUpdates       bool
 	logger           *zap.Logger
 	metricsConverter translation.MetricsConverter
+	// ExcludeProperties will filter DimensionUpdate content to not submit undesired metadata.
+	ExcludeProperties []dpfilters.PropertyFilter
 }
 
 type queuedDimension struct {
@@ -73,14 +65,21 @@ type queuedDimension struct {
 }
 
 type DimensionClientOptions struct {
-	Token                 configopaque.String
-	APIURL                *url.URL
-	APITLSConfig          *tls.Config
-	LogUpdates            bool
-	Logger                *zap.Logger
-	SendDelay             int
-	PropertiesMaxBuffered int
-	MetricsConverter      translation.MetricsConverter
+	Token        configopaque.String
+	APIURL       *url.URL
+	APITLSConfig *tls.Config
+	LogUpdates   bool
+	Logger       *zap.Logger
+	SendDelay    time.Duration
+	// In case of having issues sending dimension updates to SignalFx,
+	// buffer a fixed number of updates.
+	MaxBuffered         int
+	MetricsConverter    translation.MetricsConverter
+	ExcludeProperties   []dpfilters.PropertyFilter
+	MaxConnsPerHost     int
+	MaxIdleConns        int
+	MaxIdleConnsPerHost int
+	IdleConnTimeout     time.Duration
 }
 
 // NewDimensionClient returns a new client
@@ -94,9 +93,10 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 				KeepAlive: 30 * time.Second,
 				DualStack: true,
 			}).DialContext,
-			MaxIdleConns:        20,
-			MaxIdleConnsPerHost: 20,
-			IdleConnTimeout:     30 * time.Second,
+			MaxConnsPerHost:     options.MaxConnsPerHost,
+			MaxIdleConns:        options.MaxIdleConns,
+			MaxIdleConnsPerHost: options.MaxIdleConnsPerHost,
+			IdleConnTimeout:     options.IdleConnTimeout,
 			TLSHandshakeTimeout: 10 * time.Second,
 			TLSClientConfig:     options.APITLSConfig,
 		},
@@ -104,18 +104,19 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 	sender := NewReqSender(ctx, client, 20, map[string]string{"client": "dimension"})
 
 	return &DimensionClient{
-		ctx:              ctx,
-		Token:            options.Token,
-		APIURL:           options.APIURL,
-		sendDelay:        time.Duration(options.SendDelay) * time.Second,
-		delayedSet:       make(map[DimensionKey]*DimensionUpdate),
-		delayedQueue:     make(chan *queuedDimension, options.PropertiesMaxBuffered),
-		requestSender:    sender,
-		client:           client,
-		now:              time.Now,
-		logger:           options.Logger,
-		logUpdates:       options.LogUpdates,
-		metricsConverter: options.MetricsConverter,
+		ctx:               ctx,
+		Token:             options.Token,
+		APIURL:            options.APIURL,
+		sendDelay:         options.SendDelay,
+		delayedSet:        make(map[DimensionKey]*DimensionUpdate),
+		delayedQueue:      make(chan *queuedDimension, options.MaxBuffered),
+		requestSender:     sender,
+		client:            client,
+		now:               time.Now,
+		logger:            options.Logger,
+		logUpdates:        options.LogUpdates,
+		metricsConverter:  options.MetricsConverter,
+		ExcludeProperties: options.ExcludeProperties,
 	}
 }
 
@@ -127,6 +128,10 @@ func (dc *DimensionClient) Start() {
 // acceptDimension to be sent to the API.  This will return fairly quickly and
 // won't block. If the buffer is full, the dim update will be dropped.
 func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
+	if dimUpdate = dc.filterDimensionUpdate(dimUpdate); dimUpdate == nil {
+		return nil
+	}
+
 	dc.Lock()
 	defer dc.Unlock()
 
@@ -324,4 +329,30 @@ func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request
 	req.Header.Add("X-SF-TOKEN", string(dc.Token))
 
 	return req, nil
+}
+
+func (dc *DimensionClient) filterDimensionUpdate(update *DimensionUpdate) *DimensionUpdate {
+	for _, excludeRule := range dc.ExcludeProperties {
+		if excludeRule.DimensionName.Matches(update.Name) && excludeRule.DimensionValue.Matches(update.Value) {
+			for k, v := range update.Properties {
+				if excludeRule.PropertyName.Matches(k) {
+					vVal := ""
+					if v != nil {
+						vVal = *v
+					}
+					if excludeRule.PropertyValue.Matches(vVal) {
+						delete(update.Properties, k)
+					}
+				}
+			}
+		}
+	}
+
+	// Prevent needless dimension updates if all content has been filtered.
+	// Based on https://github.com/signalfx/signalfx-agent/blob/a10f69ec6b95d7426adaf639773628fa034628b8/pkg/core/propfilters/dimfilter.go#L95
+	if len(update.Properties) == 0 && len(update.Tags) == 0 {
+		return nil
+	}
+
+	return update
 }

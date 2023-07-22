@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet
 
@@ -214,9 +203,9 @@ func TestMetadataErrorCases(t *testing.T) {
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
 				mbs: &metadata.MetricsBuilders{
-					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
-					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
-					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 				},
 			}
 
@@ -240,10 +229,10 @@ func TestNilHandling(t *testing.T) {
 			VolumeMetricGroup:    true,
 		},
 		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
-			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
-			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
-			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 		},
 	}
 	assert.NotPanics(t, func() {

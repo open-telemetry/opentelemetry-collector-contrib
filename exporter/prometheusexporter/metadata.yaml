@@ -1,0 +1,14 @@
+type: prometheus
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics]
+  distributions:
+  - core
+  - contrib
+  - aws
+  - grafana
+  - observiq
+  - redhat
+  - sumo

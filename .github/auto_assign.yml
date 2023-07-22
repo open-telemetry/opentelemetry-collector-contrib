@@ -12,17 +12,20 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
+    - atoulme
     - dashpole
-    - evan-bradley
-    - MovieStoreGuy
-    - TylerHelmuth
+    - fatsheep9146
+    - kovrus
     # Maintainers
     - bogdandrutu
     - codeboten
     - djaglowski
     - dmitryax
+    - evan-bradley
     - jpkrohling
+    - MovieStoreGuy
     - mx-psi
+    - TylerHelmuth
 
 # A number of assignees added to the pull request
 # Set 0 to add all the assignees (default: 0)

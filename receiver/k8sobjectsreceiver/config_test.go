@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver
 
@@ -62,10 +51,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			Name:       "events",
-			Mode:       WatchMode,
-			Namespaces: []string{"default"},
-			Group:      "events.k8s.io",
+			Name:            "events",
+			Mode:            WatchMode,
+			Namespaces:      []string{"default"},
+			Group:           "events.k8s.io",
+			ResourceVersion: "1",
 			gvr: &schema.GroupVersionResource{
 				Group:    "events.k8s.io",
 				Version:  "v1",
@@ -129,4 +119,77 @@ func TestValidateResourceConflict(t *testing.T) {
 	err = rCfg.Validate()
 	require.NoError(t, err)
 	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
+}
+
+func TestPullResourceVersion(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "pull_resource_version_config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	sub, err := cm.Sub("k8sobjects")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NotNil(t, cfg)
+
+	err = component.ValidateConfig(cfg)
+	require.Error(t, err)
+
+	require.Equal(t, "1", cfg.Objects[0].ResourceVersion)
+	require.Equal(t, "", cfg.Objects[1].ResourceVersion)
+}
+
+func TestWatchResourceVersion(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_watch_resource_version.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	sub, err := cm.Sub("k8sobjects")
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NotNil(t, cfg)
+
+	err = component.ValidateConfig(cfg)
+	require.Error(t, err)
+
+	cfg.makeDiscoveryClient = getMockDiscoveryClient
+
+	err = component.ValidateConfig(cfg)
+	require.NoError(t, err)
+
+	expected := []*K8sObjectsConfig{
+		{
+			Name:            "events",
+			Mode:            WatchMode,
+			Namespaces:      []string{"default"},
+			Group:           "events.k8s.io",
+			ResourceVersion: "1",
+			gvr: &schema.GroupVersionResource{
+				Group:    "events.k8s.io",
+				Version:  "v1",
+				Resource: "events",
+			},
+		},
+		{
+			Name:            "events",
+			Mode:            WatchMode,
+			Namespaces:      []string{"default"},
+			Group:           "events.k8s.io",
+			ResourceVersion: "2",
+			gvr: &schema.GroupVersionResource{
+				Group:    "events.k8s.io",
+				Version:  "v1",
+				Resource: "events",
+			},
+		},
+	}
+	assert.EqualValues(t, expected, cfg.Objects)
+
 }

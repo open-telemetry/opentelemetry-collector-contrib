@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -460,7 +449,7 @@ func commonLogSplunkEvent(
 
 func Test_emptyLogRecord(t *testing.T) {
 	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{})
-	assert.Nil(t, event.Time)
+	assert.Zero(t, event.Time)
 	assert.Equal(t, event.Host, "unknown")
 	assert.Zero(t, event.Source)
 	assert.Zero(t, event.SourceType)
@@ -471,9 +460,76 @@ func Test_emptyLogRecord(t *testing.T) {
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-	assert.Equal(t, 1.001, *splunkTs)
+	assert.Equal(t, 1.001, splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-	assert.Equal(t, 1.002, *splunkTs)
+	assert.Equal(t, 1.002, splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(0)
-	assert.True(t, nil == splunkTs)
+	assert.Zero(t, splunkTs)
+}
+
+func Test_mergeValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		key      string
+		val      any
+		expected map[string]any
+	}{
+		{
+			name:     "int",
+			key:      "intKey",
+			val:      0,
+			expected: map[string]any{"intKey": 0},
+		},
+		{
+			name:     "flat_array",
+			key:      "arrayKey",
+			val:      []any{0, 1, 2, 3},
+			expected: map[string]any{"arrayKey": []any{0, 1, 2, 3}},
+		},
+		{
+			name:     "nested_array",
+			key:      "arrayKey",
+			val:      []any{0, 1, []any{2, 3}},
+			expected: map[string]any{"arrayKey": "[0,1,[2,3]]"},
+		},
+		{
+			name:     "array_of_map",
+			key:      "arrayKey",
+			val:      []any{0, 1, map[string]any{"3": 3}},
+			expected: map[string]any{"arrayKey": "[0,1,{\"3\":3}]"},
+		},
+		{
+			name:     "flat_map",
+			key:      "mapKey",
+			val:      map[string]any{"1": 1, "2": 2},
+			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2},
+		},
+		{
+			name:     "nested_map",
+			key:      "mapKey",
+			val:      map[string]any{"1": 1, "2": 2, "nested": map[string]any{"3": 3, "4": 4}},
+			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2, "mapKey.nested.3": 3, "mapKey.nested.4": 4},
+		},
+		{
+			name:     "flat_array_in_nested_map",
+			key:      "mapKey",
+			val:      map[string]any{"1": 1, "2": 2, "nested": map[string]any{"3": 3, "flat_array": []any{4}}},
+			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2, "mapKey.nested.3": 3, "mapKey.nested.flat_array": []any{4}},
+		},
+		{
+			name:     "nested_array_in_nested_map",
+			key:      "mapKey",
+			val:      map[string]any{"1": 1, "2": 2, "nested": map[string]any{"3": 3, "nested_array": []any{4, []any{5}}}},
+			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2, "mapKey.nested.3": 3, "mapKey.nested.nested_array": "[4,[5]]"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fields := make(map[string]any)
+			mergeValue(fields, tt.key, tt.val)
+			assert.Equal(t, tt.expected, fields)
+		})
+	}
+
 }

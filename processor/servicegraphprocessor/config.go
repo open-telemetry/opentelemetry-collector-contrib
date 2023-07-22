@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 
@@ -39,6 +28,12 @@ type Config struct {
 
 	// Store contains the config for the in-memory store used to find requests between services by pairing spans.
 	Store StoreConfig `mapstructure:"store"`
+	// CacheLoop is the time to cleans the cache periodically.
+	CacheLoop time.Duration `mapstructure:"cache_loop"`
+	// CacheLoop is the time to expire old entries from the store periodically.
+	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
+	// VirtualNodePeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
+	VirtualNodePeerAttributes []string `mapstructure:"virtual_node_peer_attributes"`
 }
 
 type StoreConfig struct {

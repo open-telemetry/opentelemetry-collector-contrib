@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package configssh // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
 
@@ -65,7 +54,7 @@ func (c *Client) Dial(endpoint string) (err error) {
 }
 
 func (c *Client) SFTPClient() (*SFTPClient, error) {
-	if c.Client.Conn == nil {
+	if c.Client == nil || c.Client.Conn == nil {
 		return nil, fmt.Errorf("SSH client not initialized")
 	}
 	client, err := sftp.NewClient(c.Client)
@@ -84,7 +73,7 @@ type SFTPClient struct {
 }
 
 // ToClient creates an SSHClient.
-func (scs *SSHClientSettings) ToClient(host component.Host, settings component.TelemetrySettings) (*Client, error) {
+func (scs *SSHClientSettings) ToClient(_ component.Host, _ component.TelemetrySettings) (*Client, error) {
 	var (
 		auth ssh.AuthMethod
 		hkc  ssh.HostKeyCallback

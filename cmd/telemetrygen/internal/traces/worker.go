@@ -1,31 +1,18 @@
 // Copyright The OpenTelemetry Authors
-// Copyright (c) 2018 The Jaeger Authors.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
 
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -52,10 +39,11 @@ func (w worker) simulateTraces() {
 	var i int
 	for w.running.Load() {
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
-			attribute.String("span.kind", "client"), // is there a semantic convention for this?
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("telemetrygen-server"),
-		))
+		),
+			trace.WithSpanKind(trace.SpanKindClient),
+		)
 
 		childCtx := ctx
 		if w.propagateContext {
@@ -68,10 +56,11 @@ func (w worker) simulateTraces() {
 		}
 
 		_, child := tracer.Start(childCtx, "okey-dokey", trace.WithAttributes(
-			attribute.String("span.kind", "server"),
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("telemetrygen-client"),
-		))
+		),
+			trace.WithSpanKind(trace.SpanKindServer),
+		)
 
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))

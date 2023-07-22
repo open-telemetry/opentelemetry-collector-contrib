@@ -1,31 +1,19 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
 
 import (
 	"context"
 	"errors"
+	"net"
 
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
-var (
-	errNilListenAndServeParameters = errors.New("no parameter of ListenAndServe can be nil")
-)
+var errNilListenAndServeParameters = errors.New("no parameter of ListenAndServe can be nil")
 
 // Server abstracts the type of transport being used and offer an
 // interface to handle serving clients over that transport.
@@ -37,12 +25,17 @@ type Server interface {
 		p protocol.Parser,
 		mc consumer.Metrics,
 		r Reporter,
-		transferChan chan<- string,
+		transferChan chan<- Metric,
 	) error
 
 	// Close stops any running ListenAndServe, however, it waits for any
 	// data already received to be parsed and sent to the next consumer.
 	Close() error
+}
+
+type Metric struct {
+	Raw  string
+	Addr net.Addr
 }
 
 // Reporter is used to report (via zPages, logs, metrics, etc) the events

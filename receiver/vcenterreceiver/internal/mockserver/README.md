@@ -35,13 +35,12 @@ And then running the receiver against the proxy.
 ```yaml
 receivers:
   vcenter:
-    metrics:
-      endpoint: https://localhost:56626
-      username: "otelu"
-      password: "otelp"
-      tls:
-        insecure: false
-        insecure_skip_verify: true
+    endpoint: https://localhost:56626
+    username: "otelu"
+    password: "otelp"
+    tls:
+      insecure: false
+      insecure_skip_verify: true
 
 service:
   pipelines:

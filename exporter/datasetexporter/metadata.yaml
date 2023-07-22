@@ -1,0 +1,7 @@
+type: dataset
+
+status:
+  class: exporter
+  stability:
+    alpha: [logs, traces]
+  distributions: [contrib]

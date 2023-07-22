@@ -28,6 +28,11 @@ resourcedetection/ecs:
   timeout: 2s
   override: false
 
+resourcedetection/lambda:
+  detectors: [env, lambda]
+  timeout: 2s
+  override: false
+
 resourcedetection/system:
   detectors: [env, system]
   timeout: 2s
@@ -57,3 +62,20 @@ resourcedetection/invalid:
   override: false
   system:
     hostname_sources: [invalid_source]
+
+resourcedetection/resourceattributes:
+  detectors: [system, ec2]
+  timeout: 2s
+  override: false
+  ec2:
+    resource_attributes:
+      host.name:
+        enabled: false
+      host.id:
+        enabled: false
+      host.type:
+        enabled: false
+  system:
+    resource_attributes:
+      os.type:
+        enabled: false

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottllog // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 
@@ -25,11 +14,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-var _ ottlcommon.ResourceContext = TransformContext{}
-var _ ottlcommon.InstrumentationScopeContext = TransformContext{}
+var _ internal.ResourceContext = TransformContext{}
+var _ internal.InstrumentationScopeContext = TransformContext{}
 
 type TransformContext struct {
 	logRecord            plog.LogRecord
@@ -65,17 +55,36 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) ottl.Parser[TransformContext] {
-	p := ottl.NewParser[TransformContext](
+func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+	p, err := ottl.NewParser[TransformContext](
 		functions,
 		parsePath,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
 	)
+	if err != nil {
+		return ottl.Parser[TransformContext]{}, err
+	}
 	for _, opt := range options {
 		opt(&p)
 	}
-	return p
+	return p, nil
+}
+
+type StatementsOption func(*ottl.Statements[TransformContext])
+
+func WithErrorMode(errorMode ottl.ErrorMode) StatementsOption {
+	return func(s *ottl.Statements[TransformContext]) {
+		ottl.WithErrorMode[TransformContext](errorMode)(s)
+	}
+}
+
+func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementsOption) ottl.Statements[TransformContext] {
+	s := ottl.NewStatements(statements, telemetrySettings)
+	for _, op := range options {
+		op(&s)
+	}
+	return s
 }
 
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
@@ -126,15 +135,15 @@ func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
 	case "cache":
-		mapKey := path[0].MapKey
+		mapKey := path[0].Keys
 		if mapKey == nil {
 			return accessCache(), nil
 		}
 		return accessCacheKey(mapKey), nil
 	case "resource":
-		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
+		return internal.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_scope":
-		return ottlcommon.ScopePathGetSetter[TransformContext](path[1:])
+		return internal.ScopePathGetSetter[TransformContext](path[1:])
 	case "time_unix_nano":
 		return accessTimeUnixNano(), nil
 	case "observed_time_unix_nano":
@@ -144,9 +153,18 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	case "severity_text":
 		return accessSeverityText(), nil
 	case "body":
-		return accessBody(), nil
+		if len(path) == 1 {
+			keys := path[0].Keys
+			if keys == nil {
+				return accessBody(), nil
+			}
+			return accessBodyKey(keys), nil
+		}
+		if path[1].Name == "string" {
+			return accessStringBody(), nil
+		}
 	case "attributes":
-		mapKey := path[0].MapKey
+		mapKey := path[0].Keys
 		if mapKey == nil {
 			return accessAttributes(), nil
 		}
@@ -188,14 +206,13 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.getCache(), *mapKey), nil
+			return internal.GetMapValue(tCtx.getCache(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.getCache(), *mapKey, val)
-			return nil
+			return internal.SetMapValue(tCtx.getCache(), keys, val)
 		},
 	}
 }
@@ -262,7 +279,47 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 			return ottlcommon.GetValue(tCtx.GetLogRecord().Body()), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			ottlcommon.SetValue(tCtx.GetLogRecord().Body(), val)
+			return internal.SetValue(tCtx.GetLogRecord().Body(), val)
+		},
+	}
+}
+
+func accessBodyKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			body := tCtx.GetLogRecord().Body()
+			switch body.Type() {
+			case pcommon.ValueTypeMap:
+				return internal.GetMapValue(tCtx.GetLogRecord().Body().Map(), keys)
+			case pcommon.ValueTypeSlice:
+				return internal.GetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys)
+			default:
+				return nil, fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
+			}
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			body := tCtx.GetLogRecord().Body()
+			switch body.Type() {
+			case pcommon.ValueTypeMap:
+				return internal.SetMapValue(tCtx.GetLogRecord().Body().Map(), keys, val)
+			case pcommon.ValueTypeSlice:
+				return internal.SetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys, val)
+			default:
+				return fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
+			}
+		},
+	}
+}
+
+func accessStringBody() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.GetLogRecord().Body().AsString(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if str, ok := val.(string); ok {
+				tCtx.GetLogRecord().Body().SetStr(str)
+			}
 			return nil
 		},
 	}
@@ -282,14 +339,13 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessAttributesKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+func accessAttributesKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return ottlcommon.GetMapValue(tCtx.GetLogRecord().Attributes(), *mapKey), nil
+			return internal.GetMapValue(tCtx.GetLogRecord().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
-			ottlcommon.SetMapValue(tCtx.GetLogRecord().Attributes(), *mapKey, val)
-			return nil
+			return internal.SetMapValue(tCtx.GetLogRecord().Attributes(), keys, val)
 		},
 	}
 }
@@ -344,7 +400,7 @@ func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
-				id, err := ottlcommon.ParseTraceID(str)
+				id, err := internal.ParseTraceID(str)
 				if err != nil {
 					return err
 				}
@@ -377,7 +433,7 @@ func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
-				id, err := ottlcommon.ParseSpanID(str)
+				id, err := internal.ParseSpanID(str)
 				if err != nil {
 					return err
 				}

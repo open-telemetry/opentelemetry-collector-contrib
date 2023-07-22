@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -169,24 +158,6 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 		entry.Resource = workerItem.Resource.Attributes().AsRaw()
 		convertFrom(record, &entry)
 		result = append(result, &entry)
-	}
-	return result
-}
-
-// ConvertFrom converts plog.Logs into a slice of entry.Entry
-// To be used in a stateless setting like tests where ease of use is more
-// important than performance or throughput.
-// Deprecated: [v0.69.0] Unnecessarily exported API.
-// Please add a comment in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17429
-// if you use it.
-func ConvertFrom(pLogs plog.Logs) []*entry.Entry {
-	result := make([]*entry.Entry, 0, pLogs.LogRecordCount())
-	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
-		rls := pLogs.ResourceLogs().At(i)
-		for j := 0; j < rls.ScopeLogs().Len(); j++ {
-			scope := rls.ScopeLogs().At(j)
-			result = append(result, convertFromLogs(fromConverterWorkerItem{Resource: rls.Resource(), Scope: scope, LogRecordSlice: scope.LogRecords()})...)
-		}
 	}
 	return result
 }

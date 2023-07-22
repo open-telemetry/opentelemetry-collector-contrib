@@ -1,23 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package file
 
 import (
 	"path/filepath"
-	"reflect"
-	"runtime"
 	"testing"
 	"time"
 
@@ -467,74 +454,6 @@ func TestBuild(t *testing.T) {
 			require.NoError,
 			func(t *testing.T, f *Input) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				expectOptions := []preEmitOption{setFileName}
-				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
-			},
-		},
-		{
-			"IncludeFilePath",
-			func(f *Config) {
-				f.IncludeFilePath = true
-			},
-			require.NoError,
-			func(t *testing.T, f *Input) {
-				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				expectOptions := []preEmitOption{setFileName, setFilePath}
-				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
-			},
-		},
-		{
-			"IncludeFileNameResolved",
-			func(f *Config) {
-				f.IncludeFileNameResolved = true
-			},
-			require.NoError,
-			func(t *testing.T, f *Input) {
-				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				expectOptions := []preEmitOption{setFileName, setFileNameResolved}
-				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
-			},
-		},
-		{
-			"IncludeFilePathResolved",
-			func(f *Config) {
-				f.IncludeFilePathResolved = true
-			},
-			require.NoError,
-			func(t *testing.T, f *Input) {
-				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				expectOptions := []preEmitOption{setFileName, setFilePathResolved}
-				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
-			},
-		},
-		{
-			"IncludeResolvedAttrs",
-			func(f *Config) {
-				f.IncludeFileName = false
-				f.IncludeFilePath = false
-				f.IncludeFilePathResolved = true
-				f.IncludeFileNameResolved = true
-			},
-			require.NoError,
-			func(t *testing.T, f *Input) {
-				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				expectOptions := []preEmitOption{setFileNameResolved, setFilePathResolved}
-				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
-			},
-		},
-		{
-			"IncludeAllFileAttrs",
-			func(f *Config) {
-				f.IncludeFileName = true
-				f.IncludeFilePath = true
-				f.IncludeFilePathResolved = true
-				f.IncludeFileNameResolved = true
-			},
-			require.NoError,
-			func(t *testing.T, f *Input) {
-				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				expectOptions := []preEmitOption{setFileName, setFilePath, setFileNameResolved, setFilePathResolved}
-				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
 			},
 		},
 		{
@@ -659,16 +578,5 @@ func TestBuild(t *testing.T) {
 			fileInput := op.(*Input)
 			tc.validate(t, fileInput)
 		})
-	}
-}
-
-func requireSamePreEmitOptions(t *testing.T, expect, actual []preEmitOption) {
-	// Comparing functions is not directly possible
-	require.Equal(t, len(expect), len(actual))
-	for i := range expect {
-		// Credit https://github.com/stretchr/testify/issues/182#issuecomment-495359313
-		expectFuncName := runtime.FuncForPC(reflect.ValueOf(expect[i]).Pointer()).Name()
-		actualFuncName := runtime.FuncForPC(reflect.ValueOf(actual[i]).Pointer()).Name()
-		require.Equal(t, expectFuncName, actualFuncName)
 	}
 }

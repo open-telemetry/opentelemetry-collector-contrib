@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
@@ -139,8 +128,8 @@ func newFloat64RateCalculator() awsmetrics.MetricCalculator {
 
 func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]interface{}, metricName string,
 	cinfoName string, curVal interface{}, curTime time.Time, multiplier float64) {
-	key := cinfoName + metricName
-	if val, ok := rateCalculator.Calculate(key, nil, curVal, curTime); ok {
+	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
+	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
 	}
 }

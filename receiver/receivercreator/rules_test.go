@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator
 
@@ -22,14 +11,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
-
-func newRuleOrPanic(s string) rule {
-	r, err := newRule(s)
-	if err != nil {
-		panic(err)
-	}
-	return r
-}
 
 func Test_ruleEval(t *testing.T) {
 	type args struct {
@@ -82,7 +63,7 @@ func Test_newRule(t *testing.T) {
 		wantErr bool
 	}{
 		{"empty rule", args{""}, true},
-		{"does not start with type", args{"port == 1234"}, true},
+		{"does not startMetrics with type", args{"port == 1234"}, true},
 		{"invalid syntax", args{"port =="}, true},
 		{"valid port", args{`type == "port" && port_name == "http"`}, false},
 		{"valid pod", args{`type=="pod" && port_name == "http"`}, false},

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 FPM_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
 
 PKG_NAME="otel-contrib-collector"
@@ -14,7 +17,7 @@ PKG_GROUP="otel"
 SERVICE_NAME="otel-contrib-collector"
 PROCESS_NAME="otelcontribcol"
 
-CONFIG_PATH="$REPO_DIR/examples/tracing/otel-collector-config.yml"
+CONFIG_PATH="$REPO_DIR/examples/demo/otel-collector-config.yaml"
 SERVICE_PATH="$FPM_DIR/$SERVICE_NAME.service"
 ENVFILE_PATH="$FPM_DIR/$SERVICE_NAME.conf"
 PREINSTALL_PATH="$FPM_DIR/preinstall.sh"

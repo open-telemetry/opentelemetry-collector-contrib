@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package datasenders // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 
@@ -30,6 +19,7 @@ import (
 type SapmDataSender struct {
 	testbed.DataSenderBase
 	consumer.Traces
+	compression string
 }
 
 // Ensure SapmDataSender implements TraceDataSenderOld.
@@ -37,12 +27,13 @@ var _ testbed.TraceDataSender = (*SapmDataSender)(nil)
 
 // NewSapmDataSender creates a new Sapm protocol sender that will send
 // to the specified port after Start is called.
-func NewSapmDataSender(port int) *SapmDataSender {
+func NewSapmDataSender(port int, compression string) *SapmDataSender {
 	return &SapmDataSender{
 		DataSenderBase: testbed.DataSenderBase{
 			Port: port,
 			Host: testbed.DefaultHost,
 		},
+		compression: compression,
 	}
 }
 
@@ -50,9 +41,12 @@ func NewSapmDataSender(port int) *SapmDataSender {
 func (je *SapmDataSender) Start() error {
 	factory := sapmexporter.NewFactory()
 	cfg := &sapmexporter.Config{
-		Endpoint:           fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
-		DisableCompression: true,
-		AccessToken:        "MyToken",
+		Endpoint:    fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
+		Compression: je.compression,
+		AccessToken: "MyToken",
+	}
+	if je.compression == "" {
+		cfg.DisableCompression = true
 	}
 	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()

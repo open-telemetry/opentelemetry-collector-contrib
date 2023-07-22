@@ -1,4 +1,7 @@
-#!/bin/bash -ex
+#!/bin/zsh -ex
+
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
@@ -7,32 +10,36 @@ PR_NAME=dependabot-prs/`date +'%Y-%m-%dT%H%M%S'`
 git checkout -b $PR_NAME
 
 IFS=$'\n'
-requests=$( gh pr list --search "author:app/dependabot" --json title --jq '.[].title' | sort )
+requests=($( gh pr list --search "author:app/dependabot" --limit 1000 --json title --jq '.[].title' | sort ))
 message=""
+dirs=(`find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./'`)
 
-last_updated=""
+declare -A mods
 
 for line in $requests; do
-    if [[ $line != Bump* ]]; then 
+    echo $line
+    if [[ $line != Bump* ]]; then
         continue
     fi
 
     module=$(echo $line | cut -f 2 -d " ")
-    if [[ $module == go.opentelemetry.io/collector* ]]; then
-        continue
-    fi
     version=$(echo $line | cut -f 6 -d " ")
+
+    mods[$module]=$version
     message+=$line
     message+=$'\n'
-    if [[ "$last_updated" == "$module $version" ]]; then
-        continue
-    fi
-    last_updated="$module $version"
-    make for-all CMD="$GITHUB_WORKSPACE/internal/buildscripts/update-dep" MODULE=$module VERSION=v$version
 done
 
-make gotidy
-make otelcontribcol
+for module version in ${(kv)mods}; do
+    topdir=`pwd`
+    for dir in $dirs; do
+        echo "checking $dir"
+        cd $dir && if grep -q "$module " go.mod; then go get "$module"@v"$version"; fi
+        cd $topdir
+    done
+done
+
+make gotidy genotelcontribcol genoteltestbedcol otelcontribcol
 
 git add go.sum go.mod
 git add "**/go.sum" "**/go.mod"

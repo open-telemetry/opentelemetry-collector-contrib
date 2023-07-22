@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package diskscraper
 
@@ -46,19 +35,19 @@ func TestScrape(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:          "Standard",
-			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
+			config:        Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			expectMetrics: metricsLen,
 		},
 		{
 			name:              "Validate Start Time",
-			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			bootTimeFunc:      func() (uint64, error) { return 100, nil },
 			expectMetrics:     metricsLen,
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:              "Boot Time Error",
-			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
 			expectMetrics:     metricsLen,
@@ -66,31 +55,31 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Filter that matches nothing",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectMetrics: 0,
 		},
 		{
 			name: "Invalid Include Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Include: MatchConfig{Devices: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating device include filters:",
 		},
 		{
 			name: "Invalid Exclude Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
-				Exclude: MatchConfig{Devices: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Exclude:              MatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating device exclude filters:",
 		},
 		{
 			name: "Disable one metric",
 			config: (func() Config {
-				config := Config{Metrics: metadata.DefaultMetricsSettings()}
+				config := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 				config.Metrics.SystemDiskIo.Enabled = false
 				return config
 			})(),

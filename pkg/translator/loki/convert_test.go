@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
 	"testing"
 
+	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +22,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 	}{
 		{
 			desc:     "empty attributes should have at least the default labels",
-			expected: defaultExporterLabels,
+			expected: model.LabelSet{"exporter": "OTLP"},
 		},
 		{
 			desc: "selected log attribute should be included",
@@ -97,6 +87,46 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			},
 			expected: model.LabelSet{
 				"exporter": "overridden",
+			},
+		},
+		{
+			desc: "it should add service.namespace/service.name as job label if both of them are present",
+			resAttrs: map[string]interface{}{
+				"service.namespace": "my-service-namespace",
+				"service.name":      "my-service-name",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"job":      "my-service-namespace/my-service-name",
+			},
+		},
+		{
+			desc: "it should add service.name as job label if service.namespace is missing",
+			resAttrs: map[string]interface{}{
+				"service.name": "my-service-name",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"job":      "my-service-name",
+			},
+		},
+		{
+			desc: "it shouldn't add service.namespace as job label if service.name is missing",
+			resAttrs: map[string]interface{}{
+				"service.namespace": "my-service-namespace",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+			},
+		},
+		{
+			desc: "it should add service.instance.id as instance label if service.instance.id is present",
+			resAttrs: map[string]interface{}{
+				"service.instance.id": "my-service-instance-id",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"instance": "my-service-instance-id",
 			},
 		},
 	}
@@ -245,4 +275,18 @@ func TestGetNestedAttribute(t *testing.T) {
 	// verify
 	assert.Equal(t, "guarana", attr.AsString())
 	assert.True(t, ok)
+}
+
+func TestConvertLogToLogRawEntry(t *testing.T) {
+	log, _, _ := exampleLog()
+	log.SetTimestamp(pcommon.NewTimestampFromTime(timeNow()))
+
+	expectedLogEntry := &push.Entry{
+		Timestamp: timestampFromLogRecord(log),
+		Line:      "Example log",
+	}
+
+	out, err := convertLogToLogRawEntry(log)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedLogEntry, out)
 }

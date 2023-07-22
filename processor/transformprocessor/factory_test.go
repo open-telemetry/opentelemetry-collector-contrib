@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package transformprocessor
 
@@ -27,18 +16,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), component.Type(typeStr))
+	assert.Equal(t, factory.Type(), component.Type(metadata.Type))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
+		ErrorMode:        ottl.PropagateError,
 		TraceStatements:  []common.ContextStatements{},
 		MetricStatements: []common.ContextStatements{},
 		LogStatements:    []common.ContextStatements{},
@@ -72,10 +64,14 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
+	oCfg.ErrorMode = ottl.IgnoreError
 	oCfg.TraceStatements = []common.ContextStatements{
 		{
-			Context:    "span",
-			Statements: []string{`set(attributes["test"], "pass") where name == "operationA"`},
+			Context: "span",
+			Statements: []string{
+				`set(attributes["test"], "pass") where name == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON(1)) where name == "operationA"`,
+			},
 		},
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
@@ -101,6 +97,7 @@ func TestFactoryCreateMetricsProcessor_InvalidActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
+	oCfg.ErrorMode = ottl.IgnoreError
 	oCfg.MetricStatements = []common.ContextStatements{
 		{
 			Context:    "datapoint",
@@ -116,10 +113,14 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
+	oCfg.ErrorMode = ottl.IgnoreError
 	oCfg.MetricStatements = []common.ContextStatements{
 		{
-			Context:    "datapoint",
-			Statements: []string{`set(attributes["test"], "pass") where metric.name == "operationA"`},
+			Context: "datapoint",
+			Statements: []string{
+				`set(attributes["test"], "pass") where metric.name == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON(1)) where metric.name == "operationA"`,
+			},
 		},
 	}
 	metricsProcessor, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
@@ -145,10 +146,14 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
+	oCfg.ErrorMode = ottl.IgnoreError
 	oCfg.LogStatements = []common.ContextStatements{
 		{
-			Context:    "log",
-			Statements: []string{`set(attributes["test"], "pass") where body == "operationA"`},
+			Context: "log",
+			Statements: []string{
+				`set(attributes["test"], "pass") where body == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON(1)) where body == "operationA"`,
+			},
 		},
 	}
 	lp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())

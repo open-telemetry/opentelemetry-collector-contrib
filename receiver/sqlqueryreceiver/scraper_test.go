@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver
 
@@ -23,7 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 )
 
 func TestScraper_ErrorOnStart(t *testing.T) {
@@ -49,7 +41,7 @@ func TestScraper_ClientErrorOnScrape(t *testing.T) {
 
 func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{
+		stringMaps: [][]stringMap{
 			{{"myfloat": "blah"}},
 		},
 	}
@@ -66,15 +58,12 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	const expected = "scraper.Scrape row conversion errors: row 0: rowToMetric: " +
-		"setDataPointValue: error converting to double: " +
-		"strconv.ParseFloat: parsing \"blah\": invalid syntax"
-	assert.EqualError(t, err, expected)
+	assert.Error(t, err)
 }
 
 func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{
+		stringMaps: [][]stringMap{
 			{{"myint": "blah"}},
 		},
 	}
@@ -91,15 +80,12 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	const expected = "scraper.Scrape row conversion errors: row 0: rowToMetric: " +
-		"setDataPointValue: error converting to integer: " +
-		"strconv.Atoi: parsing \"blah\": invalid syntax"
-	assert.EqualError(t, err, expected)
+	assert.Error(t, err)
 }
 
 func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{{
+		stringMaps: [][]stringMap{{
 			{"myint": "foo"},
 			{"myint": "bar"},
 		}},
@@ -117,16 +103,13 @@ func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 		},
 	}
 	_, err := scrpr.Scrape(context.Background())
-	const expected = "scraper.Scrape row conversion errors: " +
-		"row 0: rowToMetric: value_column 'mycol' not found in result set; " +
-		"row 1: rowToMetric: value_column 'mycol' not found in result set"
-	assert.EqualError(t, err, expected)
+	assert.Error(t, err)
 }
 
 func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 	scrpr := scraper{
 		client: &fakeDBClient{
-			responses: [][]metricRow{{{
+			stringMaps: [][]stringMap{{{
 				"count":    "42",
 				"foo_name": "baz",
 				"bar_name": "quux",
@@ -196,7 +179,7 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 
 func TestScraper_MultiRow(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{{
+		stringMaps: [][]stringMap{{
 			{
 				"count": "42",
 				"genre": "action",
@@ -242,7 +225,7 @@ func TestScraper_MultiRow(t *testing.T) {
 
 func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{
+		stringMaps: [][]stringMap{
 			{{"count": "42"}},
 			{{"count": "43"}},
 		},
@@ -265,7 +248,7 @@ func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
 
 func TestScraper_MultiResults_DeltaSum(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{
+		stringMaps: [][]stringMap{
 			{{"count": "42"}},
 			{{"count": "43"}},
 		},
@@ -302,7 +285,7 @@ func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetr
 
 func TestScraper_Float(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{
+		stringMaps: [][]stringMap{
 			{{"myfloat": "123.4"}},
 		},
 	}
@@ -326,7 +309,7 @@ func TestScraper_Float(t *testing.T) {
 
 func TestScraper_DescriptionAndUnit(t *testing.T) {
 	client := &fakeDBClient{
-		responses: [][]metricRow{
+		stringMaps: [][]stringMap{
 			{{"mycol": "123"}},
 		},
 	}
@@ -346,4 +329,154 @@ func TestScraper_DescriptionAndUnit(t *testing.T) {
 	z := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "my-unit", z.Unit())
 	assert.Equal(t, "my description", z.Description())
+}
+
+func TestScraper_FakeDB_Warnings(t *testing.T) {
+	db := fakeDB{rowVals: [][]any{{42, nil}}}
+	logger := zap.NewNop()
+	scrpr := scraper{
+		client: newDbClient(db, "", logger),
+		logger: logger,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:  "my.name",
+				ValueColumn: "col_0",
+				Description: "my description",
+				Unit:        "my-unit",
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	require.NoError(t, err)
+}
+
+func TestScraper_FakeDB_MultiRows_Warnings(t *testing.T) {
+	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
+	logger := zap.NewNop()
+	scrpr := scraper{
+		client: newDbClient(db, "", logger),
+		logger: logger,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:  "my.col.0",
+				ValueColumn: "col_0",
+				Description: "my description 0",
+				Unit:        "my-unit-0",
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	// No error is expected because we're not actually asking for metrics from the
+	// NULL column. Instead the errors from the NULL reads should just log warnings.
+	assert.NoError(t, err)
+}
+
+func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
+	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
+	logger := zap.NewNop()
+	scrpr := scraper{
+		client: newDbClient(db, "", logger),
+		logger: logger,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:  "my.col.0",
+				ValueColumn: "col_0",
+				Description: "my description 0",
+				Unit:        "my-unit-0",
+			}, {
+				MetricName:  "my.col.1",
+				ValueColumn: "col_1",
+				Description: "my description 1",
+				Unit:        "my-unit-1",
+			},
+			},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	// We expect an error here not directly because of the NULL values but because
+	// the column was also requested in Query.Metrics[1] but wasn't found. It's just
+	// a partial scrape error though so it shouldn't cause a scraper shutdown.
+	assert.Error(t, err)
+	assert.True(t, scrapererror.IsPartialScrapeError(err))
+}
+
+func TestScraper_StartAndTSColumn(t *testing.T) {
+	client := &fakeDBClient{
+		stringMaps: [][]stringMap{{
+			{
+				"mycol":   "42",
+				"StartTs": "1682417791",
+				"Ts":      "1682418264",
+			},
+		}},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:    "my.name",
+				ValueColumn:   "mycol",
+				TsColumn:      "Ts",
+				StartTsColumn: "StartTs",
+				DataType:      MetricTypeSum,
+				Aggregation:   MetricAggregationCumulative,
+			}},
+		},
+	}
+	metrics, err := scrpr.Scrape(context.Background())
+	require.NoError(t, err)
+	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, pcommon.Timestamp(1682417791), metric.Sum().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1682418264), metric.Sum().DataPoints().At(0).Timestamp())
+}
+
+func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
+	client := &fakeDBClient{
+		stringMaps: [][]stringMap{{
+			{
+				"mycol":   "42",
+				"StartTs": "1682417791",
+			},
+		}},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:    "my.name",
+				ValueColumn:   "mycol",
+				TsColumn:      "Ts",
+				StartTsColumn: "StartTs",
+				DataType:      MetricTypeSum,
+				Aggregation:   MetricAggregationCumulative,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	assert.Error(t, err)
+}
+
+func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
+	client := &fakeDBClient{
+		stringMaps: [][]stringMap{{
+			{
+				"mycol":   "42",
+				"StartTs": "blah",
+			},
+		}},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:    "my.name",
+				ValueColumn:   "mycol",
+				StartTsColumn: "StartTs",
+				DataType:      MetricTypeSum,
+				Aggregation:   MetricAggregationCumulative,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	assert.Error(t, err)
 }

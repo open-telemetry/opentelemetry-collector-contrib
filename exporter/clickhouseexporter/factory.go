@@ -1,16 +1,7 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -21,23 +12,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "clickhouse"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithMetrics(createMetricExporter, stability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
 	)
 }
 
@@ -46,11 +32,12 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
-		TTLDays:          7,
+		TTLDays:          0,
 	}
 }
 
@@ -72,7 +59,8 @@ func createLogsExporter(
 		set,
 		cfg,
 		exporter.pushLogsData,
-		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.enforcedQueueSettings()),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -97,7 +85,8 @@ func createTracesExporter(
 		set,
 		cfg,
 		exporter.pushTraceData,
-		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.enforcedQueueSettings()),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -120,6 +109,7 @@ func createMetricExporter(
 		set,
 		cfg,
 		exporter.pushMetricsData,
+		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.enforcedQueueSettings()),

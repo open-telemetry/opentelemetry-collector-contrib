@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -27,8 +16,9 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
 )
 
 var (
@@ -108,20 +98,25 @@ type HistogramConfig struct {
 	// Mode for exporting histograms. Valid values are 'distributions', 'counters' or 'nobuckets'.
 	//  - 'distributions' sends histograms as Datadog distributions (recommended).
 	//  - 'counters' sends histograms as Datadog counts, one metric per bucket.
-	//  - 'nobuckets' sends no bucket histogram metrics. .sum and .count metrics will still be sent
-	//    if `send_count_sum_metrics` is enabled.
+	//  - 'nobuckets' sends no bucket histogram metrics. Aggregation metrics will still be sent
+	//    if `send_aggregation_metrics` is enabled.
 	//
 	// The current default is 'distributions'.
 	Mode HistogramMode `mapstructure:"mode"`
 
 	// SendCountSum states if the export should send .sum and .count metrics for histograms.
-	// The current default is false.
+	// The default is false.
+	// Deprecated: [v0.75.0] Use `send_aggregation_metrics` (HistogramConfig.SendAggregations) instead.
 	SendCountSum bool `mapstructure:"send_count_sum_metrics"`
+
+	// SendAggregations states if the exporter should send .sum, .count, .min and .max metrics for histograms.
+	// The default is false.
+	SendAggregations bool `mapstructure:"send_aggregation_metrics"`
 }
 
 func (c *HistogramConfig) validate() error {
-	if c.Mode == HistogramModeNoBuckets && !c.SendCountSum {
-		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
+	if c.Mode == HistogramModeNoBuckets && !c.SendAggregations {
+		return fmt.Errorf("'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics")
 	}
 	return nil
 }
@@ -238,6 +233,17 @@ type TracesConfig struct {
 	// If set to false the resource name will be filled with the instrumentation library name + span kind.
 	// The default value is `false`.
 	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
+
+	// If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
+	// If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
+	// NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+	ComputeStatsBySpanKind bool `mapstructure:"compute_stats_by_span_kind"`
+
+	// If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
+	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
+	// If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
 
 	// flushInterval defines the interval in seconds at which the writer flushes traces
 	// to the intake; used in tests.
@@ -364,6 +370,16 @@ type Config struct {
 	// This flag is incompatible with disabling host metadata,
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
+
+	// Non-fatal warnings found during configuration loading.
+	warnings []error
+}
+
+// logWarnings logs warning messages that were generated on unmarshaling.
+func (c *Config) logWarnings(logger *zap.Logger) {
+	for _, err := range c.warnings {
+		logger.Warn(fmt.Sprintf("%v", err))
+	}
 }
 
 var _ component.Config = (*Config)(nil)
@@ -487,6 +503,13 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+
+	// Add deprecation warnings for deprecated settings.
+	renamingWarnings, err := handleRenamedSettings(configMap, c)
+	if err != nil {
+		return err
+	}
+	c.warnings = append(c.warnings, renamingWarnings...)
 
 	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
 

@@ -59,6 +59,36 @@ During the collector release process, all `./.chloggen/*.yaml` files are transcr
 
 Alternately, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scratch.
 
+## Portable Code
+
+In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
+
+* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions. 
+
+* Avoid hard-coding platform-specific values. Use environment variables or configuration files for storing platform-specific values.
+
+    For example, avoid using hard-coded file path
+    ```
+    filePath := "C:\Users\Bob\Documents\sampleData.csv"
+    ```
+
+    Instead environment variable or configuration file can be used.
+    ```
+    filePath := os.Getenv("DATA_FILE_PATH")
+    ```
+    or
+    ```
+    filePath := Configuration.Get("data_file_path")
+    ```
+
+* Be mindful of 
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
+  - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
+
+* Test your implementation thoroughly on different platforms if possible and fix any issues. 
+
+With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
+
 ## Adding New Components
 
 **Before** any code is written, [open an
@@ -75,11 +105,12 @@ providing the following information:
 * The configuration options your component will accept. This will help us understand what it does and have an idea of
   how the implementation might look like.
 
-Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
+Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
@@ -106,16 +137,33 @@ and the rest of contributors.
 - Add a README.md on the root of your component describing its configuration and usage, likely referencing some of the
   yaml files used in the component tests. We also suggest that the yaml files used in tests have comments for all
   available configuration settings so users can copy and modify them as needed.
-- Add a `replace` directive at the root `go.mod` file so your component is included in the build of the contrib
-  executable.
+- Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
-- All components must be included in [`internal/components/`](./internal/components) and in the respective testing
-  harnesses. To align with the test goal of the project, components must be testable within the framework defined within
+- All components included in the distribution must be included in [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml) 
+  and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
 - Add the sponsor for your component and yourself to a new line for your component in the
   [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
 - Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml) and use the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
+
+When submitting a component to the community, consider breaking it down into separate PRs as follows:
+
+* **First PR** should include the overall structure of the new component:
+  * Readme, configuration, and factory implementation usually using the helper
+    factory structs.
+  * This PR is usually trivial to review, so the size limit does not apply to
+    it.
+  * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+* **Second PR** should include the concrete implementation of the component. If the
+  size of this PR is larger than the recommended size consider splitting it in
+  multiple PRs.
+* **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
+  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
+  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+* Once a new component has been added to the executable, please add the component
+  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
 After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
@@ -126,7 +174,6 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
@@ -137,6 +184,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@MovieStoreGuy](https://github.com/MovieStoreGuy)
 * [@bogdandrutu](https://github.com/bogdandrutu)
 * [@jpkrohling](https://github.com/jpkrohling)
+* [@dashpole](https://github.com/dashpole)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -224,7 +272,7 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
 | `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
 | `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
-| `needs discussion`   | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
+| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
 | `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work.                                            |
 | `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                            |
 | `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
@@ -246,7 +294,7 @@ The following general labels are supported:
 |----------------------|----------------------|
 | `good first issue`   | `good-first-issue`   |
 | `help wanted`        | `help-wanted`        |
-| `needs discussion`   | `needs-discussion`   |
+| `discussion needed`  | `discussion-needed`  |
 | `needs triage`       | `needs-triage`       |
 | `waiting for author` | `waiting-for-author` |
 

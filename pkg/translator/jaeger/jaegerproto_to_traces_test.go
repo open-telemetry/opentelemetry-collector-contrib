@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package jaeger
 
@@ -276,6 +265,44 @@ func TestProtoToTraces(t *testing.T) {
 					},
 				}},
 			td: generateTracesSpanWithTwoParents(),
+		},
+		{
+			name: "no-error-from-server-span-with-4xx-http-code",
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						{
+							StartTime: testSpanStartTime,
+							Duration:  testSpanEndTime.Sub(testSpanStartTime),
+							Tags: []model.KeyValue{
+								{
+									Key:   tracetranslator.TagSpanKind,
+									VType: model.ValueType_STRING,
+									VStr:  string(tracetranslator.OpenTracingSpanKindServer),
+								},
+								{
+									Key:   conventions.AttributeHTTPStatusCode,
+									VType: model.ValueType_STRING,
+									VStr:  "404",
+								},
+							},
+						},
+					},
+				}},
+			td: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
+				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetStartTimestamp(testSpanStartTimestamp)
+				span.SetEndTimestamp(testSpanEndTimestamp)
+				span.SetKind(ptrace.SpanKindClient)
+				span.SetKind(ptrace.SpanKindServer)
+				span.Status().SetCode(ptrace.StatusCodeUnset)
+				span.Attributes().PutStr(conventions.AttributeHTTPStatusCode, "404")
+				return traces
+			}(),
 		},
 	}
 
@@ -662,6 +689,7 @@ func generateTracesOneSpanNoResource() ptrace.Traces {
 	span.SetStartTimestamp(testSpanStartTimestamp)
 	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.SetKind(ptrace.SpanKindClient)
+	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Events().At(0).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(0).SetDroppedAttributesCount(0)
 	span.Events().At(0).SetName("event-with-attr")
@@ -845,7 +873,7 @@ func generateTracesTwoSpansChildParent() ptrace.Traces {
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
-	span.Status().SetCode(ptrace.StatusCodeError)
+	span.Status().SetCode(ptrace.StatusCodeUnset)
 	span.Attributes().PutInt(conventions.AttributeHTTPStatusCode, 404)
 	return td
 }

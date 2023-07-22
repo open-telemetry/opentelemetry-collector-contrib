@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsprocessor
 
@@ -95,7 +84,7 @@ func TestProcessorStart(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		exporter        component.Component
-		metricsExporter string
+		metricsConsumer string
 		wantErrorMsg    string
 	}{
 		{"export to active otlp metrics exporter", mexp, "otlp", ""},
@@ -115,7 +104,7 @@ func TestProcessorStart(t *testing.T) {
 			// Create spanmetrics processor
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.MetricsExporter = tc.metricsExporter
+			cfg.MetricsExporter = tc.metricsConsumer
 
 			procCreationParams := processortest.NewNopCreateSettings()
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
@@ -148,7 +137,7 @@ func TestProcessorConcurrentShutdown(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 	logger := zap.New(core)
 
-	mexp := &mocks.MetricsExporter{}
+	mexp := &mocks.MetricsConsumer{}
 	tcon := &mocks.TracesConsumer{}
 
 	mockClock := clock.NewMock(time.Now())
@@ -185,10 +174,9 @@ func TestProcessorConcurrentShutdown(t *testing.T) {
 	}, time.Second, time.Millisecond*10)
 
 	// Starting spanmetricsprocessor...
-	// Started spanmetricsprocessor...
 	// Shutting down spanmetricsprocessor...
 	// Stopping ticker.
-	assert.Len(t, allLogs, 4)
+	assert.Len(t, allLogs, 3)
 }
 
 func TestConfigureLatencyBounds(t *testing.T) {
@@ -204,7 +192,8 @@ func TestConfigureLatencyBounds(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, nil)
+	p.tracesConsumer = next
 
 	// Verify
 	assert.NoError(t, err)
@@ -219,7 +208,8 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, nil)
+	p.tracesConsumer = next
 	assert.NoError(t, err)
 	caps := p.Capabilities()
 
@@ -234,7 +224,7 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 
 	logger := zap.NewNop()
 
-	mexp := &mocks.MetricsExporter{}
+	mexp := &mocks.MetricsConsumer{}
 	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 
 	tcon := &mocks.TracesConsumer{}
@@ -261,7 +251,7 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 	logger := zap.New(core)
 
 	var wg sync.WaitGroup
-	mexp := &mocks.MetricsExporter{}
+	mexp := &mocks.MetricsConsumer{}
 	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
 		wg.Done()
 		return true
@@ -356,7 +346,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			mexp := &mocks.MetricsExporter{}
+			mexp := &mocks.MetricsConsumer{}
 			tcon := &mocks.TracesConsumer{}
 
 			var wg sync.WaitGroup
@@ -398,7 +388,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	mexp := &mocks.MetricsExporter{}
+	mexp := &mocks.MetricsConsumer{}
 	tcon := &mocks.TracesConsumer{}
 
 	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
@@ -434,7 +424,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	// Prepare
-	mexp := &mocks.MetricsExporter{}
+	mexp := &mocks.MetricsConsumer{}
 	tcon := &mocks.TracesConsumer{}
 
 	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
@@ -452,7 +442,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger, ticker *clock.Ticker) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsConsumer, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger, ticker *clock.Ticker) *processorImp {
 	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
 	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
@@ -462,11 +452,11 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 	return &processorImp{
 		logger:          logger,
 		config:          Config{AggregationTemporality: temporality},
-		metricsExporter: mexp,
-		nextConsumer:    tcon,
+		metricsConsumer: mexp,
+		tracesConsumer:  tcon,
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		histograms:     make(map[metricKey]*histogramData),
+		histograms:     make(map[metricKey]*histogram),
 		latencyBounds:  defaultLatencyHistogramBucketsMs,
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
@@ -496,7 +486,7 @@ func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bo
 	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
 }
 
-func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
+func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
 	return true // Validating no exception
 }
 
@@ -813,89 +803,6 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	}
 }
 
-func TestProcessorDuplicateDimensions(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	// Duplicate dimension with reserved label after sanitization.
-	cfg.Dimensions = []Dimension{
-		{Name: "status_code"},
-	}
-
-	// Test
-	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
-	assert.Error(t, err)
-	assert.Nil(t, p)
-}
-
-func TestValidateDimensions(t *testing.T) {
-	for _, tc := range []struct {
-		name              string
-		dimensions        []Dimension
-		expectedErr       string
-		skipSanitizeLabel bool
-	}{
-		{
-			name:       "no additional dimensions",
-			dimensions: []Dimension{},
-		},
-		{
-			name: "no duplicate dimensions",
-			dimensions: []Dimension{
-				{Name: "http.service_name"},
-				{Name: "http.status_code"},
-			},
-		},
-		{
-			name: "duplicate dimension with reserved labels",
-			dimensions: []Dimension{
-				{Name: "service.name"},
-			},
-			expectedErr: "duplicate dimension name service.name",
-		},
-		{
-			name: "duplicate dimension with reserved labels after sanitization",
-			dimensions: []Dimension{
-				{Name: "service_name"},
-			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
-			name: "duplicate additional dimensions",
-			dimensions: []Dimension{
-				{Name: "service_name"},
-				{Name: "service_name"},
-			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
-			name: "duplicate additional dimensions after sanitization",
-			dimensions: []Dimension{
-				{Name: "http.status_code"},
-				{Name: "http!status_code"},
-			},
-			expectedErr: "duplicate dimension name http_status_code after sanitization",
-		},
-		{
-			name: "we skip the case if the dimension name is the same after sanitization",
-			dimensions: []Dimension{
-				{Name: "http_status_code"},
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.skipSanitizeLabel = false
-			err := validateDimensions(tc.dimensions, tc.skipSanitizeLabel)
-			if tc.expectedErr != "" {
-				assert.EqualError(t, err, tc.expectedErr)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestSanitize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
@@ -923,7 +830,7 @@ func TestSetExemplars(t *testing.T) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	value := float64(42)
 
-	ed := []exemplarData{{traceID: traceID, spanID: spanID, value: value}}
+	ed := []exemplar{{traceID: traceID, spanID: spanID, value: value}}
 
 	// ----- call -------------------------------------------------------------
 	setExemplars(ed, timestamp, exemplarSlice)
@@ -948,23 +855,25 @@ func TestProcessorUpdateExemplars(t *testing.T) {
 	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, nil)
+	p.tracesConsumer = next
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	p.updateHistogram(key, value, traceID, spanID)
+	h := p.getOrCreateHistogram(key, pcommon.NewMap())
+	h.observe(value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, p.histograms[key].exemplarsData)
-	assert.Equal(t, p.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
+	assert.NotEmpty(t, p.histograms[key].exemplars)
+	assert.Equal(t, p.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
-	p.resetExemplarData()
+	p.resetExemplars()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, p.histograms[key].exemplarsData)
+	assert.Empty(t, p.histograms[key].exemplars)
 }
 
 func TestConsumeTracesEvictedCacheKey(t *testing.T) {
@@ -1034,7 +943,7 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 			},
 		}, traces1.ResourceSpans().AppendEmpty())
 
-	mexp := &mocks.MetricsExporter{}
+	mexp := &mocks.MetricsConsumer{}
 	tcon := &mocks.TracesConsumer{}
 
 	wantDataPointCounts := []int{
@@ -1100,4 +1009,21 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 
 	wg.Wait()
 	assert.Empty(t, wantDataPointCounts)
+}
+
+func TestBuildMetricName(t *testing.T) {
+	tests := []struct {
+		namespace  string
+		metricName string
+		expected   string
+	}{
+		{"", "metric", "metric"},
+		{"ns", "metric", "ns.metric"},
+		{"longer_namespace", "metric", "longer_namespace.metric"},
+	}
+
+	for _, test := range tests {
+		actual := buildMetricName(test.namespace, test.metricName)
+		assert.Equal(t, test.expected, actual)
+	}
 }

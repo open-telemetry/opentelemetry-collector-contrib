@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
@@ -43,7 +32,7 @@ var logger *zap.Logger
 // any type of metrics need implement it.
 type MetricsModel interface {
 	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
-	Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error
+	Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error
 	// insert is used to insert metric data to clickhouse
 	insert(ctx context.Context, db *sql.DB) error
 }
@@ -62,14 +51,14 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
+func NewMetricsTable(ctx context.Context, tableName string, ttlDays uint, db *sql.DB) error {
 	var ttlExpr string
 	if ttlDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, ttlDays)
 	}
 	for table := range supportedMetricTypes {
 		query := fmt.Sprintf(table, tableName, ttlExpr)
-		if _, err := db.Exec(query); err != nil {
+		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
 	}
@@ -148,8 +137,11 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 			return floatValue
 		case pmetric.ExemplarValueTypeInt:
 			return float64(intValue)
+		case pmetric.ExemplarValueTypeEmpty:
+			logger.Warn("Examplar value type is unset, use 0.0 as default")
+			return 0.0
 		default:
-			logger.Warn("Can't find a suitable value for ExemplarValueType, ues 0.0 as default")
+			logger.Warn("Can't find a suitable value for ExemplarValueType, use 0.0 as default")
 			return 0.0
 		}
 	case pmetric.NumberDataPointValueType:
@@ -158,8 +150,11 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 			return floatValue
 		case pmetric.NumberDataPointValueTypeInt:
 			return float64(intValue)
+		case pmetric.NumberDataPointValueTypeEmpty:
+			logger.Warn("DataPoint value type is unset, use 0.0 as default")
+			return 0.0
 		default:
-			logger.Warn("Can't find a suitable value for NumberDataPointValueType, ues 0.0 as default")
+			logger.Warn("Can't find a suitable value for NumberDataPointValueType, use 0.0 as default")
 			return 0.0
 		}
 	default:

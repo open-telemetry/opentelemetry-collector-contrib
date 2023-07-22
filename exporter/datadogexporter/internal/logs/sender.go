@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 
@@ -72,6 +61,7 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		if prevtags == tags || i == 0 {
 			// Batches consecutive log items with the same tags to be submitted together
 			batch = append(batch, p)
+			prevtags = tags
 			continue
 		}
 		if err := s.handleSubmitLog(ctx, batch, prevtags); err != nil {
@@ -80,10 +70,7 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		batch = []datadogV2.HTTPLogItem{p}
 		prevtags = tags
 	}
-	if err := s.handleSubmitLog(ctx, batch, tags); err != nil {
-		return err
-	}
-	return nil
+	return s.handleSubmitLog(ctx, batch, tags)
 }
 
 func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogItem, tags string) error {

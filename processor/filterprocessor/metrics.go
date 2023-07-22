@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 
@@ -28,32 +17,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterMetricProcessor struct {
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[ottldatapoint.TransformContext]
+	logger            *zap.Logger
 }
 
 func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*filterMetricProcessor, error) {
 	var err error
-	fsp := &filterMetricProcessor{}
+	fsp := &filterMetricProcessor{
+		logger: set.Logger,
+	}
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
-			fsp.skipMetricExpr, err = common.ParseMetric(cfg.Metrics.MetricConditions, set)
+			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, filterottl.StandardMetricFuncs(), cfg.ErrorMode, set)
 			if err != nil {
 				return nil, err
 			}
 		}
 
 		if cfg.Metrics.DataPointConditions != nil {
-			fsp.skipDataPointExpr, err = common.ParseDataPoint(cfg.Metrics.DataPointConditions, set)
+			fsp.skipDataPointExpr, err = filterottl.NewBoolExprForDataPoint(cfg.Metrics.DataPointConditions, filterottl.StandardDataPointFuncs(), cfg.ErrorMode, set)
 			if err != nil {
 				return nil, err
 			}
@@ -169,6 +161,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	})
 
 	if errors != nil {
+		fmp.logger.Error("failed processing metrics", zap.Error(errors))
 		return md, errors
 	}
 	if md.ResourceMetrics().Len() == 0 {
@@ -177,7 +170,33 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	return md, nil
 }
 
-func newSkipResExpr(include *filtermetric.MatchProperties, exclude *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+func newSkipResExpr(include *filterconfig.MetricMatchProperties, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+	if filtermetric.UseOTTLBridge.IsEnabled() {
+		mp := filterconfig.MatchConfig{}
+
+		if include != nil {
+			mp.Include = &filterconfig.MatchProperties{
+				Config: filterset.Config{
+					MatchType:    filterset.MatchType(include.MatchType),
+					RegexpConfig: include.RegexpConfig,
+				},
+				Resources: include.ResourceAttributes,
+			}
+		}
+
+		if exclude != nil {
+			mp.Exclude = &filterconfig.MatchProperties{
+				Config: filterset.Config{
+					MatchType:    filterset.MatchType(exclude.MatchType),
+					RegexpConfig: exclude.RegexpConfig,
+				},
+				Resources: exclude.ResourceAttributes,
+			}
+		}
+
+		return filterottl.NewResourceSkipExprBridge(&mp)
+	}
+
 	var matchers []expr.BoolExpr[ottlresource.TransformContext]
 	inclExpr, err := newResExpr(include)
 	if err != nil {
@@ -202,7 +221,7 @@ func (r resExpr) Eval(_ context.Context, tCtx ottlresource.TransformContext) (bo
 	return filtermatcher.AttributesMatcher(r).Match(tCtx.GetResource().Attributes()), nil
 }
 
-func newResExpr(mp *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+func newResExpr(mp *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
 	if mp == nil {
 		return nil, nil
 	}

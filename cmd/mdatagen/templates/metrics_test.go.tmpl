@@ -3,13 +3,9 @@
 package {{ .Package }}
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,30 +13,31 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+
+type testConfigCollection int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
 		name       string
-		metricsSet testMetricsSet
+		configSet testConfigCollection
 	}{
 		{
 			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			configSet: testSetDefault,
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:       "all_set",
+			configSet: testSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:       "none_set",
+			configSet: testSetNone,
 		},
 	}
 	for _, test := range tests {
@@ -50,24 +47,24 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
 			{{- if and $metric.Enabled $metric.Warnings.IfEnabled }}
-			if test.metricsSet == testMetricsSetDefault || test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfEnabledNotSet }}
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfConfigured }}
-			if test.metricsSet == testMetricsSetAll || test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetAll || test.configSet == testSetNone {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -83,7 +80,7 @@ func TestMetricsBuilder(t *testing.T) {
 				allMetricsCount++
 				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 				{{- range $metric.Attributes -}}
-					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
+					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
 				{{- end }})
 			{{- end }}
 
@@ -91,12 +88,12 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- $sep := "" }}
 			{{- range $name, $info := .ResourceAttributes -}}
 				{{- $sep }}With{{ $name.Render }}
-				{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.Type.TestValue }}){{ end }}
+				{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.TestValue }}){{ end }}
 				{{- $sep = ", " }}
 			{{- end -}}
 			)
 
-			if test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -109,14 +106,11 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- range $name, $info := .ResourceAttributes }}
 				attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
 				attrCount++
-				assert.Equal(t, mb.resourceAttributesSettings.{{ $name.Render }}.Enabled, ok)
-				if mb.resourceAttributesSettings.{{ $name.Render }}.Enabled {
+				assert.Equal(t, mb.resourceAttributesConfig.{{ $name.Render }}.Enabled, ok)
+				if mb.resourceAttributesConfig.{{ $name.Render }}.Enabled {
 					enabledAttrCount++
-					{{- if $info.Enum }}
-						assert.Equal(t, "{{ index $info.Enum 0 }}", attrVal.Str())
-					{{- else }}
-						assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}())
-					{{- end }}
+					assert.EqualValues(t, {{ $info.TestValue }}, attrVal.{{ $info.Type }}()
+					{{- if or (eq $info.Type.String "Slice") (eq $info.Type.String "Map") }}.AsRaw(){{ end }})
 				}
 
 				{{- $assignSign = "=" }}
@@ -126,10 +120,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -156,27 +150,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
 
 					{{- range $i, $attr := $metric.Attributes }}
-					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeName $attr }}")
+					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 					assert.True(t, ok)
-					{{- if (attributeInfo $attr).Enum }}
-					assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
-					{{- else }}
-					assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}())
-					{{- end }}
+					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
 					{{- end }}
 				{{- end }}
 				}
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

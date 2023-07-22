@@ -1,0 +1,13 @@
+type: opencensus
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, traces]
+  distributions:
+  - core
+  - contrib
+  - grafana
+  - observiq
+  - redhat
+  - sumo

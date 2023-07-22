@@ -1,4 +1,10 @@
-name: memcachedreceiver
+type: memcached
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
 
 attributes:
   command:

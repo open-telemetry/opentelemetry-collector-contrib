@@ -1,0 +1,13 @@
+type: tail_sampling
+
+status:
+  class: processor
+  stability:
+    beta: [traces]
+  distributions:
+  - contrib
+  - aws
+  - grafana
+  - observiq
+  - splunk
+  - sumo

@@ -1,48 +1,39 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
+// Config defines the configuration for the processor.
 type Config struct {
+	// ErrorMode determines how the processor reacts to errors that occur while processing a statement.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by statements and continues on to the next statement. This is the recommended mode.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+
 	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
 	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
 }
 
-type OTTLConfig struct {
-	Traces  SignalConfig `mapstructure:"traces"`
-	Metrics SignalConfig `mapstructure:"metrics"`
-	Logs    SignalConfig `mapstructure:"logs"`
-}
-
-type SignalConfig struct {
-	Statements []string `mapstructure:"statements"`
-}
-
 var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
+	var errors error
+
 	if len(c.TraceStatements) > 0 {
 		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions()), common.WithSpanEventParser(traces.SpanEventFunctions()))
 		if err != nil {
@@ -51,7 +42,7 @@ func (c *Config) Validate() error {
 		for _, cs := range c.TraceStatements {
 			_, err = pc.ParseContextStatements(cs)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
 			}
 		}
 	}
@@ -62,9 +53,9 @@ func (c *Config) Validate() error {
 			return err
 		}
 		for _, cs := range c.MetricStatements {
-			_, err = pc.ParseContextStatements(cs)
+			_, err := pc.ParseContextStatements(cs)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
 			}
 		}
 	}
@@ -77,10 +68,10 @@ func (c *Config) Validate() error {
 		for _, cs := range c.LogStatements {
 			_, err = pc.ParseContextStatements(cs)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
 			}
 		}
 	}
 
-	return nil
+	return errors
 }

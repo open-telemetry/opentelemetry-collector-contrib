@@ -1,183 +1,195 @@
 default:
-all_metrics:
-  saphana.alert.count:
-    enabled: true
-  saphana.backup.latest:
-    enabled: true
-  saphana.column.memory.used:
-    enabled: true
-  saphana.component.memory.used:
-    enabled: true
-  saphana.connection.count:
-    enabled: true
-  saphana.cpu.used:
-    enabled: true
-  saphana.disk.size.current:
-    enabled: true
-  saphana.host.memory.current:
-    enabled: true
-  saphana.host.swap.current:
-    enabled: true
-  saphana.instance.code_size:
-    enabled: true
-  saphana.instance.memory.current:
-    enabled: true
-  saphana.instance.memory.shared.allocated:
-    enabled: true
-  saphana.instance.memory.used.peak:
-    enabled: true
-  saphana.license.expiration.time:
-    enabled: true
-  saphana.license.limit:
-    enabled: true
-  saphana.license.peak:
-    enabled: true
-  saphana.network.request.average_time:
-    enabled: true
-  saphana.network.request.count:
-    enabled: true
-  saphana.network.request.finished.count:
-    enabled: true
-  saphana.replication.average_time:
-    enabled: true
-  saphana.replication.backlog.size:
-    enabled: true
-  saphana.replication.backlog.time:
-    enabled: true
-  saphana.row_store.memory.used:
-    enabled: true
-  saphana.schema.memory.used.current:
-    enabled: true
-  saphana.schema.memory.used.max:
-    enabled: true
-  saphana.schema.operation.count:
-    enabled: true
-  saphana.schema.record.compressed.count:
-    enabled: true
-  saphana.schema.record.count:
-    enabled: true
-  saphana.service.code_size:
-    enabled: true
-  saphana.service.count:
-    enabled: true
-  saphana.service.memory.compactors.allocated:
-    enabled: true
-  saphana.service.memory.compactors.freeable:
-    enabled: true
-  saphana.service.memory.effective_limit:
-    enabled: true
-  saphana.service.memory.heap.current:
-    enabled: true
-  saphana.service.memory.limit:
-    enabled: true
-  saphana.service.memory.shared.current:
-    enabled: true
-  saphana.service.memory.used:
-    enabled: true
-  saphana.service.stack_size:
-    enabled: true
-  saphana.service.thread.count:
-    enabled: true
-  saphana.transaction.blocked:
-    enabled: true
-  saphana.transaction.count:
-    enabled: true
-  saphana.uptime:
-    enabled: true
-  saphana.volume.operation.count:
-    enabled: true
-  saphana.volume.operation.size:
-    enabled: true
-  saphana.volume.operation.time:
-    enabled: true
-no_metrics:
-  saphana.alert.count:
-    enabled: false
-  saphana.backup.latest:
-    enabled: false
-  saphana.column.memory.used:
-    enabled: false
-  saphana.component.memory.used:
-    enabled: false
-  saphana.connection.count:
-    enabled: false
-  saphana.cpu.used:
-    enabled: false
-  saphana.disk.size.current:
-    enabled: false
-  saphana.host.memory.current:
-    enabled: false
-  saphana.host.swap.current:
-    enabled: false
-  saphana.instance.code_size:
-    enabled: false
-  saphana.instance.memory.current:
-    enabled: false
-  saphana.instance.memory.shared.allocated:
-    enabled: false
-  saphana.instance.memory.used.peak:
-    enabled: false
-  saphana.license.expiration.time:
-    enabled: false
-  saphana.license.limit:
-    enabled: false
-  saphana.license.peak:
-    enabled: false
-  saphana.network.request.average_time:
-    enabled: false
-  saphana.network.request.count:
-    enabled: false
-  saphana.network.request.finished.count:
-    enabled: false
-  saphana.replication.average_time:
-    enabled: false
-  saphana.replication.backlog.size:
-    enabled: false
-  saphana.replication.backlog.time:
-    enabled: false
-  saphana.row_store.memory.used:
-    enabled: false
-  saphana.schema.memory.used.current:
-    enabled: false
-  saphana.schema.memory.used.max:
-    enabled: false
-  saphana.schema.operation.count:
-    enabled: false
-  saphana.schema.record.compressed.count:
-    enabled: false
-  saphana.schema.record.count:
-    enabled: false
-  saphana.service.code_size:
-    enabled: false
-  saphana.service.count:
-    enabled: false
-  saphana.service.memory.compactors.allocated:
-    enabled: false
-  saphana.service.memory.compactors.freeable:
-    enabled: false
-  saphana.service.memory.effective_limit:
-    enabled: false
-  saphana.service.memory.heap.current:
-    enabled: false
-  saphana.service.memory.limit:
-    enabled: false
-  saphana.service.memory.shared.current:
-    enabled: false
-  saphana.service.memory.used:
-    enabled: false
-  saphana.service.stack_size:
-    enabled: false
-  saphana.service.thread.count:
-    enabled: false
-  saphana.transaction.blocked:
-    enabled: false
-  saphana.transaction.count:
-    enabled: false
-  saphana.uptime:
-    enabled: false
-  saphana.volume.operation.count:
-    enabled: false
-  saphana.volume.operation.size:
-    enabled: false
-  saphana.volume.operation.time:
-    enabled: false
+all_set:
+  metrics:
+    saphana.alert.count:
+      enabled: true
+    saphana.backup.latest:
+      enabled: true
+    saphana.column.memory.used:
+      enabled: true
+    saphana.component.memory.used:
+      enabled: true
+    saphana.connection.count:
+      enabled: true
+    saphana.cpu.used:
+      enabled: true
+    saphana.disk.size.current:
+      enabled: true
+    saphana.host.memory.current:
+      enabled: true
+    saphana.host.swap.current:
+      enabled: true
+    saphana.instance.code_size:
+      enabled: true
+    saphana.instance.memory.current:
+      enabled: true
+    saphana.instance.memory.shared.allocated:
+      enabled: true
+    saphana.instance.memory.used.peak:
+      enabled: true
+    saphana.license.expiration.time:
+      enabled: true
+    saphana.license.limit:
+      enabled: true
+    saphana.license.peak:
+      enabled: true
+    saphana.network.request.average_time:
+      enabled: true
+    saphana.network.request.count:
+      enabled: true
+    saphana.network.request.finished.count:
+      enabled: true
+    saphana.replication.average_time:
+      enabled: true
+    saphana.replication.backlog.size:
+      enabled: true
+    saphana.replication.backlog.time:
+      enabled: true
+    saphana.row_store.memory.used:
+      enabled: true
+    saphana.schema.memory.used.current:
+      enabled: true
+    saphana.schema.memory.used.max:
+      enabled: true
+    saphana.schema.operation.count:
+      enabled: true
+    saphana.schema.record.compressed.count:
+      enabled: true
+    saphana.schema.record.count:
+      enabled: true
+    saphana.service.code_size:
+      enabled: true
+    saphana.service.count:
+      enabled: true
+    saphana.service.memory.compactors.allocated:
+      enabled: true
+    saphana.service.memory.compactors.freeable:
+      enabled: true
+    saphana.service.memory.effective_limit:
+      enabled: true
+    saphana.service.memory.heap.current:
+      enabled: true
+    saphana.service.memory.limit:
+      enabled: true
+    saphana.service.memory.shared.current:
+      enabled: true
+    saphana.service.memory.used:
+      enabled: true
+    saphana.service.stack_size:
+      enabled: true
+    saphana.service.thread.count:
+      enabled: true
+    saphana.transaction.blocked:
+      enabled: true
+    saphana.transaction.count:
+      enabled: true
+    saphana.uptime:
+      enabled: true
+    saphana.volume.operation.count:
+      enabled: true
+    saphana.volume.operation.size:
+      enabled: true
+    saphana.volume.operation.time:
+      enabled: true
+  resource_attributes:
+    db.system:
+      enabled: true
+    saphana.host:
+      enabled: true
+none_set:
+  metrics:
+    saphana.alert.count:
+      enabled: false
+    saphana.backup.latest:
+      enabled: false
+    saphana.column.memory.used:
+      enabled: false
+    saphana.component.memory.used:
+      enabled: false
+    saphana.connection.count:
+      enabled: false
+    saphana.cpu.used:
+      enabled: false
+    saphana.disk.size.current:
+      enabled: false
+    saphana.host.memory.current:
+      enabled: false
+    saphana.host.swap.current:
+      enabled: false
+    saphana.instance.code_size:
+      enabled: false
+    saphana.instance.memory.current:
+      enabled: false
+    saphana.instance.memory.shared.allocated:
+      enabled: false
+    saphana.instance.memory.used.peak:
+      enabled: false
+    saphana.license.expiration.time:
+      enabled: false
+    saphana.license.limit:
+      enabled: false
+    saphana.license.peak:
+      enabled: false
+    saphana.network.request.average_time:
+      enabled: false
+    saphana.network.request.count:
+      enabled: false
+    saphana.network.request.finished.count:
+      enabled: false
+    saphana.replication.average_time:
+      enabled: false
+    saphana.replication.backlog.size:
+      enabled: false
+    saphana.replication.backlog.time:
+      enabled: false
+    saphana.row_store.memory.used:
+      enabled: false
+    saphana.schema.memory.used.current:
+      enabled: false
+    saphana.schema.memory.used.max:
+      enabled: false
+    saphana.schema.operation.count:
+      enabled: false
+    saphana.schema.record.compressed.count:
+      enabled: false
+    saphana.schema.record.count:
+      enabled: false
+    saphana.service.code_size:
+      enabled: false
+    saphana.service.count:
+      enabled: false
+    saphana.service.memory.compactors.allocated:
+      enabled: false
+    saphana.service.memory.compactors.freeable:
+      enabled: false
+    saphana.service.memory.effective_limit:
+      enabled: false
+    saphana.service.memory.heap.current:
+      enabled: false
+    saphana.service.memory.limit:
+      enabled: false
+    saphana.service.memory.shared.current:
+      enabled: false
+    saphana.service.memory.used:
+      enabled: false
+    saphana.service.stack_size:
+      enabled: false
+    saphana.service.thread.count:
+      enabled: false
+    saphana.transaction.blocked:
+      enabled: false
+    saphana.transaction.count:
+      enabled: false
+    saphana.uptime:
+      enabled: false
+    saphana.volume.operation.count:
+      enabled: false
+    saphana.volume.operation.size:
+      enabled: false
+    saphana.volume.operation.time:
+      enabled: false
+  resource_attributes:
+    db.system:
+      enabled: false
+    saphana.host:
+      enabled: false

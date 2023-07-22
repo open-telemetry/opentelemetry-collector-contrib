@@ -1,23 +1,14 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -70,7 +61,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = v.AsRaw()
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
@@ -87,7 +78,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = v.AsRaw()
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
@@ -104,16 +95,53 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 }
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) *float64 {
-	duration := time.Duration(ts)
-	if duration == 0 {
-		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
-		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
-		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
-		// at indexing time, which will be much more useful than a 0-epoch-time value.
-		return nil
+func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) float64 {
+	return time.Duration(ts).Round(time.Millisecond).Seconds()
+}
+
+func mergeValue(dst map[string]any, k string, v any) {
+	switch element := v.(type) {
+	case []any:
+		if isArrayFlat(element) {
+			dst[k] = v
+		} else {
+			jsonStr, _ := jsoniter.MarshalToString(element)
+			dst[k] = jsonStr
+		}
+	case map[string]any:
+		flattenAndMergeMap(element, dst, k)
+	default:
+		dst[k] = v
 	}
 
-	val := duration.Round(time.Millisecond).Seconds()
-	return &val
+}
+
+func isArrayFlat(array []any) bool {
+	for _, v := range array {
+		switch v.(type) {
+		case []any, map[string]any:
+			return false
+		}
+	}
+	return true
+}
+
+func flattenAndMergeMap(src, dst map[string]any, key string) {
+	for k, v := range src {
+		current := fmt.Sprintf("%s.%s", key, k)
+		switch element := v.(type) {
+		case map[string]any:
+			flattenAndMergeMap(element, dst, current)
+		case []any:
+			if isArrayFlat(element) {
+				dst[current] = element
+			} else {
+				jsonStr, _ := jsoniter.MarshalToString(element)
+				dst[current] = jsonStr
+			}
+
+		default:
+			dst[current] = element
+		}
+	}
 }

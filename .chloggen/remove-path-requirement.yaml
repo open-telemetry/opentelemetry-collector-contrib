@@ -1,8 +1,0 @@
-change_type: bug_fix
-
-component: mezmoexporter
-
-note: "No longer require a specific path.  This will allow for compatibility with both log analysis and pipeline."
-
-issues: [18011]
-

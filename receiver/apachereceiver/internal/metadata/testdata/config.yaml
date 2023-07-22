@@ -1,51 +1,63 @@
 default:
-all_metrics:
-  apache.cpu.load:
-    enabled: true
-  apache.cpu.time:
-    enabled: true
-  apache.current_connections:
-    enabled: true
-  apache.load.1:
-    enabled: true
-  apache.load.15:
-    enabled: true
-  apache.load.5:
-    enabled: true
-  apache.request.time:
-    enabled: true
-  apache.requests:
-    enabled: true
-  apache.scoreboard:
-    enabled: true
-  apache.traffic:
-    enabled: true
-  apache.uptime:
-    enabled: true
-  apache.workers:
-    enabled: true
-no_metrics:
-  apache.cpu.load:
-    enabled: false
-  apache.cpu.time:
-    enabled: false
-  apache.current_connections:
-    enabled: false
-  apache.load.1:
-    enabled: false
-  apache.load.15:
-    enabled: false
-  apache.load.5:
-    enabled: false
-  apache.request.time:
-    enabled: false
-  apache.requests:
-    enabled: false
-  apache.scoreboard:
-    enabled: false
-  apache.traffic:
-    enabled: false
-  apache.uptime:
-    enabled: false
-  apache.workers:
-    enabled: false
+all_set:
+  metrics:
+    apache.cpu.load:
+      enabled: true
+    apache.cpu.time:
+      enabled: true
+    apache.current_connections:
+      enabled: true
+    apache.load.1:
+      enabled: true
+    apache.load.15:
+      enabled: true
+    apache.load.5:
+      enabled: true
+    apache.request.time:
+      enabled: true
+    apache.requests:
+      enabled: true
+    apache.scoreboard:
+      enabled: true
+    apache.traffic:
+      enabled: true
+    apache.uptime:
+      enabled: true
+    apache.workers:
+      enabled: true
+  resource_attributes:
+    apache.server.name:
+      enabled: true
+    apache.server.port:
+      enabled: true
+none_set:
+  metrics:
+    apache.cpu.load:
+      enabled: false
+    apache.cpu.time:
+      enabled: false
+    apache.current_connections:
+      enabled: false
+    apache.load.1:
+      enabled: false
+    apache.load.15:
+      enabled: false
+    apache.load.5:
+      enabled: false
+    apache.request.time:
+      enabled: false
+    apache.requests:
+      enabled: false
+    apache.scoreboard:
+      enabled: false
+    apache.traffic:
+      enabled: false
+    apache.uptime:
+      enabled: false
+    apache.workers:
+      enabled: false
+  resource_attributes:
+    apache.server.name:
+      enabled: false
+    apache.server.port:
+      enabled: false

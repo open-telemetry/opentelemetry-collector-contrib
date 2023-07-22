@@ -1,0 +1,8 @@
+type: servicegraph
+
+status:
+  class: processor
+  stability:
+    deprecated: [traces]
+  distributions: [contrib, sumo]
+  warnings: []

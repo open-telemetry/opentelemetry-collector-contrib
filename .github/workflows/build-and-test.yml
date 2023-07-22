@@ -22,19 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -51,16 +46,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   check-codeowners:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Check Code Owner Existence
         run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
       - name: Check Component Existence
@@ -76,24 +69,21 @@ jobs:
           - processor
           - exporter
           - extension
+          - connector
           - internal
+          - pkg
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: "~1.20.6"
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -129,23 +119,55 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+  govulncheck:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - connector
+          - internal
+          - pkg
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ~1.19.11
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Run `govulncheck`
+        run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -184,6 +206,10 @@ jobs:
         run: |
           make -j2 generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+      - name: Check gendependabot
+        run: |
+          make -j2 gendependabot
+          git diff --exit-code ':!*go.sum' || (echo 'dependabot.yml is out of date, please run "make gendependabot" and commit the changes in this PR.' && exit 1)
       - name: MultimodVerify
         run: make multimod-verify
       - name: Components dropdown in issue templates
@@ -193,31 +219,28 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: [1.19, 1.18]
+        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
         group:
           - receiver-0
           - receiver-1
           - processor
           - exporter
           - extension
+          - connector
           - internal
+          - pkg
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -236,21 +259,21 @@ jobs:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
+        if: ${{ matrix.go-version == '1.19' }}
         run: make gotest GROUP=${{ matrix.group }}
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
+      - name: Run Unit Tests With Coverage
+        if: ${{ matrix.go-version == '1.20' }} # only run coverage on one version
+        run: make gotest-with-cover GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@v3
+        if: ${{ matrix.go-version == '1.20' }} # only run coverage on one version
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: golang
-          test_format: text
-          test_path: |
-            ./**/foresight-test*.txt
+          name: coverage-artifacts
+          path: ${{ matrix.group }}-coverage.txt
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     strategy:
       matrix:
-        go-version: [1.19, 1.18]
+        go-version: ["1.20", 1.19] # 1.20 is interpreted as 1.2 without quotes
     runs-on: ubuntu-latest
     needs: [setup-environment, unittest-matrix]
     steps:
@@ -265,24 +288,36 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [unittest]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: coverage-artifacts
+      - name: Upload coverage report
+        uses: Wandalen/wretry.action@v1.3.0
+        with:
+          action: codecov/codecov-action@v3
+          with: |
+            fail_ci_if_error: true
+            verbose: true
+          attempt_limit: 10
+          attempt_delay: 15000
 
   integration-tests:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -290,37 +325,20 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
-        run: make integration-tests-with-cover
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: golang
-          test_format: text
-          test_path: |
-            ./**/foresight-test-report-integration*.txt
-          coverage_format: golang
-          coverage_path: |
-            ./**/integration-coverage.txt
+        run: make integration-test
 
   correctness-traces:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -335,32 +353,18 @@ jobs:
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: golang
-          test_format: text
-          test_path: |
-            ./**/foresight-test*.txt
   correctness-metrics:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -375,27 +379,12 @@ jobs:
         run: make install-tools
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: golang
-          test_format: text
-          test_path: |
-            ./**/foresight-test*.txt
 
   build-examples:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Build Examples
         run: make build-examples
 
@@ -414,6 +403,10 @@ jobs:
           - arm
           - arm64
           - ppc64le
+        include:
+          - os: linux
+          - arch: arm
+          - arm: 7
         exclude:
           - os: darwin
             arch: 386
@@ -428,19 +421,14 @@ jobs:
           - os: windows
             arch: ppc64le
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -454,7 +442,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Build Collector ${{ matrix.binary }}
-        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} otelcontribcol
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:
@@ -470,13 +458,7 @@ jobs:
       matrix:
         package_type: ["deb", "rpm"]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install Ruby
@@ -503,9 +485,9 @@ jobs:
       - name: Test ${{ matrix.package_type }} package
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/demo/otel-collector-config.yaml
           else
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/tracing/otel-collector-config.yml
+              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/demo/otel-collector-config.yaml
           fi
       - name: Upload Packages
         uses: actions/upload-artifact@v3
@@ -517,13 +499,7 @@ jobs:
     runs-on: windows-latest
     needs: [cross-compile]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Download Binaries
@@ -558,13 +534,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-package]
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Download Binaries
         uses: actions/download-artifact@v3
         with:
@@ -583,22 +553,17 @@ jobs:
     needs: [lint, unittest, integration-tests, build-package]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -653,41 +618,46 @@ jobs:
     needs: [lint, unittest, integration-tests, build-package]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-      - name: Mkdir bin and dist
-        run: |
-          mkdir bin/ dist/
-      - name: Cache Go
-        id: go-cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
-      - name: Install Tools
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make install-tools
+      - uses: actions/checkout@v3
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Create Github Release
         run: |
-          ./.tools/ghr -t $GITHUB_TOKEN -u open-telemetry -r opentelemetry-collector-contrib --replace $RELEASE_TAG
+          gh release create $RELEASE_TAG -t $RELEASE_TAG -n "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/$RELEASE_TAG), be sure to check the release notes there as well."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+  rotate-milestone:
+    # This job updates the "next release" milestone
+    # to the latest released version and creates a new milestone
+    # named "next release" in its place
+    runs-on: ubuntu-latest
+    needs: [publish-stable]
+    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const milestones = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open"
+            })
+            for (const milestone of milestones.data) {
+              if (milestone.title == "next release") {
+                await github.rest.issues.updateMilestone({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  milestone_number: milestone.number,
+                  title: "${{ github.ref_name }}"
+                });
+                await github.rest.issues.createMilestone({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: "next release"
+                });
+                return
+              }
+            }
 

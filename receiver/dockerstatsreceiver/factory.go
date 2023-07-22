@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 
@@ -27,38 +16,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-const (
-	typeStr        = "docker_stats"
-	stability      = component.StabilityLevelAlpha
-	useScraperV2ID = "receiver.dockerstats.useScraperV2"
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"receiver.dockerstats.useScraperV2",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
+	featuregate.WithRegisterToVersion("0.74.0"),
 )
-
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		useScraperV2ID,
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
-		featuregate.WithRegisterRemovalVersion("0.71.0"),
-	)
-}
 
 func NewFactory() rcvr.Factory {
 	return rcvr.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
+	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
 		ScraperControllerSettings: scs,
 		Endpoint:                  "unix:///var/run/docker.sock",
 		Timeout:                   5 * time.Second,
 		DockerAPIVersion:          defaultDockerAPIVersion,
-		MetricsConfig:             metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -71,17 +52,7 @@ func createMetricsReceiver(
 	dockerConfig := config.(*Config)
 	dsr := newReceiver(params, dockerConfig)
 
-	scrapeFunc := dsr.scrape
-	if featuregate.GlobalRegistry().IsEnabled(useScraperV2ID) {
-		scrapeFunc = dsr.scrapeV2
-	} else {
-		params.Logger.Warn(
-			"You are using the deprecated ScraperV1, which will " +
-				"be disabled by default in an upcoming release." +
-				"See the dockerstatsreceiver/README.md for more info.")
-	}
-
-	scrp, err := scraperhelper.NewScraper(typeStr, scrapeFunc, scraperhelper.WithStart(dsr.start))
+	scrp, err := scraperhelper.NewScraper(metadata.Type, dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
 	if err != nil {
 		return nil, err
 	}

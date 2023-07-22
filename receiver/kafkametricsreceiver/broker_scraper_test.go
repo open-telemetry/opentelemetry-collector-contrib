@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkametricsreceiver
 
@@ -110,14 +99,14 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopCreateSettings(),
-		config:   Config{Metrics: metadata.DefaultMetricsSettings()},
+		config:   Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 	}
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := bs.scrape(context.Background())
 	assert.NoError(t, err)
 	expectedDp := int64(len(testBrokers))
 	receivedMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	receivedDp := receivedMetrics.Gauge().DataPoints().At(0).IntValue()
+	receivedDp := receivedMetrics.Sum().DataPoints().At(0).IntValue()
 	assert.Equal(t, expectedDp, receivedDp)
 }
 

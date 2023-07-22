@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -19,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -34,19 +24,8 @@ type metricsExporter struct {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	internal.SetLogger(logger)
-	if err = internal.NewMetricsTable(cfg.MetricsTableName, cfg.TTLDays, client); err != nil {
 		return nil, err
 	}
 
@@ -57,8 +36,17 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *metricsExporter) shutdown(ctx context.Context) error {
+func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	internal.SetLogger(e.logger)
+	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.TTLDays, e.client)
+}
+
+// shutdown will shut down the exporter.
+func (e *metricsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -68,29 +56,28 @@ func (e *metricsExporter) shutdown(ctx context.Context) error {
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	metricsMap := internal.NewMetricsModel(e.cfg.MetricsTableName)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		metaData := internal.MetricsMetaData{}
 		metrics := md.ResourceMetrics().At(i)
-		res := metrics.Resource()
-		metaData.ResAttr = attributesToMap(res.Attributes())
-		metaData.ResURL = metrics.SchemaUrl()
+		resAttr := attributesToMap(metrics.Resource().Attributes())
 		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
 			rs := metrics.ScopeMetrics().At(j).Metrics()
-			metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
-			metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
+			scopeInstr := metrics.ScopeMetrics().At(j).Scope()
+			scopeURL := metrics.ScopeMetrics().At(j).SchemaUrl()
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				var errs error
 				switch r.Type() {
 				case pmetric.MetricTypeGauge:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Gauge(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSum:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSum].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Sum(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeHistogram:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Histogram(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeExponentialHistogram:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.ExponentialHistogram(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSummary:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSummary].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Summary(), r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeEmpty:
+					return fmt.Errorf("metrics type is unset")
 				default:
 					return fmt.Errorf("unsupported metrics type")
 				}
@@ -101,8 +88,5 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		}
 	}
 	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-	if err := internal.InsertMetrics(ctx, e.client, metricsMap); err != nil {
-		return err
-	}
-	return nil
+	return internal.InsertMetrics(ctx, e.client, metricsMap)
 }

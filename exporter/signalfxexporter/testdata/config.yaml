@@ -61,3 +61,20 @@ signalfx/allsettings:
   include_metrics:
     - metric_name: metric1
     - metric_names: [metric2, metric3]
+  log_dimension_updates: true
+  dimension_client:
+    max_buffered: 1
+    send_delay: 1h
+    max_idle_conns: 100
+    max_idle_conns_per_host: 10
+    max_conns_per_host: 10000
+    idle_conn_timeout: 2h
+  exclude_properties:
+    - property_name: globbed*
+    - property_value: '!globbed*value'
+    - dimension_name: globbed*
+    - dimension_value: '!globbed*value'
+    - property_name: globbed*
+      property_value: '!globbed*value'
+      dimension_name: globbed*
+      dimension_value: '!globbed*value'

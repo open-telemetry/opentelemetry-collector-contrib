@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics
 
@@ -24,37 +13,37 @@ import (
 )
 
 func TestFloat64RateCalculator(t *testing.T) {
-	MetricMetadata := "rate"
+	mKey := NewKey("rate", nil)
 	initTime := time.Now()
 	c := newFloat64RateCalculator()
-	r, ok := c.Calculate(MetricMetadata, nil, float64(50), initTime)
+	r, ok := c.Calculate(mKey, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
 
 	nextTime := initTime.Add(100 * time.Millisecond)
-	r, ok = c.Calculate(MetricMetadata, nil, float64(100), nextTime)
+	r, ok = c.Calculate(mKey, float64(100), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 0.5, r, 0.1)
 }
 
 func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
-	MetricMetadata := "rate"
+	mKey := NewKey("rate", nil)
 	initTime := time.Now()
 	c := newFloat64RateCalculator()
-	r, ok := c.Calculate(MetricMetadata, nil, float64(50), initTime)
+	r, ok := c.Calculate(mKey, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
 
 	nextTime := initTime
 	for i := 0; i < 10; i++ {
 		nextTime = nextTime.Add(5 * time.Millisecond)
-		r, ok = c.Calculate(MetricMetadata, nil, float64(105), nextTime)
+		r, ok = c.Calculate(mKey, float64(105), nextTime)
 		assert.False(t, ok)
 		assert.Equal(t, float64(0), r)
 	}
 
 	nextTime = nextTime.Add(5 * time.Millisecond)
-	r, ok = c.Calculate(MetricMetadata, nil, float64(105), nextTime)
+	r, ok = c.Calculate(mKey, float64(105), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 1, r, 0.1)
 }
@@ -73,13 +62,13 @@ func newFloat64RateCalculator() MetricCalculator {
 }
 
 func TestFloat64DeltaCalculator(t *testing.T) {
-	MetricMetadata := "delta"
+	mKey := NewKey("delta", nil)
 	initTime := time.Now()
 	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{0.1, 0.1, 0.5, 1.3, 1.9, 2.5, 5, 24.2, 103}
 	for i, f := range testCases {
-		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
+		r, ok := c.Calculate(mKey, f, initTime)
 		assert.Equal(t, i > 0, ok)
 		if i == 0 {
 			assert.Equal(t, float64(0), r)
@@ -90,13 +79,13 @@ func TestFloat64DeltaCalculator(t *testing.T) {
 }
 
 func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
-	MetricMetadata := "delta"
+	mKey := NewKey("delta", nil)
 	initTime := time.Now()
 	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{108, 106, 56.2, 28.8, 10, 10, 3, -1, -100}
 	for i, f := range testCases {
-		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
+		r, ok := c.Calculate(mKey, f, initTime)
 		assert.Equal(t, i > 0, ok)
 		if ok {
 			assert.Equal(t, testCases[i]-testCases[i-1], r)
@@ -186,19 +175,19 @@ func TestMapKeyEquals(t *testing.T) {
 	labelMap2["k2"] = "v2"
 	labelMap2["k1"] = "v1"
 
-	key1 := NewKey("name", labelMap1)
-	key2 := NewKey("name", labelMap2)
-	assert.Equal(t, key1, key2)
+	mKey1 := NewKey("name", labelMap1)
+	mKey2 := NewKey("name", labelMap2)
+	assert.Equal(t, mKey1, mKey2)
 
-	key1 = NewKey(mockKey{
+	mKey1 = NewKey(mockKey{
 		name:  "name",
 		index: 1,
 	}, labelMap1)
-	key2 = NewKey(mockKey{
+	mKey2 = NewKey(mockKey{
 		name:  "name",
 		index: 1,
 	}, labelMap2)
-	assert.Equal(t, key1, key2)
+	assert.Equal(t, mKey1, mKey2)
 }
 
 func TestMapKeyNotEqualOnName(t *testing.T) {
@@ -210,23 +199,23 @@ func TestMapKeyNotEqualOnName(t *testing.T) {
 	labelMap2["k2"] = "v2"
 	labelMap2["k1"] = "v1"
 
-	key1 := NewKey("name1", labelMap1)
-	key2 := NewKey("name2", labelMap2)
-	assert.NotEqual(t, key1, key2)
+	mKey1 := NewKey("name1", labelMap1)
+	mKey2 := NewKey("name2", labelMap2)
+	assert.NotEqual(t, mKey1, mKey2)
 
-	key1 = NewKey(mockKey{
+	mKey1 = NewKey(mockKey{
 		name:  "name",
 		index: 1,
 	}, labelMap1)
-	key2 = NewKey(mockKey{
+	mKey2 = NewKey(mockKey{
 		name:  "name",
 		index: 2,
 	}, labelMap2)
-	assert.NotEqual(t, key1, key2)
+	assert.NotEqual(t, mKey1, mKey2)
 
-	key2 = NewKey(mockKey{
+	mKey2 = NewKey(mockKey{
 		name:  "name0",
 		index: 1,
 	}, labelMap2)
-	assert.NotEqual(t, key1, key2)
+	assert.NotEqual(t, mKey1, mKey2)
 }

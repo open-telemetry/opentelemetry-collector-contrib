@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,30 +13,30 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testMetricsSet int
+type testConfigCollection int
 
 const (
-	testMetricsSetDefault testMetricsSet = iota
-	testMetricsSetAll
-	testMetricsSetNo
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
-		metricsSet testMetricsSet
+		name      string
+		configSet testConfigCollection
 	}{
 		{
-			name:       "default",
-			metricsSet: testMetricsSetDefault,
+			name:      "default",
+			configSet: testSetDefault,
 		},
 		{
-			name:       "all_metrics",
-			metricsSet: testMetricsSetAll,
+			name:      "all_set",
+			configSet: testSetAll,
 		},
 		{
-			name:       "no_metrics",
-			metricsSet: testMetricsSetNo,
+			name:      "none_set",
+			configSet: testSetNone,
 		},
 	}
 	for _, test := range tests {
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -80,7 +76,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperFollowerCountDataPoint(ts, 1, AttributeState(1))
+			mb.RecordZookeeperFollowerCountDataPoint(ts, 1, AttributeStateSynced)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -100,11 +96,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperPacketCountDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordZookeeperPacketCountDataPoint(ts, 1, AttributeDirectionReceived)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordZookeeperRequestActiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordZookeeperRuokDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -118,9 +118,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordZookeeperZnodeCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithServerState("attr-val"), WithZkVersion("attr-val"))
+			metrics := mb.Emit(WithServerState("server.state-val"), WithZkVersion("zk.version-val"))
 
-			if test.metricsSet == testMetricsSetNo {
+			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -131,27 +131,27 @@ func TestMetricsBuilder(t *testing.T) {
 			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("server.state")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ServerState.Enabled, ok)
-			if mb.resourceAttributesSettings.ServerState.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ServerState.Enabled, ok)
+			if mb.resourceAttributesConfig.ServerState.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "server.state-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("zk.version")
 			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.ZkVersion.Enabled, ok)
-			if mb.resourceAttributesSettings.ZkVersion.Enabled {
+			assert.Equal(t, mb.resourceAttributesConfig.ZkVersion.Enabled, ok)
+			if mb.resourceAttributesConfig.ZkVersion.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "zk.version-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 2)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testMetricsSetDefault {
+			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testMetricsSetAll {
+			if test.configSet == testSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -241,7 +241,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "synced", attrVal.Str())
+					assert.EqualValues(t, "synced", attrVal.Str())
 				case "zookeeper.fsync.exceeded_threshold.count":
 					assert.False(t, validatedMetrics["zookeeper.fsync.exceeded_threshold.count"], "Found a duplicate in the metrics slice: zookeeper.fsync.exceeded_threshold.count")
 					validatedMetrics["zookeeper.fsync.exceeded_threshold.count"] = true
@@ -308,7 +308,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
+					assert.EqualValues(t, "received", attrVal.Str())
 				case "zookeeper.request.active":
 					assert.False(t, validatedMetrics["zookeeper.request.active"], "Found a duplicate in the metrics slice: zookeeper.request.active")
 					validatedMetrics["zookeeper.request.active"] = true
@@ -319,6 +319,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "zookeeper.ruok":
+					assert.False(t, validatedMetrics["zookeeper.ruok"], "Found a duplicate in the metrics slice: zookeeper.ruok")
+					validatedMetrics["zookeeper.ruok"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Response from zookeeper ruok command", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -369,14 +381,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

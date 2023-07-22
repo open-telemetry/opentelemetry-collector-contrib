@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 
@@ -20,10 +9,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -60,6 +51,12 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 			endpoint: endpoint,
 			logger:   logger,
 		}, nil
+	case k8sconfig.AuthTypeKubeConfig:
+		return &kubeConfigClientProvider{
+			endpoint: endpoint,
+			cfg:      cfg,
+			logger:   logger,
+		}, nil
 	default:
 		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
 	}
@@ -67,6 +64,42 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 
 type ClientProvider interface {
 	BuildClient() (Client, error)
+}
+
+type kubeConfigClientProvider struct {
+	endpoint string
+	cfg      *ClientConfig
+	logger   *zap.Logger
+}
+
+func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
+	authConf, err := k8sconfig.CreateRestConfig(p.cfg.APIConfig)
+	if err != nil {
+		return nil, err
+	}
+	if p.cfg.InsecureSkipVerify {
+		// Override InsecureSkipVerify from kubeconfig
+		authConf.TLSClientConfig.CAFile = ""
+		authConf.TLSClientConfig.CAData = nil
+		authConf.TLSClientConfig.Insecure = true
+	}
+
+	client, err := rest.HTTPClientFor(authConf)
+	if err != nil {
+		return nil, err
+	}
+
+	joinPath, err := url.JoinPath(authConf.Host, "/api/v1/nodes/", p.endpoint, "/proxy/")
+	if err != nil {
+		return nil, err
+	}
+	return &clientImpl{
+		baseURL:    joinPath,
+		httpClient: *client,
+		tok:        nil,
+		logger:     p.logger,
+	}, nil
+
 }
 
 type readOnlyClientProvider struct {
@@ -238,9 +271,12 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	return body, nil
 }
 
-func (c *clientImpl) buildReq(path string) (*http.Request, error) {
-	url := c.baseURL + path
-	req, err := http.NewRequest("GET", url, nil)
+func (c *clientImpl) buildReq(p string) (*http.Request, error) {
+	reqURL, err := url.JoinPath(c.baseURL, p)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return nil, err
 	}

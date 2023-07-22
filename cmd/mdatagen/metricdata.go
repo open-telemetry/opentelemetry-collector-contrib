@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -73,13 +62,6 @@ type MetricInputType struct {
 	InputType string `mapstructure:"input_type"`
 }
 
-func (mit MetricInputType) Validate() error {
-	if mit.InputType != "" && mit.InputType != "string" {
-		return fmt.Errorf("invalid `input_type` value \"%v\", must be \"\" or \"string\"", mit.InputType)
-	}
-	return nil
-}
-
 func (mit MetricInputType) HasMetricInputType() bool {
 	return mit.InputType != ""
 }
@@ -127,6 +109,8 @@ func (mvt MetricValueType) BasicType() string {
 		return "int64"
 	case pmetric.NumberDataPointValueTypeDouble:
 		return "float64"
+	case pmetric.NumberDataPointValueTypeEmpty:
+		return ""
 	default:
 		return ""
 	}
@@ -166,11 +150,25 @@ type sum struct {
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
 func (d *sum) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("aggregation") {
+		return errors.New("missing required field: `aggregation`")
+	}
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err
 	}
 	return parser.Unmarshal(d, confmap.WithErrorUnused())
 }
+
+// TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
+// add a test case to Test_loadMetadata for file no_monotonic.yaml once the issue is solved.
+//
+// Unmarshal is a custom unmarshaler for Mono.
+// func (m *Mono) Unmarshal(parser *confmap.Conf) error {
+// 	if !parser.IsSet("monotonic") {
+// 		return errors.New("missing required field: `monotonic`")
+// 	}
+// 	return parser.Unmarshal(m, confmap.WithErrorUnused())
+// }
 
 func (d sum) Type() string {
 	return "Sum"

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
@@ -22,18 +11,17 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-)
 
-const (
-	typeStr = "datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 // NewFactory creates a factory for DataDog receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, component.StabilityLevelAlpha))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 
 }
 
@@ -46,11 +34,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesReceiver(
-	ctx context.Context,
-	params receiver.CreateSettings,
-	cfg component.Config,
-	consumer consumer.Traces) (receiver.Traces, error) {
+func createTracesReceiver(_ context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (r receiver.Traces, err error) {
 	rcfg := cfg.(*Config)
-	return newDataDogReceiver(rcfg, consumer, params)
+	r = receivers.GetOrAdd(cfg, func() component.Component {
+		dd, _ := newDataDogReceiver(rcfg, consumer, params)
+		return dd
+	})
+	return r, nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
@@ -22,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 // Config represent a configuration for the CloudWatch logs exporter.
@@ -46,6 +36,11 @@ type Config struct {
 	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
 	LogRetention int64 `mapstructure:"log_retention"`
 
+	// Tags is the option to set tags for the CloudWatch Log Group.  If specified, please add add at least 1 and at most 50 tags.  Input is a string to string map like so: { 'key': 'value' }
+	// Keys must be between 1-128 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$
+	// Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$
+	Tags map[string]*string `mapstructure:"tags"`
+
 	// QueueSettings is a subset of exporterhelper.QueueSettings,
 	// because only QueueSize is user-settable due to how AWS CloudWatch API works
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
@@ -53,6 +48,10 @@ type Config struct {
 	logger *zap.Logger
 
 	awsutil.AWSSessionSettings `mapstructure:",squash"`
+
+	// Export raw log string instead of log wrapper
+	// Required for emf logs
+	RawLog bool `mapstructure:"raw_log,omitempty"`
 }
 
 type QueueSettings struct {
@@ -73,41 +72,11 @@ func (config *Config) Validate() error {
 	if config.QueueSettings.QueueSize < 1 {
 		return errors.New("'sending_queue.queue_size' must be 1 or greater")
 	}
-	if !isValidRetentionValue(config.LogRetention) {
-		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
+	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
+		return retErr
 	}
-	return nil
-}
+	return cwlogs.ValidateTagsInput(config.Tags)
 
-// Added function to check if value is an accepted number of log retention days
-func isValidRetentionValue(input int64) bool {
-	switch input {
-	case
-		0,
-		1,
-		3,
-		5,
-		7,
-		14,
-		30,
-		60,
-		90,
-		120,
-		150,
-		180,
-		365,
-		400,
-		545,
-		731,
-		1827,
-		2192,
-		2557,
-		2922,
-		3288,
-		3653:
-		return true
-	}
-	return false
 }
 
 func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {

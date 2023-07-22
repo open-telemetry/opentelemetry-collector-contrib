@@ -1,28 +1,18 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v4"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var data = [2]interface{}{
@@ -38,6 +28,7 @@ var data = [2]interface{}{
 		8:  "_dd.sampling_rate_whatever",
 		9:  "value whatever",
 		10: "sql",
+		11: "service.name",
 	},
 	1: [][][12]interface{}{
 		{
@@ -52,9 +43,10 @@ var data = [2]interface{}{
 				int64(456),
 				1,
 				map[interface{}]interface{}{
-					8: 9,
-					0: 1,
-					2: 3,
+					8:  9,
+					0:  1,
+					2:  3,
+					11: 6,
 				},
 				map[interface{}]float64{
 					5: 1.2,
@@ -64,21 +56,21 @@ var data = [2]interface{}{
 		},
 	},
 }
-var output ptrace.Traces
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
+	var traces pb.Traces
+
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(t, err)
-	dc := pb.NewMsgpReader(bytes.NewReader(payload))
-	defer pb.FreeMsgpReader(dc)
 
-	var traces pb.Traces
-	if err := traces.DecodeMsgDictionary(dc); err != nil {
-		t.Fatal(err)
-	}
-	req := &http.Request{RequestURI: "/v0.5/traces"}
-
-	translated := toTraces(traces, req)
+	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshaling content")
+	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
+	translated := toTraces(&pb.TracerPayload{
+		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
+		LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
+		TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
+		Chunks:          traceChunksFromTraces(traces),
+	}, req)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
@@ -86,28 +78,48 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	value, exists := span.Attributes().Get("service.name")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name tag value incorrect")
-	assert.Equal(t, span.Name(), "my-resource")
+	assert.Equal(t, "my-name", span.Name())
 }
 
-func BenchmarkTranslator(b *testing.B) {
-
-	payload, err := vmsgp.Marshal(&data)
-	assert.NoError(b, err)
-	dc := pb.NewMsgpReader(bytes.NewReader(payload))
-	defer pb.FreeMsgpReader(dc)
-
+func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	var traces pb.Traces
-	if err := traces.DecodeMsgDictionary(dc); err != nil {
-		b.Fatal(err)
+	payload, err := vmsgp.Marshal(&data)
+	assert.NoError(t, err)
+	if err2 := traces.UnmarshalMsgDictionary(payload); err2 != nil {
+		t.Fatal(err2)
 	}
+	apiPayload := pb.TracerPayload{
+		LanguageName:    "1",
+		LanguageVersion: "1",
+		Chunks:          traceChunksFromTraces(traces),
+		TracerVersion:   "1",
+	}
+	var reqBytes []byte
+	bytez, _ := apiPayload.MarshalMsg(reqBytes)
+	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
 
-	req := &http.Request{RequestURI: "/v0.5/traces"}
-	b.ResetTimer()
-	b.ReportAllocs()
-	b.SetBytes(int64(len(payload)))
+	translated, _ := handlePayload(req)
+	span := translated.GetChunks()[0].GetSpans()[0]
+	assert.NotNil(t, span)
+	assert.Equal(t, 4, len(span.GetMeta()), "missing tags")
+	value, exists := span.GetMeta()["service.name"]
+	assert.True(t, exists, "service.name missing")
+	assert.Equal(t, "my-service", value, "service.name tag value incorrect")
+	assert.Equal(t, "my-name", span.GetName())
+}
+
+func BenchmarkTranslatorv05(b *testing.B) {
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		output = toTraces(traces, req)
+	for n := 0; n < b.N; n++ {
+		TestTracePayloadV05Unmarshalling(&testing.T{})
+	}
+	b.StopTimer()
+}
+
+func BenchmarkTranslatorv07(b *testing.B) {
+	b.StartTimer()
+	for n := 0; n < b.N; n++ {
+		TestTracePayloadV07Unmarshalling(&testing.T{})
 	}
 	b.StopTimer()
 }

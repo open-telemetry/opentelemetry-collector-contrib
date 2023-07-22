@@ -105,22 +105,23 @@ linters-settings:
       - kilometres
 
   depguard:
-    list-type: denylist
-    include-go-root: true
-    packages-with-error-message:
-      # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
-      - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
-      - github.com/pkg/errors: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
-      - github.com/hashicorp/go-multierror: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
-    # Add a different guard rule so that we can ignore tests.
-    additional-guards:
-      - list-type: denylist
-        include-go-root: true
-        packages-with-error-message:
-          - go.opentelemetry.io/proto: "Use go.opentelemetry.io/collector/pdata instead"
-        # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
-        ignore-file-rules:
-          - "**/*_test.go"
+    rules:
+      denied-deps:
+        deny:
+          - pkg: go.uber.org/atomic
+            desc: "Use 'sync/atomic' instead of go.uber.org/atomic"
+          - pkg: github.com/pkg/errors
+            desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
+          - pkg: github.com/hashicorp/go-multierror
+            desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+        # Add a different guard rule so that we can ignore tests.
+      ignore-in-test:
+          deny:
+          - pkg: go.opentelemetry.io/proto
+            desc: "Use go.opentelemetry.io/collector/pdata instead"
+            # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
+          files:
+            - "!**/*_test.go"
 
 linters:
   enable:
@@ -128,6 +129,7 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
+    - exhaustive
     - gci
     - gocritic
     - gofmt
@@ -152,7 +154,140 @@ issues:
     - text: "G402:"
       linters:
         - gosec
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12566
-    - text: "G112:"
+    # Following exclude-rules are used to exclude the existing components which do not pass exhaustive lint,
+    # in order to enable the exhaustive lint check.
+    # We should not add more exclude-rules.
+    # The progress of solving existing exclude-rules will be tracked in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23266
+    - path: fluentforwardreceiver
       linters:
-        - gosec
+        - exhaustive
+    - path: prometheusreceiver
+      linters:
+        - exhaustive
+    - path: deltatorateprocessor
+      linters:
+        - exhaustive
+    - path: filterprocessor
+      linters:
+        - exhaustive
+    - path: metricsgenerationprocessor
+      linters:
+        - exhaustive
+    - path: metricstransformprocessor
+      linters:
+        - exhaustive
+    - path: probabilisticsamplerprocessor
+      linters:
+        - exhaustive
+    - path: servicegraphprocessor
+      linters:
+        - exhaustive
+    - path: resourcedetectionprocessor
+      linters:
+        - exhaustive
+    - path: tailsamplingprocessor
+      linters:
+        - exhaustive
+    - path: transformprocessor
+      linters:
+        - exhaustive
+    - path: alibabacloudlogserviceexporter
+      linters:
+        - exhaustive
+    - path: awsemfexporter
+      linters:
+        - exhaustive
+    - path: awsxrayexporter
+      linters:
+        - exhaustive
+    - path: azuremonitorexporter
+      linters:
+        - exhaustive
+    - path: azuredataexplorerexporter
+      linters:
+        - exhaustive
+    - path: carbonexporter
+      linters:
+        - exhaustive
+    - path: coralogixexporter
+      linters:
+        - exhaustive
+    - path: datasetexporter
+      linters:
+        - exhaustive
+    - path: elasticsearchexporter
+      linters:
+        - exhaustive
+    - path: googlecloudpubsubexporter
+      linters:
+        - exhaustive
+    - path: instanaexporter
+      linters:
+        - exhaustive
+    - path: jaegerthrifthttpexporter
+      linters:
+        - exhaustive
+    - path: logzioexporter
+      linters:
+        - exhaustive
+    - path: prometheusexporter
+      linters:
+        - exhaustive
+    - path: prometheusremotewriteexporter
+      linters:
+        - exhaustive
+    - path: skywalkingexporter
+      linters:
+        - exhaustive
+    - path: splunkhecexporter
+      linters:
+        - exhaustive
+    - path: tanzuobservabilityexporter
+      linters:
+        - exhaustive
+    - path: k8sobserver
+      linters:
+        - exhaustive
+    - path: containerinsight
+      linters:
+        - exhaustive
+    - path: filter
+      linters:
+        - exhaustive
+    - path: coreinternal
+      linters:
+        - exhaustive
+    - path: k8sconfig
+      linters:
+        - exhaustive
+    - path: ottl
+      linters:
+        - exhaustive
+    - path: resourcetotelemetry
+      linters:
+        - exhaustive
+    - path: jaeger
+      linters:
+        - exhaustive
+    - path: prometheus
+      linters:
+        - exhaustive
+    - path: loki
+      linters:
+        - exhaustive
+    - path: opencensus
+      linters:
+        - exhaustive
+    - path: zipkin
+      linters:
+        - exhaustive
+    - path: configschema
+      linters:
+        - exhaustive
+    - path: testbed
+      linters:
+        - exhaustive
+    # Preserve original source code in attributed package.
+    - path: ctimefmt
+      linters:
+        - revive

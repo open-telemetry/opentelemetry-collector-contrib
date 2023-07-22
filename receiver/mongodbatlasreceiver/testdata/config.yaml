@@ -1,0 +1,27 @@
+mongodbatlas:
+  public_key: "my-public-key"
+  private_key: "my-private-key"
+  alerts:
+    enabled: true
+    mode: poll
+    projects:
+    - name: Project 0
+      include_clusters: [Cluster0]
+    poll_interval: 1m
+  logs:
+    enabled: true
+    projects:
+    - name: Project 0
+      access_logs:
+        enabled: true
+        auth_result: true
+        poll_interval: 1m
+      collect_audit_logs: true
+  events:
+    projects:
+      - name: Project 0
+    organizations:
+      - id: 5b478b3afc4625789ce616a3
+    poll_interval: 1m
+    page_size: 100
+    max_pages: 25

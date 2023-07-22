@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 
@@ -53,7 +42,7 @@ func newKubletScraper(
 	restClient kubelet.RestClient,
 	set receiver.CreateSettings,
 	rOptions *scraperOptions,
-	metricsConfig metadata.MetricsSettings,
+	metricsConfig metadata.MetricsBuilderConfig,
 ) (scraperhelper.Scraper, error) {
 	ks := &kubletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
@@ -70,7 +59,7 @@ func newKubletScraper(
 			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
 	}
-	return scraperhelper.NewScraper(typeStr, ks.scrape)
+	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
 }
 
 func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {

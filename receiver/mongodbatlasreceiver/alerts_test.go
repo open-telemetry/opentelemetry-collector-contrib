@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver
 
@@ -35,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -43,6 +33,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
@@ -456,7 +447,7 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "default",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{
@@ -494,7 +485,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				for k, v := range expectedResourceAttributes {
 					value, ok := ra.Get(k)
 					require.True(t, ok)
-					require.Equal(t, v, value)
+					require.Equal(t, v, value.AsString())
 				}
 			},
 		},
@@ -502,7 +493,7 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "project cluster inclusions",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{
@@ -530,7 +521,7 @@ func TestAlertsRetrieval(t *testing.T) {
 			name: "hostname and port missing",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
 					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 					Alerts: AlertConfig{
@@ -559,7 +550,7 @@ func TestAlertsRetrieval(t *testing.T) {
 						{
 							ID:            testAlertID,
 							GroupID:       testGroupID,
-							AlertConfigID: "",
+							AlertConfigID: testAlertConfigID,
 							EventTypeName: testTypeName,
 							Created:       time.Now().Format(time.RFC3339),
 							Updated:       time.Now().Format(time.RFC3339),
@@ -593,6 +584,7 @@ func TestAlertsRetrieval(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
@@ -600,7 +592,7 @@ func TestAlertsRetrieval(t *testing.T) {
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
-			err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+			err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 			require.NoError(t, err)
 
 			require.Eventually(t, func() bool {
@@ -635,7 +627,7 @@ func TestAlertPollingExclusions(t *testing.T) {
 	require.NoError(t, err)
 	alertsRcvr.client = testClient()
 
-	err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost())
+	err = alertsRcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 	require.NoError(t, err)
 
 	require.Never(t, func() bool {
@@ -665,7 +657,7 @@ func testAlert() mongodbatlas.Alert {
 	return mongodbatlas.Alert{
 		ID:            testAlertID,
 		GroupID:       testGroupID,
-		AlertConfigID: "",
+		AlertConfigID: testAlertConfigID,
 		EventTypeName: testTypeName,
 		Created:       time.Now().Format(time.RFC3339),
 		Updated:       time.Now().Format(time.RFC3339),
@@ -695,7 +687,7 @@ func validateAttributes(t *testing.T, expectedStringAttributes map[string]string
 				for k, v := range expectedStringAttributes {
 					val, ok := lr.Attributes().Get(k)
 					require.True(t, ok)
-					require.Equal(t, val.AsString(), v)
+					require.Equal(t, v, val.AsString())
 				}
 			}
 		}

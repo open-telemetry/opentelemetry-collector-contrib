@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
@@ -263,7 +252,7 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
 	timestamp := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
-	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	baseName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 
 	// If the sum is unset, it indicates the _sum metric point should be
 	// omitted
@@ -453,7 +442,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	tsMap map[string]*prompb.TimeSeries) {
 	timestamp := convertTimeStamp(pt.Timestamp())
 	// sum and count of the summary should append suffix to baseName
-	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	baseName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 
@@ -75,6 +64,8 @@ func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 		dataPointSlice = metric.Gauge().DataPoints()
 	case pmetric.MetricTypeSum:
 		dataPointSlice = metric.Sum().DataPoints()
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+		fallthrough
 	default:
 		panic(fmt.Sprintf("data type not supported: %s", metric.Type()))
 	}
@@ -126,6 +117,7 @@ func maskTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
 						m.Summary().DataPoints().At(l).SetTimestamp(ts)
 					}
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
@@ -168,6 +160,7 @@ func maskStartTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
 						m.Summary().DataPoints().At(l).SetStartTimestamp(ts)
 					}
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
@@ -233,6 +226,12 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 			switch attribute.Type() {
 			case pcommon.ValueTypeStr:
 				attribute.SetStr("")
+			case pcommon.ValueTypeBool:
+				attribute.SetBool(false)
+			case pcommon.ValueTypeInt:
+				attribute.SetInt(0)
+			case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
+				fallthrough
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}
@@ -253,6 +252,20 @@ func maskMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName st
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		internal.MaskResourceAttributeValue(rms.At(i).Resource(), attributeName)
+	}
+}
+
+func ChangeResourceAttributeValue(attributeName string, changeFn func(string) string) CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		changeMetricsResourceAttributeValue(expected, attributeName, changeFn)
+		changeMetricsResourceAttributeValue(actual, attributeName, changeFn)
+	})
+}
+
+func changeMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName string, changeFn func(string) string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
 	}
 }
 
@@ -306,6 +319,24 @@ func sortResourceMetricsSlice(rms pmetric.ResourceMetricsSlice) {
 		bAttrs := pdatautil.MapHash(b.Resource().Attributes())
 		return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 	})
+}
+
+func IgnoreScopeVersion() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskScopeVersion(expected)
+		maskScopeVersion(actual)
+	})
+}
+
+func maskScopeVersion(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			sm.Scope().SetVersion("")
+		}
+	}
 }
 
 // IgnoreScopeMetricsOrder is a CompareMetricsOption that ignores the order of instrumentation scope traces/metrics/logs.
@@ -372,6 +403,7 @@ func sortMetricDataPointSlices(ms pmetric.Metrics) {
 					sortExponentialHistogramDataPointSlice(m.ExponentialHistogram().DataPoints())
 				case pmetric.MetricTypeSummary:
 					sortSummaryDataPointSlice(m.Summary().DataPoints())
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}

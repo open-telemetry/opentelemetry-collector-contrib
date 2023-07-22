@@ -1,123 +1,131 @@
 default:
-all_metrics:
-  mongodb.cache.operations:
-    enabled: true
-  mongodb.collection.count:
-    enabled: true
-  mongodb.connection.count:
-    enabled: true
-  mongodb.cursor.count:
-    enabled: true
-  mongodb.cursor.timeout.count:
-    enabled: true
-  mongodb.data.size:
-    enabled: true
-  mongodb.database.count:
-    enabled: true
-  mongodb.document.operation.count:
-    enabled: true
-  mongodb.extent.count:
-    enabled: true
-  mongodb.global_lock.time:
-    enabled: true
-  mongodb.health:
-    enabled: true
-  mongodb.index.access.count:
-    enabled: true
-  mongodb.index.count:
-    enabled: true
-  mongodb.index.size:
-    enabled: true
-  mongodb.lock.acquire.count:
-    enabled: true
-  mongodb.lock.acquire.time:
-    enabled: true
-  mongodb.lock.acquire.wait_count:
-    enabled: true
-  mongodb.lock.deadlock.count:
-    enabled: true
-  mongodb.memory.usage:
-    enabled: true
-  mongodb.network.io.receive:
-    enabled: true
-  mongodb.network.io.transmit:
-    enabled: true
-  mongodb.network.request.count:
-    enabled: true
-  mongodb.object.count:
-    enabled: true
-  mongodb.operation.count:
-    enabled: true
-  mongodb.operation.latency.time:
-    enabled: true
-  mongodb.operation.repl.count:
-    enabled: true
-  mongodb.operation.time:
-    enabled: true
-  mongodb.session.count:
-    enabled: true
-  mongodb.storage.size:
-    enabled: true
-  mongodb.uptime:
-    enabled: true
-no_metrics:
-  mongodb.cache.operations:
-    enabled: false
-  mongodb.collection.count:
-    enabled: false
-  mongodb.connection.count:
-    enabled: false
-  mongodb.cursor.count:
-    enabled: false
-  mongodb.cursor.timeout.count:
-    enabled: false
-  mongodb.data.size:
-    enabled: false
-  mongodb.database.count:
-    enabled: false
-  mongodb.document.operation.count:
-    enabled: false
-  mongodb.extent.count:
-    enabled: false
-  mongodb.global_lock.time:
-    enabled: false
-  mongodb.health:
-    enabled: false
-  mongodb.index.access.count:
-    enabled: false
-  mongodb.index.count:
-    enabled: false
-  mongodb.index.size:
-    enabled: false
-  mongodb.lock.acquire.count:
-    enabled: false
-  mongodb.lock.acquire.time:
-    enabled: false
-  mongodb.lock.acquire.wait_count:
-    enabled: false
-  mongodb.lock.deadlock.count:
-    enabled: false
-  mongodb.memory.usage:
-    enabled: false
-  mongodb.network.io.receive:
-    enabled: false
-  mongodb.network.io.transmit:
-    enabled: false
-  mongodb.network.request.count:
-    enabled: false
-  mongodb.object.count:
-    enabled: false
-  mongodb.operation.count:
-    enabled: false
-  mongodb.operation.latency.time:
-    enabled: false
-  mongodb.operation.repl.count:
-    enabled: false
-  mongodb.operation.time:
-    enabled: false
-  mongodb.session.count:
-    enabled: false
-  mongodb.storage.size:
-    enabled: false
-  mongodb.uptime:
-    enabled: false
+all_set:
+  metrics:
+    mongodb.cache.operations:
+      enabled: true
+    mongodb.collection.count:
+      enabled: true
+    mongodb.connection.count:
+      enabled: true
+    mongodb.cursor.count:
+      enabled: true
+    mongodb.cursor.timeout.count:
+      enabled: true
+    mongodb.data.size:
+      enabled: true
+    mongodb.database.count:
+      enabled: true
+    mongodb.document.operation.count:
+      enabled: true
+    mongodb.extent.count:
+      enabled: true
+    mongodb.global_lock.time:
+      enabled: true
+    mongodb.health:
+      enabled: true
+    mongodb.index.access.count:
+      enabled: true
+    mongodb.index.count:
+      enabled: true
+    mongodb.index.size:
+      enabled: true
+    mongodb.lock.acquire.count:
+      enabled: true
+    mongodb.lock.acquire.time:
+      enabled: true
+    mongodb.lock.acquire.wait_count:
+      enabled: true
+    mongodb.lock.deadlock.count:
+      enabled: true
+    mongodb.memory.usage:
+      enabled: true
+    mongodb.network.io.receive:
+      enabled: true
+    mongodb.network.io.transmit:
+      enabled: true
+    mongodb.network.request.count:
+      enabled: true
+    mongodb.object.count:
+      enabled: true
+    mongodb.operation.count:
+      enabled: true
+    mongodb.operation.latency.time:
+      enabled: true
+    mongodb.operation.repl.count:
+      enabled: true
+    mongodb.operation.time:
+      enabled: true
+    mongodb.session.count:
+      enabled: true
+    mongodb.storage.size:
+      enabled: true
+    mongodb.uptime:
+      enabled: true
+  resource_attributes:
+    database:
+      enabled: true
+none_set:
+  metrics:
+    mongodb.cache.operations:
+      enabled: false
+    mongodb.collection.count:
+      enabled: false
+    mongodb.connection.count:
+      enabled: false
+    mongodb.cursor.count:
+      enabled: false
+    mongodb.cursor.timeout.count:
+      enabled: false
+    mongodb.data.size:
+      enabled: false
+    mongodb.database.count:
+      enabled: false
+    mongodb.document.operation.count:
+      enabled: false
+    mongodb.extent.count:
+      enabled: false
+    mongodb.global_lock.time:
+      enabled: false
+    mongodb.health:
+      enabled: false
+    mongodb.index.access.count:
+      enabled: false
+    mongodb.index.count:
+      enabled: false
+    mongodb.index.size:
+      enabled: false
+    mongodb.lock.acquire.count:
+      enabled: false
+    mongodb.lock.acquire.time:
+      enabled: false
+    mongodb.lock.acquire.wait_count:
+      enabled: false
+    mongodb.lock.deadlock.count:
+      enabled: false
+    mongodb.memory.usage:
+      enabled: false
+    mongodb.network.io.receive:
+      enabled: false
+    mongodb.network.io.transmit:
+      enabled: false
+    mongodb.network.request.count:
+      enabled: false
+    mongodb.object.count:
+      enabled: false
+    mongodb.operation.count:
+      enabled: false
+    mongodb.operation.latency.time:
+      enabled: false
+    mongodb.operation.repl.count:
+      enabled: false
+    mongodb.operation.time:
+      enabled: false
+    mongodb.session.count:
+      enabled: false
+    mongodb.storage.size:
+      enabled: false
+    mongodb.uptime:
+      enabled: false
+  resource_attributes:
+    database:
+      enabled: false

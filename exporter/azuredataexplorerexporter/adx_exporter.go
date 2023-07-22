@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -22,7 +11,6 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	kustoerrors "github.com/Azure/azure-kusto-go/kusto/data/errors"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -81,7 +69,7 @@ func (e *adxDataProducer) ingestData(b []string) error {
 	return nil
 }
 
-func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs) error {
+func (e *adxDataProducer) logsDataPusher(_ context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	var logsBuffer []string
 	for i := 0; i < resourceLogs.Len(); i++ {
@@ -109,7 +97,7 @@ func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs)
 	return nil
 }
 
-func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace.Traces) error {
+func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.Traces) error {
 	resourceSpans := traceData.ResourceSpans()
 	var spanBuffer []string
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -156,12 +144,12 @@ func (e *adxDataProducer) Close(context.Context) error {
 
 // Create an exporter. The exporter instantiates a client , creates the ingestor and then sends data through it
 
-func newExporter(config *Config, logger *zap.Logger, telemetryDataType int) (*adxDataProducer, error) {
+func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, version string) (*adxDataProducer, error) {
 	tableName, err := getTableName(config, telemetryDataType)
 	if err != nil {
 		return nil, err
 	}
-	metricClient, err := buildAdxClient(config)
+	metricClient, err := buildAdxClient(config, version)
 
 	if err != nil {
 		return nil, err
@@ -216,12 +204,10 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 	return nil
 }
 
-func buildAdxClient(config *Config) (*kusto.Client, error) {
-	authorizer := kusto.Authorization{
-		Config: auth.NewClientCredentialsConfig(config.ApplicationID,
-			string(config.ApplicationKey), config.TenantID),
-	}
-	client, err := kusto.New(config.ClusterURI, authorizer)
+func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
+	kcsb := kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{})
+	client, err := kusto.New(kcsb)
 	return client, err
 }
 
