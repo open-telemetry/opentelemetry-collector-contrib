@@ -1389,7 +1389,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.RetrySettings.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
-	cfg.HeartbeatStartup = true
+	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -1424,7 +1424,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.RetrySettings.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
-	cfg.HeartbeatStartup = true
+	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)

@@ -44,6 +44,9 @@ type HecHeartbeat struct {
 	// heartbeat is not enabled.
 	// A heartbeat is an event sent to _internal index with metadata for the current collector/host.
 	Interval time.Duration `mapstructure:"interval"`
+
+	// Startup is used to send heartbeat events on exporter's startup.
+	Startup bool `mapstructure:"startup"`
 }
 
 // HecTelemetry defines the telemetry configuration for the exporter
@@ -130,9 +133,6 @@ type Config struct {
 
 	// Heartbeat is the configuration to enable heartbeat
 	Heartbeat HecHeartbeat `mapstructure:"heartbeat"`
-
-	// HeartbeatStartup is used to send heartbeat events on exporter's startup
-	HeartbeatStartup bool `mapstructure:"heartbeat_startup"`
 
 	// Telemetry is the configuration for splunk hec exporter telemetry
 	Telemetry HecTelemetry `mapstructure:"telemetry"`

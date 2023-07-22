@@ -52,6 +52,7 @@ type client struct {
 	buildInfo         component.BuildInfo
 	heartbeater       *heartbeater
 	bufferPool        bufferPool
+	exporterName      string
 }
 
 var jsonStreamPool = sync.Pool{
@@ -67,6 +68,7 @@ func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) 
 		telemetrySettings: set.TelemetrySettings,
 		buildInfo:         set.BuildInfo,
 		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression),
+		exporterName:      set.ID.String(),
 	}
 }
 
@@ -624,16 +626,15 @@ func (c *client) start(_ context.Context, host component.Host) (err error) {
 		healthCheckURL, _ := c.config.getURL()
 		healthCheckURL.Path = c.config.HealthPath
 		if err := checkHecHealth(httpClient, healthCheckURL); err != nil {
-			return fmt.Errorf("health check failed: %w", err)
+			return fmt.Errorf("%s: health check failed: %w", c.exporterName, err)
 		}
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
 	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
-	if c.config.HeartbeatStartup {
-		pushLogFn := getPushLogFn(c)
-		if err := pushLogFn(context.Background(), generateHeartbeatLog(c.config.HecToOtelAttrs, c.buildInfo)); err != nil {
-			return fmt.Errorf("heartbeat on startup failed: %w", err)
+	if c.config.Heartbeat.Startup {
+		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
+			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)
 		}
 	}
 	return nil
