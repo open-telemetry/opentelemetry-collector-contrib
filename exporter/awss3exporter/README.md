@@ -20,15 +20,15 @@ This exporter targets to support proto/json format.
 
 The following exporter configuration parameters are supported. 
 
-| Name           | Description                                           | Default  |
-|:---------------|:------------------------------------------------------|----------|
-| `region`       | AWS region.                                           |          |
-| `s3_bucket`    | S3 bucket                                             |          |
-| `s3_prefix`    | prefix for the S3 key (root directory inside bucket). |          |
-| `s3_partition` | time granularity of S3 key: hour or minute            | "minute" |
-| `file_prefix`  | file prefix defined by user                           |          |
-| `marshaler`    | marshaler used to produce output data otlp_json       |          |
-| `endpoint`     | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`               |          |
+| Name           | Description                                                                                          | Default     |
+|:---------------|:-----------------------------------------------------------------------------------------------------|-------------|
+| `region`       | AWS region.                                                                                          | "us-east-1" |
+| `s3_bucket`    | S3 bucket                                                                                            |             |
+| `s3_prefix`    | prefix for the S3 key (root directory inside bucket).                                                |             |
+| `s3_partition` | time granularity of S3 key: hour or minute                                                           | "minute"    |
+| `file_prefix`  | file prefix defined by user                                                                          |             |
+| `marshaler`    | marshaler used to produce output data otlp_json                                                      |             |
+| `endpoint`     | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket` |             |
 
 # Example Configuration
 
