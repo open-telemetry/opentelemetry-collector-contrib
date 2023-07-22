@@ -15,10 +15,11 @@ var distros = map[string]string{
 	"core":     "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol",
 	"contrib":  "https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib",
 	"aws":      "https://github.com/aws-observability/aws-otel-collector",
+	"grafana":  "https://github.com/grafana/agent",
 	"observiq": "https://github.com/observIQ/observiq-otel-collector",
+	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
 	"splunk":   "https://github.com/signalfx/splunk-otel-collector",
 	"sumo":     "https://github.com/SumoLogic/sumologic-otel-collector",
-	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
 }
 
 type Codeowners struct {
