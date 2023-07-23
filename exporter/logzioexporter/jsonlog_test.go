@@ -94,7 +94,6 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		output := convertLogRecordToJSON(test.log, test.scopeName, test.resource)
 		require.Equal(t, output, test.expected)
 	}
-
 }
 
 func TestSetTimeStamp(t *testing.T) {

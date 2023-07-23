@@ -62,7 +62,6 @@ func fillLogOne(log plog.LogRecord) {
 	attNestedMap := attMap.PutEmptyMap("nested")
 	attNestedMap.PutStr("string", "v1")
 	attNestedMap.PutDouble("number", 499)
-
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -70,7 +69,6 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-
 	attrs := log.Attributes()
 	attrs.PutStr("customer", "acme")
 	attrs.PutDouble("number", 64)
@@ -78,11 +76,11 @@ func fillLogTwo(log plog.LogRecord) {
 	attrs.PutStr("env", "dev")
 	log.Body().SetStr("something happened")
 }
+
 func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-
 	attrs := log.Attributes()
 	attrs.PutStr("customer", "acme")
 	attrs.PutDouble("number", 64)
@@ -237,13 +235,11 @@ func TestNullExporterConfig(tester *testing.T) {
 
 func gUnzipData(data []byte) (resData []byte, err error) {
 	b := bytes.NewBuffer(data)
-
 	var r io.Reader
 	r, err = gzip.NewReader(b)
 	if err != nil {
 		return
 	}
-
 	var resB bytes.Buffer
 	_, err = resB.ReadFrom(r)
 	if err != nil {
@@ -313,5 +309,4 @@ func TestPushLogsData(tester *testing.T) {
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &jsonLog))
 	assert.Equal(tester, testHost, jsonLog["host.name"])
 	assert.Equal(tester, testService, jsonLog["service.name"])
-
 }
