@@ -9,7 +9,7 @@ change_type: 'enhancement'
 component: splunkhecexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add heartbeat check while startup. This is different than the healtcheck_startup, as the latter doesn't take token or index into account.
+note: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healtcheck_startup, as the latter doesn't take token or index into account.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [24411]

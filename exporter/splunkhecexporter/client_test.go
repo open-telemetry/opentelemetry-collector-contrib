@@ -1429,7 +1429,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
-	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()), "heartbeat on startup failed: HTTP 500 \"Internal Server Error\"")
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 type badJSON struct {
