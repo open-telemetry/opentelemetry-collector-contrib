@@ -125,6 +125,7 @@ linters-settings:
 
   exhaustive:
     explicit-exhaustive-switch: true
+    ignore-enum-members: "pmetric.MetricTypeEmpty"
 
 linters:
   enable:
