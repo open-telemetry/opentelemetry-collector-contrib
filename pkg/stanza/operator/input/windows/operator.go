@@ -197,12 +197,6 @@ func (e *Input) read(ctx context.Context) int {
 // processEvent will process and send an event retrieved from windows event log.
 func (e *Input) processEvent(ctx context.Context, event Event) {
 	if e.raw {
-		rawEvent, err := event.RenderRaw(e.buffer)
-		if err != nil {
-			e.Errorf("Failed to render raw event: %s", err)
-			return
-		}
-
 		if len(e.excludeProviders) > 0 {
 			simpleEvent, err := event.RenderSimple(e.buffer)
 			if err != nil {
@@ -212,10 +206,15 @@ func (e *Input) processEvent(ctx context.Context, event Event) {
 
 			for _, excludeProvider := range e.excludeProviders {
 				if simpleEvent.Provider.Name == excludeProvider {
-					e.Debug("Stopped processing event with excluded provider ", excludeProvider)
 					return
 				}
 			}
+		}
+
+		rawEvent, err := event.RenderRaw(e.buffer)
+		if err != nil {
+			e.Errorf("Failed to render raw event: %s", err)
+			return
 		}
 		e.sendEventRaw(ctx, rawEvent)
 		return
@@ -226,12 +225,9 @@ func (e *Input) processEvent(ctx context.Context, event Event) {
 		return
 	}
 
-	if len(e.excludeProviders) > 0 {
-		for _, excludeProvider := range e.excludeProviders {
-			if simpleEvent.Provider.Name == excludeProvider {
-				e.Debug("Stopped processing event with excluded provider ", excludeProvider)
-				return
-			}
+	for _, excludeProvider := range e.excludeProviders {
+		if simpleEvent.Provider.Name == excludeProvider {
+			return
 		}
 	}
 
