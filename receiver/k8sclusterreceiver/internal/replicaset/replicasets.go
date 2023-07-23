@@ -4,15 +4,17 @@
 package replicaset // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 
 import (
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replica"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset/internal/metadata"
 )
 
 // Transform transforms the replica set to remove the fields that we don't use to reduce RAM utilization.
@@ -29,33 +31,18 @@ func Transform(rs *appsv1.ReplicaSet) *appsv1.ReplicaSet {
 	}
 }
 
-func GetMetrics(rs *appsv1.ReplicaSet) []*agentmetricspb.ExportMetricsServiceRequest {
-	if rs.Spec.Replicas == nil {
-		return nil
+func GetMetrics(set receiver.CreateSettings, rs *appsv1.ReplicaSet) pmetric.Metrics {
+
+	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	if rs.Spec.Replicas != nil {
+		mbphase.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))
+		mbphase.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas))
 	}
 
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResource(rs),
-			Metrics: replica.GetMetrics(
-				"replicaset",
-				*rs.Spec.Replicas,
-				rs.Status.AvailableReplicas,
-			),
-		},
-	}
+	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(rs.Namespace), imetadataphase.WithK8sReplicasetName(rs.Name), imetadataphase.WithK8sReplicasetUID(string(rs.UID)), imetadataphase.WithOpencensusResourcetype("k8s"))
 
-}
-
-func getResource(rs *appsv1.ReplicaSet) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			conventions.AttributeK8SReplicaSetUID:  string(rs.UID),
-			conventions.AttributeK8SReplicaSetName: rs.Name,
-			conventions.AttributeK8SNamespaceName:  rs.Namespace,
-		},
-	}
+	return metrics
 }
 
 func GetMetadata(rs *appsv1.ReplicaSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

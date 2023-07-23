@@ -32,9 +32,10 @@ type GMPConfig struct {
 type MetricConfig struct {
 	// Prefix configures the prefix of metrics sent to GoogleManagedPrometheus.  Defaults to prometheus.googleapis.com.
 	// Changing this prefix is not recommended, as it may cause metrics to not be queryable with promql in the Cloud Monitoring UI.
-	Prefix             string                 `mapstructure:"prefix"`
-	ClientConfig       collector.ClientConfig `mapstructure:",squash"`
-	ExtraMetricsConfig ExtraMetricsConfig     `mapstructure:"extra_metrics_config"`
+	Prefix             string                     `mapstructure:"prefix"`
+	ClientConfig       collector.ClientConfig     `mapstructure:",squash"`
+	ExtraMetricsConfig ExtraMetricsConfig         `mapstructure:"extra_metrics_config"`
+	ResourceFilters    []collector.ResourceFilter `mapstructure:"resource_filters"`
 }
 
 // ExtraMetricsConfig controls the inclusion of additional metrics.
@@ -64,6 +65,7 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	cfg.ProjectID = c.ProjectID
 	cfg.UserAgent = c.UserAgent
 	cfg.MetricConfig.ClientConfig = c.MetricConfig.ClientConfig
+	cfg.MetricConfig.ResourceFilters = c.MetricConfig.ResourceFilters
 
 	// add target_info and scope_info metrics
 	extraMetricsFuncs := make([]func(m pmetric.Metrics), 0)

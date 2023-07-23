@@ -101,6 +101,42 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
 
+## Setting resource attributes as metric labels
+
+By default, resource attributes are added to a special metric called `target_info`. To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
+
+```promql
+app_ads_ad_requests_total * on (job, instance) group_left target_info{k8s_namespace_name="my-namespace"}
+```
+
+Or to group by a particular attribute (for ex. `k8s_namespace_name`):
+
+```promql
+sum by (k8s_namespace_name) (app_ads_ad_requests_total * on (job, instance) group_left(k8s_namespace_name) target_info)
+```
+
+This is not a common pattern, and we recommend copying the most common resource attributes into metric labels. You can do this through the transform processor:
+
+```yaml
+processor:
+  transform:
+    metric_statements:
+      - context: metric
+        statements:
+        - set(attributes["namespace"], resource.attributes["k8s_namespace_name"])
+        - set(attributes["container"], resource.attributes["k8s.container.name"])
+        - set(attributes["pod"], resource.attributes["k8s.pod.name"])
+        - set(attributes["cluster"], resource.attributes["k8s.cluster.name"])
+```
+
+After this, grouping or selecting becomes as simple as:
+
+```promql
+app_ads_ad_requests_total{namespace="my-namespace"}
+
+sum by (namespace) (app_ads_ad_requests_total)
+```
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
