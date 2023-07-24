@@ -6,6 +6,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 func (p *Parser[K]) evaluateMathExpression(expr *mathExpression) (Getter[K], error) {
@@ -98,12 +99,56 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 					default:
 						return nil, fmt.Errorf("%v must be int64 or float64", y)
 					}
+				case time.Time:
+					return performOpTimeDuration(x, y, op)
+				case time.Duration:
+					return performOpTimeDuration(x, y, op)
 				default:
-					return nil, fmt.Errorf("%v must be int64 or float64", x)
+					return nil, fmt.Errorf("%v must be int64, float64, time.Time or time.Duration", x)
 				}
 			},
 		},
 	}
+}
+
+func performOpTimeDuration(x any, y any, op mathOp) (any, error) {
+	switch op {
+	case ADD:
+		if xTime, ok := any(x).(time.Time); ok {
+			if yDur, ok := any(y).(time.Duration); ok {
+				result := xTime.Add(yDur)
+				return result, nil
+			}
+			return nil, fmt.Errorf("time.Time must be added to time.Duration; found %v instead", y)
+		}
+		if xDur, ok := any(x).(time.Duration); ok {
+			if yDur, ok := any(y).(time.Duration); ok {
+				result := xDur + yDur
+				return result, nil
+			}
+			return nil, fmt.Errorf("time.Duration must be added to time.Duration; found %v instead", y)
+		}
+	case SUB:
+		if xTime, ok := any(x).(time.Time); ok {
+			if yTime, ok := any(y).(time.Time); ok {
+				result := xTime.Sub(yTime)
+				return result, nil
+			}
+			if yDur, ok := any(y).(time.Duration); ok {
+				result := xTime.Add(-1 * yDur)
+				return result, nil
+			}
+			return nil, fmt.Errorf("time.Time must be added to time.Time or time.Duration; found %v instead", y)
+		}
+		if xDur, ok := any(x).(time.Duration); ok {
+			if yDur, ok := any(y).(time.Duration); ok {
+				result := xDur + yDur
+				return result, nil
+			}
+			return nil, fmt.Errorf("time.Duration must be added to time.Duration; found %v instead", y)
+		}
+	}
+	return nil, fmt.Errorf("only addition and subtraction supported for time.Time and time.Duration")
 }
 
 func performOp[N int64 | float64](x N, y N, op mathOp) (N, error) {
