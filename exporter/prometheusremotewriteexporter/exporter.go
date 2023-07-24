@@ -15,11 +15,9 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -93,19 +91,10 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	retryClient := retryablehttp.NewClient()
-	retryClient.HTTPClient, err = prwe.clientSettings.ToClient(host, prwe.settings)
+	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
 		return err
 	}
-
-	// Configure retry settings
-	// Default settings reference - https://github.com/hashicorp/go-retryablehttp/blob/571a88bc9c3b7c64575f0e9b0f646af1510f2c76/client.go#L51-L53
-	retryClient.RetryWaitMin = 100 * time.Millisecond
-	retryClient.RetryWaitMax = 1 * time.Second
-	retryClient.RetryMax = 3
-
-	prwe.client = retryClient.HTTPClient
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
 

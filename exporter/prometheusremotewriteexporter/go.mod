@@ -7,7 +7,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.81.0
@@ -33,7 +32,6 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
