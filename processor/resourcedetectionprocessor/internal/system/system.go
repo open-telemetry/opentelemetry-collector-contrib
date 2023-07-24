@@ -34,10 +34,10 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider           system.Provider
-	logger             *zap.Logger
-	hostnameSources    []string
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider        system.Provider
+	logger          *zap.Logger
+	hostnameSources []string
+	rb              *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
@@ -47,54 +47,47 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 		cfg.HostnameSources = []string{"dns", "os"}
 	}
 
-	return &Detector{provider: system.NewProvider(), logger: p.Logger, hostnameSources: cfg.HostnameSources, resourceAttributes: cfg.ResourceAttributes}, nil
+	return &Detector{
+		provider:        system.NewProvider(),
+		logger:          p.Logger,
+		hostnameSources: cfg.HostnameSources,
+		rb:              metadata.NewResourceBuilder(cfg.ResourceAttributes),
+	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	var hostname string
 
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
-
 	osType, err := d.provider.OSType()
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS type: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	hostID, err := d.provider.HostID(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting host ID: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host ID: %w", err)
 	}
 
 	hostArch, err := d.provider.HostArch()
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting host architecture: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
 	}
 
 	for _, source := range d.hostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
 		if err == nil {
-			if d.resourceAttributes.HostName.Enabled {
-				attrs.PutStr(conventions.AttributeHostName, hostname)
-			}
-			if d.resourceAttributes.OsType.Enabled {
-				attrs.PutStr(conventions.AttributeOSType, osType)
-			}
-			if d.resourceAttributes.HostID.Enabled {
-				attrs.PutStr(conventions.AttributeHostID, hostID)
-			}
-			if d.resourceAttributes.HostArch.Enabled {
-				attrs.PutStr(conventions.AttributeHostArch, hostArch)
-			}
-
-			return res, conventions.SchemaURL, nil
+			d.rb.SetHostName(hostname)
+			d.rb.SetOsType(osType)
+			d.rb.SetHostID(hostID)
+			d.rb.SetHostArch(hostArch)
+			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())
 	}
 
-	return res, "", errors.New("all hostname sources failed to get hostname")
+	return pcommon.NewResource(), "", errors.New("all hostname sources failed to get hostname")
 }
 
 // getHostname returns OS hostname

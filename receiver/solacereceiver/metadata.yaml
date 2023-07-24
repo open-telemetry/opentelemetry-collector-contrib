@@ -5,4 +5,5 @@ status:
   stability:
     beta: [traces]
   distributions: [contrib, sumo]
-  
+  codeowners:
+    active: [djaglowski, mcardy]

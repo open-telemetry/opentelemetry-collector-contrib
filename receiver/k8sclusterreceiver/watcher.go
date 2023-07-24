@@ -13,8 +13,11 @@ import (
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
@@ -40,11 +43,13 @@ type resourceWatcher struct {
 	informerFactories   []sharedInformer
 	dataCollector       *collection.DataCollector
 	logger              *zap.Logger
+	sampledLogger       *zap.Logger
 	metadataConsumers   []metadataConsumer
 	initialTimeout      time.Duration
 	initialSyncDone     *atomic.Bool
 	initialSyncTimedOut *atomic.Bool
 	config              *Config
+	entityLogConsumer   consumer.Logs
 
 	// For mocking.
 	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
@@ -55,8 +60,18 @@ type metadataConsumer func(metadata []*experimentalmetricmetadata.MetadataUpdate
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(set receiver.CreateSettings, cfg *Config) *resourceWatcher {
+	// Create a sampled logger for error messages.
+	core := zapcore.NewSamplerWithOptions(
+		set.Logger.Core(),
+		1*time.Second,
+		1,    // 1 per second initially
+		1000, // then 1/1000 of messages
+	)
+	sampledLogger := zap.New(core)
+
 	return &resourceWatcher{
 		logger:                   set.Logger,
+		sampledLogger:            sampledLogger,
 		dataCollector:            collection.NewDataCollector(set, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
 		initialSyncDone:          &atomic.Bool{},
 		initialSyncTimedOut:      &atomic.Bool{},
@@ -90,7 +105,7 @@ func (rw *resourceWatcher) initialize() error {
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
-	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, 0)
+	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, rw.config.MetadataCollectionInterval)
 
 	// Map of supported group version kinds by name of a kind.
 	// If none of the group versions are supported by k8s server for a specific kind,
@@ -237,7 +252,7 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 	rw.dataCollector.SyncMetrics(obj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
-	if len(rw.metadataConsumers) == 0 {
+	if !rw.hasDestination() {
 		return
 	}
 
@@ -250,13 +265,17 @@ func (rw *resourceWatcher) onDelete(obj interface{}) {
 	rw.dataCollector.RemoveFromMetricsStore(obj)
 }
 
+func (rw *resourceWatcher) hasDestination() bool {
+	return len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
+}
+
 func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 	rw.waitForInitialInformerSync()
 	// Sync metrics from the new object
 	rw.dataCollector.SyncMetrics(newObj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
-	if len(rw.metadataConsumers) == 0 {
+	if !rw.hasDestination() {
 		return
 	}
 
@@ -325,12 +344,37 @@ func validateMetadataExporters(metadataExporters map[string]bool, exporters map[
 }
 
 func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) {
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+
 	metadataUpdate := metadata.GetMetadataUpdate(oldMetadata, newMetadata)
-	if len(metadataUpdate) == 0 {
-		return
+	if len(metadataUpdate) != 0 {
+		for _, consume := range rw.metadataConsumers {
+			_ = consume(metadataUpdate)
+		}
 	}
 
-	for _, consume := range rw.metadataConsumers {
-		_ = consume(metadataUpdate)
+	if rw.entityLogConsumer != nil {
+		// Represent metadata update as entity events.
+		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp)
+
+		// Convert entity events to log representation.
+		logs := entityEvents.ConvertAndMoveToLogs()
+
+		if logs.LogRecordCount() != 0 {
+			err := rw.entityLogConsumer.ConsumeLogs(context.Background(), logs)
+			if err != nil {
+				rw.sampledLogger.Error("Error sending entity events to the consumer", zap.Error(err))
+
+				// Note: receiver contract says that we need to retry sending if the
+				// returned error is not Permanent. However, we are not doing it here.
+				// Instead, we rely on the fact the metadata is collected periodically
+				// and the entity events will be delivered on the next cycle. This is
+				// fine because we deliver cumulative entity state.
+				// This allows us to avoid stressing the Collector or its destination
+				// unnecessarily (typically non-Permanent errors happen in stressed conditions).
+				// The periodic collection will be implemented later, see
+				// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24413
+			}
+		}
 	}
 }

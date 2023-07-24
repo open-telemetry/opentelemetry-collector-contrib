@@ -20,6 +20,7 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/exceptions
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -56,6 +57,7 @@ body:
       - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
+      - exporter/opensearch
       - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
@@ -82,6 +84,7 @@ body:
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
+      - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver

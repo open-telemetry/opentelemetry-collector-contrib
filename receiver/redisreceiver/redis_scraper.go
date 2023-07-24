@@ -35,7 +35,7 @@ const redisMaxDbs = 16 // Maximum possible number of redis databases
 func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
-		Password: cfg.Password,
+		Password: string(cfg.Password),
 		Network:  cfg.Transport,
 	}
 
