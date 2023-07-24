@@ -5,3 +5,5 @@ status:
   stability:
     development: [metrics]
   distributions:
+  codeowners:
+    active: [shalper2, MovieStoreGuy]

@@ -6,3 +6,5 @@ status:
     deprecated: [traces]
   distributions: [contrib, sumo]
   warnings: []
+  codeowners:
+    active: [jpkrohling, mapno]
