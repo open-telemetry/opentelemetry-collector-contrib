@@ -117,6 +117,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 }
 
 func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg) (sampling.PolicyEvaluator, error) {
+	settings.Logger = settings.Logger.With(zap.Any("policy", cfg.Type))
+
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(settings), nil

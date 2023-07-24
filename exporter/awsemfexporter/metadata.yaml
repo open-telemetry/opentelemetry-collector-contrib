@@ -5,3 +5,5 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, aws, observiq]
+  codeowners:
+    active: [Aneurysm9, shaochengwang, mxiamxia]
