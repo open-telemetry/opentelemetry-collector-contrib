@@ -25,12 +25,12 @@ import (
 )
 
 var (
-	errNilLogsConsumer      = errors.New("missing a logs consumer")
-	errMissingEndpoint      = errors.New("missing a receiver endpoint")
-	errInvalidRequestMethod = errors.New("invalid method. Valid method is POST")
-	errInvalidEncodingType  = errors.New("invalid encoding type")
-	errEmptyResponseBody    = errors.New("request body content length is zero")
-	errMissingRequiredHeader    = errors.New("request was missing required header or incorrect header value")	
+	errNilLogsConsumer       = errors.New("missing a logs consumer")
+	errMissingEndpoint       = errors.New("missing a receiver endpoint")
+	errInvalidRequestMethod  = errors.New("invalid method. Valid method is POST")
+	errInvalidEncodingType   = errors.New("invalid encoding type")
+	errEmptyResponseBody     = errors.New("request body content length is zero")
+	errMissingRequiredHeader = errors.New("request was missing required header or incorrect header value")
 )
 
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
@@ -158,7 +158,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		requiredHeaderValue := r.Header.Get(er.cfg.RequiredHeader.Key)
 		if requiredHeaderValue != er.cfg.RequiredHeader.Value {
 			er.failBadReq(ctx, w, http.StatusUnauthorized, errMissingRequiredHeader)
-		return
+			return
 		}
 	}
 

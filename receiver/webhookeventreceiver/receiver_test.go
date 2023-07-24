@@ -48,7 +48,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 				WriteTimeout: "210",
 				Path:         "/event",
 				HealthPath:   "/health",
-				RequiredHeader:     RequiredHeader{
+				RequiredHeader: RequiredHeader{
 					Key:   "key-present",
 					Value: "value-present",
 				},
@@ -152,7 +152,7 @@ func TestFailedReq(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0"
 	headerCfg := createDefaultConfig().(*Config)
-	headerCfg.Endpoint = "localhost:0" 
+	headerCfg.Endpoint = "localhost:0"
 	headerCfg.RequiredHeader.Key = "key-present"
 	headerCfg.RequiredHeader.Value = "value-present"
 

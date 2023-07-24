@@ -62,12 +62,12 @@ func TestValidateConfig(t *testing.T) {
 		},
 		{
 			desc:   "RequiredHeader does not contain both a key and a value",
-			expect: errs,
+			expect: errRequiredHeader,
 			conf: Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "",
 				},
-				RequiredHeader:     RequiredHeader{
+				RequiredHeader: RequiredHeader{
 					Key:   "key-present",
 					Value: "",
 				},
@@ -75,12 +75,12 @@ func TestValidateConfig(t *testing.T) {
 		},
 		{
 			desc:   "RequiredHeader does not contain both a key and a value",
-			expect: errs,
+			expect: errRequiredHeader,
 			conf: Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "",
 				},
-				RequiredHeader:     RequiredHeader{
+				RequiredHeader: RequiredHeader{
 					Key:   "",
 					Value: "value-present",
 				},
@@ -95,6 +95,10 @@ func TestValidateConfig(t *testing.T) {
 				},
 				WriteTimeout: "14s",
 				ReadTimeout:  "15s",
+				RequiredHeader: RequiredHeader{
+					Key:   "",
+					Value: "value-present",
+				},
 			},
 		},
 	}
@@ -126,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 		WriteTimeout: "500ms",
 		Path:         "some/path",
 		HealthPath:   "health/path",
-		RequiredHeader:     RequiredHeader{
+		RequiredHeader: RequiredHeader{
 			Key:   "key-present",
 			Value: "value-present",
 		},
