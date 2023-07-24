@@ -1,0 +1,26 @@
+k8slog/default:
+k8slog/ds-stdout:
+  discovery:
+    mode: daemonset-stdout
+    host_root: /host_root
+    k8s_api:
+      auth_type: serviceAccount
+    runtime_apis:
+      - type: docker
+        addr: unix:///host_root/var/run/docker.sock
+        containerd_addr: unix:///host_root/run/containerd/containerd.sock
+      - type: cri
+        addr: unix:///host_root/run/containerd/containerd.sock
+        containerd_state: /host_root/run/containerd
+    filter:
+      - annotations:
+          - op: exists
+            key: io.opentelemetry.collectlog
+        namespaces:
+          - op: not-equals
+            value: kube-system
+  extract:
+    metadata:
+      - k8s.pod.name
+      - k8s.pod.uid
+      - k8s.container.name
