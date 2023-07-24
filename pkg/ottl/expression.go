@@ -7,10 +7,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
@@ -246,26 +246,53 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 	}
 }
 
+// FunctionGetter is a Getter that must return an ExprFunc.
 type FunctionGetter[K any] interface {
-	Get(ctx context.Context, tCtx K) (interface{}, error)
-	Caller(funcName interface{}, factoryMap map[string]Factory[K], params string) (Getter[K], error)
+	Get(ctx context.Context, iArgs Arguments) (Expr[K], error)
 }
 
+// StandardFunctionGetter is a basic implementation of FunctionGetter
 type StandardFunctionGetter[K any] struct {
-	Getter ExprFunc[K]
+	fCtx FunctionContext
+	fact Factory[K]
 }
 
-func (g StandardFunctionGetter[K]) Get(ctx context.Context, tctx K) (interface{}, error) {
-	return g.Getter(ctx, tctx)
-}
-
-func (g StandardFunctionGetter[K]) Caller(funcName interface{}, factoryMap map[string]Factory[K], params string) (Getter[K], error) {
-	parser, err := NewParser(factoryMap, nil, componenttest.NewNopTelemetrySettings())
-	if err != nil {
-		return nil, err
+// Get retrieves an ExprFunc value.
+// If the value is not an ExprFunc a new Error is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardFunctionGetter[K]) Get(_ context.Context, iArgs Arguments) (Expr[K], error) {
+	if g.fact == nil {
+		return Expr[K]{}, fmt.Errorf("undefined function")
 	}
-	statement := funcName.(string) + "(\"" + params + "\")"
-	return parser.ConverterGetter(statement)
+	fArgs := g.fact.CreateDefaultArguments()
+	fArgsVal := reflect.ValueOf(fArgs).Elem()
+	iArgsVal := reflect.ValueOf(iArgs).Elem()
+	if fArgsVal.NumField() != iArgsVal.NumField() {
+		return Expr[K]{}, fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", fArgsVal.NumField(), iArgsVal.NumField())
+	}
+	for i := 0; i < fArgsVal.NumField(); i++ {
+		field := iArgsVal.Field(i)
+		fieldTag := fArgsVal.Type().Field(i).Tag.Get("ottlarg")
+		if fieldTag == "" {
+			return Expr[K]{}, fmt.Errorf("no `ottlarg` struct tag on Arguments field %q", fArgsVal.Type().Field(i).Name)
+		}
+		argNum, err := strconv.Atoi(fieldTag)
+		if err != nil {
+			return Expr[K]{}, fmt.Errorf("ottlarg struct tag on field %q is not a valid integer: %w", fArgsVal.Type().Field(i).Name, err)
+		}
+		if argNum < 0 || argNum >= iArgsVal.NumField() {
+			return Expr[K]{}, fmt.Errorf("ottlarg struct tag on field %q has value %d, but must be between 0 and %d", fArgsVal.Type().Field(i).Name, argNum, iArgsVal.NumField())
+		}
+		if field.Type() != fArgsVal.Field(i).Type() {
+			return Expr[K]{}, fmt.Errorf("incorrect type for argument %d. Expected: %v Received: %v", i, fArgsVal.Field(i).Type(), field.Type())
+		}
+		fArgsVal.Field(i).Set(field)
+	}
+	fn, err := g.fact.CreateFunction(g.fCtx, fArgs)
+	if err != nil {
+		return Expr[K]{}, fmt.Errorf("couldn't create function: %w", err)
+	}
+	return Expr[K]{exprFunc: fn}, nil
 }
 
 // PMapGetter is a Getter that must return a pcommon.Map.
@@ -504,8 +531,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	if val.Enum != nil {
 		enum, err := p.enumParser(val.Enum)
 		if err != nil {
-			// This is a hack, which assumes a literal function name when the enum parsing fails
-			return &literal[K]{value: string(*val.Enum)}, nil
+			return nil, err
 		}
 		return &literal[K]{value: int64(*enum)}, nil
 	}

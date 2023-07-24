@@ -676,82 +676,67 @@ func Test_StandardStringGetter(t *testing.T) {
 	}
 }
 
-func Test_StandardFunctionGetter(t *testing.T) {
-	tests := []struct {
-		name             string
-		getter           StandardFunctionGetter[any]
-		want             interface{}
-		valid            bool
-		expectedErrorMsg string
-	}{
-		{
-			name: "function type",
-			getter: StandardFunctionGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
-					return "SHA256", nil
-				},
-			},
-			want:  "SHA256",
-			valid: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			function, err := tt.getter.Get(context.Background(), nil)
-			if tt.valid {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, function)
-			} else {
-				assert.IsType(t, TypeError(""), err)
-				assert.EqualError(t, err, tt.expectedErrorMsg)
-			}
-		})
-	}
-}
-
-func Test_FunctionGetter_Call(t *testing.T) {
-	factoryMap := CreateFactoryMap(
-		createFactory(
+func Test_FunctionGetter(t *testing.T) {
+	functions := CreateFactoryMap(
+		createFactory[any](
 			"SHA256",
-			&getterArguments{},
-			functionWithGetter,
+			&stringGetterArguments{},
+			functionWithStringGetter,
 		),
 	)
+	type EditorArguments struct {
+		Replacement StringGetter[any]
+		Function    FunctionGetter[any]
+	}
+	type FuncArgs struct {
+		Input StringGetter[any]
+	}
 	tests := []struct {
 		name             string
-		getter           StandardFunctionGetter[any]
+		getter           StringGetter[any]
+		function         FunctionGetter[any]
 		want             interface{}
-		params           string
 		valid            bool
 		expectedErrorMsg string
 	}{
 		{
-			name: "function type",
-			getter: StandardFunctionGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
-					return "SHA256", nil
+			name: "function getter",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
 				},
 			},
-			want:   "anything",
-			params: "test",
-			valid:  true,
+			function: StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA256"]},
+			want:     "anything",
+			valid:    true,
+		},
+		{
+			name: "function getter nil",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA250"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "undefined function",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			function, err := tt.getter.Get(context.Background(), nil)
-			assert.NoError(t, err)
-			hashgetter, err := tt.getter.Caller(function, factoryMap, tt.params)
-			assert.NoError(t, err)
-			hashString, err := hashgetter.Get(context.Background(), nil)
-			assert.NoError(t, err)
+			editorArgs := EditorArguments{
+				Replacement: tt.getter,
+				Function:    tt.function,
+			}
+			fn, err := editorArgs.Function.Get(context.Background(), &FuncArgs{Input: editorArgs.Replacement})
 			if tt.valid {
+				var result interface{}
+				result, err = fn.Eval(context.Background(), nil)
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, hashString)
+				assert.Equal(t, tt.want, result.(string))
 			} else {
-				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})

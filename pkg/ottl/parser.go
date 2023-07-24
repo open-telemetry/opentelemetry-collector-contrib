@@ -141,17 +141,6 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 	}, nil
 }
 
-func (p *Parser[K]) ConverterGetter(statement string) (Getter[K], error) {
-	parsed, err := parseStatement(statement)
-	if err != nil {
-		if parsed.Converter != nil {
-			return p.newGetterFromConverter(*parsed.Converter)
-		}
-		return nil, err
-	}
-	return p.newGetterFromConverter(*parsed.Converter)
-}
-
 var parser = newParser[parsedStatement]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
@@ -162,9 +151,6 @@ func parseStatement(raw string) (*parsedStatement, error) {
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
-		if parsed.Converter != nil {
-			return parsed, err
-		}
 		return nil, err
 	}
 
