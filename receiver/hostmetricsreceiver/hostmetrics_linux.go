@@ -8,6 +8,7 @@ package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/shirou/gopsutil/v3/common"
 )
