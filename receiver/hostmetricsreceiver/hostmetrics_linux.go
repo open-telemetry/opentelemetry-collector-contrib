@@ -54,7 +54,7 @@ func setGoPsutilEnvVars(rootPath string, env environment) common.EnvMap {
 		if ok {
 			continue // don't override if existing env var is set
 		}
-		m[envVarKey] = defaultValue
+		m[envVarKey] = filepath.Join(rootPath, defaultValue)
 	}
 	return m
 }
