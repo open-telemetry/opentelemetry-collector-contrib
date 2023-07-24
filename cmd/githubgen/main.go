@@ -139,7 +139,7 @@ func run(folder string) error {
 			key := filepath.Dir(path) + "/"
 			components[key] = m
 			foldersList = append(foldersList, key)
-			for stability, _ := range m.Status.Stability {
+			for stability := range m.Status.Stability {
 				if stability == "unmaintained" {
 					// do not account for unmaintained status to change the max length of the component line.
 					return nil
@@ -164,7 +164,7 @@ func run(folder string) error {
 LOOP:
 	for _, key := range foldersList {
 		m := components[key]
-		for stability, _ := range m.Status.Stability {
+		for stability := range m.Status.Stability {
 			if stability == "unmaintained" {
 				unmaintainedList += key + "\n"
 				unmaintainedCodeowners += fmt.Sprintf("%s%s @open-telemetry/collector-contrib-approvers \n", key, strings.Repeat(" ", maxLength-len(key)))
