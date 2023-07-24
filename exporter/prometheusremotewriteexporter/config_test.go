@@ -76,6 +76,9 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: &TargetInfo{
 					Enabled: true,
 				},
+				ScopeInfo: &ScopeInfo{
+					Enabled: false,
+				},
 				CreatedMetric: &CreatedMetric{Enabled: true},
 			},
 		},

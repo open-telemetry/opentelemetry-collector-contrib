@@ -302,9 +302,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_with_empty_scope",
 			pcommon.NewResource(),
-			func() pcommon.InstrumentationScope {
-				return pcommon.NewInstrumentationScope()
-			}(),
+			pcommon.NewInstrumentationScope(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},

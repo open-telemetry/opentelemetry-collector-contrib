@@ -604,9 +604,9 @@ func addScopeTargetInfo(
 	if ok {
 		serviceName.CopyTo(resCopy.Attributes().PutEmpty(conventions.AttributeServiceName))
 	}
-	serviceInstanceId, ok := resource.Attributes().Get(conventions.AttributeServiceInstanceID)
+	serviceInstanceID, ok := resource.Attributes().Get(conventions.AttributeServiceInstanceID)
 	if ok {
-		serviceInstanceId.CopyTo(resCopy.Attributes().PutEmpty(conventions.AttributeServiceInstanceID))
+		serviceInstanceID.CopyTo(resCopy.Attributes().PutEmpty(conventions.AttributeServiceInstanceID))
 	}
 
 	name := scopeMetricName

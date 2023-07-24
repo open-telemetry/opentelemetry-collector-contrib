@@ -41,6 +41,9 @@ func Test_NewPRWExporter(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
+		ScopeInfo: &ScopeInfo{
+			Enabled: false,
+		},
 		CreatedMetric: &CreatedMetric{
 			Enabled: false,
 		},
@@ -135,6 +138,9 @@ func Test_Start(t *testing.T) {
 		ExternalLabels:  map[string]string{},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		ScopeInfo: &ScopeInfo{
+			Enabled: false,
 		},
 		CreatedMetric: &CreatedMetric{
 			Enabled: false,
@@ -678,6 +684,9 @@ func Test_PushMetrics(t *testing.T) {
 						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: &TargetInfo{
 							Enabled: true,
+						},
+						ScopeInfo: &ScopeInfo{
+							Enabled: false,
 						},
 						CreatedMetric: &CreatedMetric{
 							Enabled: true,
