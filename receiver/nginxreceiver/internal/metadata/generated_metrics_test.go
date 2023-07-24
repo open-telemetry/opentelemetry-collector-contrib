@@ -60,7 +60,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeState(1))
+			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -72,7 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeState(1))
+			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 
 			metrics := mb.Emit()
 
@@ -129,7 +129,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "nginx.connections_handled":
 					assert.False(t, validatedMetrics["nginx.connections_handled"], "Found a duplicate in the metrics slice: nginx.connections_handled")
 					validatedMetrics["nginx.connections_handled"] = true
@@ -172,7 +172,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				}
 			}
 		})

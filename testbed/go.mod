@@ -31,6 +31,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.81.0
 	go.opentelemetry.io/collector/component v0.81.0
+	go.opentelemetry.io/collector/config/configcompression v0.81.0
 	go.opentelemetry.io/collector/config/configgrpc v0.81.0
 	go.opentelemetry.io/collector/config/confighttp v0.81.0
 	go.opentelemetry.io/collector/config/confignet v0.81.0
@@ -69,13 +70,13 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.299 // indirect
+	github.com/aws/aws-sdk-go v1.44.301 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
@@ -119,7 +120,7 @@ require (
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
-	github.com/googleapis/gax-go/v2 v2.11.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/gophercloud/gophercloud v1.2.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
@@ -211,7 +212,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.81.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.81.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.81.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.81.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.81.0 // indirect
@@ -241,11 +241,11 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.11.0 // indirect
 	gonum.org/v1/gonum v0.13.0 // indirect
-	google.golang.org/api v0.129.0 // indirect
+	google.golang.org/api v0.131.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529 // indirect
+	google.golang.org/genproto v0.0.0-20230629202037-9506855d4529 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230629202037-9506855d4529 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230706204954-ccb25ca9f130 // indirect
 	google.golang.org/grpc v1.56.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

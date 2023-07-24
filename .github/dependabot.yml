@@ -48,6 +48,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/connector/exceptionsconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/connector/routingconnector"
     schedule:
       interval: "weekly"
@@ -229,6 +234,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/opencensusexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/opensearchexporter"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1089,16 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/sqlqueryreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/sqlserverreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/sshcheckreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

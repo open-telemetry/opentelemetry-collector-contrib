@@ -39,7 +39,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
 
 	// Setup k8s resources.
 	numPods := 2
@@ -87,7 +87,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt)
 
 	createPods(t, client, 1)
 
@@ -110,7 +110,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
 
 	numPods := 1000
 	numQuotas := 2
@@ -145,10 +145,12 @@ func TestReceiverWithMetadata(t *testing.T) {
 	}()
 
 	client := newFakeClientWithAllResources()
-	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
+	metricsConsumer := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = &atomic.Int32{}
 
-	r := setupReceiver(client, nil, next, 10*time.Second, tt)
+	logsConsumer := new(consumertest.LogsSink)
+
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -163,17 +165,28 @@ func TestReceiverWithMetadata(t *testing.T) {
 	updatedPod := getUpdatedPod(pods[0])
 	r.resourceWatcher.onUpdate(pods[0], updatedPod)
 
-	// Should not result in ConsumerKubernetesMetadata invocation.
-	r.resourceWatcher.onUpdate(pods[0], pods[0])
+	// Should not result in ConsumerKubernetesMetadata invocation since the pod
+	// is not changed. Should result in entity event because they are emitted even
+	// if the entity is not changed.
+	r.resourceWatcher.onUpdate(updatedPod, updatedPod)
 
 	deletePods(t, client, 1)
 
 	// Ensure ConsumeKubernetesMetadata is called twice, once for the add and
-	// then for the update.
+	// then for the update. Note the second update does not result in metatada call
+	// since the pod is not changed.
 	require.Eventually(t, func() bool {
 		return int(numCalls.Load()) == 2
 	}, 10*time.Second, 100*time.Millisecond,
 		"metadata not collected")
+
+	// Must have 3 entity events: once for the add, followed by an update and
+	// then another update, which unlike metadata calls actually happens since
+	// even unchanged entities trigger an event.
+	require.Eventually(t, func() bool {
+		return logsConsumer.LogRecordCount() == 3
+	}, 10*time.Second, 100*time.Millisecond,
+		"entity events not collected")
 
 	require.NoError(t, r.Shutdown(ctx))
 }
@@ -194,7 +207,8 @@ func getUpdatedPod(pod *corev1.Pod) interface{} {
 func setupReceiver(
 	client *fake.Clientset,
 	osQuotaClient quotaclientset.Interface,
-	consumer consumer.Metrics,
+	metricsConsumer consumer.Metrics,
+	logsConsumer consumer.Logs,
 	initialSyncTimeout time.Duration,
 	tt obsreporttest.TestTelemetry) *kubernetesReceiver {
 
@@ -210,8 +224,9 @@ func setupReceiver(
 		Distribution:               distribution,
 	}
 
-	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config, consumer)
+	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config)
 	kr := r.(*kubernetesReceiver)
+	kr.metricsConsumer = metricsConsumer
 	kr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return client, nil
 	}
@@ -219,6 +234,7 @@ func setupReceiver(
 		return osQuotaClient, nil
 	}
 	kr.resourceWatcher.initialTimeout = initialSyncTimeout
+	kr.resourceWatcher.entityLogConsumer = logsConsumer
 	return kr
 }
 

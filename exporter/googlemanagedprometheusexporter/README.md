@@ -24,7 +24,15 @@ The following configuration options are supported:
 - `user_agent` (optional): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number. Defaults to `opentelemetry-collector-contrib {{version}}`.
 - `metric`(optional): Configuration for sending metrics to Cloud Monitoring.
   - `endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
-- `use_insecure` (optional): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `use_insecure` (optional): If true, disables gRPC client transport security. Only has applies if Endpoint is not "".
+  - `extra_metrics_config` (optional): Enable or disable additional metrics.
+    - `enable_target_info` (default=`true`): Add `target_info` metric based on resource.
+    - `enable_scope_info` (default=`true`): Add `otel_scope_info` metric and `scope_name`/`scope_version` attributes to all other metrics.
+  - `resource_filters` (optional): Provides a list of filters to match resource attributes which will be included in metric labels.
+    - `prefix` (optional): Match resource attribute keys by prefix.
+    - `regex` (optional): Match resource attribute keys by regex.
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = false)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`

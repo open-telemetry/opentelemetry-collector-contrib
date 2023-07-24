@@ -6,6 +6,7 @@ package snowflakereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -22,13 +23,13 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Username                                string `mapstructure:"username"`
-	Password                                string `mapstructure:"password"`
-	Account                                 string `mapstructure:"account"`
-	Schema                                  string `mapstructure:"schema"`
-	Warehouse                               string `mapstructure:"warehouse"`
-	Database                                string `mapstructure:"database"`
-	Role                                    string `mapstructure:"role"`
+	Username                                string              `mapstructure:"username"`
+	Password                                configopaque.String `mapstructure:"password"`
+	Account                                 string              `mapstructure:"account"`
+	Schema                                  string              `mapstructure:"schema"`
+	Warehouse                               string              `mapstructure:"warehouse"`
+	Database                                string              `mapstructure:"database"`
+	Role                                    string              `mapstructure:"role"`
 }
 
 func (cfg *Config) Validate() error {
