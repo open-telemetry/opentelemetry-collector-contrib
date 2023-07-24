@@ -4,11 +4,11 @@
 package hostmetricsreceiver
 
 import (
-	"github.com/shirou/gopsutil/v3/common"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

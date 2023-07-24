@@ -28,8 +28,8 @@ type Config interface {
 }
 
 type ScraperConfig struct {
-	RootPath string `mapstructure:"-"`
-	EnvMap   common.EnvMap
+	RootPath string        `mapstructure:"-"`
+	EnvMap   common.EnvMap `mapstructure:"-"`
 }
 
 func (p *ScraperConfig) SetRootPath(rootPath string) {
