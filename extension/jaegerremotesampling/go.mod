@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaege
 go 1.19
 
 require (
+	github.com/fortytw2/leaktest v1.3.0
 	github.com/jaegertracing/jaeger v1.41.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
