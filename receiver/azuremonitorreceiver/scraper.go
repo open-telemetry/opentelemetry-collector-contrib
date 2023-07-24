@@ -83,6 +83,7 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
 		settings:                        settings.TelemetrySettings,
 		mb:                              metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
+		azIDWorkloadFunc:                azidentity.NewDefaultAzureCredential,
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
@@ -103,6 +104,7 @@ type azureScraper struct {
 	resourcesUpdated                time.Time
 	mb                              *metadata.MetricsBuilder
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
+	azIDWorkloadFunc                func(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
@@ -139,8 +141,17 @@ func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
 }
 
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
-	s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
-	if err != nil {
+	switch s.cfg.Authentication {
+	case "service_principal":
+		s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
+		if err != nil {
+			return err
+		}
+	case "workload_identity":
+		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
+			return err
+		}
+	default:
 		return err
 	}
 

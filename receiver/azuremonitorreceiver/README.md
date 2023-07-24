@@ -18,11 +18,9 @@ This receiver scrapes Azure Monitor API for resources metrics.
 
 The following settings are required:
 - `subscription_id`
-- `tenant_id`
-- `client_id`
-- `client_secret`
 
 The following settings are optional:
+- `authentication` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
@@ -30,12 +28,23 @@ The following settings are optional:
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
-### Example Configuration
+Authenticating using service principal requires following settings:
+- `tenant_id`
+- `client_id`
+- `client_secret`
+
+Authenticating using workload identities requires following environment variables being set:
+- `AZURE_TENANT_ID`
+- `AZURE_CLIENT_ID`
+- `AZURE_FEDERATED_TOKEN_FILE`
+
+### Example Configurations
 
 ```yaml
 receivers:
   azuremonitor:
     subscription_id: "${subscription_id}"
+    authentication: "service_principal"
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
     client_secret: "${env:CLIENT_SECRET}"
@@ -47,6 +56,13 @@ receivers:
       - "${service2}"
     collection_interval: 60s
     initial_delay: 1s
+```
+
+```yaml
+receivers:
+  azuremonitor:
+    subscription_id: "${subscription_id}"
+    authentication: "workload_identity"
 ```
 
 ## Metrics
