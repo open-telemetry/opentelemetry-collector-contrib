@@ -14,10 +14,16 @@ import (
 )
 
 func Test_Len(t *testing.T) {
+	pcommonSlice := pcommon.NewSlice()
+	err := pcommonSlice.FromRaw(make([]any, 5))
+	if err != nil {
+		t.Error(err)
+	}
+
 	tests := []struct {
 		name     string
 		value    interface{}
-		expected int
+		expected int64
 	}{
 		{
 			name:     "string",
@@ -29,11 +35,26 @@ func Test_Len(t *testing.T) {
 			value:    pcommon.NewValueStr("a string"),
 			expected: 8,
 		},
+		{
+			name:     "string slice",
+			value:    make([]string, 5),
+			expected: 5,
+		},
+		{
+			name:     "int slice",
+			value:    make([]int, 5),
+			expected: 5,
+		},
+		{
+			name:     "pcommon slice",
+			value:    pcommonSlice,
+			expected: 5,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := strLen[any](&ottl.StandardStringGetter[any]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			exprFunc := computeLen[any](&ottl.StandardGetSetter[any]{
+				Getter: func(context context.Context, tCtx any) (interface{}, error) {
 					return tt.value, nil
 				},
 			})
@@ -46,9 +67,9 @@ func Test_Len(t *testing.T) {
 
 // nolint:errorlint
 func Test_Len_Error(t *testing.T) {
-	exprFunc := strLen[any](&ottl.StandardStringGetter[any]{
+	exprFunc := computeLen[any](&ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, interface{}) (interface{}, error) {
-			return nil, ottl.TypeError("")
+			return 24, nil
 		},
 	})
 	result, err := exprFunc(context.Background(), nil)
