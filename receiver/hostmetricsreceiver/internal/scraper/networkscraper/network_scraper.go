@@ -34,7 +34,6 @@ type scraper struct {
 	startTime pcommon.Timestamp
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
-	envMap    common.EnvMap
 
 	// for mocking
 	bootTime    func(context.Context) (uint64, error)
@@ -44,7 +43,7 @@ type scraper struct {
 }
 
 // newNetworkScraper creates a set of Network related metrics
-func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) (*scraper, error) {
+func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
 		settings:    settings,
 		config:      cfg,
@@ -52,7 +51,6 @@ func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg 
 		ioCounters:  net.IOCountersWithContext,
 		connections: net.ConnectionsWithContext,
 		conntrack:   net.FilterCountersWithContext,
-		envMap:      envMap,
 	}
 
 	var err error
@@ -75,7 +73,7 @@ func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg 
 }
 
 func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -108,7 +106,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) recordNetworkCounterMetrics() error {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// get total stats only
@@ -159,7 +157,7 @@ func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice [
 }
 
 func (s *scraper) recordNetworkConnectionsMetrics() error {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	connections, err := s.connections(ctx, "tcp")

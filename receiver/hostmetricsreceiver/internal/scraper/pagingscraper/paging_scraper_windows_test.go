@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -91,7 +90,7 @@ func TestScrape_Errors(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig}, common.EnvMap{})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -163,7 +162,7 @@ func TestStart_Error(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig}, common.EnvMap{})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsConfig})
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
 

@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,7 +73,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config, common.EnvMap{})
+			scraper := newLoadScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
 			}

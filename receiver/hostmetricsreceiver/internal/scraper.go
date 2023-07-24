@@ -18,18 +18,24 @@ type ScraperFactory interface {
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, settings receiver.CreateSettings, cfg Config, envMap common.EnvMap) (scraperhelper.Scraper, error)
+	CreateMetricsScraper(ctx context.Context, settings receiver.CreateSettings, cfg Config) (scraperhelper.Scraper, error)
 }
 
 // Config is the configuration of a scraper.
 type Config interface {
 	SetRootPath(rootPath string)
+	SetEnvMap(envMap common.EnvMap)
 }
 
 type ScraperConfig struct {
 	RootPath string `mapstructure:"-"`
+	EnvMap   common.EnvMap
 }
 
 func (p *ScraperConfig) SetRootPath(rootPath string) {
 	p.RootPath = rootPath
+}
+
+func (p *ScraperConfig) SetEnvMap(envMap common.EnvMap) {
+	p.EnvMap = envMap
 }

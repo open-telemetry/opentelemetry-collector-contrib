@@ -33,16 +33,15 @@ type scraper struct {
 	bootTime func(context.Context) (uint64, error)
 	times    func(context.Context, bool) ([]cpu.TimesStat, error)
 	now      func() time.Time
-	envMap   common.EnvMap
 }
 
 // newCPUScraper creates a set of CPU related metrics
-func newCPUScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now, envMap: envMap}
+func newCPUScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 
 func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -52,7 +51,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(s.now())
 	cpuTimes, err := s.times(ctx, true /*percpu=*/)
 	if err != nil {

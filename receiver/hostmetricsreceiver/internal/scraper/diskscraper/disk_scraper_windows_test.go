@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -50,7 +49,7 @@ func TestScrape_Error(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{}, common.EnvMap{})
+			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr, nil)
@@ -94,7 +93,7 @@ func TestStart_Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{}, common.EnvMap{})
+			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)

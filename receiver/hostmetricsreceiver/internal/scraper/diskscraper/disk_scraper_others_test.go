@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +38,7 @@ func TestScrape_Others(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{}, common.EnvMap{})
+			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			if test.ioCountersFunc != nil {

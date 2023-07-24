@@ -33,7 +33,6 @@ type scraper struct {
 	settings receiver.CreateSettings
 	config   *Config
 	mb       *metadata.MetricsBuilder
-	envMap   common.EnvMap
 
 	// for mocking
 	bootTime         func(context.Context) (uint64, error)
@@ -42,19 +41,18 @@ type scraper struct {
 }
 
 // newPagingScraper creates a Paging Scraper
-func newPagingScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) *scraper {
+func newPagingScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
 	return &scraper{
 		settings:         settings,
 		config:           cfg,
 		bootTime:         host.BootTimeWithContext,
 		getPageFileStats: getPageFileStats,
 		swapMemory:       mem.SwapMemoryWithContext,
-		envMap:           envMap,
 	}
 }
 
 func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -113,7 +111,7 @@ func (s *scraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp, pageF
 }
 
 func (s *scraper) scrapePagingMetrics() error {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 	swap, err := s.swapMemory(ctx)
 	if err != nil {

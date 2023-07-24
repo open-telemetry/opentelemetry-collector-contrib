@@ -11,7 +11,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +52,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{}, common.EnvMap{})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
 			if test.virtualMemoryFunc != nil {
 				scraper.getPageFileStats = test.virtualMemoryFunc
 			}

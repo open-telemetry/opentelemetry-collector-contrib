@@ -34,7 +34,7 @@ func (s *scraper) recordNetworkConntrackMetrics() error {
 	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackMax.Enabled {
 		return nil
 	}
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 	conntrack, err := s.conntrack(ctx)
 	if err != nil {

@@ -78,6 +78,8 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		}
 
 		collectorCfg.SetRootPath(cfg.RootPath)
+		envMap := setGoPsutilEnvVars(cfg.RootPath, &osEnv{})
+		collectorCfg.SetEnvMap(envMap)
 
 		cfg.Scrapers[key] = collectorCfg
 	}

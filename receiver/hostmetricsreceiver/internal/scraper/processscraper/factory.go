@@ -8,7 +8,6 @@ import (
 	"errors"
 	"runtime"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -39,13 +38,12 @@ func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
 	settings receiver.CreateSettings,
 	cfg internal.Config,
-	envMap common.EnvMap,
 ) (scraperhelper.Scraper, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
 		return nil, errors.New("process scraper only available on Linux, Windows, or MacOS")
 	}
 
-	s, err := newProcessScraper(settings, cfg.(*Config), envMap)
+	s, err := newProcessScraper(settings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

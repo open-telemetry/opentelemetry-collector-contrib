@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -62,7 +61,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config, common.EnvMap{})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

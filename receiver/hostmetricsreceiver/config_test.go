@@ -4,6 +4,7 @@
 package hostmetricsreceiver
 
 import (
+	"github.com/shirou/gopsutil/v3/common"
 	"path/filepath"
 	"testing"
 	"time"
@@ -44,7 +45,11 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 	defaultConfigCPUScraper := factory.CreateDefaultConfig()
 	defaultConfigCPUScraper.(*Config).Scrapers = map[string]internal.Config{
-		cpuscraper.TypeStr: (&cpuscraper.Factory{}).CreateDefaultConfig(),
+		cpuscraper.TypeStr: func() internal.Config {
+			cfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
+			cfg.SetEnvMap(common.EnvMap{})
+			return cfg
+		}(),
 	}
 
 	assert.Equal(t, defaultConfigCPUScraper, r0)
@@ -56,31 +61,58 @@ func TestLoadConfig(t *testing.T) {
 			InitialDelay:       time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:  (&cpuscraper.Factory{}).CreateDefaultConfig(),
-			diskscraper.TypeStr: (&diskscraper.Factory{}).CreateDefaultConfig(),
+			cpuscraper.TypeStr: func() internal.Config {
+				cfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			}(),
+			diskscraper.TypeStr: func() internal.Config {
+				cfg := (&diskscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			}(),
 			loadscraper.TypeStr: (func() internal.Config {
 				cfg := (&loadscraper.Factory{}).CreateDefaultConfig()
 				cfg.(*loadscraper.Config).CPUAverage = true
+				cfg.SetEnvMap(common.EnvMap{})
 				return cfg
 			})(),
-			filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig(),
-			memoryscraper.TypeStr:     (&memoryscraper.Factory{}).CreateDefaultConfig(),
+			filesystemscraper.TypeStr: func() internal.Config {
+				cfg := (&filesystemscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			}(),
+			memoryscraper.TypeStr: func() internal.Config {
+				cfg := (&memoryscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			}(),
 			networkscraper.TypeStr: (func() internal.Config {
 				cfg := (&networkscraper.Factory{}).CreateDefaultConfig()
 				cfg.(*networkscraper.Config).Include = networkscraper.MatchConfig{
 					Interfaces: []string{"test1"},
 					Config:     filterset.Config{MatchType: "strict"},
 				}
+				cfg.SetEnvMap(common.EnvMap{})
 				return cfg
 			})(),
-			processesscraper.TypeStr: (&processesscraper.Factory{}).CreateDefaultConfig(),
-			pagingscraper.TypeStr:    (&pagingscraper.Factory{}).CreateDefaultConfig(),
+			processesscraper.TypeStr: func() internal.Config {
+				cfg := (&processesscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			}(),
+			pagingscraper.TypeStr: func() internal.Config {
+				cfg := (&pagingscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			}(),
 			processscraper.TypeStr: (func() internal.Config {
 				cfg := (&processscraper.Factory{}).CreateDefaultConfig()
 				cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 					Names:  []string{"test2", "test3"},
 					Config: filterset.Config{MatchType: "regexp"},
 				}
+				cfg.SetEnvMap(common.EnvMap{})
 				return cfg
 			})(),
 		},

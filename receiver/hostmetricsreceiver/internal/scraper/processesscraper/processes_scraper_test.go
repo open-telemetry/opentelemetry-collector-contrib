@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/process"
@@ -67,7 +66,7 @@ func TestScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-			}, common.EnvMap{})
+			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)
 

@@ -36,7 +36,6 @@ type scraper struct {
 	settings receiver.CreateSettings
 	config   *Config
 	mb       *metadata.MetricsBuilder
-	envMap   common.EnvMap
 
 	// for mocking gopsutil
 	getMiscStats func(context.Context) (*load.MiscStat, error)
@@ -55,13 +54,13 @@ type processesMetadata struct {
 }
 
 // newProcessesScraper creates a set of Processes related metrics
-func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) *scraper {
+func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
 	return &scraper{
 		settings:     settings,
 		config:       cfg,
 		getMiscStats: load.MiscWithContext,
 		getProcesses: func() ([]proc, error) {
-			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
+			ctx := context.WithValue(context.Background(), common.EnvKey, cfg.EnvMap)
 			ps, err := process.ProcessesWithContext(ctx)
 			ret := make([]proc, len(ps))
 			for i := range ps {
@@ -70,12 +69,11 @@ func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cf
 			return ret, err
 		},
 		bootTime: host.BootTimeWithContext,
-		envMap:   envMap,
 	}
 }
 
 func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err

@@ -34,7 +34,6 @@ type scraper struct {
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
-	envMap   common.EnvMap
 
 	// for mocking gopsutil disk.Partitions & disk.Usage
 	bootTime   func(context.Context) (uint64, error)
@@ -48,18 +47,18 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
 	}
 
-	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter, envMap: envMap}
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter}
 	return scraper, nil
 }
 
 func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -70,7 +69,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors

@@ -20,7 +20,7 @@ const enableProcessesCount = true
 const enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
 
 func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.envMap)
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	processes, err := s.getProcesses()
 	if err != nil {
 		return processesMetadata{}, err

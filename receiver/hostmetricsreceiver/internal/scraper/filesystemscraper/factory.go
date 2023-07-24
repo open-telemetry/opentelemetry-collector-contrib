@@ -7,7 +7,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/shirou/gopsutil/v3/common"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -43,7 +42,6 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.CreateSettings,
 	config internal.Config,
-	envMap common.EnvMap,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
 
@@ -65,7 +63,7 @@ func (f *Factory) CreateMetricsScraper(
 		}
 	}
 
-	s, err := newFileSystemScraper(ctx, settings, cfg, envMap)
+	s, err := newFileSystemScraper(ctx, settings, cfg)
 	if err != nil {
 		return nil, err
 	}

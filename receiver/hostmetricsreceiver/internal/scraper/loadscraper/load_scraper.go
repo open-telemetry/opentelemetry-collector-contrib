@@ -31,7 +31,6 @@ type scraper struct {
 	config     *Config
 	mb         *metadata.MetricsBuilder
 	skipScrape bool
-	envMap     common.EnvMap
 
 	// for mocking
 	bootTime func(context.Context) (uint64, error)
@@ -39,13 +38,13 @@ type scraper struct {
 }
 
 // newLoadScraper creates a set of Load related metrics
-func newLoadScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config, envMap common.EnvMap) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages, envMap: envMap}
+func newLoadScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages}
 }
 
 // start
 func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -86,7 +85,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 
 	avgLoadValues, err := s.load(ctx)
 	if err != nil {
