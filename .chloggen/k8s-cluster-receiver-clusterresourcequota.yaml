@@ -13,7 +13,7 @@ component: "k8sclusterreceiver"
 note: "Change k8s.clusterresourcequota metrics to use mdatagen"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [10553, 4367]
+issues: [4367]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
