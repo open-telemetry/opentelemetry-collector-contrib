@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.81.0
 	go.opentelemetry.io/collector/consumer v0.81.0
 	go.opentelemetry.io/collector/receiver v0.81.0
-	k8s.io/client-go v0.27.3
+	k8s.io/client-go v0.27.4
 )
 
 require (
@@ -169,8 +169,8 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.27.3 // indirect
-	k8s.io/apimachinery v0.27.3 // indirect
+	k8s.io/api v0.27.4 // indirect
+	k8s.io/apimachinery v0.27.4 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/utils v0.0.0-20230308161112-d77c459e9343 // indirect
