@@ -7,3 +7,5 @@ status:
   distributions:
   - contrib
   - observiq
+  codeowners:
+    active: [gramidt, gouthamve, jpkrohling, kovrus, mar4uk]

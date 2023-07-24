@@ -5,3 +5,5 @@ status:
   stability:
     deprecated: [traces]
   distributions: [contrib]
+  codeowners:
+    active: [jpkrohling, pavolloffay, frzifus]

@@ -7,3 +7,5 @@ status:
   distributions:
   - contrib
   - sumo
+  codeowners:
+    active: [mar4uk, kovrus, jpkrohling]

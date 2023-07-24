@@ -5,6 +5,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, splunk]
+  codeowners:
+    active: [dmitryax, crobert-1, atoulme]
 
 resource_attributes:
   oracledb.instance.name:
