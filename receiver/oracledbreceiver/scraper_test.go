@@ -112,11 +112,11 @@ func TestScraper_Scrape(t *testing.T) {
 			cfg := metadata.DefaultMetricsBuilderConfig()
 			cfg.Metrics.OracledbConsistentGets.Enabled = true
 			cfg.Metrics.OracledbDbBlockGets.Enabled = true
-			metricsBuilder := metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings())
 
 			scrpr := scraper{
-				logger:         zap.NewNop(),
-				metricsBuilder: metricsBuilder,
+				logger: zap.NewNop(),
+				rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
 				dbProviderFunc: func() (*sql.DB, error) {
 					return nil, nil
 				},

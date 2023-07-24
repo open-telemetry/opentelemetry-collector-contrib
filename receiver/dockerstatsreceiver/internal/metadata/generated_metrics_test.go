@@ -277,7 +277,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithContainerCommandLine("container.command_line-val"), WithContainerHostname("container.hostname-val"), WithContainerID("container.id-val"), WithContainerImageID("container.image.id-val"), WithContainerImageName("container.image.name-val"), WithContainerName("container.name-val"), WithContainerRuntime("container.runtime-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -286,60 +288,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("container.command_line")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerCommandLine.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerCommandLine.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.command_line-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.hostname")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerHostname.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerHostname.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.hostname-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerID.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.image.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerImageID.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerImageID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.image.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.image.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerImageName.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerImageName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.image.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerName.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.runtime")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerRuntime.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerRuntime.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.runtime-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 7)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

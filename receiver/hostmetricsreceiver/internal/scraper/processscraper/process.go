@@ -10,6 +10,7 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
@@ -39,28 +40,25 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
-	opts := make([]metadata.ResourceMetricsOption, 0, 6)
-	opts = append(opts,
-		metadata.WithProcessPid(int64(m.pid)),
-		metadata.WithProcessParentPid(int64(m.parentPid)),
-		metadata.WithProcessExecutableName(m.executable.name),
-		metadata.WithProcessExecutablePath(m.executable.path),
-	)
+func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Resource {
+	rb.SetProcessPid(int64(m.pid))
+	rb.SetProcessParentPid(int64(m.parentPid))
+	rb.SetProcessExecutableName(m.executable.name)
+	rb.SetProcessExecutablePath(m.executable.path)
 	if m.command != nil {
-		opts = append(opts, metadata.WithProcessCommand(m.command.command))
+		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {
 			// TODO insert slice here once this is supported by the data model
 			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-			opts = append(opts, metadata.WithProcessCommandLine(strings.Join(m.command.commandLineSlice, " ")))
+			rb.SetProcessCommandLine(strings.Join(m.command.commandLineSlice, " "))
 		} else {
-			opts = append(opts, metadata.WithProcessCommandLine(m.command.commandLine))
+			rb.SetProcessCommandLine(m.command.commandLine)
 		}
 	}
 	if m.username != "" {
-		opts = append(opts, metadata.WithProcessOwner(m.username))
+		rb.SetProcessOwner(m.username)
 	}
-	return opts
+	return rb.Emit()
 }
 
 // processHandles provides a wrapper around []*process.Process

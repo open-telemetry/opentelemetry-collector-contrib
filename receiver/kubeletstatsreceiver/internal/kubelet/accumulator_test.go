@@ -31,7 +31,7 @@ func TestMetadataErrorCases(t *testing.T) {
 		numMDs                          int
 		numLogs                         int
 		logMessages                     []string
-		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)
+		detailedPVCLabelsSetterOverride func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
 	}{
 		{
 			name: "Fails to get container metadata",
@@ -168,9 +168,9 @@ func TestMetadataErrorCases(t *testing.T) {
 					},
 				},
 			}, nil),
-			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
 				// Mock failure cases.
-				return nil, errors.New("")
+				return errors.New("")
 			},
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
@@ -197,11 +197,12 @@ func TestMetadataErrorCases(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 
-			tt.metadata.DetailedPVCResourceGetter = tt.detailedPVCLabelsSetterOverride
+			tt.metadata.DetailedPVCResourceSetter = tt.detailedPVCLabelsSetterOverride
 			acc := metricDataAccumulator{
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
+				rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 				mbs: &metadata.MetricsBuilders{
 					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
@@ -228,6 +229,7 @@ func TestNilHandling(t *testing.T) {
 			ContainerMetricGroup: true,
 			VolumeMetricGroup:    true,
 		},
+		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 		mbs: &metadata.MetricsBuilders{
 			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
