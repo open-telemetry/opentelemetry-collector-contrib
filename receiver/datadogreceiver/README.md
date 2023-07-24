@@ -42,4 +42,6 @@ All config params here are valid as well
 
 https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration
 
+### Default Attributes
 
+- `dd.span.Resource`: The datadog resource name (as distinct from the span name)
