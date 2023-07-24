@@ -5,6 +5,7 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -31,6 +32,8 @@ type Config struct {
 var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
+	var errors error
+
 	if len(c.TraceStatements) > 0 {
 		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions()), common.WithSpanEventParser(traces.SpanEventFunctions()))
 		if err != nil {
@@ -39,7 +42,7 @@ func (c *Config) Validate() error {
 		for _, cs := range c.TraceStatements {
 			_, err = pc.ParseContextStatements(cs)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
 			}
 		}
 	}
@@ -50,9 +53,9 @@ func (c *Config) Validate() error {
 			return err
 		}
 		for _, cs := range c.MetricStatements {
-			_, err = pc.ParseContextStatements(cs)
+			_, err := pc.ParseContextStatements(cs)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
 			}
 		}
 	}
@@ -65,10 +68,10 @@ func (c *Config) Validate() error {
 		for _, cs := range c.LogStatements {
 			_, err = pc.ParseContextStatements(cs)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
 			}
 		}
 	}
 
-	return nil
+	return errors
 }

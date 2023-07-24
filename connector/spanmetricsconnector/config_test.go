@@ -49,6 +49,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 				DimensionsCacheSize:  1500,
 				MetricsFlushInterval: 30 * time.Second,
+				Exemplars: ExemplarsConfig{
+					Enabled: true,
+				},
 				Histogram: HistogramConfig{
 					Unit: metrics.Seconds,
 					Explicit: &ExplicitHistogramConfig{
@@ -59,8 +62,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-			},
-		},
+			}},
 		{
 			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
 			expected: &Config{
@@ -82,6 +84,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_histogram_unit"),
 			errorMessage: "unknown Unit \"h\"",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "exemplars_enabled"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:    defaultDimensionsCacheSize,
+				MetricsFlushInterval:   15 * time.Second,
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars:              ExemplarsConfig{Enabled: true},
+			},
 		},
 	}
 

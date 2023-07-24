@@ -276,7 +276,7 @@ func addSingleHistogramDataPoint(
 ) {
 	timestamp := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
-	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	baseName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 
 	// If the sum is unset, it indicates the _sum metric point should be
 	// omitted
@@ -473,7 +473,7 @@ func addSingleSummaryDataPoint(
 ) {
 	timestamp := convertTimeStamp(pt.Timestamp())
 	// sum and count of the summary should append suffix to baseName
-	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	baseName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),

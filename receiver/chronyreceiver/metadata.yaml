@@ -6,6 +6,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib]
+  codeowners:
+    active: [MovieStoreGuy, jamesmoessis]
 
 attributes:
   leap.status:

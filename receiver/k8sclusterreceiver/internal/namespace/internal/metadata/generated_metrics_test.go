@@ -58,7 +58,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNamespacePhaseDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithK8sNamespaceName("attr-val"), WithK8sNamespaceUID("attr-val"), WithOpencensusResourcetype("attr-val"))
+			metrics := mb.Emit(WithK8sNamespaceName("k8s.namespace.name-val"), WithK8sNamespaceUID("k8s.namespace.uid-val"), WithOpencensusResourcetype("opencensus.resourcetype-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -74,21 +74,21 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.namespace.uid")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceUID.Enabled, ok)
 			if mb.resourceAttributesConfig.K8sNamespaceUID.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "k8s.namespace.uid-val", attrVal.Str())
 			}
 			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
 			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
 				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
+				assert.EqualValues(t, "opencensus.resourcetype-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
 			assert.Equal(t, attrCount, 3)

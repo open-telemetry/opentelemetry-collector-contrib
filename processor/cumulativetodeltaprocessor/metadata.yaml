@@ -6,3 +6,5 @@ status:
     beta: [metrics]
   distributions: [contrib, observiq, sumo, aws]
   warnings: [Statefulness]
+  codeowners:
+    active: [TylerHelmuth]
