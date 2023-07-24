@@ -26,7 +26,7 @@ type Config struct {
 	// List of exporters to which metadata from this receiver should be forwarded to.
 	MetadataExporters []string `mapstructure:"metadata_exporters"`
 
-	// Whether OpenShift supprot should be enabled or not.
+	// Whether OpenShift support should be enabled or not.
 	Distribution string `mapstructure:"distribution"`
 
 	// Collection interval for metadata.
