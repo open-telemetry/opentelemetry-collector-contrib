@@ -74,6 +74,24 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
 	}
 
+	var hostIPv4Addresses []any
+	if hostIPv4IPs, err := d.provider.HostIPv4Addresses(); err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host IPv4 addresses: %w", err)
+	} else {
+		for _, ip := range hostIPv4IPs {
+			hostIPv4Addresses = append(hostIPv4Addresses, ip.String())
+		}
+	}
+
+	var hostIPv6Addresses []any
+	if hostIPv6IPs, err := d.provider.HostIPv6Addresses(); err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host IPv4 addresses: %w", err)
+	} else {
+		for _, ip := range hostIPv6IPs {
+			hostIPv6Addresses = append(hostIPv6Addresses, ip.String())
+		}
+	}
+
 	for _, source := range d.hostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
@@ -82,6 +100,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetOsType(osType)
 			d.rb.SetHostID(hostID)
 			d.rb.SetHostArch(hostArch)
+			d.rb.SetHostIpv4Addresses(hostIPv4Addresses)
+			d.rb.SetHostIpv6Addresses(hostIPv6Addresses)
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())

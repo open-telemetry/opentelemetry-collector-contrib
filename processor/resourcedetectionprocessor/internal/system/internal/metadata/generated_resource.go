@@ -33,6 +33,20 @@ func (rb *ResourceBuilder) SetHostID(val string) {
 	}
 }
 
+// SetHostIpv4Addresses sets provided value as "host.ipv4.addresses" attribute.
+func (rb *ResourceBuilder) SetHostIpv4Addresses(val []any) {
+	if rb.config.HostIpv4Addresses.Enabled {
+		rb.res.Attributes().PutEmptySlice("host.ipv4.addresses").FromRaw(val)
+	}
+}
+
+// SetHostIpv6Addresses sets provided value as "host.ipv6.addresses" attribute.
+func (rb *ResourceBuilder) SetHostIpv6Addresses(val []any) {
+	if rb.config.HostIpv6Addresses.Enabled {
+		rb.res.Attributes().PutEmptySlice("host.ipv6.addresses").FromRaw(val)
+	}
+}
+
 // SetHostName sets provided value as "host.name" attribute.
 func (rb *ResourceBuilder) SetHostName(val string) {
 	if rb.config.HostName.Enabled {

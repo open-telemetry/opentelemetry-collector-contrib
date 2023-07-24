@@ -5,6 +5,10 @@ all_set:
       enabled: true
     host.id:
       enabled: true
+    host.ipv4.addresses:
+      enabled: true
+    host.ipv6.addresses:
+      enabled: true
     host.name:
       enabled: true
     os.type:
@@ -14,6 +18,10 @@ none_set:
     host.arch:
       enabled: false
     host.id:
+      enabled: false
+    host.ipv4.addresses:
+      enabled: false
+    host.ipv6.addresses:
       enabled: false
     host.name:
       enabled: false

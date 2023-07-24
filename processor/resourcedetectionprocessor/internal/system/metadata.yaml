@@ -19,3 +19,11 @@ resource_attributes:
     description: The host.arch
     type: string
     enabled: false
+  host.ipv4.addresses:
+    description: IPv4 addresses for the host
+    type: slice
+    enabled: false
+  host.ipv6.addresses:
+    description: IPv6 addresses for the host
+    type: slice
+    enabled: false

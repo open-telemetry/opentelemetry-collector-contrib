@@ -59,6 +59,12 @@ type Provider interface {
 
 	// HostArch returns the host architecture
 	HostArch() (string, error)
+
+	// HostIPv4Addresses returns the host's IPv4 interfaces
+	HostIPv4Addresses() ([]net.IP, error)
+
+	// HostIPv6Addresses returns the host's IPv6 interfaces
+	HostIPv6Addresses() ([]net.IP, error)
 }
 
 type systemMetadataProvider struct {
@@ -150,4 +156,50 @@ func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
 
 func (systemMetadataProvider) HostArch() (string, error) {
 	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
+}
+
+func (p systemMetadataProvider) hostAddresses(ipv4 bool) (ips []net.IP, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range ifaces {
+		// skip if the interface is down or is a loopback interface
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get addresses for interface %v: %w", iface, err)
+		}
+		for _, addr := range addrs {
+			ip, _, err := net.ParseCIDR(addr.String())
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse address %q from interface %v: %w", addr, iface, err)
+			}
+
+			if ip.IsLoopback() {
+				// skip loopback IPs
+				continue
+			}
+
+			// If ip is not an IPv4 address, To4 returns nil.
+			isAddrIPv4 := ip.To4() != nil
+			if ipv4 == isAddrIPv4 {
+				ips = append(ips, ip)
+			}
+		}
+
+	}
+	return ips, err
+}
+
+func (p systemMetadataProvider) HostIPv4Addresses() ([]net.IP, error) {
+	return p.hostAddresses(true)
+}
+
+func (p systemMetadataProvider) HostIPv6Addresses() ([]net.IP, error) {
+	return p.hostAddresses(false)
 }

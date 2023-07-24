@@ -15,6 +15,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb := NewResourceBuilder(cfg)
 			rb.SetHostArch("host.arch-val")
 			rb.SetHostID("host.id-val")
+			rb.SetHostIpv4Addresses([]any{"host.ipv4.addresses-item1", "host.ipv4.addresses-item2"})
+			rb.SetHostIpv6Addresses([]any{"host.ipv6.addresses-item1", "host.ipv6.addresses-item2"})
 			rb.SetHostName("host.name-val")
 			rb.SetOsType("os.type-val")
 
@@ -25,7 +27,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 4, res.Attributes().Len())
+				assert.Equal(t, 6, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -42,6 +44,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("host.ipv4.addresses")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, []any{"host.ipv4.addresses-item1", "host.ipv4.addresses-item2"}, val.Slice().AsRaw())
+			}
+			val, ok = res.Attributes().Get("host.ipv6.addresses")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, []any{"host.ipv6.addresses-item1", "host.ipv6.addresses-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("host.name")
 			assert.True(t, ok)
