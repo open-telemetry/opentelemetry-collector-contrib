@@ -27,6 +27,9 @@ The following settings are optional:
 * `health_path` (default: '/health_check'): Path available for checking receiver status
 * `read_timeout` (default: '500ms'): Maximum wait time while attempting to read a received event
 * `write_timeout` (default: '500ms'): Maximum wait time while attempting to write a response
+* `required_header` (optional):  
+    * `key` (required if `required_header` config option is set): Represents the key portion of the required header.
+    * `value` (required if `required_header` config option is set): Represents the value portion of the required header.
 
 Example:
 ```yaml
@@ -36,6 +39,9 @@ receivers:
         read_timeout: "500ms"
         path: "eventsource/receiver"
         health_path: "eventreceiver/healthcheck"
+        required_header:
+            key: "required-key"
+            value: "matching-value"
 ```
 The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
 
