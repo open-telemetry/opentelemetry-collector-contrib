@@ -15,6 +15,7 @@
 package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -25,10 +26,10 @@ import (
 	"strings"
 	"time"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -80,9 +81,11 @@ var newAWSSession = func(roleArn string, region string, log *zap.Logger) (*sessi
 }
 
 var getEC2Region = func(s *session.Session) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
+	defer cancel()
 	return ec2metadata.New(s, &aws.Config{
-		Retryer: client.DefaultRetryer{NumMaxRetries: 5},
-	}).Region()
+		Retryer: override.IMDSRetryer,
+	}).RegionWithContext(ctx)
 }
 
 func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.Session, error) {

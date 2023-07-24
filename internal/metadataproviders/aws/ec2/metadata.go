@@ -17,8 +17,8 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
@@ -38,19 +38,25 @@ var _ Provider = (*metadataClient)(nil)
 func NewProvider(sess *session.Session) Provider {
 	return &metadataClient{
 		metadata: ec2metadata.New(sess, &aws.Config{
-			Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+			Retryer: override.IMDSRetryer,
 		}),
 	}
 }
 
 func (c *metadataClient) InstanceID(ctx context.Context) (string, error) {
-	return c.metadata.GetMetadataWithContext(ctx, "instance-id")
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	return c.metadata.GetMetadataWithContext(childCtx, "instance-id")
 }
 
 func (c *metadataClient) Hostname(ctx context.Context) (string, error) {
-	return c.metadata.GetMetadataWithContext(ctx, "hostname")
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	return c.metadata.GetMetadataWithContext(childCtx, "hostname")
 }
 
 func (c *metadataClient) Get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
-	return c.metadata.GetInstanceIdentityDocumentWithContext(ctx)
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	return c.metadata.GetInstanceIdentityDocumentWithContext(childCtx)
 }

@@ -15,12 +15,13 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
+	"context"
 	"os"
 	"sync"
 	"time"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/xray"
@@ -169,7 +170,9 @@ type ec2MetadataProvider struct {
 
 func (p ec2MetadataProvider) get() string {
 	var metadata string
-	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
+	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
+	defer cancel()
+	if result, err := p.client.GetMetadataWithContext(ctx, p.metadataKey); err == nil {
 		metadata = result
 	}
 	return metadata
@@ -190,7 +193,7 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 	}
 	if !settings.LocalMode {
 		metadataClient := ec2metadata.New(sess, &aws.Config{
-			Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+			Retryer: override.IMDSRetryer,
 		})
 		hostnameProviders = append(hostnameProviders, ec2MetadataProvider{
 			client:      metadataClient,

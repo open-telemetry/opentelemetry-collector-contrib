@@ -18,8 +18,8 @@ import (
 	"context"
 	"time"
 
+	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
 	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"go.uber.org/zap"
@@ -55,7 +55,7 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
 	emd := &ec2Metadata{
 		client: awsec2metadata.New(session, &aws.Config{
-			Retryer: client.DefaultRetryer{NumMaxRetries: 5},
+			Retryer: override.IMDSRetryer,
 		}),
 		refreshInterval:  refreshInterval,
 		instanceIDReadyC: instanceIDReadyC,
@@ -85,7 +85,9 @@ func (emd *ec2Metadata) refresh(ctx context.Context) {
 	}
 	emd.logger.Info("Fetch instance id and type from ec2 metadata")
 
-	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(ctx)
+	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
+	defer cancel()
+	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(childCtx)
 	if err != nil {
 		emd.logger.Error("Failed to get ec2 metadata", zap.Error(err))
 		return
