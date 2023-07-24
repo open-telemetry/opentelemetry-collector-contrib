@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -46,6 +47,13 @@ func TestLoadConfigRootPath(t *testing.T) {
 	expectedConfig.RootPath = "testdata"
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
 	cpuScraperCfg.SetRootPath("testdata")
+	cpuScraperCfg.SetEnvMap(common.EnvMap{
+		common.HostDevEnvKey: "testdata/dev",
+		common.HostEtcEnvKey: "testdata/etc",
+		common.HostRunEnvKey: "testdata/run",
+		common.HostSysEnvKey: "testdata/sys",
+		common.HostVarEnvKey: "testdata/var",
+	})
 	expectedConfig.Scrapers = map[string]internal.Config{cpuscraper.TypeStr: cpuScraperCfg}
 
 	assert.Equal(t, expectedConfig, r)
