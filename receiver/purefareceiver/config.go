@@ -41,7 +41,7 @@ type Config struct {
 	// Env represents the respective environment value valid to scrape
 	Env string `mapstructure:"env"`
 
-	// Fa_array_name represents the display name that is appended to the recieved metrics, as the `host` label if not provided by OpenMetrics output, and to the `fa_array_name` label always.
+	// Fa_array_name represents the display name that is appended to the received metrics, as the `host` label if not provided by OpenMetrics output, and to the `fa_array_name` label always.
 	Fa_array_name string `mapstructure:"fa_array_name"`
 }
 
