@@ -234,7 +234,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
