@@ -12,19 +12,16 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
-
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
-
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 const (
@@ -41,11 +38,6 @@ type SSOTracesExporter struct {
 	Dataset      string
 	httpSettings confighttp.HTTPClientSettings
 	telemetry    component.TelemetrySettings
-}
-
-func (s *SSOTracesExporter) Shutdown(_ context.Context) error {
-	// TODO is there anything to be done here?
-	return nil
 }
 
 func shouldRetryEvent(status int) bool {
@@ -90,7 +82,7 @@ func (s *SSOTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces)
 			scope := scopeSpans.At(j).Scope()
 			schemaURL := scopeSpans.At(j).SchemaUrl()
 			for k := 0; k < spans.Len(); k++ {
-				payload, err := s.createJsonDocument(resource, scope, schemaURL, spans.At(k))
+				payload, err := s.createJSONDocument(resource, scope, schemaURL, spans.At(k))
 				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
@@ -150,7 +142,7 @@ func defaultIfEmpty(value string, def string) string {
 	return value
 }
 
-func (s *SSOTracesExporter) createJsonDocument(
+func (s *SSOTracesExporter) createJSONDocument(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	schemaURL string,

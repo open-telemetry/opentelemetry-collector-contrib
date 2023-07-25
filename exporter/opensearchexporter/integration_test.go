@@ -12,11 +12,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/yaml.v3"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"gopkg.in/yaml.v3"
 )
 
 func TestOpenSearchExporter(t *testing.T) {
@@ -34,7 +33,7 @@ func TestOpenSearchExporter(t *testing.T) {
 			if actionData, isBulkAction := strMap["create"]; isBulkAction {
 				validateBulkAction(t, actionData.(map[string]any))
 			} else {
-				validateTraceJson(t, strMap)
+				validateTraceJSON(t, strMap)
 			}
 		}
 	}))
@@ -61,7 +60,7 @@ func TestOpenSearchExporter(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func validateTraceJson(t *testing.T, strMap map[string]any) {
+func validateTraceJSON(t *testing.T, strMap map[string]any) {
 	require.NotEmpty(t, strMap)
 	// TODO would be excellent place for schema validation once the schema is published
 }
