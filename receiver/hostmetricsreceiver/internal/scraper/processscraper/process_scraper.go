@@ -42,6 +42,7 @@ const (
 type scraper struct {
 	settings           receiver.CreateSettings
 	config             *Config
+	rb                 *metadata.ResourceBuilder
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
 	excludeFS          filterset.FilterSet
@@ -86,6 +87,7 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
+	s.rb = metadata.NewResourceBuilder(s.config.ResourceAttributes)
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
@@ -150,8 +152,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(signalMetricsLen, fmt.Errorf("error reading pending signals for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		options := append(md.resourceOptions(), metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
-		s.mb.EmitForResource(options...)
+		s.mb.EmitForResource(metadata.WithResource(md.buildResource(s.rb)),
+			metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
 	}
 
 	// Cleanup any [ucal.CPUUtilizationCalculator]s for PIDs that are no longer present
