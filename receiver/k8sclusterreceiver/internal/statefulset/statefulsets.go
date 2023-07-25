@@ -49,7 +49,12 @@ func GetMetrics(set receiver.CreateSettings, ss *appsv1.StatefulSet) pmetric.Met
 	mb.RecordK8sStatefulsetReadyPodsDataPoint(ts, int64(ss.Status.ReadyReplicas))
 	mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, int64(ss.Status.CurrentReplicas))
 	mb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, int64(ss.Status.UpdatedReplicas))
-	return mb.Emit(imetadata.WithK8sStatefulsetUID(string(ss.UID)), imetadata.WithK8sStatefulsetName(ss.Name), imetadata.WithK8sNamespaceName(ss.Namespace), imetadata.WithOpencensusResourcetype("k8s"))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sStatefulsetUID(string(ss.UID))
+	rb.SetK8sStatefulsetName(ss.Name)
+	rb.SetK8sNamespaceName(ss.Namespace)
+	rb.SetOpencensusResourcetype("k8s")
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(ss *appsv1.StatefulSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

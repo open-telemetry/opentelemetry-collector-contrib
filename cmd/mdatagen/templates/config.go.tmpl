@@ -69,10 +69,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 {{ if .Metrics -}}
 // MetricsBuilderConfig is a configuration for {{ .Type }} metrics builder.
 type MetricsBuilderConfig struct {
-    Metrics MetricsConfig `mapstructure:"metrics"`
-    {{- if .ResourceAttributes }}
-    ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
-    {{- end }}
+	Metrics MetricsConfig `mapstructure:"metrics"`
+	{{- if .ResourceAttributes }}
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	{{- end }}
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
