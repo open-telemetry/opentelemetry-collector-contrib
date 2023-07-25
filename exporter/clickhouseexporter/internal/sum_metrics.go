@@ -100,16 +100,20 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 	}
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		batch, err := tx.PrepareContext(ctx, s.insertSQL)
+		statement, err := tx.PrepareContext(ctx, s.insertSQL)
 		if err != nil {
 			return err
 		}
-	batch:
+		
+		defer func() {
+			_ = statement.Close()
+		}()
+
 		for _, model := range s.sumModel {
 			for i := 0; i < model.sum.DataPoints().Len(); i++ {
 				dp := model.sum.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-				_, err = batch.ExecContext(ctx,
+				_, err = statement.ExecContext(ctx,
 					model.metadata.ResAttr,
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
@@ -134,7 +138,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 					model.sum.IsMonotonic(),
 				)
 				if err != nil {
-					break batch
+					return fmt.Errorf("ExecContext:%w", err)
 				}
 			}
 		}

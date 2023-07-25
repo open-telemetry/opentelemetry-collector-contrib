@@ -92,17 +92,19 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 	}
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		batch, err := tx.PrepareContext(ctx, s.insertSQL)
+		statement, err := tx.PrepareContext(ctx, s.insertSQL)
 		if err != nil {
 			return err
 		}
-	batch:
+		defer func() {
+			_ = statement.Close()
+		}()
 		for _, model := range s.summaryModel {
 			for i := 0; i < model.summary.DataPoints().Len(); i++ {
 				dp := model.summary.DataPoints().At(i)
 				quantiles, values := convertValueAtQuantile(dp.QuantileValues())
 
-				_, err = batch.ExecContext(ctx,
+				_, err = statement.ExecContext(ctx,
 					model.metadata.ResAttr,
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
@@ -123,7 +125,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 					uint32(dp.Flags()),
 				)
 				if err != nil {
-					break batch
+					return fmt.Errorf("ExecContext:%w", err)
 				}
 			}
 		}

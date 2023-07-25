@@ -115,18 +115,21 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		batch, err := tx.PrepareContext(ctx, e.insertSQL)
+		statement, err := tx.PrepareContext(ctx, e.insertSQL)
 		if err != nil {
 			return err
 		}
 
-	batch:
+		defer func() {
+			_ = statement.Close()
+		}()
+		
 		for _, model := range e.expHistogramModels {
 			for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
 				dp := model.expHistogram.DataPoints().At(i)
 
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-				_, err = batch.ExecContext(ctx,
+				_, err = statement.ExecContext(ctx,
 					model.metadata.ResAttr,
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
@@ -158,7 +161,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 					dp.Max(),
 				)
 				if err != nil {
-					break batch
+					return fmt.Errorf("ExecContext:%w", err)
 				}
 			}
 		}

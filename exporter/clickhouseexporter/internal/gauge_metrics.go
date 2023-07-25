@@ -96,16 +96,20 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 	}
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		stat, err := tx.PrepareContext(ctx, g.insertSQL)
+		statement, err := tx.PrepareContext(ctx, g.insertSQL)
 		if err != nil {
 			return err
 		}
-	batch:
+		
+		defer func() {
+			_ = statement.Close()
+		}()
+
 		for _, model := range g.gaugeModels {
 			for i := 0; i < model.gauge.DataPoints().Len(); i++ {
 				dp := model.gauge.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-				_, err = stat.ExecContext(ctx,
+				_, err = statement.ExecContext(ctx,
 					model.metadata.ResAttr,
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
@@ -128,7 +132,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 					spanIDs,
 				)
 				if err != nil {
-					break batch
+					return fmt.Errorf("ExecContext:%w", err)
 				}
 			}
 		}
@@ -139,7 +143,6 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 		logger.Debug("insert gauge metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert gauge metrics fail:%w", err)
 	}
-	println(fmt.Sprintf("insert gauge metrics %d, cost %s", g.count, duration))
 	return nil
 }
 
