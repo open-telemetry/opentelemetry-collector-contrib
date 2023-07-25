@@ -316,6 +316,21 @@ exporters:
       #
       # span_name_as_resource_name: true
 
+      ## @param compute_stats_by_span_kind - enables APM stats computation based on `span.kind`
+      ## If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
+      ## If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
+      ## NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+      #
+      # compute_stats_by_span_kind: true
+  
+      ## @param peer_service_aggregation - enables `peer.service` aggregation on trace stats in Datadog exporter
+      ## If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
+      ## For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
+      ## If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+      ## If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+      #
+      # peer_service_aggregation: true
+
     ## @param host_metadata - custom object - optional
     ## Host metadata specific configuration.
     ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
