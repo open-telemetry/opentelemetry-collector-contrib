@@ -37,7 +37,6 @@ const (
 
 type SSOTracesExporter struct {
 	client       *opensearch.Client
-	bulkIndexer  opensearchutil.BulkIndexer
 	Namespace    string
 	Dataset      string
 	httpSettings confighttp.HTTPClientSettings
