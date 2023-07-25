@@ -253,6 +253,10 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
+.PHONY: gengithub
+gengithub:
+	$(GOCMD) run cmd/githubgen/main.go .
+
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
