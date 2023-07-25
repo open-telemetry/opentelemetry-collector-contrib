@@ -1,8 +1,10 @@
 receivers:
   purefa:
+    fa_array_name: array01.example.com
     endpoint: http://172.31.60.208:9490/metrics
 
   purefa/with_custom_intervals:
+    fa_array_name: array01.example.com
     endpoint: http://172.31.60.208:9490/metrics
     array:
       - address: array01

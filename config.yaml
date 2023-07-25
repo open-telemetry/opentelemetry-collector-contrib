@@ -1,0 +1,98 @@
+extensions:
+  bearertokenauth/array01:
+    token: "cb5ef954-e5ea-0545-0889-e62c5985a63e"
+
+
+receivers:
+  purefa:
+    fa_array_name: foobar
+    endpoint: http://localhost:9490/metrics
+    array:
+      - address: gse-array01.prlb.flr.c360cloud.com
+        auth:
+          authenticator: bearertokenauth/array01
+    hosts:
+      - address: gse-array01.prlb.flr.c360cloud.com
+          authenticator: bearertokenauth/array01
+    env: dev
+    settings:
+      reload_intervals:
+        array: 10s
+        hosts: 13s
+        directories: 15s
+        pods: 30s
+        volumes: 25s
+
+  otlp:
+    protocols:
+      http:
+      grpc:
+  # The hostmetrics receiver is required to get correct infrastructure metrics in Datadog.
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load:
+      memory:
+      network:
+      processes:
+  # The prometheus receiver scrapes metrics needed for the OpenTelemetry Collector Dashboard.
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: 'otelcol'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['0.0.0.0:8888']
+
+  filelog:
+    include_file_path: true
+    poll_interval: 500ms
+    include:
+      - /var/log/**/*example*/*.log
+
+processors:
+  batch:
+    send_batch_max_size: 100
+    send_batch_size: 10
+    timeout: 10s
+
+
+exporters:
+  logging:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+#exporters:
+#  datadog:
+#    api:
+#      site: <DD_SITE>
+#      key: ${env:DD_API_KEY}
+
+service:
+  extensions: [bearertokenauth/array01]
+  pipelines:
+    metrics:
+      receivers: [purefa]
+      processors: [batch]
+      exporters: [logging]
+#    traces:
+#      receivers: [otlp]
+#      processors: [batch]
+#      exporters: []
+#    logs:
+#      receivers: [otlp, filelog]
+#      processors: [batch]
+#      exporters: []

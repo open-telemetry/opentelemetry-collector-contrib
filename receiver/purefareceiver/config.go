@@ -40,6 +40,9 @@ type Config struct {
 
 	// Env represents the respective environment value valid to scrape
 	Env string `mapstructure:"env"`
+
+	// Fa_array_name represents the display name that is appended to the recieved metrics, as the `host` label if not provided by OpenMetrics output, and to the `fa_array_name` label always.
+	Fa_array_name string `mapstructure:"fa_array_name"`
 }
 
 type Settings struct {
@@ -57,6 +60,9 @@ type ReloadIntervals struct {
 func (c *Config) Validate() error {
 	var errs error
 
+	if c.Fa_array_name == "" {
+		errs = multierr.Append(errs, errors.New("the array's pretty name as 'fa_array_name' must be provided"))
+	}
 	if c.Settings.ReloadIntervals.Array == 0 {
 		errs = multierr.Append(errs, errors.New("reload interval for 'array' must be provided"))
 	}
