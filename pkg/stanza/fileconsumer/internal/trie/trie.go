@@ -44,7 +44,13 @@ func (trie *Trie) HasKey(key []byte) bool {
 // Put inserts the key into the trie
 func (trie *Trie) Put(key []byte) {
 	node := trie
+	shouldPush := false
+	var last *Trie
 	for _, r := range key {
+		if node.isEnd {
+			last = node
+			shouldPush = true
+		}
 		child, ok := node.children[r]
 		if !ok {
 			if node.children == nil {
@@ -54,6 +60,9 @@ func (trie *Trie) Put(key []byte) {
 			node.children[r] = child
 		}
 		node = child
+	}
+	if shouldPush {
+		last.isEnd = false
 	}
 	node.isEnd = true
 }
