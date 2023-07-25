@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -48,9 +49,10 @@ type scraper struct {
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
 	ucals              map[int32]*ucal.CPUUtilizationCalculator
+
 	// for mocking
 	getProcessCreateTime func(p processHandle) (int64, error)
-	getProcessHandles    func() (processHandles, error)
+	getProcessHandles    func(context.Context) (processHandles, error)
 
 	handleCountManager handlecount.Manager
 }
@@ -171,7 +173,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
 func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
-	handles, err := s.getProcessHandles()
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
+	handles, err := s.getProcessHandles(ctx)
 	if err != nil {
 		return nil, err
 	}

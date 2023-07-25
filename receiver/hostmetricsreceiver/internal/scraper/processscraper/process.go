@@ -4,6 +4,7 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"context"
 	"runtime"
 	"strings"
 	"time"
@@ -108,8 +109,8 @@ func (p *gopsProcessHandles) Len() int {
 	return len(p.handles)
 }
 
-func getProcessHandlesInternal() (processHandles, error) {
-	processes, err := process.Processes()
+func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
+	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}

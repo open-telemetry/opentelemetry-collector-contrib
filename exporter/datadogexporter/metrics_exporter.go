@@ -82,8 +82,9 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	case CumulativeMonotonicSumModeToDelta:
 		numberMode = otlpmetrics.NumberModeCumulativeToDelta
 	}
-
 	options = append(options, otlpmetrics.WithNumberMode(numberMode))
+	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
+		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
 	return otlpmetrics.NewTranslator(logger, options...)
 }
