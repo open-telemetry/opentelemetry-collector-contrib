@@ -289,13 +289,13 @@ func Test_export(t *testing.T) {
 			*ts1,
 			false,
 			http.StatusAccepted,
-			false,
+			true,
 		}, {
 			"error_status_code_case",
 			*ts1,
 			true,
 			http.StatusForbidden,
-			false,
+			true,
 		},
 	}
 
@@ -552,7 +552,7 @@ func Test_PushMetrics(t *testing.T) {
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusServiceUnavailable,
-			returnErr:          false,
+			returnErr:          true,
 			// When using the WAL, it returns success once the data is persisted to the WAL
 			skipForWAL: true,
 		},

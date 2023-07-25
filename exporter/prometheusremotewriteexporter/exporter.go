@@ -150,18 +150,6 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-// labelsToString converts labels to a string representation.
-func labelsToString(labels []prompb.Label) string {
-	var sb strings.Builder
-	for _, l := range labels {
-		sb.WriteString(l.Name)
-		sb.WriteByte('=')
-		sb.WriteString(l.Value)
-		sb.WriteByte(',')
-	}
-	return sb.String()
-}
-
 // handleExport partitions the time series map into N arrays and creates N workers to process them.
 func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	// There are no metrics to export, so return.
@@ -179,39 +167,49 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	wg := sync.WaitGroup{}
 	wg.Add(concurrencyLimit)
 
+	// Create an array of errors to store errors from each worker
+	errorsArray := make([]error, concurrencyLimit)
+
 	for i := 0; i < concurrencyLimit; i++ {
 		// Submit one array per worker
-		go func(partition map[string]*prompb.TimeSeries) {
+		go func(partition map[string]*prompb.TimeSeries, workerIndex int) {
 			defer wg.Done()
 
 			requests, err := batchTimeSeries(partition, maxBatchByteSize)
 			if err != nil {
-				err = consumererror.NewPermanent(err)
+				errorsArray[workerIndex] = consumererror.NewPermanent(err)
 				prwe.settings.Logger.Error("Failed to batch time series:", zap.Error(err))
+				return
 			}
 
 			if !prwe.walEnabled() {
 				// WAL is not enabled, perform a direct export
 				if errExecute := prwe.export(ctx, requests); errExecute != nil {
-					// We will log the error here, but not return it immediately.
-					// Instead, we'll let the worker complete its execution.
+					errorsArray[workerIndex] = errExecute
 					prwe.settings.Logger.Error("Failed to export data:", zap.Error(errExecute))
 				}
 			} else {
 				// WAL is enabled, persist requests to the WAL for later export
 				if err := prwe.wal.persistToWAL(requests); err != nil {
-					// Log the error and return a permanent consumer error
-					err = consumererror.NewPermanent(err)
+					errorsArray[workerIndex] = consumererror.NewPermanent(err)
 					prwe.settings.Logger.Error("Failed to persist to WAL:", zap.Error(err))
 				}
 			}
-		}(partitions[i])
+		}(partitions[i], i)
 	}
 
 	// Wait for all workers to finish processing the requests
 	wg.Wait()
 
-	return nil
+	// Check if any errors were written to the errorsArray, and return them if present.
+	var finalErr error
+	for _, err := range errorsArray {
+		if err != nil {
+			finalErr = multierr.Append(finalErr, err)
+		}
+	}
+
+	return finalErr
 }
 
 // partitionTimeSeries partitions the time series map into N arrays using hashing/fnv.
@@ -223,44 +221,34 @@ func partitionTimeSeries(tsMap map[string]*prompb.TimeSeries, concurrencyLimit i
 
 	// FNV-1a is a non-cryptographic hash function.
 	hasher := fnv.New32a()
-
-	for _, ts := range tsMap {
-		// Hash the labels of the time series using FNV-1a.
+	for key, ts := range tsMap {
 		hasher.Reset()
-		hasher.Write([]byte(labelsToString(ts.Labels)))
+		hasher.Write([]byte(key))
 		hash := hasher.Sum32()
-
-		// Modulo the hash with the number of partitions to get the partition index.
+		// Modulo the key with the number of partitions to get the partition index.
 		partitionIndex := int(hash % uint32(concurrencyLimit))
-		partitions[partitionIndex][labelsToString(ts.Labels)] = ts
+		partitions[partitionIndex][key] = ts
 	}
-
 	return partitions
 }
 
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
-	// Use a mutex to handle concurrent errors
-	var mu sync.Mutex
-	var errs error
-
 	// Process each WriteRequest sequentially
 	for _, request := range requests {
 		// Check if the context is already cancelled
 		select {
 		case <-ctx.Done():
 			// Even if the context is already cancelled, return the accumulated errors, if any.
-			return errs
+			return ctx.Err()
 		default:
 			// Process the WriteRequest
 			if errExecute := prwe.execute(ctx, request); errExecute != nil {
-				mu.Lock()
-				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
-				mu.Unlock()
+				return consumererror.NewPermanent(errExecute)
 			}
 		}
 	}
 
-	return errs
+	return nil
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
