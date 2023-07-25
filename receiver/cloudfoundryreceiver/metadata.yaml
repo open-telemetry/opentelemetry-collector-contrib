@@ -5,4 +5,5 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, splunk, observiq, sumo]
-
+  codeowners:
+    active: [agoallikmaa, pellared, crobert-1]

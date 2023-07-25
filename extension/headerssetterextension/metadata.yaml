@@ -4,4 +4,9 @@ status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: [contrib, sumo]
+  distributions:
+  - contrib
+  - grafana
+  - sumo
+  codeowners:
+    active: [jpkrohling, kovrus]

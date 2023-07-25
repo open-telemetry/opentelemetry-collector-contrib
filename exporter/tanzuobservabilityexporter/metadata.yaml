@@ -5,3 +5,5 @@ status:
   stability:
     beta: [traces, metrics]
   distributions: [contrib]
+  codeowners:
+    active: [oppegard, thepeterstone, keep94]

@@ -5,3 +5,5 @@ status:
   stability:
     beta: [traces, metrics, logs]
   distributions: [contrib, observiq]
+  codeowners:
+    active: [gramidt]
