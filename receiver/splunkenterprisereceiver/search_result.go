@@ -20,3 +20,16 @@ type Field struct {
     Value     string `xml:"value>text"`
 }
 
+// '/services/server/introspection/indexer'
+type indexThroughput struct {
+    Entries []IdxTEntry `json:"entry"`
+}
+
+type IdxTEntry struct {
+    Content IdxTContent `json:"content"`
+}
+
+type IdxTContent struct {
+    Status string `json:"status"`
+    AvgKb  float64 `json:"average_KBps"` 
+}
