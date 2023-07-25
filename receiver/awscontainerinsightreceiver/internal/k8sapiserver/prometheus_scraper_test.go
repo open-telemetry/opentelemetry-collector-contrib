@@ -16,20 +16,23 @@ package k8sapiserver
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
-	"time"
 
+	configutil "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 const renameMetric = `
@@ -50,9 +53,10 @@ rpc_duration_total{method="post",port="6381"} 120.0
 `
 
 type mockConsumer struct {
-	t             *testing.T
-	up            *bool
-	httpConnected *bool
+	t                *testing.T
+	up               *bool
+	httpConnected    *bool
+	rpcDurationTotal *bool
 }
 
 func (m mockConsumer) Capabilities() consumer.Capabilities {
@@ -71,6 +75,9 @@ func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) er
 			assert.Equal(m.t, float64(15), metric.Sum().DataPoints().At(0).DoubleValue())
 			*m.httpConnected = true
 		}
+		if metric.Name() == "rpc_duration_total" {
+			*m.rpcDurationTotal = true
+		}
 		if metric.Name() == "up" {
 			assert.Equal(m.t, float64(1), metric.Gauge().DataPoints().At(0).DoubleValue())
 			*m.up = true
@@ -80,23 +87,75 @@ func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) er
 	return nil
 }
 
-func TestNewPrometheusScraperNilLeaderElection(t *testing.T) {
+func TestNewPrometheusScraperBadInputs(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger, _ = zap.NewDevelopment()
 
-	scraper, err := NewPrometheusScraper(context.TODO(), settings, "", mockConsumer{}, componenttest.NewNopHost(), mockClusterNameProvider{}, nil)
-	assert.Error(t, err)
-	assert.Nil(t, scraper)
+	leaderElection := LeaderElection{
+		leading: true,
+	}
+
+	tests := []PrometheusScraperOpts{
+		{
+			Ctx:                 context.TODO(),
+			TelemetrySettings:   settings,
+			Endpoint:            "",
+			Consumer:            mockConsumer{},
+			Host:                componenttest.NewNopHost(),
+			ClusterNameProvider: mockClusterNameProvider{},
+			LeaderElection:      nil,
+			BearerToken:         "",
+		},
+		{
+			Ctx:                 context.TODO(),
+			TelemetrySettings:   settings,
+			Endpoint:            "",
+			Consumer:            nil,
+			Host:                componenttest.NewNopHost(),
+			ClusterNameProvider: mockClusterNameProvider{},
+			LeaderElection:      &leaderElection,
+			BearerToken:         "",
+		},
+		{
+			Ctx:                 context.TODO(),
+			TelemetrySettings:   settings,
+			Endpoint:            "",
+			Consumer:            mockConsumer{},
+			Host:                nil,
+			ClusterNameProvider: mockClusterNameProvider{},
+			LeaderElection:      &leaderElection,
+			BearerToken:         "",
+		},
+		{
+			Ctx:                 context.TODO(),
+			TelemetrySettings:   settings,
+			Endpoint:            "",
+			Consumer:            mockConsumer{},
+			Host:                componenttest.NewNopHost(),
+			ClusterNameProvider: nil,
+			LeaderElection:      &leaderElection,
+			BearerToken:         "",
+		},
+	}
+
+	for _, tt := range tests {
+		scraper, err := NewPrometheusScraper(tt)
+
+		assert.Error(t, err)
+		assert.Nil(t, scraper)
+	}
 }
 func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 
 	upPtr := false
 	httpPtr := false
+	rpcDurationTotalPtr := false
 
 	consumer := mockConsumer{
-		t:             t,
-		up:            &upPtr,
-		httpConnected: &httpPtr,
+		t:                t,
+		up:               &upPtr,
+		httpConnected:    &httpPtr,
+		rpcDurationTotal: &rpcDurationTotalPtr,
 	}
 
 	settings := componenttest.NewNopTelemetrySettings()
@@ -105,16 +164,26 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	leaderElection := LeaderElection{
 		leading: true,
 	}
-	scraper, err := NewPrometheusScraper(context.TODO(), settings, "", consumer, componenttest.NewNopHost(), mockClusterNameProvider{}, &leaderElection)
+
+	scraper, err := NewPrometheusScraper(PrometheusScraperOpts{
+		Ctx:                 context.TODO(),
+		TelemetrySettings:   settings,
+		Endpoint:            "",
+		Consumer:            mockConsumer{},
+		Host:                componenttest.NewNopHost(),
+		ClusterNameProvider: mockClusterNameProvider{},
+		LeaderElection:      &leaderElection,
+		BearerToken:         "",
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, mockClusterNameProvider{}, scraper.clusterNameProvider)
 
-	// build up a new SPR
-	spFactory := simpleprometheusreceiver.NewFactory()
+	// build up a new PR
+	promFactory := prometheusreceiver.NewFactory()
 
 	targets := []*testData{
 		{
-			name: "prometheus_simple",
+			name: "prometheus",
 			pages: []mockPrometheusResponse{
 				{code: 200, data: renameMetric},
 			},
@@ -125,24 +194,55 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 
 	split := strings.Split(mp.srv.URL, "http://")
 
-	spConfig := simpleprometheusreceiver.Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: split[1],
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:           true,
+	scrapeConfig := &config.ScrapeConfig{
+		HTTPClientConfig: configutil.HTTPClientConfig{
+			TLSConfig: configutil.TLSConfig{
 				InsecureSkipVerify: true,
 			},
 		},
-		MetricsPath:        cfg.ScrapeConfigs[0].MetricsPath,
-		CollectionInterval: time.Duration(cfg.ScrapeConfigs[0].ScrapeInterval),
-		UseServiceAccount:  false,
+		ScrapeInterval:  cfg.ScrapeConfigs[0].ScrapeInterval,
+		ScrapeTimeout:   cfg.ScrapeConfigs[0].ScrapeInterval,
+		JobName:         fmt.Sprintf("%s/%s", "containerInsightsKubeAPIServerScraper", cfg.ScrapeConfigs[0].MetricsPath),
+		HonorTimestamps: true,
+		Scheme:          "http",
+		MetricsPath:     cfg.ScrapeConfigs[0].MetricsPath,
+		ServiceDiscoveryConfigs: discovery.Configs{
+			&discovery.StaticConfig{
+				{
+					Targets: []model.LabelSet{
+						{
+							model.AddressLabel: model.LabelValue(split[1]),
+							"ClusterName":      model.LabelValue("test_cluster_name"),
+							"Version":          model.LabelValue("0"),
+							"Sources":          model.LabelValue("[\"apiserver\"]"),
+							"NodeName":         model.LabelValue("test"),
+							"Type":             model.LabelValue("control_plane"),
+						},
+					},
+				},
+			},
+		},
+		MetricRelabelConfigs: []*relabel.Config{
+			{
+				// allow list filter for the control plane metrics we care about
+				SourceLabels: model.LabelNames{"__name__"},
+				Regex:        relabel.MustNewRegexp("http_connected_total"),
+				Action:       relabel.Keep,
+			},
+		},
 	}
 
-	// replace the SPR
+	promConfig := prometheusreceiver.Config{
+		PrometheusConfig: &config.Config{
+			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
+		},
+	}
+
+	// replace the prom receiver
 	params := receiver.CreateSettings{
 		TelemetrySettings: scraper.settings,
 	}
-	scraper.simplePrometheusReceiver, err = spFactory.CreateMetricsReceiver(scraper.ctx, params, &spConfig, consumer)
+	scraper.prometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.ctx, params, &promConfig, consumer)
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 	defer mp.Close()
@@ -160,4 +260,5 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 
 	assert.True(t, *consumer.up)
 	assert.True(t, *consumer.httpConnected)
+	assert.False(t, *consumer.rpcDurationTotal) // this will get filtered out by our metric relabel config
 }
