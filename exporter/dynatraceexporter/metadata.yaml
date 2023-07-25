@@ -5,3 +5,5 @@ status:
   stability:
     deprecated: [metrics]
   distributions: [contrib, aws, observiq]
+  codeowners:
+    active: [dyladan, arminru, evan-bradley]

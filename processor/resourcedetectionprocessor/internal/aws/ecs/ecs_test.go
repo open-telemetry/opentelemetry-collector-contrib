@@ -120,8 +120,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
 	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	d := Detector{provider: &mockMetaDataProvider{isV4: true}, resourceAttributes: resourceAttributes}
+	d := Detector{provider: &mockMetaDataProvider{isV4: true}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -144,8 +143,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.PutStr("cloud.availability_zone", "us-west-2a")
 	attr.PutStr("cloud.account.id", "123456789123")
 
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	d := Detector{provider: &mockMetaDataProvider{isV4: false}, resourceAttributes: resourceAttributes}
+	d := Detector{provider: &mockMetaDataProvider{isV4: false}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

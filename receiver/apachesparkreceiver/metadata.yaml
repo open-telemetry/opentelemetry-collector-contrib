@@ -5,6 +5,8 @@ status:
   stability: 
     development: [metrics]
   distributions: [contrib]
+  codeowners:
+    active: [djaglowski, Caleb-Hurshman, mrsillydog]
 
 resource_attributes:
   spark.application.id:
