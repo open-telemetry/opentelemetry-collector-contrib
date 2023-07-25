@@ -88,6 +88,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			&outOfBoundsStructTagFunctionArguments{},
 			functionThatHasAnError,
 		),
+		createFactory(
+			"testing_unknown_function",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
+		),
 	)
 
 	p, _ := NewParser(
@@ -307,6 +312,17 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+					},
+				},
+			},
+		},
+		{
+			name: "Unknown Function",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
 					},
 				},
 			},
@@ -940,6 +956,18 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "functiongetter arg",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+					},
+				},
+			},
+			want: "hashstring",
+		},
+		{
 			name: "stringlikegetter arg",
 			inv: editor{
 				Function: "testing_stringlikegetter",
@@ -1312,6 +1340,16 @@ func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}],
 	}, nil
 }
 
+type functionGetterArguments struct {
+	FunctionGetterArg FunctionGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFunctionGetter(FunctionGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "hashstring", nil
+	}, nil
+}
+
 type stringLikeGetterArguments struct {
 	StringLikeGetterArg StringLikeGetter[any] `ottlarg:"0"`
 }
@@ -1583,6 +1621,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 		),
 		createFactory[any](
 			"testing_stringgetter",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"testing_functiongetter",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
+		),
+		createFactory[any](
+			"SHA256",
 			&stringGetterArguments{},
 			functionWithStringGetter,
 		),
