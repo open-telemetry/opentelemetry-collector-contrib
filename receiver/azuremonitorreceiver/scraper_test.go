@@ -37,8 +37,8 @@ func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCre
 	return &azidentity.ClientSecretCredential{}, nil
 }
 
-func azIDWorkloadFuncMock(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error) {
-	return &azidentity.DefaultAzureCredential{}, nil
+func azIDWorkloadFuncMock(*azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error) {
+	return &azidentity.WorkloadIdentityCredential{}, nil
 }
 
 func armClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error) {
@@ -134,7 +134,7 @@ func TestAzureScraperStart(t *testing.T) {
 					t.Errorf("azureScraper.start() error = %v", err)
 				}
 				require.NotNil(t, s.cred)
-				require.IsType(t, &azidentity.DefaultAzureCredential{}, s.cred)
+				require.IsType(t, &azidentity.WorkloadIdentityCredential{}, s.cred)
 			},
 		},
 	}

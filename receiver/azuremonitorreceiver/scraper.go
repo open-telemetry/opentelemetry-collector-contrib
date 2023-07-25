@@ -83,7 +83,7 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
 		settings:                        settings.TelemetrySettings,
 		mb:                              metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
-		azIDWorkloadFunc:                azidentity.NewDefaultAzureCredential,
+		azIDWorkloadFunc:                azidentity.NewWorkloadIdentityCredential,
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
@@ -104,7 +104,7 @@ type azureScraper struct {
 	resourcesUpdated                time.Time
 	mb                              *metadata.MetricsBuilder
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
-	azIDWorkloadFunc                func(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
+	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
