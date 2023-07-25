@@ -125,8 +125,12 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	curMF := t.getOrCreateMetricFamily(metricName)
+	err := curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
+	if err != nil {
+		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
+	}
 
-	return 0, curMF.addSeries(t.getSeriesRef(ls, curMF.mtype), metricName, ls, atMs, val)
+	return 0, nil // never return errors, as that fails the whole scrape
 }
 
 func (t *transaction) getOrCreateMetricFamily(mn string) *metricFamily {

@@ -32,16 +32,16 @@ const (
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &detector{
-		logger:             set.Logger,
-		detector:           gcp.NewDetector(),
-		resourceAttributes: cfg.ResourceAttributes,
+		logger:   set.Logger,
+		detector: gcp.NewDetector(),
+		rb:       localMetadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
 
 type detector struct {
-	logger             *zap.Logger
-	detector           gcpDetector
-	resourceAttributes localMetadata.ResourceAttributesConfig
+	logger   *zap.Logger
+	detector gcpDetector
+	rb       *localMetadata.ResourceBuilder
 }
 
 func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -49,69 +49,67 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		return pcommon.NewResource(), "", nil
 	}
 
-	rb := localMetadata.NewResourceBuilder(d.resourceAttributes)
-
-	rb.SetCloudProvider(conventions.AttributeCloudProviderGCP)
-	errs := rb.SetFromCallable(rb.SetCloudAccountID, d.detector.ProjectID)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderGCP)
+	errs := d.rb.SetFromCallable(d.rb.SetCloudAccountID, d.detector.ProjectID)
 
 	switch d.detector.CloudPlatform() {
 	case gcp.GKE:
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPKubernetesEngine)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPKubernetesEngine)
 		errs = multierr.Combine(errs,
-			rb.SetZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion),
-			rb.SetFromCallable(rb.SetK8sClusterName, d.detector.GKEClusterName),
-			rb.SetFromCallable(rb.SetHostID, d.detector.GKEHostID),
+			d.rb.SetZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion),
+			d.rb.SetFromCallable(d.rb.SetK8sClusterName, d.detector.GKEClusterName),
+			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GKEHostID),
 		)
 		// GCEHostname is fallible on GKE, since it's not available when using workload identity.
 		if v, err := d.detector.GCEHostName(); err == nil {
-			rb.SetHostName(v)
+			d.rb.SetHostName(v)
 		} else {
 			d.logger.Info("Fallible detector failed. This attribute will not be available.",
 				zap.String("key", conventions.AttributeHostName), zap.Error(err))
 		}
 	case gcp.CloudRun:
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudRun)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudRun)
 		errs = multierr.Combine(errs,
-			rb.SetFromCallable(rb.SetFaasName, d.detector.FaaSName),
-			rb.SetFromCallable(rb.SetFaasVersion, d.detector.FaaSVersion),
-			rb.SetFromCallable(rb.SetFaasID, d.detector.FaaSID),
-			rb.SetFromCallable(rb.SetCloudRegion, d.detector.FaaSCloudRegion),
+			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
+			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
+			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
 	case gcp.CloudFunctions:
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudFunctions)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudFunctions)
 		errs = multierr.Combine(errs,
-			rb.SetFromCallable(rb.SetFaasName, d.detector.FaaSName),
-			rb.SetFromCallable(rb.SetFaasVersion, d.detector.FaaSVersion),
-			rb.SetFromCallable(rb.SetFaasID, d.detector.FaaSID),
-			rb.SetFromCallable(rb.SetCloudRegion, d.detector.FaaSCloudRegion),
+			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
+			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
+			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
 	case gcp.AppEngineFlex:
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPAppEngine)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPAppEngine)
 		errs = multierr.Combine(errs,
-			rb.SetZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion),
-			rb.SetFromCallable(rb.SetFaasName, d.detector.AppEngineServiceName),
-			rb.SetFromCallable(rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			rb.SetFromCallable(rb.SetFaasID, d.detector.AppEngineServiceInstance),
+			d.rb.SetZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion),
+			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
+			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
+			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance),
 		)
 	case gcp.AppEngineStandard:
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPAppEngine)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPAppEngine)
 		errs = multierr.Combine(errs,
-			rb.SetFromCallable(rb.SetFaasName, d.detector.AppEngineServiceName),
-			rb.SetFromCallable(rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			rb.SetFromCallable(rb.SetFaasID, d.detector.AppEngineServiceInstance),
-			rb.SetFromCallable(rb.SetCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone),
-			rb.SetFromCallable(rb.SetCloudRegion, d.detector.AppEngineStandardCloudRegion),
+			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
+			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
+			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance),
+			d.rb.SetFromCallable(d.rb.SetCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone),
+			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.AppEngineStandardCloudRegion),
 		)
 	case gcp.GCE:
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPComputeEngine)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPComputeEngine)
 		errs = multierr.Combine(errs,
-			rb.SetZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion),
-			rb.SetFromCallable(rb.SetHostType, d.detector.GCEHostType),
-			rb.SetFromCallable(rb.SetHostID, d.detector.GCEHostID),
-			rb.SetFromCallable(rb.SetHostName, d.detector.GCEHostName),
+			d.rb.SetZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion),
+			d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GCEHostType),
+			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GCEHostID),
+			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.GCEHostName),
 		)
 	default:
 		// We don't support this platform yet, so just return with what we have
 	}
-	return rb.Emit(), conventions.SchemaURL, errs
+	return d.rb.Emit(), conventions.SchemaURL, errs
 }

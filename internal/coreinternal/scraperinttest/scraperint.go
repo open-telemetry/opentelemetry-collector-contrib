@@ -143,7 +143,6 @@ func (it *IntegrationTest) Run(t *testing.T) {
 }
 
 func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
-	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	var errs error
 
 	var network testcontainers.Network
@@ -164,7 +163,6 @@ func (it *IntegrationTest) createNetwork(t *testing.T) testcontainers.Network {
 }
 
 func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
-	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	var wg sync.WaitGroup
 	ci := &ContainerInfo{
 		containers: make(map[string]testcontainers.Container, len(it.containerRequests)),

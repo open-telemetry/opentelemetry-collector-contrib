@@ -6,3 +6,5 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [core, contrib, splunk, observiq, sumo, aws, redhat]
   warnings: [Orphaned Telemetry, Other]
+  codeowners:
+    active: [TylerHelmuth, boostchicken]

@@ -53,7 +53,6 @@ func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, conte
 }
 
 func createNginxContainer(ctx context.Context, t *testing.T) testcontainers.Container {
-	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	req := testcontainers.ContainerRequest{
 		Image:        "docker.io/library/nginx:1.17",
 		ExposedPorts: []string{"80/tcp"},
@@ -86,8 +85,6 @@ func hasResourceScopeMetrics(containerID string, metrics []pmetric.Metrics) bool
 
 func TestDefaultMetricsIntegration(t *testing.T) {
 	t.Parallel()
-	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
-	// nolint:staticcheck
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 
@@ -142,8 +139,6 @@ func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	t.Parallel()
-	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
-	// nolint:staticcheck
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
 

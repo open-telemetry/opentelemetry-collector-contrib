@@ -118,7 +118,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *appsv1.ReplicaSet:
 		md = replicaset.GetMetrics(dc.settings, o)
 	case *appsv1.DaemonSet:
-		md = ocsToMetrics(demonset.GetMetrics(o))
+		md = demonset.GetMetrics(dc.settings, o)
 	case *appsv1.StatefulSet:
 		md = statefulset.GetMetrics(dc.settings, o)
 	case *batchv1.Job:
@@ -132,7 +132,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
 		md = hpa.GetMetricsBeta(dc.settings, o)
 	case *quotav1.ClusterResourceQuota:
-		md = ocsToMetrics(clusterresourcequota.GetMetrics(o))
+		md = clusterresourcequota.GetMetrics(dc.settings, o)
 	default:
 		return
 	}
