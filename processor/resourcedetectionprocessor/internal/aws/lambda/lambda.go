@@ -33,13 +33,13 @@ const (
 var _ internal.Detector = (*detector)(nil)
 
 type detector struct {
-	logger             *zap.Logger
-	resourceAttributes metadata.ResourceAttributesConfig
+	logger *zap.Logger
+	rb     *metadata.ResourceBuilder
 }
 
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &detector{logger: set.Logger, resourceAttributes: cfg.ResourceAttributes}, nil
+	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
 func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -49,38 +49,36 @@ func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaU
 		return pcommon.NewResource(), "", err
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
-	rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSLambda)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSLambda)
 	if value, ok := os.LookupEnv(awsRegionEnvVar); ok {
-		rb.SetCloudRegion(value)
+		d.rb.SetCloudRegion(value)
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector
-	rb.SetFaasName(functionName)
+	d.rb.SetFaasName(functionName)
 	if value, ok := os.LookupEnv(awsLambdaFunctionVersionEnvVar); ok {
-		rb.SetFaasVersion(value)
+		d.rb.SetFaasVersion(value)
 	}
 
 	// Note: The FaaS spec (https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
 	//       recommends setting faas.instance to the full log stream name for AWS Lambda.
 	if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
-		rb.SetFaasInstance(value)
+		d.rb.SetFaasInstance(value)
 	}
 	if value, ok := os.LookupEnv(awsLambdaFunctionMemorySizeEnvVar); ok {
-		rb.SetFaasMaxMemory(value)
+		d.rb.SetFaasMaxMemory(value)
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md
 	if value, ok := os.LookupEnv(awsLambdaLogGroupNameEnvVar); ok {
-		rb.SetAwsLogGroupNames([]any{value})
+		d.rb.SetAwsLogGroupNames([]any{value})
 	}
 	if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
-		rb.SetAwsLogStreamNames([]any{value})
+		d.rb.SetAwsLogStreamNames([]any{value})
 	}
 
-	return rb.Emit(), conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

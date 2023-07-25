@@ -6,6 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [observiq] |
 | Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=closed&color=blue&logo=opentelemetry) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aabmass](https://www.github.com/aabmass), [@dashpole](https://www.github.com/dashpole), [@jsuereth](https://www.github.com/jsuereth), [@punya](https://www.github.com/punya), [@damemi](https://www.github.com/damemi), [@psx95](https://www.github.com/psx95) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

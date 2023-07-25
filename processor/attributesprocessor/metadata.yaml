@@ -14,3 +14,5 @@ status:
   - splunk
   - sumo
   warnings: [Identity Conflict]
+  codeowners:
+    active: [boostchicken]

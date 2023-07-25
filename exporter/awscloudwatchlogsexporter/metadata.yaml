@@ -5,3 +5,5 @@ status:
   stability:
     beta: [logs]
   distributions: [contrib, observiq]
+  codeowners:
+    active: [boostchicken]

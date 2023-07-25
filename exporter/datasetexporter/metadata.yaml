@@ -5,3 +5,5 @@ status:
   stability:
     alpha: [logs, traces]
   distributions: [contrib]
+  codeowners:
+    active: [atoulme, martin-majlis-s1, zdaratom, tomaz-s1]
