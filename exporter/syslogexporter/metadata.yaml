@@ -4,3 +4,5 @@ status:
   class: exporter
   stability: 
     development: [logs]
+  codeowners:
+    active: [kkujawa-sumo, rnishtala-sumo, astencel-sumo]

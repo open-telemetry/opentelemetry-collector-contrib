@@ -27,11 +27,11 @@ var _ receiver.Metrics = (*kubernetesReceiver)(nil)
 type kubernetesReceiver struct {
 	resourceWatcher *resourceWatcher
 
-	config   *Config
-	settings receiver.CreateSettings
-	consumer consumer.Metrics
-	cancel   context.CancelFunc
-	obsrecv  *obsreport.Receiver
+	config          *Config
+	settings        receiver.CreateSettings
+	metricsConsumer consumer.Metrics
+	cancel          context.CancelFunc
+	obsrecv         *obsreport.Receiver
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -97,25 +97,69 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 }
 
 func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
+	if kr.metricsConsumer == nil {
+		// Metric collection is not enabled.
+		return
+	}
+
 	now := time.Now()
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
 
 	c := kr.obsrecv.StartMetricsOp(ctx)
 
 	numPoints := mds.DataPointCount()
-	err := kr.consumer.ConsumeMetrics(c, mds)
+	err := kr.metricsConsumer.ConsumeMetrics(c, mds)
 	kr.obsrecv.EndMetricsOp(c, metadata.Type, numPoints, err)
 }
 
-// newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-	rCfg := cfg.(*Config)
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newMetricsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.Unwrap().(*kubernetesReceiver).metricsConsumer = consumer
+	return r, nil
+}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             set.ID,
-		Transport:              transport,
-		ReceiverCreateSettings: set,
-	})
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newLogsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Logs,
+) (receiver.Logs, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.Unwrap().(*kubernetesReceiver).resourceWatcher.entityLogConsumer = consumer
+	return r, nil
+}
+
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+	rCfg := cfg.(*Config)
+	obsrecv, err := obsreport.NewReceiver(
+		obsreport.ReceiverSettings{
+			ReceiverID:             set.ID,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +167,6 @@ func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.C
 		resourceWatcher: newResourceWatcher(set, rCfg),
 		settings:        set,
 		config:          rCfg,
-		consumer:        consumer,
 		obsrecv:         obsrecv,
 	}, nil
 }

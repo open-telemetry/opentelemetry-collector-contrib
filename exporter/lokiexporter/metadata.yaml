@@ -4,4 +4,8 @@ status:
   class: exporter
   stability:
     beta: [logs]
-  distributions: [contrib, observiq]
+  distributions:
+  - contrib
+  - observiq
+  codeowners:
+    active: [gramidt, gouthamve, jpkrohling, kovrus, mar4uk]

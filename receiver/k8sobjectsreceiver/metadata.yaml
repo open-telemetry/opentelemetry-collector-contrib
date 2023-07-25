@@ -5,4 +5,5 @@ status:
   stability:
     alpha: [logs]
   distributions: [contrib, splunk, sumo]
-  
+  codeowners:
+    active: [dmitryax, hvaghani221]

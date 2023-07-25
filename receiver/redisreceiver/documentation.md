@@ -18,7 +18,7 @@ Number of clients pending on a blocking call
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
+| {client} | Sum | Int | Cumulative | false |
 
 ### redis.clients.connected
 
@@ -26,7 +26,7 @@ Number of client connections (excluding connections from replicas)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
+| {client} | Sum | Int | Cumulative | false |
 
 ### redis.clients.max_input_buffer
 
@@ -58,7 +58,7 @@ Total number of commands processed by the server
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {command} | Sum | Int | Cumulative | true |
 
 ### redis.connections.received
 
@@ -66,7 +66,7 @@ Total number of connections accepted by the server
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {connection} | Sum | Int | Cumulative | true |
 
 ### redis.connections.rejected
 
@@ -74,7 +74,7 @@ Number of connections rejected because of maxclients limit
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {connection} | Sum | Int | Cumulative | true |
 
 ### redis.cpu.time
 
@@ -110,7 +110,7 @@ Number of keyspace keys with an expiration
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| {key} | Gauge | Int |
 
 #### Attributes
 
@@ -124,7 +124,7 @@ Number of keyspace keys
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Int |
+| {key} | Gauge | Int |
 
 #### Attributes
 
@@ -138,7 +138,7 @@ Number of evicted keys due to maxmemory limit
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {key} | Sum | Int | Cumulative | true |
 
 ### redis.keys.expired
 
@@ -146,7 +146,7 @@ Total number of key expiration events
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {event} | Sum | Int | Cumulative | true |
 
 ### redis.keyspace.hits
 
@@ -154,7 +154,7 @@ Number of successful lookup of keys in the main dictionary
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {hit} | Sum | Int | Cumulative | true |
 
 ### redis.keyspace.misses
 
@@ -162,7 +162,7 @@ Number of failed lookup of keys in the main dictionary
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {miss} | Sum | Int | Cumulative | true |
 
 ### redis.latest_fork
 
@@ -178,7 +178,7 @@ Ratio between used_memory_rss and used_memory
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-|  | Gauge | Double |
+| 1 | Gauge | Double |
 
 ### redis.memory.lua
 
@@ -234,7 +234,7 @@ Number of changes since the last dump
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
+| {change} | Sum | Int | Cumulative | false |
 
 ### redis.replication.backlog_first_byte_offset
 
@@ -258,7 +258,7 @@ Number of connected replicas
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
+| {replica} | Sum | Int | Cumulative | false |
 
 ### redis.uptime
 
@@ -284,7 +284,7 @@ Total number of calls for a command
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
+| {call} | Sum | Int | Cumulative | true |
 
 #### Attributes
 
@@ -320,7 +320,7 @@ Redis node's role
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
+| {role} | Sum | Int | Cumulative | false |
 
 #### Attributes
 

@@ -5,16 +5,16 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bufio"
-	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type readerFactory struct {
@@ -23,7 +23,7 @@ type readerFactory struct {
 	fromBeginning   bool
 	splitterFactory splitterFactory
 	encodingConfig  helper.EncodingConfig
-	headerSettings  *headerSettings
+	headerConfig    *header.Config
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -40,7 +40,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
 		withSplitterFunc(old.lineSplitFunc).
-		withHeaderAttributes(util.MapCopy(old.FileAttributes.HeaderAttributes)).
+		withFileAttributes(util.MapCopy(old.FileAttributes)).
 		withHeaderFinalized(old.HeaderFinalized).
 		build()
 }
@@ -55,16 +55,16 @@ func (f *readerFactory) newFingerprint(file *os.File) (*fingerprint.Fingerprint,
 
 type readerBuilder struct {
 	*readerFactory
-	file             *os.File
-	fp               *fingerprint.Fingerprint
-	offset           int64
-	splitFunc        bufio.SplitFunc
-	headerFinalized  bool
-	headerAttributes map[string]any
+	file            *os.File
+	fp              *fingerprint.Fingerprint
+	offset          int64
+	splitFunc       bufio.SplitFunc
+	headerFinalized bool
+	fileAttributes  map[string]any
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
-	return &readerBuilder{readerFactory: f, headerAttributes: map[string]any{}}
+	return &readerBuilder{readerFactory: f, fileAttributes: map[string]any{}}
 }
 
 func (b *readerBuilder) withSplitterFunc(s bufio.SplitFunc) *readerBuilder {
@@ -92,8 +92,8 @@ func (b *readerBuilder) withHeaderFinalized(finalized bool) *readerBuilder {
 	return b
 }
 
-func (b *readerBuilder) withHeaderAttributes(attrs map[string]any) *readerBuilder {
-	b.headerAttributes = attrs
+func (b *readerBuilder) withFileAttributes(attrs map[string]any) *readerBuilder {
+	b.fileAttributes = attrs
 	return b
 }
 
@@ -101,8 +101,8 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
 		readerConfig:    b.readerConfig,
 		Offset:          b.offset,
-		headerSettings:  b.headerSettings,
 		HeaderFinalized: b.headerFinalized,
+		FileAttributes:  b.fileAttributes,
 	}
 
 	if b.splitFunc != nil {
@@ -110,74 +110,89 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	} else {
 		r.lineSplitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
 		if err != nil {
-			return
-		}
-	}
-
-	enc, err := b.encodingConfig.Build()
-	if err != nil {
-		return
-	}
-	r.encoding = enc
-
-	if b.file != nil {
-		r.file = b.file
-		r.SugaredLogger = b.SugaredLogger.With("path", b.file.Name())
-		r.FileAttributes, err = resolveFileAttributes(b.file.Name())
-		if err != nil {
-			b.Errorf("resolve attributes: %w", err)
-		}
-
-		// unsafeReader has the file set to nil, so don't try emending its offset.
-		if !b.fromBeginning {
-			if err = r.offsetToEnd(); err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
-		r.FileAttributes = &FileAttributes{}
-	}
-
-	if b.fp != nil {
-		r.Fingerprint = b.fp
-	} else if b.file != nil {
-		r.Fingerprint, err = b.readerFactory.newFingerprint(r.file)
-		if err != nil {
 			return nil, err
 		}
 	}
 
-	r.FileAttributes.HeaderAttributes = b.headerAttributes
+	r.encoding, err = b.encodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
 
-	if b.headerSettings == nil || b.headerFinalized {
+	if b.headerConfig == nil || b.headerFinalized {
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = b.readerConfig.emit
+	} else {
+		r.splitFunc = b.headerConfig.SplitFunc
+		r.headerReader, err = header.NewReader(b.SugaredLogger, *b.headerConfig)
+		if err != nil {
+			return nil, err
+		}
+		r.processFunc = r.headerReader.Process
+	}
+
+	if b.file == nil {
+		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
 		return r, nil
 	}
 
-	// We are reading the header so we should start with the header split func
-	r.splitFunc = b.headerSettings.splitFunc
+	r.file = b.file
+	r.SugaredLogger = b.SugaredLogger.With("path", b.file.Name())
+	r.FileAttributes = b.fileAttributes
 
-	outOp := newHeaderPipelineOutput(b.SugaredLogger)
-	p, err := pipeline.Config{
-		Operators:     b.headerSettings.config.MetadataOperators,
-		DefaultOutput: outOp,
-	}.Build(b.SugaredLogger)
+	// Resolve file name and path attributes
+	resolved := b.file.Name()
 
+	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
+	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
+	if runtime.GOOS != "windows" {
+		resolved, err = filepath.EvalSymlinks(b.file.Name())
+		if err != nil {
+			b.Errorf("resolve symlinks: %w", err)
+		}
+	}
+	abs, err := filepath.Abs(resolved)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build pipeline: %w", err)
+		b.Errorf("resolve abs: %w", err)
 	}
 
-	if err := p.Start(storage.NewNopClient()); err != nil {
-		return nil, fmt.Errorf("failed to start header pipeline: %w", err)
+	if b.readerConfig.includeFileName {
+		r.FileAttributes[logFileName] = filepath.Base(b.file.Name())
+	} else if r.FileAttributes[logFileName] != nil {
+		delete(r.FileAttributes, logFileName)
+	}
+	if b.readerConfig.includeFilePath {
+		r.FileAttributes[logFilePath] = b.file.Name()
+	} else if r.FileAttributes[logFilePath] != nil {
+		delete(r.FileAttributes, logFilePath)
+	}
+	if b.readerConfig.includeFileNameResolved {
+		r.FileAttributes[logFileNameResolved] = filepath.Base(abs)
+	} else if r.FileAttributes[logFileNameResolved] != nil {
+		delete(r.FileAttributes, logFileNameResolved)
+	}
+	if b.readerConfig.includeFilePathResolved {
+		r.FileAttributes[logFilePathResolved] = abs
+	} else if r.FileAttributes[logFilePathResolved] != nil {
+		delete(r.FileAttributes, logFilePathResolved)
 	}
 
-	r.headerPipeline = p
-	r.headerPipelineOutput = outOp
+	if !b.fromBeginning {
+		if err = r.offsetToEnd(); err != nil {
+			return nil, err
+		}
+	}
 
-	// Set initial emit func to header function
-	r.processFunc = r.consumeHeaderLine
+	if b.fp != nil {
+		r.Fingerprint = b.fp
+		return r, nil
+	}
+
+	fp, err := b.readerFactory.newFingerprint(r.file)
+	if err != nil {
+		return nil, err
+	}
+	r.Fingerprint = fp
 
 	return r, nil
 }
