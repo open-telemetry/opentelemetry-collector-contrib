@@ -4,12 +4,14 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: metrics, logs, traces   |
-| Distributions | [contrib], [aws], [observiq], [splunk], [sumo] |
+| Distributions | [contrib], [aws], [grafana], [observiq], [splunk], [sumo] |
 | Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkafka%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkafka%20&label=closed&color=blue&logo=opentelemetry) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@pavolloffay](https://www.github.com/pavolloffay), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [aws]: https://github.com/aws-observability/aws-otel-collector
+[grafana]: https://github.com/grafana/agent
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [splunk]: https://github.com/signalfx/splunk-otel-collector
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
@@ -46,6 +48,12 @@ The following settings can be optionally configured:
   - `plain_text`
     - `username`: The username to use.
     - `password`: The password to use
+  - `sasl`
+    - `username`: The username to use.
+    - `password`: The password to use
+    - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM or PLAIN)
+    - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM mechanism
+    - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
   - `tls`
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
       only be used if `insecure` is set to true.
@@ -67,7 +75,7 @@ The following settings can be optionally configured:
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. When
-    disabled the client does not make the initial request to broker at the
+    disabled, the client does not make the initial request to broker at the
     startup.
   - `retry`
     - `max` (default = 3): The number of retries to get metadata

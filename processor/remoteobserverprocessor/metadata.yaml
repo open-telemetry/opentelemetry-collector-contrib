@@ -4,4 +4,6 @@ status:
   class: processor
   stability:
     alpha: [logs, metrics, traces]
-  distributions: []
+  distributions: [contrib]
+  codeowners:
+    active: [pmcollins]

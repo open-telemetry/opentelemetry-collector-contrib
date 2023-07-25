@@ -17,6 +17,8 @@ import (
 	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +30,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -78,7 +79,7 @@ func TestNewExporter(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
-	var recvMetadata hostmetadata.HostMetadata
+	var recvMetadata payload.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
@@ -297,6 +298,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				once          sync.Once
 				statsRecorder testutil.MockStatsProcessor
 			)
+
+			pusher := newTestPusher(t)
+			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+			require.NoError(t, err)
+
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
@@ -304,6 +310,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				&once,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
+				reporter,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -400,7 +407,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	body := <-server.MetadataChan
-	var recvMetadata hostmetadata.HostMetadata
+	var recvMetadata payload.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
@@ -681,6 +688,9 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				once          sync.Once
 				statsRecorder testutil.MockStatsProcessor
 			)
+			pusher := newTestPusher(t)
+			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
+			require.NoError(t, err)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
@@ -688,6 +698,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				&once,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
+				reporter,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")

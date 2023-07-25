@@ -103,13 +103,13 @@ func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
 		case "auth_no_priv":
 			require.Equal(t, gosnmp.AuthNoPriv, client.client.GetMsgFlags())
 			require.Equal(t, cfg.AuthType, securityParams.AuthenticationProtocol)
-			require.Equal(t, cfg.AuthPassword, securityParams.AuthenticationPassphrase)
+			require.Equal(t, string(cfg.AuthPassword), securityParams.AuthenticationPassphrase)
 		case "auth_priv":
 			require.Equal(t, gosnmp.AuthPriv, client.client.GetMsgFlags())
 			require.Equal(t, cfg.AuthType, securityParams.AuthenticationProtocol.String())
-			require.Equal(t, cfg.AuthPassword, securityParams.AuthenticationPassphrase)
+			require.Equal(t, string(cfg.AuthPassword), securityParams.AuthenticationPassphrase)
 			require.Equal(t, cfg.PrivacyType, securityParams.PrivacyProtocol.String())
-			require.Equal(t, cfg.PrivacyPassword, securityParams.PrivacyPassphrase)
+			require.Equal(t, string(cfg.PrivacyPassword), securityParams.PrivacyPassphrase)
 		}
 	}
 }
