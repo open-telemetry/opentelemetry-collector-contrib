@@ -20,7 +20,7 @@ The following settings are required:
 - `subscription_id`
 
 The following settings are optional:
-- `authentication` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`.
+- `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
@@ -33,18 +33,18 @@ Authenticating using service principal requires following settings:
 - `client_id`
 - `client_secret`
 
-Authenticating using workload identities requires following environment variables being set:
+Authenticating using workload identities requires following environment variables being set (automatically by workload identity webhook):
 - `AZURE_TENANT_ID`
 - `AZURE_CLIENT_ID`
 - `AZURE_FEDERATED_TOKEN_FILE`
 
 ### Example Configurations
 
+Using Service Principal for authentication:
 ```yaml
 receivers:
   azuremonitor:
     subscription_id: "${subscription_id}"
-    authentication: "service_principal"
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
     client_secret: "${env:CLIENT_SECRET}"
@@ -58,11 +58,12 @@ receivers:
     initial_delay: 1s
 ```
 
+Using Azure Workload Identity for authentication:
 ```yaml
 receivers:
   azuremonitor:
     subscription_id: "${subscription_id}"
-    authentication: "workload_identity"
+    auth: "workload_identity"
 ```
 
 ## Metrics
