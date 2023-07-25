@@ -5,4 +5,5 @@ status:
   stability:
     deprecated: [metrics]
   distributions: [splunk]
-  
+  codeowners:
+    active: [dmitryax]

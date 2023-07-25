@@ -19,6 +19,8 @@ const (
 	semconvOtelEntityID         = "otel.entity.id"
 	semconvOtelEntityType       = "otel.entity.type"
 	semconvOtelEntityAttributes = "otel.entity.attributes"
+
+	semconvOtelEntityEventAsScope = "otel.entity.event_as_log"
 )
 
 // EntityEventsSlice is a slice of EntityEvent.
@@ -52,9 +54,35 @@ func (s EntityEventsSlice) At(i int) EntityEvent {
 	return EntityEvent{orig: s.orig.At(i)}
 }
 
+// ConvertAndMoveToLogs converts entity events to log representation and moves them
+// from this EntityEventsSlice into plog.Logs. This slice becomes empty after this call.
+func (s EntityEventsSlice) ConvertAndMoveToLogs() plog.Logs {
+	logs := plog.NewLogs()
+
+	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+
+	// Set the scope marker.
+	scopeLogs.Scope().Attributes().PutBool(semconvOtelEntityEventAsScope, true)
+
+	// Move all events. Note that this remove all
+	s.orig.MoveAndAppendTo(scopeLogs.LogRecords())
+
+	return logs
+}
+
 // EntityEvent is an entity event.
 type EntityEvent struct {
 	orig plog.LogRecord
+}
+
+// Timestamp of the event.
+func (e EntityEvent) Timestamp() pcommon.Timestamp {
+	return e.orig.Timestamp()
+}
+
+// SetTimestamp sets the event timestamp.
+func (e EntityEvent) SetTimestamp(timestamp pcommon.Timestamp) {
+	e.orig.SetTimestamp(timestamp)
 }
 
 // ID of the entity.

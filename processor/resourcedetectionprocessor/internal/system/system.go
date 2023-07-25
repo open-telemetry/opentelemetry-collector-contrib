@@ -34,10 +34,10 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider           system.Provider
-	logger             *zap.Logger
-	hostnameSources    []string
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider        system.Provider
+	logger          *zap.Logger
+	hostnameSources []string
+	rb              *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
@@ -47,7 +47,12 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 		cfg.HostnameSources = []string{"dns", "os"}
 	}
 
-	return &Detector{provider: system.NewProvider(), logger: p.Logger, hostnameSources: cfg.HostnameSources, resourceAttributes: cfg.ResourceAttributes}, nil
+	return &Detector{
+		provider:        system.NewProvider(),
+		logger:          p.Logger,
+		hostnameSources: cfg.HostnameSources,
+		rb:              metadata.NewResourceBuilder(cfg.ResourceAttributes),
+	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
@@ -73,12 +78,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
 		if err == nil {
-			rb := metadata.NewResourceBuilder(d.resourceAttributes)
-			rb.SetHostName(hostname)
-			rb.SetOsType(osType)
-			rb.SetHostID(hostID)
-			rb.SetHostArch(hostArch)
-			return rb.Emit(), conventions.SchemaURL, nil
+			d.rb.SetHostName(hostname)
+			d.rb.SetOsType(osType)
+			d.rb.SetHostID(hostID)
+			d.rb.SetHostArch(hostArch)
+			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())
 	}

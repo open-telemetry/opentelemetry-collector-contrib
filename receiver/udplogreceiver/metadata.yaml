@@ -5,4 +5,5 @@ status:
   stability:
     alpha: [logs]
   distributions: [contrib, observiq, sumo]
-
+  codeowners:
+    active: [djaglowski]

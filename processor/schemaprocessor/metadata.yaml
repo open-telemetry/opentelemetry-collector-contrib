@@ -5,3 +5,5 @@ status:
   stability:
     development: [traces, metrics, logs]
   distributions: [sumo]
+  codeowners:
+    active: [MovieStoreGuy]

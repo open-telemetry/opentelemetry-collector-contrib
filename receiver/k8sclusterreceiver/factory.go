@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
@@ -19,8 +20,9 @@ const (
 	distributionOpenShift  = "openshift"
 
 	// Default config values.
-	defaultCollectionInterval = 10 * time.Second
-	defaultDistribution       = distributionKubernetes
+	defaultCollectionInterval         = 10 * time.Second
+	defaultDistribution               = distributionKubernetes
+	defaultMetadataCollectionInterval = 5 * time.Minute
 )
 
 var defaultNodeConditionsToReport = []string{"Ready"}
@@ -33,6 +35,7 @@ func createDefaultConfig() component.Config {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		MetadataCollectionInterval: defaultMetadataCollectionInterval,
 	}
 }
 
@@ -41,5 +44,13 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(newReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(newLogsReceiver, metadata.MetricsStability),
+	)
 }
+
+// This is the map of already created k8scluster receivers for particular configurations.
+// We maintain this map because the Factory is asked log and metric receivers separately
+// when it gets CreateLogsReceiver() and CreateMetricsReceiver() but they must not
+// create separate objects, they must use one receiver object per configuration.
+var receivers = sharedcomponent.NewSharedComponents()
