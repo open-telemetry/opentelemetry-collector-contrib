@@ -40,6 +40,13 @@ func (rb *ResourceBuilder) SetHostName(val string) {
 	}
 }
 
+// SetOsDescription sets provided value as "os.description" attribute.
+func (rb *ResourceBuilder) SetOsDescription(val string) {
+	if rb.config.OsDescription.Enabled {
+		rb.res.Attributes().PutStr("os.description", val)
+	}
+}
+
 // SetOsType sets provided value as "os.type" attribute.
 func (rb *ResourceBuilder) SetOsType(val string) {
 	if rb.config.OsType.Enabled {
