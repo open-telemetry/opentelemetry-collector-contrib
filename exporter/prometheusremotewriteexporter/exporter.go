@@ -8,7 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"hash/crc32"
+	"hash/fnv"
 	"io"
 	"math"
 	"net/http"
@@ -214,17 +214,23 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	return nil
 }
 
-// partitionTimeSeries partitions the time series map into N arrays using hashing.
+// partitionTimeSeries partitions the time series map into N arrays using hashing/fnv.
 func partitionTimeSeries(tsMap map[string]*prompb.TimeSeries, concurrencyLimit int) []map[string]*prompb.TimeSeries {
 	partitions := make([]map[string]*prompb.TimeSeries, concurrencyLimit)
 	for i := 0; i < concurrencyLimit; i++ {
 		partitions[i] = make(map[string]*prompb.TimeSeries)
 	}
 
+	// FNV-1a is a non-cryptographic hash function.
+	hasher := fnv.New32a()
+
 	for _, ts := range tsMap {
-		// Use CRC32 hashing to convert the labels of the time series to an integer value,
-		// and then modulo the hash with the number of partitions to get the partition index.
-		hash := crc32.ChecksumIEEE([]byte(labelsToString(ts.Labels)))
+		// Hash the labels of the time series using FNV-1a.
+		hasher.Reset()
+		hasher.Write([]byte(labelsToString(ts.Labels)))
+		hash := hasher.Sum32()
+
+		// Modulo the hash with the number of partitions to get the partition index.
 		partitionIndex := int(hash % uint32(concurrencyLimit))
 		partitions[partitionIndex][labelsToString(ts.Labels)] = ts
 	}
