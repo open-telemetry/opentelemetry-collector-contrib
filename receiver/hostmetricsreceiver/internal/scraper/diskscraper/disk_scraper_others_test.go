@@ -22,15 +22,17 @@ import (
 func TestScrape_Others(t *testing.T) {
 	type testCase struct {
 		name           string
-		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
+		ioCountersFunc func(ctx context.Context, names ...string) (map[string]disk.IOCountersStat, error)
 		expectedErr    string
 	}
 
 	testCases := []testCase{
 		{
-			name:           "Error",
-			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err1") },
-			expectedErr:    "err1",
+			name: "Error",
+			ioCountersFunc: func(_ context.Context, names ...string) (map[string]disk.IOCountersStat, error) {
+				return nil, errors.New("err1")
+			},
+			expectedErr: "err1",
 		},
 	}
 
