@@ -21,7 +21,7 @@ type pipelineOutput struct {
 	logChan chan *entry.Entry
 }
 
-// newHeaderPipelineOutput creates a new receiver output
+// newPipelineOutput creates a new receiver output
 func newPipelineOutput(logger *zap.SugaredLogger) *pipelineOutput {
 	return &pipelineOutput{
 		OutputOperator: helper.OutputOperator{
