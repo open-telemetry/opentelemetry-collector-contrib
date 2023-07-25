@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
+package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 
 import (
 	"context"

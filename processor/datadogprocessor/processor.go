@@ -9,6 +9,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -28,7 +29,7 @@ type datadogProcessor struct {
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
 	// It is implemented by the traceagent structure; replaced in tests.
-	agent ingester
+	agent datadog.Ingester
 
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
@@ -52,7 +53,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 	return &datadogProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,
-		agent:        newAgent(ctx, in),
+		agent:        datadog.NewAgent(ctx, in),
 		translator:   trans,
 		in:           in,
 		cfg:          cfg,

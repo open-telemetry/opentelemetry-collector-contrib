@@ -229,21 +229,21 @@ require (
 	github.com/ClickHouse/ch-go v0.52.1 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.10.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.88 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.46.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.46.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.46.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.46.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.46.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.46.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.46.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.46.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.46.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.13.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.2 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.5.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.2 // indirect
 	github.com/DataDog/sketches-go v1.4.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
@@ -492,6 +492,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.80.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.80.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.80.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.80.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.80.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.80.0 // indirect
@@ -618,7 +619,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.80.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013 // indirect
-	go.opentelemetry.io/collector/semconv v0.80.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.81.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.1-0.20230612162650-64be7e574a17 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0 // indirect
@@ -1074,6 +1075,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipki
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ./receiver/zookeeperreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ./extension/observer/dockerobserver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ./internal/datadog
 
 // see https://github.com/google/gnostic/issues/262
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
+package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 
 import (
 	"context"
@@ -41,7 +41,7 @@ type traceagent struct {
 
 // newAgent creates a new unstarted traceagent using the given context. Call Start to start the traceagent.
 // The out channel will receive outoing stats payloads resulting from spans ingested using the Ingest method.
-func newAgent(ctx context.Context, out chan pb.StatsPayload) *traceagent {
+func NewAgent(ctx context.Context, out chan pb.StatsPayload) *traceagent {
 	return newAgentWithConfig(ctx, traceconfig.New(), out)
 }
 
@@ -167,10 +167,10 @@ func (p *traceagent) goProcess() {
 	}
 }
 
-var _ ingester = (*traceagent)(nil)
+var _ Ingester = (*traceagent)(nil)
 
-// An ingester is able to ingest traces. Implemented by traceagent.
-type ingester interface {
+// An Ingester is able to ingest traces. Implemented by traceagent.
+type Ingester interface {
 	// Start starts the ingester.
 	Start()
 
