@@ -790,10 +790,7 @@ func TestBuildWithHeader(t *testing.T) {
 			},
 			require.NoError,
 			func(t *testing.T, f *Manager) {
-				require.NotNil(t, f.readerFactory.headerSettings)
-				require.NotNil(t, f.readerFactory.headerSettings.matchRegex)
-				require.NotNil(t, f.readerFactory.headerSettings.splitFunc)
-				require.NotNil(t, f.readerFactory.headerSettings.config)
+				require.NotNil(t, f.readerFactory.headerConfig.SplitFunc)
 			},
 		},
 	}
@@ -810,7 +807,6 @@ func TestBuildWithHeader(t *testing.T) {
 			if err != nil {
 				return
 			}
-
 			tc.validate(t, input)
 		})
 	}
