@@ -208,8 +208,8 @@ jobs:
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
       - name: Gen codeowners
         run: |
-          make githubgen
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make githubgen" and commit the changes in this PR.' && exit 1)
+          make gengithub
+          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gengithub" and commit the changes in this PR.' && exit 1)
       - name: Check gendependabot
         run: |
           make -j2 gendependabot
