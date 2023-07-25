@@ -4,10 +4,20 @@
 package opensearchexporter
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
+
+	"github.com/opensearch-project/opensearch-go/v2"
+	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
+
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -17,9 +27,17 @@ import (
 	"go.uber.org/multierr"
 )
 
+const (
+	// defaultNamespace value is used as SSOTracesExporter.Namespace when component.Config.Namespace is not set.
+	defaultNamespace = "namespace"
+
+	// defaultDataset value is used as SSOTracesExporter.Dataset when component.Config.Dataset is not set.
+	defaultDataset = "default"
+)
+
 type SSOTracesExporter struct {
-	client       *osClientCurrent
-	bulkIndexer  osBulkIndexerCurrent
+	client       *opensearch.Client
+	bulkIndexer  opensearchutil.BulkIndexer
 	Namespace    string
 	Dataset      string
 	httpSettings confighttp.HTTPClientSettings
@@ -31,10 +49,38 @@ func (s *SSOTracesExporter) Shutdown(_ context.Context) error {
 	return nil
 }
 
+func shouldRetryEvent(status int) bool {
+	var retryOnStatus = []int{500, 502, 503, 504, 429}
+	for _, retryable := range retryOnStatus {
+		if status == retryable {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *SSOTracesExporter) getIndexName() string {
+	return strings.Join([]string{"sso_traces", s.Dataset, s.Namespace}, "-")
+}
+
 func (s *SSOTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	// TODO Refactor
 	// Generate JSON first, then create bulk indexer to send them.
 	var errs []error
+
+	bulkIndexer, err := newBulkIndexer(s.telemetry.Logger, s.client)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	defer func(bulkIndexer opensearchutil.BulkIndexer, ctx context.Context) {
+		deferErr := bulkIndexer.Close(ctx)
+		if deferErr != nil {
+			errs = append(errs, deferErr)
+		}
+	}(bulkIndexer, ctx)
+
+	var spansToRetry []int
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		il := resourceSpans.At(i)
@@ -45,12 +91,51 @@ func (s *SSOTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces)
 			scope := scopeSpans.At(j).Scope()
 			schemaURL := scopeSpans.At(j).SchemaUrl()
 			for k := 0; k < spans.Len(); k++ {
-				err := s.pushTraceRecord(ctx, resource, scope, schemaURL, spans.At(k))
+				payload, err := s.createJsonDocument(resource, scope, schemaURL, spans.At(k))
 				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
-					errs = append(errs, err)
+					errs = append(errs, consumererror.NewPermanent(err))
+				} else {
+					// construct destination index name by combining Dataset and Namespace options if they are set.
+					bi := s.newBulkIndexerItem(payload)
+
+					// Setup error handler. The handler handles the per item response status based on the
+					// selective ACKing in the bulk response.
+					bi.OnFailure = func(ctx context.Context, item opensearchutil.BulkIndexerItem, resp opensearchutil.BulkIndexerResponseItem, err error) {
+						switch {
+						case shouldRetryEvent(resp.Status):
+							spansToRetry = append(spansToRetry, k)
+							s.telemetry.Logger.Debug("Retrying to index",
+								zap.String("name", item.Index),
+								zap.Int("status", resp.Status),
+								zap.NamedError("reason", err))
+
+						case resp.Status == 0 && err != nil:
+							// Encoding error. We didn't even attempt to send the event
+							s.telemetry.Logger.Error("Drop docs: failed to add docs to the bulk request buffer.",
+								zap.NamedError("reason", err))
+							errs = append(errs, consumererror.NewPermanent(err))
+
+						case err != nil:
+							s.telemetry.Logger.Error("Drop docs: failed to index",
+								zap.String("name", item.Index),
+								zap.Int("status", resp.Status),
+								zap.NamedError("reason", err))
+
+						default:
+							// OpenSearch error while indexing document
+							errorJSON, _ := json.Marshal(resp.Error)
+							s.telemetry.Logger.Error(fmt.Sprintf("Drop docs: failed to index: %s", errorJSON),
+								zap.Int("status", resp.Status))
+						}
+					}
+
+					err = bulkIndexer.Add(ctx, bi)
+					if err != nil {
+						s.telemetry.Logger.Error(fmt.Sprintf("Failed to add item to bulk indexer: %s", err))
+					}
 				}
 			}
 		}
@@ -66,13 +151,12 @@ func defaultIfEmpty(value string, def string) string {
 	return value
 }
 
-func (s *SSOTracesExporter) pushTraceRecord(
-	ctx context.Context,
+func (s *SSOTracesExporter) createJsonDocument(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	schemaURL string,
 	span ptrace.Span,
-) error {
+) ([]byte, error) {
 	sso := SSOSpan{}
 	sso.Attributes = span.Attributes().AsRaw()
 	sso.DroppedAttributesCount = span.DroppedAttributesCount()
@@ -140,13 +224,7 @@ func (s *SSOTracesExporter) pushTraceRecord(
 			ssoLink.SpanID = link.SpanID().String()
 		}
 	}
-	payload, _ := json.Marshal(sso)
-
-	// construct destination index name by combining Dataset and Namespace options if they are set.
-	index := strings.Join([]string{"sso_traces", defaultIfEmpty(s.Dataset, "default"), defaultIfEmpty(s.Namespace, "namespace")}, "-")
-	defaultMaxAttempts := 3 // TODO how should this work with RetrySettings?
-	return pushDocuments(ctx, s.telemetry.Logger, index, payload, s.client, defaultMaxAttempts)
-
+	return json.Marshal(sso)
 }
 
 func (s *SSOTracesExporter) Start(_ context.Context, host component.Host) error {
@@ -160,12 +238,7 @@ func (s *SSOTracesExporter) Start(_ context.Context, host component.Host) error 
 		return err
 	}
 
-	bulkIndexer, err := newBulkIndexer(s.telemetry.Logger, client)
-	if err != nil {
-		return err
-	}
 	s.client = client
-	s.bulkIndexer = bulkIndexer
 	return nil
 }
 
@@ -176,8 +249,43 @@ func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*SSOTracesE
 
 	return &SSOTracesExporter{
 		telemetry:    set.TelemetrySettings,
-		Namespace:    cfg.Namespace,
-		Dataset:      cfg.Dataset,
+		Namespace:    defaultIfEmpty(cfg.Namespace, defaultNamespace),
+		Dataset:      defaultIfEmpty(cfg.Dataset, defaultDataset),
 		httpSettings: cfg.HTTPClientSettings,
 	}, nil
+}
+
+func (s *SSOTracesExporter) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
+
+	body := bytes.NewReader(document)
+	item := opensearchutil.BulkIndexerItem{Action: "create", Index: s.getIndexName(), Body: body}
+	return item
+}
+
+func newOpenSearchClient(endpoint string, httpClient *http.Client, logger *zap.Logger) (*opensearch.Client, error) {
+
+	transport := httpClient.Transport
+
+	return opensearch.NewClient(opensearch.Config{
+		Transport: transport,
+
+		// configure connection setup
+		Addresses:    []string{endpoint},
+		DisableRetry: true,
+
+		// configure internal metrics reporting and logging
+		EnableMetrics:     false, // TODO
+		EnableDebugLogger: false, // TODO
+		Logger:            (*clientLogger)(logger),
+	})
+}
+
+func newBulkIndexer(logger *zap.Logger, client *opensearch.Client) (opensearchutil.BulkIndexer, error) {
+	return opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
+		NumWorkers: 1,
+		Client:     client,
+		OnError: func(_ context.Context, err error) {
+			logger.Error(fmt.Sprintf("Bulk indexer error: %v", err))
+		},
+	})
 }

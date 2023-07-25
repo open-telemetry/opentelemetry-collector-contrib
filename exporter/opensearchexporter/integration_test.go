@@ -8,15 +8,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"sync/atomic"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"gopkg.in/yaml.v3"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func TestOpenSearchExporter(t *testing.T) {
@@ -25,10 +25,17 @@ func TestOpenSearchExporter(t *testing.T) {
 		var err error
 		decoder := json.NewDecoder(r.Body)
 		for decoder.More() {
-			var traceData any
-			err = decoder.Decode(&traceData)
+			var jsonData any
+			err = decoder.Decode(&jsonData)
 			require.NoError(t, err)
-			require.NotNil(t, traceData)
+			require.NotNil(t, jsonData)
+
+			strMap := jsonData.(map[string]any)
+			if actionData, isBulkAction := strMap["create"]; isBulkAction {
+				validateBulkAction(t, actionData.(map[string]any))
+			} else {
+				validateTraceJson(t, strMap)
+			}
 		}
 	}))
 	defer ts.Close()
@@ -46,13 +53,39 @@ func TestOpenSearchExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	// Load sample data
-	dp, err := testbed.NewFileDataProvider("testdata/traces.yaml", component.DataTypeTraces)
+	traces, err := readTraces("testdata/traces.yaml")
 	require.NoError(t, err)
-	dataItemsGenerated := atomic.Uint64{}
-	dp.SetLoadGeneratorCounters(&dataItemsGenerated)
-	traces, _ := dp.GenerateTraces()
 
 	// Send it
 	err = exporter.ConsumeTraces(context.Background(), traces)
 	require.NoError(t, err)
+}
+
+func validateTraceJson(t *testing.T, strMap map[string]any) {
+	require.NotEmpty(t, strMap)
+	// TODO would be excellent place for schema validation once the schema is published
+}
+
+func validateBulkAction(t *testing.T, strMap map[string]any) {
+	val, exists := strMap["_index"]
+	require.True(t, exists)
+	require.Equal(t, val, "sso_traces-default-namespace")
+}
+
+// readTraces loads a yaml file at given filePath and converts the content to ptrace.Traces
+func readTraces(filePath string) (ptrace.Traces, error) {
+	b, err := os.ReadFile(filePath)
+	if err != nil {
+		return ptrace.Traces{}, err
+	}
+	var m map[string]interface{}
+	if err = yaml.Unmarshal(b, &m); err != nil {
+		return ptrace.Traces{}, err
+	}
+	b, err = json.Marshal(m)
+	if err != nil {
+		return ptrace.Traces{}, err
+	}
+	unmarshaler := ptrace.JSONUnmarshaler{}
+	return unmarshaler.UnmarshalTraces(b)
 }
