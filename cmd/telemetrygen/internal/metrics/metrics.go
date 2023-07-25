@@ -38,6 +38,7 @@ func Start(cfg *Config) error {
 
 	httpExpOpt := []otlpmetrichttp.Option{
 		otlpmetrichttp.WithEndpoint(cfg.Endpoint),
+		otlpmetrichttp.WithURLPath(cfg.HTTPPath),
 	}
 
 	if cfg.Insecure {
