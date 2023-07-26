@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -204,7 +205,7 @@ func getPodStore() *PodStore {
 	return &PodStore{
 		cache:            newMapWithExpiry(time.Minute),
 		nodeInfo:         nodeInfo,
-		prevMeasurements: make(map[string]*mapWithExpiry),
+		prevMeasurements: sync.Map{},
 		logger:           zap.NewNop(),
 	}
 }
@@ -282,6 +283,39 @@ func TestPodStore_decorateMem(t *testing.T) {
 	podStore.decorateMem(metric, pod)
 
 	assert.Equal(t, float64(20), metric.GetField("container_memory_utilization_over_container_limit").(float64))
+}
+
+func TestPodStore_previousCleanupLocking(t *testing.T) {
+	podStore := getPodStore()
+	podStore.podClient = &mockPodClient{}
+	pod := getBaseTestPodInfo()
+	ctx := context.TODO()
+
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.K8sPodNameKey: "cpu-limit"}
+	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	metric := generateMetric(fields, tags)
+
+	quit := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-quit:
+				return
+			default:
+				// manipulate last refreshed so that we are always forcing a refresh
+				podStore.lastRefreshed = time.Now().Add(-1 * time.Hour)
+				podStore.RefreshTick(ctx)
+			}
+		}
+	}()
+
+	for i := 0; i < 1000; i++ {
+		// status metrics push things to the previous list
+		podStore.addStatus(metric, pod)
+	}
+
+	quit <- true
+	// this test would crash without proper locking
 }
 
 func TestPodStore_addContainerCount(t *testing.T) {

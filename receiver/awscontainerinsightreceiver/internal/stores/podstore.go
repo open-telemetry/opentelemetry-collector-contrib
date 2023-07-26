@@ -116,15 +116,15 @@ type podClient interface {
 }
 
 type PodStore struct {
-	cache            *mapWithExpiry
-	prevMeasurements map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
-	podClient        podClient
-	k8sClient        replicaSetInfoProvider
-	lastRefreshed    time.Time
-	nodeInfo         *nodeInfo
-	prefFullPodName  bool
-	logger           *zap.Logger
-	sync.Mutex
+	cache *mapWithExpiry
+	// preMeasurements per each Type (Pod, Container, etc)
+	prevMeasurements          sync.Map // map[string]*mapWithExpiry
+	podClient                 podClient
+	k8sClient                 replicaSetInfoProvider
+	lastRefreshed             time.Time
+	nodeInfo                  *nodeInfo
+	prefFullPodName           bool
+	logger                    *zap.Logger
 	addFullPodNameMetricLabel bool
 	includeEnhancedMetrics    bool
 }
@@ -154,8 +154,9 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 	}
 
 	podStore := &PodStore{
-		cache:                     newMapWithExpiry(podsExpiry),
-		prevMeasurements:          make(map[string]*mapWithExpiry),
+		cache:            newMapWithExpiry(podsExpiry),
+		prevMeasurements: sync.Map{},
+		//prevMeasurements:          make(map[string]*mapWithExpiry),
 		podClient:                 podClient,
 		nodeInfo:                  newNodeInfo(nodeName, k8sClient.GetNodeClient(), logger),
 		prefFullPodName:           prefFullPodName,
@@ -169,12 +170,12 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 }
 
 func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}, bool) {
-	prevMeasurement, ok := p.prevMeasurements[metricType]
+	prevMeasurement, ok := p.prevMeasurements.Load(metricType)
 	if !ok {
 		return nil, false
 	}
 
-	content, ok := prevMeasurement.Get(metricKey)
+	content, ok := prevMeasurement.(*mapWithExpiry).Get(metricKey)
 
 	if !ok {
 		return nil, false
@@ -184,12 +185,12 @@ func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}
 }
 
 func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content interface{}) {
-	prevMeasurement, ok := p.prevMeasurements[metricType]
+	prevMeasurement, ok := p.prevMeasurements.Load(metricType)
 	if !ok {
 		prevMeasurement = newMapWithExpiry(measurementsExpiry)
-		p.prevMeasurements[metricType] = prevMeasurement
+		p.prevMeasurements.Store(metricType, prevMeasurement)
 	}
-	prevMeasurement.Set(metricKey, content)
+	prevMeasurement.(*mapWithExpiry).Set(metricKey, content)
 }
 
 // RefreshTick triggers refreshing of the pod store.
@@ -249,8 +250,6 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 }
 
 func (p *PodStore) getCachedEntry(podKey string) *cachedEntry {
-	p.Lock()
-	defer p.Unlock()
 	if content, ok := p.cache.Get(podKey); ok {
 		return content.(*cachedEntry)
 	}
@@ -258,8 +257,6 @@ func (p *PodStore) getCachedEntry(podKey string) *cachedEntry {
 }
 
 func (p *PodStore) setCachedEntry(podKey string, entry *cachedEntry) {
-	p.Lock()
-	defer p.Unlock()
 	p.cache.Set(podKey, entry)
 }
 
@@ -277,12 +274,11 @@ func (p *PodStore) refresh(ctx context.Context, now time.Time) {
 }
 
 func (p *PodStore) cleanup(now time.Time) {
-	for _, prevMeasurement := range p.prevMeasurements {
-		prevMeasurement.CleanUp(now)
-	}
-
-	p.Lock()
-	defer p.Unlock()
+	p.prevMeasurements.Range(
+		func(key, prevMeasurement interface{}) bool {
+			prevMeasurement.(*mapWithExpiry).CleanUp(now)
+			return true
+		})
 	p.cache.CleanUp(now)
 }
 

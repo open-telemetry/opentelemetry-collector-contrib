@@ -122,15 +122,24 @@ func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
 }
 
 func (m *MapWithExpiry) Get(key Key) (*MetricValue, bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	v, ok := m.entries[key]
 	return v, ok
 }
 
 func (m *MapWithExpiry) Set(key Key, value MetricValue) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	m.entries[key] = &value
 }
 
 func (m *MapWithExpiry) CleanUp(now time.Time) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
 	for k, v := range m.entries {
 		if now.Sub(v.Timestamp) >= m.ttl {
 			delete(m.entries, k)
@@ -140,12 +149,4 @@ func (m *MapWithExpiry) CleanUp(now time.Time) {
 
 func (m *MapWithExpiry) Size() int {
 	return len(m.entries)
-}
-
-func (m *MapWithExpiry) Lock() {
-	m.lock.Lock()
-}
-
-func (m *MapWithExpiry) Unlock() {
-	m.lock.Unlock()
 }
