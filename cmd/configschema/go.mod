@@ -1112,3 +1112,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling => ../../extension/jaegerremotesampling
+
+// Pin to a specific commit to adopt to a breaking change until next release
+replace github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3 => github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3.0.20230720220350-143f7b52181b

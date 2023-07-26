@@ -96,3 +96,6 @@ retract (
 	v0.76.2
 	v0.76.1
 )
+
+// Pin to a specific commit to adopt to a breaking change until next release
+replace github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3 => github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3.0.20230720220350-143f7b52181b
