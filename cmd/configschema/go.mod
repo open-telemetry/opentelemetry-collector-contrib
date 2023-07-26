@@ -22,8 +22,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor v0.8.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.0.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.4 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.4 // indirect
 	github.com/gocql/gocql v1.3.1 // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.81.0 // indirect
@@ -237,20 +237,21 @@ require (
 	github.com/ClickHouse/ch-go v0.52.1 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.10.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.89 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.14.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
+	github.com/DataDog/go-tuf v1.0.0-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.5.4 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.5.4 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.4 // indirect
 	github.com/DataDog/sketches-go v1.4.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
@@ -522,7 +523,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
-	github.com/opencontainers/runtime-spec v1.0.3-0.20220909204839-494a5a6aca78 // indirect
+	github.com/opencontainers/runtime-spec v1.1.0-rc.3 // indirect
 	github.com/opencontainers/selinux v1.10.1 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
@@ -556,7 +557,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.14 // indirect
 	github.com/scalyr/dataset-go v0.0.9 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.5.0 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.6 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
