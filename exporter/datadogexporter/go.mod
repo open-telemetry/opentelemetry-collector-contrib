@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.19
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.89
+	github.com/DataDog/agent-payload/v5 v5.0.91
 	github.com/DataDog/datadog-agent/pkg/proto v0.47.0-rc.3.0.20230720220350-143f7b52181b
-	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3.0.20230720220350-143f7b52181b
+	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3
 	github.com/DataDog/datadog-api-client-go/v2 v2.14.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.5.4
