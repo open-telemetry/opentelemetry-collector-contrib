@@ -25,7 +25,7 @@ attributes:
 metrics:
   #  brokers scraper
   kafka.brokers:
-    enabled: true
+    enabled: false
     description: "[DEPRECATED] Number of brokers in the cluster."
     unit: "{brokers}"
     gauge:
@@ -33,7 +33,7 @@ metrics:
     warnings:
       if_enabled: The metric is deprecated and will be removed. Use `kafka.brokers.count`
   kafka.brokers.count:
-    enabled: false
+    enabled: true
     description: Number of brokers in the cluster.
     unit: "{brokers}"
     sum:
