@@ -40,9 +40,12 @@ func GetMetrics(set receiver.CreateSettings, rs *appsv1.ReplicaSet) pmetric.Metr
 		mbphase.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas))
 	}
 
-	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(rs.Namespace), imetadataphase.WithK8sReplicasetName(rs.Name), imetadataphase.WithK8sReplicasetUID(string(rs.UID)), imetadataphase.WithOpencensusResourcetype("k8s"))
-
-	return metrics
+	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb.SetK8sNamespaceName(rs.Namespace)
+	rb.SetK8sReplicasetName(rs.Name)
+	rb.SetK8sReplicasetUID(string(rs.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 }
 
 func GetMetadata(rs *appsv1.ReplicaSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

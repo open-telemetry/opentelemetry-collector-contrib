@@ -88,7 +88,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+				InitialCumulativeMonotonicMode: InitialValueModeAuto,
 			},
 			SummaryConfig: SummaryConfig{
 				Mode: SummaryModeGauges,
@@ -149,7 +150,8 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -198,7 +200,8 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -251,7 +254,8 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,

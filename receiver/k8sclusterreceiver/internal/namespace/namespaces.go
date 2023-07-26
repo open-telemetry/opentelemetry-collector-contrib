@@ -18,7 +18,11 @@ func GetMetrics(set receiver.CreateSettings, ns *corev1.Namespace) pmetric.Metri
 	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
-	return mb.Emit(imetadata.WithK8sNamespaceUID(string(ns.UID)), imetadata.WithK8sNamespaceName(ns.Name), imetadata.WithOpencensusResourcetype("k8s"))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sNamespaceUID(string(ns.UID))
+	rb.SetK8sNamespaceName(ns.Name)
+	rb.SetOpencensusResourcetype("k8s")
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 var namespacePhaseValues = map[corev1.NamespacePhase]int32{

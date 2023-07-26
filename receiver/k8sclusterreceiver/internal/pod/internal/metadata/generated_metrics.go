@@ -64,13 +64,11 @@ func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity          int                 // maximum observed number of metrics per resource.
-	resourceCapacity         int                 // maximum observed number of resource attributes.
-	metricsBuffer            pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                component.BuildInfo // contains version information
-	resourceAttributesConfig ResourceAttributesConfig
-	metricK8sPodPhase        metricK8sPodPhase
+	startTime         pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity   int                 // maximum observed number of metrics per resource.
+	metricsBuffer     pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo         component.BuildInfo // contains version information
+	metricK8sPodPhase metricK8sPodPhase
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -85,11 +83,10 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:            pmetric.NewMetrics(),
-		buildInfo:                settings.BuildInfo,
-		resourceAttributesConfig: mbc.ResourceAttributes,
-		metricK8sPodPhase:        newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
+		startTime:         pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:     pmetric.NewMetrics(),
+		buildInfo:         settings.BuildInfo,
+		metricK8sPodPhase: newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
 	}
 	for _, op := range options {
 		op(mb)
@@ -102,63 +99,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
-func WithK8sNamespaceName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNamespaceName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
-		}
-	}
-}
-
-// WithK8sNodeName sets provided value as "k8s.node.name" attribute for current resource.
-func WithK8sNodeName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNodeName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.node.name", val)
-		}
-	}
-}
-
-// WithK8sPodName sets provided value as "k8s.pod.name" attribute for current resource.
-func WithK8sPodName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sPodName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.pod.name", val)
-		}
-	}
-}
-
-// WithK8sPodUID sets provided value as "k8s.pod.uid" attribute for current resource.
-func WithK8sPodUID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sPodUID.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
-		}
-	}
-}
-
-// WithOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute for current resource.
-func WithOpencensusResourcetype(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.OpencensusResourcetype.Enabled {
-			rm.Resource().Attributes().PutStr("opencensus.resourcetype", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -183,7 +140,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/k8sclusterreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -191,7 +147,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sPodPhase.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
