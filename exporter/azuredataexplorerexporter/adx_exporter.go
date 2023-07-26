@@ -206,6 +206,11 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 }
 
 func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
+	client, err := kusto.New(createKcsb(config, version))
+	return client, err
+}
+
+func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
 	var kcsb *kusto.ConnectionStringBuilder
 	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
@@ -219,8 +224,7 @@ func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
 	}
 	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
-	client, err := kusto.New(kcsb)
-	return client, err
+	return kcsb
 }
 
 // Depending on the table, create separate ingestors
