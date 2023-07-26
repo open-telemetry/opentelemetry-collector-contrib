@@ -166,8 +166,8 @@ func buildEventFromLog(
 	log plog.LogRecord,
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
+	serverHost string,
 	logSettings LogsSettings,
-	hostSettings ServerHostSettings,
 ) *add_events.EventBundle {
 	attrs := make(map[string]interface{})
 	event := add_events.Event{}
@@ -227,7 +227,7 @@ func buildEventFromLog(
 	event.Attrs = attrs
 	event.Log = "LL"
 	event.Thread = "TL"
-	event.ServerHost = inferServerHost(resource, attrs, hostSettings)
+	event.ServerHost = inferServerHost(resource, attrs, serverHost)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TL", Name: "logs"},
@@ -253,8 +253,8 @@ func (e *DatasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 						logRecord,
 						resource,
 						scope,
+						e.serverHost,
 						e.exporterCfg.logsSettings,
-						e.exporterCfg.serverHostSettings,
 					),
 				)
 			}

@@ -28,7 +28,7 @@ dataset/full:
     export_scope_info_on_event: true
     decompose_complex_message_field: true
   server_host:
-    use_host_name: false
+    use_hostname: false
     server_host: "server-host"
   retry_on_failure:
     enabled: true

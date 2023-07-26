@@ -153,7 +153,7 @@ func TestBuildEventFromSpanOne(t *testing.T) {
 			traces.ResourceSpans().At(0).Resource(),
 			traces.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
 		},
-		testServerHostSettings,
+		testServerHost,
 	)
 
 	assert.Equal(t, expected, was)
@@ -193,6 +193,7 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 				"name_":          "should_be_name_",
 				"span_id_":       "should_be_span_id_",
 			},
+			ServerHost: testServerHost,
 		},
 		Thread: testTThread,
 		Log:    testTLog,
@@ -203,7 +204,7 @@ func TestBuildEventsFromSpanAttributesCollision(t *testing.T) {
 			rs.Resource(),
 			rss.Scope(),
 		},
-		newDefaultServerHostSettings(),
+		testServerHost,
 	)
 
 	assert.Equal(t, expected, was)
@@ -213,9 +214,7 @@ func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T)
 	traces := testdata.GenerateTracesTwoSpansSameResourceOneDifferent()
 	traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("serverHost", "")
 	traces.ResourceSpans().At(1).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("serverHost", "valServerHost")
-	was := buildEventsFromTraces(traces, ServerHostSettings{
-		ServerHost: testServerHost,
-	})
+	was := buildEventsFromTraces(traces, testServerHost)
 
 	expected := []*add_events.EventBundle{
 		{
@@ -398,6 +397,7 @@ func generateSimpleEvent(
 	start int64,
 	end int64,
 	serviceName string,
+	serverHost string,
 ) *add_events.Event {
 	attrs := map[string]interface{}{
 		"sca:schemVer": 1,
@@ -424,17 +424,18 @@ func generateSimpleEvent(
 	}
 
 	return &add_events.Event{
-		Thread: "TT",
-		Log:    "LT",
-		Sev:    9,
-		Ts:     fmt.Sprintf("%d", start),
-		Attrs:  attrs,
+		Thread:     "TT",
+		Log:        "LT",
+		Sev:        9,
+		Ts:         fmt.Sprintf("%d", start),
+		Attrs:      attrs,
+		ServerHost: serverHost,
 	}
 }
 
 func TestBuildEventsFromTracesTrees(t *testing.T) {
 	traces := GenerateTracesTreesAndOrphans()
-	was := buildEventsFromTraces(traces, newDefaultServerHostSettings())
+	was := buildEventsFromTraces(traces, testServerHost)
 
 	statusUnset := ptrace.NewStatus()
 	statusError := ptrace.NewStatus()
@@ -442,62 +443,62 @@ func TestBuildEventsFromTracesTrees(t *testing.T) {
 
 	expected := []*add_events.EventBundle{
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102030101010101", "0102010101010101", statusError, 2100, 3800, "sAAA"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102030101010101", "0102010101010101", statusError, 2100, 3800, "sAAA", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102020101010101", "0102010101010101", statusError, 200, 2000, "sAAA"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102020101010101", "0102010101010101", statusError, 200, 2000, "sAAA", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("04040404040404040404040404040404", "0405040404040404", "0404040404040404", statusUnset, 40000, 50000, "sAAA"),
+			Event:  generateSimpleEvent("04040404040404040404040404040404", "0405040404040404", "0404040404040404", statusUnset, 40000, 50000, "sAAA", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("03030303030303030303030303030303", "0304030303030303", "0306030303030303", statusUnset, 23000, 24000, "sBBB"),
+			Event:  generateSimpleEvent("03030303030303030303030303030303", "0304030303030303", "0306030303030303", statusUnset, 23000, 24000, "sBBB", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("03030303030303030303030303030303", "0303030303030303", "0305030303030303", statusError, 21000, 22000, "sBBB"),
+			Event:  generateSimpleEvent("03030303030303030303030303030303", "0303030303030303", "0305030303030303", statusError, 21000, 22000, "sBBB", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("02020202020202020202020202020202", "0203020202020202", "0202020202020202", statusUnset, 10100, 19900, "sBBB"),
+			Event:  generateSimpleEvent("02020202020202020202020202020202", "0203020202020202", "0202020202020202", statusUnset, 10100, 19900, "sBBB", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0103010101010101", "0101010101010101", statusUnset, 5100, 9900, "sBBB"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0103010101010101", "0101010101010101", statusUnset, 5100, 9900, "sBBB", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102010101010101", "0101010101010101", statusUnset, 100, 4900, "sBBB"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102010101010101", "0101010101010101", statusUnset, 100, 4900, "sBBB", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("02020202020202020202020202020202", "0202020202020202", "", statusUnset, 10000, 20000, "sCCC"),
+			Event:  generateSimpleEvent("02020202020202020202020202020202", "0202020202020202", "", statusUnset, 10000, 20000, "sCCC", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0101010101010101", "", statusUnset, 0, 10000, "sCCC"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0101010101010101", "", statusUnset, 0, 10000, "sCCC", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102040101010101", "0102010101010101", statusUnset, 4000, 4800, "sCCC"),
+			Event:  generateSimpleEvent("01010101010101010101010101010101", "0102040101010101", "0102010101010101", statusUnset, 4000, 4800, "sCCC", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},
 		{
-			Event:  generateSimpleEvent("04040404040404040404040404040404", "0404040404040404", "", statusUnset, 40100, 49900, "sCCC"),
+			Event:  generateSimpleEvent("04040404040404040404040404040404", "0404040404040404", "", statusUnset, 40100, 49900, "sCCC", testServerHost),
 			Thread: testTThread,
 			Log:    testTLog,
 		},

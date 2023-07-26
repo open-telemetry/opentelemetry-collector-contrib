@@ -207,10 +207,6 @@ var testLEventReq = &add_events.Event{
 	},
 }
 
-var testServerHostSettings = ServerHostSettings{
-	ServerHost: testServerHost,
-}
-
 func TestBuildEventFromLog(t *testing.T) {
 	lr := testdata.GenerateLogsOneLogRecord()
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
@@ -224,8 +220,8 @@ func TestBuildEventFromLog(t *testing.T) {
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		newDefaultLogsSettings(),
-		testServerHostSettings,
 	)
 
 	assert.Equal(t, expected, was)
@@ -254,11 +250,11 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		LogsSettings{
 			ExportResourceInfo: true,
 			ExportScopeInfo:    true,
 		},
-		testServerHostSettings,
 	)
 
 	assert.Equal(t, expected, was)
@@ -288,11 +284,11 @@ func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		scope,
+		testServerHost,
 		LogsSettings{
 			ExportResourceInfo: false,
 			ExportScopeInfo:    true,
 		},
-		testServerHostSettings,
 	)
 
 	assert.Equal(t, expected, was)
@@ -321,8 +317,8 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		newDefaultLogsSettings(),
-		testServerHostSettings,
 	)
 
 	assert.Equal(t, expected, was)
@@ -358,8 +354,8 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		newDefaultLogsSettings(),
-		testServerHostSettings,
 	)
 
 	assert.Equal(t, expected, was)

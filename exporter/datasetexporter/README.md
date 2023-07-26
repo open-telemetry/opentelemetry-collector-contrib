@@ -55,8 +55,8 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
     - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
     - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
 - `server_host`:
-  - `server_host` (default = ''): Specifies the server host to be used for the events. By default, no specific value is set.
-  - `use_host_name` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.
+  - `server_host` (default = ''): Specifies the server host to be used for the events.
+  - `use_hostname` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
@@ -88,11 +88,11 @@ exporters:
       group_by:
         - container_id
     server_host:
-      # If these attribute serverHost is not specified or empty,
+      # If the serverHost attribute is not specified or empty,
       # use the value from the env variable SERVER_HOST
-      use_host: ${env:SERVER_HOST}
-      # If it's not set, use the hostname value
-      use_host_name: true
+      server_host: ${env:SERVER_HOST}
+      # If server_host is not set, use the hostname value
+      use_hostname: true
 
   dataset/traces:
     # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance

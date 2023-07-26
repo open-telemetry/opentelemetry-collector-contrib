@@ -40,7 +40,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 
 func buildEventFromSpan(
 	bundle spanBundle,
-	hostSettings ServerHostSettings,
+	serverHost string,
 ) *add_events.EventBundle {
 	span := bundle.span
 	resource := bundle.resource
@@ -80,7 +80,7 @@ func buildEventFromSpan(
 	event.Attrs = attrs
 	event.Log = "LT"
 	event.Thread = "TT"
-	event.ServerHost = inferServerHost(bundle.resource, attrs, hostSettings)
+	event.ServerHost = inferServerHost(bundle.resource, attrs, serverHost)
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TT", Name: "traces"},
@@ -133,7 +133,7 @@ type spanBundle struct {
 	scope    pcommon.InstrumentationScope
 }
 
-func buildEventsFromTraces(ld ptrace.Traces, hostSettings ServerHostSettings) []*add_events.EventBundle {
+func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.EventBundle {
 	var events []*add_events.EventBundle
 	var spans = make([]spanBundle, 0)
 
@@ -153,12 +153,12 @@ func buildEventsFromTraces(ld ptrace.Traces, hostSettings ServerHostSettings) []
 	}
 
 	for _, span := range spans {
-		events = append(events, buildEventFromSpan(span, hostSettings))
+		events = append(events, buildEventFromSpan(span, serverHost))
 	}
 
 	return events
 }
 
 func (e *DatasetExporter) consumeTraces(_ context.Context, ld ptrace.Traces) error {
-	return sendBatch(buildEventsFromTraces(ld, e.exporterCfg.serverHostSettings), e.client)
+	return sendBatch(buildEventsFromTraces(ld, e.serverHost), e.client)
 }

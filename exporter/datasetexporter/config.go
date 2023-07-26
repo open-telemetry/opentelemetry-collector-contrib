@@ -80,7 +80,7 @@ func newDefaultBufferSettings() BufferSettings {
 }
 
 type ServerHostSettings struct {
-	UseHostName bool   `mapstructure:"use_host_name"`
+	UseHostName bool   `mapstructure:"use_hostname"`
 	ServerHost  string `mapstructure:"server_host"`
 }
 
