@@ -97,7 +97,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordProcessThreadsDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithProcessCommand("process.command-val"), WithProcessCommandLine("process.command_line-val"), WithProcessExecutableName("process.executable.name-val"), WithProcessExecutablePath("process.executable.path-val"), WithProcessOwner("process.owner-val"), WithProcessParentPid(18), WithProcessPid(11))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -106,60 +108,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("process.command")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProcessCommand.Enabled, ok)
-			if mb.resourceAttributesConfig.ProcessCommand.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "process.command-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("process.command_line")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProcessCommandLine.Enabled, ok)
-			if mb.resourceAttributesConfig.ProcessCommandLine.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "process.command_line-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("process.executable.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProcessExecutableName.Enabled, ok)
-			if mb.resourceAttributesConfig.ProcessExecutableName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "process.executable.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("process.executable.path")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProcessExecutablePath.Enabled, ok)
-			if mb.resourceAttributesConfig.ProcessExecutablePath.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "process.executable.path-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("process.owner")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProcessOwner.Enabled, ok)
-			if mb.resourceAttributesConfig.ProcessOwner.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "process.owner-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("process.parent_pid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProcessParentPid.Enabled, ok)
-			if mb.resourceAttributesConfig.ProcessParentPid.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, 18, attrVal.Int())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("process.pid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProcessPid.Enabled, ok)
-			if mb.resourceAttributesConfig.ProcessPid.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, 11, attrVal.Int())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 7)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

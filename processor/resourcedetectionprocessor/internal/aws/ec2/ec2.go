@@ -32,10 +32,10 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	metadataProvider   ec2provider.Provider
-	tagKeyRegexes      []*regexp.Regexp
-	logger             *zap.Logger
-	resourceAttributes metadata.ResourceAttributesConfig
+	metadataProvider ec2provider.Provider
+	tagKeyRegexes    []*regexp.Regexp
+	logger           *zap.Logger
+	rb               *metadata.ResourceBuilder
 }
 
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -50,10 +50,10 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 	}
 
 	return &Detector{
-		metadataProvider:   ec2provider.NewProvider(sess),
-		tagKeyRegexes:      tagKeyRegexes,
-		logger:             set.Logger,
-		resourceAttributes: cfg.ResourceAttributes,
+		metadataProvider: ec2provider.NewProvider(sess),
+		tagKeyRegexes:    tagKeyRegexes,
+		logger:           set.Logger,
+		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
 
@@ -73,17 +73,16 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting hostname: %w", err)
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-	rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEC2)
-	rb.SetCloudRegion(meta.Region)
-	rb.SetCloudAccountID(meta.AccountID)
-	rb.SetCloudAvailabilityZone(meta.AvailabilityZone)
-	rb.SetHostID(meta.InstanceID)
-	rb.SetHostImageID(meta.ImageID)
-	rb.SetHostType(meta.InstanceType)
-	rb.SetHostName(hostname)
-	res := rb.Emit()
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEC2)
+	d.rb.SetCloudRegion(meta.Region)
+	d.rb.SetCloudAccountID(meta.AccountID)
+	d.rb.SetCloudAvailabilityZone(meta.AvailabilityZone)
+	d.rb.SetHostID(meta.InstanceID)
+	d.rb.SetHostImageID(meta.ImageID)
+	d.rb.SetHostType(meta.InstanceType)
+	d.rb.SetHostName(hostname)
+	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
 		client := getHTTPClientSettings(ctx, d.logger)

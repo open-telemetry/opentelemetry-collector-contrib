@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
 
 func TestDetect(t *testing.T) {
@@ -227,11 +228,10 @@ func TestDetect(t *testing.T) {
 }
 
 func newTestDetector(gcpDetector *fakeGCPDetector) *detector {
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
 	return &detector{
-		logger:             zap.NewNop(),
-		detector:           gcpDetector,
-		resourceAttributes: resourceAttributes,
+		logger:   zap.NewNop(),
+		detector: gcpDetector,
+		rb:       localMetadata.NewResourceBuilder(localMetadata.DefaultResourceAttributesConfig()),
 	}
 }
 

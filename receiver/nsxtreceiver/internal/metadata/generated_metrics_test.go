@@ -82,7 +82,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
 
-			metrics := mb.Emit(WithDeviceID("device.id-val"), WithNsxtNodeID("nsxt.node.id-val"), WithNsxtNodeName("nsxt.node.name-val"), WithNsxtNodeType("nsxt.node.type-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -91,39 +93,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("device.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.DeviceID.Enabled, ok)
-			if mb.resourceAttributesConfig.DeviceID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "device.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeID.Enabled, ok)
-			if mb.resourceAttributesConfig.NsxtNodeID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "nsxt.node.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.NsxtNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "nsxt.node.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeType.Enabled, ok)
-			if mb.resourceAttributesConfig.NsxtNodeType.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "nsxt.node.type-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 4)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

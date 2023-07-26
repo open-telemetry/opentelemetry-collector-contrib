@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -165,23 +166,14 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	headerConf := &HeaderConfig{
-		Pattern: "^#",
-		MetadataOperators: []operator.Config{
-			{
-				Builder: regexConf,
-			},
-		},
-	}
-
 	enc, err := helper.EncodingConfig{
 		Encoding: "utf-8",
 	}.Build()
 	require.NoError(t, err)
 
-	h, err := headerConf.buildHeaderSettings(enc.Encoding)
+	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc.Encoding)
 	require.NoError(t, err)
-	f.headerSettings = h
+	f.headerConfig = h
 
 	temp := openTemp(t, t.TempDir())
 

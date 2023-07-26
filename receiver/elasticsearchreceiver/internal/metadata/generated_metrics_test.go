@@ -397,7 +397,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordJvmThreadsCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithElasticsearchClusterName("elasticsearch.cluster.name-val"), WithElasticsearchIndexName("elasticsearch.index.name-val"), WithElasticsearchNodeName("elasticsearch.node.name-val"), WithElasticsearchNodeVersion("elasticsearch.node.version-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -406,39 +408,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("elasticsearch.cluster.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchClusterName.Enabled, ok)
-			if mb.resourceAttributesConfig.ElasticsearchClusterName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "elasticsearch.cluster.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.index.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchIndexName.Enabled, ok)
-			if mb.resourceAttributesConfig.ElasticsearchIndexName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "elasticsearch.index.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.ElasticsearchNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "elasticsearch.node.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.version")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ElasticsearchNodeVersion.Enabled, ok)
-			if mb.resourceAttributesConfig.ElasticsearchNodeVersion.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "elasticsearch.node.version-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 4)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

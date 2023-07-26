@@ -5,3 +5,5 @@ status:
   stability:
     beta: [traces]
   distributions: [contrib, sumo]
+  codeowners:
+    active: [leonsp-ai, dmitryax, mx-psi, TylerHelmuth]

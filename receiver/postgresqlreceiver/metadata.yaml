@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   postgresql.database.name:

@@ -32,7 +32,7 @@ var (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name         string
-		getMiscStats func() (*load.MiscStat, error)
+		getMiscStats func(context.Context) (*load.MiscStat, error)
 		getProcesses func() ([]proc, error)
 		expectedErr  string
 		validate     func(*testing.T, pmetric.MetricSlice)
@@ -43,12 +43,12 @@ func TestScrape(t *testing.T) {
 		validate: validateRealData,
 	}, {
 		name:         "FakeData",
-		getMiscStats: func() (*load.MiscStat, error) { return &fakeData, nil },
+		getMiscStats: func(ctx context.Context) (*load.MiscStat, error) { return &fakeData, nil },
 		getProcesses: func() ([]proc, error) { return fakeProcessesData, nil },
 		validate:     validateFakeData,
 	}, {
 		name:         "ErrorFromMiscStat",
-		getMiscStats: func() (*load.MiscStat, error) { return &load.MiscStat{}, errors.New("err1") },
+		getMiscStats: func(context.Context) (*load.MiscStat, error) { return &load.MiscStat{}, errors.New("err1") },
 		expectedErr:  "err1",
 	}, {
 		name:         "ErrorFromProcesses",

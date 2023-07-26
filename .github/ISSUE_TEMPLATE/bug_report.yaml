@@ -19,6 +19,7 @@ body:
       # Do not manually edit it.
       # Start Collector components list
       - cmd/configschema
+      - cmd/githubgen
       - cmd/mdatagen
       - cmd/opampsupervisor
       - cmd/otelcontribcol
@@ -63,6 +64,7 @@ body:
       - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
+      - exporter/opensearch
       - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
@@ -89,6 +91,7 @@ body:
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
+      - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver

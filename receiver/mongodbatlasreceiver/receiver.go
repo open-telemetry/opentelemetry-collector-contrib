@@ -25,6 +25,7 @@ type receiver struct {
 	cfg         *Config
 	client      *internal.MongoDBAtlasClient
 	lastRun     time.Time
+	rb          *metadata.ResourceBuilder
 	mb          *metadata.MetricsBuilder
 	stopperChan chan struct{}
 }
@@ -41,6 +42,7 @@ func newMongoDBAtlasReceiver(settings rcvr.CreateSettings, cfg *Config) *receive
 		log:         settings.Logger,
 		cfg:         cfg,
 		client:      client,
+		rb:          metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:          metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		stopperChan: make(chan struct{}),
 	}
@@ -161,17 +163,16 @@ func (s *receiver) extractProcessMetrics(
 		return fmt.Errorf("error when polling process metrics from MongoDB Atlas: %w", err)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithMongodbAtlasOrgName(orgName),
-		metadata.WithMongodbAtlasProjectName(project.Name),
-		metadata.WithMongodbAtlasProjectID(project.ID),
-		metadata.WithMongodbAtlasHostName(process.Hostname),
-		metadata.WithMongodbAtlasUserAlias(process.UserAlias),
-		metadata.WithMongodbAtlasClusterName(clusterName),
-		metadata.WithMongodbAtlasProcessPort(strconv.Itoa(process.Port)),
-		metadata.WithMongodbAtlasProcessTypeName(process.TypeName),
-		metadata.WithMongodbAtlasProcessID(process.ID),
-	)
+	s.rb.SetMongodbAtlasOrgName(orgName)
+	s.rb.SetMongodbAtlasProjectName(project.Name)
+	s.rb.SetMongodbAtlasProjectID(project.ID)
+	s.rb.SetMongodbAtlasHostName(process.Hostname)
+	s.rb.SetMongodbAtlasUserAlias(process.UserAlias)
+	s.rb.SetMongodbAtlasClusterName(clusterName)
+	s.rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
+	s.rb.SetMongodbAtlasProcessTypeName(process.TypeName)
+	s.rb.SetMongodbAtlasProcessID(process.ID)
+	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 
 	return nil
 }
@@ -208,18 +209,17 @@ func (s *receiver) extractProcessDatabaseMetrics(
 		); err != nil {
 			return fmt.Errorf("error when polling database metrics from MongoDB Atlas: %w", err)
 		}
-		s.mb.EmitForResource(
-			metadata.WithMongodbAtlasOrgName(orgName),
-			metadata.WithMongodbAtlasProjectName(project.Name),
-			metadata.WithMongodbAtlasProjectID(project.ID),
-			metadata.WithMongodbAtlasHostName(process.Hostname),
-			metadata.WithMongodbAtlasUserAlias(process.UserAlias),
-			metadata.WithMongodbAtlasClusterName(clusterName),
-			metadata.WithMongodbAtlasProcessPort(strconv.Itoa(process.Port)),
-			metadata.WithMongodbAtlasProcessTypeName(process.TypeName),
-			metadata.WithMongodbAtlasProcessID(process.ID),
-			metadata.WithMongodbAtlasDbName(db.DatabaseName),
-		)
+		s.rb.SetMongodbAtlasOrgName(orgName)
+		s.rb.SetMongodbAtlasProjectName(project.Name)
+		s.rb.SetMongodbAtlasProjectID(project.ID)
+		s.rb.SetMongodbAtlasHostName(process.Hostname)
+		s.rb.SetMongodbAtlasUserAlias(process.UserAlias)
+		s.rb.SetMongodbAtlasClusterName(clusterName)
+		s.rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
+		s.rb.SetMongodbAtlasProcessTypeName(process.TypeName)
+		s.rb.SetMongodbAtlasProcessID(process.ID)
+		s.rb.SetMongodbAtlasDbName(db.DatabaseName)
+		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 	}
 	return nil
 }
@@ -246,18 +246,17 @@ func (s *receiver) extractProcessDiskMetrics(
 		); err != nil {
 			return fmt.Errorf("error when polling disk metrics from MongoDB Atlas: %w", err)
 		}
-		s.mb.EmitForResource(
-			metadata.WithMongodbAtlasOrgName(orgName),
-			metadata.WithMongodbAtlasProjectName(project.Name),
-			metadata.WithMongodbAtlasProjectID(project.ID),
-			metadata.WithMongodbAtlasHostName(process.Hostname),
-			metadata.WithMongodbAtlasUserAlias(process.UserAlias),
-			metadata.WithMongodbAtlasClusterName(clusterName),
-			metadata.WithMongodbAtlasProcessPort(strconv.Itoa(process.Port)),
-			metadata.WithMongodbAtlasProcessTypeName(process.TypeName),
-			metadata.WithMongodbAtlasProcessID(process.ID),
-			metadata.WithMongodbAtlasDiskPartition(disk.PartitionName),
-		)
+		s.rb.SetMongodbAtlasOrgName(orgName)
+		s.rb.SetMongodbAtlasProjectName(project.Name)
+		s.rb.SetMongodbAtlasProjectID(project.ID)
+		s.rb.SetMongodbAtlasHostName(process.Hostname)
+		s.rb.SetMongodbAtlasUserAlias(process.UserAlias)
+		s.rb.SetMongodbAtlasClusterName(clusterName)
+		s.rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
+		s.rb.SetMongodbAtlasProcessTypeName(process.TypeName)
+		s.rb.SetMongodbAtlasProcessID(process.ID)
+		s.rb.SetMongodbAtlasDiskPartition(disk.PartitionName)
+		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 	}
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/process"
@@ -37,8 +38,9 @@ type scraper struct {
 	mb       *metadata.MetricsBuilder
 
 	// for mocking gopsutil
-	getMiscStats func() (*load.MiscStat, error)
+	getMiscStats func(context.Context) (*load.MiscStat, error)
 	getProcesses func() ([]proc, error)
+	bootTime     func(context.Context) (uint64, error)
 }
 
 // for mocking out gopsutil process.Process
@@ -56,20 +58,23 @@ func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cf
 	return &scraper{
 		settings:     settings,
 		config:       cfg,
-		getMiscStats: load.Misc,
+		getMiscStats: load.MiscWithContext,
 		getProcesses: func() ([]proc, error) {
-			ps, err := process.Processes()
+			ctx := context.WithValue(context.Background(), common.EnvKey, cfg.EnvMap)
+			ps, err := process.ProcessesWithContext(ctx)
 			ret := make([]proc, len(ps))
 			for i := range ps {
 				ret[i] = ps[i]
 			}
 			return ret, err
 		},
+		bootTime: host.BootTimeWithContext,
 	}
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := host.BootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
