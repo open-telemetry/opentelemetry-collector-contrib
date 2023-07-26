@@ -102,7 +102,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordIisUptimeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithIisApplicationPool("iis.application_pool-val"), WithIisSite("iis.site-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -111,25 +113,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("iis.application_pool")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.IisApplicationPool.Enabled, ok)
-			if mb.resourceAttributesConfig.IisApplicationPool.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "iis.application_pool-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("iis.site")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.IisSite.Enabled, ok)
-			if mb.resourceAttributesConfig.IisSite.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "iis.site-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 2)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
