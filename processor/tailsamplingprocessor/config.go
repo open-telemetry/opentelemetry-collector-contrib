@@ -139,6 +139,8 @@ type NumericAttributeCfg struct {
 	MinValue int64 `mapstructure:"min_value"`
 	// MaxValue is the maximum value of the attribute to be considered a match.
 	MaxValue int64 `mapstructure:"max_value"`
+	// If invertMatch is true it means that we will do the vice versa decision.
+	InvertMatch bool `mapstructure:"invert_match"`
 }
 
 // ProbabilisticCfg holds the configurable settings to create a probabilistic

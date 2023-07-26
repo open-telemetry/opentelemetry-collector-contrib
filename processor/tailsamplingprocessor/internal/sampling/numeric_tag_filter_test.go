@@ -18,7 +18,7 @@ import (
 func TestNumericTagFilter(t *testing.T) {
 
 	var empty = map[string]interface{}{}
-	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", math.MinInt32, math.MaxInt32)
+	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", math.MinInt32, math.MaxInt32, false)
 
 	resAttr := map[string]interface{}{}
 	resAttr["example"] = 8
@@ -52,6 +52,56 @@ func TestNumericTagFilter(t *testing.T) {
 			Desc:     "span attribute above max limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
 			Decision: NotSampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			u, _ := uuid.NewRandom()
+			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
+func TestNumericTagFilterInverted(t *testing.T) {
+
+	var empty = map[string]interface{}{}
+	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", math.MinInt32, math.MaxInt32, true)
+
+	resAttr := map[string]interface{}{}
+	resAttr["example"] = 8
+
+	cases := []struct {
+		Desc     string
+		Trace    *TraceData
+		Decision Decision
+	}{
+		{
+			Desc:     "nonmatching span attribute",
+			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
+			Decision: Sampled,
+		},
+		{
+			Desc:     "span attribute with lower limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
+			Decision: NotSampled,
+		},
+		{
+			Desc:     "span attribute with upper limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
+			Decision: NotSampled,
+		},
+		{
+			Desc:     "span attribute below min limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
+			Decision: Sampled,
+		},
+		{
+			Desc:     "span attribute above max limit",
+			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
+			Decision: Sampled,
 		},
 	}
 
