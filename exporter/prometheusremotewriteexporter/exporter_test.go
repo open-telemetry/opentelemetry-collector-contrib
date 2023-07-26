@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -1013,4 +1014,37 @@ func TestPartitionTimeSeries(t *testing.T) {
 	if totalTimeSeries != len(tsMap) {
 		t.Errorf("Expected %d time series in partitions, got %d", len(tsMap), totalTimeSeries)
 	}
+}
+
+func TestErrorInExecute(t *testing.T) {
+	attempts := 0
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if attempts == 0 {
+			attempts++
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer mockServer.Close()
+
+	endpointURL, err := url.Parse(mockServer.URL)
+	assert.NoError(t, err)
+
+	// Create the prwExporter
+	exporter := &prwExporter{
+		endpointURL: endpointURL,
+		client:      http.DefaultClient,
+	}
+
+	ctx := context.Background()
+	writeReq := &prompb.WriteRequest{}
+	// Test case where the execute method returns a 4xx error
+	err = exporter.execute(ctx, writeReq)
+	assert.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+
+	// Test case where the execute method returns no error
+	err = exporter.execute(ctx, writeReq)
+	assert.NoError(t, err)
 }
