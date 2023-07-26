@@ -23,7 +23,7 @@ metrics:
   #  brokers scraper
   kafka.brokers:
     enabled: true
-    description: Number of brokers in the cluster.
+    description: Count of brokers in the cluster.
     unit: "{brokers}"
     sum:
       monotonic: false
