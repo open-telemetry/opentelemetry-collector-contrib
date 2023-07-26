@@ -27,6 +27,7 @@ type mySQLScraper struct {
 	sqlclient client
 	logger    *zap.Logger
 	config    *Config
+	rb        *metadata.ResourceBuilder
 	mb        *metadata.MetricsBuilder
 
 	// Feature gates regarding resource attributes
@@ -40,6 +41,7 @@ func newMySQLScraper(
 	ms := &mySQLScraper{
 		logger: settings.Logger,
 		config: config,
+		rb:     metadata.NewResourceBuilder(config.MetricsBuilderConfig.ResourceAttributes),
 		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 
@@ -104,7 +106,8 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// colect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
 
-	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+	m.rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.mb.EmitForResource(metadata.WithResource(m.rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
 }

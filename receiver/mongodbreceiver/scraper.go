@@ -26,6 +26,7 @@ type mongodbScraper struct {
 	config       *Config
 	client       client
 	mongoVersion *version.Version
+	rb           *metadata.ResourceBuilder
 	mb           *metadata.MetricsBuilder
 }
 
@@ -34,6 +35,7 @@ func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongod
 	return &mongodbScraper{
 		logger:       settings.Logger,
 		config:       config,
+		rb:           metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		mongoVersion: v,
 	}
@@ -116,7 +118,8 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
 
-	s.mb.EmitForResource(metadata.WithDatabase(databaseName))
+	s.rb.SetDatabase(databaseName)
+	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 }
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
