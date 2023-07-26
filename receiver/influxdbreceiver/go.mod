@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
-	github.com/influxdata/influxdb-observability/common v0.5.4
-	github.com/influxdata/influxdb-observability/influx2otel v0.5.4
+	github.com/influxdata/influxdb-observability/common v0.5.5
+	github.com/influxdata/influxdb-observability/influx2otel v0.5.5
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.81.0
