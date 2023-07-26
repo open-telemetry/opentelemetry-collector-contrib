@@ -17,8 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
-type saramaMetrics map[string]map[string]interface{} // saramaMetrics is a map of metric name to tags
-
 
 type brokerScraper struct {
 	client       sarama.Client
@@ -27,6 +25,8 @@ type brokerScraper struct {
 	saramaConfig *sarama.Config
 	mb           *metadata.MetricsBuilder
 }
+
+type saramaMetrics map[string]map[string]interface{} // saramaMetrics is a map of metric name to tags
 
 var nrMetricsPrefix = [...]string{
 	"consumer-fetch-rate-for-broker-",
