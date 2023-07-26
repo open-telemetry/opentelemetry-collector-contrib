@@ -165,7 +165,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			metric := createMetricTelemetry()
 
-			ctx := NewTransformContext(metric, pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.Nil(t, err)

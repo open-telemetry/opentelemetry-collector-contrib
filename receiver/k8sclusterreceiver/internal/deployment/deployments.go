@@ -37,7 +37,12 @@ func GetMetrics(set receiver.CreateSettings, dep *appsv1.Deployment) pmetric.Met
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))
 	mb.RecordK8sDeploymentAvailableDataPoint(ts, int64(dep.Status.AvailableReplicas))
-	return mb.Emit(imetadata.WithK8sDeploymentName(dep.Name), imetadata.WithK8sDeploymentUID(string(dep.UID)), imetadata.WithK8sNamespaceName(dep.Namespace), imetadata.WithOpencensusResourcetype("k8s"))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sDeploymentName(dep.Name)
+	rb.SetK8sDeploymentUID(string(dep.UID))
+	rb.SetK8sNamespaceName(dep.Namespace)
+	rb.SetOpencensusResourcetype("k8s")
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(dep *appsv1.Deployment) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

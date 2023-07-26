@@ -162,7 +162,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithBigipNodeIPAddress("bigip.node.ip_address-val"), WithBigipNodeName("bigip.node.name-val"), WithBigipPoolName("bigip.pool.name-val"), WithBigipPoolMemberIPAddress("bigip.pool_member.ip_address-val"), WithBigipPoolMemberName("bigip.pool_member.name-val"), WithBigipVirtualServerDestination("bigip.virtual_server.destination-val"), WithBigipVirtualServerName("bigip.virtual_server.name-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -171,60 +173,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("bigip.node.ip_address")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipNodeIPAddress.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipNodeIPAddress.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "bigip.node.ip_address-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "bigip.node.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.pool.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipPoolName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipPoolName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "bigip.pool.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.pool_member.ip_address")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipPoolMemberIPAddress.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipPoolMemberIPAddress.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "bigip.pool_member.ip_address-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.pool_member.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipPoolMemberName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipPoolMemberName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "bigip.pool_member.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.virtual_server.destination")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipVirtualServerDestination.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipVirtualServerDestination.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "bigip.virtual_server.destination-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.virtual_server.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipVirtualServerName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipVirtualServerName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "bigip.virtual_server.name-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 7)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

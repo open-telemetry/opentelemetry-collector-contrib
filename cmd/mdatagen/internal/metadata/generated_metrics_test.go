@@ -77,7 +77,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true)
 
-			metrics := mb.Emit(WithMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}), WithOptionalResourceAttr("optional.resource.attr-val"), WithSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"}), WithStringEnumResourceAttrOne, WithStringResourceAttr("string.resource.attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -86,46 +88,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("map.resource.attr")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.MapResourceAttr.Enabled, ok)
-			if mb.resourceAttributesConfig.MapResourceAttr.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"}, attrVal.Map().AsRaw())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("optional.resource.attr")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.OptionalResourceAttr.Enabled, ok)
-			if mb.resourceAttributesConfig.OptionalResourceAttr.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "optional.resource.attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("slice.resource.attr")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SliceResourceAttr.Enabled, ok)
-			if mb.resourceAttributesConfig.SliceResourceAttr.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, []any{"slice.resource.attr-item1", "slice.resource.attr-item2"}, attrVal.Slice().AsRaw())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("string.enum.resource.attr")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.StringEnumResourceAttr.Enabled, ok)
-			if mb.resourceAttributesConfig.StringEnumResourceAttr.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "one", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("string.resource.attr")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.StringResourceAttr.Enabled, ok)
-			if mb.resourceAttributesConfig.StringResourceAttr.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "string.resource.attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 5)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

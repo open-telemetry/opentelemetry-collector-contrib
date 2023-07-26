@@ -4,6 +4,7 @@
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 
 import (
+	quotav1 "github.com/openshift/api/quota/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
@@ -73,6 +74,50 @@ func NewJob(id string) *batchv1.Job {
 			Active:    2,
 			Succeeded: 3,
 			Failed:    0,
+		},
+	}
+}
+
+func NewClusterResourceQuota(id string) *quotav1.ClusterResourceQuota {
+	return &quotav1.ClusterResourceQuota{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-clusterquota-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-clusterquota-" + id + "-uid"),
+		},
+		Status: quotav1.ClusterResourceQuotaStatus{
+			Total: corev1.ResourceQuotaStatus{
+				Hard: corev1.ResourceList{
+					"requests.cpu": *resource.NewQuantity(10, resource.DecimalSI),
+				},
+				Used: corev1.ResourceList{
+					"requests.cpu": *resource.NewQuantity(6, resource.DecimalSI),
+				},
+			},
+			Namespaces: quotav1.ResourceQuotasStatusByNamespace{
+				{
+					Namespace: "ns1",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(6, resource.DecimalSI),
+						},
+						Used: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(1, resource.DecimalSI),
+						},
+					},
+				},
+				{
+					Namespace: "ns2",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(4, resource.DecimalSI),
+						},
+						Used: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(5, resource.DecimalSI),
+						},
+					},
+				},
+			},
 		},
 	}
 }
