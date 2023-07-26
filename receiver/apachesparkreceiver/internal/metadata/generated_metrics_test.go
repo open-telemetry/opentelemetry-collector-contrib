@@ -306,7 +306,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithSparkApplicationID("spark.application.id-val"), WithSparkApplicationName("spark.application.name-val"), WithSparkExecutorID("spark.executor.id-val"), WithSparkJobID(12), WithSparkStageAttemptID(22), WithSparkStageID(14))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -315,53 +317,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("spark.application.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SparkApplicationID.Enabled, ok)
-			if mb.resourceAttributesConfig.SparkApplicationID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "spark.application.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("spark.application.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SparkApplicationName.Enabled, ok)
-			if mb.resourceAttributesConfig.SparkApplicationName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "spark.application.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("spark.executor.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SparkExecutorID.Enabled, ok)
-			if mb.resourceAttributesConfig.SparkExecutorID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "spark.executor.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("spark.job.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SparkJobID.Enabled, ok)
-			if mb.resourceAttributesConfig.SparkJobID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, 12, attrVal.Int())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("spark.stage.attempt.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SparkStageAttemptID.Enabled, ok)
-			if mb.resourceAttributesConfig.SparkStageAttemptID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, 22, attrVal.Int())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("spark.stage.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SparkStageID.Enabled, ok)
-			if mb.resourceAttributesConfig.SparkStageID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, 14, attrVal.Int())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 6)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

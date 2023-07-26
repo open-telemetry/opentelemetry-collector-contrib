@@ -6,7 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib], [sumo] |
 | Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Floki%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Floki%20&label=closed&color=blue&logo=opentelemetry) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mar4uk](https://www.github.com/mar4uk), [@kovrus](https://www.github.com/kovrus), [@jpkrohling](https://www.github.com/jpkrohling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mar4uk](https://www.github.com/mar4uk), [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
