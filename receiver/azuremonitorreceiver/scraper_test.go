@@ -91,7 +91,7 @@ func TestAzureScraperStart(t *testing.T) {
 					CacheResourcesDefinitions:     24 * 60 * 60,
 					MaximumNumberOfMetricsInACall: 20,
 					Services:                      monitorServices,
-					Authentication:                "service_principal",
+					Authentication:                ServicePrincipal,
 				}
 				s := &azureScraper{
 					cfg:                             customCfg,
@@ -119,7 +119,7 @@ func TestAzureScraperStart(t *testing.T) {
 					CacheResourcesDefinitions:     24 * 60 * 60,
 					MaximumNumberOfMetricsInACall: 20,
 					Services:                      monitorServices,
-					Authentication:                "workload_identity",
+					Authentication:                WorkloadIdentity,
 				}
 				s := &azureScraper{
 					cfg:                             customCfg,

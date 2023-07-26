@@ -241,6 +241,11 @@ type Config struct {
 	AppendTagsAsAttributes                  bool                          `mapstructure:"append_tags_as_attributes"`
 }
 
+const (
+	ServicePrincipal = "service_principal"
+	WorkloadIdentity = "workload_identity"
+)
+
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
 	if c.SubscriptionID == "" {
@@ -248,7 +253,7 @@ func (c Config) Validate() (err error) {
 	}
 
 	switch c.Authentication {
-	case "service_principal":
+	case ServicePrincipal:
 		if c.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
 		}
@@ -260,7 +265,7 @@ func (c Config) Validate() (err error) {
 		if c.ClientSecret == "" {
 			err = multierr.Append(err, errMissingClientSecret)
 		}
-	case "workload_identity":
+	case WorkloadIdentity:
 		if _, exist := os.LookupEnv("AZURE_CLIENT_ID"); !exist {
 			err = multierr.Append(err, errMissingClientIDEnv)
 		}

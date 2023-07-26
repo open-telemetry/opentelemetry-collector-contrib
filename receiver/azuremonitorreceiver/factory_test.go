@@ -44,7 +44,7 @@ func TestNewFactory(t *testing.T) {
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
 					MaximumNumberOfMetricsInACall: 20,
-					Authentication:                "service_principal",
+					Authentication:                ServicePrincipal,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

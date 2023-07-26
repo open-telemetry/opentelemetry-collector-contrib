@@ -142,12 +142,12 @@ func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
 
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	switch s.cfg.Authentication {
-	case "service_principal":
+	case ServicePrincipal:
 		s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
 		if err != nil {
 			return err
 		}
-	case "workload_identity":
+	case WorkloadIdentity:
 		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
 			return err
 		}
