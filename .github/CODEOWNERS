@@ -33,9 +33,9 @@ confmap/provider/s3provider/                             @open-telemetry/collect
 
 connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
 connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling
-connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus @mwear
+connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
-connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @albertteoh @kovrus
+connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @albertteoh
 
 examples/demo/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
@@ -68,7 +68,7 @@ exporter/kafkaexporter/                                  @open-telemetry/collect
 exporter/loadbalancingexporter/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                           @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                 @open-telemetry/collector-contrib-approvers @Doron-Bargo @yotamloe
-exporter/lokiexporter/                                   @open-telemetry/collector-contrib-approvers @gramidt @gouthamve @jpkrohling @kovrus @mar4uk
+exporter/lokiexporter/                                   @open-telemetry/collector-contrib-approvers @gramidt @gouthamve @jpkrohling @mar4uk
 exporter/mezmoexporter/                                  @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/opensearchexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @MitchellGale @MaxKsyunz @YANG-DB
@@ -92,7 +92,7 @@ extension/awsproxy/                                      @open-telemetry/collect
 extension/basicauthextension/                            @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin
 extension/bearertokenauthextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123 @frzifus
 extension/encodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy
-extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
+extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                                 @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
 extension/jaegerremotesampling/                          @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
@@ -131,10 +131,10 @@ pkg/pdatautil/                                           @open-telemetry/collect
 pkg/resourcetotelemetry/                                 @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                              @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/translator/jaeger/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-pkg/translator/loki/                                     @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @kovrus @mar4uk
+pkg/translator/loki/                                     @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @mar4uk
 pkg/translator/opencensus/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                               @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
-pkg/translator/prometheusremotewrite/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @kovrus
+pkg/translator/prometheusremotewrite/                    @open-telemetry/collector-contrib-approvers @Aneurysm9
 pkg/translator/signalfx/                                 @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/translator/zipkin/                                   @open-telemetry/collector-contrib-approvers @MovieStoreGuy @astencel-sumo @crobert-1
 pkg/winperfcounters/                                     @open-telemetry/collector-contrib-approvers @dashpole @mrod1598 @binaryfissiongames
@@ -158,7 +158,7 @@ processor/resourcedetectionprocessor/internal/azure/     @open-telemetry/collect
 processor/resourcedetectionprocessor/internal/heroku/    @open-telemetry/collector-contrib-approvers @atoulme
 processor/resourcedetectionprocessor/internal/openshift/ @open-telemetry/collector-contrib-approvers @frzifus
 processor/resourceprocessor/                             @open-telemetry/collector-contrib-approvers @dmitryax
-processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
+processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/servicegraphprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 processor/spanmetricsprocessor/                          @open-telemetry/collector-contrib-approvers @albertteoh
@@ -170,7 +170,7 @@ receiver/activedirectorydsreceiver/                      @open-telemetry/collect
 receiver/aerospikereceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
 receiver/apachereceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/apachesparkreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski @Caleb-Hurshman @mrsillydog
-receiver/awscloudwatchmetricsreceiver/                   @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
+receiver/awscloudwatchmetricsreceiver/                   @open-telemetry/collector-contrib-approvers @jpkrohling
 receiver/awscloudwatchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/awscontainerinsightreceiver/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                 @open-telemetry/collector-contrib-approvers @Aneurysm9
@@ -211,7 +211,7 @@ receiver/k8sobjectsreceiver/                             @open-telemetry/collect
 receiver/kafkametricsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 receiver/kubeletstatsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/lokireceiver/                                   @open-telemetry/collector-contrib-approvers @mar4uk @kovrus @jpkrohling
+receiver/lokireceiver/                                   @open-telemetry/collector-contrib-approvers @mar4uk @jpkrohling
 receiver/memcachedreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/mongodbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
