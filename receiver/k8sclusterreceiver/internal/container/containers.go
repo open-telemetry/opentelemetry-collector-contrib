@@ -33,8 +33,8 @@ const (
 
 // GetSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
-func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1.Pod) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetSpecMetrics(config Config, set receiver.CreateSettings, c corev1.Container, pod *corev1.Pod) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(config.MetricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	for k, r := range c.Resources.Requests {
 		//exhaustive:ignore

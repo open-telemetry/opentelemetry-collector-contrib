@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 )
 
 // Config defines configuration for kubernetes cluster receiver.
@@ -35,6 +36,8 @@ type Config struct {
 	// Setting the duration to 0 will disable periodic collection (however will not impact
 	// metadata collection on changes).
 	MetadataCollectionInterval time.Duration `mapstructure:"metadata_collection_interval"`
+
+	collection.MetricsConfig `mapstructure:",squash"`
 }
 
 func (cfg *Config) Validate() error {

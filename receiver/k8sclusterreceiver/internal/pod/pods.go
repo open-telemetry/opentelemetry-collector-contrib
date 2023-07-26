@@ -71,7 +71,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	return newPod
 }
 
-func GetMetrics(set receiver.CreateSettings, pod *corev1.Pod) pmetric.Metrics {
+func GetMetrics(containerConfig container.Config, set receiver.CreateSettings, pod *corev1.Pod) pmetric.Metrics {
 	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mbphase.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
@@ -84,7 +84,7 @@ func GetMetrics(set receiver.CreateSettings, pod *corev1.Pod) pmetric.Metrics {
 	metrics := mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
-		specMetrics := container.GetSpecMetrics(set, c, pod)
+		specMetrics := container.GetSpecMetrics(containerConfig, set, c, pod)
 		specMetrics.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 

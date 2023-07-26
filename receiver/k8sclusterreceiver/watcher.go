@@ -72,7 +72,7 @@ func newResourceWatcher(set receiver.CreateSettings, cfg *Config) *resourceWatch
 	return &resourceWatcher{
 		logger:                   set.Logger,
 		sampledLogger:            sampledLogger,
-		dataCollector:            collection.NewDataCollector(set, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
+		dataCollector:            collection.NewDataCollector(set, cfg.MetricsConfig, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
 		initialSyncDone:          &atomic.Bool{},
 		initialSyncTimedOut:      &atomic.Bool{},
 		initialTimeout:           defaultInitialSyncTimeout,

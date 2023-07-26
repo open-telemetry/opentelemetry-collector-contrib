@@ -24,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
@@ -50,18 +51,30 @@ type DataCollector struct {
 	settings                 receiver.CreateSettings
 	metricsStore             *metricsStore
 	metadataStore            *metadata.Store
+	metricsConfig            MetricsConfig
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
 }
 
+type MetricsConfig struct {
+	container container.Config `mapstructure:"container"`
+}
+
+func DefaultMetricsConfig() MetricsConfig {
+	return MetricsConfig{
+		container: container.CreateDefaultConfig(),
+	}
+}
+
 // NewDataCollector returns a DataCollector.
-func NewDataCollector(set receiver.CreateSettings, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
+func NewDataCollector(set receiver.CreateSettings, metricsConfig MetricsConfig, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
 	return &DataCollector{
 		settings: set,
 		metricsStore: &metricsStore{
 			metricsCache: make(map[types.UID]pmetric.Metrics),
 		},
 		metadataStore:            &metadata.Store{},
+		metricsConfig:            metricsConfig,
 		nodeConditionsToReport:   nodeConditionsToReport,
 		allocatableTypesToReport: allocatableTypesToReport,
 	}
@@ -102,7 +115,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		md = pod.GetMetrics(dc.settings, o)
+		md = pod.GetMetrics(dc.metricsConfig.container, dc.settings, o)
 	case *corev1.Node:
 		md = node.GetMetrics(dc.settings, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
 	case *corev1.Namespace:
