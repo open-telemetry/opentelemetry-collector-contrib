@@ -94,7 +94,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sContainerStorageRequestDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithContainerID("attr-val"), WithContainerImageName("attr-val"), WithContainerImageTag("attr-val"), WithK8sContainerName("attr-val"), WithK8sNamespaceName("attr-val"), WithK8sNodeName("attr-val"), WithK8sPodName("attr-val"), WithK8sPodUID("attr-val"), WithOpencensusResourcetype("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -103,74 +105,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("container.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerID.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.image.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerImageName.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerImageName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.image.tag")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerImageTag.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerImageTag.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.container.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sContainerName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sContainerName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.namespace.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sPodName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sPodName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.uid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sPodUID.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sPodUID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
-			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 9)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

@@ -3532,10 +3532,8 @@ func newMetricSparkStageTaskResultSize(cfg MetricConfig) metricSparkStageTaskRes
 type MetricsBuilder struct {
 	startTime                                                pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                                          int                 // maximum observed number of metrics per resource.
-	resourceCapacity                                         int                 // maximum observed number of resource attributes.
 	metricsBuffer                                            pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                                component.BuildInfo // contains version information
-	resourceAttributesConfig                                 ResourceAttributesConfig
 	metricSparkDriverBlockManagerDiskUsage                   metricSparkDriverBlockManagerDiskUsage
 	metricSparkDriverBlockManagerMemoryUsage                 metricSparkDriverBlockManagerMemoryUsage
 	metricSparkDriverCodeGeneratorCompilationAverageTime     metricSparkDriverCodeGeneratorCompilationAverageTime
@@ -3616,7 +3614,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                            pmetric.NewMetrics(),
 		buildInfo:                                settings.BuildInfo,
-		resourceAttributesConfig:                 mbc.ResourceAttributes,
 		metricSparkDriverBlockManagerDiskUsage:   newMetricSparkDriverBlockManagerDiskUsage(mbc.Metrics.SparkDriverBlockManagerDiskUsage),
 		metricSparkDriverBlockManagerMemoryUsage: newMetricSparkDriverBlockManagerMemoryUsage(mbc.Metrics.SparkDriverBlockManagerMemoryUsage),
 		metricSparkDriverCodeGeneratorCompilationAverageTime:     newMetricSparkDriverCodeGeneratorCompilationAverageTime(mbc.Metrics.SparkDriverCodeGeneratorCompilationAverageTime),
@@ -3692,72 +3689,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithSparkApplicationID sets provided value as "spark.application.id" attribute for current resource.
-func WithSparkApplicationID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkApplicationID.Enabled {
-			rm.Resource().Attributes().PutStr("spark.application.id", val)
-		}
-	}
-}
-
-// WithSparkApplicationName sets provided value as "spark.application.name" attribute for current resource.
-func WithSparkApplicationName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkApplicationName.Enabled {
-			rm.Resource().Attributes().PutStr("spark.application.name", val)
-		}
-	}
-}
-
-// WithSparkExecutorID sets provided value as "spark.executor.id" attribute for current resource.
-func WithSparkExecutorID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkExecutorID.Enabled {
-			rm.Resource().Attributes().PutStr("spark.executor.id", val)
-		}
-	}
-}
-
-// WithSparkJobID sets provided value as "spark.job.id" attribute for current resource.
-func WithSparkJobID(val int64) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkJobID.Enabled {
-			rm.Resource().Attributes().PutInt("spark.job.id", val)
-		}
-	}
-}
-
-// WithSparkStageAttemptID sets provided value as "spark.stage.attempt.id" attribute for current resource.
-func WithSparkStageAttemptID(val int64) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkStageAttemptID.Enabled {
-			rm.Resource().Attributes().PutInt("spark.stage.attempt.id", val)
-		}
-	}
-}
-
-// WithSparkStageID sets provided value as "spark.stage.id" attribute for current resource.
-func WithSparkStageID(val int64) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkStageID.Enabled {
-			rm.Resource().Attributes().PutInt("spark.stage.id", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3781,7 +3729,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/apachesparkreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -3851,7 +3798,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkStageTaskResultSize.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -215,17 +214,13 @@ func TestSetExtraLabels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ro, err := tt.metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
-
-			r := pmetric.NewResourceMetrics()
-			rac := metadata.DefaultResourceAttributesConfig()
-			for _, op := range ro {
-				op(rac, r)
-			}
+			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+			err := tt.metadata.setExtraResources(rb, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), tt.args[2])
+			res := rb.Emit()
 
 			if tt.wantError == "" {
 				require.NoError(t, err)
-				temp := r.Resource().Attributes().AsRaw()
+				temp := res.Attributes().AsRaw()
 				assert.EqualValues(t, tt.want, temp)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())
@@ -364,8 +359,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			volName := "volume0"
-			rac := metadata.DefaultResourceAttributesConfig()
-			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
+			md := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -381,17 +375,14 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 						},
 					},
 				},
-			}, func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
-				return nil, nil
+			}, func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+				return nil
 			})
-			ro, _ := metadata.getExtraResources(stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
+			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+			err := md.setExtraResources(rb, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)
+			require.NoError(t, err)
 
-			rm := pmetric.NewResourceMetrics()
-			for _, op := range ro {
-				op(rac, rm)
-			}
-
-			assert.Equal(t, tt.want, rm.Resource().Attributes().AsRaw())
+			assert.Equal(t, tt.want, rb.Emit().Attributes().AsRaw())
 		})
 	}
 }

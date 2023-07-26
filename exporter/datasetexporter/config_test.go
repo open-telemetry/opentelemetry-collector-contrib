@@ -42,8 +42,9 @@ func TestConfigUseDefaults(t *testing.T) {
 	assert.Equal(t, "https://example.com", config.DatasetURL)
 	assert.Equal(t, "secret", string(config.APIKey))
 	assert.Equal(t, bufferMaxLifetime, config.MaxLifetime)
-	assert.Equal(t, tracesMaxWait, config.TracesSettings.MaxWait)
 	assert.Equal(t, logsExportResourceInfoDefault, config.LogsSettings.ExportResourceInfo)
+	assert.Equal(t, logsExportScopeInfoDefault, config.LogsSettings.ExportScopeInfo)
+	assert.Equal(t, logsDecomposeComplexMessageFieldDefault, config.LogsSettings.DecomposeComplexMessageField)
 }
 
 func TestConfigValidate(t *testing.T) {
@@ -105,17 +106,14 @@ func TestConfigString(t *testing.T) {
 			MaxLifetime: 123,
 			GroupBy:     []string{"field1", "field2"},
 		},
-		TracesSettings: TracesSettings{
-			Aggregate: true,
-			MaxWait:   45 * time.Second,
-		},
+		TracesSettings:  TracesSettings{},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 
 	assert.Equal(t,
-		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:true MaxWait:45s}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}; LogsSettings: {ExportResourceInfo:false}",
+		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}; LogsSettings: {ExportResourceInfo:false ExportScopeInfo:false DecomposeComplexMessageField:false}",
 		config.String(),
 	)
 }
@@ -133,4 +131,19 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	err := config.Unmarshal(configMap)
 	assert.Nil(t, err)
 	assert.Equal(t, true, config.LogsSettings.ExportResourceInfo)
+}
+
+func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
+	f := NewFactory()
+	config := f.CreateDefaultConfig().(*Config)
+	configMap := confmap.NewFromStringMap(map[string]interface{}{
+		"dataset_url": "https://example.com",
+		"api_key":     "secret",
+		"logs": map[string]any{
+			"export_scope_info_on_event": false,
+		},
+	})
+	err := config.Unmarshal(configMap)
+	assert.Nil(t, err)
+	assert.Equal(t, false, config.LogsSettings.ExportScopeInfo)
 }

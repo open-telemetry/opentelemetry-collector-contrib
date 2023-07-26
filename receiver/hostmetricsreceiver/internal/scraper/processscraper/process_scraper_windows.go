@@ -28,7 +28,7 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.System, metadata.AttributeStateSystem)
 }
 
-func getProcessName(proc processHandle, exePath string) (string, error) {
+func getProcessName(_ processHandle, exePath string) (string, error) {
 	if exePath == "" {
 		return "", fmt.Errorf("executable path is empty")
 	}

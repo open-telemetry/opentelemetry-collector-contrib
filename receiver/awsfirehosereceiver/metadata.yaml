@@ -5,4 +5,5 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, observiq, sumo]
-
+  codeowners:
+    active: [Aneurysm9]

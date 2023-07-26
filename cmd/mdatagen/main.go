@@ -61,11 +61,13 @@ func run(ymlPath string) error {
 			return err
 		}
 
-		if err = inlineReplace(
-			filepath.Join(tmplDir, "readme.md.tmpl"),
-			filepath.Join(ymlDir, "README.md"),
-			md, statusStart, statusEnd); err != nil {
-			return err
+		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
+			if err = inlineReplace(
+				filepath.Join(tmplDir, "readme.md.tmpl"),
+				filepath.Join(ymlDir, "README.md"),
+				md, statusStart, statusEnd); err != nil {
+				return err
+			}
 		}
 	}
 	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
@@ -87,6 +89,17 @@ func run(ymlPath string) error {
 	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
 		filepath.Join(codeDir, "generated_config_test.go"), md); err != nil {
 		return err
+	}
+
+	if len(md.ResourceAttributes) > 0 {
+		if err = generateFile(filepath.Join(tmplDir, "resource.go.tmpl"),
+			filepath.Join(codeDir, "generated_resource.go"), md); err != nil {
+			return err
+		}
+		if err = generateFile(filepath.Join(tmplDir, "resource_test.go.tmpl"),
+			filepath.Join(codeDir, "generated_resource_test.go"), md); err != nil {
+			return err
+		}
 	}
 
 	if len(md.Metrics) == 0 {
@@ -117,12 +130,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"attributeInfo": func(an attributeName) attribute {
 					return md.Attributes[an]
 				},
-				"attributeName": func(an attributeName) string {
-					if md.Attributes[an].NameOverride != "" {
-						return md.Attributes[an].NameOverride
-					}
-					return string(an)
-				},
 				"metricInfo": func(mn metricName) metric {
 					return md.Metrics[mn]
 				},
@@ -136,7 +143,18 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"stringsJoin":  strings.Join,
 				"stringsSplit": strings.Split,
-				"casesTitle":   cases.Title(language.English).String,
+				"userLinks": func(elems []string) []string {
+					result := make([]string, len(elems))
+					for i, elem := range elems {
+						if elem == "open-telemetry/collector-approvers" {
+							result[i] = "[@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)"
+						} else {
+							result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
+						}
+					}
+					return result
+				},
+				"casesTitle": cases.Title(language.English).String,
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")

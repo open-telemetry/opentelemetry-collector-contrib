@@ -89,7 +89,7 @@ type metricRedisClientsBlocked struct {
 func (m *metricRedisClientsBlocked) init() {
 	m.data.SetName("redis.clients.blocked")
 	m.data.SetDescription("Number of clients pending on a blocking call")
-	m.data.SetUnit("")
+	m.data.SetUnit("{client}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -140,7 +140,7 @@ type metricRedisClientsConnected struct {
 func (m *metricRedisClientsConnected) init() {
 	m.data.SetName("redis.clients.connected")
 	m.data.SetDescription("Number of client connections (excluding connections from replicas)")
-	m.data.SetUnit("")
+	m.data.SetUnit("{client}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -289,7 +289,7 @@ type metricRedisCmdCalls struct {
 func (m *metricRedisCmdCalls) init() {
 	m.data.SetName("redis.cmd.calls")
 	m.data.SetDescription("Total number of calls for a command")
-	m.data.SetUnit("")
+	m.data.SetUnit("{call}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -444,7 +444,7 @@ type metricRedisCommandsProcessed struct {
 func (m *metricRedisCommandsProcessed) init() {
 	m.data.SetName("redis.commands.processed")
 	m.data.SetDescription("Total number of commands processed by the server")
-	m.data.SetUnit("")
+	m.data.SetUnit("{command}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -495,7 +495,7 @@ type metricRedisConnectionsReceived struct {
 func (m *metricRedisConnectionsReceived) init() {
 	m.data.SetName("redis.connections.received")
 	m.data.SetDescription("Total number of connections accepted by the server")
-	m.data.SetUnit("")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -546,7 +546,7 @@ type metricRedisConnectionsRejected struct {
 func (m *metricRedisConnectionsRejected) init() {
 	m.data.SetName("redis.connections.rejected")
 	m.data.SetDescription("Number of connections rejected because of maxclients limit")
-	m.data.SetUnit("")
+	m.data.SetUnit("{connection}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -701,7 +701,7 @@ type metricRedisDbExpires struct {
 func (m *metricRedisDbExpires) init() {
 	m.data.SetName("redis.db.expires")
 	m.data.SetDescription("Number of keyspace keys with an expiration")
-	m.data.SetUnit("")
+	m.data.SetUnit("{key}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -752,7 +752,7 @@ type metricRedisDbKeys struct {
 func (m *metricRedisDbKeys) init() {
 	m.data.SetName("redis.db.keys")
 	m.data.SetDescription("Number of keyspace keys")
-	m.data.SetUnit("")
+	m.data.SetUnit("{key}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -803,7 +803,7 @@ type metricRedisKeysEvicted struct {
 func (m *metricRedisKeysEvicted) init() {
 	m.data.SetName("redis.keys.evicted")
 	m.data.SetDescription("Number of evicted keys due to maxmemory limit")
-	m.data.SetUnit("")
+	m.data.SetUnit("{key}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -854,7 +854,7 @@ type metricRedisKeysExpired struct {
 func (m *metricRedisKeysExpired) init() {
 	m.data.SetName("redis.keys.expired")
 	m.data.SetDescription("Total number of key expiration events")
-	m.data.SetUnit("")
+	m.data.SetUnit("{event}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -905,7 +905,7 @@ type metricRedisKeyspaceHits struct {
 func (m *metricRedisKeyspaceHits) init() {
 	m.data.SetName("redis.keyspace.hits")
 	m.data.SetDescription("Number of successful lookup of keys in the main dictionary")
-	m.data.SetUnit("")
+	m.data.SetUnit("{hit}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -956,7 +956,7 @@ type metricRedisKeyspaceMisses struct {
 func (m *metricRedisKeyspaceMisses) init() {
 	m.data.SetName("redis.keyspace.misses")
 	m.data.SetDescription("Number of failed lookup of keys in the main dictionary")
-	m.data.SetUnit("")
+	m.data.SetUnit("{miss}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1105,7 +1105,7 @@ type metricRedisMemoryFragmentationRatio struct {
 func (m *metricRedisMemoryFragmentationRatio) init() {
 	m.data.SetName("redis.memory.fragmentation_ratio")
 	m.data.SetDescription("Ratio between used_memory_rss and used_memory")
-	m.data.SetUnit("")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
@@ -1452,7 +1452,7 @@ type metricRedisRdbChangesSinceLastSave struct {
 func (m *metricRedisRdbChangesSinceLastSave) init() {
 	m.data.SetName("redis.rdb.changes_since_last_save")
 	m.data.SetDescription("Number of changes since the last dump")
-	m.data.SetUnit("")
+	m.data.SetUnit("{change}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1601,7 +1601,7 @@ type metricRedisRole struct {
 func (m *metricRedisRole) init() {
 	m.data.SetName("redis.role")
 	m.data.SetDescription("Redis node's role")
-	m.data.SetUnit("")
+	m.data.SetUnit("{role}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1654,7 +1654,7 @@ type metricRedisSlavesConnected struct {
 func (m *metricRedisSlavesConnected) init() {
 	m.data.SetName("redis.slaves.connected")
 	m.data.SetDescription("Number of connected replicas")
-	m.data.SetUnit("")
+	m.data.SetUnit("{replica}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -1751,10 +1751,8 @@ func newMetricRedisUptime(cfg MetricConfig) metricRedisUptime {
 type MetricsBuilder struct {
 	startTime                                    pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                              int                 // maximum observed number of metrics per resource.
-	resourceCapacity                             int                 // maximum observed number of resource attributes.
 	metricsBuffer                                pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                    component.BuildInfo // contains version information
-	resourceAttributesConfig                     ResourceAttributesConfig
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
@@ -1805,7 +1803,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                pmetric.NewMetrics(),
 		buildInfo:                                    settings.BuildInfo,
-		resourceAttributesConfig:                     mbc.ResourceAttributes,
 		metricRedisClientsBlocked:                    newMetricRedisClientsBlocked(mbc.Metrics.RedisClientsBlocked),
 		metricRedisClientsConnected:                  newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
@@ -1851,27 +1848,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithRedisVersion sets provided value as "redis.version" attribute for current resource.
-func WithRedisVersion(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.RedisVersion.Enabled {
-			rm.Resource().Attributes().PutStr("redis.version", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1895,7 +1888,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/redisreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -1935,7 +1927,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRedisUptime.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

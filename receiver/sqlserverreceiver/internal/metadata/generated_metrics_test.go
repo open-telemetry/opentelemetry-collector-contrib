@@ -92,7 +92,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperations(1))
+			mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperationsRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -134,7 +134,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithSqlserverComputerName("attr-val"), WithSqlserverDatabaseName("attr-val"), WithSqlserverInstanceName("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -143,32 +145,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("sqlserver.computer.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SqlserverComputerName.Enabled, ok)
-			if mb.resourceAttributesConfig.SqlserverComputerName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("sqlserver.database.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SqlserverDatabaseName.Enabled, ok)
-			if mb.resourceAttributesConfig.SqlserverDatabaseName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("sqlserver.instance.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SqlserverInstanceName.Enabled, ok)
-			if mb.resourceAttributesConfig.SqlserverInstanceName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 3)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -302,7 +279,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "sqlserver.page.split.rate":
 					assert.False(t, validatedMetrics["sqlserver.page.split.rate"], "Found a duplicate in the metrics slice: sqlserver.page.split.rate")
 					validatedMetrics["sqlserver.page.split.rate"] = true

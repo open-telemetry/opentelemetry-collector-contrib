@@ -56,16 +56,18 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", AttributeState(1))
+			mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemFilesystemUsageDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", AttributeState(1))
+			mb.RecordSystemFilesystemUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
 
 			allMetricsCount++
-			mb.RecordSystemFilesystemUtilizationDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSystemFilesystemUtilizationDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val")
 
-			metrics := mb.Emit()
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -74,11 +76,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 0)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -106,19 +104,19 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "mode-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mountpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "mountpoint-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
+					assert.EqualValues(t, "free", attrVal.Str())
 				case "system.filesystem.usage":
 					assert.False(t, validatedMetrics["system.filesystem.usage"], "Found a duplicate in the metrics slice: system.filesystem.usage")
 					validatedMetrics["system.filesystem.usage"] = true
@@ -135,19 +133,19 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "mode-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mountpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "mountpoint-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "free", attrVal.Str())
+					assert.EqualValues(t, "free", attrVal.Str())
 				case "system.filesystem.utilization":
 					assert.False(t, validatedMetrics["system.filesystem.utilization"], "Found a duplicate in the metrics slice: system.filesystem.utilization")
 					validatedMetrics["system.filesystem.utilization"] = true
@@ -162,16 +160,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "mode-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mountpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "mountpoint-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "type-val", attrVal.Str())
 				}
 			}
 		})
