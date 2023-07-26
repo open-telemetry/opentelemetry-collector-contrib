@@ -233,22 +233,24 @@ func partitionTimeSeries(tsMap map[string]*prompb.TimeSeries, concurrencyLimit i
 }
 
 func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) error {
+	var errs error
+
 	// Process each WriteRequest sequentially
 	for _, request := range requests {
 		// Check if the context is already cancelled
 		select {
 		case <-ctx.Done():
 			// Even if the context is already cancelled, return the accumulated errors, if any.
-			return ctx.Err()
+			return multierr.Append(errs, ctx.Err())
 		default:
 			// Process the WriteRequest
 			if errExecute := prwe.execute(ctx, request); errExecute != nil {
-				return consumererror.NewPermanent(errExecute)
+				errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 			}
 		}
 	}
 
-	return nil
+	return errs
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
