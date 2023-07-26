@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
 // +build linux
@@ -24,7 +13,10 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,6 +29,7 @@ import (
 )
 
 const operatorType = "journald_input"
+const waitDuration = 1 * time.Second
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
@@ -60,12 +53,16 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig `mapstructure:",squash"`
 
-	Directory *string  `mapstructure:"directory,omitempty"`
-	Files     []string `mapstructure:"files,omitempty"`
-	StartAt   string   `mapstructure:"start_at,omitempty"`
-	Units     []string `mapstructure:"units,omitempty"`
-	Priority  string   `mapstructure:"priority,omitempty"`
+	Directory *string       `mapstructure:"directory,omitempty"`
+	Files     []string      `mapstructure:"files,omitempty"`
+	StartAt   string        `mapstructure:"start_at,omitempty"`
+	Units     []string      `mapstructure:"units,omitempty"`
+	Priority  string        `mapstructure:"priority,omitempty"`
+	Matches   []MatchConfig `mapstructure:"matches,omitempty"`
+	Grep      string        `mapstructure:"grep,omitempty"`
 }
+
+type MatchConfig map[string]string
 
 // Build will build a journald input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
@@ -74,6 +71,25 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
+	args, err := c.buildArgs()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Input{
+		InputOperator: inputOperator,
+		newCmd: func(ctx context.Context, cursor []byte) cmd {
+			if cursor != nil {
+				args = append(args, "--after-cursor", string(cursor))
+			}
+			return exec.CommandContext(ctx, "journalctl", args...) // #nosec - ...
+			// journalctl is an executable that is required for this operator to function
+		},
+		json: jsoniter.ConfigFastest,
+	}, nil
+}
+
+func (c Config) buildArgs() ([]string, error) {
 	args := make([]string, 0, 10)
 
 	// Export logs in UTC time
@@ -99,6 +115,10 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	args = append(args, "--priority", c.Priority)
 
+	if len(c.Grep) > 0 {
+		args = append(args, "--grep", c.Grep)
+	}
+
 	switch {
 	case c.Directory != nil:
 		args = append(args, "--directory", *c.Directory)
@@ -108,17 +128,54 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		}
 	}
 
-	return &Input{
-		InputOperator: inputOperator,
-		newCmd: func(ctx context.Context, cursor []byte) cmd {
-			if cursor != nil {
-				args = append(args, "--after-cursor", string(cursor))
-			}
-			return exec.CommandContext(ctx, "journalctl", args...) // #nosec - ...
-			// journalctl is an executable that is required for this operator to function
-		},
-		json: jsoniter.ConfigFastest,
-	}, nil
+	if len(c.Matches) > 0 {
+		matches, err := c.buildMatchesConfig()
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, matches...)
+	}
+
+	return args, nil
+}
+
+func buildMatchConfig(mc MatchConfig) ([]string, error) {
+	re := regexp.MustCompile("^[_A-Z]+$")
+
+	// Sort keys to be consistent with every run and to be predictable for tests
+	sortedKeys := make([]string, 0, len(mc))
+	for key := range mc {
+		if !re.MatchString(key) {
+			return []string{}, fmt.Errorf("'%s' is not a valid Systemd field name", key)
+		}
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	configs := []string{}
+	for _, key := range sortedKeys {
+		configs = append(configs, fmt.Sprintf("%s=%s", key, mc[key]))
+	}
+
+	return configs, nil
+}
+
+func (c Config) buildMatchesConfig() ([]string, error) {
+	matches := []string{}
+
+	for i, mc := range c.Matches {
+		if i > 0 {
+			matches = append(matches, "+")
+		}
+		mcs, err := buildMatchConfig(mc)
+		if err != nil {
+			return []string{}, err
+		}
+
+		matches = append(matches, mcs...)
+	}
+
+	return matches, nil
 }
 
 // Input is an operator that process logs using journald
@@ -135,7 +192,14 @@ type Input struct {
 
 type cmd interface {
 	StdoutPipe() (io.ReadCloser, error)
+	StderrPipe() (io.ReadCloser, error)
 	Start() error
+	Wait() error
+}
+
+type failedCommand struct {
+	err    string
+	output string
 }
 
 var lastReadCursorKey = "lastReadCursor"
@@ -159,10 +223,64 @@ func (operator *Input) Start(persister operator.Persister) error {
 	if err != nil {
 		return fmt.Errorf("failed to get journalctl stdout: %w", err)
 	}
+	stderr, err := journal.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get journalctl stderr: %w", err)
+	}
 	err = journal.Start()
 	if err != nil {
 		return fmt.Errorf("start journalctl: %w", err)
 	}
+
+	stderrChan := make(chan string)
+	failedChan := make(chan failedCommand)
+
+	// Start the wait goroutine
+	operator.wg.Add(1)
+	go func() {
+		defer operator.wg.Done()
+		err := journal.Wait()
+		message := <-stderrChan
+
+		f := failedCommand{
+			output: message,
+		}
+
+		if err != nil {
+			ee := (&exec.ExitError{})
+			if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
+				f.err = ee.Error()
+			}
+		}
+
+		select {
+		case failedChan <- f:
+		// log an error in case channel is closed
+		case <-time.After(waitDuration):
+			operator.Logger().Errorw("journalctl command exited", "error", f.err, "output", f.output)
+		}
+	}()
+
+	// Start the stderr reader goroutine
+	operator.wg.Add(1)
+	go func() {
+		defer operator.wg.Done()
+
+		stderrBuf := bufio.NewReader(stderr)
+		messages := []string{}
+
+		for {
+			line, err := stderrBuf.ReadBytes('\n')
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					operator.Errorw("Received error reading from journalctl stderr", zap.Error(err))
+				}
+				stderrChan <- strings.Join(messages, "\n")
+				return
+			}
+			messages = append(messages, string(line))
+		}
+	}()
 
 	// Start the reader goroutine
 	operator.wg.Add(1)
@@ -192,7 +310,16 @@ func (operator *Input) Start(persister operator.Persister) error {
 		}
 	}()
 
-	return nil
+	// Wait waitDuration for eventual error
+	select {
+	case err := <-failedChan:
+		if err.err == "" {
+			return fmt.Errorf("journalctl command exited")
+		}
+		return fmt.Errorf("journalctl command failed (%v): %v", err.err, err.output)
+	case <-time.After(waitDuration):
+		return nil
+	}
 }
 
 func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {

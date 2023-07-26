@@ -1,0 +1,9 @@
+type: parquet
+
+status:
+  class: exporter
+  stability:
+    development: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package networkscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 
@@ -19,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/net"
 	"go.opentelemetry.io/collector/component"
@@ -46,10 +36,10 @@ type scraper struct {
 	excludeFS filterset.FilterSet
 
 	// for mocking
-	bootTime    func() (uint64, error)
-	ioCounters  func(bool) ([]net.IOCountersStat, error)
-	connections func(string) ([]net.ConnectionStat, error)
-	conntrack   func() ([]net.FilterStat, error)
+	bootTime    func(context.Context) (uint64, error)
+	ioCounters  func(context.Context, bool) ([]net.IOCountersStat, error)
+	connections func(context.Context, string) ([]net.ConnectionStat, error)
+	conntrack   func(context.Context) ([]net.FilterStat, error)
 }
 
 // newNetworkScraper creates a set of Network related metrics
@@ -57,10 +47,10 @@ func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg 
 	scraper := &scraper{
 		settings:    settings,
 		config:      cfg,
-		bootTime:    host.BootTime,
-		ioCounters:  net.IOCounters,
-		connections: net.Connections,
-		conntrack:   net.FilterCounters,
+		bootTime:    host.BootTimeWithContext,
+		ioCounters:  net.IOCountersWithContext,
+		connections: net.ConnectionsWithContext,
+		conntrack:   net.FilterCountersWithContext,
 	}
 
 	var err error
@@ -82,14 +72,15 @@ func newNetworkScraper(_ context.Context, settings receiver.CreateSettings, cfg 
 	return scraper, nil
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
 
 	s.startTime = pcommon.Timestamp(bootTime * 1e9)
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -115,10 +106,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) recordNetworkCounterMetrics() error {
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// get total stats only
-	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
+	ioCounters, err := s.ioCounters(ctx, true /*perNetworkInterfaceController=*/)
 	if err != nil {
 		return fmt.Errorf("failed to read network IO stats: %w", err)
 	}
@@ -165,9 +157,10 @@ func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice [
 }
 
 func (s *scraper) recordNetworkConnectionsMetrics() error {
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	connections, err := s.connections("tcp")
+	connections, err := s.connections(ctx, "tcp")
 	if err != nil {
 		return fmt.Errorf("failed to read TCP connections: %w", err)
 	}

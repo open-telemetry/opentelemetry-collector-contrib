@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/memory
+type: hostmetricsreceiver/memory
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 

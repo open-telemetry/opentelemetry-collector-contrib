@@ -1,108 +1,57 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package hpa // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
 
 import (
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
-var hpaMaxReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.max_replicas",
-	Description: "Maximum number of replicas to which the autoscaler can scale up",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+func GetMetricsBeta(set receiver.CreateSettings, hpa *autoscalingv2beta2.HorizontalPodAutoscaler) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))
+	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
+	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
+	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sHpaUID(string(hpa.UID))
+	rb.SetK8sHpaName(hpa.Name)
+	rb.SetK8sNamespaceName(hpa.Namespace)
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
-var hpaMinReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.min_replicas",
-	Description: "Minimum number of replicas to which the autoscaler can scale down",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+func GetMetrics(set receiver.CreateSettings, hpa *autoscalingv2.HorizontalPodAutoscaler) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))
+	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
+	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
+	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sHpaUID(string(hpa.UID))
+	rb.SetK8sHpaName(hpa.Name)
+	rb.SetK8sNamespaceName(hpa.Namespace)
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
-var hpaCurrentReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.current_replicas",
-	Description: "Current number of pod replicas managed by this autoscaler",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var hpaDesiredReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.desired_replicas",
-	Description: "Desired number of pod replicas managed by this autoscaler",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-func GetMetrics(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) []*agentmetricspb.ExportMetricsServiceRequest {
-	metrics := []*metricspb.Metric{
-		{
-			MetricDescriptor: hpaMaxReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(hpa.Spec.MaxReplicas)),
-			},
-		},
-		{
-			MetricDescriptor: hpaMinReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(*hpa.Spec.MinReplicas)),
-			},
-		},
-		{
-			MetricDescriptor: hpaCurrentReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(hpa.Status.CurrentReplicas)),
-			},
-		},
-		{
-			MetricDescriptor: hpaDesiredReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(hpa.Status.DesiredReplicas)),
-			},
-		},
-	}
-
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResourceForHPA(hpa),
-			Metrics:  metrics,
-		},
+func GetMetadata(hpa *autoscalingv2.HorizontalPodAutoscaler) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+		experimentalmetricmetadata.ResourceID(hpa.UID): metadata.GetGenericMetadata(&hpa.ObjectMeta, "HPA"),
 	}
 }
 
-func getResourceForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			constants.K8sKeyHPAUID:                string(hpa.UID),
-			constants.K8sKeyHPAName:               hpa.Name,
-			conventions.AttributeK8SNamespaceName: hpa.Namespace,
-		},
-	}
-}
-
-func GetMetadata(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func GetMetadataBeta(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		experimentalmetricmetadata.ResourceID(hpa.UID): metadata.GetGenericMetadata(&hpa.ObjectMeta, "HPA"),
 	}

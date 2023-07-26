@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
@@ -32,7 +21,7 @@ translation_rules:
       k8s: true
       container: true
 
-- action: rename_metrics
+- action: copy_metrics
   mapping:
     # kubeletstats container cpu needed for calculation below
     container.cpu.time: sf_temp.container_cpu_utilization
@@ -84,8 +73,11 @@ translation_rules:
     sf_temp.cpu.utilization: 100
 
 # convert cpu metrics
+- action: copy_metrics
+  mapping:
+    system.cpu.time: sf_temp.system.cpu.time
 - action: split_metric
-  metric_name: system.cpu.time
+  metric_name: sf_temp.system.cpu.time
   dimension_key: state
   mapping:
     idle: sf_temp.cpu.idle
@@ -211,9 +203,14 @@ translation_rules:
 
 # Translations to derive filesystem metrics
 ## sf_temp.disk.total, required to compute disk.utilization
+## same as df, disk.utilization = (used/(used + free)) * 100 see: https://github.com/shirou/gopsutil/issues/562
 - action: copy_metrics
   mapping:
     system.filesystem.usage: sf_temp.disk.total
+  dimension_key: state
+  dimension_values:
+    used: true
+    free: true
 - action: aggregate_metric
   metric_name: sf_temp.disk.total
   aggregation_method: sum
@@ -221,9 +218,14 @@ translation_rules:
     - state
 
 ## sf_temp.disk.summary_total, required to compute disk.summary_utilization
+## same as df, don't count root fs, ie: total = used + free
 - action: copy_metrics
   mapping:
     system.filesystem.usage: sf_temp.disk.summary_total
+  dimension_key: state
+  dimension_values:
+    used: true
+    free: true
 - action: aggregate_metric
   metric_name: sf_temp.disk.summary_total
   aggregation_method: avg
@@ -369,8 +371,11 @@ translation_rules:
     sf_temp.memory.utilization: 100
 
 # Virtual memory metrics
+- action: copy_metrics
+  mapping:
+    system.paging.operations: sf_temp.system.paging.operations
 - action: split_metric
-  metric_name: system.paging.operations
+  metric_name: sf_temp.system.paging.operations
   dimension_key: direction
   mapping:
     page_in: sf_temp.system.paging.operations.page_in
@@ -448,9 +453,11 @@ translation_rules:
     sf_temp.memory.used: true
     sf_temp.system.cpu.delta: true
     sf_temp.system.cpu.total: true
+    sf_temp.system.cpu.time: true
     sf_temp.system.cpu.usage: true
     sf_temp.system.filesystem.usage: true
     sf_temp.system.memory.usage: true
+    sf_temp.system.paging.operations: true
     sf_temp.system.paging.operations.page_in: true
     sf_temp.system.paging.operations.page_out: true
 `

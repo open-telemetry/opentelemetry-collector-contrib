@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logicmonitorexporter
 
@@ -20,23 +9,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
+	lmsdklogs "github.com/logicmonitor/lm-data-sdk-go/api/logs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-)
 
-type logsResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter/internal/testutil"
+)
 
 func Test_NewLogsExporter(t *testing.T) {
 	tests := []struct {
@@ -47,7 +32,7 @@ func Test_NewLogsExporter(t *testing.T) {
 		}
 	}{
 		{
-			name: "Create NewLogExporter",
+			name: "should create LogExporter",
 			args: struct {
 				config *Config
 				logger *zap.Logger
@@ -65,7 +50,7 @@ func Test_NewLogsExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			set := exportertest.NewNopCreateSettings()
-			exp := newLogsExporter(tt.args.config, set)
+			exp := newLogsExporter(context.Background(), tt.args.config, set)
 			assert.NotNil(t, exp)
 		})
 	}
@@ -73,10 +58,11 @@ func Test_NewLogsExporter(t *testing.T) {
 
 func TestPushLogData(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := logsResponse{
+		response := lmsdklogs.LMLogIngestResponse{
 			Success: true,
-			Message: "Logs exported successfully",
+			Message: "Accepted",
 		}
+		w.WriteHeader(http.StatusAccepted)
 		assert.NoError(t, json.NewEncoder(w).Encode(&response))
 	}))
 	defer ts.Close()
@@ -113,7 +99,7 @@ func TestPushLogData(t *testing.T) {
 				lg  plog.Logs
 			}{
 				ctx: context.Background(),
-				lg:  createLogData(1),
+				lg:  testutil.CreateLogData(1),
 			},
 		},
 	}
@@ -121,38 +107,11 @@ func TestPushLogData(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			set := exportertest.NewNopCreateSettings()
-			exp := newLogsExporter(test.fields.config, set)
+			exp := newLogsExporter(test.args.ctx, test.fields.config, set)
 
-			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+			require.NoError(t, exp.start(test.args.ctx, componenttest.NewNopHost()))
 			err := exp.PushLogData(test.args.ctx, test.args.lg)
 			assert.NoError(t, err)
 		})
 	}
-}
-
-func createLogData(numberOfLogs int) plog.Logs {
-	logs := plog.NewLogs()
-	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
-	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("service.name", "myapp")
-	rl.Resource().Attributes().PutStr("hostname", "myapp")
-	rl.Resource().Attributes().PutInt("http.statusCode", 200)
-	rl.Resource().Attributes().PutBool("isTest", true)
-	rl.Resource().Attributes().PutDouble("value", 20.00)
-	rl.Resource().Attributes().PutEmptySlice("values")
-	rl.Resource().Attributes().PutEmptyMap("valueMap")
-	rl.ScopeLogs().AppendEmpty() // Add an empty ScopeLogs
-	ill := rl.ScopeLogs().AppendEmpty()
-
-	for i := 0; i < numberOfLogs; i++ {
-		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.LogRecords().AppendEmpty()
-		logRecord.Body().SetStr("mylog")
-		logRecord.Attributes().PutStr("my-label", "myapp-type")
-		logRecord.Attributes().PutStr("custom", "custom")
-		logRecord.SetTimestamp(ts)
-	}
-	ill.LogRecords().AppendEmpty()
-
-	return logs
 }

@@ -1,5 +1,13 @@
 ---
-name: chrony receiver
+type: chrony
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [MovieStoreGuy, jamesmoessis]
 
 attributes:
   leap.status:

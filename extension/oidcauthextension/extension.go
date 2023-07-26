@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 
@@ -90,7 +79,8 @@ func (e *oidcExtension) start(context.Context, component.Host) error {
 
 // authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
 func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	authHeaders := headers[e.cfg.Attribute]
+	metadata := client.NewMetadata(headers)
+	authHeaders := metadata.Get(e.cfg.Attribute)
 	if len(authHeaders) == 0 {
 		return ctx, errNotAuthenticated
 	}

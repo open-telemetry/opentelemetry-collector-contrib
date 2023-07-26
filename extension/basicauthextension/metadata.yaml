@@ -1,0 +1,14 @@
+type: basicauth
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions:
+  - contrib
+  - grafana
+  - observiq
+  - redhat
+  - sumo
+  codeowners:
+    active: [jpkrohling, svrakitin]

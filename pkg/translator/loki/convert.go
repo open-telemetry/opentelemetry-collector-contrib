@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -35,12 +24,20 @@ const (
 const (
 	formatJSON   string = "json"
 	formatLogfmt string = "logfmt"
+	formatRaw    string = "raw"
 )
 
-var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
-
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
-	out := defaultExporterLabels
+	out := model.LabelSet{"exporter": "OTLP"}
+
+	// Map service.namespace + service.name to job
+	if job, ok := extractJob(resAttrs); ok {
+		out[model.JobLabel] = model.LabelValue(job)
+	}
+	// Map service.instance.id to instance
+	if instance, ok := extractInstance(resAttrs); ok {
+		out[model.InstanceLabel] = model.LabelValue(instance)
+	}
 
 	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
@@ -163,14 +160,23 @@ func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcom
 	}, nil
 }
 
+func convertLogToLogRawEntry(lr plog.LogRecord) (*push.Entry, error) {
+	return &push.Entry{
+		Timestamp: timestampFromLogRecord(lr),
+		Line:      lr.Body().AsString(),
+	}, nil
+}
+
 func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	switch format {
 	case formatJSON:
 		return convertLogToJSONEntry(lr, res, scope)
 	case formatLogfmt:
 		return convertLogToLogfmtEntry(lr, res, scope)
+	case formatRaw:
+		return convertLogToLogRawEntry(lr)
 	default:
-		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJSON, formatLogfmt)
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
 	}
 
 }

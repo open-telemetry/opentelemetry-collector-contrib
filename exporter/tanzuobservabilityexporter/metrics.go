@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tanzuobservabilityexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 
@@ -20,13 +9,13 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -208,7 +197,7 @@ func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings
 	namef := zap.String(metricNameString, metric.Name())
 	typef := zap.String(metricTypeString, metric.Type().String())
 	settings.Logger.Debug("Metric missing value", namef, typef)
-	count.Inc()
+	count.Add(1)
 }
 
 // getValue gets the floating point value out of a NumberDataPoint
@@ -267,7 +256,7 @@ func newGaugeConsumer(
 	return &gaugeConsumer{
 		sender:        sender,
 		settings:      settings,
-		missingValues: atomic.NewInt64(0),
+		missingValues: &atomic.Int64{},
 	}
 }
 
@@ -306,7 +295,7 @@ func newSumConsumer(
 	return &sumConsumer{
 		sender:        sender,
 		settings:      settings,
-		missingValues: atomic.NewInt64(0),
+		missingValues: &atomic.Int64{},
 	}
 }
 
@@ -359,8 +348,8 @@ type histogramReporting struct {
 func newHistogramReporting(settings component.TelemetrySettings) *histogramReporting {
 	return &histogramReporting{
 		settings:                 settings,
-		malformedHistograms:      atomic.NewInt64(0),
-		noAggregationTemporality: atomic.NewInt64(0),
+		malformedHistograms:      &atomic.Int64{},
+		noAggregationTemporality: &atomic.Int64{},
 	}
 }
 
@@ -379,14 +368,14 @@ func (r *histogramReporting) NoAggregationTemporality() int64 {
 func (r *histogramReporting) LogMalformed(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("Malformed histogram", namef)
-	r.malformedHistograms.Inc()
+	r.malformedHistograms.Add(1)
 }
 
 // LogNoAggregationTemporality logs seeing a histogram metric with no aggregation temporality
 func (r *histogramReporting) LogNoAggregationTemporality(metric pmetric.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
 	r.settings.Logger.Debug("histogram metric missing aggregation temporality", namef)
-	r.noAggregationTemporality.Inc()
+	r.noAggregationTemporality.Add(1)
 }
 
 // Report sends the counts in this instance to wavefront.

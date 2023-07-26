@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 
@@ -21,12 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/datadog-agent/pkg/trace/api"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -66,9 +56,9 @@ func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out c
 	// in the exporter). In order to avoid duplicating the hostname setting in the processor and
 	// exporter, we use a placeholder and fill it in later (in the Datadog Exporter or Agent OTLP
 	// Ingest). This gives a better user experience.
-	cfg.Hostname = translator.UnsetHostnamePlaceholder
+	cfg.Hostname = metrics.UnsetHostnamePlaceholder
 	pchan := make(chan *api.Payload, 1000)
-	a := agent.NewAgent(ctx, cfg)
+	a := agent.NewAgent(ctx, cfg, telemetry.NewNoopCollector())
 	// replace the Concentrator (the component which computes and flushes APM Stats from incoming
 	// traces) with our own, which uses the 'out' channel.
 	a.Concentrator = stats.NewConcentrator(cfg, out, time.Now())

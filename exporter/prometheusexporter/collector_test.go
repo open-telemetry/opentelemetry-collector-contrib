@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter
 
@@ -96,6 +85,56 @@ func TestConvertInvalidMetric(t *testing.T) {
 	}
 }
 
+func setUpTestExemplar(exemplar pmetric.Exemplar) {
+	var tBytes [16]byte
+	testTraceID, _ := hex.DecodeString("641d68e314a58152cc2581e7663435d1")
+	copy(tBytes[:], testTraceID)
+	traceID := pcommon.TraceID(tBytes)
+	exemplar.SetTraceID(traceID)
+
+	var sBytes [8]byte
+	testSpanID, _ := hex.DecodeString("7436d6ac76178623")
+	copy(sBytes[:], testSpanID)
+	spanID := pcommon.SpanID(sBytes)
+	exemplar.SetSpanID(spanID)
+
+	exemplarTs, _ := time.Parse("unix", "Mon Jan _2 15:04:05 MST 2006")
+	exemplar.SetTimestamp(pcommon.NewTimestampFromTime(exemplarTs))
+}
+
+func setTestExemplarWithDoubleValue(exemplar pmetric.Exemplar, value float64) {
+	setUpTestExemplar(exemplar)
+	exemplar.SetDoubleValue(value)
+}
+
+func setTextExemplarWithIntValue(exemplar pmetric.Exemplar, value int64) {
+	setUpTestExemplar(exemplar)
+	exemplar.SetIntValue(value)
+}
+
+func exemplarsEqual(t *testing.T, otelExemplar pmetric.Exemplar, promExemplar *io_prometheus_client.Exemplar) {
+	var givenValue float64
+	switch otelExemplar.ValueType() {
+	case pmetric.ExemplarValueTypeDouble:
+		givenValue = otelExemplar.DoubleValue()
+	case pmetric.ExemplarValueTypeInt:
+		givenValue = float64(otelExemplar.IntValue())
+	default:
+		t.Error("Unexpected value type for OTel exemplar", otelExemplar.ValueType())
+	}
+
+	require.Equal(t, givenValue, promExemplar.GetValue())
+	require.Equal(t, 2, len(promExemplar.GetLabel()))
+	ml := make(map[string]string)
+	for _, l := range promExemplar.GetLabel() {
+		ml[l.GetName()] = l.GetValue()
+	}
+	traceID := otelExemplar.TraceID()
+	spanID := otelExemplar.SpanID()
+	require.Equal(t, hex.EncodeToString(traceID[:]), ml["trace_id"])
+	require.Equal(t, hex.EncodeToString(spanID[:]), ml["span_id"])
+}
+
 func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	// initialize empty histogram
 	metric := pmetric.NewMetric()
@@ -111,21 +150,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 
 	// add test exemplar values to the metric
 	promExporterExemplars := histogramDataPoint.Exemplars().AppendEmpty()
-	var tBytes [16]byte
-	testTraceID, _ := hex.DecodeString("641d68e314a58152cc2581e7663435d1")
-	copy(tBytes[:], testTraceID)
-	traceID := pcommon.TraceID(tBytes)
-	promExporterExemplars.SetTraceID(traceID)
-
-	var sBytes [8]byte
-	testSpanID, _ := hex.DecodeString("7436d6ac76178623")
-	copy(sBytes[:], testSpanID)
-	spanID := pcommon.SpanID(sBytes)
-	promExporterExemplars.SetSpanID(spanID)
-
-	exemplarTs, _ := time.Parse("unix", "Mon Jan _2 15:04:05 MST 2006")
-	promExporterExemplars.SetTimestamp(pcommon.NewTimestampFromTime(exemplarTs))
-	promExporterExemplars.SetDoubleValue(3.0)
+	setTestExemplarWithDoubleValue(promExporterExemplars, 3.0)
 
 	pMap := pcommon.NewMap()
 
@@ -150,14 +175,46 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	require.Equal(t, 3, len(buckets))
 
 	require.Equal(t, 3.0, buckets[0].GetExemplar().GetValue())
-	require.Equal(t, int32(128654848), buckets[0].GetExemplar().GetTimestamp().GetNanos())
-	require.Equal(t, 2, len(buckets[0].GetExemplar().GetLabel()))
-	ml := make(map[string]string)
-	for _, l := range buckets[0].GetExemplar().GetLabel() {
-		ml[l.GetName()] = l.GetValue()
+	exemplarsEqual(t, promExporterExemplars, buckets[0].GetExemplar())
+}
+
+func TestConvertMonotonicSumExemplar(t *testing.T) {
+	// initialize empty metric
+	metric := pmetric.NewMetric()
+	metric.SetName("test_monotonic_sum")
+	metric.SetDescription("this is test monotonic sum metric")
+	metric.SetUnit("T")
+
+	sum := metric.SetEmptySum()
+	sum.SetIsMonotonic(true)
+
+	dataPoint := sum.DataPoints().AppendEmpty()
+	dataPoint.SetIntValue(1)
+
+	exemplar := dataPoint.Exemplars().AppendEmpty()
+	setTextExemplarWithIntValue(exemplar, 1)
+
+	pMap := pcommon.NewMap()
+
+	c := collector{
+
+		accumulator: &mockAccumulator{
+			metrics:            []pmetric.Metric{metric},
+			resourceAttributes: pMap,
+		},
+		logger: zap.NewNop(),
 	}
-	require.Equal(t, "641d68e314a58152cc2581e7663435d1", ml["trace_id"])
-	require.Equal(t, "7436d6ac76178623", ml["span_id"])
+
+	promMetric, _ := c.convertSum(metric, pMap)
+	outMetric := io_prometheus_client.Metric{}
+	err := promMetric.Write(&outMetric)
+	if err != nil {
+		t.Error("Unable to write metric to prometheus output form:", err)
+	}
+
+	promCounter := outMetric.GetCounter()
+	require.Equal(t, 1.0, promCounter.GetValue())
+	exemplarsEqual(t, exemplar, promCounter.GetExemplar())
 }
 
 // errorCheckCore keeps track of logged errors
@@ -210,7 +267,8 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 
 	for m := range ch {
 		require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-		require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+		require.Contains(t, m.Desc().String(), "label_1")
+		require.Contains(t, m.Desc().String(), "label_2")
 
 		pbMetric := io_prometheus_client.Metric{}
 		require.NoError(t, m.Write(&pbMetric))
@@ -391,7 +449,7 @@ func TestCollectMetrics(t *testing.T) {
 					}
 
 					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2 job instance]")
+					require.Regexp(t, `variableLabels: \[.*label_1.+label_2.+job.+instance.*\]`, m.Desc().String())
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -489,7 +547,8 @@ func TestAccumulateHistograms(t *testing.T) {
 				for m := range ch {
 					n++
 					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+					require.Contains(t, m.Desc().String(), "label_1")
+					require.Contains(t, m.Desc().String(), "label_2")
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -508,7 +567,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					require.Nil(t, pbMetric.Gauge)
 					require.Nil(t, pbMetric.Counter)
 
-					h := *pbMetric.Histogram
+					h := pbMetric.Histogram
 					require.Equal(t, tt.histogramCount, h.GetSampleCount())
 					require.Equal(t, tt.histogramSum, h.GetSampleSum())
 					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
@@ -591,7 +650,8 @@ func TestAccumulateSummary(t *testing.T) {
 				for m := range ch {
 					n++
 					require.Contains(t, m.Desc().String(), "fqName: \"test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+					require.Contains(t, m.Desc().String(), "label_1")
+					require.Contains(t, m.Desc().String(), "label_2")
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
@@ -611,7 +671,7 @@ func TestAccumulateSummary(t *testing.T) {
 					require.Nil(t, pbMetric.Counter)
 					require.Nil(t, pbMetric.Histogram)
 
-					s := *pbMetric.Summary
+					s := pbMetric.Summary
 					require.Equal(t, tt.wantCount, *s.SampleCount)
 					require.Equal(t, tt.wantSum, *s.SampleSum)
 					// To ensure that we can compare quantiles, we need to just extract their values.

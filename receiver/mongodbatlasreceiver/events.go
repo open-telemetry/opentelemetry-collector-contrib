@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -30,7 +19,6 @@ import (
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 )
 
@@ -43,14 +31,14 @@ const (
 
 type eventsClient interface {
 	GetProject(ctx context.Context, groupID string) (*mongodbatlas.Project, error)
-	GetEvents(ctx context.Context, groupID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
+	GetProjectEvents(ctx context.Context, groupID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
+	GetOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error)
+	GetOrganizationEvents(ctx context.Context, orgID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
 }
 
 type eventsReceiver struct {
 	client        eventsClient
 	logger        *zap.Logger
-	id            component.ID  // ID of the receiver component
-	storageID     *component.ID // ID of the storage extension component
 	storageClient storage.Client
 	cfg           *Config
 	consumer      consumer.Logs
@@ -69,16 +57,15 @@ type eventRecord struct {
 
 func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consumer.Logs) *eventsReceiver {
 	r := &eventsReceiver{
-		client:       internal.NewMongoDBAtlasClient(c.PublicKey, c.PrivateKey, c.RetrySettings, settings.Logger),
-		cfg:          c,
-		logger:       settings.Logger,
-		id:           settings.ID,
-		storageID:    c.StorageID,
-		consumer:     consumer,
-		pollInterval: c.Events.PollInterval,
-		wg:           &sync.WaitGroup{},
-		maxPages:     int(c.Events.MaxPages),
-		pageSize:     int(c.Events.PageSize),
+		client:        internal.NewMongoDBAtlasClient(c.PublicKey, string(c.PrivateKey), c.RetrySettings, settings.Logger),
+		cfg:           c,
+		logger:        settings.Logger,
+		consumer:      consumer,
+		pollInterval:  c.Events.PollInterval,
+		wg:            &sync.WaitGroup{},
+		maxPages:      int(c.Events.MaxPages),
+		pageSize:      int(c.Events.PageSize),
+		storageClient: storage.NewNopClient(),
 	}
 
 	if r.maxPages == 0 {
@@ -96,14 +83,10 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 	return r
 }
 
-func (er *eventsReceiver) Start(ctx context.Context, host component.Host) error {
+func (er *eventsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
 	er.logger.Debug("Starting up events receiver")
 	cancelCtx, cancel := context.WithCancel(ctx)
 	er.cancel = cancel
-	storageClient, err := adapter.GetStorageClient(cancelCtx, host, er.storageID, er.id)
-	if err != nil {
-		return fmt.Errorf("failed to get storage client: %w", err)
-	}
 	er.storageClient = storageClient
 	er.loadCheckpoint(cancelCtx)
 
@@ -150,14 +133,23 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 			er.logger.Error("error retrieving project information for "+pc.Name+":", zap.Error(err))
 			return err
 		}
-		er.poll(ctx, project, pc, st, et)
+		er.pollProject(ctx, project, pc, st, et)
+	}
+
+	for _, pc := range er.cfg.Events.Organizations {
+		org, err := er.client.GetOrganization(ctx, pc.ID)
+		if err != nil {
+			er.logger.Error("error retrieving org information for "+pc.ID+":", zap.Error(err))
+			return err
+		}
+		er.pollOrg(ctx, org, pc, st, et)
 	}
 
 	er.record.NextStartTime = &et
 	return er.checkpoint(ctx)
 }
 
-func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig, startTime, now time.Time) {
+func (er *eventsReceiver) pollProject(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig, startTime, now time.Time) {
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
@@ -166,18 +158,18 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 			MinDate:    startTime,
 		}
 
-		projectEvents, hasNext, err := er.client.GetEvents(ctx, project.ID, opts)
+		projectEvents, hasNext, err := er.client.GetProjectEvents(ctx, project.ID, opts)
 		if err != nil {
 			er.logger.Error("unable to get events for project", zap.Error(err), zap.String("project", p.Name))
 			break
 		}
 
 		now := pcommon.NewTimestampFromTime(now)
-		logs := er.transformEvents(now, projectEvents, project)
+		logs := er.transformProjectEvents(now, projectEvents, project)
 
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
-				er.logger.Error("error consuming events", zap.Error(err))
+				er.logger.Error("error consuming project events", zap.Error(err))
 				break
 			}
 		}
@@ -188,13 +180,57 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 	}
 }
 
-func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
+func (er *eventsReceiver) pollOrg(ctx context.Context, org *mongodbatlas.Organization, p *OrgConfig, startTime, now time.Time) {
+	for pageN := 1; pageN <= er.maxPages; pageN++ {
+		opts := &internal.GetEventsOptions{
+			PageNum:    pageN,
+			EventTypes: er.cfg.Events.Types,
+			MaxDate:    now,
+			MinDate:    startTime,
+		}
+
+		organizationEvents, hasNext, err := er.client.GetOrganizationEvents(ctx, org.ID, opts)
+		if err != nil {
+			er.logger.Error("unable to get events for organization", zap.Error(err), zap.String("organization", p.ID))
+			break
+		}
+
+		now := pcommon.NewTimestampFromTime(now)
+		logs := er.transformOrgEvents(now, organizationEvents, org)
+
+		if logs.LogRecordCount() > 0 {
+			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
+				er.logger.Error("error consuming organization events", zap.Error(err))
+				break
+			}
+		}
+
+		if !hasNext {
+			break
+		}
+	}
+}
+
+func (er *eventsReceiver) transformProjectEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	ra := resourceLogs.Resource().Attributes()
 	ra.PutStr("mongodbatlas.project.name", p.Name)
 	ra.PutStr("mongodbatlas.org.id", p.OrgID)
+	er.transformEvents(now, events, &resourceLogs)
+	return logs
+}
 
+func (er *eventsReceiver) transformOrgEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, o *mongodbatlas.Organization) plog.Logs {
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	ra := resourceLogs.Resource().Attributes()
+	ra.PutStr("mongodbatlas.org.id", o.ID)
+	er.transformEvents(now, events, &resourceLogs)
+	return logs
+}
+
+func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, resourceLogs *plog.ResourceLogs) {
 	for _, event := range events {
 
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -224,7 +260,6 @@ func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongo
 
 		parseOptionalAttributes(&attrs, event)
 	}
-	return logs
 }
 
 func (er *eventsReceiver) checkpoint(ctx context.Context) error {

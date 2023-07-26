@@ -1,22 +1,12 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awscloudwatchlogsexporter
 
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -35,7 +25,7 @@ type mockPusher struct {
 	mock.Mock
 }
 
-func (p *mockPusher) AddLogEntry(logEvent *cwlogs.Event) error {
+func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -58,34 +48,151 @@ func TestLogToCWLog(t *testing.T) {
 		name     string
 		resource pcommon.Resource
 		log      plog.LogRecord
-		want     *cloudwatchlogs.InputLogEvent
+		config   Config
+		want     cwlogs.Event
 		wantErr  bool
 	}{
 		{
 			name:     "basic",
 			resource: testResource(),
 			log:      testLogRecord(),
-			want: &cloudwatchlogs.InputLogEvent{
-				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+			config:   Config{},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				},
+				LogGroupName:  "",
+				LogStreamName: "",
 			},
 		},
 		{
 			name:     "no resource",
 			resource: pcommon.NewResource(),
 			log:      testLogRecord(),
-			want: &cloudwatchlogs.InputLogEvent{
-				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
+			config:   Config{},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
+				},
+				LogGroupName:  "",
+				LogStreamName: "",
 			},
 		},
 		{
 			name:     "no trace",
 			resource: testResource(),
 			log:      testLogRecordWithoutTrace(),
-			want: &cloudwatchlogs.InputLogEvent{
-				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+			},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				},
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+			},
+		},
+		{
+			name:     "raw",
+			resource: testResource(),
+			log:      testLogRecordWithoutTrace(),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+			},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`hello world`),
+				},
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+			},
+		},
+		{
+			name:     "raw emf v1",
+			resource: testResource(),
+			log:      createPLog(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+			},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
+				},
+				LogGroupName:  "Foo",
+				LogStreamName: "tStreamName",
+			},
+		},
+		{
+			name:     "raw emf v1 with log stream",
+			resource: testResource(),
+			log:      createPLog(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","LogStreamName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+			},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","LogStreamName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
+				},
+				LogGroupName:  "Foo",
+				LogStreamName: "Foo",
+			},
+		},
+		{
+			name:     "raw emf v0",
+			resource: testResource(),
+			log:      createPLog(`{"Timestamp":1574109732004,"log_group_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+			},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"Timestamp":1574109732004,"log_group_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+				},
+				LogGroupName:  "Foo",
+				LogStreamName: "tStreamName",
+			},
+		},
+		{
+			name:     "raw emf v0 with log stream",
+			resource: testResource(),
+			log:      createPLog(`{"Timestamp":1574109732004,"log_group_name":"Foo","log_stream_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+			},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"Timestamp":1574109732004,"log_group_name":"Foo","log_stream_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+				},
+				LogGroupName:  "Foo",
+				LogStreamName: "Foo",
 			},
 		},
 	}
@@ -93,12 +200,15 @@ func TestLogToCWLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resourceAttrs := attrsValue(tt.resource.Attributes())
-			got, err := logToCWLog(resourceAttrs, tt.log)
+			got, err := logToCWLog(resourceAttrs, tt.log, &tt.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("logToCWLog() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			assert.Equal(t, tt.want, got)
+			// Do not test generated time since it is time.Now()
+			assert.Equal(t, tt.want.InputLogEvent, got.InputLogEvent)
+			assert.Equal(t, tt.want.LogStreamName, got.LogStreamName)
+			assert.Equal(t, tt.want.LogGroupName, got.LogGroupName)
 		})
 	}
 }
@@ -109,7 +219,7 @@ func BenchmarkLogToCWLog(b *testing.B) {
 	resource := testResource()
 	log := testLogRecord()
 	for i := 0; i < b.N; i++ {
-		_, err := logToCWLog(attrsValue(resource.Attributes()), log)
+		_, err := logToCWLog(attrsValue(resource.Attributes()), log, &Config{})
 		if err != nil {
 			b.Errorf("logToCWLog() failed %v", err)
 			return
@@ -151,6 +261,13 @@ func testLogRecordWithoutTrace() plog.LogRecord {
 	return record
 }
 
+func createPLog(log string) plog.LogRecord {
+	pLog := plog.NewLogRecord()
+	pLog.Body().SetStr(log)
+	pLog.SetTimestamp(1609719139000000)
+	return pLog
+}
+
 func TestConsumeLogs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -174,9 +291,12 @@ func TestConsumeLogs(t *testing.T) {
 	logPusher := new(mockPusher)
 	logPusher.On("AddLogEntry", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("").Twice()
-	exp.(*exporter).pusher = logPusher
-	require.NoError(t, exp.(*exporter).ConsumeLogs(ctx, ld))
-	require.NoError(t, exp.Shutdown(ctx))
+	exp.pusherMap[cwlogs.PusherKey{
+		LogGroupName:  expCfg.LogGroupName,
+		LogStreamName: expCfg.LogStreamName,
+	}] = logPusher
+	require.NoError(t, exp.consumeLogs(ctx, ld))
+	require.NoError(t, exp.shutdown(ctx))
 }
 
 func TestNewExporterWithoutRegionErr(t *testing.T) {

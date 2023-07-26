@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter
 
@@ -51,7 +40,7 @@ func TestPrometheusExporter(t *testing.T) {
 					"code0": "one0",
 				},
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":8999",
+					Endpoint: "localhost:8999",
 				},
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
@@ -60,7 +49,7 @@ func TestPrometheusExporter(t *testing.T) {
 		{
 			config: &Config{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":88999",
+					Endpoint: "localhost:88999",
 				},
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
@@ -82,9 +71,8 @@ func TestPrometheusExporter(t *testing.T) {
 				require.Error(t, err)
 				assert.Equal(t, tt.wantErr, err.Error())
 				continue
-			} else {
-				require.NoError(t, err)
 			}
+			require.NoError(t, err)
 
 			assert.NotNil(t, exp)
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -109,7 +97,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "./testdata/certs/server.crt",
@@ -194,7 +182,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -276,7 +264,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"code1": "one1",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -352,7 +340,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
@@ -429,7 +417,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"code2": "one2",
 		},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":7777",
+			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,

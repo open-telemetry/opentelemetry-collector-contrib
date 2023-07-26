@@ -1,0 +1,9 @@
+type: googlecloud
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]

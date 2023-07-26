@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
@@ -49,6 +38,7 @@ type metricDataAccumulator struct {
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
 	time                  time.Time
+	rb                    *metadata.ResourceBuilder
 	mbs                   *metadata.MetricsBuilders
 }
 
@@ -63,10 +53,10 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
-
+	a.rb.SetK8sNodeName(s.NodeName)
 	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
-		metadata.WithK8sNodeName(s.NodeName),
+		metadata.WithResource(a.rb.Emit()),
 	))
 }
 
@@ -81,11 +71,12 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 
+	a.rb.SetK8sPodUID(s.PodRef.UID)
+	a.rb.SetK8sPodName(s.PodRef.Name)
+	a.rb.SetK8sNamespaceName(s.PodRef.Namespace)
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
-		metadata.WithK8sPodUID(s.PodRef.UID),
-		metadata.WithK8sPodName(s.PodRef.Name),
-		metadata.WithK8sNamespaceName(s.PodRef.Namespace),
+		metadata.WithResource(a.rb.Emit()),
 	))
 }
 
@@ -94,7 +85,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	ro, err := getContainerResourceOptions(sPod, s, a.metadata)
+	res, err := getContainerResource(a.rb, sPod, s, a.metadata)
 	if err != nil {
 		a.logger.Warn(
 			"failed to fetch container metrics",
@@ -109,7 +100,10 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	addMemoryMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
 
-	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(ro...))
+	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithResource(res),
+	))
 }
 
 func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeStats) {
@@ -117,7 +111,7 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	ro, err := getVolumeResourceOptions(sPod, s, a.metadata)
+	res, err := getVolumeResourceOptions(a.rb, sPod, s, a.metadata)
 	if err != nil {
 		a.logger.Warn(
 			"Failed to gather additional volume metadata. Skipping metric collection.",
@@ -130,5 +124,5 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sVolumeMetrics, s, currentTime)
 
-	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(ro...))
+	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(metadata.WithResource(res)))
 }

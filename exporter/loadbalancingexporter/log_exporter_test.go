@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter
 
@@ -20,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -33,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -319,7 +308,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	})
 
 	resolverCh := make(chan struct{}, 1)
-	counter := atomic.NewInt64(0)
+	counter := &atomic.Int64{}
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -333,7 +322,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter.Inc()
+				counter.Add(1)
 			}()
 
 			if counter.Load() <= 2 {
@@ -369,18 +358,18 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	lb.res = res
 	p.loadBalancer = lb
 
-	counter1 := atomic.NewInt64(0)
-	counter2 := atomic.NewInt64(0)
+	counter1 := &atomic.Int64{}
+	counter2 := &atomic.Int64{}
 	defaultExporters := map[string]component.Component{
 		"127.0.0.1:4317": newMockLogsExporter(func(ctx context.Context, ld plog.Logs) error {
-			counter1.Inc()
+			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		},
 		),
 		"127.0.0.2:4317": newMockLogsExporter(func(ctx context.Context, ld plog.Logs) error {
-			counter2.Inc()
+			counter2.Add(1)
 			return nil
 		},
 		),

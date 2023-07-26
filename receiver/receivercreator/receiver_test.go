@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator
 
@@ -22,9 +11,6 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -33,12 +19,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -51,11 +40,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 type mockObserver struct {
 }
 
-func (m *mockObserver) Start(ctx context.Context, host component.Host) error {
+func (m *mockObserver) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (m *mockObserver) Shutdown(ctx context.Context) error {
+func (m *mockObserver) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -76,7 +65,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[metadata.Type] = factory
 
 	host := &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}
 	host.extensions = map[component.ID]component.Component{
@@ -85,7 +74,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	}
 
 	cfg := factory.CreateDefaultConfig()
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "1").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "1").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -94,7 +83,8 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mockConsumer)
 	require.NoError(t, err)
-	dyn := rcvr.(*receiverCreator)
+	sc := rcvr.(*sharedcomponent.SharedComponent)
+	dyn := sc.Component.(*receiverCreator)
 	require.NoError(t, rcvr.Start(context.Background(), host))
 
 	var shutdownOnce sync.Once
@@ -112,33 +102,16 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
-		example := receiver.(*nopWithEndpointReceiver)
-		md := internaldata.OCToMetrics(
-			&commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
-				LibraryInfo: &commonpb.LibraryInfo{},
-				Identifier:  &commonpb.ProcessIdentifier{},
-				Attributes: map[string]string{
-					"attr": "1",
-				},
-			},
-			&resourcepb.Resource{Type: "test"},
-			[]*metricspb.Metric{
-				{
-					MetricDescriptor: &metricspb.MetricDescriptor{
-						Name:        "my-metric",
-						Description: "My metric",
-						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-					},
-					Timeseries: []*metricspb.TimeSeries{
-						{
-							Points: []*metricspb.Point{
-								{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
-							},
-						},
-					},
-				},
-			})
+		wr := receiver.(*wrappedReceiver)
+		example := wr.metrics.(*nopWithEndpointReceiver)
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("attr", "1")
+		rm.Resource().Attributes().PutStr(semconv.AttributeServiceName, "dynamictest")
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("my-metric")
+		m.SetDescription("My metric")
+		m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntValue(123)
 		assert.NoError(t, example.ConsumeMetrics(context.Background(), md))
 	}
 

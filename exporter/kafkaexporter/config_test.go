@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkaexporter
 
@@ -27,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
@@ -66,6 +57,12 @@ func TestLoadConfig(t *testing.T) {
 						Username: "jdoe",
 						Password: "pass",
 					},
+					SASL: &SASLConfig{
+						Username:  "jdoe",
+						Password:  "pass",
+						Mechanism: "PLAIN",
+						Version:   0,
+					},
 				},
 				Metadata: Metadata{
 					Full: false,
@@ -85,8 +82,18 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
+			cfg := applyConfigOption(func(conf *Config) {
+				// config.Validate() reads the Authentication.SASL struct, but it's not present
+				// in the default config. This sets it to avoid a segfault during testing.
+				conf.Authentication = Authentication{
+					SASL: &SASLConfig{
+						Username:  "jdoe",
+						Password:  "pass",
+						Mechanism: "PLAIN",
+						Version:   0,
+					},
+				}
+			})
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
@@ -106,8 +113,80 @@ func TestValidate_err_compression(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+	assert.EqualError(t, err, "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+}
+
+func TestValidate_sasl_username(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Username:  "",
+				Password:  "pass",
+				Mechanism: "PLAIN",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.EqualError(t, err, "auth.sasl.username is required")
+}
+
+func TestValidate_sasl_password(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Username:  "jdoe",
+				Password:  "",
+				Mechanism: "PLAIN",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.EqualError(t, err, "auth.sasl.password is required")
+}
+
+func TestValidate_sasl_mechanism(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Username:  "jdoe",
+				Password:  "pass",
+				Mechanism: "FAKE",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.EqualError(t, err, "auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FAKE")
+}
+
+func TestValidate_sasl_version(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: Authentication{
+			SASL: &SASLConfig{
+				Username:  "jdoe",
+				Password:  "pass",
+				Mechanism: "PLAIN",
+				Version:   42,
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.EqualError(t, err, "auth.sasl.version has to be either 0 or 1. configured value 42")
 }
 
 func Test_saramaProducerCompressionCodec(t *testing.T) {

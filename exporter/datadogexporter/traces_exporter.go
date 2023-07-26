@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
@@ -21,11 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
+	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -34,32 +25,45 @@ import (
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
 type traceExporter struct {
-	params         exporter.CreateSettings
-	cfg            *Config
-	ctx            context.Context       // ctx triggers shutdown upon cancellation
-	client         *zorkian.Client       // client sends runnimg metrics to backend & performs API validation
-	metricsAPI     *datadogV2.MetricsApi // client sends runnimg metrics to backend
-	scrubber       scrub.Scrubber        // scrubber scrubs sensitive information from error messages
-	onceMetadata   *sync.Once            // onceMetadata ensures that metadata is sent only once across all exporters
-	agent          *agent.Agent          // agent processes incoming traces
-	sourceProvider source.Provider       // is able to source the origin of a trace (hostname, container, etc)
+	params           exporter.CreateSettings
+	cfg              *Config
+	ctx              context.Context         // ctx triggers shutdown upon cancellation
+	client           *zorkian.Client         // client sends runnimg metrics to backend & performs API validation
+	metricsAPI       *datadogV2.MetricsApi   // client sends runnimg metrics to backend
+	scrubber         scrub.Scrubber          // scrubber scrubs sensitive information from error messages
+	onceMetadata     *sync.Once              // onceMetadata ensures that metadata is sent only once across all exporters
+	agent            *agent.Agent            // agent processes incoming traces
+	sourceProvider   source.Provider         // is able to source the origin of a trace (hostname, container, etc)
+	metadataReporter *inframetadata.Reporter // reports host metadata from resource attributes and metrics
+	retrier          *clientutil.Retrier     // retrier handles retries on requests
 }
 
-func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, agent *agent.Agent) (*traceExporter, error) {
+func newTracesExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg *Config,
+	onceMetadata *sync.Once,
+	sourceProvider source.Provider,
+	agent *agent.Agent,
+	metadataReporter *inframetadata.Reporter,
+) (*traceExporter, error) {
+	scrubber := scrub.NewScrubber()
 	exp := &traceExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		agent:          agent,
-		onceMetadata:   onceMetadata,
-		scrubber:       scrub.NewScrubber(),
-		sourceProvider: sourceProvider,
+		params:           params,
+		cfg:              cfg,
+		ctx:              ctx,
+		agent:            agent,
+		onceMetadata:     onceMetadata,
+		scrubber:         scrubber,
+		sourceProvider:   sourceProvider,
+		retrier:          clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		metadataReporter: metadataReporter,
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
@@ -99,8 +103,14 @@ func (exp *traceExporter) consumeTraces(
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
+
+		// Consume resources for host metadata
+		for i := 0; i < td.ResourceSpans().Len(); i++ {
+			res := td.ResourceSpans().At(i).Resource()
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
+		}
 	}
 	rspans := td.ResourceSpans()
 	hosts := make(map[string]struct{})
@@ -113,30 +123,35 @@ func (exp *traceExporter) consumeTraces(
 			hosts[src.Identifier] = struct{}{}
 		case source.AWSECSFargateKind:
 			tags[src.Tag()] = struct{}{}
+		case source.InvalidKind:
 		}
 	}
 
-	exp.exportHostMetrics(ctx, hosts, tags)
+	exp.exportUsageMetrics(ctx, hosts, tags)
 	return nil
 }
 
-func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
+	buildTags := metrics.TagsFromBuildInfo(exp.params.BuildInfo)
 	var err error
 	if isMetricExportV2Enabled() {
 		series := make([]datadogV2.MetricSeries, 0, len(hosts)+len(tags))
 		for host := range hosts {
-			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
+			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), buildTags)...)
 		}
 		for tag := range tags {
-			ms := metrics.DefaultMetrics("traces", "", uint64(now), exp.params.BuildInfo)
+			ms := metrics.DefaultMetrics("traces", "", uint64(now), buildTags)
 			for i := range ms {
 				ms[i].Tags = append(ms[i].Tags, tag)
 			}
 			series = append(series, ms...)
 		}
-		ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-		_, _, err = exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series})
+		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series}, *clientutil.GZipSubmitMetricsOptionalParameters)
+			return clientutil.WrapError(merr, httpresp)
+		})
 	} else {
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
 		for host := range hosts {
@@ -149,7 +164,9 @@ func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[strin
 			}
 			series = append(series, ms...)
 		}
-		err = exp.client.PostMetrics(series)
+		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+			return exp.client.PostMetrics(series)
+		})
 	}
 	if err != nil {
 		exp.params.Logger.Error("Error posting hostname/tags series", zap.Error(err))
@@ -167,11 +184,13 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	}
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
-	acfg.OTLPReceiver.UsePreviewHostnameLogic = metadata.HostnamePreviewFeatureGate.IsEnabled()
 	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
+	acfg.SkipSSLValidation = cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify
+	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
+	acfg.PeerServiceAggregation = cfg.Traces.PeerServiceAggregation
 	if v := cfg.Traces.flushInterval; v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}
@@ -179,5 +198,5 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 		acfg.Endpoints[0].Host = addr
 	}
 	tracelog.SetLogger(&zaplogger{params.Logger})
-	return agent.NewAgent(ctx, acfg), nil
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
 }

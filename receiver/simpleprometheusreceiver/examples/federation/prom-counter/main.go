@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -40,8 +29,9 @@ func initMeter() api.Meter {
 	mux := http.NewServeMux()
 	mux.Handle("/", promhttp.Handler())
 	server := &http.Server{
-		Addr:    ":8080",
-		Handler: mux,
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -69,7 +59,7 @@ func main() {
 	valueRecorder.Record(ctx, 0)
 	commonLabels := []attribute.KeyValue{attribute.String("A", "1"), attribute.String("B", "2"), attribute.String("C", "3")}
 	counter := int64(0)
-	valueRecorder.Record(ctx, counter, commonLabels...)
+	valueRecorder.Record(ctx, counter, api.WithAttributes(commonLabels...))
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	ticker := time.NewTicker(1 * time.Second)
@@ -78,7 +68,7 @@ func main() {
 		case <-ticker.C:
 			time.Sleep(1 * time.Second)
 			counter++
-			valueRecorder.Record(ctx, counter, commonLabels...)
+			valueRecorder.Record(ctx, counter, api.WithAttributes(commonLabels...))
 			break
 		case <-c:
 			ticker.Stop()

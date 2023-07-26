@@ -1,0 +1,9 @@
+type: splunk_hec
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq]
+  codeowners:
+    active: [atoulme, dmitryax]

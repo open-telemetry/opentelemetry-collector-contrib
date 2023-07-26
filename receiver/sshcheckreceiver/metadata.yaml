@@ -1,4 +1,12 @@
-name: sshcheckreceiver
+type: sshcheck
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [nslaughter, codeboten]
 
 resource_attributes:
   ssh.endpoint:

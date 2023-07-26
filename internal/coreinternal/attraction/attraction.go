@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
@@ -21,8 +10,15 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+)
+
+var enableSha256Gate = featuregate.GlobalRegistry().MustRegister(
+	"coreinternal.attraction.hash.sha256",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, switches hashing algorithm from SHA-1 to SHA-2 256"),
 )
 
 // Settings specifies the processor settings.
@@ -85,7 +81,9 @@ type ActionKeyValue struct {
 	// DELETE  - Deletes the attribute. If the key doesn't exist,
 	//           no action is performed.
 	// HASH    - Calculates the SHA-1 hash of an existing value and overwrites the
-	//           value with it's SHA-1 hash result.
+	//           value with its SHA-1 hash result. If the feature gate
+	//           `coreinternal.attraction.hash.sha256` is enabled, it uses SHA2-256
+	//           instead.
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
@@ -132,8 +130,8 @@ const (
 	// Supports pattern which is matched against attribute key.
 	DELETE Action = "delete"
 
-	// HASH calculates the SHA-1 hash of an existing value and overwrites the
-	// value with it's SHA-1 hash result.
+	// HASH calculates the SHA-256 hash of an existing value and overwrites the
+	// value with it's SHA-256 hash result.
 	// Supports pattern which is matched against attribute key.
 	HASH Action = "hash"
 
@@ -405,7 +403,11 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 
 func hashAttribute(key string, attrs pcommon.Map) {
 	if value, exists := attrs.Get(key); exists {
-		sha1Hasher(value)
+		if enableSha256Gate.IsEnabled() {
+			sha2Hasher(value)
+		} else {
+			sha1Hasher(value)
+		}
 	}
 }
 

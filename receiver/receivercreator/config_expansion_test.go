@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator
 
@@ -92,7 +81,7 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		name    string
 		cm      userConfigMap
 		args    args
-		want    map[string]interface{}
+		want    userConfigMap
 		wantErr bool
 	}{
 		// Note:
@@ -100,7 +89,7 @@ func Test_userConfigMap_resolve(t *testing.T) {
 			"one": map[string]interface{}{
 				"two": "`endpoint`",
 			},
-		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
+		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
 			"one": map[string]interface{}{
 				"two": "localhost",
 			},
@@ -108,14 +97,65 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		{
 			"single level map", userConfigMap{
 				"endpoint": "`endpoint`:6379",
-			}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
+			}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
 				"endpoint": "localhost:6379",
+			}, false,
+		},
+		{
+			"nested slices and maps", userConfigMap{
+				"one": []interface{}{
+					"`one`:6379",
+					map[string]interface{}{
+						"two": []interface{}{
+							"`two`:6379",
+						},
+						"three": []interface{}{
+							map[string]interface{}{
+								"three": "abc`three`xyz",
+							},
+							map[string]interface{}{
+								"four": []string{
+									"`first`",
+									"second",
+									"abc `third` xyz",
+								},
+							},
+						},
+					},
+				},
+			}, args{observer.EndpointEnv{
+				"one":   "one.value",
+				"two":   "two.value",
+				"three": "three.value",
+				"first": "first.value",
+				"third": "third.value",
+			}}, userConfigMap{
+				"one": []interface{}{
+					"one.value:6379",
+					map[string]interface{}{
+						"two": []interface{}{
+							"two.value:6379",
+						},
+						"three": []interface{}{
+							map[string]interface{}{
+								"three": "abcthree.valuexyz",
+							},
+							map[string]interface{}{
+								"four": []interface{}{
+									"first.value",
+									"second",
+									"abc third.value xyz",
+								},
+							},
+						},
+					},
+				},
 			}, false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := expandMap(tt.cm, tt.args.env)
+			got, err := expandConfig(tt.cm, tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("resolve() error = %v, wantErr %v", err, tt.wantErr)
 				return

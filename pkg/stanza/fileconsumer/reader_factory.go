@@ -1,25 +1,19 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"bufio"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -29,9 +23,10 @@ type readerFactory struct {
 	fromBeginning   bool
 	splitterFactory splitterFactory
 	encodingConfig  helper.EncodingConfig
+	headerConfig    *header.Config
 }
 
-func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
+func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
 	return f.newReaderBuilder().
 		withFile(file).
 		withFingerprint(fp).
@@ -44,7 +39,9 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFile(newFile).
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
-		withSplitterFunc(old.splitFunc).
+		withSplitterFunc(old.lineSplitFunc).
+		withFileAttributes(util.MapCopy(old.FileAttributes)).
+		withHeaderFinalized(old.HeaderFinalized).
 		build()
 }
 
@@ -52,20 +49,22 @@ func (f *readerFactory) unsafeReader() (*Reader, error) {
 	return f.newReaderBuilder().build()
 }
 
-func (f *readerFactory) newFingerprint(file *os.File) (*Fingerprint, error) {
-	return NewFingerprint(file, f.readerConfig.fingerprintSize)
+func (f *readerFactory) newFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
+	return fingerprint.New(file, f.readerConfig.fingerprintSize)
 }
 
 type readerBuilder struct {
 	*readerFactory
-	file      *os.File
-	fp        *Fingerprint
-	offset    int64
-	splitFunc bufio.SplitFunc
+	file            *os.File
+	fp              *fingerprint.Fingerprint
+	offset          int64
+	splitFunc       bufio.SplitFunc
+	headerFinalized bool
+	fileAttributes  map[string]any
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
-	return &readerBuilder{readerFactory: f}
+	return &readerBuilder{readerFactory: f, fileAttributes: map[string]any{}}
 }
 
 func (b *readerBuilder) withSplitterFunc(s bufio.SplitFunc) *readerBuilder {
@@ -78,7 +77,7 @@ func (b *readerBuilder) withFile(f *os.File) *readerBuilder {
 	return b
 }
 
-func (b *readerBuilder) withFingerprint(fp *Fingerprint) *readerBuilder {
+func (b *readerBuilder) withFingerprint(fp *fingerprint.Fingerprint) *readerBuilder {
 	b.fp = fp
 	return b
 }
@@ -88,54 +87,112 @@ func (b *readerBuilder) withOffset(offset int64) *readerBuilder {
 	return b
 }
 
+func (b *readerBuilder) withHeaderFinalized(finalized bool) *readerBuilder {
+	b.headerFinalized = finalized
+	return b
+}
+
+func (b *readerBuilder) withFileAttributes(attrs map[string]any) *readerBuilder {
+	b.fileAttributes = attrs
+	return b
+}
+
 func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
-		readerConfig: b.readerConfig,
-		Offset:       b.offset,
+		readerConfig:    b.readerConfig,
+		Offset:          b.offset,
+		HeaderFinalized: b.headerFinalized,
+		FileAttributes:  b.fileAttributes,
 	}
 
 	if b.splitFunc != nil {
-		r.splitFunc = b.splitFunc
+		r.lineSplitFunc = b.splitFunc
 	} else {
-		r.splitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
+		r.lineSplitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
 		if err != nil {
-			return
+			return nil, err
 		}
 	}
 
-	enc, err := b.encodingConfig.Build()
+	r.encoding, err = b.encodingConfig.Build()
 	if err != nil {
-		return
+		return nil, err
 	}
-	r.encoding = enc
 
-	if b.file != nil {
-		r.file = b.file
-		r.SugaredLogger = b.SugaredLogger.With("path", b.file.Name())
-		r.fileAttributes, err = resolveFileAttributes(b.file.Name())
-		if err != nil {
-			b.Errorf("resolve attributes: %w", err)
-		}
-
-		// unsafeReader has the file set to nil, so don't try emending its offset.
-		if !b.fromBeginning {
-			if err := r.offsetToEnd(); err != nil {
-				return nil, err
-			}
-		}
+	if b.headerConfig == nil || b.headerFinalized {
+		r.splitFunc = r.lineSplitFunc
+		r.processFunc = b.readerConfig.emit
 	} else {
+		r.splitFunc = b.headerConfig.SplitFunc
+		r.headerReader, err = header.NewReader(b.SugaredLogger, *b.headerConfig)
+		if err != nil {
+			return nil, err
+		}
+		r.processFunc = r.headerReader.Process
+	}
+
+	if b.file == nil {
 		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
+		return r, nil
+	}
+
+	r.file = b.file
+	r.SugaredLogger = b.SugaredLogger.With("path", b.file.Name())
+	r.FileAttributes = b.fileAttributes
+
+	// Resolve file name and path attributes
+	resolved := b.file.Name()
+
+	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
+	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
+	if runtime.GOOS != "windows" {
+		resolved, err = filepath.EvalSymlinks(b.file.Name())
+		if err != nil {
+			b.Errorf("resolve symlinks: %w", err)
+		}
+	}
+	abs, err := filepath.Abs(resolved)
+	if err != nil {
+		b.Errorf("resolve abs: %w", err)
+	}
+
+	if b.readerConfig.includeFileName {
+		r.FileAttributes[logFileName] = filepath.Base(b.file.Name())
+	} else if r.FileAttributes[logFileName] != nil {
+		delete(r.FileAttributes, logFileName)
+	}
+	if b.readerConfig.includeFilePath {
+		r.FileAttributes[logFilePath] = b.file.Name()
+	} else if r.FileAttributes[logFilePath] != nil {
+		delete(r.FileAttributes, logFilePath)
+	}
+	if b.readerConfig.includeFileNameResolved {
+		r.FileAttributes[logFileNameResolved] = filepath.Base(abs)
+	} else if r.FileAttributes[logFileNameResolved] != nil {
+		delete(r.FileAttributes, logFileNameResolved)
+	}
+	if b.readerConfig.includeFilePathResolved {
+		r.FileAttributes[logFilePathResolved] = abs
+	} else if r.FileAttributes[logFilePathResolved] != nil {
+		delete(r.FileAttributes, logFilePathResolved)
+	}
+
+	if !b.fromBeginning {
+		if err = r.offsetToEnd(); err != nil {
+			return nil, err
+		}
 	}
 
 	if b.fp != nil {
 		r.Fingerprint = b.fp
-	} else if b.file != nil {
-		fp, err := b.readerFactory.newFingerprint(r.file)
-		if err != nil {
-			return nil, err
-		}
-		r.Fingerprint = fp
+		return r, nil
 	}
+
+	fp, err := b.readerFactory.newFingerprint(r.file)
+	if err != nil {
+		return nil, err
+	}
+	r.Fingerprint = fp
 
 	return r, nil
 }

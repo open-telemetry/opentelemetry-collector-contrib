@@ -1,0 +1,9 @@
+type: purefb
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [jpkrohling, dgoscn, chrroberts-pure]

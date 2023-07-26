@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -20,12 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"math"
 	"runtime"
 	"sort"
 	"sync"
 
+	"github.com/cespare/xxhash/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -51,18 +40,9 @@ import (
 //	│ │ │ ┌─────────────────────────────────────────────────┴─┐
 //	└─┼─┼─► workerLoop()                                      │
 //	  └─┤ │   consumes sent log entries from workerChan,      │
-//	    │ │   translates received entries to plog.LogRecords,│
-//	    └─┤   hashes them to generate an ID, and sends them   │
-//	      │   onto batchChan                                  │
+//	    │ │   translates received entries to plog.LogRecords, │
+//	    └─┤   and sends them on flushChan                     │
 //	      └─────────────────────────┬─────────────────────────┘
-//	                                │
-//	                                ▼
-//	    ┌─────────────────────────────────────────────────────┐
-//	    │ aggregationLoop()                                   │
-//	    │   consumes from batchChan, aggregates log records   │
-//	    │   by marshaled Resource and sends the               │
-//	    │   aggregated buffer to flushChan                    │
-//	    └───────────────────────────┬─────────────────────────┘
 //	                                │
 //	                                ▼
 //	    ┌─────────────────────────────────────────────────────┐
@@ -83,10 +63,6 @@ type Converter struct {
 	workerChan chan []*entry.Entry
 	// workerCount configures the amount of workers started.
 	workerCount int
-	// aggregationChan obtains log entries converted by the pool of workers,
-	// in a form of logRecords grouped by Resource and then sends aggregated logs
-	// on flushChan.
-	aggregationChan chan []workerItem
 
 	// flushChan is an internal channel used for transporting batched plog.Logs.
 	flushChan chan plog.Logs
@@ -98,28 +74,44 @@ type Converter struct {
 	logger *zap.Logger
 }
 
-func NewConverter(logger *zap.Logger) *Converter {
-	return &Converter{
-		workerChan:      make(chan []*entry.Entry),
-		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
-		aggregationChan: make(chan []workerItem),
-		pLogsChan:       make(chan plog.Logs),
-		stopChan:        make(chan struct{}),
-		flushChan:       make(chan plog.Logs),
-		logger:          logger,
+type converterOption interface {
+	apply(*Converter)
+}
+
+func withWorkerCount(workerCount int) converterOption {
+	return workerCountOption{workerCount}
+}
+
+type workerCountOption struct {
+	workerCount int
+}
+
+func (o workerCountOption) apply(c *Converter) {
+	c.workerCount = o.workerCount
+}
+
+func NewConverter(logger *zap.Logger, opts ...converterOption) *Converter {
+	c := &Converter{
+		workerChan:  make(chan []*entry.Entry),
+		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
+		pLogsChan:   make(chan plog.Logs),
+		stopChan:    make(chan struct{}),
+		flushChan:   make(chan plog.Logs),
+		logger:      logger,
 	}
+	for _, opt := range opts {
+		opt.apply(c)
+	}
+	return c
 }
 
 func (c *Converter) Start() {
 	c.logger.Debug("Starting log converter", zap.Int("worker_count", c.workerCount))
 
+	c.wg.Add(c.workerCount)
 	for i := 0; i < c.workerCount; i++ {
-		c.wg.Add(1)
 		go c.workerLoop()
 	}
-
-	c.wg.Add(1)
-	go c.aggregationLoop()
 
 	c.wg.Add(1)
 	go c.flushLoop()
@@ -138,15 +130,9 @@ func (c *Converter) OutChannel() <-chan plog.Logs {
 	return c.pLogsChan
 }
 
-type workerItem struct {
-	Resource   map[string]interface{}
-	LogRecord  plog.LogRecord
-	ResourceID uint64
-}
-
 // workerLoop is responsible for obtaining log entries from Batch() calls,
-// converting them to plog.LogRecords and sending them together with the
-// associated Resource through the aggregationChan for aggregation.
+// converting them to plog.LogRecords batched by Resource, and sending them
+// on flushChan.
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
 
@@ -161,71 +147,29 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			workerItems := make([]workerItem, 0, len(entries))
+			resourceHashToIdx := make(map[uint64]int)
 
+			pLogs := plog.NewLogs()
+			var sl plog.ScopeLogs
 			for _, e := range entries {
-				lr := convert(e)
 				resourceID := HashResource(e.Resource)
-				workerItems = append(workerItems, workerItem{
-					Resource:   e.Resource,
-					ResourceID: resourceID,
-					LogRecord:  lr,
-				})
+				resourceIdx, ok := resourceHashToIdx[resourceID]
+				if !ok {
+					resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
+					rl := pLogs.ResourceLogs().AppendEmpty()
+					upsertToMap(e.Resource, rl.Resource().Attributes())
+					sl = rl.ScopeLogs().AppendEmpty()
+				} else {
+					sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(0)
+				}
+				convertInto(e, sl.LogRecords().AppendEmpty())
 			}
 
+			// Send plogs directly to flushChan
 			select {
-			case c.aggregationChan <- workerItems:
+			case c.flushChan <- pLogs:
 			case <-c.stopChan:
 			}
-		}
-	}
-}
-
-// aggregationLoop is responsible for receiving the converted log entries and aggregating
-// them by Resource.
-func (c *Converter) aggregationLoop() {
-	defer c.wg.Done()
-
-	resourceIDToLogs := make(map[uint64]plog.Logs)
-
-	for {
-		select {
-		case workerItems, ok := <-c.aggregationChan:
-			if !ok {
-				return
-			}
-
-			for _, wi := range workerItems {
-				pLogs, ok := resourceIDToLogs[wi.ResourceID]
-				if ok {
-					lr := pLogs.ResourceLogs().
-						At(0).ScopeLogs().
-						At(0).LogRecords().AppendEmpty()
-					wi.LogRecord.CopyTo(lr)
-					continue
-				}
-
-				pLogs = plog.NewLogs()
-				logs := pLogs.ResourceLogs()
-				rls := logs.AppendEmpty()
-
-				resource := rls.Resource()
-				upsertToMap(wi.Resource, resource.Attributes())
-
-				ills := rls.ScopeLogs()
-				lr := ills.AppendEmpty().LogRecords().AppendEmpty()
-				wi.LogRecord.CopyTo(lr)
-
-				resourceIDToLogs[wi.ResourceID] = pLogs
-			}
-
-			for r, pLogs := range resourceIDToLogs {
-				c.flushChan <- pLogs
-				delete(resourceIDToLogs, r)
-			}
-
-		case <-c.stopChan:
-			return
 		}
 	}
 }
@@ -299,7 +243,10 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	}
 
 	upsertToMap(ent.Attributes, dest.Attributes())
-	upsertToAttributeVal(ent.Body, dest.Body())
+
+	if ent.Body != nil {
+		upsertToAttributeVal(ent.Body, dest.Body())
+	}
 
 	if ent.TraceID != nil {
 		var buffer [16]byte
@@ -311,7 +258,7 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 		copy(buffer[0:8], ent.SpanID)
 		dest.SetSpanID(buffer)
 	}
-	if ent.TraceFlags != nil {
+	if ent.TraceFlags != nil && len(ent.TraceFlags) > 0 {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
 		flags := uint32(ent.TraceFlags[0])
@@ -444,8 +391,24 @@ var defaultSevTextMap = map[entry.Severity]string{
 var pairSep = []byte{0xfe}
 
 // emptyResourceID is the ID returned by HashResource when it is passed an empty resource.
-// This specific number is chosen as it is the starting offset of fnv64.
-const emptyResourceID uint64 = 14695981039346656037
+// This specific number is chosen as it is the starting offset of xxHash.
+const emptyResourceID uint64 = 17241709254077376921
+
+type hashWriter struct {
+	h        *xxhash.Digest
+	keySlice []string
+}
+
+func newHashWriter() *hashWriter {
+	return &hashWriter{
+		h:        xxhash.New(),
+		keySlice: make([]string, 0),
+	}
+}
+
+var hashWriterPool = &sync.Pool{
+	New: func() interface{} { return newHashWriter() },
+}
 
 // HashResource will hash an entry.Entry.Resource
 func HashResource(resource map[string]interface{}) uint64 {
@@ -453,39 +416,39 @@ func HashResource(resource map[string]interface{}) uint64 {
 		return emptyResourceID
 	}
 
-	var fnvHash = fnv.New64a()
-	var fnvHashOut = make([]byte, 0, 16)
-	var keySlice = make([]string, 0, len(resource))
+	hw := hashWriterPool.Get().(*hashWriter)
+	defer hashWriterPool.Put(hw)
+	hw.h.Reset()
+	hw.keySlice = hw.keySlice[:0]
 
 	for k := range resource {
-		keySlice = append(keySlice, k)
+		hw.keySlice = append(hw.keySlice, k)
 	}
 
-	if len(keySlice) > 1 {
+	if len(hw.keySlice) > 1 {
 		// In order for this to be deterministic, we need to sort the map. Using range, like above,
 		// has no guarantee about order.
-		sort.Strings(keySlice)
+		sort.Strings(hw.keySlice)
 	}
 
-	for _, k := range keySlice {
-		fnvHash.Write([]byte(k))
-		fnvHash.Write(pairSep)
+	for _, k := range hw.keySlice {
+		hw.h.Write([]byte(k)) //nolint:errcheck
+		hw.h.Write(pairSep)   //nolint:errcheck
 
 		switch t := resource[k].(type) {
 		case string:
-			fnvHash.Write([]byte(t))
+			hw.h.Write([]byte(t)) //nolint:errcheck
 		case []byte:
-			fnvHash.Write(t)
+			hw.h.Write(t) //nolint:errcheck
 		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			binary.Write(fnvHash, binary.BigEndian, t) // nolint - nothing to do about it
+			binary.Write(hw.h, binary.BigEndian, t) // nolint - nothing to do about it
 		default:
 			b, _ := json.Marshal(t)
-			fnvHash.Write(b)
+			hw.h.Write(b) //nolint:errcheck
 		}
 
-		fnvHash.Write(pairSep)
+		hw.h.Write(pairSep) //nolint:errcheck
 	}
 
-	fnvHashOut = fnvHash.Sum(fnvHashOut)
-	return binary.BigEndian.Uint64(fnvHashOut)
+	return hw.h.Sum64()
 }

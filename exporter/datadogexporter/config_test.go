@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter
 
@@ -94,12 +83,12 @@ func TestValidate(t *testing.T) {
 				API: APIConfig{Key: "notnull"},
 				Metrics: MetricsConfig{
 					HistConfig: HistogramConfig{
-						Mode:         HistogramModeNoBuckets,
-						SendCountSum: false,
+						Mode:             HistogramModeNoBuckets,
+						SendAggregations: false,
 					},
 				},
 			},
-			err: "'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics",
+			err: "'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics",
 		},
 		{
 			name: "TLS settings are valid",
@@ -237,6 +226,29 @@ func TestUnmarshal(t *testing.T) {
 				},
 			}),
 			err: errEmptyEndpoint.Error(),
+		},
+		{
+			name: "invalid initial cumulative monotonic value mode",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"initial_cumulative_monotonic_value": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.initial_cumulative_monotonic_value': invalid initial value mode \"invalid_mode\"",
+		},
+		{
+			name: "initial cumulative monotonic value mode set with raw_value",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"cumulative_monotonic_mode":          "raw_value",
+						"initial_cumulative_monotonic_value": "drop",
+					},
+				},
+			}),
+			err: "\"metrics::sums::initial_cumulative_monotonic_value\" can only be configured when \"metrics::sums::cumulative_monotonic_mode\" is set to \"to_delta\"",
 		},
 	}
 

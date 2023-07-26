@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -22,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.opentelemetry.io/collector/component"
@@ -45,9 +35,9 @@ type scraper struct {
 	mb       *metadata.MetricsBuilder
 
 	// for mocking
-	bootTime         func() (uint64, error)
+	bootTime         func(context.Context) (uint64, error)
 	getPageFileStats func() ([]*pageFileStats, error)
-	swapMemory       func() (*mem.SwapMemoryStat, error)
+	swapMemory       func(context.Context) (*mem.SwapMemoryStat, error)
 }
 
 // newPagingScraper creates a Paging Scraper
@@ -55,19 +45,20 @@ func newPagingScraper(_ context.Context, settings receiver.CreateSettings, cfg *
 	return &scraper{
 		settings:         settings,
 		config:           cfg,
-		bootTime:         host.BootTime,
+		bootTime:         host.BootTimeWithContext,
 		getPageFileStats: getPageFileStats,
-		swapMemory:       mem.SwapMemory,
+		swapMemory:       mem.SwapMemoryWithContext,
 	}
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -120,8 +111,9 @@ func (s *scraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp, pageF
 }
 
 func (s *scraper) scrapePagingMetrics() error {
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
-	swap, err := s.swapMemory()
+	swap, err := s.swapMemory(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read swap info: %w", err)
 	}

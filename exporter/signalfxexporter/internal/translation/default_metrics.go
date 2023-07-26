@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
@@ -49,7 +38,7 @@ exclude_metrics:
 # CPU Metrics.
 - metric_name: system.cpu.time
   dimensions:
-    state: [interrupt, nice, softirq, steal, system, user, wait]
+    state: [idle, interrupt, nice, softirq, steal, system, user, wait]
 
 - metric_name: cpu.idle
   dimensions:
@@ -141,10 +130,8 @@ exclude_metrics:
   - /^k8s\.(?i:(node)|(pod))\.filesystem\.capacity$/
   - /^k8s\.(?i:(node)|(pod))\.filesystem\.usage$/
 
-  # matches (k8s.node|k8s.pod).cpu.time
-  - /^k8s\.(?i:(node)|(pod))\.cpu\.time$/
-
-  # matches (container|k8s.node|k8s.pod).cpu.utilization
+  # matches (container|k8s.node|k8s.pod).cpu...
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.cpu\.time$/
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.cpu\.utilization$/
 
   # matches k8s.node.network.io and k8s.node.network.errors

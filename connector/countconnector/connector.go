@@ -1,22 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package countconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -24,17 +13,29 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
 const scopeName = "otelcol/countconnector"
 
-// count can count spans, data points, or log records and emit
-// the count onto a metrics pipeline.
+// count can count spans, span event, metrics, data points, or log records
+// and emit the counts onto a metrics pipeline.
 type count struct {
-	cfg             Config
 	metricsConsumer consumer.Metrics
 	component.StartFunc
 	component.ShutdownFunc
+
+	spansMetricDefs      map[string]metricDef[ottlspan.TransformContext]
+	spanEventsMetricDefs map[string]metricDef[ottlspanevent.TransformContext]
+	metricsMetricDefs    map[string]metricDef[ottlmetric.TransformContext]
+	dataPointsMetricDefs map[string]metricDef[ottldatapoint.TransformContext]
+	logsMetricDefs       map[string]metricDef[ottllog.TransformContext]
 }
 
 func (c *count) Capabilities() consumer.Capabilities {
@@ -42,11 +43,34 @@ func (c *count) Capabilities() consumer.Capabilities {
 }
 
 func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	now := time.Now()
+	var errors error
 	countMetrics := pmetric.NewMetrics()
 	countMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
+		spansCounter := newCounter[ottlspan.TransformContext](c.spansMetricDefs)
+		spanEventsCounter := newCounter[ottlspanevent.TransformContext](c.spanEventsMetricDefs)
+
+		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+			scopeSpan := resourceSpan.ScopeSpans().At(j)
+
+			for k := 0; k < scopeSpan.Spans().Len(); k++ {
+				span := scopeSpan.Spans().At(k)
+				sCtx := ottlspan.NewTransformContext(span, scopeSpan.Scope(), resourceSpan.Resource())
+				errors = multierr.Append(errors, spansCounter.update(ctx, span.Attributes(), sCtx))
+
+				for l := 0; l < span.Events().Len(); l++ {
+					event := span.Events().At(l)
+					eCtx := ottlspanevent.NewTransformContext(event, span, scopeSpan.Scope(), resourceSpan.Resource())
+					errors = multierr.Append(errors, spanEventsCounter.update(ctx, event.Attributes(), eCtx))
+				}
+			}
+		}
+
+		if len(spansCounter.counts)+len(spanEventsCounter.counts) == 0 {
+			continue // don't add an empty resource
+		}
+
 		countResource := countMetrics.ResourceMetrics().AppendEmpty()
 		resourceSpan.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
 
@@ -54,21 +78,73 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(scopeName)
 
-		var count uint64
-		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
-			count += uint64(resourceSpan.ScopeSpans().At(j).Spans().Len())
-		}
-		setCountMetric(countScope.Metrics().AppendEmpty(), c.cfg.Traces, count, now)
+		spansCounter.appendMetricsTo(countScope.Metrics())
+		spanEventsCounter.appendMetricsTo(countScope.Metrics())
+	}
+	if errors != nil {
+		return errors
 	}
 	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
 }
 
 func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	now := time.Now()
+	var errors error
 	countMetrics := pmetric.NewMetrics()
 	countMetrics.ResourceMetrics().EnsureCapacity(md.ResourceMetrics().Len())
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		resourceMetric := md.ResourceMetrics().At(i)
+		metricsCounter := newCounter[ottlmetric.TransformContext](c.metricsMetricDefs)
+		dataPointsCounter := newCounter[ottldatapoint.TransformContext](c.dataPointsMetricDefs)
+
+		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+			scopeMetrics := resourceMetric.ScopeMetrics().At(j)
+
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+				metric := scopeMetrics.Metrics().At(k)
+				mCtx := ottlmetric.NewTransformContext(metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
+				errors = multierr.Append(errors, metricsCounter.update(ctx, pcommon.NewMap(), mCtx))
+
+				switch metric.Type() {
+				case pmetric.MetricTypeGauge:
+					dps := metric.Gauge().DataPoints()
+					for i := 0; i < dps.Len(); i++ {
+						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
+						errors = multierr.Append(errors, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+					}
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for i := 0; i < dps.Len(); i++ {
+						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
+						errors = multierr.Append(errors, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+					}
+				case pmetric.MetricTypeSummary:
+					dps := metric.Summary().DataPoints()
+					for i := 0; i < dps.Len(); i++ {
+						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
+						errors = multierr.Append(errors, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for i := 0; i < dps.Len(); i++ {
+						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
+						errors = multierr.Append(errors, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for i := 0; i < dps.Len(); i++ {
+						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
+						errors = multierr.Append(errors, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
+					}
+				case pmetric.MetricTypeEmpty:
+					errors = multierr.Append(errors, fmt.Errorf("metric %q: invalid metric type: %v", metric.Name(), metric.Type()))
+				}
+			}
+		}
+
+		if len(metricsCounter.counts)+len(dataPointsCounter.counts) == 0 {
+			continue // don't add an empty resource
+		}
+
 		countResource := countMetrics.ResourceMetrics().AppendEmpty()
 		resourceMetric.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
 
@@ -76,36 +152,38 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(scopeName)
 
-		var count uint64
-		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
-			countMetrics := resourceMetric.ScopeMetrics().At(j).Metrics()
-			for k := 0; k < countMetrics.Len(); k++ {
-				countMetric := countMetrics.At(k)
-				switch countMetric.Type() {
-				case pmetric.MetricTypeGauge:
-					count += uint64(countMetric.Gauge().DataPoints().Len())
-				case pmetric.MetricTypeSum:
-					count += uint64(countMetric.Sum().DataPoints().Len())
-				case pmetric.MetricTypeSummary:
-					count += uint64(countMetric.Summary().DataPoints().Len())
-				case pmetric.MetricTypeHistogram:
-					count += uint64(countMetric.Histogram().DataPoints().Len())
-				case pmetric.MetricTypeExponentialHistogram:
-					count += uint64(countMetric.ExponentialHistogram().DataPoints().Len())
-				}
-			}
-		}
-		setCountMetric(countScope.Metrics().AppendEmpty(), c.cfg.Metrics, count, now)
+		metricsCounter.appendMetricsTo(countScope.Metrics())
+		dataPointsCounter.appendMetricsTo(countScope.Metrics())
+	}
+	if errors != nil {
+		return errors
 	}
 	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
 }
 
 func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	now := time.Now()
+	var errors error
 	countMetrics := pmetric.NewMetrics()
 	countMetrics.ResourceMetrics().EnsureCapacity(ld.ResourceLogs().Len())
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resourceLog := ld.ResourceLogs().At(i)
+		counter := newCounter[ottllog.TransformContext](c.logsMetricDefs)
+
+		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
+			scopeLogs := resourceLog.ScopeLogs().At(j)
+
+			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+				logRecord := scopeLogs.LogRecords().At(k)
+
+				lCtx := ottllog.NewTransformContext(logRecord, scopeLogs.Scope(), resourceLog.Resource())
+				errors = multierr.Append(errors, counter.update(ctx, logRecord.Attributes(), lCtx))
+			}
+		}
+
+		if len(counter.counts) == 0 {
+			continue // don't add an empty resource
+		}
+
 		countResource := countMetrics.ResourceMetrics().AppendEmpty()
 		resourceLog.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
 
@@ -113,24 +191,10 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(scopeName)
 
-		var count uint64
-		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
-			count += uint64(resourceLog.ScopeLogs().At(j).LogRecords().Len())
-		}
-		setCountMetric(countScope.Metrics().AppendEmpty(), c.cfg.Logs, count, now)
+		counter.appendMetricsTo(countScope.Metrics())
+	}
+	if errors != nil {
+		return errors
 	}
 	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
-}
-
-func setCountMetric(countMetric pmetric.Metric, metricType MetricInfo, count uint64, now time.Time) {
-	countMetric.SetName(metricType.Name)
-	countMetric.SetDescription(metricType.Description)
-	sum := countMetric.SetEmptySum()
-	// The delta value is always positive, so a value accumulated downstream is monotonic
-	sum.SetIsMonotonic(true)
-	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-	dp := sum.DataPoints().AppendEmpty()
-	dp.SetIntValue(int64(count))
-	// TODO determine appropriate start time
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
 }

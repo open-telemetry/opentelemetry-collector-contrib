@@ -1,4 +1,12 @@
-name: expvarreceiver
+type: expvar
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [jamesmoessis, MovieStoreGuy]
 
 metrics:
   process.runtime.memstats.total_alloc:

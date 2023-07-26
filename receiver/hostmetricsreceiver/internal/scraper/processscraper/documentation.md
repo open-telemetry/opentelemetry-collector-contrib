@@ -2,6 +2,8 @@
 
 # hostmetricsreceiver/process
 
+**Parent Component:** hostmetrics
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -70,6 +72,8 @@ metrics:
 
 Number of times the process has been context switched.
 
+This metric is only available on Linux.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {count} | Sum | Int | Cumulative | true |
@@ -108,13 +112,15 @@ Number of disk operations performed by the process.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
-### process.memory.physical_usage
+### process.handles
 
-[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.
+Number of handles held by the process.
+
+This metric is only available on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| {count} | Sum | Int | Cumulative | false |
 
 ### process.memory.utilization
 
@@ -124,17 +130,11 @@ Percentage of total physical memory that is used by the process.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-### process.memory.virtual_usage
-
-[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### process.open_file_descriptors
 
 Number of file descriptors in use by the process.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -142,7 +142,9 @@ Number of file descriptors in use by the process.
 
 ### process.paging.faults
 
-Number of page faults the process has made. This metric is only available on Linux.
+Number of page faults the process has made.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -156,7 +158,9 @@ Number of page faults the process has made. This metric is only available on Lin
 
 ### process.signals_pending
 
-Number of pending signals for the process. This metric is only available on Linux.
+Number of pending signals for the process.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

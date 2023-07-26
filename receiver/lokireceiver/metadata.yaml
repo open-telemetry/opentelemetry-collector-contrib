@@ -1,0 +1,11 @@
+type: loki
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions:
+  - contrib
+  - sumo
+  codeowners:
+    active: [mar4uk, kovrus, jpkrohling]

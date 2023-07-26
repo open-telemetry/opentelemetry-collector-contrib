@@ -1,0 +1,9 @@
+type: splunkenterprise
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions:
+  codeowners:
+    active: [shalper2, MovieStoreGuy]

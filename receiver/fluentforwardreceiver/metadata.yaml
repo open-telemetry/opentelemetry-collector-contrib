@@ -1,0 +1,9 @@
+type: fluentforward
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [dmitryax]

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter
 
@@ -26,7 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -51,7 +41,6 @@ func TestLogsExporter_New(t *testing.T) {
 
 	failWithMsg := func(msg string) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
-			require.Nil(t, exporter)
 			require.NotNil(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
@@ -70,10 +59,14 @@ func TestLogsExporter_New(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 
+			var err error
 			exporter, err := newLogsExporter(zap.NewNop(), test.config)
+			err = multierr.Append(err, err)
+
 			if exporter != nil {
+				err = multierr.Append(err, exporter.start(context.TODO(), nil))
 				defer func() {
-					require.NoError(t, exporter.Shutdown(context.TODO()))
+					require.NoError(t, exporter.shutdown(context.TODO()))
 				}()
 			}
 
@@ -99,13 +92,42 @@ func TestExporter_pushLogsData(t *testing.T) {
 
 		require.Equal(t, 3, items)
 	})
+	t.Run("test check resource metadata", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				require.Equal(t, "https://opentelemetry.io/schemas/1.4.0", values[8])
+				require.Equal(t, map[string]string{
+					"service.name": "test-service",
+				}, values[9])
+			}
+			return nil
+		})
+		exporter := newTestLogsExporter(t, defaultEndpoint)
+		mustPushLogsData(t, exporter, simpleLogs(1))
+	})
+	t.Run("test check scope metadata", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[10])
+				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[11])
+				require.Equal(t, "1.0.0", values[12])
+				require.Equal(t, map[string]string{
+					"lib": "clickhouse",
+				}, values[13])
+			}
+			return nil
+		})
+		exporter := newTestLogsExporter(t, defaultEndpoint)
+		mustPushLogsData(t, exporter, simpleLogs(1))
+	})
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
+	require.NoError(t, exporter.start(context.TODO(), nil))
 
-	t.Cleanup(func() { _ = exporter.Shutdown(context.TODO()) })
+	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
 	return exporter
 }
 
@@ -123,7 +145,13 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 func simpleLogs(count int) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
+	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
+	rl.Resource().Attributes().PutStr("service.name", "test-service")
 	sl := rl.ScopeLogs().AppendEmpty()
+	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
+	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
+	sl.Scope().SetVersion("1.0.0")
+	sl.Scope().Attributes().PutStr("lib", "clickhouse")
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -150,7 +178,7 @@ type testClickhouseDriver struct {
 	recorder recorder
 }
 
-func (t *testClickhouseDriver) Open(name string) (driver.Conn, error) {
+func (t *testClickhouseDriver) Open(_ string) (driver.Conn, error) {
 	return &testClickhouseDriverConn{
 		recorder: t.recorder,
 	}, nil
@@ -175,7 +203,7 @@ func (*testClickhouseDriverConn) Begin() (driver.Tx, error) {
 	return &testClickhouseDriverTx{}, nil
 }
 
-func (*testClickhouseDriverConn) CheckNamedValue(v *driver.NamedValue) error {
+func (*testClickhouseDriverConn) CheckNamedValue(_ *driver.NamedValue) error {
 	return nil
 }
 
@@ -196,7 +224,7 @@ func (t *testClickhouseDriverStmt) Exec(args []driver.Value) (driver.Result, err
 	return nil, t.recorder(t.query, args)
 }
 
-func (t *testClickhouseDriverStmt) Query(args []driver.Value) (driver.Rows, error) {
+func (t *testClickhouseDriverStmt) Query(_ []driver.Value) (driver.Rows, error) {
 	return nil, nil
 }
 

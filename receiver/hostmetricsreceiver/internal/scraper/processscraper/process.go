@@ -1,25 +1,17 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"context"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
@@ -49,28 +41,25 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
-	opts := make([]metadata.ResourceMetricsOption, 0, 6)
-	opts = append(opts,
-		metadata.WithProcessPid(int64(m.pid)),
-		metadata.WithProcessParentPid(int64(m.parentPid)),
-		metadata.WithProcessExecutableName(m.executable.name),
-		metadata.WithProcessExecutablePath(m.executable.path),
-	)
+func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Resource {
+	rb.SetProcessPid(int64(m.pid))
+	rb.SetProcessParentPid(int64(m.parentPid))
+	rb.SetProcessExecutableName(m.executable.name)
+	rb.SetProcessExecutablePath(m.executable.path)
 	if m.command != nil {
-		opts = append(opts, metadata.WithProcessCommand(m.command.command))
+		rb.SetProcessCommand(m.command.command)
 		if m.command.commandLineSlice != nil {
 			// TODO insert slice here once this is supported by the data model
 			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-			opts = append(opts, metadata.WithProcessCommandLine(strings.Join(m.command.commandLineSlice, " ")))
+			rb.SetProcessCommandLine(strings.Join(m.command.commandLineSlice, " "))
 		} else {
-			opts = append(opts, metadata.WithProcessCommandLine(m.command.commandLine))
+			rb.SetProcessCommandLine(m.command.commandLine)
 		}
 	}
 	if m.username != "" {
-		opts = append(opts, metadata.WithProcessOwner(m.username))
+		rb.SetProcessOwner(m.username)
 	}
-	return opts
+	return rb.Emit()
 }
 
 // processHandles provides a wrapper around []*process.Process
@@ -96,6 +85,7 @@ type processHandle interface {
 	NumThreads() (int32, error)
 	CreateTime() (int64, error)
 	Parent() (*process.Process, error)
+	Ppid() (int32, error)
 	PageFaults() (*process.PageFaultsStat, error)
 	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
 	NumFDs() (int32, error)
@@ -119,8 +109,8 @@ func (p *gopsProcessHandles) Len() int {
 	return len(p.handles)
 }
 
-func getProcessHandlesInternal() (processHandles, error) {
-	processes, err := process.Processes()
+func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
+	processes, err := process.ProcessesWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -129,21 +119,10 @@ func getProcessHandlesInternal() (processHandles, error) {
 }
 
 func parentPid(handle processHandle, pid int32) (int32, error) {
-	// special case for pid 0
-	if pid == 0 {
-		return 0, nil
-	}
-	parent, err := handle.Parent()
-
-	if err != nil {
-		// return pid of -1 along with error for all other problems retrieving parent pid
-		return -1, err
-	}
-
-	// if a process does not have a parent return 0
-	if parent == nil {
+	// special case for pid 0 and pid 1 in darwin
+	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
 		return 0, nil
 	}
 
-	return parent.Pid, nil
+	return handle.Ppid()
 }

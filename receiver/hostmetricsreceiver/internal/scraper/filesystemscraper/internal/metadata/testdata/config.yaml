@@ -1,15 +1,17 @@
 default:
-all_metrics:
-  system.filesystem.inodes.usage:
-    enabled: true
-  system.filesystem.usage:
-    enabled: true
-  system.filesystem.utilization:
-    enabled: true
-no_metrics:
-  system.filesystem.inodes.usage:
-    enabled: false
-  system.filesystem.usage:
-    enabled: false
-  system.filesystem.utilization:
-    enabled: false
+all_set:
+  metrics:
+    system.filesystem.inodes.usage:
+      enabled: true
+    system.filesystem.usage:
+      enabled: true
+    system.filesystem.utilization:
+      enabled: true
+none_set:
+  metrics:
+    system.filesystem.inodes.usage:
+      enabled: false
+    system.filesystem.usage:
+      enabled: false
+    system.filesystem.utilization:
+      enabled: false

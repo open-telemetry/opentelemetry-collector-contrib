@@ -1,0 +1,10 @@
+type: sqlquery
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+    development: [logs]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [dmitryax, pmcollins]

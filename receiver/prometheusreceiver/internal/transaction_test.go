@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -29,11 +18,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 const (
@@ -63,24 +53,24 @@ var (
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	assert.NoError(t, tr.Commit())
 }
 
 func TestTransactionRollbackDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	assert.NoError(t, tr.Rollback())
 }
 
 func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.UpdateMetadata(0, labels.New(), metadata.Metadata{})
 	assert.NoError(t, err)
 }
 
 func TestTransactionAppendNoTarget(t *testing.T) {
 	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0)
 	assert.Error(t, err)
 }
@@ -90,7 +80,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 		model.InstanceLabel: "localhost:8080",
 		model.JobLabel:      "test2",
 	})
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0)
 	assert.ErrorIs(t, err, errMetricNameNotFound)
 
@@ -98,7 +88,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 }
 
 func TestTransactionAppendEmptyMetricName(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test2",
@@ -109,7 +99,7 @@ func TestTransactionAppendEmptyMetricName(t *testing.T) {
 
 func TestTransactionAppendResource(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -130,6 +120,28 @@ func TestTransactionAppendResource(t *testing.T) {
 	require.Equal(t, expectedResource, gotResource)
 }
 
+func TestReceiverVersionAndNameAreAttached(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+	assert.NoError(t, tr.Commit())
+
+	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+
+	gotScope := mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope()
+	require.Equal(t, receiverName, gotScope.Name())
+	require.Equal(t, component.NewDefaultBuildInfo().Version, gotScope.Version())
+}
+
 func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 	goodLabels := labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
@@ -138,7 +150,7 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 	})
 	sink := new(consumertest.MetricsSink)
 	adjusterErr := errors.New("adjuster error")
-	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
 	assert.NoError(t, err)
 	assert.ErrorIs(t, tr.Commit(), adjusterErr)
@@ -147,7 +159,7 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestTransactionAppendDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	dupLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -165,7 +177,18 @@ func TestTransactionAppendDuplicateLabels(t *testing.T) {
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -174,12 +197,28 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	)
 
 	_, err := tr.Append(0, goodLabels, 1917, 1.0)
-	require.ErrorIs(t, err, errEmptyLeLabel)
+	require.NoError(t, err)
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	assert.Len(t, sink.AllMetrics(), 0)
 }
 
 func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -188,12 +227,62 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	)
 
 	_, err := tr.Append(0, goodLabels, 1917, 1.0)
-	require.ErrorIs(t, err, errEmptyQuantileLabel)
+	require.NoError(t, err)
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	assert.Len(t, sink.AllMetrics(), 0)
+}
+
+func TestTransactionAppendValidAndInvalid(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
+
+	// a valid counter
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+
+	// summary without quantiles, should be ignored
+	summarylabels := labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "summary_test",
+	)
+
+	_, err = tr.Append(0, summarylabels, 1917, 1.0)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+	require.Equal(t, 1, mds[0].MetricCount())
 }
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -206,7 +295,7 @@ func TestAppendExemplarWithNoMetricName(t *testing.T) {
 
 func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -219,7 +308,7 @@ func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
 
 func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -235,7 +324,7 @@ func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
 
 func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -249,7 +338,7 @@ func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
 
 func TestAppendExemplarWithNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	_, err := tr.AppendExemplar(0, nil, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
@@ -257,7 +346,7 @@ func TestAppendExemplarWithNoLabels(t *testing.T) {
 
 func TestAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	_, err := tr.AppendExemplar(0, []labels.Label{}, exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
@@ -1129,19 +1218,6 @@ func TestMetricBuilderHistogram(t *testing.T) {
 			},
 			wants: func() []pmetric.Metrics {
 				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("hist_test")
-				hist0 := m0.SetEmptyHistogram()
-				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				pt0 := hist0.DataPoints().AppendEmpty()
-				pt0.SetCount(3)
-				pt0.SetSum(100)
-				pt0.BucketCounts().FromRaw([]uint64{3})
-				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.Attributes().PutStr("foo", "bar")
-
 				return []pmetric.Metrics{md0}
 			},
 		},
@@ -1369,7 +1445,7 @@ func (tt buildTestData) run(t *testing.T) {
 	st := ts
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), featuregate.GlobalRegistry())
+		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st
@@ -1430,6 +1506,7 @@ func (s *startTimeAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
 				}
 			}
 		}

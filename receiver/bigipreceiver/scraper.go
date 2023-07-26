@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package bigipreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 
@@ -44,6 +33,7 @@ type bigipScraper struct {
 	logger   *zap.Logger
 	cfg      *Config
 	settings component.TelemetrySettings
+	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -53,7 +43,8 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		rb:       metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
@@ -179,11 +170,10 @@ func (s *bigipScraper) collectVirtualServers(virtualServerStats *models.VirtualS
 		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipVirtualServerName(virtualServerStats.NestedStats.Entries.Name.Description),
-		metadata.WithBigipVirtualServerDestination(virtualServerStats.NestedStats.Entries.Destination.Description),
-		metadata.WithBigipPoolName(virtualServerStats.NestedStats.Entries.PoolName.Description),
-	)
+	s.rb.SetBigipVirtualServerName(virtualServerStats.NestedStats.Entries.Name.Description)
+	s.rb.SetBigipVirtualServerDestination(virtualServerStats.NestedStats.Entries.Destination.Description)
+	s.rb.SetBigipPoolName(virtualServerStats.NestedStats.Entries.PoolName.Description)
+	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 }
 
 // collectPools collects pool metrics
@@ -223,9 +213,8 @@ func (s *bigipScraper) collectPools(poolStats *models.PoolStats, now pcommon.Tim
 		s.mb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipPoolName(poolStats.NestedStats.Entries.Name.Description),
-	)
+	s.rb.SetBigipPoolName(poolStats.NestedStats.Entries.Name.Description)
+	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 }
 
 // collectPoolMembers collects pool member metrics
@@ -263,11 +252,10 @@ func (s *bigipScraper) collectPoolMembers(poolMemberStats *models.PoolMemberStat
 		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipPoolMemberName(fmt.Sprintf("%s:%d", poolMemberStats.NestedStats.Entries.Name.Description, poolMemberStats.NestedStats.Entries.Port.Value)),
-		metadata.WithBigipPoolMemberIPAddress(poolMemberStats.NestedStats.Entries.IPAddress.Description),
-		metadata.WithBigipPoolName(poolMemberStats.NestedStats.Entries.PoolName.Description),
-	)
+	s.rb.SetBigipPoolMemberName(fmt.Sprintf("%s:%d", poolMemberStats.NestedStats.Entries.Name.Description, poolMemberStats.NestedStats.Entries.Port.Value))
+	s.rb.SetBigipPoolMemberIPAddress(poolMemberStats.NestedStats.Entries.IPAddress.Description)
+	s.rb.SetBigipPoolName(poolMemberStats.NestedStats.Entries.PoolName.Description)
+	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 }
 
 // collectNodes collects node metrics
@@ -305,8 +293,7 @@ func (s *bigipScraper) collectNodes(nodeStats *models.NodeStats, now pcommon.Tim
 		s.mb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithBigipNodeName(nodeStats.NestedStats.Entries.Name.Description),
-		metadata.WithBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description),
-	)
+	s.rb.SetBigipNodeName(nodeStats.NestedStats.Entries.Name.Description)
+	s.rb.SetBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description)
+	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 }

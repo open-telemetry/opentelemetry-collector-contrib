@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -42,42 +31,79 @@ func Test_replacePattern(t *testing.T) {
 		name        string
 		target      ottl.GetSetter[pcommon.Value]
 		pattern     string
-		replacement string
+		replacement ottl.StringGetter[pcommon.Value]
 		want        func(pcommon.Value)
 	}{
 		{
-			name:        "replace regex match",
-			target:      target,
-			pattern:     `passwd\=[^\s]*(\s?)`,
-			replacement: "passwd=*** ",
+			name:    "replace regex match",
+			target:  target,
+			pattern: `passwd\=[^\s]*(\s?)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "passwd=*** ", nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=*** otherarg=notsensitive key1 key2")
 			},
 		},
 		{
-			name:        "no regex match",
-			target:      target,
-			pattern:     `nomatch\=[^\s]*(\s?)`,
-			replacement: "shouldnotbeinoutput",
+			name:    "no regex match",
+			target:  target,
+			pattern: `nomatch\=[^\s]*(\s?)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "shouldnotbeinoutput", nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 			},
 		},
 		{
-			name:        "multiple regex match",
-			target:      target,
-			pattern:     `key[^\s]*(\s?)`,
-			replacement: "**** ",
+			name:    "multiple regex match",
+			target:  target,
+			pattern: `key[^\s]*(\s?)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "**** ", nil
+				},
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("application passwd=sensitivedtata otherarg=notsensitive **** **** ")
+			},
+		},
+		{
+			name:    "expand capturing groups",
+			target:  target,
+			pattern: `(\w+)=(\w+)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "$1:$2", nil
+				},
+			},
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application passwd:sensitivedtata otherarg:notsensitive key1 key2")
+			},
+		},
+		{
+			name:    "replacement with literal $",
+			target:  target,
+			pattern: `passwd\=[^\s]*(\s?)`,
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "passwd=$$$$$$ ", nil
+				},
+			},
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application passwd=$$$ otherarg=notsensitive key1 key2")
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
-
-			exprFunc, err := ReplacePattern(tt.target, tt.pattern, tt.replacement)
+			exprFunc, err := replacePattern(tt.target, tt.pattern, tt.replacement)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, scenarioValue)
@@ -103,8 +129,13 @@ func Test_replacePattern_bad_input(t *testing.T) {
 			return nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{replacement}", nil
+		},
+	}
 
-	exprFunc, err := ReplacePattern[interface{}](target, "regexp", "{replacement}")
+	exprFunc, err := replacePattern[interface{}](target, "regexp", replacement)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -123,8 +154,13 @@ func Test_replacePattern_get_nil(t *testing.T) {
 			return nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{anything}", nil
+		},
+	}
 
-	exprFunc, err := ReplacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, "{anything}")
+	exprFunc, err := replacePattern[interface{}](target, `nomatch\=[^\s]*(\s?)`, replacement)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)
@@ -143,9 +179,14 @@ func Test_replacePatterns_invalid_pattern(t *testing.T) {
 			return nil
 		},
 	}
+	replacement := &ottl.StandardStringGetter[interface{}]{
+		Getter: func(context.Context, interface{}) (interface{}, error) {
+			return "{anything}", nil
+		},
+	}
 
 	invalidRegexPattern := "*"
-	_, err := ReplacePattern[interface{}](target, invalidRegexPattern, "{anything}")
+	_, err := replacePattern[interface{}](target, invalidRegexPattern, replacement)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
@@ -18,7 +7,6 @@ import (
 	"context"
 	"math"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -26,30 +14,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
-var enableHistogramSupportGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.cumulativetodeltaprocessor.EnableHistogramSupport",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("Enables histogram conversion support"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15658"),
-	featuregate.WithRegisterRemovalVersion("v0.68.0"),
-)
-
 type cumulativeToDeltaProcessor struct {
-	includeFS               filterset.FilterSet
-	excludeFS               filterset.FilterSet
-	logger                  *zap.Logger
-	deltaCalculator         *tracking.MetricTracker
-	cancelFunc              context.CancelFunc
-	histogramSupportEnabled bool
+	includeFS       filterset.FilterSet
+	excludeFS       filterset.FilterSet
+	logger          *zap.Logger
+	deltaCalculator *tracking.MetricTracker
+	cancelFunc      context.CancelFunc
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 	p := &cumulativeToDeltaProcessor{
-		logger:                  logger,
-		deltaCalculator:         tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
-		cancelFunc:              cancel,
-		histogramSupportEnabled: enableHistogramSupportGate.IsEnabled(),
+		logger:          logger,
+		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness, config.InitialValue),
+		cancelFunc:      cancel,
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
@@ -92,10 +70,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				case pmetric.MetricTypeHistogram:
-					if !ctdp.histogramSupportEnabled {
-						return false
-					}
-
 					ms := m.Histogram()
 					if ms.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 						return false
@@ -119,6 +93,8 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+					fallthrough
 				default:
 					return false
 				}
@@ -141,7 +117,6 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
-
 	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			id := baseIdentity
@@ -150,6 +125,11 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			id.MetricValueType = dp.ValueType()
 			point := tracking.ValuePoint{
 				ObservedTimestamp: dp.Timestamp(),
+			}
+
+			if dp.Flags().NoRecordedValue() {
+				// drop points with no value
+				return true
 			}
 			if id.IsFloatVal() {
 				// Do not attempt to transform NaN values
@@ -180,12 +160,16 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
-
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()
 			id.Attributes = dp.Attributes()
+
+			if dp.Flags().NoRecordedValue() {
+				// drop points with no value
+				return true
+			}
 
 			point := tracking.ValuePoint{
 				ObservedTimestamp: dp.Timestamp(),

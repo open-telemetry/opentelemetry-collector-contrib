@@ -1,0 +1,231 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attributes
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926637000"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926637000"
+              isMonotonic: true
+          - description: Span event count by attributes
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926637000"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926637000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attributes
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926647000"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926647000"
+              isMonotonic: true
+          - description: Span event count by attributes
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926647000"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926647000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attributes
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926654000"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926654000"
+              isMonotonic: true
+          - description: Span event count by attributes
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926654000"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926654000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Span count by attributes
+            name: span.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926661000"
+                - asInt: "1"
+                  attributes:
+                    - key: span.required
+                      value:
+                        stringValue: foo
+                    - key: span.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926661000"
+              isMonotonic: true
+          - description: Span event count by attributes
+            name: spanevent.count.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678392127926661000"
+                - asInt: "4"
+                  attributes:
+                    - key: event.required
+                      value:
+                        stringValue: foo
+                    - key: event.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678392127926661000"
+              isMonotonic: true
+        scope:
+          name: otelcol/countconnector

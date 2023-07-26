@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
@@ -21,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -52,7 +42,13 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 		TraceId String
     ) CODEC(ZSTD(1)),
     AggTemp Int32 CODEC(ZSTD(1)),
-	IsMonotonic Boolean CODEC(Delta, ZSTD(1))
+	IsMonotonic Boolean CODEC(Delta, ZSTD(1)),
+	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
@@ -140,6 +136,8 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+19] = spanIDs
 			valueArgs[index+20] = int32(model.sum.AggregationTemporality())
 			valueArgs[index+21] = model.sum.IsMonotonic()
+
+			index += sumValueCounts
 		}
 	}
 
@@ -160,7 +158,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (s *sumMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
+func (s *sumMetrics) Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	sum, ok := metrics.(pmetric.Sum)
 	if !ok {
 		return fmt.Errorf("metrics param is not type of Sum")
@@ -170,8 +168,13 @@ func (s *sumMetrics) Add(metrics any, metaData *MetricsMetaData, name string, de
 		metricName:        name,
 		metricDescription: description,
 		metricUnit:        unit,
-		metadata:          metaData,
-		sum:               sum,
+		metadata: &MetricsMetaData{
+			ResAttr:    resAttr,
+			ResURL:     resURL,
+			ScopeURL:   scopeURL,
+			ScopeInstr: scopeInstr,
+		},
+		sum: sum,
 	})
 	return nil
 }

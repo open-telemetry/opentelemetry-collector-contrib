@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
@@ -23,12 +12,34 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
+func rowToMetric(row stringMap, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
+	if cfg.StartTsColumn != "" {
+		if val, found := row[cfg.StartTsColumn]; found {
+			timestamp, err := strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.StartTsColumn, val, err)
+			}
+			startTime = pcommon.Timestamp(timestamp)
+		} else {
+			return fmt.Errorf("rowToMetric: start_ts_column not found")
+		}
+	}
+	if cfg.TsColumn != "" {
+		if val, found := row[cfg.TsColumn]; found {
+			timestamp, err := strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.TsColumn, val, err)
+			}
+			ts = pcommon.Timestamp(timestamp)
+		} else {
+			return fmt.Errorf("rowToMetric: ts_column not found")
+		}
+	}
 	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)
 	value, found := row[cfg.ValueColumn]
 	if !found {
@@ -96,13 +107,13 @@ func setDataPointValue(cfg MetricCfg, str string, dest pmetric.NumberDataPoint) 
 	case MetricValueTypeUnspecified, MetricValueTypeInt:
 		val, err := strconv.Atoi(str)
 		if err != nil {
-			return fmt.Errorf("setDataPointValue: error converting to integer: %w", err)
+			return fmt.Errorf("setDataPointValue: col %q: error converting to integer: %w", cfg.ValueColumn, err)
 		}
 		dest.SetIntValue(int64(val))
 	case MetricValueTypeDouble:
 		val, err := strconv.ParseFloat(str, 64)
 		if err != nil {
-			return fmt.Errorf("setDataPointValue: error converting to double: %w", err)
+			return fmt.Errorf("setDataPointValue: col %q: error converting to double: %w", cfg.ValueColumn, err)
 		}
 		dest.SetDoubleValue(val)
 	}

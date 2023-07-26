@@ -1,0 +1,9 @@
+type: prometheusremotewrite
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, aws, observiq]
+  codeowners:
+    active: [Aneurysm9, rapphil]

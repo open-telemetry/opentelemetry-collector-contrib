@@ -1,0 +1,9 @@
+type: k8s_events
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [dmitryax]

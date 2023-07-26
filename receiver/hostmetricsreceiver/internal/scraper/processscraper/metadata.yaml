@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/process
+type: hostmetricsreceiver/process
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
@@ -90,37 +92,9 @@ metrics:
       value_type: double
     attributes: [state]
 
-  process.memory.physical_usage:
-    enabled: false
-    description: "[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use."
-    warnings:
-      if_configured: >-
-        The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See
-        https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
-        for more details.
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-
   process.memory.usage:
     enabled: true
     description: The amount of physical memory in use.
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-
-  process.memory.virtual_usage:
-    enabled: false
-    description: "[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size."
-    warnings:
-      if_configured: >-
-        The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See 
-        https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
-        for more details.
     unit: By
     sum:
       value_type: int
@@ -155,7 +129,8 @@ metrics:
 
   process.paging.faults:
     enabled: false
-    description: Number of page faults the process has made. This metric is only available on Linux.
+    description: Number of page faults the process has made.
+    extended_documentation: This metric is only available on Linux.
     unit: "{faults}"
     sum:
       value_type: int
@@ -165,7 +140,8 @@ metrics:
 
   process.signals_pending:
     enabled: false
-    description: Number of pending signals for the process. This metric is only available on Linux.
+    description: Number of pending signals for the process.
+    extended_documentation: This metric is only available on Linux.
     unit: "{signals}"
     sum:
       value_type: int
@@ -184,6 +160,17 @@ metrics:
   process.open_file_descriptors:
     enabled: false
     description: Number of file descriptors in use by the process.
+    extended_documentation: This metric is only available on Linux.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.handles:
+    enabled: false
+    description: Number of handles held by the process.
+    extended_documentation: This metric is only available on Windows.
     unit: '{count}'
     sum:
       value_type: int
@@ -193,6 +180,7 @@ metrics:
   process.context_switches:
     enabled: false
     description: Number of times the process has been context switched.
+    extended_documentation: This metric is only available on Linux.
     unit: '{count}'
     sum:
       value_type: int

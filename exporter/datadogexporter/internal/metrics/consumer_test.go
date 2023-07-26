@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics
 
@@ -18,10 +7,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -38,11 +27,11 @@ func (t testProvider) Source(context.Context) (source.Source, error) {
 	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
 }
 
-func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
-	tr, err := translator.New(logger,
-		translator.WithHistogramMode(translator.HistogramModeDistributions),
-		translator.WithNumberMode(translator.NumberModeCumulativeToDelta),
-		translator.WithFallbackSourceProvider(testProvider("fallbackHostname")),
+func newTranslator(t *testing.T, logger *zap.Logger) *metrics.Translator {
+	tr, err := metrics.NewTranslator(logger,
+		metrics.WithHistogramMode(metrics.HistogramModeDistributions),
+		metrics.WithNumberMode(metrics.NumberModeCumulativeToDelta),
+		metrics.WithFallbackSourceProvider(testProvider("fallbackHostname")),
 	)
 	require.NoError(t, err)
 	return tr
@@ -71,10 +60,11 @@ func TestRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	metadata, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	var runningHostnames []string
-	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
+	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}, metadata) {
 		for _, res := range metric.Resources {
 			runningHostnames = append(runningHostnames, *res.Name)
 		}
@@ -114,9 +104,10 @@ func TestTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	metadata, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
-	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
+	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{}, metadata)
 	var runningTags []string
 	var runningHostnames []string
 	for _, metric := range runningMetrics {
@@ -132,15 +123,16 @@ func TestTagsMetrics(t *testing.T) {
 }
 
 func TestConsumeAPMStats(t *testing.T) {
+	var md metrics.Metadata
 	c := NewConsumer()
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
 	}
 	require.Len(t, c.as, len(testutil.StatsPayloads))
 	require.ElementsMatch(t, c.as, testutil.StatsPayloads)
-	_, _, out := c.All(0, component.BuildInfo{}, []string{})
+	_, _, out := c.All(0, component.BuildInfo{}, []string{}, md)
 	require.ElementsMatch(t, out, testutil.StatsPayloads)
-	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"})
+	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"}, md)
 	var copies []pb.ClientStatsPayload
 	for _, sp := range testutil.StatsPayloads {
 		sp.Tags = append(sp.Tags, "extra:key")

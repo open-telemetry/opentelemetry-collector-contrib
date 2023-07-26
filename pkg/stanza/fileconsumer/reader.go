@@ -1,48 +1,54 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type readerConfig struct {
-	fingerprintSize int
-	maxLogSize      int
-	emit            EmitFunc
+	fingerprintSize         int
+	maxLogSize              int
+	emit                    emit.Callback
+	includeFileName         bool
+	includeFilePath         bool
+	includeFileNameResolved bool
+	includeFilePathResolved bool
 }
 
 // Reader manages a single file
+//
+// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
 type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
-	splitFunc bufio.SplitFunc
-	encoding  helper.Encoding
+	lineSplitFunc bufio.SplitFunc
+	splitFunc     bufio.SplitFunc
+	encoding      helper.Encoding
+	processFunc   emit.Callback
 
-	Fingerprint    *Fingerprint
+	Fingerprint    *fingerprint.Fingerprint
 	Offset         int64
 	generation     int
 	file           *os.File
-	fileAttributes *FileAttributes
+	FileAttributes map[string]any
+	eof            bool
+
+	HeaderFinalized bool
+	headerReader    *header.Reader
 }
 
 // offsetToEnd sets the starting offset
@@ -62,7 +68,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -72,23 +78,50 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		default:
 		}
 
-		ok := scanner.Scan()
+		ok := s.Scan()
 		if !ok {
-			if err := scanner.getError(); err != nil {
+			r.eof = true
+			if err := s.Error(); err != nil {
+				// If Scan returned an error then we are not guaranteed to be at the end of the file
+				r.eof = false
 				r.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
 		}
 
-		token, err := r.encoding.Decode(scanner.Bytes())
+		token, err := r.encoding.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
-		} else {
-			r.emit(ctx, r.fileAttributes, token)
+		} else if err := r.processFunc(ctx, token, r.FileAttributes); err != nil {
+			if errors.Is(err, header.ErrEndOfHeader) {
+				r.finalizeHeader()
+
+				// Now that the header is consumed, use the normal split and process functions.
+				// Recreate the scanner with the normal split func.
+				// Do not use the updated offset from the old scanner, as the most recent token
+				// could be split differently with the new splitter.
+				r.splitFunc = r.lineSplitFunc
+				r.processFunc = r.emit
+				if _, err = r.file.Seek(r.Offset, 0); err != nil {
+					r.Errorw("Failed to seek post-header", zap.Error(err))
+					return
+				}
+				s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
+			} else {
+				r.Errorw("process: %w", zap.Error(err))
+			}
 		}
 
-		r.Offset = scanner.Pos()
+		r.Offset = s.Pos()
 	}
+}
+
+func (r *Reader) finalizeHeader() {
+	if err := r.headerReader.Stop(); err != nil {
+		r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+	}
+	r.headerReader = nil
+	r.HeaderFinalized = true
 }
 
 // Close will close the file
@@ -96,6 +129,12 @@ func (r *Reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
+		}
+	}
+
+	if r.headerReader != nil {
+		if err := r.headerReader.Stop(); err != nil {
+			r.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
 }

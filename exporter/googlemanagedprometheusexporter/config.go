@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlemanagedprometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
 
@@ -20,6 +9,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Config defines configuration for Google Cloud Managed Service for Prometheus exporter.
@@ -42,8 +32,18 @@ type GMPConfig struct {
 type MetricConfig struct {
 	// Prefix configures the prefix of metrics sent to GoogleManagedPrometheus.  Defaults to prometheus.googleapis.com.
 	// Changing this prefix is not recommended, as it may cause metrics to not be queryable with promql in the Cloud Monitoring UI.
-	Prefix       string                 `mapstructure:"prefix"`
-	ClientConfig collector.ClientConfig `mapstructure:",squash"`
+	Prefix             string                     `mapstructure:"prefix"`
+	ClientConfig       collector.ClientConfig     `mapstructure:",squash"`
+	ExtraMetricsConfig ExtraMetricsConfig         `mapstructure:"extra_metrics_config"`
+	ResourceFilters    []collector.ResourceFilter `mapstructure:"resource_filters"`
+}
+
+// ExtraMetricsConfig controls the inclusion of additional metrics.
+type ExtraMetricsConfig struct {
+	// Add `target_info` metric based on the resource. On by default.
+	EnableTargetInfo bool `mapstructure:"enable_target_info"`
+	// Add `otel_scope_info` metric and `scope_name`/`scope_version` attributes to all other metrics. On by default.
+	EnableScopeInfo bool `mapstructure:"enable_scope_info"`
 }
 
 func (c *GMPConfig) toCollectorConfig() collector.Config {
@@ -65,6 +65,22 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	cfg.ProjectID = c.ProjectID
 	cfg.UserAgent = c.UserAgent
 	cfg.MetricConfig.ClientConfig = c.MetricConfig.ClientConfig
+	cfg.MetricConfig.ResourceFilters = c.MetricConfig.ResourceFilters
+
+	// add target_info and scope_info metrics
+	extraMetricsFuncs := make([]func(m pmetric.Metrics), 0)
+	if c.MetricConfig.ExtraMetricsConfig.EnableTargetInfo {
+		extraMetricsFuncs = append(extraMetricsFuncs, googlemanagedprometheus.AddTargetInfoMetric)
+	}
+	if c.MetricConfig.ExtraMetricsConfig.EnableScopeInfo {
+		extraMetricsFuncs = append(extraMetricsFuncs, googlemanagedprometheus.AddScopeInfoMetric)
+	}
+	cfg.MetricConfig.ExtraMetrics = func(m pmetric.Metrics) pmetric.ResourceMetricsSlice {
+		for _, extraMetricsFunc := range extraMetricsFuncs {
+			extraMetricsFunc(m)
+		}
+		return m.ResourceMetrics()
+	}
 	return cfg
 }
 

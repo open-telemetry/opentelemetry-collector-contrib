@@ -9,17 +9,55 @@ on:
   pull_request:
 
 jobs:
-  kubernetes-test:
+  docker-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
+      - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19   
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Build Docker Image
+        run: |
+          make docker-otelcontribcol
+      - name: export image to tar
+        run: |
+          docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: otelcontribcol
+          path: /tmp/otelcontribcol.tar
+  kubernetes-test:
+    env:
+      KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
+    strategy:
+      matrix:
+        k8s-version: ["v1.26.0", "v1.25.3", "v1.24.7", "v1.23.13"]
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ~1.19.11
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -29,51 +67,29 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
-      - name: Build Collector
-        run: make otelcontribcol
-      - name: Build Docker Image
-        run: |
-            make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
-      - name: Set up Helm
-        uses: azure/setup-helm@v3.5
-        with:
-          version: v3.9.0
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.3.0
       - name: Create kind cluster
-        uses: helm/kind-action@v1.5.0
-      - name: Check kind
+        uses: helm/kind-action@v1.8.0
+        with:
+          node_image: kindest/node:${{ matrix.k8s-version }}
+          kubectl_version: ${{ matrix.k8s-version }}
+          cluster_name: kind
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: otelcontribcol
+          path: /tmp
+      - name: Load Docker image
         run: |
-          kubectl cluster-info --context kind-chart-testing
-          kubectl get node
-          docker ps -a --filter label=io.x-k8s.kind.cluster=chart-testing
+          docker load --input /tmp/otelcontribcol.tar
       - name: Kind load image
         run: |
-          kind load docker-image otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --name chart-testing
-      - name: Add Dependencies
-        shell: bash
+          kind load docker-image otelcontribcol:latest --name kind
+      - name: run k8sclusterreceiver e2e tests
         run: |
-            helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
-      - uses: actions/checkout@v3
-        with:
-          repository: 'open-telemetry/opentelemetry-helm-charts'
-          path: opentelemetry-helm-charts
-      - name: Helm install collector
-        run: helm install test --set image.tag=$GITHUB_SHA -f .github/workflows/e2e/k8s/collector-helm-values.yml opentelemetry-helm-charts/charts/opentelemetry-collector
-      - name: check collector status
-        run: |
-          kubectl wait --for=condition=Ready --timeout=60s pod/test-opentelemetry-collector-0
-      - name: start telemetrygen job
-        run: |
-          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-job.yml
-      - name: check telemetrygen job status
-        run: |
-          kubectl wait --for=condition=Complete --timeout=60s job/test-telemetrygen
-      - name: copy trace output
-        run: |
-          kubectl cp -c filecp default/test-opentelemetry-collector-0:tmp/trace.json processor/k8sattributesprocessor/testdata/trace.json
-      - name: run e2e test to check output
+          cd receiver/k8sclusterreceiver
+          go test -v --tags=e2e
+      - name: run k8sattributesprocessor e2e tests
         run: |    
           cd processor/k8sattributesprocessor
           go test -v --tags=e2e
+

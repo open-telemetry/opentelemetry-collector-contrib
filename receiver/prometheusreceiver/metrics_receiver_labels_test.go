@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -21,7 +10,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -41,7 +29,7 @@ func TestExternalLabels(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	})
 }
@@ -131,7 +119,7 @@ func TestLabelLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelLimit = 5
@@ -254,7 +242,7 @@ func TestLabelNameLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelNameLengthLimit = 20
@@ -290,7 +278,7 @@ func TestLabelValueLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		// set label name limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelValueLengthLimit = 25
@@ -462,7 +450,7 @@ func TestEmptyLabelValues(t *testing.T) {
 			validateFunc: verifyEmptyLabelValuesTarget2,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 const honorLabelsTarget = `
@@ -553,7 +541,7 @@ func TestEmptyLabels(t *testing.T) {
 			validateFunc: verifyEmptyLabelsTarget1,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func TestHonorLabelsFalseConfig(t *testing.T) {
@@ -567,7 +555,7 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
@@ -609,7 +597,7 @@ func TestHonorLabelsTrueConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		// set label name limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.HonorLabels = true
@@ -635,7 +623,7 @@ func TestRelabelJobInstance(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -704,7 +692,7 @@ func TestTargetInfoResourceAttributes(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {

@@ -1,0 +1,9 @@
+type: pprof
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [core, contrib, splunk, observiq, sumo, aws, redhat]
+  codeowners:
+    active: [MovieStoreGuy]

@@ -1,4 +1,13 @@
-name: saphanareceiver
+type: saphana
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [dehaansa]
+
 resource_attributes:
   saphana.host:
     type: string

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
@@ -37,6 +26,7 @@ type redisScraper struct {
 	client   client
 	redisSvc *redisSvc
 	settings component.TelemetrySettings
+	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 	uptime   time.Duration
 }
@@ -46,7 +36,7 @@ const redisMaxDbs = 16 // Maximum possible number of redis databases
 func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
-		Password: cfg.Password,
+		Password: string(cfg.Password),
 		Network:  cfg.Transport,
 	}
 
@@ -62,10 +52,11 @@ func newRedisScraperWithClient(client client, settings receiver.CreateSettings, 
 		client:   client,
 		redisSvc: newRedisSvc(client),
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		rb:       metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 	return scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		rs.Scrape,
 		scraperhelper.WithShutdown(rs.shutdown),
 	)
@@ -104,7 +95,8 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordRoleMetrics(now, inf)
 	rs.recordCmdStatsMetrics(now, inf)
-	return rs.mb.Emit(metadata.WithRedisVersion(rs.getRedisVersion(inf))), nil
+	rs.rb.SetRedisVersion(rs.getRedisVersion(inf))
+	return rs.mb.Emit(metadata.WithResource(rs.rb.Emit())), nil
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.

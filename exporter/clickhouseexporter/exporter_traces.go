@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -22,8 +11,9 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -38,17 +28,8 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = createTracesTable(cfg, client); err != nil {
 		return nil, err
 	}
 
@@ -60,8 +41,16 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *tracesExporter) Shutdown(_ context.Context) error {
+func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	return createTracesTable(ctx, e.cfg, e.client)
+}
+
+// shutdown will shut down the exporter.
+func (e *tracesExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -88,6 +77,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			}
 			for j := 0; j < spans.ScopeSpans().Len(); j++ {
 				rs := spans.ScopeSpans().At(j).Spans()
+				scopeName := spans.ScopeSpans().At(j).Scope().Name()
+				scopeVersion := spans.ScopeSpans().At(j).Scope().Version()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					spanAttr := attributesToMap(r.Attributes())
@@ -104,6 +95,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 						traceutil.SpanKindStr(r.Kind()),
 						serviceName,
 						resAttr,
+						scopeName,
+						scopeVersion,
 						spanAttr,
 						r.EndTimestamp().AsTime().Sub(r.StartTimestamp().AsTime()).Nanoseconds(),
 						traceutil.StatusCodeStr(status.Code()),
@@ -125,7 +118,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert traces", zap.Int("records", td.SpanCount()),
+	e.logger.Debug("insert traces", zap.Int("records", td.SpanCount()),
 		zap.String("cost", duration.String()))
 	return err
 }
@@ -175,6 +168,8 @@ CREATE TABLE IF NOT EXISTS %s (
      SpanKind LowCardinality(String) CODEC(ZSTD(1)),
      ServiceName LowCardinality(String) CODEC(ZSTD(1)),
      ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+     ScopeName String CODEC(ZSTD(1)),
+     ScopeVersion String CODEC(ZSTD(1)),
      SpanAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      Duration Int64 CODEC(ZSTD(1)),
      StatusCode LowCardinality(String) CODEC(ZSTD(1)),
@@ -212,7 +207,9 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SpanName,
                         SpanKind,
                         ServiceName,
-                        ResourceAttributes,
+					    ResourceAttributes,
+						ScopeName,
+						ScopeVersion,
                         SpanAttributes,
                         Duration,
                         StatusCode,
@@ -225,6 +222,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Links.TraceState,
                         Links.Attributes
                         ) VALUES (
+                                  ?,
+                                  ?,
                                   ?,
                                   ?,
                                   ?,
@@ -274,14 +273,14 @@ GROUP BY TraceId;
 `
 )
 
-func createTracesTable(cfg *Config, db *sql.DB) error {
-	if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
+func createTracesTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateTracesTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traces table sql: %w", err)
 	}
-	if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+	if _, err := db.ExecContext(ctx, renderCreateTraceIDTsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traceIDTs table sql: %w", err)
 	}
-	if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+	if _, err := db.ExecContext(ctx, renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create traceIDTs view sql: %w", err)
 	}
 	return nil

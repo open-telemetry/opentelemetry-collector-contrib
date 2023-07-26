@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
@@ -25,7 +14,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 type k8sobjectsreceiver struct {
@@ -64,7 +58,7 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 	}, nil
 }
 
-func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
+func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
 	kr.setting.Logger.Info("Object Receiver started")
 
 	for _, object := range kr.objects {
@@ -114,21 +108,28 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 	ticker := NewTicker(config.Interval)
+	listOption := metav1.ListOptions{
+		FieldSelector: config.FieldSelector,
+		LabelSelector: config.LabelSelector,
+	}
+
+	if config.ResourceVersion != "" {
+		listOption.ResourceVersion = config.ResourceVersion
+		listOption.ResourceVersionMatch = metav1.ResourceVersionMatchExact
+	}
+
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			objects, err := resource.List(ctx, metav1.ListOptions{
-				FieldSelector: config.FieldSelector,
-				LabelSelector: config.LabelSelector,
-			})
+			objects, err := resource.List(ctx, listOption)
 			if err != nil {
 				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
 			} else if len(objects.Items) > 0 {
-				logs := pullObjectsToLogData(objects, config)
+				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, typeStr, logs.LogRecordCount(), err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logs.LogRecordCount(), err)
 			}
 		case <-stopperChan:
 			return
@@ -145,10 +146,14 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	watch, err := resource.Watch(ctx, metav1.ListOptions{
-		FieldSelector: config.FieldSelector,
-		LabelSelector: config.LabelSelector,
-	})
+	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+		return resource.Watch(ctx, metav1.ListOptions{
+			FieldSelector: config.FieldSelector,
+			LabelSelector: config.LabelSelector,
+		})
+	}
+
+	watch, err := watch.NewRetryWatcher(config.ResourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
 		return
@@ -162,11 +167,11 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
-			logs := watchObjectsToLogData(&data, config)
+			logs := watchObjectsToLogData(&data, time.Now(), config)
 
 			obsCtx := kr.obsrecv.StartLogsOp(ctx)
 			err := kr.consumer.ConsumeLogs(obsCtx, logs)
-			kr.obsrecv.EndLogsOp(obsCtx, typeStr, 1, err)
+			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, 1, err)
 		case <-stopperChan:
 			watch.Stop()
 			return

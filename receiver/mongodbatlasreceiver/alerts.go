@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -43,7 +32,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
@@ -91,8 +79,6 @@ type alertsReceiver struct {
 	pageSize      int64
 	maxPages      int64
 	doneChan      chan bool
-	id            component.ID  // ID of the receiver component
-	storageID     *component.ID // ID of the storage extension component
 	storageClient storage.Client
 }
 
@@ -115,22 +101,20 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 
 	recv := &alertsReceiver{
 		addr:          cfg.Endpoint,
-		secret:        cfg.Secret,
+		secret:        string(cfg.Secret),
 		tlsSettings:   cfg.TLS,
 		consumer:      consumer,
 		mode:          cfg.Mode,
 		projects:      cfg.Projects,
 		retrySettings: baseConfig.RetrySettings,
 		publicKey:     baseConfig.PublicKey,
-		privateKey:    baseConfig.PrivateKey,
+		privateKey:    string(baseConfig.PrivateKey),
 		wg:            &sync.WaitGroup{},
 		pollInterval:  baseConfig.Alerts.PollInterval,
 		maxPages:      baseConfig.Alerts.MaxPages,
 		pageSize:      baseConfig.Alerts.PageSize,
 		doneChan:      make(chan bool, 1),
 		logger:        params.Logger,
-		id:            params.ID,
-		storageID:     baseConfig.StorageID,
 	}
 
 	if recv.mode == alertModePoll {
@@ -138,28 +122,25 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 		return recv, nil
 	}
 	s := &http.Server{
-		TLSConfig: tlsConfig,
-		Handler:   http.HandlerFunc(recv.handleRequest),
+		TLSConfig:         tlsConfig,
+		Handler:           http.HandlerFunc(recv.handleRequest),
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	recv.server = s
 	return recv, nil
 }
 
-func (a *alertsReceiver) Start(ctx context.Context, host component.Host) error {
+func (a *alertsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
 	if a.mode == alertModePoll {
-		return a.startPolling(ctx, host)
+		return a.startPolling(ctx, storageClient)
 	}
 	return a.startListening(ctx, host)
 }
 
-func (a *alertsReceiver) startPolling(ctx context.Context, host component.Host) error {
+func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage.Client) error {
 	a.logger.Debug("starting alerts receiver in retrieval mode")
-	storageClient, err := adapter.GetStorageClient(ctx, host, a.storageID, a.id)
-	if err != nil {
-		return fmt.Errorf("failed to set up storage: %w", err)
-	}
 	a.storageClient = storageClient
-	err = a.syncPersistence(ctx)
+	err := a.syncPersistence(ctx)
 	if err != nil {
 		a.logger.Error("there was an error syncing the receiver with checkpoint", zap.Error(err))
 	}

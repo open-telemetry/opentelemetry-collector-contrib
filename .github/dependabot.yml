@@ -2,879 +2,1103 @@
 
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/cmd/configschema"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/cmd/mdatagen"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/opampsupervisor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/cmd/otelcontribcol"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/cmd/oteltestbedcol"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/cmd/telemetrygen"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/cmd/tracegen"
-    schedule:
-      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/confmap/provider/s3provider"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/connector/countconnector"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/connector/exceptionsconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/connector/routingconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/connector/servicegraphconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/connector/spanmetricsconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/examples/demo/client"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/examples/demo/server"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/alibabacloudlogserviceexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/awscloudwatchlogsexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/awsemfexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/awskinesisexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/awss3exporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/awsxrayexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/azuredataexplorerexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/azuremonitorexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/carbonexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/cassandraexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/clickhouseexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/coralogixexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/datadogexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/datasetexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/dynatraceexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/elasticsearchexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/f5cloudexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/fileexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlecloudexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlecloudpubsubexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlemanagedprometheusexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/influxdbexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/instanaexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/jaegerexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/jaegerthrifthttpexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/kafkaexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/loadbalancingexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/logicmonitorexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/logzioexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/lokiexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/mezmoexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/opencensusexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/opensearchexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/parquetexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/prometheusexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/prometheusremotewriteexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/pulsarexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/sapmexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/sentryexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/signalfxexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/skywalkingexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/splunkhecexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/sumologicexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/syslogexporter"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/tanzuobservabilityexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/tencentcloudlogserviceexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/exporter/zipkinexporter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/asapauthextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/awsproxy"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/basicauthextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/extension/fluentbitextension"
+    directory: "/extension/encodingextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/headerssetterextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/healthcheckextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/httpforwarder"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/jaegerremotesampling"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/oauth2clientauthextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/observer"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/dockerobserver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/ecsobserver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/ecstaskobserver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/hostobserver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/k8sobserver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/oidcauthextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/pprofextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/sigv4authextension"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/extension/storage"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/awsutil"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/containerinsight"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/cwlogs"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/ecsutil"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/k8s"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/metrics"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/proxy"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/xray"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/xray/testdata/sampleapp"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/xray/testdata/sampleserver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/common"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/coreinternal"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/docker"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/filter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/k8sconfig"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/internal/k8stest"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/kubelet"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/metadataproviders"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/sharedcomponent"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/splunk"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/batchperresourceattr"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/batchpersignal"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/experimentalmetricmetadata"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/ottl"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/pdatatest"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/pdatautil"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/resourcetotelemetry"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/stanza"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/jaeger"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/loki"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/opencensus"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/prometheus"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/prometheusremotewrite"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/signalfx"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/zipkin"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/pkg/winperfcounters"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/attributesprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/cumulativetodeltaprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/datadogprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/deltatorateprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/filterprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/groupbyattrsprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/groupbytraceprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/k8sattributesprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/logstransformprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/metricsgenerationprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/metricstransformprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/probabilisticsamplerprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/redactionprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/processor/remoteobserverprocessor"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/resourcedetectionprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/resourceprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/routingprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/schemaprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/servicegraphprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/spanmetricsprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/spanprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/tailsamplingprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/processor/transformprocessor"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/activedirectorydsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/aerospikereceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/apachereceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/apachesparkreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/awscloudwatchmetricsreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/awscloudwatchreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/awscontainerinsightreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/awsecscontainermetricsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/awsfirehosereceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/awsxrayreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/azureblobreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/azureeventhubreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/azuremonitorreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/bigipreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/carbonreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/chronyreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/cloudflarereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/cloudfoundryreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/collectdreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/couchdbreceiver"
     schedule:
       interval: "weekly"
- - package-ecosystem: "gomod"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/datadogreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/dockerstatsreceiver"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/dotnetdiagnosticsreceiver"
-    schedule:
-      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/elasticsearchreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/expvarreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/filelogreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/filereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/filestatsreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/flinkmetricsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/fluentforwardreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/googlecloudpubsubreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/googlecloudspannerreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/haproxyreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/hostmetricsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/httpcheckreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/iisreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/influxdbreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/jaegerreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/jmxreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/journaldreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/k8sclusterreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/k8seventsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/k8sobjectsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/kafkametricsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/kafkareceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/kubeletstatsreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/lokireceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/memcachedreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/mongodbatlasreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/mongodbreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/mysqlreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/nginxreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/nsxtreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/opencensusreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/oracledbreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/otlpjsonfilereceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/podmanreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/postgresqlreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/prometheusexecreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/promtailreceiver"
-    schedule:
-      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/pulsarreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/purefareceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/purefbreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/rabbitmqreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/receivercreator"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/redisreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/riakreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/saphanareceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/sapmreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/signalfxreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/simpleprometheusreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/simpleprometheusreceiver/examples/federation/prom-counter"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/skywalkingreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/snmpreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/snowflakereceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/solacereceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/splunkenterprisereceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/splunkhecreceiver"
     schedule:
       interval: "weekly"
+      day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/sqlqueryreceiver"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/sqlserverreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/statsdreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/syslogreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/tcplogreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/udplogreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/vcenterreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/wavefrontreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/windowseventlogreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/windowsperfcountersreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/zipkinreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/zookeeperreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/testbed"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/testbed/mockdatasenders/mockdatadogagentexporter"
-    schedule:
-      interval: "weekly"
+      day: "wednesday"

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
@@ -21,9 +10,10 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -38,17 +28,8 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-
-	if err := createDatabase(cfg); err != nil {
-		return nil, err
-	}
-
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = createLogsTable(cfg, client); err != nil {
 		return nil, err
 	}
 
@@ -60,8 +41,16 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}, nil
 }
 
-// Shutdown will shutdown the exporter.
-func (e *logsExporter) Shutdown(_ context.Context) error {
+func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	if err := createDatabase(ctx, e.cfg); err != nil {
+		return err
+	}
+
+	return createLogsTable(ctx, e.cfg, e.client)
+}
+
+// shutdown will shut down the exporter.
+func (e *logsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -82,12 +71,17 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
+			resURL := logs.SchemaUrl()
 			resAttr := attributesToMap(res.Attributes())
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
+				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
+				scopeName := logs.ScopeLogs().At(j).Scope().Name()
+				scopeVersion := logs.ScopeLogs().At(j).Scope().Version()
+				scopeAttr := attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					logAttr := attributesToMap(r.Attributes())
@@ -100,7 +94,12 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						int32(r.SeverityNumber()),
 						serviceName,
 						r.Body().AsString(),
+						resURL,
 						resAttr,
+						scopeURL,
+						scopeName,
+						scopeVersion,
+						scopeAttr,
 						logAttr,
 					)
 					if err != nil {
@@ -112,7 +111,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})
 	duration := time.Since(start)
-	e.logger.Info("insert logs", zap.Int("records", ld.LogRecordCount()),
+	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
 }
@@ -138,11 +137,18 @@ CREATE TABLE IF NOT EXISTS %s (
      SeverityNumber Int32 CODEC(ZSTD(1)),
      ServiceName LowCardinality(String) CODEC(ZSTD(1)),
      Body String CODEC(ZSTD(1)),
+     ResourceSchemaUrl String CODEC(ZSTD(1)),
      ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
+     ScopeSchemaUrl String CODEC(ZSTD(1)),
+     ScopeName String CODEC(ZSTD(1)),
+     ScopeVersion String CODEC(ZSTD(1)),
+     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      LogAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.001) GRANULARITY 1,
      INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+     INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+     INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
@@ -162,9 +168,19 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SeverityNumber,
                         ServiceName,
                         Body,
+                        ResourceSchemaUrl,
                         ResourceAttributes,
+                        ScopeSchemaUrl,
+                        ScopeName,
+                        ScopeVersion,
+                        ScopeAttributes,
                         LogAttributes
                         ) VALUES (
+                                  ?,
+                                  ?,
+                                  ?,
+                                  ?,
+                                  ?,
                                   ?,
                                   ?,
                                   ?,
@@ -182,43 +198,36 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	dsn, err := cfg.buildDSN(cfg.Database)
-	if err != nil {
-		return nil, err
-	}
-	db, err := sql.Open(driverName, dsn)
+	db, err := cfg.buildDB(cfg.Database)
 	if err != nil {
 		return nil, err
 	}
 	return db, nil
 }
 
-func createDatabase(cfg *Config) error {
+func createDatabase(ctx context.Context, cfg *Config) error {
+	// use default database to create new database
 	if cfg.Database == defaultDatabase {
 		return nil
 	}
-	// use default database to create new database
-	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
+
+	db, err := cfg.buildDB(defaultDatabase)
 	if err != nil {
 		return err
-	}
-	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
-	if err != nil {
-		return fmt.Errorf("sql.Open:%w", err)
 	}
 	defer func() {
 		_ = db.Close()
 	}()
 	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
-	_, err = db.Exec(query)
+	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
 	}
 	return nil
 }
 
-func createLogsTable(cfg *Config, db *sql.DB) error {
-	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
+	if _, err := db.ExecContext(ctx, renderCreateLogsTableSQL(cfg)); err != nil {
 		return fmt.Errorf("exec create logs table sql: %w", err)
 	}
 	return nil

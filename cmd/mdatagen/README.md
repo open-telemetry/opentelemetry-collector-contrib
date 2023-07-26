@@ -1,37 +1,56 @@
 # Metadata Generator
 
-Receivers can contain a `metadata.yaml` file that documents the metrics that may be emitted by the receiver.
+Every component's documentation should include a brief description of the component and guidance on how to use it.
+There is also some information about the component (or metadata) that should be included to help end-users understand the current state of the component and whether it is right for their use case.
+Examples of this metadata about a component are:
 
-Current examples:
+* its stability level
+* the distributions containing it
+* the types of pipelines it supports
+* metrics emitted in the case of a scraping receiver
 
-* hostmetricsreceiver scrapers like the [cpuscraper](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/metadata.yaml)
+The metadata generator defines a schema for specifying this information to ensure it is complete and well-formed.
+The metadata generator is then able to ingest the metadata, validate it against the schema and produce documentation in a standardized format.
+An example of how this generated documentation looks can be found in [documentation.md](./documentation.md).
 
-See [metric-metadata.yaml](metric-metadata.yaml) for file format documentation.
+## Using the Metadata Generator
 
-If adding a new receiver a `doc.go` file should also be added to trigger the generation. See below for details.
+In order for a component to benefit from the metadata generator (`mdatagen`) these requirements need to be met:
+1. A `metadata.yaml` file containing the metadata needs to be included in the component
+2. The component should declare a `go:generate mdatagen` directive which tells `mdatagen` what to generate
 
-## Generating
+As an example, here is a minimal `metadata.yaml` for the [OTLP receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver):
+```yaml
+type: otlp
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+    stable: [metrics, traces]
+```
 
-`make generate` triggers the following actions:
+Detailed information about the schema of `metadata.yaml` can be found in [metadata-schema.yaml](./metadata-schema.yaml).
 
-1. `cd cmd/mdatagen && $(GOCMD) install .` to install `mdatagen` tool in`GOBIN`
+The `go:generate mdatagen` directive is usually defined in a `doc.go` file in the same package as the component, for example:
+```go
+//go:generate mdatagen metadata.yaml
 
-2. All `go:generate mdatagen` directives that are usually defined in `doc.go` files of the metric scrapers will be 
-   executed. For example,
-   [/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/doc.go](../../receiver/hostmetricsreceiver/internal/scraper/cpuscraper/doc.go)
-   runs `mdatagen` for the [metadata.yaml](../../receiver/hostmetricsreceiver/internal/scraper/cpuscraper/metadata.yaml)
-   which generates the metrics builder code in
-   [internal/metadata](../../receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata)
-   and [documentation.md](../../receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata) with
-   generated documentation about emitted metrics.
+package main
+```
 
-## Development
+Below are some more examples that can be used for reference:
 
-In order to introduce support of a new functionality in metadata.yaml:
+* The ElasticSearch receiver has an extensive [metadata.yaml](../../receiver/elasticsearchreceiver/metadata.yaml)
+* The host metrics receiver has internal subcomponents, each with their own `metadata.yaml` and `doc.go`. See [cpuscraper](../../receiver/hostmetricsreceiver/internal/scraper/cpuscraper) for example.
 
-1. Make code changes in the (generating code)[./loader.test] and (templates)[./templates/].
-2. Add usage of the new functionality in (metadata.yaml)[./metadata.yaml].
-3. Run `make mdatagen-test`.
-4. Make sure all tests are passing including (generated tests)[./internal/metadata/generated_metrics_test.go].
-5. Run `make generate`.
+You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` tool in `GOBIN` and then run `mdatagen metadata.yaml` to generate documentation for a specific component or you can run `make generate` to generate documentation for all components.
 
+## Contributing to the Metadata Generator
+
+The code for generating the documentation can be found in [loader.go](./loader.go) and the templates for rendering the documentation can be found in [templates](./templates).
+When making updates to the metadata generator or introducing support for new functionality:
+
+1. Ensure the [metadata-schema.yaml](./metadata-schema.yaml) and [./metadata.yaml](metadata.yaml) files reflect the changes.
+2. Run `make mdatagen-test`.
+3. Make sure all tests are passing including [generated tests](./internal/metadata/generated_metrics_test.go).
+4. Run `make generate`.
