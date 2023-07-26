@@ -91,6 +91,20 @@ func (rb *ResourceBuilder) SetGcpCloudRunJobTaskIndex(val string) {
 	}
 }
 
+// SetGcpGceInstanceHostname sets provided value as "gcp.gce.instance.hostname" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceHostname(val string) {
+	if rb.config.GcpGceInstanceHostname.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance.hostname", val)
+	}
+}
+
+// SetGcpGceInstanceName sets provided value as "gcp.gce.instance.name" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceName(val string) {
+	if rb.config.GcpGceInstanceName.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance.name", val)
+	}
+}
+
 // SetHostID sets provided value as "host.id" attribute.
 func (rb *ResourceBuilder) SetHostID(val string) {
 	if rb.config.HostID.Enabled {

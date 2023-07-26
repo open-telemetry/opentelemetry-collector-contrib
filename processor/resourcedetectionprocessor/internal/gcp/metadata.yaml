@@ -59,3 +59,11 @@ resource_attributes:
     description: The Job execution task index
     type: string
     enabled: true
+  gcp.gce.instance.name:
+    description: The name of the GCE instance.
+    type: string
+    enabled: true
+  gcp.gce.instance.hostname:
+    description: The hostname of the GCE instance.
+    type: string
+    enabled: true
