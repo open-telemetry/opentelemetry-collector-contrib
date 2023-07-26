@@ -248,7 +248,6 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 }
 
 func startPostgresDbContainer(t *testing.T, externalPort string) testcontainers.Container {
-	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	req := testcontainers.ContainerRequest{
 		Image: "postgres:9.6.24",
 		Env: map[string]string{

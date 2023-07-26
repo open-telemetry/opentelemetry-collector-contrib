@@ -62,7 +62,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
 
-			metrics := mb.Emit(WithK8sNamespaceName("k8s.namespace.name-val"), WithK8sResourcequotaName("k8s.resourcequota.name-val"), WithK8sResourcequotaUID("k8s.resourcequota.uid-val"), WithOpencensusResourcetype("opencensus.resourcetype-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -71,39 +73,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("k8s.namespace.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.resourcequota.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sResourcequotaName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sResourcequotaName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.resourcequota.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.resourcequota.uid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sResourcequotaUID.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sResourcequotaUID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.resourcequota.uid-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
-			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "opencensus.resourcetype-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 4)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

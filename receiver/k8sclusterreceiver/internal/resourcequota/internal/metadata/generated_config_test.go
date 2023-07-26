@@ -72,3 +72,53 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				K8sNamespaceName:       ResourceAttributeConfig{Enabled: true},
+				K8sResourcequotaName:   ResourceAttributeConfig{Enabled: true},
+				K8sResourcequotaUID:    ResourceAttributeConfig{Enabled: true},
+				OpencensusResourcetype: ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				K8sNamespaceName:       ResourceAttributeConfig{Enabled: false},
+				K8sResourcequotaName:   ResourceAttributeConfig{Enabled: false},
+				K8sResourcequotaUID:    ResourceAttributeConfig{Enabled: false},
+				OpencensusResourcetype: ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
+}

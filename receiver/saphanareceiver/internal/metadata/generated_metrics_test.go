@@ -234,7 +234,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 
-			metrics := mb.Emit(WithDbSystem("db.system-val"), WithSaphanaHost("saphana.host-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -243,25 +245,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("db.system")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.DbSystem.Enabled, ok)
-			if mb.resourceAttributesConfig.DbSystem.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "db.system-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("saphana.host")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SaphanaHost.Enabled, ok)
-			if mb.resourceAttributesConfig.SaphanaHost.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "saphana.host-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 2)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

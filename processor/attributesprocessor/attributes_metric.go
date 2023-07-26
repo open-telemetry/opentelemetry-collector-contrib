@@ -44,7 +44,7 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetr
 			for k := 0; k < metrics.Len(); k++ {
 				m := metrics.At(k)
 				if a.skipExpr != nil {
-					skip, err := a.skipExpr.Eval(ctx, ottlmetric.NewTransformContext(m, scope, resource))
+					skip, err := a.skipExpr.Eval(ctx, ottlmetric.NewTransformContext(m, metrics, scope, resource))
 					if err != nil {
 						return md, err
 					}
