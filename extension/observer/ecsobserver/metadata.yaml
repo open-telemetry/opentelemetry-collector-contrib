@@ -6,4 +6,4 @@ status:
     beta: [extension]
   distributions: [contrib, aws, splunk, sumo]
   codeowners:
-    active: [dmitryax @rmfitzpatrick]
+    active: [dmitryax, rmfitzpatrick]
