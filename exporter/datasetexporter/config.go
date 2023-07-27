@@ -59,6 +59,7 @@ const bufferMaxLifetime = 5 * time.Second
 const bufferRetryInitialInterval = 5 * time.Second
 const bufferRetryMaxInterval = 30 * time.Second
 const bufferRetryMaxElapsedTime = 300 * time.Second
+const bufferRetryShutdownTimeout = 30 * time.Second
 
 type BufferSettings struct {
 	MaxLifetime          time.Duration `mapstructure:"max_lifetime"`
@@ -66,6 +67,7 @@ type BufferSettings struct {
 	RetryInitialInterval time.Duration `mapstructure:"retry_initial_interval"`
 	RetryMaxInterval     time.Duration `mapstructure:"retry_max_interval"`
 	RetryMaxElapsedTime  time.Duration `mapstructure:"retry_max_elapsed_time"`
+	RetryShutdownTimeout time.Duration `mapstructure:"retry_shutdown_timeout"`
 }
 
 // newDefaultBufferSettings returns the default settings for BufferSettings.
@@ -76,6 +78,7 @@ func newDefaultBufferSettings() BufferSettings {
 		RetryInitialInterval: bufferRetryInitialInterval,
 		RetryMaxInterval:     bufferRetryMaxInterval,
 		RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
+		RetryShutdownTimeout: bufferRetryShutdownTimeout,
 	}
 }
 
@@ -160,6 +163,7 @@ func (c *Config) convert() (*ExporterConfig, error) {
 					RetryMaxElapsedTime:      c.BufferSettings.RetryMaxElapsedTime,
 					RetryMultiplier:          backoff.DefaultMultiplier,
 					RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
+					RetryShutdownTimeout:     c.BufferSettings.RetryShutdownTimeout,
 				},
 				ServerHostSettings: server_host_config.DataSetServerHostSettings{
 					UseHostName: c.ServerHostSettings.UseHostName,

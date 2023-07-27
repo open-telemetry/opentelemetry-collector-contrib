@@ -51,6 +51,7 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
   - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
+  - `retry_shutdown_timeout` (default = 30s): The maximum time for which it will try to send data to the DataSet during shutdown. This value should be shorter than container's grace period.
 - `logs`:
     - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
     - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
@@ -87,6 +88,8 @@ exporters:
       # Group data based on these attributes
       group_by:
         - container_id
+      # try to send data to the DataSet for at most 30s during shutdown
+      retry_shutdown_timeout: 30s
     server_host:
       # If the serverHost attribute is not specified or empty,
       # use the value from the env variable SERVER_HOST

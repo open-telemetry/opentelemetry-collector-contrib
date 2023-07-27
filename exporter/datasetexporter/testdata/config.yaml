@@ -23,6 +23,7 @@ dataset/full:
     retry_initial_interval: 21s
     retry_max_interval: 22s
     retry_max_elapsed_time: 23s
+    retry_shutdown_timeout: 24s
   logs:
     export_resource_info_on_event: true
     export_scope_info_on_event: true

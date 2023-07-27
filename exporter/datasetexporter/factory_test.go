@@ -69,6 +69,7 @@ func TestLoadConfig(t *testing.T) {
 					RetryInitialInterval: bufferRetryInitialInterval,
 					RetryMaxInterval:     bufferRetryMaxInterval,
 					RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
+					RetryShutdownTimeout: bufferRetryShutdownTimeout,
 				},
 				TracesSettings:     newDefaultTracesSettings(),
 				LogsSettings:       newDefaultLogsSettings(),
@@ -89,6 +90,7 @@ func TestLoadConfig(t *testing.T) {
 					RetryInitialInterval: 21 * time.Second,
 					RetryMaxInterval:     22 * time.Second,
 					RetryMaxElapsedTime:  23 * time.Second,
+					RetryShutdownTimeout: 24 * time.Second,
 				},
 				TracesSettings: TracesSettings{},
 				LogsSettings: LogsSettings{
@@ -146,7 +148,7 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; LogsSettings: {ExportResourceInfo:false ExportScopeInfo:false DecomposeComplexMessageField:false}; TracesSettings: {}; ServerHostSettings: {UseHostName:false ServerHost:}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportScopeInfo:false DecomposeComplexMessageField:false}; TracesSettings: {}; ServerHostSettings: {UseHostName:false ServerHost:}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
