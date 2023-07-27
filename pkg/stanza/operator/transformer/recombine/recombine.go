@@ -80,13 +80,13 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	var prog *vm.Program
 	if c.IsFirstEntry != "" {
 		matchesFirst = true
-		prog, err = expr.Compile(c.IsFirstEntry, expr.AsBool(), expr.AllowUndefinedVariables())
+		prog, err = helper.ExprCompileBool(c.IsFirstEntry)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile is_first_entry: %w", err)
 		}
 	} else {
 		matchesFirst = false
-		prog, err = expr.Compile(c.IsLastEntry, expr.AsBool(), expr.AllowUndefinedVariables())
+		prog, err = helper.ExprCompileBool(c.IsLastEntry)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile is_last_entry: %w", err)
 		}

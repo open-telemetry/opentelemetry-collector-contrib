@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"go.uber.org/zap"
 
@@ -65,7 +64,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	routes := make([]*Route, 0, len(c.Routes))
 	for _, routeConfig := range c.Routes {
-		compiled, err := expr.Compile(routeConfig.Expression, expr.AsBool(), expr.AllowUndefinedVariables())
+		compiled, err := helper.ExprCompileBool(routeConfig.Expression)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile expression '%s': %w", routeConfig.Expression, err)
 		}

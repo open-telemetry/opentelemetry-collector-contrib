@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/ast"
 	"github.com/antonmedv/expr/vm"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -77,7 +78,7 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 
 	subExprs := make([]*vm.Program, 0, len(subExprStrings))
 	for _, subExprString := range subExprStrings {
-		program, err := expr.Compile(subExprString, expr.AllowUndefinedVariables())
+		program, err := expr.Compile(subExprString, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}))
 		if err != nil {
 			return nil, errors.Wrap(err, "compile embedded expression")
 		}
@@ -88,6 +89,10 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 		SubStrings: subStrings,
 		SubExprs:   subExprs,
 	}, nil
+}
+
+func ExprCompileBool(input string) (*vm.Program, error) {
+	return expr.Compile(input, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}), expr.AsBool())
 }
 
 // An ExprString is made up of a list of string literals
@@ -113,14 +118,29 @@ func (e *ExprString) Render(env map[string]interface{}) (string, error) {
 		b.WriteString(outString)
 	}
 	b.WriteString(e.SubStrings[len(e.SubStrings)-1])
-
 	return b.String(), nil
+}
+
+type patcher struct{}
+
+func (p *patcher) Visit(node *ast.Node) {
+	n, ok := (*node).(*ast.CallNode)
+	if !ok {
+		return
+	}
+	c, ok := (n.Callee).(*ast.IdentifierNode)
+	if !ok {
+		return
+	}
+	if c.Value == "env" {
+		c.Value = "os_env_func"
+	}
 }
 
 var envPool = sync.Pool{
 	New: func() interface{} {
 		return map[string]interface{}{
-			"env": os.Getenv,
+			"os_env_func": os.Getenv,
 		}
 	},
 }
