@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -44,10 +45,11 @@ func (lfs *localFileStorage) Shutdown(context.Context) error {
 // GetClient returns a storage client for an individual component
 func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
 	var rawName string
+	entName := strings.ReplaceAll(ent.Name(), "/", "_")
 	if name == "" {
-		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
+		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), entName)
 	} else {
-		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
+		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), entName, name)
 	}
 	// TODO sanitize rawName
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
