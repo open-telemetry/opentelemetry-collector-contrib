@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -36,7 +36,7 @@ type datadogProcessor struct {
 
 	// in specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
-	in chan *pb.StatsPayload
+	in chan pb.StatsPayload
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
@@ -44,7 +44,7 @@ type datadogProcessor struct {
 
 func newProcessor(ctx context.Context, logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*datadogProcessor, error) {
 	cfg := config.(*Config)
-	in := make(chan *pb.StatsPayload, 100)
+	in := make(chan pb.StatsPayload, 100)
 	trans, err := metrics.NewTranslator(logger)
 	if err != nil {
 		return nil, err
