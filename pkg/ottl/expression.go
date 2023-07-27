@@ -272,19 +272,9 @@ func (g StandardFunctionGetter[K]) Get(_ context.Context, iArgs Arguments) (Expr
 	}
 	for i := 0; i < fArgsVal.NumField(); i++ {
 		field := iArgsVal.Field(i)
-		fieldTag := fArgsVal.Type().Field(i).Tag.Get("ottlarg")
-		if fieldTag == "" {
-			return Expr[K]{}, fmt.Errorf("no `ottlarg` struct tag on Arguments field %q", fArgsVal.Type().Field(i).Name)
-		}
-		argNum, err := strconv.Atoi(fieldTag)
+		_, err := checkForArgErrors(i, fArgsVal)
 		if err != nil {
-			return Expr[K]{}, fmt.Errorf("ottlarg struct tag on field %q is not a valid integer: %w", fArgsVal.Type().Field(i).Name, err)
-		}
-		if argNum < 0 || argNum >= iArgsVal.NumField() {
-			return Expr[K]{}, fmt.Errorf("ottlarg struct tag on field %q has value %d, but must be between 0 and %d", fArgsVal.Type().Field(i).Name, argNum, iArgsVal.NumField())
-		}
-		if field.Type() != fArgsVal.Field(i).Type() {
-			return Expr[K]{}, fmt.Errorf("incorrect type for argument %d. Expected: %v Received: %v", i, fArgsVal.Field(i).Type(), field.Type())
+			return Expr[K]{}, err
 		}
 		fArgsVal.Field(i).Set(field)
 	}
@@ -449,7 +439,7 @@ func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, 
 	return &result, nil
 }
 
-// IntLikeGetter is a Getter that returns an int by converting the underlying value to an int if necessary.
+// IntLikeGetter is a Getter that returns an int by converting the underlying value to an int if necessary
 type IntLikeGetter[K any] interface {
 	// Get retrieves an int value.
 	// Unlike `IntGetter`, the expectation is that the underlying value is converted to an int if possible.

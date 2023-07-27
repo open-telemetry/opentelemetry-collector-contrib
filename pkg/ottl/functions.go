@@ -47,41 +47,50 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
+func checkForArgErrors(index int, argsVal reflect.Value) (int, error) {
+	argsType := argsVal.Type()
+	fieldTag, ok := argsType.Field(index).Tag.Lookup("ottlarg")
+	if !ok {
+		return 0, fmt.Errorf("no `ottlarg` struct tag on Arguments field %q", argsType.Field(index).Name)
+	}
+	argNum, err := strconv.Atoi(fieldTag)
+	if err != nil {
+		return 0, fmt.Errorf("ottlarg struct tag on field %q is not a valid integer: %w", argsType.Field(index).Name, err)
+	}
+	if argNum < 0 || argNum >= argsVal.NumField() {
+		return 0, fmt.Errorf("ottlarg struct tag on field %q has value %d, but must be between 0 and %d", argsType.Field(index).Name, argNum, argsVal.NumField())
+	}
+	return argNum, nil
+}
+
 func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	if len(ed.Arguments) != argsVal.NumField() {
 		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
 	}
 
-	argsType := argsVal.Type()
-
 	for i := 0; i < argsVal.NumField(); i++ {
 		field := argsVal.Field(i)
 		fieldType := field.Type()
-
-		fieldTag, ok := argsType.Field(i).Tag.Lookup("ottlarg")
-
-		if !ok {
-			return fmt.Errorf("no `ottlarg` struct tag on Arguments field %q", argsType.Field(i).Name)
-		}
-
-		argNum, err := strconv.Atoi(fieldTag)
-
+		argNum, err := checkForArgErrors(i, argsVal)
 		if err != nil {
-			return fmt.Errorf("ottlarg struct tag on field %q is not a valid integer: %w", argsType.Field(i).Name, err)
+			return err
 		}
-
-		if argNum < 0 || argNum >= len(ed.Arguments) {
-			return fmt.Errorf("ottlarg struct tag on field %q has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(ed.Arguments))
-		}
-
 		argVal := ed.Arguments[argNum]
-
 		var val any
 		switch {
 		case strings.HasPrefix(fieldType.Name(), "FunctionGetter"):
-			f, ok := p.functions[string(*argVal.Enum)]
+			var name string
+			switch {
+			case argVal.Enum != nil:
+				name = string(*argVal.Enum)
+			case argVal.FunctionName != nil:
+				name = *argVal.FunctionName
+			default:
+				return errors.New("invalid function name given")
+			}
+			f, ok := p.functions[name]
 			if !ok {
-				return fmt.Errorf("undefined function %q", ed.Function)
+				return fmt.Errorf("undefined function %s", name)
 			}
 			val = StandardFunctionGetter[K]{fCtx: FunctionContext{Set: p.telemetrySettings}, fact: f}
 		case fieldType.Kind() == reflect.Slice:
@@ -89,7 +98,6 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		default:
 			val, err = p.buildArg(argVal, fieldType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}

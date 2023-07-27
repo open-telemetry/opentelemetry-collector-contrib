@@ -322,7 +322,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []value{
 					{
-						Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+						FunctionName: (ottltest.Strp("SHA256")),
 					},
 				},
 			},
@@ -961,7 +961,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []value{
 					{
-						Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+						FunctionName: (ottltest.Strp("SHA256")),
 					},
 				},
 			},
