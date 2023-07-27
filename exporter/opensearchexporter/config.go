@@ -12,10 +12,11 @@ import (
 
 // Config defines configuration for OpenSearch exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
-	Namespace                     string `mapstructure:"namespace"`
-	Dataset                       string `mapstructure:"dataset"`
+	confighttp.HTTPClientSettings  `mapstructure:"http"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	Namespace                      string `mapstructure:"namespace"`
+	Dataset                        string `mapstructure:"dataset"`
 }
 
 var (

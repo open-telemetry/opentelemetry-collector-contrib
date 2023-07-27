@@ -51,5 +51,6 @@ func createTracesExporter(ctx context.Context,
 		te.pushTraceData,
 		exporterhelper.WithStart(te.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithRetry(c.RetrySettings))
+		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithTimeout(c.TimeoutSettings))
 }

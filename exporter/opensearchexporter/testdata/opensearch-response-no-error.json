@@ -1,0 +1,38 @@
+{
+  "errors": false,
+  "items": [
+    {
+      "index": {
+        "_id": "1rrTj4kB8NX1kNtrCB8U",
+        "_index": "sso_trace-default-namespace",
+        "_primary_term": 1,
+        "_seq_no": 0,
+        "_shards": {
+          "failed": 0,
+          "successful": 1,
+          "total": 2
+        },
+        "_version": 1,
+        "result": "created",
+        "status": 201
+      }
+    },
+    {
+      "index": {
+        "_id": "2arTj4kB8NX1kNtrCB8U",
+        "_index": "sso_trace-default-namespace",
+        "_primary_term": 1,
+        "_seq_no": 0,
+        "_shards": {
+          "failed": 0,
+          "successful": 1,
+          "total": 2
+        },
+        "_version": 1,
+        "result": "created",
+        "status": 201
+      }
+    }
+  ],
+  "took": 65
+}

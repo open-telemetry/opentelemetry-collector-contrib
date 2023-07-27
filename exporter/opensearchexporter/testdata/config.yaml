@@ -4,19 +4,23 @@ extensions:
     password: testtoo
 
 opensearch:
-  endpoint: https://opensearch.example.com:9200
+  http:
+    endpoint: https://opensearch.example.com:9200
+
 opensearch/trace:
   dataset: ngnix
   namespace: eu
-  tls:
-    insecure: false
-  endpoint: https://opensearch.example.com:9200
-  timeout: 2m
-  headers:
-    myheader: test
+  http:
+    tls:
+      insecure: false
+    endpoint: https://opensearch.example.com:9200
+    timeout: 2m
+    headers:
+      myheader: test
+    auth:
+      authenticator: sample_basic_auth
+  timeout:
   retry_on_failure:
     enabled: true
     initial_interval: 100000000
     randomization_factor: 0.5
-  auth:
-    authenticator: sample_basic_auth
