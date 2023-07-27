@@ -155,7 +155,6 @@ status:
   codeowners:
     active: [<github account of the sponsor, such as alice>, <your GitHub account if you are already an OpenTelemetry member>]
 ```
-- Run `make gengithub` to generate the updated `.github/CODEOWNERS` file.
 - Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
 - For README.md, you can start with the following:
 ```
