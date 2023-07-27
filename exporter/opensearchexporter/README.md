@@ -17,7 +17,7 @@ The documents are sent using [observability catalog](https://github.com/opensear
 
 ### HTTP Connection Options
 OpenSearch export supports standard (HTTP client settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).
-- `endpoint` (required) `<url>:<port>` of OpenSearch node to send data to.
+- `http.endpoint` (required) `<url>:<port>` of OpenSearch node to send data to.
 
 ### TLS settings
 Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/Client Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#client-configuration).
@@ -25,6 +25,8 @@ Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/
 ### Retry Options
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
+### Timeout Options
+- `timeout` : See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 ## Example
 
 ```yaml
@@ -36,9 +38,10 @@ extensions:
     
 exporters:
   opensearch/trace:
-    endpoint: https://opensearch.example.com:9200
-    auth:
-      authenticator: basicauth/client
+    http:
+      endpoint: https://opensearch.example.com:9200
+      auth:
+        authenticator: basicauth/client
 # ······
 service:
   pipelines:
