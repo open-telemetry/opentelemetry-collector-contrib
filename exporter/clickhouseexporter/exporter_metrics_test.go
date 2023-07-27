@@ -46,43 +46,47 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	})
 	t.Run("check Resource metadata and scope metadata", func(t *testing.T) {
 		items := &atomic.Int32{}
+		resourceSchemaIdx := []int{1, 2, 2}
+
+		itemIdxs := map[string]*atomic.Uint32{
+			"otel_metrics_exponential_histogram": {},
+			"otel_metrics_gauge":                 {},
+			"otel_metrics_histogram":             {},
+			"otel_metrics_sum":                   {},
+			"otel_metrics_summary":               {},
+		}
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				items.Add(1)
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
-					require.Equal(t, "Resource SchemaUrl 1", values[1])
-					require.Equal(t, "Scope name 1", values[2])
-
-					require.Equal(t, "Resource SchemaUrl 2", values[30])
-					require.Equal(t, "Scope name 2", values[31])
+					idx := itemIdxs["otel_metrics_exponential_histogram"]
+					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					idx.Add(1)
+					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_gauge") {
-					require.Equal(t, "Resource SchemaUrl 1", values[1])
-					require.Equal(t, "Scope name 1", values[2])
-
-					require.Equal(t, "Resource SchemaUrl 2", values[21])
-					require.Equal(t, "Scope name 2", values[22])
+					idx := itemIdxs["otel_metrics_gauge"]
+					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					idx.Add(1)
+					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_histogram") {
-					require.Equal(t, "Resource SchemaUrl 1", values[1])
-					require.Equal(t, "Scope name 1", values[2])
-
-					require.Equal(t, "Resource SchemaUrl 2", values[26])
-					require.Equal(t, "Scope name 2", values[27])
+					idx := itemIdxs["otel_metrics_histogram"]
+					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					idx.Add(1)
+					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_sum (") {
-					require.Equal(t, "Resource SchemaUrl 1", values[1])
-					require.Equal(t, "Scope name 1", values[2])
-
-					require.Equal(t, "Resource SchemaUrl 2", values[23])
-					require.Equal(t, "Scope name 2", values[24])
+					idx := itemIdxs["otel_metrics_sum"]
+					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					idx.Add(1)
+					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_summary") {
-					require.Equal(t, "Resource SchemaUrl 1", values[1])
-					require.Equal(t, "Scope name 1", values[2])
-
-					require.Equal(t, "Resource SchemaUrl 2", values[19])
-					require.Equal(t, "Scope name 2", values[20])
+					idx := itemIdxs["otel_metrics_summary"]
+					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					idx.Add(1)
+					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 			}
 			return nil
@@ -90,49 +94,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
-		require.Equal(t, int32(5), items.Load())
-	})
-	t.Run("check one resource metrics contain different scope metrics", func(t *testing.T) {
-		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-			if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
-				require.Equal(t, "Resource SchemaUrl 2", values[30])
-				require.Equal(t, "Scope name 2", values[31])
-
-				require.Equal(t, "Resource SchemaUrl 2", values[59])
-				require.Equal(t, "Scope name 3", values[60])
-			}
-			if strings.HasPrefix(query, "INSERT INTO otel_metrics_gauge") {
-				require.Equal(t, "Resource SchemaUrl 2", values[21])
-				require.Equal(t, "Scope name 2", values[22])
-
-				require.Equal(t, "Resource SchemaUrl 2", values[41])
-				require.Equal(t, "Scope name 3", values[42])
-			}
-			if strings.HasPrefix(query, "INSERT INTO otel_metrics_histogram") {
-				require.Equal(t, "Resource SchemaUrl 2", values[26])
-				require.Equal(t, "Scope name 2", values[27])
-
-				require.Equal(t, "Resource SchemaUrl 2", values[51])
-				require.Equal(t, "Scope name 3", values[52])
-			}
-			if strings.HasPrefix(query, "INSERT INTO otel_metrics_sum (") {
-				require.Equal(t, "Resource SchemaUrl 2", values[23])
-				require.Equal(t, "Scope name 2", values[24])
-
-				require.Equal(t, "Resource SchemaUrl 2", values[45])
-				require.Equal(t, "Scope name 3", values[46])
-			}
-			if strings.HasPrefix(query, "INSERT INTO otel_metrics_summary") {
-				require.Equal(t, "Resource SchemaUrl 2", values[19])
-				require.Equal(t, "Scope name 2", values[20])
-
-				require.Equal(t, "Resource SchemaUrl 2", values[37])
-				require.Equal(t, "Scope name 3", values[38])
-			}
-			return nil
-		})
-		exporter := newTestMetricsExporter(t)
-		mustPushMetricsData(t, exporter, simpleMetrics(1))
+		require.Equal(t, int32(15), items.Load())
 	})
 }
 

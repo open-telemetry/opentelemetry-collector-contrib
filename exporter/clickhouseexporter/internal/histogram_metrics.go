@@ -110,7 +110,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		if err != nil {
 			return err
 		}
-		
+
 		defer func() {
 			_ = statement.Close()
 		}()

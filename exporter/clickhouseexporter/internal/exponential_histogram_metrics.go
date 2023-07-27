@@ -123,7 +123,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		defer func() {
 			_ = statement.Close()
 		}()
-		
+
 		for _, model := range e.expHistogramModels {
 			for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
 				dp := model.expHistogram.DataPoints().At(i)
