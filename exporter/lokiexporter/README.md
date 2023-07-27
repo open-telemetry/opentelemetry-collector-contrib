@@ -22,7 +22,8 @@ The following settings are required:
 - `default_labels_enabled` (optional): The map that allows to disable default labels: `exporter`, `job`, `instance`, `level`. 
 If `default_labels_enabled` is omitted then default labels will be added. If one of the labels is omitted in `default_labels_enabled` then this label will be added.
 **Important to remember**: 
-If all default labels are disabled and there are no other labels added then the log entry would be dropped because at least one label should be present to successfully put the log record into Loki 
+If all default labels are disabled and there are no other labels added then the log entry would be dropped because at least one label should be present to successfully put the log record into Loki.
+The metric `otelcol_lokiexporter_send_failed_due_to_missing_labels` shows how many log records were dropped because no labels were specified 
 
 Example:
 ```yaml
