@@ -13,6 +13,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	typeError = "target arg must be of type string, []any, map[string]any, pcommon.Map, pcommon.Slice, or pcommon.Value (of type String, Map, Slice)"
+)
+
 type LenArguments[K any] struct {
 	Target ottl.Getter[K] `ottlarg:"0"`
 }
@@ -31,6 +35,7 @@ func createLenFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	return computeLen(args.Target), nil
 }
 
+// nolint:exhaustive
 func computeLen[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
@@ -38,22 +43,34 @@ func computeLen[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 			return nil, err
 		}
 
+		switch valType := val.(type) {
+		case pcommon.Value:
+			switch valType.Type() {
+			case pcommon.ValueTypeStr:
+				return int64(len(valType.Str())), nil
+			case pcommon.ValueTypeSlice:
+				return int64(valType.Slice().Len()), nil
+			case pcommon.ValueTypeMap:
+				return int64(valType.Map().Len()), nil
+			}
+			return nil, fmt.Errorf(typeError)
+		case pcommon.Map:
+			return int64(valType.Len()), nil
+		case pcommon.Slice:
+			return int64(valType.Len()), nil
+
+		}
+
 		v := reflect.ValueOf(val)
-		if v.Kind() == reflect.String {
-			return int64(len(v.String())), nil
-		} else if v.Kind() == reflect.Slice {
+		switch v.Kind() {
+		case reflect.Map:
+			fallthrough
+		case reflect.Slice:
+			fallthrough
+		case reflect.String:
 			return int64(v.Len()), nil
 		}
 
-		if pcommonVal, ok := val.(pcommon.Value); ok {
-			if pcommonVal.Type() == pcommon.ValueTypeStr {
-				return int64(len(pcommonVal.Str())), nil
-			}
-		}
-		if pcommonSlice, ok := val.(pcommon.Slice); ok {
-			return int64(pcommonSlice.Len()), nil
-		}
-
-		return nil, fmt.Errorf("target arg must be of type string, []any, or pcommon.Slice")
+		return nil, fmt.Errorf(typeError)
 	}
 }

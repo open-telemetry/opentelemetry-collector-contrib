@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,24 @@ func Test_Len(t *testing.T) {
 		t.Error(err)
 	}
 
+	pcommonMap := pcommon.NewMap()
+	err = pcommonMap.FromRaw(dummyMap(5))
+	if err != nil {
+		t.Error(err)
+	}
+
+	pcommonValueSlice := pcommon.NewValueSlice()
+	err = pcommonValueSlice.FromRaw(make([]any, 5))
+	if err != nil {
+		t.Error(err)
+	}
+
+	pcommonValueMap := pcommon.NewValueMap()
+	err = pcommonValueMap.FromRaw(dummyMap(5))
+	if err != nil {
+		t.Error(err)
+	}
+
 	tests := []struct {
 		name     string
 		value    interface{}
@@ -31,9 +50,9 @@ func Test_Len(t *testing.T) {
 			expected: 8,
 		},
 		{
-			name:     "ValueTypeString",
-			value:    pcommon.NewValueStr("a string"),
-			expected: 8,
+			name:     "map",
+			value:    dummyMap(5),
+			expected: 5,
 		},
 		{
 			name:     "string slice",
@@ -46,8 +65,28 @@ func Test_Len(t *testing.T) {
 			expected: 5,
 		},
 		{
+			name:     "pcommon map",
+			value:    pcommonMap,
+			expected: 5,
+		},
+		{
 			name:     "pcommon slice",
 			value:    pcommonSlice,
+			expected: 5,
+		},
+		{
+			name:     "pcommon value string",
+			value:    pcommon.NewValueStr("a string"),
+			expected: 8,
+		},
+		{
+			name:     "pcommon value slice",
+			value:    pcommonValueSlice,
+			expected: 5,
+		},
+		{
+			name:     "pcommon value map",
+			value:    pcommonValueMap,
 			expected: 5,
 		},
 	}
@@ -63,6 +102,14 @@ func Test_Len(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func dummyMap(size int) map[string]any {
+	m := make(map[string]any, size)
+	for i := 0; i < size; i++ {
+		m[strconv.Itoa(i)] = i
+	}
+	return m
 }
 
 // nolint:errorlint
