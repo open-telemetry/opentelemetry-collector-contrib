@@ -52,48 +52,54 @@ func TestValidate(t *testing.T) {
 		{
 			scenario: "Valid udp configuration",
 			conf: Config{
-				Endpoint: "udp://localhost:323",
-				Timeout:  10 * time.Second,
+				Endpoint:                  "udp://localhost:323",
+				Timeout:                   10 * time.Second,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			err: nil,
 		},
 		{
 			scenario: "Invalid udp hostname",
 			conf: Config{
-				Endpoint: "udp://:323",
-				Timeout:  10 * time.Second,
+				Endpoint:                  "udp://:323",
+				Timeout:                   10 * time.Second,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			err: chrony.ErrInvalidNetwork,
 		},
 		{
 			scenario: "Invalid udp port",
 			conf: Config{
-				Endpoint: "udp://localhost",
-				Timeout:  10 * time.Second,
+				Endpoint:                  "udp://localhost",
+				Timeout:                   10 * time.Second,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			err: chrony.ErrInvalidNetwork,
 		},
 		{
 			scenario: "Valid unix path",
 			conf: Config{
-				Endpoint: fmt.Sprintf("unix://%s", t.TempDir()),
-				Timeout:  10 * time.Second,
+				Endpoint:                  fmt.Sprintf("unix://%s", t.TempDir()),
+				Timeout:                   10 * time.Second,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			err: nil,
 		},
 		{
 			scenario: "Invalid unix path",
 			conf: Config{
-				Endpoint: "unix:///no/dir/to/socket",
-				Timeout:  10 * time.Second,
+				Endpoint:                  "unix:///no/dir/to/socket",
+				Timeout:                   10 * time.Second,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			err: os.ErrNotExist,
 		},
 		{
 			scenario: "Invalid timeout set",
 			conf: Config{
-				Endpoint: "unix://no/dir/to/socket",
-				Timeout:  0,
+				Endpoint:                  "unix://no/dir/to/socket",
+				Timeout:                   0,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			err: errInvalidValue,
 		},
