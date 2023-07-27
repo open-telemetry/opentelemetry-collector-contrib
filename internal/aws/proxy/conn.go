@@ -83,9 +83,19 @@ var newAWSSession = func(roleArn string, region string, log *zap.Logger) (*sessi
 var getEC2Region = func(s *session.Session) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
 	defer cancel()
-	return ec2metadata.New(s, &aws.Config{
-		Retryer: override.IMDSRetryer,
+	region, err := ec2metadata.New(s, &aws.Config{
+		Retryer:                   override.IMDSRetryer,
+		EC2MetadataEnableFallback: aws.Bool(false),
 	}).RegionWithContext(ctx)
+	if err == nil {
+		return region, err
+	}
+	ctxFallbackEnable, cancelFallbackEnable := context.WithTimeout(context.Background(), override.TimePerCall)
+	defer cancelFallbackEnable()
+	return ec2metadata.New(s, &aws.Config{
+		Retryer:                   override.IMDSRetryer,
+		EC2MetadataEnableFallback: aws.Bool(true),
+	}).RegionWithContext(ctxFallbackEnable)
 }
 
 func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.Session, error) {

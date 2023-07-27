@@ -164,18 +164,23 @@ func (p envMetadataProvider) get() string {
 }
 
 type ec2MetadataProvider struct {
-	client      *ec2metadata.EC2Metadata
-	metadataKey string
+	client               *ec2metadata.EC2Metadata
+	clientFallbackEnable *ec2metadata.EC2Metadata
+	metadataKey          string
 }
 
 func (p ec2MetadataProvider) get() string {
-	var metadata string
 	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
 	defer cancel()
 	if result, err := p.client.GetMetadataWithContext(ctx, p.metadataKey); err == nil {
-		metadata = result
+		return result
 	}
-	return metadata
+	childCtxFallbackEnable, cancelRetryEnable := context.WithTimeout(context.Background(), override.TimePerCall)
+	defer cancelRetryEnable()
+	if result, err := p.clientFallbackEnable.GetMetadataWithContext(childCtxFallbackEnable, p.metadataKey); err == nil {
+		return result
+	}
+	return ""
 }
 
 // ToOptions returns the metadata options if enabled by the config.
@@ -193,15 +198,22 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 	}
 	if !settings.LocalMode {
 		metadataClient := ec2metadata.New(sess, &aws.Config{
-			Retryer: override.IMDSRetryer,
+			Retryer:                   override.IMDSRetryer,
+			EC2MetadataEnableFallback: aws.Bool(false),
+		})
+		metadataClientFallbackEnable := ec2metadata.New(sess, &aws.Config{
+			Retryer:                   override.IMDSRetryer,
+			EC2MetadataEnableFallback: aws.Bool(true),
 		})
 		hostnameProviders = append(hostnameProviders, ec2MetadataProvider{
-			client:      metadataClient,
-			metadataKey: metadataHostname,
+			client:               metadataClient,
+			clientFallbackEnable: metadataClientFallbackEnable,
+			metadataKey:          metadataHostname,
 		})
 		instanceIDProviders = append(instanceIDProviders, ec2MetadataProvider{
-			client:      metadataClient,
-			metadataKey: metadataHostname,
+			client:               metadataClient,
+			clientFallbackEnable: metadataClientFallbackEnable,
+			metadataKey:          metadataHostname,
 		})
 	}
 	return []Option{

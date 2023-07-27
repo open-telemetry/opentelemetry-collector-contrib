@@ -5,7 +5,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 go 1.19
 
 require (
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230719154634-7dfcb28377c2
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.77.0
@@ -278,7 +278,7 @@ require (
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.293 // indirect
+	github.com/aws/aws-sdk-go v1.44.309 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.22 // indirect

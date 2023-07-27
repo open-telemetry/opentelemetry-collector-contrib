@@ -37,16 +37,17 @@ type ec2MetadataProvider interface {
 }
 
 type ec2Metadata struct {
-	logger           *zap.Logger
-	client           metadataClient
-	refreshInterval  time.Duration
-	instanceID       string
-	instanceType     string
-	instanceIP       string
-	region           string
-	instanceIDReadyC chan bool
-	instanceIPReadyC chan bool
-	localMode        bool
+	logger               *zap.Logger
+	client               metadataClient
+	clientFallbackEnable metadataClient
+	refreshInterval      time.Duration
+	instanceID           string
+	instanceType         string
+	instanceIP           string
+	region               string
+	instanceIDReadyC     chan bool
+	instanceIPReadyC     chan bool
+	localMode            bool
 }
 
 type ec2MetadataOption func(*ec2Metadata)
@@ -55,7 +56,12 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
 	emd := &ec2Metadata{
 		client: awsec2metadata.New(session, &aws.Config{
-			Retryer: override.IMDSRetryer,
+			Retryer:                   override.IMDSRetryer,
+			EC2MetadataEnableFallback: aws.Bool(false),
+		}),
+		clientFallbackEnable: awsec2metadata.New(session, &aws.Config{
+			Retryer:                   override.IMDSRetryer,
+			EC2MetadataEnableFallback: aws.Bool(true),
 		}),
 		refreshInterval:  refreshInterval,
 		instanceIDReadyC: instanceIDReadyC,
@@ -89,14 +95,23 @@ func (emd *ec2Metadata) refresh(ctx context.Context) {
 	defer cancel()
 	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(childCtx)
 	if err != nil {
-		emd.logger.Error("Failed to get ec2 metadata", zap.Error(err))
-		return
+		contextInner, cancelFnInner := context.WithTimeout(ctx, override.TimePerCall)
+		defer cancelFnInner()
+		docInner, errInner := emd.clientFallbackEnable.GetInstanceIdentityDocumentWithContext(contextInner)
+		if errInner != nil {
+			emd.logger.Error("Failed to get ec2 metadata", zap.Error(err))
+			return
+		}
+		emd.instanceID = docInner.InstanceID
+		emd.instanceType = docInner.InstanceType
+		emd.region = docInner.Region
+		emd.instanceIP = docInner.PrivateIP
+	} else {
+		emd.instanceID = doc.InstanceID
+		emd.instanceType = doc.InstanceType
+		emd.region = doc.Region
+		emd.instanceIP = doc.PrivateIP
 	}
-
-	emd.instanceID = doc.InstanceID
-	emd.instanceType = doc.InstanceType
-	emd.region = doc.Region
-	emd.instanceIP = doc.PrivateIP
 
 	// notify ec2tags and ebsvolume that the instance id is ready
 	if emd.instanceID != "" {
