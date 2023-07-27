@@ -117,7 +117,7 @@ type podClient interface {
 
 type PodStore struct {
 	cache *mapWithExpiry
-	// preMeasurements per each Type (Pod, Container, etc)
+	// prevMeasurements per each Type (Pod, Container, etc)
 	prevMeasurements          sync.Map // map[string]*mapWithExpiry
 	podClient                 podClient
 	k8sClient                 replicaSetInfoProvider
