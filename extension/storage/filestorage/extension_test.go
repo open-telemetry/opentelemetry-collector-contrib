@@ -35,6 +35,7 @@ func TestExtensionIntegrity(t *testing.T) {
 		{kind: component.KindExporter, name: newTestEntity("exporter_two")},
 		{kind: component.KindExtension, name: newTestEntity("extension_one")},
 		{kind: component.KindExtension, name: newTestEntity("extension_two")},
+		{kind: component.KindExtension, name: newTestEntity("extension/three")},
 	}
 
 	// Make a client for each component
