@@ -17,6 +17,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -34,7 +35,7 @@ const maxBatchByteSize = 3000000
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
 	endpointURL     *url.URL
-	client          *http.Client
+	client          *retryablehttp.Client
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
 	concurrency     int
@@ -68,6 +69,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
 		settings:        set.TelemetrySettings,
+		client: 		 retryablehttp.NewClient(),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -89,10 +91,14 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
+	httpClient, err := prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
 		return err
 	}
+
+	// Set the HTTP client as the underlying client for the retryable client
+	prwe.client.HTTPClient = httpClient
+
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
 
@@ -237,7 +243,8 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	req.Header.Set("User-Agent", prwe.userAgentHeader)
 
-	resp, err := prwe.client.Do(req)
+	retryReq, _ := retryablehttp.FromRequest(req)
+	resp, err := prwe.client.Do(retryReq)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
