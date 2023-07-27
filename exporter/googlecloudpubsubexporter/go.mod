@@ -12,8 +12,8 @@ require (
 	go.opentelemetry.io/collector/exporter v0.81.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013
 	go.uber.org/zap v1.24.0
-	google.golang.org/api v0.133.0
-	google.golang.org/grpc v1.56.2
+	google.golang.org/api v0.134.0
+	google.golang.org/grpc v1.57.0
 )
 
 require (
@@ -54,6 +54,7 @@ require (
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
+	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
