@@ -58,16 +58,11 @@ func computeLen[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 			return int64(valType.Len()), nil
 		case pcommon.Slice:
 			return int64(valType.Len()), nil
-
 		}
 
 		v := reflect.ValueOf(val)
 		switch v.Kind() {
-		case reflect.Map:
-			fallthrough
-		case reflect.Slice:
-			fallthrough
-		case reflect.String:
+                case reflect.String, reflect.Map, reflect.Slice:
 			return int64(v.Len()), nil
 		}
 

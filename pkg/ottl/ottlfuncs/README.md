@@ -463,9 +463,9 @@ Examples:
 
 `Len(target)`
 
-The `Len` Converter returns the length of the target string or slice.
+The `Len` Converter returns the int64 length of the target string or slice.
 
-`target` is either a `string`, slice, `pcommmon.ValueTypeStr`, or `pcommon.Value` with type `pcommon.ValueTypeStr`, or `pcommon.Slice`.
+`target` is either a `string`, `slice`, `map`, `pcommon.Slice`, `pcommon.Map`, or `pcommon.Value` with type `pcommon.ValueTypeStr`, `pcommon.ValueTypeSlice`, or `pcommon.ValueTypeMap`.
 
 If the `target` is not an acceptable type, the `Len` Converter will return an error.
 
