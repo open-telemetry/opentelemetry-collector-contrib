@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -60,31 +59,18 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 		return nil, fmt.Errorf("cannot create newDatasetExporter: %w", err)
 	}
 
-	serverHost, err := getServerHost(exporterCfg.serverHostSettings)
-	if err != nil {
-		logger.Error("Cannot get serverHost: ", zap.Error(err))
-		return nil, fmt.Errorf("Cannot get serverHost: %w", err)
-	}
-
 	return &DatasetExporter{
 		client:      client,
 		limiter:     rate.NewLimiter(100*rate.Every(1*time.Minute), 100), // 100 requests / minute
 		session:     uuid.New().String(),
 		logger:      logger,
 		exporterCfg: exporterCfg,
-		serverHost:  serverHost,
+		serverHost:  client.ServerHost(),
 	}, nil
 }
 
 func (e *DatasetExporter) shutdown(context.Context) error {
 	return e.client.Shutdown()
-}
-
-func getServerHost(settings ServerHostSettings) (string, error) {
-	if len(settings.ServerHost) > 0 {
-		return settings.ServerHost, nil
-	}
-	return os.Hostname()
 }
 
 func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) error {

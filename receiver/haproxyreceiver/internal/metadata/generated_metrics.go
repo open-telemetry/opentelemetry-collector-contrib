@@ -1378,10 +1378,8 @@ func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal 
 type MetricsBuilder struct {
 	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                   int                 // maximum observed number of metrics per resource.
-	resourceCapacity                  int                 // maximum observed number of resource attributes.
 	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                         component.BuildInfo // contains version information
-	resourceAttributesConfig          ResourceAttributesConfig
 	metricHaproxyBytesInput           metricHaproxyBytesInput
 	metricHaproxyBytesOutput          metricHaproxyBytesOutput
 	metricHaproxyClientsCanceled      metricHaproxyClientsCanceled
@@ -1425,7 +1423,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesConfig:          mbc.ResourceAttributes,
 		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(mbc.Metrics.HaproxyBytesInput),
 		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(mbc.Metrics.HaproxyBytesOutput),
 		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(mbc.Metrics.HaproxyClientsCanceled),
@@ -1464,99 +1461,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithHaproxyAddr sets provided value as "haproxy.addr" attribute for current resource.
-func WithHaproxyAddr(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyAddr.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.addr", val)
-		}
-	}
-}
-
-// WithHaproxyAlgo sets provided value as "haproxy.algo" attribute for current resource.
-func WithHaproxyAlgo(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyAlgo.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.algo", val)
-		}
-	}
-}
-
-// WithHaproxyIid sets provided value as "haproxy.iid" attribute for current resource.
-func WithHaproxyIid(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyIid.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.iid", val)
-		}
-	}
-}
-
-// WithHaproxyPid sets provided value as "haproxy.pid" attribute for current resource.
-func WithHaproxyPid(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyPid.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.pid", val)
-		}
-	}
-}
-
-// WithHaproxySid sets provided value as "haproxy.sid" attribute for current resource.
-func WithHaproxySid(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxySid.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.sid", val)
-		}
-	}
-}
-
-// WithHaproxyType sets provided value as "haproxy.type" attribute for current resource.
-func WithHaproxyType(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyType.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.type", val)
-		}
-	}
-}
-
-// WithHaproxyURL sets provided value as "haproxy.url" attribute for current resource.
-func WithHaproxyURL(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyURL.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.url", val)
-		}
-	}
-}
-
-// WithProxyName sets provided value as "proxy_name" attribute for current resource.
-func WithProxyName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ProxyName.Enabled {
-			rm.Resource().Attributes().PutStr("proxy_name", val)
-		}
-	}
-}
-
-// WithServiceName sets provided value as "service_name" attribute for current resource.
-func WithServiceName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ServiceName.Enabled {
-			rm.Resource().Attributes().PutStr("service_name", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1580,7 +1501,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/haproxyreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -1613,7 +1533,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricHaproxySessionsTotal.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

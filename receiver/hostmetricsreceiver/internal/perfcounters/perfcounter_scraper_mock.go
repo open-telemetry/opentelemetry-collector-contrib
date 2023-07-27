@@ -28,7 +28,7 @@ func NewMockPerfCounterScraperError(scrapeErr, getObjectErr, getValuesErr, initE
 }
 
 // start is a no-op
-func (p *MockPerfCounterScraperError) Initialize(objects ...string) error {
+func (p *MockPerfCounterScraperError) Initialize(_ ...string) error {
 	if p.initError != nil {
 		return p.initError
 	}
@@ -52,7 +52,7 @@ type mockPerfDataCollectionError struct {
 
 // GetObject returns the specified getObjectErr or an object that will return a subsequent
 // error if getObjectErr is nil
-func (p mockPerfDataCollectionError) GetObject(objectName string) (PerfDataObject, error) {
+func (p mockPerfDataCollectionError) GetObject(_ string) (PerfDataObject, error) {
 	if p.getObjectErr != nil {
 		return nil, p.getObjectErr
 	}
@@ -65,11 +65,11 @@ type mockPerfDataObjectError struct {
 }
 
 // Filter is a no-op
-func (obj mockPerfDataObjectError) Filter(includeFS, excludeFS filterset.FilterSet, includeTotal bool) {
+func (obj mockPerfDataObjectError) Filter(_, _ filterset.FilterSet, _ bool) {
 }
 
 // GetValues returns the specified getValuesErr
-func (obj mockPerfDataObjectError) GetValues(counterNames ...string) ([]*CounterValues, error) {
+func (obj mockPerfDataObjectError) GetValues(_ ...string) ([]*CounterValues, error) {
 	return nil, obj.getValuesErr
 }
 
@@ -101,7 +101,7 @@ func NewMockPerfCounterScraper(objectsAndValuesToReturn map[string]map[string][]
 }
 
 // start is a no-op
-func (p *MockPerfCounterScraper) Initialize(objects ...string) error {
+func (p *MockPerfCounterScraper) Initialize(_ ...string) error {
 	return nil
 }
 
@@ -144,7 +144,7 @@ type mockPerfDataObject struct {
 }
 
 // Filter is a no-op
-func (obj mockPerfDataObject) Filter(includeFS, excludeFS filterset.FilterSet, includeTotal bool) {
+func (obj mockPerfDataObject) Filter(_, _ filterset.FilterSet, _ bool) {
 }
 
 // GetValues returns the specified counter values

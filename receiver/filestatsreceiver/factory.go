@@ -36,9 +36,8 @@ func newReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	fileStatsConfig := cfg.(*Config)
-	metricsBuilder := metadata.NewMetricsBuilder(fileStatsConfig.MetricsBuilderConfig, settings)
 
-	mp := newScraper(metricsBuilder, fileStatsConfig, settings.TelemetrySettings.Logger)
+	mp := newScraper(fileStatsConfig, settings)
 	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
 	if err != nil {
 		return nil, err

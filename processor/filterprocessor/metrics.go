@@ -124,7 +124,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 			scope := smetrics.Scope()
 			smetrics.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
 				if fmp.skipMetricExpr != nil {
-					skip, err := fmp.skipMetricExpr.Eval(ctx, ottlmetric.NewTransformContext(metric, scope, resource))
+					skip, err := fmp.skipMetricExpr.Eval(ctx, ottlmetric.NewTransformContext(metric, smetrics.Metrics(), scope, resource))
 					if err != nil {
 						errors = multierr.Append(errors, err)
 					}
