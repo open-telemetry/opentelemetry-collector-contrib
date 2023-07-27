@@ -9,7 +9,10 @@ import (
 	"testing"
 
 	"github.com/Shopify/sarama"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -90,15 +93,20 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 }
 
 func TestBrokerScraper_scrape(t *testing.T) {
-	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("new client failed")
+	client := newMockClient()
+	client.Mock.On("Brokers").Return(testBrokers)
+	bs := brokerScraper{
+		client:   client,
+		settings: receivertest.NewNopCreateSettings(),
+		config:   Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 	}
-	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
+	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
+	md, err := bs.scrape(context.Background())
 	assert.NoError(t, err)
-	assert.NotNil(t, bs)
-	err = bs.Shutdown(context.Background())
-	assert.NoError(t, err)
+	expectedDp := int64(len(testBrokers))
+	receivedMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	receivedDp := receivedMetrics.Sum().DataPoints().At(0).IntValue()
+	assert.Equal(t, expectedDp, receivedDp)
 }
 
 func TestBrokersScraper_createBrokerScraper(t *testing.T) {
