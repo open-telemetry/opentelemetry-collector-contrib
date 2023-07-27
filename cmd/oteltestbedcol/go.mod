@@ -35,17 +35,17 @@ require (
 	go.opentelemetry.io/collector/component v0.81.1-0.20230726164905-cd00f5cc16a3
 	go.opentelemetry.io/collector/connector v0.81.1-0.20230726164905-cd00f5cc16a3
 	go.opentelemetry.io/collector/exporter v0.81.1-0.20230726164905-cd00f5cc16a3
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.81.1-0.20230726164905-cd00f5cc16a3
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.81.1-0.20230726164905-cd00f5cc16a3
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.81.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.81.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.81.0
 	go.opentelemetry.io/collector/extension v0.81.1-0.20230726164905-cd00f5cc16a3
-	go.opentelemetry.io/collector/extension/ballastextension v0.81.1-0.20230726164905-cd00f5cc16a3
-	go.opentelemetry.io/collector/extension/zpagesextension v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/extension/ballastextension v0.81.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.81.0
 	go.opentelemetry.io/collector/processor v0.81.1-0.20230726164905-cd00f5cc16a3
 	go.opentelemetry.io/collector/processor/batchprocessor v0.81.1-0.20230726164905-cd00f5cc16a3
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.81.0
 	go.opentelemetry.io/collector/receiver v0.81.1-0.20230726164905-cd00f5cc16a3
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.81.0
 	golang.org/x/sys v0.10.0
 )
 
