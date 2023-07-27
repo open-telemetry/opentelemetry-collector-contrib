@@ -6,3 +6,5 @@ status:
     beta: [traces, metrics]
     alpha: [logs]
   distributions: [contrib, observiq]
+  codeowners:
+    active: [oded-dd, povilasv, matej-g]

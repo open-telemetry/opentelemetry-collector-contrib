@@ -27,9 +27,9 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider           consul.Provider
-	logger             *zap.Logger
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider consul.Provider
+	logger   *zap.Logger
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
@@ -59,7 +59,7 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 	}
 
 	provider := consul.NewProvider(client, userCfg.MetaLabels)
-	return &Detector{provider: provider, logger: p.Logger, resourceAttributes: userCfg.ResourceAttributes}, nil
+	return &Detector{provider: provider, logger: p.Logger, rb: metadata.NewResourceBuilder(userCfg.ResourceAttributes)}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
@@ -69,12 +69,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-	rb.SetHostName(md.Hostname)
-	rb.SetCloudRegion(md.Datacenter)
-	rb.SetHostID(md.NodeID)
+	d.rb.SetHostName(md.Hostname)
+	d.rb.SetCloudRegion(md.Datacenter)
+	d.rb.SetHostID(md.NodeID)
 
-	res := rb.Emit()
+	res := d.rb.Emit()
 
 	for key, element := range md.HostMetadata {
 		res.Attributes().PutStr(key, element)

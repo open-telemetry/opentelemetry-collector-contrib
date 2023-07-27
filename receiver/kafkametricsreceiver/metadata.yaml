@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: [dmitryax]
 
 attributes:
   topic:

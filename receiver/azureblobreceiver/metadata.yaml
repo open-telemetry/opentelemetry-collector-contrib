@@ -5,4 +5,5 @@ status:
   stability:
     development: [logs, traces]
   distributions: [contrib]
-  
+  codeowners:
+    active: [eedorenko, mx-psi]

@@ -4,17 +4,20 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 
 import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 // GetEntityEvents processes metadata updates and returns entity events that describe the metadata changes.
-func GetEntityEvents(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) metadataPkg.EntityEventsSlice {
+func GetEntityEvents(old, new map[metadataPkg.ResourceID]*KubernetesMetadata, timestamp pcommon.Timestamp) metadataPkg.EntityEventsSlice {
 	out := metadataPkg.NewEntityEventsSlice()
 
 	for id, oldObj := range old {
 		if _, ok := new[id]; !ok {
 			// An object was present, but no longer is. Create a "delete" event.
 			entityEvent := out.AppendEmpty()
+			entityEvent.SetTimestamp(timestamp)
 			entityEvent.ID().PutStr(oldObj.ResourceIDKey, string(oldObj.ResourceID))
 			entityEvent.SetEntityDelete()
 		}
@@ -23,6 +26,7 @@ func GetEntityEvents(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) me
 	// All "new" are current objects. Create "state" events. "old" state does not matter.
 	for _, newObj := range new {
 		entityEvent := out.AppendEmpty()
+		entityEvent.SetTimestamp(timestamp)
 		entityEvent.ID().PutStr(newObj.ResourceIDKey, string(newObj.ResourceID))
 		state := entityEvent.SetEntityState()
 		state.SetEntityType(newObj.EntityType)

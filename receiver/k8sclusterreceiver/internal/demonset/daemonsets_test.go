@@ -4,47 +4,35 @@
 package demonset
 
 import (
+	"path/filepath"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestDaemonsetMetrics(t *testing.T) {
 	ds := testutils.NewDaemonset("1")
 
-	actualResourceMetrics := GetMetrics(ds)
-
-	require.Equal(t, 1, len(actualResourceMetrics))
-	require.Equal(t, 4, len(actualResourceMetrics[0].Metrics))
-
-	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, rm.Resource, constants.K8sType,
-		map[string]string{
-			"k8s.daemonset.uid":  "test-daemonset-1-uid",
-			"k8s.daemonset.name": "test-daemonset-1",
-			"k8s.namespace.name": "test-namespace",
-		},
+	m := GetMetrics(receivertest.NewNopCreateSettings(), ds)
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.daemonset.current_scheduled_nodes",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
-
-	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.daemonset.desired_scheduled_nodes",
-		metricspb.MetricDescriptor_GAUGE_INT64, 5)
-
-	testutils.AssertMetricsInt(t, rm.Metrics[2], "k8s.daemonset.misscheduled_nodes",
-		metricspb.MetricDescriptor_GAUGE_INT64, 1)
-
-	testutils.AssertMetricsInt(t, rm.Metrics[3], "k8s.daemonset.ready_nodes",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
 func TestTransform(t *testing.T) {

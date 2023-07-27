@@ -21,6 +21,7 @@ var _ internal.MetricContext = TransformContext{}
 
 type TransformContext struct {
 	metric               pmetric.Metric
+	metrics              pmetric.MetricSlice
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
@@ -28,9 +29,10 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(metric pmetric.Metric, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
 	return TransformContext{
 		metric:               metric,
+		metrics:              metrics,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
@@ -39,6 +41,10 @@ func NewTransformContext(metric pmetric.Metric, instrumentationScope pcommon.Ins
 
 func (tCtx TransformContext) GetMetric() pmetric.Metric {
 	return tCtx.metric
+}
+
+func (tCtx TransformContext) GetMetrics() pmetric.MetricSlice {
+	return tCtx.metrics
 }
 
 func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {

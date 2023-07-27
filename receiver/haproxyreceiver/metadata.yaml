@@ -5,6 +5,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, sumo]
+  codeowners:
+    active: [atoulme, MovieStoreGuy]
 
 resource_attributes:
   haproxy.url:

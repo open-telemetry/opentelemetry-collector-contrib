@@ -1,6 +1,4 @@
 prometheus:
-  buffer_period: 234
-  buffer_count: 45
   use_start_time_metric: true
   start_time_metric_regex: '^(.+_)*process_start_time_seconds$'
   config:

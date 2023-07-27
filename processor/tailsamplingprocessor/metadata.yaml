@@ -4,4 +4,12 @@ status:
   class: processor
   stability:
     beta: [traces]
-  distributions: [contrib, observiq, splunk, sumo, aws]
+  distributions:
+  - contrib
+  - aws
+  - grafana
+  - observiq
+  - splunk
+  - sumo
+  codeowners:
+    active: [jpkrohling]
