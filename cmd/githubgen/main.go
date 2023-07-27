@@ -5,10 +5,13 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -75,13 +78,28 @@ internal/common
 
 const unmaintainedStatus = "unmaintained"
 
+//go:embed members.txt
+var membersData string
+
+//go:embed allowlist.txt
+var allowlistData string
+var members []string
+var allowlist []string
+
+func init() {
+	members = strings.Split(membersData, "\n")
+
+	allowlist = strings.Split(allowlistData, "\n")
+}
+
 // Generates files specific to Github according to status metadata:
 // .github/CODEOWNERS
 // .github/ALLOWLIST
+// Usage: go run cmd/githubgen/main.go <repository root> [--check]
 func main() {
 	flag.Parse()
 	folder := flag.Arg(0)
-	if err := run(folder); err != nil {
+	if err := run(folder, flag.Arg(1) == "--check"); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -127,10 +145,11 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-func run(folder string) error {
+func run(folder string, checkMembers bool) error {
 	components := map[string]metadata{}
 	foldersList := []string{}
 	maxLength := 0
+	allCodeowners := make(map[string]struct{}, 24)
 	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
 		if info.Name() == "metadata.yaml" {
 			m, err := loadMetadata(path)
@@ -149,16 +168,49 @@ func run(folder string) error {
 					return nil
 				}
 			}
+			for _, id := range m.Status.Codeowners.Active {
+				allCodeowners[id] = struct{}{}
+			}
 			if len(key) > maxLength {
 				maxLength = len(key)
 			}
 		}
 		return nil
 	})
-	sort.Strings(foldersList)
 	if err != nil {
 		return err
 	}
+	sort.Strings(foldersList)
+	var missingCodeowners []string
+	for codeowner := range allCodeowners {
+		present, err2 := hasMember(codeowner, checkMembers)
+		if err2 != nil {
+			return err2
+		}
+
+		if !present {
+			allowed := inAllowlist(codeowner)
+			if !allowed {
+				missingCodeowners = append(missingCodeowners, codeowner)
+			}
+		}
+	}
+	if len(missingCodeowners) > 0 {
+		sort.Strings(missingCodeowners)
+		return fmt.Errorf("codeowners are not members: %s", strings.Join(missingCodeowners, ", "))
+	}
+	if checkMembers {
+		var list []string
+		for codeowner := range allCodeowners {
+			list = append(list, codeowner)
+		}
+		sort.Strings(list)
+		err = os.WriteFile(filepath.Join("cmd", "githubgen", "members.txt"), []byte(strings.Join(list, "\n")), 0600)
+		if err != nil {
+			return err
+		}
+	}
+
 	codeowners := codeownersHeader
 	deprecatedList := "## DEPRECATED components\n"
 	unmaintainedList := "\n## UNMAINTAINED components\n"
@@ -205,4 +257,46 @@ LOOP:
 	}
 
 	return nil
+}
+
+func hasMember(id string, checkGithub bool) (bool, error) {
+	if checkGithub {
+		present, err := checkGithubMembership(id)
+		return present, err
+	}
+	for _, m := range members {
+		if id == m {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func inAllowlist(id string) bool {
+	for _, m := range allowlist {
+		if id == m {
+			return true
+		}
+	}
+	return false
+}
+
+func checkGithubMembership(id string) (bool, error) {
+	req, err := http.NewRequest("GET", "https://api.github.com/orgs/open-telemetry/members/"+id, nil)
+	if err != nil {
+		return false, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	}
+	httpClient := http.DefaultClient
+
+	res, err := httpClient.Do(req)
+	if err == nil {
+		_, _ = io.Copy(io.Discard, res.Body)
+		_ = res.Body.Close()
+	}
+	return res.StatusCode == 204, err
 }
