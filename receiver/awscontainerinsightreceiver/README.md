@@ -340,17 +340,18 @@ kubectl apply -f config.yaml
 
 ## Available Metrics and Resource Attributes
 ### Cluster
-| Metric                                                     | Unit    |
-|------------------------------------------------------------|---------|
-| cluster_failed_node_count                                  | Count   |
-| cluster_node_count                                         | Count   |
-| apiserver_storage_objects                                  | Count   |
-| apiserver_request_total                                    | Count   |
-| apiserver_request_duration_seconds                         | Seconds |
-| apiserver_admission_controller_admission_duration_seconds  | Seconds |
-| rest_client_request_duration_seconds                       | Seconds |
-| rest_client_requests_total                                 | Count   |
-| etcd_request_duration_seconds                              | Seconds |
+| Metric                                                    | Unit    |
+|-----------------------------------------------------------|---------|
+| cluster_failed_node_count                                 | Count   |
+| cluster_node_count                                        | Count   |
+| cluster_number_of_running_pods                            | Count   |
+| apiserver_storage_objects                                 | Count   |
+| apiserver_request_total                                   | Count   |
+| apiserver_request_duration_seconds                        | Seconds |
+| apiserver_admission_controller_admission_duration_seconds | Seconds |
+| rest_client_request_duration_seconds                      | Seconds |
+| rest_client_requests_total                                | Count   |
+| etcd_request_duration_seconds                             | Seconds |
 
 
 
