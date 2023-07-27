@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
@@ -17,7 +18,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+// We define it here so we can easily mock it inside tests
 var now = time.Now
+
+// Prefix which is added to all the special / internal DataSet fields
+const specialDataSetFieldNamePrefix string = "sca:"
+
+// If a LogRecord doesn't contain severity or we can't map it to a valid DataSet severity, we use
+// this value (3 - INFO) instead
+const defaultDataSetSeverityLevel int = dataSetLogLevelInfo
+
+// Constants for valid DataSet log levels (aka Event.sev int field value)
+const (
+	dataSetLogLevelFinest = 0
+	dataSetLogLevelTrace  = 1
+	dataSetLogLevelDebug  = 2
+	dataSetLogLevelInfo   = 3
+	dataSetLogLevelWarn   = 4
+	dataSetLogLevelError  = 5
+	dataSetLogLevelFatal  = 6
+)
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := castConfig(config)
@@ -38,31 +58,108 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	)
 }
 
-func buildBody(attrs map[string]interface{}, value pcommon.Value) string {
+func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommon.Value) string {
+	// The message / body is stored as part of the "message" field on the DataSet event.
 	message := value.AsString()
-	attrs["body.type"] = value.Type().String()
-	switch value.Type() {
-	case pcommon.ValueTypeEmpty:
-		attrs["body.empty"] = value.AsString()
-	case pcommon.ValueTypeStr:
-		attrs["body.str"] = value.Str()
-	case pcommon.ValueTypeBool:
-		attrs["body.bool"] = value.Bool()
-	case pcommon.ValueTypeDouble:
-		attrs["body.double"] = value.Double()
-	case pcommon.ValueTypeInt:
-		attrs["body.int"] = value.Int()
-	case pcommon.ValueTypeMap:
+
+	// Additionally, we support de-composing complex message value (e.g. map / dictionary) into
+	// multiple event attributes.
+	//
+	// This functionality is behind a config option / feature flag and not enabled by default
+	// since no other existing DataSet integrations handle it in this manner (aka for out of
+	// the box consistency reasons).
+	// If user wants to achieve something like that, they usually handle that on the client
+	// (e.g. attribute processor or similar) or on the server (DataSet server side JSON parser
+	// for the message field).
+	if settings.DecomposeComplexMessageField && value.Type() == pcommon.ValueTypeMap {
 		updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
-	case pcommon.ValueTypeBytes:
-		attrs["body.bytes"] = value.AsString()
-	case pcommon.ValueTypeSlice:
-		attrs["body.slice"] = value.AsRaw()
-	default:
-		attrs["body.unknown"] = value.AsString()
 	}
 
 	return message
+}
+
+// Function maps OTel severity on the LogRecord to DataSet severity level (number)
+func mapOtelSeverityToDataSetSeverity(log plog.LogRecord) int {
+	// This function maps OTel severity level to DataSet severity levels
+	//
+	// Valid OTel levels - https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
+	// and valid DataSet ones - https://github.com/scalyr/logstash-output-scalyr/blob/master/lib/logstash/outputs/scalyr.rb#L70
+	sevNum := log.SeverityNumber()
+	sevText := log.SeverityText()
+
+	dataSetSeverity := defaultDataSetSeverityLevel
+
+	if sevNum > 0 {
+		dataSetSeverity = mapLogRecordSevNumToDataSetSeverity(sevNum)
+	} else if sevText != "" {
+		// Per docs, SeverityNumber is optional so if it's not present we fall back to SeverityText
+		// https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext
+		dataSetSeverity = mapLogRecordSeverityTextToDataSetSeverity(sevText)
+	}
+
+	return dataSetSeverity
+}
+
+func mapLogRecordSevNumToDataSetSeverity(sevNum plog.SeverityNumber) int {
+	// Maps LogRecord.SeverityNumber field value to DataSet severity value.
+	dataSetSeverity := defaultDataSetSeverityLevel
+
+	if sevNum <= 0 {
+		return dataSetSeverity
+	}
+
+	// See https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
+	// for OTEL mappings
+	switch sevNum {
+	case 1, 2, 3, 4:
+		// TRACE
+		dataSetSeverity = dataSetLogLevelTrace
+	case 5, 6, 7, 8:
+		// DEBUG
+		dataSetSeverity = dataSetLogLevelDebug
+	case 9, 10, 11, 12:
+		// INFO
+		dataSetSeverity = dataSetLogLevelInfo
+	case 13, 14, 15, 16:
+		// WARN
+		dataSetSeverity = dataSetLogLevelWarn
+	case 17, 18, 19, 20:
+		// ERROR
+		dataSetSeverity = dataSetLogLevelError
+	case 21, 22, 23, 24:
+		// FATAL / CRITICAL / EMERGENCY
+		dataSetSeverity = dataSetLogLevelFatal
+	}
+
+	return dataSetSeverity
+}
+
+func mapLogRecordSeverityTextToDataSetSeverity(sevText string) int {
+	// Maps LogRecord.SeverityText field value to DataSet severity value.
+	dataSetSeverity := defaultDataSetSeverityLevel
+
+	if sevText == "" {
+		return dataSetSeverity
+	}
+
+	switch strings.ToLower(sevText) {
+	case "fine", "finest":
+		dataSetSeverity = dataSetLogLevelFinest
+	case "trace":
+		dataSetSeverity = dataSetLogLevelTrace
+	case "debug":
+		dataSetSeverity = dataSetLogLevelDebug
+	case "info", "information":
+		dataSetSeverity = dataSetLogLevelInfo
+	case "warn", "warning":
+		dataSetSeverity = dataSetLogLevelWarn
+	case "error":
+		dataSetSeverity = dataSetLogLevelError
+	case "fatal", "critical", "emergency":
+		dataSetSeverity = dataSetLogLevelFatal
+	}
+
+	return dataSetSeverity
 }
 
 func buildEventFromLog(
@@ -75,30 +172,25 @@ func buildEventFromLog(
 	event := add_events.Event{}
 
 	observedTs := log.ObservedTimestamp().AsTime()
-	if sevNum := log.SeverityNumber(); sevNum > 0 {
-		attrs["severity.number"] = sevNum
-		event.Sev = int(sevNum)
-	}
+
+	event.Sev = mapOtelSeverityToDataSetSeverity(log)
 
 	if timestamp := log.Timestamp().AsTime(); !timestamp.Equal(time.Unix(0, 0)) {
 		event.Ts = strconv.FormatInt(timestamp.UnixNano(), 10)
 	}
 
 	if body := log.Body().AsString(); body != "" {
-		attrs["message"] = fmt.Sprintf(
-			"OtelExporter - Log - %s",
-			buildBody(attrs, log.Body()),
-		)
+		attrs["message"] = buildBody(settings, attrs, log.Body())
 	}
+
 	if dropped := log.DroppedAttributesCount(); dropped > 0 {
 		attrs["dropped_attributes_count"] = dropped
 	}
+
 	if !observedTs.Equal(time.Unix(0, 0)) {
-		attrs["observed.timestamp"] = observedTs.String()
+		attrs[specialDataSetFieldNamePrefix+"observedTime"] = strconv.FormatInt(observedTs.UnixNano(), 10)
 	}
-	if sevText := log.SeverityText(); sevText != "" {
-		attrs["severity.text"] = sevText
-	}
+
 	if span := log.SpanID().String(); span != "" {
 		attrs["span_id"] = span
 	}
@@ -111,9 +203,6 @@ func buildEventFromLog(
 	if event.Ts == "" {
 		// ObservedTimestamp should always be set, but in case if it's not, we fall back to
 		// current time
-		// TODO: We should probably also do a rate limited log message here since this
-		// could indicate an issue with the current setup in case most events don't contain
-		// a timestamp.
 		if !observedTs.Equal(time.Unix(0, 0)) {
 			event.Ts = strconv.FormatInt(observedTs.UnixNano(), 10)
 		} else {
@@ -122,14 +211,17 @@ func buildEventFromLog(
 	}
 
 	updateWithPrefixedValues(attrs, "attributes.", ".", log.Attributes().AsRaw(), 0)
-	attrs["flags"] = log.Flags()
-	attrs["flag.is_sampled"] = log.Flags().IsSampled()
 
 	if settings.ExportResourceInfo {
 		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
 	}
-	attrs["scope.name"] = scope.Name()
-	updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+
+	if settings.ExportScopeInfo {
+		if scope.Name() != "" {
+			attrs["scope.name"] = scope.Name()
+		}
+		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+	}
 
 	event.Attrs = attrs
 	event.Log = "LL"

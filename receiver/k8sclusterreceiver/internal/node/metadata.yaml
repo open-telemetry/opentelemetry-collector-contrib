@@ -1,5 +1,7 @@
 type: k8s/node
 
+parent: k8s_cluster
+
 sem_conv_version: 1.18.0
 
 resource_attributes:
@@ -71,5 +73,11 @@ metrics:
     enabled: true
     description: How many bytes of storage remaining that the node can allocate to pods
     unit: "By"
+    gauge:
+      value_type: int
+  k8s.node.allocatable_pods:
+    enabled: true
+    description: How many pods remaining the node can allocate
+    unit: "{pods}"
     gauge:
       value_type: int

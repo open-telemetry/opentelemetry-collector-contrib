@@ -64,7 +64,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageState(1))
+			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -78,7 +78,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithRabbitmqNodeName("attr-val"), WithRabbitmqQueueName("attr-val"), WithRabbitmqVhostName("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -87,32 +89,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("rabbitmq.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.RabbitmqNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.queue.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqQueueName.Enabled, ok)
-			if mb.resourceAttributesConfig.RabbitmqQueueName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.vhost.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqVhostName.Enabled, ok)
-			if mb.resourceAttributesConfig.RabbitmqVhostName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 3)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -168,7 +145,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "ready", attrVal.Str())
+					assert.EqualValues(t, "ready", attrVal.Str())
 				case "rabbitmq.message.delivered":
 					assert.False(t, validatedMetrics["rabbitmq.message.delivered"], "Found a duplicate in the metrics slice: rabbitmq.message.delivered")
 					validatedMetrics["rabbitmq.message.delivered"] = true

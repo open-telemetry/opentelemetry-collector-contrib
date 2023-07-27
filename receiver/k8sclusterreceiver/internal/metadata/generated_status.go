@@ -9,4 +9,5 @@ import (
 const (
 	Type             = "k8s_cluster"
 	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelDevelopment
 )

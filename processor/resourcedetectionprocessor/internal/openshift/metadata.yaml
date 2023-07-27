@@ -1,5 +1,12 @@
 type: resourcedetectionprocessor/openshift
 
+parent: resourcedetection
+
+status:
+  class: processor
+  codeowners:
+    active: [frzifus]
+
 resource_attributes:
   cloud.provider:
     description: The cloud.provider

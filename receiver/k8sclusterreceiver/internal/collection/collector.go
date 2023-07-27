@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -24,7 +23,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
@@ -104,35 +102,35 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		md = ocsToMetrics(pod.GetMetrics(o, dc.settings.TelemetrySettings.Logger))
+		md = pod.GetMetrics(dc.settings, o)
 	case *corev1.Node:
 		md = node.GetMetrics(dc.settings, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
 	case *corev1.Namespace:
 		md = namespace.GetMetrics(dc.settings, o)
 	case *corev1.ReplicationController:
-		md = ocsToMetrics(replicationcontroller.GetMetrics(o))
+		md = replicationcontroller.GetMetrics(dc.settings, o)
 	case *corev1.ResourceQuota:
 		md = resourcequota.GetMetrics(dc.settings, o)
 	case *appsv1.Deployment:
 		md = deployment.GetMetrics(dc.settings, o)
 	case *appsv1.ReplicaSet:
-		md = ocsToMetrics(replicaset.GetMetrics(o))
+		md = replicaset.GetMetrics(dc.settings, o)
 	case *appsv1.DaemonSet:
-		md = ocsToMetrics(demonset.GetMetrics(o))
+		md = demonset.GetMetrics(dc.settings, o)
 	case *appsv1.StatefulSet:
 		md = statefulset.GetMetrics(dc.settings, o)
 	case *batchv1.Job:
-		md = ocsToMetrics(jobs.GetMetrics(o))
+		md = jobs.GetMetrics(dc.settings, o)
 	case *batchv1.CronJob:
-		md = ocsToMetrics(cronjob.GetMetrics(o))
+		md = cronjob.GetMetrics(dc.settings, o)
 	case *batchv1beta1.CronJob:
-		md = ocsToMetrics(cronjob.GetMetricsBeta(o))
+		md = cronjob.GetMetricsBeta(dc.settings, o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
 		md = hpa.GetMetrics(dc.settings, o)
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
 		md = hpa.GetMetricsBeta(dc.settings, o)
 	case *quotav1.ClusterResourceQuota:
-		md = ocsToMetrics(clusterresourcequota.GetMetrics(o))
+		md = clusterresourcequota.GetMetrics(dc.settings, o)
 	default:
 		return
 	}
@@ -175,12 +173,4 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[experimentalmetricmet
 	}
 
 	return km
-}
-
-func ocsToMetrics(ocs []*agentmetricspb.ExportMetricsServiceRequest) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	for _, ocm := range ocs {
-		internaldata.OCToMetrics(ocm.Node, ocm.Resource, ocm.Metrics).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-	}
-	return md
 }

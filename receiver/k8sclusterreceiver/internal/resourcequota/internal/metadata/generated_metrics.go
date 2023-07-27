@@ -119,10 +119,8 @@ func newMetricK8sResourceQuotaUsed(cfg MetricConfig) metricK8sResourceQuotaUsed 
 type MetricsBuilder struct {
 	startTime                       pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                 int                 // maximum observed number of metrics per resource.
-	resourceCapacity                int                 // maximum observed number of resource attributes.
 	metricsBuffer                   pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                       component.BuildInfo // contains version information
-	resourceAttributesConfig        ResourceAttributesConfig
 	metricK8sResourceQuotaHardLimit metricK8sResourceQuotaHardLimit
 	metricK8sResourceQuotaUsed      metricK8sResourceQuotaUsed
 }
@@ -142,7 +140,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
-		resourceAttributesConfig:        mbc.ResourceAttributes,
 		metricK8sResourceQuotaHardLimit: newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
 		metricK8sResourceQuotaUsed:      newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
 	}
@@ -157,54 +154,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
-func WithK8sNamespaceName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNamespaceName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
-		}
-	}
-}
-
-// WithK8sResourcequotaName sets provided value as "k8s.resourcequota.name" attribute for current resource.
-func WithK8sResourcequotaName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sResourcequotaName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.resourcequota.name", val)
-		}
-	}
-}
-
-// WithK8sResourcequotaUID sets provided value as "k8s.resourcequota.uid" attribute for current resource.
-func WithK8sResourcequotaUID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sResourcequotaUID.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.resourcequota.uid", val)
-		}
-	}
-}
-
-// WithOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute for current resource.
-func WithOpencensusResourcetype(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.OpencensusResourcetype.Enabled {
-			rm.Resource().Attributes().PutStr("opencensus.resourcetype", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -229,7 +195,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/k8sclusterreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -238,7 +203,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sResourceQuotaUsed.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

@@ -43,6 +43,12 @@ func TestLoadConfig(t *testing.T) {
 			GMPConfig: GMPConfig{
 				ProjectID: "my-project",
 				UserAgent: "opentelemetry-collector-contrib {{version}}",
+				MetricConfig: MetricConfig{
+					ExtraMetricsConfig: ExtraMetricsConfig{
+						EnableTargetInfo: true,
+						EnableScopeInfo:  true,
+					},
+				},
 			},
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:             true,

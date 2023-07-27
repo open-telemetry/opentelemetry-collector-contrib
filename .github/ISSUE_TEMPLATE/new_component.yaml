@@ -1,7 +1,7 @@
 name: New component proposal
 description: Suggest a new component for the project
 title: "New component: "
-labels: ["new component", "needs triage"]
+labels: ["Sponsor Needed", "needs triage"]
 body:
   - type: textarea
     attributes:
@@ -27,11 +27,21 @@ body:
       description: A vendor-specific component directly interfaces with a vendor-specific API and is expected to be maintained by a representative of the same vendor.
       options:
         - label: This is a vendor-specific component
-        - label: If this is a vendor-specific component, I am proposing to contribute this as a representative of the vendor.
+        - label: If this is a vendor-specific component, I am proposing to contribute and support it as a representative of the vendor.
+  - type: input
+    attributes:
+      label: Code Owner(s)
+      description: A code owner is responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
+        Please list one or more members or aspiring members of the OpenTelemetry project who will serve as code owners.
+        For vendor-specific components, the code owner is required and must be a representative of the vendor.
+        For non-vendor components, having a code owner is strongly recommended. However, you may use the issue to try to find a code owner for your component.
   - type: input
     attributes:
       label: Sponsor (optional)
-      description: "A sponsor is an approver who will be in charge of being the official reviewer of the code. For vendor-specific components, it's good to have a volunteer sponsor. If you can't find one, we'll assign one in a round-robin fashion. For non-vendor components, having a sponsor means that your use-case has been validated. If there are no sponsors yet for the component, it's fine: use the issue as a means to try to find a sponsor for your component."
+      description: "A sponsor is an approver who will be in charge of being the official reviewer of the code.
+        For vendor-specific components, it's good to have a volunteer sponsor. If you can't find one, we'll assign one in a round-robin fashion.
+        For non-vendor components, having a sponsor means that your use-case has been validated.
+        If there are no sponsors yet for the component, it's fine: use the issue as a means to try to find a sponsor for your component."
   - type: textarea
     attributes:
       label: Additional context

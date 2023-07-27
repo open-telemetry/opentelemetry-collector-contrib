@@ -5,3 +5,5 @@ status:
   stability:
     beta: [traces, metrics, logs]
   distributions: [contrib, splunk, observiq, sumo, aws, redhat]
+  codeowners:
+    active: [Aneurysm9, dashpole]

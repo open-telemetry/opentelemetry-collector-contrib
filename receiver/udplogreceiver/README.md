@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib], [observiq], [sumo] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fudplog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fudplog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fudplog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fudplog) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -16,15 +18,16 @@ Receives logs over UDP.
 
 ## Configuration Fields
 
-| Field             | Default          | Description                                                                                                        |
-| ---               | ---              | ---                                                                                                                |
-| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                                                         |
-| `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
-| `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                                         |
-| `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
-| `multiline`       |                  | A `multiline` configuration block. See below for details                                                           |
-| `encoding`        | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
-| `operators`       | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
+| Field                     | Default              | Description                                                                                                        |
+| ---                       | ---                  | ---                                                                                                                |
+| `listen_address`          | required             | A listen address of the form `<ip>:<port>`                                                                         |
+| `attributes`              | {}                   | A map of `key: value` pairs to add to the entry's attributes                                                       |
+| `one_log_per_packet`      | false                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
+| `resource`                | {}                   | A map of `key: value` pairs to add to the entry's resource                                                         |
+| `add_attributes`          | false                | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
+| `multiline`               |                      | A `multiline` configuration block. See below for details                                                           |
+| `encoding`                | `utf-8`              | The encoding of the file being read. See the list of supported encodings below for available options               |
+| `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 
 ### Operators
 

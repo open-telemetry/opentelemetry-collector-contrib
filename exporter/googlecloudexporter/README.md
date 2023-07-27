@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib], [observiq] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fgooglecloud%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fgooglecloud) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fgooglecloud%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fgooglecloud) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aabmass](https://www.github.com/aabmass), [@dashpole](https://www.github.com/dashpole), [@jsuereth](https://www.github.com/jsuereth), [@punya](https://www.github.com/punya), [@damemi](https://www.github.com/damemi), [@psx95](https://www.github.com/psx95) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -176,7 +178,9 @@ The following configuration options are supported:
 - `metric` (optional): Configuration for sending metrics to Cloud Monitoring.
   - `prefix` (default = `workload.googleapis.com`): The prefix to add to metrics.
   - `endpoint` (default = monitoring.googleapis.com): Endpoint where metric data is going to be sent to.
-  - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `known_domains` (default = [googleapis.com, kubernetes.io, istio.io, knative.dev]): If a metric belongs to one of these domains it does not get a prefix.
   - `skip_create_descriptor` (default = false): If set to true, do not send metric descriptors to GCM.
   - `instrumentation_library_labels` (default = true): If true, set the instrumentation_source and instrumentation_version labels.
@@ -196,13 +200,17 @@ The following configuration options are supported:
       errors (`UNAVAILABLE` or `DEADLINE_EXCEEDED`).
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
   - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
-  - `use_insecure` (default = false): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
+  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes http and service keys so that they appear more prominently in the UI.
     - `key`: Key is the OpenTelemetry attribute key
     - `replacement`: Replacement is the attribute sent to Google Cloud Trace
 - `log` (optional): Configuration for sending metrics to Cloud Logging.
-  - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to. D
-  - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
+  - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to.
+  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
+  - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
+  - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` attribute set, the exporter will return an error processing that entry.
   - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
@@ -233,6 +241,54 @@ following proxy environment variables:
 
 If set at Collector start time then exporters, regardless of protocol,
 will or will not proxy traffic as defined by these environment variables.
+
+### Preventing metric label collisions
+
+The metrics exporter can add metric labels to timeseries, such as when setting
+`metric.service_resource_labels`, `metric.instrumentation_library_labels` (both
+on by default), or when using `metric.resource_filters` to convert resource
+attributes to metric labels.
+
+However, if your metrics already contain any of these labels they will fail to
+export to Google Cloud with a `Duplicate label key encountered` error. Such
+labels from the default features above include:
+
+* `service_name`
+* `service_namespace`
+* `service_instance_id`
+* `instrumentation_source`
+* `instrumentation_version`
+
+*(Note that these are the sanitized versions of OpenTelemetry attributes, with `.` replaced by `_` to be compatible with Cloud Monitoring. For example, `service_name` comes from the [`service.name` resource attribute](https://github.com/open-telemetry/opentelemetry-specification/blob/dc78006c12d9767fd2e35b691706c7572a76fd43/specification/resource/semantic_conventions/README.md#service).)*
+
+To prevent this, it's recommended to use the [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/c7bd50ce773e66be327ef7618775a884a774e5d1/processor/transformprocessor) in your collector config to rename existing metric labels to preserve them, for example:
+
+```yaml
+processors:
+  transform:
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(attributes["exported_service_name"], attributes["service_name"])
+      - delete_key(attributes, "service_name")
+      - set(attributes["exported_service_namespace"], attributes["service_namespace"])
+      - delete_key(attributes, "service_namespace")
+      - set(attributes["exported_service_instance_id"], attributes["service_instance_id"])
+      - delete_key(attributes, "service_instance_id")
+      - set(attributes["exported_instrumentation_source"], attributes["instrumentation_source"])
+      - delete_key(attributes, "instrumentation_source")
+      - set(attributes["exported_instrumentation_version"], attributes["instrumentation_version"])
+      - delete_key(attributes, "instrumentation_version")
+```
+
+The same method can be used for any resource attributes being filtered to metric
+labels, or metric labels which might collide with the GCP monitored resource
+used with resource detection.
+
+Keep in mind that your conflicting attributes may contain dots instead of
+underscores (eg, `service.name`), but these will still collide once all
+attributes are normalized to metric labels. In this case you will need to update
+the collector config above appropriately.
 
 ### Logging Example
 

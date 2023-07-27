@@ -30,9 +30,9 @@ func TestScrape(t *testing.T) {
 		name                     string
 		config                   Config
 		rootPath                 string
-		bootTimeFunc             func() (uint64, error)
-		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
-		usageFunc                func(string) (*disk.UsageStat, error)
+		bootTimeFunc             func(context.Context) (uint64, error)
+		partitionsFunc           func(context.Context, bool) ([]disk.PartitionStat, error)
+		usageFunc                func(context.Context, string) (*disk.UsageStat, error)
 		expectMetrics            bool
 		expectedDeviceDataPoints int
 		expectedDeviceAttributes []map[string]pcommon.Value
@@ -55,10 +55,10 @@ func TestScrape(t *testing.T) {
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				IncludeDevices:       DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}},
 			},
-			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{{Device: "a"}, {Device: "b"}}, nil
 			},
-			usageFunc: func(string) (*disk.UsageStat, error) {
+			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{}, nil
 			},
 			expectMetrics:            true,
@@ -79,14 +79,14 @@ func TestScrape(t *testing.T) {
 				IncludeVirtualFS:     true,
 				IncludeFSTypes:       FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
 			},
-			partitionsFunc: func(includeVirtual bool) (paritions []disk.PartitionStat, err error) {
+			partitionsFunc: func(_ context.Context, includeVirtual bool) (paritions []disk.PartitionStat, err error) {
 				paritions = append(paritions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
 				if includeVirtual {
 					paritions = append(paritions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
 				}
 				return paritions, err
 			},
-			usageFunc: func(s string) (*disk.UsageStat, error) {
+			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{}, nil
 			},
 			expectMetrics:            true,
@@ -115,12 +115,12 @@ func TestScrape(t *testing.T) {
 					MountPoints: []string{"mount_point_b", "mount_point_c"},
 				},
 			},
-			usageFunc: func(s string) (*disk.UsageStat, error) {
+			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{
 					Fstype: "fs_type_a",
 				}, nil
 			},
-			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+			partitionsFunc: func(_ context.Context, b bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{
 					{
 						Device:     "device_a",
@@ -167,7 +167,7 @@ func TestScrape(t *testing.T) {
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			rootPath: filepath.Join("/", "hostfs"),
-			usageFunc: func(s string) (*disk.UsageStat, error) {
+			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
 				if s != filepath.Join("/hostfs", "mount_point_a") {
 					return nil, errors.New("mountpoint not translated according to RootPath")
 				}
@@ -175,7 +175,7 @@ func TestScrape(t *testing.T) {
 					Fstype: "fs_type_a",
 				}, nil
 			},
-			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+			partitionsFunc: func(_ context.Context, b bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{
 					{
 						Device:     "device_a",
@@ -245,7 +245,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:           "Partitions Error",
-			partitionsFunc: func(bool) ([]disk.PartitionStat, error) { return nil, errors.New("err1") },
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) { return nil, errors.New("err1") },
 			expectedErr:    "err1",
 		},
 		{
@@ -265,12 +265,12 @@ func TestScrape(t *testing.T) {
 					FSTypes: []string{"fs_type_b"},
 				},
 			},
-			usageFunc: func(s string) (*disk.UsageStat, error) {
+			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{
 					Fstype: "fs_type_a",
 				}, nil
 			},
-			partitionsFunc: func(b bool) ([]disk.PartitionStat, error) {
+			partitionsFunc: func(_ context.Context, b bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{
 					{
 						Device:     "device_a",
@@ -306,7 +306,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:        "Usage Error",
-			usageFunc:   func(string) (*disk.UsageStat, error) { return nil, errors.New("err2") },
+			usageFunc:   func(context.Context, string) (*disk.UsageStat, error) { return nil, errors.New("err2") },
 			expectedErr: "err2",
 		},
 	}

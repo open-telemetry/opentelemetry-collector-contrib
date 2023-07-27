@@ -1,5 +1,7 @@
 type: resourcedetectionprocessor/lambda
 
+parent: resourcedetection
+
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -15,11 +17,11 @@ resource_attributes:
     enabled: true
   aws.log.group.names:
     description: The aws.log.group.names
-    type: string
+    type: slice
     enabled: true
   aws.log.stream.names:
     description: The aws.log.stream.names
-    type: string
+    type: slice
     enabled: true
   faas.name:
     description: faas.name

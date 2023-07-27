@@ -155,7 +155,11 @@ func (s *Supervisor) loadConfig(configFile string) error {
 		return err
 	}
 
-	if err := k.Unmarshal("", &s.config); err != nil {
+	decodeConf := koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	}
+
+	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
 		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
 
@@ -170,11 +174,46 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	return nil
 }
 
+func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
+	var supportedCapabilities protobufs.AgentCapabilities
+	if c := s.config.Capabilities; c != nil {
+		// ReportsEffectiveConfig is set if unspecified or explicitly set to true.
+		if (c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig) || c.ReportsEffectiveConfig == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
+		}
+
+		// ReportsHealth is set if unspecified or explicitly set to true.
+		if (c.ReportsHealth != nil && *c.ReportsHealth) || c.ReportsHealth == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
+		}
+
+		// ReportsOwnMetrics is set if unspecified or explicitly set to true.
+		if (c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics) || c.ReportsOwnMetrics == nil {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
+		}
+
+		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
+		}
+
+		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+		}
+	}
+	return supportedCapabilities
+}
+
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(s.logger.Sugar())
 
+	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
+	if err != nil {
+		return err
+	}
+
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
+		TLSConfig:      tlsConfig,
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func() {
@@ -211,14 +250,9 @@ func (s *Supervisor) startOpAMP() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
-		// TODO: Make capabilities configurable
-		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
-			protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
+		Capabilities: s.Capabilities(),
 	}
-	err := s.opampClient.SetAgentDescription(s.createAgentDescription())
+	err = s.opampClient.SetAgentDescription(s.createAgentDescription())
 	if err != nil {
 		return err
 	}

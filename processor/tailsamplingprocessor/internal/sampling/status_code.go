@@ -54,8 +54,8 @@ func (r *statusCodeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace 
 	r.logger.Debug("Evaluating spans in status code filter")
 
 	trace.Lock()
+	defer trace.Unlock()
 	batches := trace.ReceivedBatches
-	trace.Unlock()
 
 	return hasSpanWithCondition(batches, func(span ptrace.Span) bool {
 		for _, statusCode := range r.statusCodes {

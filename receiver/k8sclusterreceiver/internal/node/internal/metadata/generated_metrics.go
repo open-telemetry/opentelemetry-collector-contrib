@@ -159,6 +159,55 @@ func newMetricK8sNodeAllocatableMemory(cfg MetricConfig) metricK8sNodeAllocatabl
 	return m
 }
 
+type metricK8sNodeAllocatablePods struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.allocatable_pods metric with initial data.
+func (m *metricK8sNodeAllocatablePods) init() {
+	m.data.SetName("k8s.node.allocatable_pods")
+	m.data.SetDescription("How many pods remaining the node can allocate")
+	m.data.SetUnit("{pods}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sNodeAllocatablePods) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeAllocatablePods) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeAllocatablePods) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeAllocatablePods(cfg MetricConfig) metricK8sNodeAllocatablePods {
+	m := metricK8sNodeAllocatablePods{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sNodeAllocatableStorage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -458,13 +507,12 @@ func newMetricK8sNodeConditionReady(cfg MetricConfig) metricK8sNodeConditionRead
 type MetricsBuilder struct {
 	startTime                                pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                          int                 // maximum observed number of metrics per resource.
-	resourceCapacity                         int                 // maximum observed number of resource attributes.
 	metricsBuffer                            pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                component.BuildInfo // contains version information
-	resourceAttributesConfig                 ResourceAttributesConfig
 	metricK8sNodeAllocatableCPU              metricK8sNodeAllocatableCPU
 	metricK8sNodeAllocatableEphemeralStorage metricK8sNodeAllocatableEphemeralStorage
 	metricK8sNodeAllocatableMemory           metricK8sNodeAllocatableMemory
+	metricK8sNodeAllocatablePods             metricK8sNodeAllocatablePods
 	metricK8sNodeAllocatableStorage          metricK8sNodeAllocatableStorage
 	metricK8sNodeConditionDiskPressure       metricK8sNodeConditionDiskPressure
 	metricK8sNodeConditionMemoryPressure     metricK8sNodeConditionMemoryPressure
@@ -488,10 +536,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                            pmetric.NewMetrics(),
 		buildInfo:                                settings.BuildInfo,
-		resourceAttributesConfig:                 mbc.ResourceAttributes,
 		metricK8sNodeAllocatableCPU:              newMetricK8sNodeAllocatableCPU(mbc.Metrics.K8sNodeAllocatableCPU),
 		metricK8sNodeAllocatableEphemeralStorage: newMetricK8sNodeAllocatableEphemeralStorage(mbc.Metrics.K8sNodeAllocatableEphemeralStorage),
 		metricK8sNodeAllocatableMemory:           newMetricK8sNodeAllocatableMemory(mbc.Metrics.K8sNodeAllocatableMemory),
+		metricK8sNodeAllocatablePods:             newMetricK8sNodeAllocatablePods(mbc.Metrics.K8sNodeAllocatablePods),
 		metricK8sNodeAllocatableStorage:          newMetricK8sNodeAllocatableStorage(mbc.Metrics.K8sNodeAllocatableStorage),
 		metricK8sNodeConditionDiskPressure:       newMetricK8sNodeConditionDiskPressure(mbc.Metrics.K8sNodeConditionDiskPressure),
 		metricK8sNodeConditionMemoryPressure:     newMetricK8sNodeConditionMemoryPressure(mbc.Metrics.K8sNodeConditionMemoryPressure),
@@ -510,45 +558,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithK8sNodeName sets provided value as "k8s.node.name" attribute for current resource.
-func WithK8sNodeName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNodeName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.node.name", val)
-		}
-	}
-}
-
-// WithK8sNodeUID sets provided value as "k8s.node.uid" attribute for current resource.
-func WithK8sNodeUID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNodeUID.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.node.uid", val)
-		}
-	}
-}
-
-// WithOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute for current resource.
-func WithOpencensusResourcetype(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.OpencensusResourcetype.Enabled {
-			rm.Resource().Attributes().PutStr("opencensus.resourcetype", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -573,7 +599,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/k8sclusterreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -581,6 +606,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sNodeAllocatableCPU.emit(ils.Metrics())
 	mb.metricK8sNodeAllocatableEphemeralStorage.emit(ils.Metrics())
 	mb.metricK8sNodeAllocatableMemory.emit(ils.Metrics())
+	mb.metricK8sNodeAllocatablePods.emit(ils.Metrics())
 	mb.metricK8sNodeAllocatableStorage.emit(ils.Metrics())
 	mb.metricK8sNodeConditionDiskPressure.emit(ils.Metrics())
 	mb.metricK8sNodeConditionMemoryPressure.emit(ils.Metrics())
@@ -589,7 +615,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sNodeConditionReady.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -620,6 +646,11 @@ func (mb *MetricsBuilder) RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts p
 // RecordK8sNodeAllocatableMemoryDataPoint adds a data point to k8s.node.allocatable_memory metric.
 func (mb *MetricsBuilder) RecordK8sNodeAllocatableMemoryDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNodeAllocatableMemory.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sNodeAllocatablePodsDataPoint adds a data point to k8s.node.allocatable_pods metric.
+func (mb *MetricsBuilder) RecordK8sNodeAllocatablePodsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeAllocatablePods.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sNodeAllocatableStorageDataPoint adds a data point to k8s.node.allocatable_storage metric.

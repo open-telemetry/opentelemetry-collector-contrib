@@ -24,8 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-const defaultResourcesLen = 5
-
 const (
 	defaultDockerAPIVersion         = 1.23
 	minimalRequiredDockerAPIVersion = 1.22
@@ -41,6 +39,7 @@ type receiver struct {
 	config   *Config
 	settings rcvr.CreateSettings
 	client   *docker.Client
+	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -48,6 +47,7 @@ func newReceiver(set rcvr.CreateSettings, config *Config) *receiver {
 	return &receiver{
 		config:   config,
 		settings: set,
+		rb:       metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
 }
@@ -125,33 +125,27 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	}
 
 	// Always-present resource attrs + the user-configured resource attrs
-	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
-	resourceMetricsOptions := make([]metadata.ResourceMetricsOption, 0, resourceCapacity)
-	resourceMetricsOptions = append(resourceMetricsOptions,
-		metadata.WithContainerRuntime("docker"),
-		metadata.WithContainerHostname(container.Config.Hostname),
-		metadata.WithContainerID(container.ID),
-		metadata.WithContainerImageName(container.Config.Image),
-		metadata.WithContainerName(strings.TrimPrefix(container.Name, "/")))
+	r.rb.SetContainerRuntime("docker")
+	r.rb.SetContainerHostname(container.Config.Hostname)
+	r.rb.SetContainerID(container.ID)
+	r.rb.SetContainerImageName(container.Config.Image)
+	r.rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
+	r.rb.SetContainerImageID(container.Image)
+	r.rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
+	resource := r.rb.Emit()
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
-		label := label
 		if v := container.EnvMap[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutStr(label, v)
-			})
+			resource.Attributes().PutStr(label, v)
 		}
 	}
 	for k, label := range r.config.ContainerLabelsToMetricLabels {
-		label := label
 		if v := container.Config.Labels[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutStr(label, v)
-			})
+			resource.Attributes().PutStr(label, v)
 		}
 	}
 
-	r.mb.EmitForResource(resourceMetricsOptions...)
+	r.mb.EmitForResource(metadata.WithResource(resource))
 	return errs
 }
 

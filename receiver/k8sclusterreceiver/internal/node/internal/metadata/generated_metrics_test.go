@@ -68,6 +68,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -90,7 +94,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNodeConditionReadyDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithK8sNodeName("attr-val"), WithK8sNodeUID("attr-val"), WithOpencensusResourcetype("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -99,32 +105,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("k8s.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.node.uid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNodeUID.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNodeUID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("opencensus.resourcetype")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.OpencensusResourcetype.Enabled, ok)
-			if mb.resourceAttributesConfig.OpencensusResourcetype.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 3)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -167,6 +148,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "How many bytes of RAM memory remaining that the node can allocate to pods", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.allocatable_pods":
+					assert.False(t, validatedMetrics["k8s.node.allocatable_pods"], "Found a duplicate in the metrics slice: k8s.node.allocatable_pods")
+					validatedMetrics["k8s.node.allocatable_pods"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "How many pods remaining the node can allocate", ms.At(i).Description())
+					assert.Equal(t, "{pods}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

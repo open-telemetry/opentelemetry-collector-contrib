@@ -61,65 +61,55 @@ func TestBuildBody(t *testing.T) {
 	err = bytes.FromRaw([]byte{byte(65), byte(66), byte(67)})
 	assert.NoError(t, err)
 	tests := []struct {
-		body    pcommon.Value
-		key     string
-		value   interface{}
-		message string
+		body      pcommon.Value
+		valueType string
+		message   string
 	}{
 		{
-			body:    pcommon.NewValueEmpty(),
-			key:     "body.empty",
-			value:   "",
-			message: "",
+			body:      pcommon.NewValueEmpty(),
+			valueType: "empty",
+			message:   "",
 		},
 		{
-			body:    pcommon.NewValueStr("foo"),
-			key:     "body.str",
-			value:   "foo",
-			message: "foo",
+			body:      pcommon.NewValueStr("foo"),
+			valueType: "string",
+			message:   "foo",
 		},
 		{
-			body:    pcommon.NewValueBool(true),
-			key:     "body.bool",
-			value:   true,
-			message: "true",
+			body:      pcommon.NewValueBool(true),
+			valueType: "bool",
+			message:   "true",
 		},
 		{
-			body:    pcommon.NewValueDouble(42.5),
-			key:     "body.double",
-			value:   float64(42.5),
-			message: "42.5",
+			body:      pcommon.NewValueDouble(42.5),
+			valueType: "double",
+			message:   "42.5",
 		},
 		{
-			body:    pcommon.NewValueInt(42),
-			key:     "body.int",
-			value:   int64(42),
-			message: "42",
+			body:      pcommon.NewValueInt(42),
+			valueType: "int",
+			message:   "42",
 		},
 		{
-			body:    bytes,
-			key:     "body.bytes",
-			value:   "QUJD",
-			message: "QUJD",
+			body:      bytes,
+			valueType: "bytes",
+			message:   "QUJD",
 		},
 		{
-			body:    slice,
-			key:     "body.slice",
-			value:   []interface{}{int64(1), int64(2), int64(3)},
-			message: "[1,2,3]",
+			body:      slice,
+			valueType: "simpleMap",
+			message:   "[1,2,3]",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.key, func(*testing.T) {
-			attrs := make(map[string]interface{})
-			msg := buildBody(attrs, tt.body)
-			expectedAttrs := make(map[string]interface{})
-			expectedAttrs["body.type"] = tt.body.Type().String()
-			expectedAttrs[tt.key] = tt.value
+	settings := newDefaultLogsSettings()
 
-			assert.Equal(t, tt.message, msg, tt.key)
-			assert.Equal(t, expectedAttrs, attrs, tt.key)
+	for _, tt := range tests {
+		t.Run(tt.valueType, func(*testing.T) {
+			attrs := make(map[string]interface{})
+			msg := buildBody(settings, attrs, tt.body)
+
+			assert.Equal(t, tt.message, msg, tt.valueType)
 		})
 	}
 }
@@ -135,10 +125,12 @@ func TestBuildBodyMap(t *testing.T) {
 		"array": []any{1, 2, 3},
 	})
 	if assert.NoError(t, err) {
+		settings := newDefaultLogsSettings()
+		settings.DecomposeComplexMessageField = true
 		attrs := make(map[string]interface{})
-		msg := buildBody(attrs, m)
+
+		msg := buildBody(settings, attrs, m)
 		expectedAttrs := make(map[string]interface{})
-		expectedAttrs["body.type"] = pcommon.ValueTypeMap.String()
 		expectedAttrs["body.map.scalar"] = "scalar-value"
 		expectedAttrs["body.map.map.m1"] = "v1"
 		expectedAttrs["body.map.map.m2"] = "v2"
@@ -156,20 +148,29 @@ func TestBuildBodyMap(t *testing.T) {
 var testLEventRaw = &add_events.Event{
 	Thread: "TL",
 	Log:    "LL",
-	Sev:    9,
+	Sev:    3,
 	Ts:     "1581452773000000789",
 	Attrs: map[string]interface{}{
 		"attributes.app":           "server",
 		"attributes.instance_num":  int64(1),
-		"body.str":                 "This is a log message",
-		"body.type":                "Str",
 		"dropped_attributes_count": uint32(1),
-		"flag.is_sampled":          false,
-		"flags":                    plog.LogRecordFlags(0),
-		"message":                  "OtelExporter - Log - This is a log message",
-		"scope.name":               "",
-		"severity.number":          plog.SeverityNumberInfo,
-		"severity.text":            "Info",
+		"message":                  "This is a log message",
+		"span_id":                  "0102040800000000",
+		"trace_id":                 "08040201000000000000000000000000",
+	},
+}
+
+var testLEventRawWithScopeInfo = &add_events.Event{
+	Thread: "TL",
+	Log:    "LL",
+	Sev:    3,
+	Ts:     "1581452773000000789",
+	Attrs: map[string]interface{}{
+		"attributes.app":           "server",
+		"attributes.instance_num":  int64(1),
+		"dropped_attributes_count": uint32(1),
+		"scope.name":               "test-scope",
+		"message":                  "This is a log message",
 		"span_id":                  "0102040800000000",
 		"trace_id":                 "08040201000000000000000000000000",
 	},
@@ -183,15 +184,8 @@ var testLEventReq = &add_events.Event{
 	Attrs: map[string]interface{}{
 		"attributes.app":           "server",
 		"attributes.instance_num":  float64(1),
-		"body.str":                 "This is a log message",
-		"body.type":                "Str",
 		"dropped_attributes_count": float64(1),
-		"flag.is_sampled":          false,
-		"flags":                    float64(plog.LogRecordFlags(0)),
-		"message":                  "OtelExporter - Log - This is a log message",
-		"scope.name":               "",
-		"severity.number":          float64(plog.SeverityNumberInfo),
-		"severity.text":            "Info",
+		"message":                  "This is a log message",
 		"span_id":                  "0102040800000000",
 		"trace_id":                 "08040201000000000000000000000000",
 		"bundle_key":               "d41d8cd98f00b204e9800998ecf8427e",
@@ -251,12 +245,44 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
 		LogsSettings{
 			ExportResourceInfo: true,
+			ExportScopeInfo:    true,
 		},
 	)
 
 	assert.Equal(t, expected, was)
 }
 
+func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("test-scope")
+	scope.SetDroppedAttributesCount(11)
+
+	expected := &add_events.EventBundle{
+		Event: &add_events.Event{
+			Thread: testLEventRawWithScopeInfo.Thread,
+			Log:    testLEventRawWithScopeInfo.Log,
+			Sev:    testLEventRawWithScopeInfo.Sev,
+			Ts:     testLEventRawWithScopeInfo.Ts,
+			Attrs:  testLEventRawWithScopeInfo.Attrs,
+		},
+		Thread: testLThread,
+		Log:    testLLog,
+	}
+	was := buildEventFromLog(
+		ld,
+		lr.ResourceLogs().At(0).Resource(),
+		scope,
+		LogsSettings{
+			ExportResourceInfo: false,
+			ExportScopeInfo:    true,
+		},
+	)
+
+	assert.Equal(t, expected, was)
+}
 func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
 	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
 	// ObservedTimestamp should be used
@@ -267,7 +293,8 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 	ld.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(1686235113, 0)))
 
 	testLEventRaw.Ts = "1686235113000000000"
-	testLEventRaw.Attrs["observed.timestamp"] = "2023-06-08 14:38:33 +0000 UTC"
+	// 2023-06-08 14:38:33 +0000 UTC
+	testLEventRaw.Attrs["sca:observedTime"] = "1686235113000000000"
 	delete(testLEventRaw.Attrs, "timestamp")
 	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
 
@@ -304,7 +331,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 
 	testLEventRaw.Ts = strconv.FormatInt(currentTime.UnixNano(), 10)
 	delete(testLEventRaw.Attrs, "timestamp")
-	delete(testLEventRaw.Attrs, "observed.timestamp")
+	delete(testLEventRaw.Attrs, "sca:observedTime")
 	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
 
 	expected := &add_events.EventBundle{
@@ -371,6 +398,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
 		},
+		LogsSettings:    newDefaultLogsSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -406,4 +434,188 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		},
 		addRequest,
 	)
+}
+
+func makeLogRecordWithSeverityNumberAndSeverityText(sevNum int, sevText string) plog.LogRecord {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	ld.SetSeverityNumber(plog.SeverityNumber(sevNum))
+	ld.SetSeverityText(sevText)
+
+	return ld
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextInvalidValues(t *testing.T) {
+	// Invalid values get mapped to info (3 - INFO)
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "")
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(-1, "")
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(25, "")
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(100, "")
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
+
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetTraceLogLevel(t *testing.T) {
+	// trace
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(1, "")
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(2, "")
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(3, "")
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(4, "")
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetDebugLogLevel(t *testing.T) {
+	// debug
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(5, "")
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(6, "")
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(7, "")
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(8, "")
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetInfoLogLevel(t *testing.T) {
+	// info
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(9, "")
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(10, "")
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(11, "")
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(12, "")
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetWarnLogLevel(t *testing.T) {
+	// warn
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(13, "")
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(14, "")
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(15, "")
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(16, "")
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetErrorLogLevel(t *testing.T) {
+	// error
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(17, "")
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(18, "")
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(19, "")
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(20, "")
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetFatalLogLevel(t *testing.T) {
+	// fatal
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(21, "")
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(22, "")
+	ld.SetSeverityNumber(22)
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(23, "")
+	ld.SetSeverityNumber(22)
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(24, "")
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumberInvalidValues(t *testing.T) {
+	// invalid values
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "a")
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(0, "infoinfo")
+	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumberDataSetTraceLogLevel(t *testing.T) {
+	// trace
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "trace")
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumberDataSetDebugLogLevel(t *testing.T) {
+	// debug
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "debug")
+	assert.Equal(t, dataSetLogLevelDebug, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumberDataSetInfoLogLevel(t *testing.T) {
+	// info
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "info")
+	assert.Equal(t, dataSetLogLevelInfo, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(0, "informational")
+	ld.SetSeverityText("informational")
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumberDataSetInfoWarnLevel(t *testing.T) {
+	// warn
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "warn")
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(0, "warning")
+	assert.Equal(t, dataSetLogLevelWarn, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumberDataSetInfoErrorLevel(t *testing.T) {
+	// error
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "error")
+	assert.Equal(t, dataSetLogLevelError, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityTextNoSeverityNumberDataSetInfoFatalLevel(t *testing.T) {
+	// fatal
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(0, "fatal")
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(0, "fatal")
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(0, "emergency")
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
+}
+
+func TestOtelSeverityToDataSetSeverityWithSeverityNumberAndSeverityTextSeverityNumberHasPriority(t *testing.T) {
+	// If provided, SeverityNumber has priority over SeverityText
+	ld := makeLogRecordWithSeverityNumberAndSeverityText(3, "debug")
+	assert.Equal(t, dataSetLogLevelTrace, mapOtelSeverityToDataSetSeverity(ld))
+
+	ld = makeLogRecordWithSeverityNumberAndSeverityText(22, "info")
+	assert.Equal(t, dataSetLogLevelFatal, mapOtelSeverityToDataSetSeverity(ld))
 }

@@ -5,6 +5,9 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [aws], [observiq], [sumo] |
+| Warnings      | [Other](#warnings) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fawscontainerinsight%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fawscontainerinsight) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fawscontainerinsight%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fawscontainerinsight) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@pxaws](https://www.github.com/pxaws) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -875,3 +878,17 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | EBSVolumeId          |
 <br/><br/>
 <br/><br/>
+
+# Warnings
+
+## Root permissions
+
+When using this component, the collector process needs root permission to be able to read the content of the files located in the following locations:
+   * `/`
+   * `/var/run/docker.sock`
+   * `/var/lib/docker`
+   * `/run/containerd/containerd.sock`
+   * `/sys`
+   * `/dev/disk`
+
+This requirement comes from the fact that this component is based on [cAdvisor](https://github.com/google/cadvisor).

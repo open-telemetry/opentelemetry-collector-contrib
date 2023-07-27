@@ -1,5 +1,7 @@
 type: resourcedetectionprocessor/system
 
+parent: resourcedetection
+
 resource_attributes:
   host.name:
     description: The host.name
@@ -8,8 +10,12 @@ resource_attributes:
   host.id:
     description: The host.id
     type: string
-    enabled: true
+    enabled: false
   os.type:
     description: The os.type
     type: string
     enabled: true
+  host.arch:
+    description: The host.arch
+    type: string
+    enabled: false

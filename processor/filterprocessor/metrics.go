@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterMetricProcessor struct {
@@ -39,7 +38,7 @@ func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*fi
 	}
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
-			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, common.MetricFunctions(), cfg.ErrorMode, set)
+			fsp.skipMetricExpr, err = filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, filterottl.StandardMetricFuncs(), cfg.ErrorMode, set)
 			if err != nil {
 				return nil, err
 			}
@@ -125,7 +124,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 			scope := smetrics.Scope()
 			smetrics.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
 				if fmp.skipMetricExpr != nil {
-					skip, err := fmp.skipMetricExpr.Eval(ctx, ottlmetric.NewTransformContext(metric, scope, resource))
+					skip, err := fmp.skipMetricExpr.Eval(ctx, ottlmetric.NewTransformContext(metric, smetrics.Metrics(), scope, resource))
 					if err != nil {
 						errors = multierr.Append(errors, err)
 					}
@@ -172,6 +171,32 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 }
 
 func newSkipResExpr(include *filterconfig.MetricMatchProperties, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+	if filtermetric.UseOTTLBridge.IsEnabled() {
+		mp := filterconfig.MatchConfig{}
+
+		if include != nil {
+			mp.Include = &filterconfig.MatchProperties{
+				Config: filterset.Config{
+					MatchType:    filterset.MatchType(include.MatchType),
+					RegexpConfig: include.RegexpConfig,
+				},
+				Resources: include.ResourceAttributes,
+			}
+		}
+
+		if exclude != nil {
+			mp.Exclude = &filterconfig.MatchProperties{
+				Config: filterset.Config{
+					MatchType:    filterset.MatchType(exclude.MatchType),
+					RegexpConfig: exclude.RegexpConfig,
+				},
+				Resources: exclude.ResourceAttributes,
+			}
+		}
+
+		return filterottl.NewResourceSkipExprBridge(&mp)
+	}
+
 	var matchers []expr.BoolExpr[ottlresource.TransformContext]
 	inclExpr, err := newResExpr(include)
 	if err != nil {

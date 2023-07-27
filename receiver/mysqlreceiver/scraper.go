@@ -27,6 +27,7 @@ type mySQLScraper struct {
 	sqlclient client
 	logger    *zap.Logger
 	config    *Config
+	rb        *metadata.ResourceBuilder
 	mb        *metadata.MetricsBuilder
 
 	// Feature gates regarding resource attributes
@@ -40,6 +41,7 @@ func newMySQLScraper(
 	ms := &mySQLScraper{
 		logger: settings.Logger,
 		config: config,
+		rb:     metadata.NewResourceBuilder(config.MetricsBuilderConfig.ResourceAttributes),
 		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 
@@ -55,10 +57,6 @@ func (m *mySQLScraper) start(_ context.Context, _ component.Host) error {
 		return err
 	}
 	m.sqlclient = sqlclient
-
-	if m.config.MetricsBuilderConfig.Metrics.MysqlLockedConnects.Enabled {
-		m.logger.Warn("`mysql.locked_connects` is deprecated and is going to be set as optional in `v0.81.0` and removed in `v0.82.0`. Please use `mysql.connection.errors` instead")
-	}
 
 	return nil
 }
@@ -108,7 +106,8 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// colect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
 
-	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+	m.rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.mb.EmitForResource(metadata.WithResource(m.rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
 }
@@ -196,7 +195,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorAborted))
 		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorLocked))
 

@@ -60,11 +60,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequest(1))
+			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequest(1))
+			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -72,13 +72,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperation(1))
+			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequest(1))
+			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 
-			metrics := mb.Emit(WithRiakNodeName("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -87,18 +89,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("riak.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RiakNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.RiakNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -140,7 +131,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					assert.EqualValues(t, "put", attrVal.Str())
 				case "riak.node.operation.time.mean":
 					assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
 					validatedMetrics["riak.node.operation.time.mean"] = true
@@ -155,7 +146,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					assert.EqualValues(t, "put", attrVal.Str())
 				case "riak.node.read_repair.count":
 					assert.False(t, validatedMetrics["riak.node.read_repair.count"], "Found a duplicate in the metrics slice: riak.node.read_repair.count")
 					validatedMetrics["riak.node.read_repair.count"] = true
@@ -186,7 +177,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "riak.vnode.operation.count":
 					assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
 					validatedMetrics["riak.vnode.operation.count"] = true
@@ -203,7 +194,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					assert.EqualValues(t, "put", attrVal.Str())
 				}
 			}
 		})

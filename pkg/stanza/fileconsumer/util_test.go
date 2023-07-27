@@ -17,17 +17,23 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func testEmitFunc(emitChan chan *emitParams) EmitFunc {
-	return func(_ context.Context, attrs *FileAttributes, token []byte) {
+func nopEmitFunc(_ context.Context, _ []byte, _ map[string]any) error {
+	return nil
+}
+
+func testEmitFunc(emitChan chan *emitParams) emit.Callback {
+	return func(_ context.Context, token []byte, attrs map[string]any) error {
 		copied := make([]byte, len(token))
 		copy(copied, token)
 		emitChan <- &emitParams{attrs, copied}
+		return nil
 	}
 }
 
@@ -54,14 +60,15 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 	return c
 }
 
-func emitOnChan(received chan []byte) EmitFunc {
-	return func(_ context.Context, _ *FileAttributes, token []byte) {
+func emitOnChan(received chan []byte) emit.Callback {
+	return func(_ context.Context, token []byte, _ map[string]any) error {
 		received <- token
+		return nil
 	}
 }
 
 type emitParams struct {
-	attrs *FileAttributes
+	attrs map[string]any
 	token []byte
 }
 
@@ -174,11 +181,11 @@ func waitForToken(t *testing.T, c chan *emitParams, expected []byte) {
 	}
 }
 
-func waitForTokenHeaderAttributes(t *testing.T, c chan *emitParams, expected []byte, headerAttributes map[string]any) {
+func waitForTokenWithAttributes(t *testing.T, c chan *emitParams, expected []byte, attrs map[string]any) {
 	select {
 	case call := <-c:
 		require.Equal(t, expected, call.token)
-		require.Equal(t, headerAttributes, call.attrs.HeaderAttributes)
+		require.Equal(t, attrs, call.attrs)
 	case <-time.After(3 * time.Second):
 		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}
@@ -205,8 +212,8 @@ func expectNoTokens(t *testing.T, c chan *emitParams) {
 
 func expectNoTokensUntil(t *testing.T, c chan *emitParams, d time.Duration) {
 	select {
-	case call := <-c:
-		require.FailNow(t, "Received unexpected message", "Message: %s", call.token)
+	case token := <-c:
+		require.FailNow(t, "Received unexpected message", "Message: %s", token)
 	case <-time.After(d):
 	}
 }

@@ -5,6 +5,8 @@ status:
   stability:
     development: [metrics]
   distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   server.state:

@@ -4,6 +4,7 @@
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 
 import (
+	quotav1 "github.com/openshift/api/quota/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
@@ -77,6 +78,50 @@ func NewJob(id string) *batchv1.Job {
 	}
 }
 
+func NewClusterResourceQuota(id string) *quotav1.ClusterResourceQuota {
+	return &quotav1.ClusterResourceQuota{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-clusterquota-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-clusterquota-" + id + "-uid"),
+		},
+		Status: quotav1.ClusterResourceQuotaStatus{
+			Total: corev1.ResourceQuotaStatus{
+				Hard: corev1.ResourceList{
+					"requests.cpu": *resource.NewQuantity(10, resource.DecimalSI),
+				},
+				Used: corev1.ResourceList{
+					"requests.cpu": *resource.NewQuantity(6, resource.DecimalSI),
+				},
+			},
+			Namespaces: quotav1.ResourceQuotasStatusByNamespace{
+				{
+					Namespace: "ns1",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(6, resource.DecimalSI),
+						},
+						Used: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(1, resource.DecimalSI),
+						},
+					},
+				},
+				{
+					Namespace: "ns2",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(4, resource.DecimalSI),
+						},
+						Used: corev1.ResourceList{
+							"requests.cpu": *resource.NewQuantity(5, resource.DecimalSI),
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func NewDaemonset(id string) *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		ObjectMeta: v1.ObjectMeta{
@@ -146,18 +191,34 @@ func NewNode(id string) *corev1.Node {
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
 				{
-					Type:   corev1.NodeReady,
-					Status: corev1.ConditionTrue,
+					Type:   corev1.NodeDiskPressure,
+					Status: corev1.ConditionFalse,
 				},
 				{
-					Status: corev1.ConditionFalse,
 					Type:   corev1.NodeMemoryPressure,
+					Status: corev1.ConditionFalse,
+				},
+				{
+					Type:   corev1.NodeNetworkUnavailable,
+					Status: corev1.ConditionFalse,
+				},
+				{
+					Type:   corev1.NodePIDPressure,
+					Status: corev1.ConditionFalse,
+				},
+				{
+					Type:   corev1.NodeReady,
+					Status: corev1.ConditionTrue,
 				},
 			},
 			Allocatable: corev1.ResourceList{
 				corev1.ResourceCPU:              *resource.NewMilliQuantity(123, resource.DecimalSI),
 				corev1.ResourceMemory:           *resource.NewQuantity(456, resource.DecimalSI),
 				corev1.ResourceEphemeralStorage: *resource.NewQuantity(1234, resource.DecimalSI),
+				corev1.ResourcePods:             *resource.NewQuantity(12, resource.DecimalSI),
+				"hugepages-1Gi":                 *resource.NewQuantity(2, resource.DecimalSI),
+				"hugepages-2Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
+				"hugepages-5Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
 			},
 		},
 	}
