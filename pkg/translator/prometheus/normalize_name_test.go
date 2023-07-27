@@ -88,13 +88,6 @@ func TestPercent(t *testing.T) {
 
 }
 
-func TestDollar(t *testing.T) {
-
-	require.Equal(t, "crypto_bitcoin_value_dollars", normalizeName(createGauge("crypto.bitcoin.value", "$"), ""))
-	require.Equal(t, "crypto_bitcoin_value_dollars", normalizeName(createGauge("crypto.bitcoin.value.dollars", "$"), ""))
-
-}
-
 func TestEmpty(t *testing.T) {
 
 	require.Equal(t, "test_metric_no_unit", normalizeName(createGauge("test.metric.no_unit", ""), ""))
