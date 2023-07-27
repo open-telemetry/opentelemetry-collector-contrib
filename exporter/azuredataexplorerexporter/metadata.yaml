@@ -6,4 +6,4 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [asaharan, ag-ramachandran]
+    active: [asaharn, ag-ramachandran, tanmaya-panda1]
