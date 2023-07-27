@@ -120,7 +120,7 @@ func Test_Len_Error(t *testing.T) {
 		},
 	})
 	result, err := exprFunc(context.Background(), nil)
-	assert.Equal(t, nil, result)
+	assert.Nil(t, result)
 	assert.Error(t, err)
 	_, ok := err.(ottl.TypeError)
 	assert.False(t, ok)
