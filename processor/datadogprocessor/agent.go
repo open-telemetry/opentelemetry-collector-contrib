@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/datadog-agent/pkg/trace/api"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -41,12 +41,12 @@ type traceagent struct {
 
 // newAgent creates a new unstarted traceagent using the given context. Call Start to start the traceagent.
 // The out channel will receive outoing stats payloads resulting from spans ingested using the Ingest method.
-func newAgent(ctx context.Context, out chan *pb.StatsPayload) *traceagent {
+func newAgent(ctx context.Context, out chan pb.StatsPayload) *traceagent {
 	return newAgentWithConfig(ctx, traceconfig.New(), out)
 }
 
 // newAgentWithConfig creates a new traceagent with the given config cfg. Used in tests; use newAgent instead.
-func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out chan *pb.StatsPayload) *traceagent {
+func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out chan pb.StatsPayload) *traceagent {
 	// disable the HTTP receiver
 	cfg.ReceiverPort = 0
 	// set the API key to succeed startup; it is never used nor needed

@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -223,15 +223,15 @@ func (s *MockSourceProvider) Source(_ context.Context) (source.Source, error) {
 }
 
 type MockStatsProcessor struct {
-	In []*pb.ClientStatsPayload
+	In []pb.ClientStatsPayload
 }
 
-func (s *MockStatsProcessor) ProcessStats(in *pb.ClientStatsPayload, _, _ string) {
+func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, _, _ string) {
 	s.In = append(s.In, in)
 }
 
-// StatsPayloads contains a couple of *pb.ClientStatsPayloads used for testing.
-var StatsPayloads = []*pb.ClientStatsPayload{
+// StatsPayloads contains a couple of pb.ClientStatsPayloads used for testing.
+var StatsPayloads = []pb.ClientStatsPayload{
 	{
 		Hostname:         "host",
 		Env:              "prod",
@@ -244,11 +244,11 @@ var StatsPayloads = []*pb.ClientStatsPayload{
 		Service:          "mysql",
 		ContainerID:      "abcdef123456",
 		Tags:             []string{"a:b", "c:d"},
-		Stats: []*pb.ClientStatsBucket{
+		Stats: []pb.ClientStatsBucket{
 			{
 				Start:    10,
 				Duration: 1,
-				Stats: []*pb.ClientGroupedStats{
+				Stats: []pb.ClientGroupedStats{
 					{
 						Service:        "kafka",
 						Name:           "queue.add",
@@ -278,11 +278,11 @@ var StatsPayloads = []*pb.ClientStatsPayload{
 		Service:          "mysql2",
 		ContainerID:      "abcdef1234562",
 		Tags:             []string{"a:b2", "c:d2"},
-		Stats: []*pb.ClientStatsBucket{
+		Stats: []pb.ClientStatsBucket{
 			{
 				Start:    102,
 				Duration: 12,
-				Stats: []*pb.ClientGroupedStats{
+				Stats: []pb.ClientGroupedStats{
 					{
 						Service:        "kafka2",
 						Name:           "queue.add2",
