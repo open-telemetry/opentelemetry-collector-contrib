@@ -32,6 +32,7 @@ type Protocol struct {
 type ResolverSettings struct {
 	Static *StaticResolver `mapstructure:"static"`
 	DNS    *DNSResolver    `mapstructure:"dns"`
+	K8sSvc *K8sSvcResolver `mapstructure:"k8s"`
 }
 
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
@@ -45,4 +46,10 @@ type DNSResolver struct {
 	Port     string        `mapstructure:"port"`
 	Interval time.Duration `mapstructure:"interval"`
 	Timeout  time.Duration `mapstructure:"timeout"`
+}
+
+// K8sSvcResolver defines the configuration for the DNS resolver
+type K8sSvcResolver struct {
+	Service string  `mapstructure:"service"`
+	Ports   []int32 `mapstructure:"ports"`
 }
