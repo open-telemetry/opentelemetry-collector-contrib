@@ -6,4 +6,4 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib, observiq, splunk, sumo, redhat]
   codeowners:
-    active: [jpkrohling, kovrus]
+    active: [jpkrohling]
