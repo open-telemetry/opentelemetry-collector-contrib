@@ -8,13 +8,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.81.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.21.0
-	go.opentelemetry.io/collector v0.81.0
-	go.opentelemetry.io/collector/component v0.81.0
-	go.opentelemetry.io/collector/consumer v0.81.0
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013
-	go.opentelemetry.io/collector/receiver v0.81.0
-	go.opentelemetry.io/collector/semconv v0.81.0
+	go.opentelemetry.io/collector v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/component v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/consumer v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0013.0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013.0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/receiver v0.81.1-0.20230726164905-cd00f5cc16a3
+	go.opentelemetry.io/collector/semconv v0.81.1-0.20230726164905-cd00f5cc16a3
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/trace v1.16.0
 	go.uber.org/multierr v1.11.0
@@ -58,8 +58,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.81.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.81.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.81.1-0.20230726164905-cd00f5cc16a3 // indirect
+	go.opentelemetry.io/collector/confmap v0.81.1-0.20230726164905-cd00f5cc16a3 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect

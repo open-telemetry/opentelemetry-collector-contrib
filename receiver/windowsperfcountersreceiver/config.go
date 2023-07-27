@@ -55,10 +55,6 @@ type MetricRep struct {
 func (c *Config) Validate() error {
 	var errs error
 
-	if c.CollectionInterval <= 0 {
-		errs = multierr.Append(errs, fmt.Errorf("collection_interval must be a positive duration"))
-	}
-
 	if len(c.PerfCounters) == 0 {
 		errs = multierr.Append(errs, fmt.Errorf("must specify at least one perf counter"))
 	}
