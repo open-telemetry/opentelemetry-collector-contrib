@@ -6,7 +6,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -26,7 +26,7 @@ var _ metrics.APMStatsConsumer = (*Consumer)(nil)
 type Consumer struct {
 	ms        []datadogV2.MetricSeries
 	sl        sketches.SketchSeriesList
-	as        []*pb.ClientStatsPayload
+	as        []pb.ClientStatsPayload
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
@@ -80,7 +80,7 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []*pb.ClientStatsPayload) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo, metadata)...)
 	if len(tags) == 0 {
@@ -99,7 +99,7 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 }
 
 // ConsumeAPMStats implements metrics.APMStatsConsumer.
-func (c *Consumer) ConsumeAPMStats(s *pb.ClientStatsPayload) {
+func (c *Consumer) ConsumeAPMStats(s pb.ClientStatsPayload) {
 	c.as = append(c.as, s)
 }
 
