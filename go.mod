@@ -496,6 +496,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.81.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.81.0 // indirect
@@ -1085,6 +1086,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zooke
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ./extension/observer/dockerobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ./internal/datadog
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling => ./extension/jaegerremotesampling
 
 // see https://github.com/google/gnostic/issues/262
