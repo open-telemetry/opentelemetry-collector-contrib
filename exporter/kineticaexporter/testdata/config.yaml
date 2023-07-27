@@ -1,0 +1,8 @@
+kinetica:
+  host: http://localhost:9191/
+  schema: 
+  username: admin
+  password: password
+  bypasssslcertcheck: true
+
+
