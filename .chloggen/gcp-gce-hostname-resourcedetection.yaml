@@ -9,7 +9,7 @@ change_type: enhancement
 component: resourcedetectionprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: GCP resource detection processor automatically adds `gcp.gce.instance.hostname` and `gcp.gce.instance.name` attributes.
+note: GCP resource detection processor can automatically add `gcp.gce.instance.hostname` and `gcp.gce.instance.name` attributes.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [24598]

@@ -60,10 +60,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		GcpGceInstanceHostname: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		GcpGceInstanceName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		HostID: ResourceAttributeConfig{
 			Enabled: true,

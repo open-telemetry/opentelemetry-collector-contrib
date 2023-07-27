@@ -35,7 +35,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 16, res.Attributes().Len())
+				assert.Equal(t, 14, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 16, res.Attributes().Len())
 			case "none_set":
@@ -96,12 +96,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "gcp.cloud_run.job.task_index-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("gcp.gce.instance.hostname")
-			assert.True(t, ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "gcp.gce.instance.hostname-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("gcp.gce.instance.name")
-			assert.True(t, ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "gcp.gce.instance.name-val", val.Str())
 			}

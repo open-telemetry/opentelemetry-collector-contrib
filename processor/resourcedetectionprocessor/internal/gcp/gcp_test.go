@@ -108,6 +108,33 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeHostType:              "n1-standard1",
 				conventions.AttributeCloudRegion:           "us-central1",
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+			},
+		},
+		{
+			desc: "GCE with instance.hostname and instance.name enabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
+			}, func(cfg *localMetadata.ResourceAttributesConfig) {
+				cfg.GcpGceInstanceHostname.Enabled = true
+				cfg.GcpGceInstanceName.Enabled = true
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID:        "my-project",
+				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
+				conventions.AttributeHostID:                "1472385723456792345",
+				conventions.AttributeHostName:              "my-gke-node-1234",
+				conventions.AttributeHostType:              "n1-standard1",
+				conventions.AttributeCloudRegion:           "us-central1",
+				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				"gcp.gce.instance.hostname":                "custom.dns.example.com",
 				"gcp.gce.instance.name":                    "my-gke-node-1234",
 			},
@@ -253,11 +280,15 @@ func TestDetect(t *testing.T) {
 	}
 }
 
-func newTestDetector(gcpDetector *fakeGCPDetector) *detector {
+func newTestDetector(gcpDetector *fakeGCPDetector, opts ...func(*localMetadata.ResourceAttributesConfig)) *detector {
+	cfg := localMetadata.DefaultResourceAttributesConfig()
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 	return &detector{
 		logger:   zap.NewNop(),
 		detector: gcpDetector,
-		rb:       localMetadata.NewResourceBuilder(localMetadata.DefaultResourceAttributesConfig()),
+		rb:       localMetadata.NewResourceBuilder(cfg),
 	}
 }
 
@@ -436,6 +467,7 @@ func (f *fakeGCPDetector) CloudRunJobExecution() (string, error) {
 		return "", f.err
 	}
 	return f.gcpCloudRunJobExecution, nil
+}
 
 func (f *fakeGCPDetector) GCEInstanceName() (string, error) {
 	if f.err != nil {

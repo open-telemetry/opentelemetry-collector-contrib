@@ -163,6 +163,8 @@ processors:
     * host.id (instance id)
     * host.name (instance name)
     * host.type (machine type)
+    * (optional) gcp.gce.instance.hostname
+    * (optional) gcp.gce.instance.name
 
 #### GKE Metadata
 
@@ -180,7 +182,7 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
 - `node.name` through the downward API with the `env` detector
 - obtaining the Kubernetes node name from the Kubernetes API (with `k8s.io/client-go`)
 
-#### Google Cloud Run Metadata
+#### Google Cloud Run Services Metadata
 
     * cloud.provider ("gcp")
     * cloud.platform ("gcp_cloud_run")
@@ -189,6 +191,17 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
     * faas.id (instance id)
     * faas.name (service name)
     * faas.version (service revision)
+
+#### Cloud Run Jobs Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.id (instance id)
+    * faas.name (service name)
+    * gcp.cloud_run.job.execution ("my-service-ajg89")
+    * gcp.cloud_run.job.task_index ("0")
 
 #### Google Cloud Functions Metadata
 
