@@ -1394,7 +1394,43 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
-	assert.ErrorContains(t, exporter.Start(context.Background(), componenttest.NewNopHost()), "heartbeat on startup failed: HTTP 403")
+	// The exporter's name is "" while generating default params
+	assert.EqualError(t, exporter.Start(context.Background(), componenttest.NewNopHost()), ": heartbeat on startup failed: HTTP 403 \"Forbidden\"")
+}
+
+func TestHeartbeatStartupPass_Disabled(t *testing.T) {
+	rr := make(chan receivedRequest)
+	capture := CapturingData{receivedRequest: rr, statusCode: 403}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &http.Server{
+		Handler:           &capture,
+		ReadHeaderTimeout: 20 * time.Second,
+	}
+	defer s.Close()
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			require.NoError(t, e)
+		}
+	}()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
+	// otherwise we will not see the error.
+	cfg.QueueSettings.Enabled = false
+	// Disable retries to not wait too much time for the return error.
+	cfg.RetrySettings.Enabled = false
+	cfg.DisableCompression = true
+	cfg.Token = "1234-1234"
+	cfg.Heartbeat.Startup = false
+
+	params := exportertest.NewNopCreateSettings()
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestHeartbeatStartupPass(t *testing.T) {
