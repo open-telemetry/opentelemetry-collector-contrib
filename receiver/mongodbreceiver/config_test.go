@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -87,6 +88,9 @@ func TestValidate(t *testing.T) {
 				Username: tc.username,
 				Password: configopaque.String(tc.password),
 				Hosts:    hosts,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 1,
+				},
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
@@ -138,6 +142,9 @@ func TestBadTLSConfigs(t *testing.T) {
 					},
 				},
 				TLSClientSetting: tc.tlsConfig,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 1,
+				},
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expectError {
