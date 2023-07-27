@@ -6,7 +6,6 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -20,9 +19,6 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
 	Endpoint string `mapstructure:"endpoint"`
-
-	// The maximum amount of time to wait for docker API responses.  Default is 5s
-	Timeout time.Duration `mapstructure:"timeout"`
 
 	// A mapping of container label names to MetricDescriptor label keys.
 	// The corresponding container label value will become the DataPoint label value
@@ -52,9 +48,6 @@ type Config struct {
 func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("endpoint must be specified")
-	}
-	if config.CollectionInterval == 0 {
-		return errors.New("collection_interval must be a positive duration")
 	}
 	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
 		return fmt.Errorf("api_version must be at least %v", minimalRequiredDockerAPIVersion)

@@ -29,11 +29,11 @@ func NewFactory() rcvr.Factory {
 func createDefaultConfig() *Config {
 	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	cfg.CollectionInterval = 10 * time.Second
-
+	cfg.Timeout = 5 * time.Second
+	
 	return &Config{
 		ScraperControllerSettings: cfg,
 		Endpoint:                  "unix:///run/podman/podman.sock",
-		Timeout:                   5 * time.Second,
 		APIVersion:                defaultAPIVersion,
 	}
 }

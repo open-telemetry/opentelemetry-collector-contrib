@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 )
@@ -35,6 +36,7 @@ func TestMetricValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "wss://not-supported-websockets",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
 			},
 			expectedError: errors.New("url scheme must be http or https"),
 		},
@@ -44,6 +46,7 @@ func TestMetricValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "\x00",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
 			},
 			expectedError: errors.New("parse"),
 		},
@@ -54,6 +57,7 @@ func TestMetricValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
 			},
 			expectedError: errors.New("username not provided"),
 		},
@@ -64,6 +68,7 @@ func TestMetricValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
 			},
 			expectedError: errors.New("password not provided"),
 		},

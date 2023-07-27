@@ -85,12 +85,10 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username: tc.username,
-				Password: configopaque.String(tc.password),
-				Hosts:    hosts,
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					CollectionInterval: 1,
-				},
+				Username:                  tc.username,
+				Password:                  configopaque.String(tc.password),
+				Hosts:                     hosts,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
@@ -141,10 +139,8 @@ func TestBadTLSConfigs(t *testing.T) {
 						Endpoint: "localhost:27017",
 					},
 				},
-				TLSClientSetting: tc.tlsConfig,
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					CollectionInterval: 1,
-				},
+				TLSClientSetting:          tc.tlsConfig,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expectError {

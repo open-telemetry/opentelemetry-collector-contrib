@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -23,11 +24,12 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
 			},
 		}, {
 			desc: "valid config with no metric settings",
-			cfg:  &Config{},
+			cfg:  &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings("")},
 		},
 		{
 			desc: "default config is valid",

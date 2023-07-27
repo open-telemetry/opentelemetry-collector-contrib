@@ -48,7 +48,7 @@ func TestNewReceiverErrors(t *testing.T) {
 	r, err = newReceiver(context.Background(), receivertest.NewNopCreateSettings(), &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
 	assert.Nil(t, r)
 	require.Error(t, err)
-	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
+	assert.Equal(t, "collection_interval must be a positive duration", err.Error())
 }
 
 func TestScraperLoop(t *testing.T) {

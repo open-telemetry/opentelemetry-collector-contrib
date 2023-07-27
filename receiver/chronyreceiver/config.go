@@ -5,8 +5,6 @@ package chronyreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
-	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -26,8 +24,6 @@ type Config struct {
 	//
 	// The default value is unix:///var/run/chrony/chronyd.sock
 	Endpoint string `mapstructure:"endpoint"`
-	// Timeout controls the max time allowed to read data from chronyd
-	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 var (
@@ -40,16 +36,11 @@ func newDefaultCongfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-
-		Endpoint: "unix:///var/run/chrony/chronyd.sock",
-		Timeout:  10 * time.Second,
+		Endpoint:                  "unix:///var/run/chrony/chronyd.sock",
 	}
 }
 
 func (c *Config) Validate() error {
-	if c.Timeout < 1 {
-		return fmt.Errorf("must have a positive timeout: %w", errInvalidValue)
-	}
 	_, _, err := chrony.SplitNetworkEndpoint(c.Endpoint)
 	return err
 }

@@ -54,7 +54,6 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 			},
 			MetricsBuilderConfig: mbc,
 			Endpoint:             "udp://localhost:323",
-			Timeout:              10 * time.Second,
 		},
 		consumertest.NewNop(),
 	)
